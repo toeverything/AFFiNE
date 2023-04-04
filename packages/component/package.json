@@ -29,6 +29,7 @@
     "@mui/base": "5.0.0-alpha.124",
     "@mui/icons-material": "^5.11.16",
     "@mui/material": "^5.11.16",
+    "@radix-ui/react-avatar": "^1.0.2",
     "@toeverything/hooks": "workspace:*",
     "clsx": "^1.2.1",
     "lit": "^2.7.1",

@@ -1,11 +1,12 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import type { Workspace } from '@blocksuite/store';
+import * as RadixAvatar from '@radix-ui/react-avatar';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import clsx from 'clsx';
 import type React from 'react';
-import { memo } from 'react';
 
-import { avatarStyle, avatarTextStyle } from './index.css';
+import { avatarImageStyle, avatarStyle, avatarTextStyle } from './index.css';
 
 function stringToColour(str: string) {
   str = str || 'affine';
@@ -28,61 +29,6 @@ function stringToColour(str: string) {
   return colour;
 }
 
-interface AvatarProps {
-  size: number;
-  name: string;
-  avatar_url: string;
-  className?: string;
-}
-
-export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
-  size: _size,
-  avatar_url,
-  name,
-  ...props
-}) {
-  const size = _size || 20;
-  const sizeStr = size + 'px';
-
-  return (
-    <>
-      {avatar_url ? (
-        <div
-          {...props}
-          className={clsx(avatarStyle, props.className)}
-          style={{
-            width: sizeStr,
-            height: sizeStr,
-          }}
-        >
-          <picture>
-            <img
-              width={size}
-              height={size}
-              src={avatar_url}
-              alt=""
-              referrerPolicy="no-referrer"
-            />
-          </picture>
-        </div>
-      ) : (
-        <div
-          {...props}
-          className={avatarTextStyle}
-          style={{
-            width: sizeStr,
-            height: sizeStr,
-            fontSize: Math.ceil(0.5 * size) + 'px',
-            background: stringToColour(name || 'AFFiNE'),
-          }}
-        >
-          {(name || 'AFFiNE').substring(0, 1)}
-        </div>
-      )}
-    </>
-  );
-});
-
 export type WorkspaceAvatarProps = {
   size?: number;
   workspace: LocalWorkspace | AffineWorkspace | null;
@@ -97,19 +43,32 @@ export type BlockSuiteWorkspaceAvatar = Omit<
 };
 
 export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
-  size = 20,
+  size,
   workspace,
   ...props
 }) => {
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
+  const [name] = useBlockSuiteWorkspaceName(workspace);
 
   return (
-    <Avatar
+    <RadixAvatar.Root
       {...props}
-      size={size}
-      name={workspace.meta.name ?? 'Untitled'}
-      avatar_url={avatar ?? ''}
-    />
+      className={clsx(avatarStyle, props.className)}
+      style={{
+        height: size,
+        width: size,
+      }}
+    >
+      <RadixAvatar.Image className={avatarImageStyle} src={avatar} alt={name} />
+      <RadixAvatar.Fallback
+        className={avatarTextStyle}
+        style={{
+          backgroundColor: stringToColour(name),
+        }}
+      >
+        {name.substring(0, 1)}
+      </RadixAvatar.Fallback>
+    </RadixAvatar.Root>
   );
 };
 
@@ -127,5 +86,23 @@ export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = ({
       />
     );
   }
-  return <Avatar {...props} size={size} name="UNKNOWN" avatar_url="" />;
+  return (
+    <RadixAvatar.Root
+      {...props}
+      className={clsx(avatarStyle, props.className)}
+      style={{
+        height: size,
+        width: size,
+      }}
+    >
+      <RadixAvatar.Fallback
+        className={avatarTextStyle}
+        style={{
+          backgroundColor: stringToColour('A'),
+        }}
+      >
+        A
+      </RadixAvatar.Fallback>
+    </RadixAvatar.Root>
+  );
 };
