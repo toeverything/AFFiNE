@@ -14,6 +14,9 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
   loadPriority: LoadPriority.LOW,
   CRUD,
   UI: {
+    Provider: ({ children }) => {
+      return <>{children}</>;
+    },
     PageDetail: ({ currentWorkspace, currentPageId }) => {
       const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
       if (!page) {
