@@ -1,11 +1,13 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import type { Workspace } from '@blocksuite/store';
+import * as RadixAvatar from '@radix-ui/react-avatar';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import clsx from 'clsx';
 import type React from 'react';
 import { memo } from 'react';
 
-import { avatarStyle, avatarTextStyle } from './index.css';
+import { avatarImageStyle, avatarStyle, avatarTextStyle } from './index.css';
 
 function stringToColour(str: string) {
   str = str || 'affine';
@@ -97,19 +99,31 @@ export type BlockSuiteWorkspaceAvatar = Omit<
 };
 
 export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
-  size = 20,
+  size,
   workspace,
   ...props
 }) => {
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
+  const [name] = useBlockSuiteWorkspaceName(workspace);
 
   return (
-    <Avatar
-      {...props}
-      size={size}
-      name={workspace.meta.name ?? 'Untitled'}
-      avatar_url={avatar ?? ''}
-    />
+    <RadixAvatar.Root
+      className={clsx(avatarStyle, props.className)}
+      style={{
+        height: size,
+        width: size,
+      }}
+    >
+      <RadixAvatar.Image className={avatarImageStyle} src={avatar} alt={name} />
+      <RadixAvatar.Fallback
+        className={avatarTextStyle}
+        style={{
+          backgroundColor: stringToColour(name),
+        }}
+      >
+        {name.substring(0, 1)}
+      </RadixAvatar.Fallback>
+    </RadixAvatar.Root>
   );
 };
 
@@ -127,5 +141,22 @@ export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = ({
       />
     );
   }
-  return <Avatar {...props} size={size} name="UNKNOWN" avatar_url="" />;
+  return (
+    <RadixAvatar.Root
+      className={clsx(avatarStyle, props.className)}
+      style={{
+        height: size,
+        width: size,
+      }}
+    >
+      <RadixAvatar.Fallback
+        className={avatarTextStyle}
+        style={{
+          backgroundColor: stringToColour('A'),
+        }}
+      >
+        A
+      </RadixAvatar.Fallback>
+    </RadixAvatar.Root>
+  );
 };
