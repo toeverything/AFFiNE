@@ -103,7 +103,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./packages/component/coverage/coverage-storybook.json
+          files: ./packages/component/coverage/storybook/coverage-storybook.json
           flags: storybook-test
           name: affine
           fail_ci_if_error: true
