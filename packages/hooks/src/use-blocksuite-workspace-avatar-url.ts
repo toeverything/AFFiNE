@@ -7,6 +7,9 @@ export function useBlockSuiteWorkspaceAvatarUrl(
   blockSuiteWorkspace: Workspace
 ) {
   const [url, set] = useState(() => blockSuiteWorkspace.meta.avatar);
+  if (url !== blockSuiteWorkspace.meta.avatar) {
+    set(blockSuiteWorkspace.meta.avatar);
+  }
   const { data: avatar, mutate } = useSWR(url, {
     fetcher: async avatar => {
       assertExists(blockSuiteWorkspace);
