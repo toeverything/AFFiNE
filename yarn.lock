@@ -50,6 +50,7 @@ __metadata:
     "@mui/icons-material": ^5.11.11
     "@mui/material": ^5.11.15
     "@storybook/addon-actions": ^7.0.2
+    "@storybook/addon-coverage": ^0.0.8
     "@storybook/addon-essentials": ^7.0.2
     "@storybook/addon-interactions": ^7.0.2
     "@storybook/addon-links": ^7.0.2
@@ -66,7 +67,6 @@ __metadata:
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.0.11
     "@vanilla-extract/css": ^1.11.0
-    "@vanilla-extract/vite-plugin": ^3.8.0
     "@vitejs/plugin-react": ^3.1.0
     clsx: ^1.2.1
     jest-mock: ^29.5.0
@@ -4789,6 +4789,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@storybook/addon-coverage@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "@storybook/addon-coverage@npm:0.0.8"
+  dependencies:
+    "@types/babel__core": ^7.1.19
+    "@types/istanbul-lib-coverage": ^2.0.4
+    babel-plugin-istanbul: ^6.1.1
+    vite-plugin-istanbul: ^3.0.1
+  checksum: 8cf18a291699df1b630f77698abfd4d370dabfba55ae186e522b76b9bc76ce6a866cdd5d0e8c044dda135dd2873651d3ab9d2ddc93903222bdabf236ef64645e
+  languageName: node
+  linkType: hard
+
 "@storybook/addon-docs@npm:7.0.2":
   version: 7.0.2
   resolution: "@storybook/addon-docs@npm:7.0.2"
@@ -6109,7 +6121,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/babel__core@npm:^7.0.0, @types/babel__core@npm:^7.1.14":
+"@types/babel__core@npm:^7.0.0, @types/babel__core@npm:^7.1.14, @types/babel__core@npm:^7.1.19":
   version: 7.20.0
   resolution: "@types/babel__core@npm:7.20.0"
   dependencies:
@@ -6345,7 +6357,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/istanbul-lib-coverage@npm:*, @types/istanbul-lib-coverage@npm:^2.0.0, @types/istanbul-lib-coverage@npm:^2.0.1":
+"@types/istanbul-lib-coverage@npm:*, @types/istanbul-lib-coverage@npm:^2.0.0, @types/istanbul-lib-coverage@npm:^2.0.1, @types/istanbul-lib-coverage@npm:^2.0.4":
   version: 2.0.4
   resolution: "@types/istanbul-lib-coverage@npm:2.0.4"
   checksum: a25d7589ee65c94d31464c16b72a9dc81dfa0bea9d3e105ae03882d616e2a0712a9c101a599ec482d297c3591e16336962878cb3eb1a0a62d5b76d277a890ce7
@@ -7209,6 +7221,7 @@ __metadata:
     "@vitejs/plugin-react": ^3.1.0
     "@vitest/coverage-istanbul": ^0.29.8
     "@vitest/ui": ^0.29.8
+    concurrently: ^8.0.1
     eslint: ^8.37.0
     eslint-config-prettier: ^8.8.0
     eslint-plugin-import: ^2.27.5
@@ -8859,6 +8872,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"concurrently@npm:^8.0.1":
+  version: 8.0.1
+  resolution: "concurrently@npm:8.0.1"
+  dependencies:
+    chalk: ^4.1.2
+    date-fns: ^2.29.3
+    lodash: ^4.17.21
+    rxjs: ^7.8.0
+    shell-quote: ^1.8.0
+    spawn-command: 0.0.2-1
+    supports-color: ^8.1.1
+    tree-kill: ^1.2.2
+    yargs: ^17.7.1
+  bin:
+    conc: dist/bin/concurrently.js
+    concurrently: dist/bin/concurrently.js
+  checksum: cce10ab1bbd7fd099300234637cdbc8e12622a5fe53f8dd31dcd9562d9803f25d3d0410bdb6fffd54e8f4e11b852366c03994bd319843cce70e449c8a8a69526
+  languageName: node
+  linkType: hard
+
 "console-control-strings@npm:^1.0.0, console-control-strings@npm:^1.1.0":
   version: 1.1.0
   resolution: "console-control-strings@npm:1.1.0"
@@ -9056,6 +9089,13 @@ __metadata:
   version: 1.0.8
   resolution: "damerau-levenshtein@npm:1.0.8"
   checksum: d240b7757544460ae0586a341a53110ab0a61126570ef2d8c731e3eab3f0cb6e488e2609e6a69b46727635de49be20b071688698744417ff1b6c1d7ccd03e0de
+  languageName: node
+  linkType: hard
+
+"date-fns@npm:^2.29.3":
+  version: 2.29.3
+  resolution: "date-fns@npm:2.29.3"
+  checksum: e01cf5b62af04e05dfff921bb9c9933310ed0e1ae9a81eb8653452e64dc841acf7f6e01e1a5ae5644d0337e9a7f936175fd2cb6819dc122fdd9c5e86c56be484
   languageName: node
   linkType: hard
 
@@ -16971,6 +17011,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"shell-quote@npm:^1.8.0":
+  version: 1.8.0
+  resolution: "shell-quote@npm:1.8.0"
+  checksum: 6ef7c5e308b9c77eedded882653a132214fa98b4a1512bb507588cf6cd2fc78bfee73e945d0c3211af028a1eabe09c6a19b96edd8977dc149810797e93809749
+  languageName: node
+  linkType: hard
+
 "shelljs@npm:^0.8.5":
   version: 0.8.5
   resolution: "shelljs@npm:0.8.5"
@@ -17200,6 +17247,13 @@ __metadata:
   version: 1.1.5
   resolution: "space-separated-tokens@npm:1.1.5"
   checksum: 8ef68f1cfa8ccad316b7f8d0df0919d0f1f6d32101e8faeee34ea3a923ce8509c1ad562f57388585ee4951e92d27afa211ed0a077d3d5995b5ba9180331be708
+  languageName: node
+  linkType: hard
+
+"spawn-command@npm:0.0.2-1":
+  version: 0.0.2-1
+  resolution: "spawn-command@npm:0.0.2-1"
+  checksum: 2cac8519332193d1ed37d57298c4a1f73095e9edd20440fbab4aa47f531da83831734f2b51c44bb42b2747bf3485dec3fa2b0a1003f74c67561f2636622e328b
   languageName: node
   linkType: hard
 
@@ -17649,7 +17703,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"supports-color@npm:^8.0.0":
+"supports-color@npm:^8.0.0, supports-color@npm:^8.1.1":
   version: 8.1.1
   resolution: "supports-color@npm:8.1.1"
   dependencies:
@@ -18699,6 +18753,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"vite-plugin-istanbul@npm:^3.0.1":
+  version: 3.0.4
+  resolution: "vite-plugin-istanbul@npm:3.0.4"
+  dependencies:
+    "@istanbuljs/load-nyc-config": ^1.1.0
+    istanbul-lib-instrument: ^5.1.0
+    picocolors: ^1.0.0
+    test-exclude: ^6.0.0
+  checksum: 74fa99e2e2bded28ff6ba47bddf3cdd2eae04d37f2b6d257dcf5571c75f3433c6495fe94bba1f12acd0fc6046a6e83ea618b0547726ba68190bf292c7cb34695
+  languageName: node
+  linkType: hard
+
 "vite-plugin-istanbul@npm:^4.0.1":
   version: 4.0.1
   resolution: "vite-plugin-istanbul@npm:4.0.1"
@@ -19455,7 +19521,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:^17.3.1":
+"yargs@npm:^17.3.1, yargs@npm:^17.7.1":
   version: 17.7.1
   resolution: "yargs@npm:17.7.1"
   dependencies:
