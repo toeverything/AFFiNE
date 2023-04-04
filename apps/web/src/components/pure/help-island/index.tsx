@@ -1,4 +1,5 @@
 import { MuiFade, Tooltip } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, DoneIcon } from '@blocksuite/icons';
 import dynamic from 'next/dynamic';
@@ -12,7 +13,6 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-
 const ContactModal = dynamic(
   () =>
     import('@affine/component/contact-modal').then(({ ContactModal }) => ({
@@ -25,7 +25,9 @@ const ContactModal = dynamic(
 
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 export const HelpIsland = ({
-  showList = ['whatNew', 'contact', 'shortcuts'],
+  showList = config.enableChangeLog
+    ? ['whatNew', 'contact', 'shortcuts']
+    : ['contact', 'shortcuts'],
 }: {
   showList?: IslandItemNames[];
 }) => {

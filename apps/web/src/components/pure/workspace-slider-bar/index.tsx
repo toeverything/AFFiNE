@@ -86,6 +86,18 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   useEffect(() => {
     window.apis?.onSidebarVisibilityChange(sidebarOpen);
   }, [sidebarOpen]);
+
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if ((e.key === '/' && e.metaKey) || (e.key === '/' && e.ctrlKey)) {
+        setSidebarOpen(!sidebarOpen);
+      }
+    };
+    document.addEventListener('keydown', keydown, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', keydown, { capture: true });
+  }, [sidebarOpen, setSidebarOpen]);
+
   return (
     <>
       <StyledSliderBarWrapper
@@ -109,7 +121,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               currentWorkspace={currentWorkspace}
               onClick={onOpenWorkspaceListModal}
             />
-            <ChangeLog />
+            {config.enableChangeLog && <ChangeLog />}
             <StyledListItem
               data-testid="slider-bar-quick-search-button"
               onClick={useCallback(() => {

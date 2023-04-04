@@ -4,13 +4,13 @@ import {
   ModalWrapper,
   Tooltip,
 } from '@affine/component';
+import { WorkspaceCard } from '@affine/component/workspace-card';
 import { useTranslation } from '@affine/i18n';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 
 import type { AllWorkspace } from '../../../shared';
 import { Footer } from '../footer';
-import { WorkspaceCard } from '../workspace-card';
 import { LanguageMenu } from './language-menu';
 import {
   StyledCreateWorkspaceCard,

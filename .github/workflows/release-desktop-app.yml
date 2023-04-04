@@ -98,9 +98,19 @@ jobs:
       - name: move octobase Binary
         run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
+      - name: Signing By Apple Developer ID
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
       - name: make build
         run: yarn make-macos-x64
         working-directory: apps/electron
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Save x64 artifacts
         run: |
@@ -151,9 +161,19 @@ jobs:
       - name: move octobase Binary
         run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
+      - name: Signing By Apple Developer ID
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
       - name: make build
         run: yarn make-macos-arm64
         working-directory: apps/electron
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Save arm64 artifacts
         run: |

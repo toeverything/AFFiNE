@@ -1,4 +1,4 @@
-import '../styles/globals.css';
+import '@affine/component/theme/global.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';

@@ -5,19 +5,24 @@ import type { Page } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
-import { useEffect, useState } from 'react';
 
 import type { EditorProps } from '.';
 import { BlockSuiteEditor } from '.';
 
-function initPage(page: Page, editor: Readonly<EditorContainer>): void {
+function initPage(page: Page): void {
   // Add page block and surface block at root level
   const pageBlockId = page.addBlock('affine:page', {
-    title: new page.Text(''),
+    title: new page.Text('Hello, world!'),
   });
   page.addBlock('affine:surface', {}, null);
   const frameId = page.addBlock('affine:frame', {}, pageBlockId);
-  page.addBlock('affine:paragraph', {}, frameId);
+  page.addBlock(
+    'affine:paragraph',
+    {
+      text: new page.Text('This is a paragraph.'),
+    },
+    frameId
+  );
   page.resetHistory();
 }
 
@@ -26,12 +31,8 @@ const blockSuiteWorkspace = new Workspace({
   blobOptionsGetter: () => void 0,
 });
 blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
-const promise = new Promise<void>(resolve => {
-  blockSuiteWorkspace.slots.pageAdded.once(() => {
-    resolve();
-  });
-});
-blockSuiteWorkspace.createPage('page0');
+const page = blockSuiteWorkspace.createPage('page0');
+initPage(page);
 
 type BlockSuiteMeta = Meta<typeof BlockSuiteEditor>;
 export default {
@@ -40,16 +41,6 @@ export default {
 } satisfies BlockSuiteMeta;
 
 const Template: StoryFn<EditorProps> = (args: EditorProps) => {
-  const [loaded, setLoaded] = useState(false);
-  const page = blockSuiteWorkspace.getPage('page0');
-  useEffect(() => {
-    promise
-      .then(() => setLoaded(true))
-      .then(() => {
-        document.dispatchEvent(new Event('blocksuite:ready'));
-      });
-  }, []);
-  if (!loaded || !page) return <div>Loading...</div>;
   return (
     <BlockSuiteEditor
       {...args}
@@ -80,6 +71,5 @@ Empty.play = async ({ canvasElement }) => {
 };
 
 Empty.args = {
-  onInit: initPage,
   mode: 'page',
 };
