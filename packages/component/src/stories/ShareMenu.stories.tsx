@@ -1,6 +1,5 @@
 import type { StoryFn } from '@storybook/react';
 
-import type { ContactModalProps } from '../components/contact-modal';
 import { ShareMenu } from '../components/share-menu';
 
 export default {
@@ -8,7 +7,7 @@ export default {
   component: ShareMenu,
 };
 
-export const Basic: StoryFn<ContactModalProps> = () => {
+export const Basic: StoryFn = () => {
   return <ShareMenu />;
 };
 Basic.args = {
