@@ -1,10 +1,16 @@
 import { Menu } from '@affine/component';
+import { ExportIcon } from '@blocksuite/icons';
 import { useState } from 'react';
 
 import Export from './Export';
 import SharePage from './SharePage';
 import ShareWorkspace from './ShareWorkspace';
-import { StyledShareButton, StyledTabsWrapper } from './styles';
+import {
+  StyledIndicator,
+  StyledShareButton,
+  StyledTabsWrapper,
+  TabItem,
+} from './styles';
 
 type SharePanel = 'SharePage' | 'Export' | 'ShareWorkspace';
 const MenuItems: Record<SharePanel, React.FC> = {
@@ -22,51 +28,55 @@ export const ShareMenu = () => {
   const ActiveComponent = MenuItems[activeItem];
   interface ShareMenuProps {
     activeItem: SharePanel;
-    onMenuChange: (selectedItem: SharePanel) => void;
+    onChangeTab: (selectedItem: SharePanel) => void;
   }
-  const ShareMenu: React.FC<ShareMenuProps> = ({
-    activeItem,
-    onMenuChange,
-  }) => {
+  const ShareMenu: React.FC<ShareMenuProps> = ({ activeItem, onChangeTab }) => {
     const handleButtonClick = (itemName: SharePanel) => {
-      onMenuChange(itemName);
+      onChangeTab(itemName);
+      setActiveItem(itemName);
     };
 
     return (
       <StyledTabsWrapper>
         {Object.keys(MenuItems).map(item => (
-          <button
+          <TabItem
+            isActive={activeItem === item}
             key={item}
             onClick={() => handleButtonClick(item as SharePanel)}
           >
             {item}
-          </button>
+          </TabItem>
         ))}
       </StyledTabsWrapper>
     );
   };
-
-  const EditMenu = (
+  const activeIndex = Object.keys(MenuItems).indexOf(activeItem);
+  const Share = (
     <>
-      <ShareMenu activeItem={activeItem} onMenuChange={handleMenuChange} />
+      <ShareMenu activeItem={activeItem} onChangeTab={handleMenuChange} />
+      <StyledIndicator activeIndex={activeIndex} />
       <ActiveComponent />
     </>
   );
   return (
     <>
       <Menu
-        content={EditMenu}
+        content={Share}
         visible={open}
         width={627}
         placement="bottom-end"
         trigger={['click']}
         disablePortal={true}
+        onClickAway={() => {
+          setOpen(false);
+        }}
       >
         <StyledShareButton
           onClick={() => {
             setOpen(!open);
           }}
         >
+          <ExportIcon />
           <div>Share</div>
         </StyledShareButton>
       </Menu>
