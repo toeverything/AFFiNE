@@ -1,6 +1,7 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import type { Workspace } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
+import clsx from 'clsx';
 import type React from 'react';
 import { memo } from 'react';
 
@@ -31,6 +32,7 @@ interface AvatarProps {
   size: number;
   name: string;
   avatar_url: string;
+  className?: string;
 }
 
 export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
@@ -47,7 +49,7 @@ export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
       {avatar_url ? (
         <div
           {...props}
-          className={avatarStyle}
+          className={clsx(avatarStyle, props.className)}
           style={{
             width: sizeStr,
             height: sizeStr,
@@ -84,6 +86,7 @@ export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
 export type WorkspaceAvatarProps = {
   size?: number;
   workspace: LocalWorkspace | AffineWorkspace | null;
+  className?: string;
 };
 
 export type BlockSuiteWorkspaceAvatar = Omit<
