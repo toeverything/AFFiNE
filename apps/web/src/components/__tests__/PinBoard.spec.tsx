@@ -113,6 +113,7 @@ describe('PinBoard', () => {
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
     // New page meta is added in initial page meta
     expect(rootPageMeta?.subpageIds.includes(addedPageMeta.id)).toBe(true);
+    app.unmount();
   });
 
   test('delete pivot', async () => {
@@ -128,8 +129,9 @@ describe('PinBoard', () => {
 
     // Every page should be tagged as trash
     expect(blockSuiteWorkspace.meta.pageMetas.filter(m => m.trash).length).toBe(
-      2
+      3
     );
+    app.unmount();
   });
 
   test('rename pivot', async () => {
@@ -148,6 +150,7 @@ describe('PinBoard', () => {
     // expect(
     //   blockSuiteWorkspace.meta.getPageMeta(rootPageId)?.name
     // ).toBe('tteesstt');
+    app.unmount();
   });
 
   test('move pivot', async () => {
@@ -175,6 +178,7 @@ describe('PinBoard', () => {
 
     expect(rootPageMeta?.subpageIds.includes(pivotId1)).toBe(false);
     expect(rootPageMeta?.subpageIds.includes(pivotId2)).toBe(true);
+    app.unmount();
   });
 });
 
