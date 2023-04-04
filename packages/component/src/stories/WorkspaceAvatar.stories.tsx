@@ -77,3 +77,11 @@ export const BlobExample: StoryFn<WorkspaceAvatarProps> = props => {
 BlobExample.args = {
   size: 40,
 };
+
+export const Empty: StoryFn<WorkspaceAvatarProps> = props => {
+  return <WorkspaceAvatar {...props} workspace={null} />;
+};
+
+Empty.args = {
+  size: 40,
+};
