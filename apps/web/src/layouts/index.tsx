@@ -264,8 +264,13 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
   const sidebarFloating = useSidebarFloating();
   const [sidebarWidth, setSliderWidth] = useSidebarWidth();
-  const actualSidebarWidth = sidebarFloating || !sidebarOpen ? 0 : sidebarWidth;
-  const width = `calc(100% - ${actualSidebarWidth}px)`;
+  const actualSidebarWidth = !sidebarOpen
+    ? 0
+    : sidebarFloating
+    ? 'calc(10vw + 400px)'
+    : sidebarWidth;
+  const mainWidth =
+    sidebarOpen && !sidebarFloating ? `calc(100% - ${sidebarWidth}px)` : '100%';
   const [resizing] = useSidebarResizing();
 
   const onResizeStart = useCallback(() => {
@@ -332,7 +337,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
             </StyledSliderResizer>
           )}
         </StyledSpacer>
-        <MainContainerWrapper resizing={resizing} style={{ width: width }}>
+        <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
             <AffineWorkspaceEffect />
             {children}

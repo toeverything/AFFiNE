@@ -22,13 +22,13 @@ export const StyledSpacer = styled('div')<{
   sidebarOpen: boolean;
   resizing: boolean;
   floating: boolean;
-}>(({ resizing, sidebarOpen, floating }) => {
+}>(({ resizing, floating }) => {
   return {
-    position: 'relative',
+    position: floating ? 'absolute' : 'relative',
     flexGrow: 1,
-    maxWidth: 'calc(100vw - 698px)',
-    minWidth: !floating && sidebarOpen ? '256px' : '0',
-    transition: resizing ? '' : 'width .3s, min-width .3s',
+    height: '100%',
+    maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
+    transition: resizing ? '' : 'width .3s, min-width .3s, max-width .3s',
   };
 });
 

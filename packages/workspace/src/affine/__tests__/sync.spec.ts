@@ -135,9 +135,12 @@ describe('ydoc sync', () => {
         workspace1.doc.getMap(`space:${pageId}`).toJSON()
       );
       const page2 = workspace2.getPage(pageId) as Page;
-      page1.updateBlockById(paragraphId, {
-        text: new page1.Text('hello world'),
-      });
+      page1.updateBlock(
+        page1.getBlockById(paragraphId) as ParagraphBlockModel,
+        {
+          text: new page1.Text('hello world'),
+        }
+      );
       await new Promise(resolve => setTimeout(resolve, 1000));
       const paragraph2 = page2.getBlockById(paragraphId) as ParagraphBlockModel;
       const text = paragraph2.text as Text;
