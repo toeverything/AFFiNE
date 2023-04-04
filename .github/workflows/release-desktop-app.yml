@@ -45,6 +45,10 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: add arm64 target
+        if: matrix.arch == 'arm64'
+        run: rustup target add aarch64-apple-darwin
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
