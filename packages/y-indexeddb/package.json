@@ -28,7 +28,7 @@
     "@blocksuite/blocks": "0.5.0-20230404060355-e26ee252",
     "@blocksuite/store": "0.5.0-20230404060355-e26ee252",
     "vite": "^4.2.1",
-    "vite-plugin-dts": "^2.1.0"
+    "vite-plugin-dts": "^2.2.0"
   },
   "peerDependencies": {
     "yjs": "^13.5.51"

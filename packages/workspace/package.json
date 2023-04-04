@@ -29,7 +29,7 @@
     "react-dom": "^18.2.0",
     "y-indexeddb": "^9.0.10",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.5.51",
+    "yjs": "^13.5.52",
     "zod": "^3.21.4"
   },
   "devDependencies": {
