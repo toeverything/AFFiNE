@@ -29,103 +29,24 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: true
 
+env:
+  APPLE_ID: ${{ secrets.APPLE_ID }}
+  APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+  NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+  NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+
 jobs:
-  before-make:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          electron-workspace-install: true
-
-      - name: before-make
-        working-directory: apps/electron
-        run: yarn before-make
-        env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-
-      - name: Upload Artifact (web-static)
-        uses: actions/upload-artifact@v3
-        with:
-          name: before-make-web-static
-          path: apps/electron/resources/web-static
-
-      - name: Upload Artifact (electron dist)
-        uses: actions/upload-artifact@v3
-        with:
-          name: before-make-electron-dist
-          path: apps/electron/dist
-
-  build-macos-x64:
-    needs: before-make
+  make-macos:
     runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          electron-workspace-install: true
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './packages/octobase-node -> target'
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: before-make-web-static
-          path: apps/electron/resources/web-static
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: before-make-electron-dist
-          path: apps/electron/dist
-
-      - name: build octobase-node
-        run: yarn build:octobase-node
-        working-directory: apps/electron
-
-      - name: move octobase Binary
-        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
-
-      - name: Signing By Apple Developer ID
-        uses: apple-actions/import-codesign-certs@v2
-        with:
-          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-
-      - name: make build
-        run: yarn make-macos-x64
-        working-directory: apps/electron
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-
-      - name: Save x64 artifacts
-        run: |
-          mkdir -p builds
-          mv apps/electron/out/make/AFFiNE.dmg ./builds/affine-darwin-x64-${{ github.event.inputs.version }}.dmg
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: affine-darwin-x64-builds
-          path: builds
-
-  build-macos-arm64:
-    needs: before-make
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -137,29 +58,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: add arm64 target
+        if: matrix.arch == 'arm64'
         run: rustup target add aarch64-apple-darwin
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './packages/octobase-node -> target'
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: before-make-web-static
-          path: apps/electron/resources/web-static
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: before-make-electron-dist
-          path: apps/electron/dist
-
-      - name: build octobase-node
-        run: yarn build:octobase-node --target=aarch64-apple-darwin
-        working-directory: apps/electron
-
-      - name: move octobase Binary
-        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
       - name: Signing By Apple Developer ID
         uses: apple-actions/import-codesign-certs@v2
@@ -168,26 +73,21 @@ jobs:
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
       - name: make build
-        run: yarn make-macos-arm64
+        run: yarn make-macos-${{ matrix.arch }}
         working-directory: apps/electron
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Save arm64 artifacts
+      - name: Save artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/make/AFFiNE.dmg ./builds/affine-darwin-arm64-${{ github.event.inputs.version }}.dmg
+          mv apps/electron/out/make/AFFiNE.dmg ./builds/affine-darwin-${{ matrix.arch }}-${{ github.event.inputs.version }}.dmg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-darwin-arm64-builds
+          name: affine-darwin-${{ matrix.arch }}-builds
           path: builds
 
-  build-windows:
-    needs: before-make
+  make-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
@@ -203,23 +103,6 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './packages/octobase-node -> target'
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: before-make-web-static
-          path: apps/electron/resources/web-static
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: before-make-electron-dist
-          path: apps/electron/dist
-
-      - name: build octobase-node
-        run: yarn build:octobase-node
-        working-directory: apps/electron
-
-      - name: move octobase Binary
-        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
       - name: make build
         run: yarn make-windows-x64
@@ -237,7 +120,7 @@ jobs:
           path: builds
 
   release:
-    needs: [build-macos-x64, build-macos-arm64, build-windows]
+    needs: [make-macos, make-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download MacOS x64 Artifacts

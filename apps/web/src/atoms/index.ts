@@ -1,10 +1,9 @@
 import { atomWithSyncStorage } from '@affine/jotai';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
-import { unstable_batchedUpdates } from 'react-dom';
 
 import { WorkspacePlugins } from '../plugins';
 import type { AllWorkspace } from '../shared';
@@ -12,22 +11,6 @@ import type { AllWorkspace } from '../shared';
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);
 export const currentEditorAtom = atom<Readonly<EditorContainer> | null>(null);
-
-// If the workspace is locked, it means that the user maybe updating the workspace
-//  from local to remote or vice versa
-export const workspaceLockAtom = atom(false);
-export async function lockMutex(fn: () => Promise<unknown>) {
-  if (jotaiStore.get(workspaceLockAtom)) {
-    throw new Error('Workspace is locked');
-  }
-  unstable_batchedUpdates(() => {
-    jotaiStore.set(workspaceLockAtom, true);
-  });
-  await fn();
-  unstable_batchedUpdates(() => {
-    jotaiStore.set(workspaceLockAtom, false);
-  });
-}
 
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
