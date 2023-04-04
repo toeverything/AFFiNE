@@ -52,6 +52,7 @@ export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
 
   return (
     <RadixAvatar.Root
+      {...props}
       className={clsx(avatarStyle, props.className)}
       style={{
         height: size,
@@ -87,6 +88,7 @@ export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = ({
   }
   return (
     <RadixAvatar.Root
+      {...props}
       className={clsx(avatarStyle, props.className)}
       style={{
         height: size,
