@@ -15,9 +15,9 @@ export const StyledSliderBarWrapper = styled('div')<{
       userSelect: 'none',
     },
     zIndex: theme.zIndex.modal,
-    transition: resizing ? '' : 'transform .3s',
+    transition: resizing ? '' : 'transform .3s, width .3s, max-width .3s',
     transform: show ? 'translateX(0)' : 'translateX(-100%)',
-    maxWidth: floating ? undefined : 'calc(100vw - 698px)',
+    maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
     background:
       !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
     borderRight: macosElectron ? '' : '1px solid',
