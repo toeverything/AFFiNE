@@ -1,6 +1,6 @@
 import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
-import type { FC } from 'react';
+import type { FC, PropsWithChildren } from 'react';
 
 export type BaseProvider = {
   flavour: string;
@@ -126,4 +126,5 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   PageDetail: FC<PageDetailProps<Flavour>>;
   PageList: FC<PageListProps<Flavour>>;
   SettingsDetail: FC<SettingProps<Flavour>>;
+  Provider: FC<PropsWithChildren>;
 }
