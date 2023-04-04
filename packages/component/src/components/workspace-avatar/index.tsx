@@ -5,7 +5,6 @@ import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksu
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import clsx from 'clsx';
 import type React from 'react';
-import { memo } from 'react';
 
 import { avatarImageStyle, avatarStyle, avatarTextStyle } from './index.css';
 
@@ -29,61 +28,6 @@ function stringToColour(str: string) {
 
   return colour;
 }
-
-interface AvatarProps {
-  size: number;
-  name: string;
-  avatar_url: string;
-  className?: string;
-}
-
-export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
-  size: _size,
-  avatar_url,
-  name,
-  ...props
-}) {
-  const size = _size || 20;
-  const sizeStr = size + 'px';
-
-  return (
-    <>
-      {avatar_url ? (
-        <div
-          {...props}
-          className={clsx(avatarStyle, props.className)}
-          style={{
-            width: sizeStr,
-            height: sizeStr,
-          }}
-        >
-          <picture>
-            <img
-              width={size}
-              height={size}
-              src={avatar_url}
-              alt=""
-              referrerPolicy="no-referrer"
-            />
-          </picture>
-        </div>
-      ) : (
-        <div
-          {...props}
-          className={avatarTextStyle}
-          style={{
-            width: sizeStr,
-            height: sizeStr,
-            fontSize: Math.ceil(0.5 * size) + 'px',
-            background: stringToColour(name || 'AFFiNE'),
-          }}
-        >
-          {(name || 'AFFiNE').substring(0, 1)}
-        </div>
-      )}
-    </>
-  );
-});
 
 export type WorkspaceAvatarProps = {
   size?: number;
