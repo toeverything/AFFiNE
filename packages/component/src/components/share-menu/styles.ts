@@ -1,5 +1,6 @@
-import { displayFlex, styled, TextButton } from '../..';
+import Link from 'next/link';
 
+import { displayFlex, styled, TextButton } from '../..';
 export const StyledShareButton = styled(TextButton)(({ theme }) => {
   return {
     padding: '4px 8px',
@@ -20,6 +21,13 @@ export const StyledTabsWrapper = styled('div')(() => {
     position: 'relative',
   };
 });
+export const StyledExportWrapper = styled('div')(() => {
+  return {
+    ...displayFlex('center', 'start'),
+    flexDirection: 'column',
+    position: 'relative',
+  };
+});
 
 export const TabItem = styled('li')<{ isActive?: boolean }>(
   ({ theme, isActive }) => {
@@ -28,12 +36,23 @@ export const TabItem = styled('li')<{ isActive?: boolean }>(
         ...displayFlex('center', 'center'),
         width: 'calc(100% / 3)',
         height: '34px',
-        color: isActive ? theme.colors.primaryColor : theme.colors.textColor,
+        color: theme.colors.textColor,
+        opacity: isActive ? 1 : 0.2,
         fontWeight: '500',
         fontSize: theme.font.h6,
         lineHeight: theme.font.lineHeight,
         cursor: 'pointer',
         transition: 'all 0.15s ease',
+        ':after': {
+          content: '""',
+          position: 'absolute',
+          bottom: '-2px',
+          left: '-2px',
+          width: 'calc(100% + 4px)',
+          height: '2px',
+          background: theme.colors.textColor,
+          opacity: 0.2,
+        },
       };
     }
   }
@@ -42,7 +61,7 @@ export const StyledIndicator = styled('div')<{ activeIndex: number }>(
   ({ theme, activeIndex }) => {
     return {
       height: '2px',
-      background: theme.colors.primaryColor,
+      background: theme.colors.textColor,
       position: 'absolute',
       left: `calc(${activeIndex * 100}% / 3)`,
       width: `calc(100% / 3)`,
@@ -50,3 +69,14 @@ export const StyledIndicator = styled('div')<{ activeIndex: number }>(
     };
   }
 );
+export const StyledLink = styled(Link)(() => {
+  return {
+    flexGrow: 1,
+    textAlign: 'left',
+    color: 'inherit',
+    ...displayFlex('flex-start', 'center'),
+    ':visited': {
+      color: 'inherit',
+    },
+  };
+});
