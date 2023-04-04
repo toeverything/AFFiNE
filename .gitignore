@@ -13,6 +13,7 @@
 /out-tsc
 .nyc_output
 .coverage
+target
 
 # dependencies
 node_modules
