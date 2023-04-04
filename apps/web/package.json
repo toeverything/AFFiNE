@@ -53,6 +53,8 @@
     "@types/react": "^18.0.31",
     "@types/react-dom": "^18.0.11",
     "@types/webpack-env": "^1.18.0",
+    "@vanilla-extract/css": "^1.11.0",
+    "@vanilla-extract/next-plugin": "^2.1.1",
     "dotenv": "^16.0.3",
     "eslint": "^8.37.0",
     "eslint-config-next": "^13.2.4",
