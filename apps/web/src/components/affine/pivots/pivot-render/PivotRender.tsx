@@ -34,6 +34,7 @@ export const PivotRender: TreeNode['render'] = (
 
   return (
     <StyledPivot
+      data-testid={`pivot-${node.id}`}
       onClick={e => {
         onClick?.(e, node);
       }}
@@ -55,6 +56,7 @@ export const PivotRender: TreeNode['render'] = (
       {record[node.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
       {showRename ? (
         <Input
+          data-testid={`pivot-input-${node.id}`}
           value={currentMeta?.title ?? ''}
           placeholder="Untitled"
           onClick={e => e.stopPropagation()}

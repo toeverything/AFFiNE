@@ -66,6 +66,7 @@ export const OperationButton = ({
         }}
       >
         <StyledOperationButton
+          data-testid="pivot-operation-button"
           ref={ref => setAnchorEl(ref)}
           size="small"
           onClick={() => {
@@ -77,6 +78,7 @@ export const OperationButton = ({
         </StyledOperationButton>
 
         <PureMenu
+          data-testid="pivot-operation-menu"
           width={256}
           anchorEl={anchorEl}
           open={operationMenuOpen}
@@ -84,6 +86,7 @@ export const OperationButton = ({
           zIndex={menuIndex}
         >
           <MenuItem
+            data-testid="pivot-operation-add"
             onClick={() => {
               onAdd();
               setOperationMenuOpen(false);
@@ -94,6 +97,7 @@ export const OperationButton = ({
             {t('Add a subpage inside')}
           </MenuItem>
           <MenuItem
+            data-testid="pivot-operation-move-to"
             onClick={() => {
               setOperationMenuOpen(false);
               setPivotsMenuOpen(true);
@@ -103,6 +107,7 @@ export const OperationButton = ({
             {t('Move to')}
           </MenuItem>
           <MenuItem
+            data-testid="pivot-operation-rename"
             onClick={() => {
               onRename?.();
               setOperationMenuOpen(false);
@@ -113,6 +118,7 @@ export const OperationButton = ({
             {t('Rename')}
           </MenuItem>
           <MoveToTrash
+            testId="pivot-operation-move-to-trash"
             onItemClick={() => {
               setOperationMenuOpen(false);
               setConfirmModalOpen(true);
@@ -146,6 +152,8 @@ export const OperationButton = ({
           onCancel={() => {
             setConfirmModalOpen(false);
           }}
+          confirmButtonTestId="move-to-trash-confirm"
+          cancelButtonTestId="move-to-trash-cancel"
         />
       </div>
     </MuiClickAwayListener>

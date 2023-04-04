@@ -76,7 +76,12 @@ export const PivotsMenu = ({
   });
 
   return (
-    <PureMenu width={320} height={480} {...pureMenuProps}>
+    <PureMenu
+      width={320}
+      height={480}
+      {...pureMenuProps}
+      data-testid="pivots-menu"
+    >
       <StyledSearchContainer>
         <label>
           <SearchIcon />

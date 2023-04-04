@@ -63,15 +63,17 @@ export const PivotInternal = ({
   );
 };
 
+export type PivotsProps = {
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+  openPage: (pageId: string) => void;
+  allMetas: PageMeta[];
+};
+
 export const Pivots = ({
   blockSuiteWorkspace,
   openPage,
   allMetas,
-}: {
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-  openPage: (pageId: string) => void;
-  allMetas: PageMeta[];
-}) => {
+}: PivotsProps) => {
   const { t } = useTranslation();
 
   const [showPivot, setShowPivot] = useState(true);

@@ -1,3 +1,4 @@
+import type { ConfirmProps } from '@affine/component';
 import { Confirm, MenuItem } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
@@ -30,15 +31,10 @@ export const MoveToTrash = ({
 
 const ConfirmModal = ({
   meta,
-  open,
-  onConfirm,
-  onCancel,
+  ...confirmModalProps
 }: {
-  open: boolean;
-  onConfirm?: () => void;
-  onCancel?: () => void;
   meta: PageMeta;
-}) => {
+} & ConfirmProps) => {
   const { t } = useTranslation();
 
   return (
@@ -49,16 +45,7 @@ const ConfirmModal = ({
       })}
       confirmText={t('Delete')}
       confirmType="danger"
-      open={open}
-      onConfirm={() => {
-        onConfirm?.();
-      }}
-      onClose={() => {
-        onCancel?.();
-      }}
-      onCancel={() => {
-        onCancel?.();
-      }}
+      {...confirmModalProps}
     />
   );
 };
