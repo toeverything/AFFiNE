@@ -31,4 +31,18 @@ module.exports = {
       },
     },
   ],
+  hooks: {
+    generateAssets: async (_, platform, arch) => {
+      const { $ } = await import('zx');
+
+      if (platform === 'darwin' && arch === 'arm64') {
+        // In GitHub Actions runner, MacOS is always x64
+        // we need to manually set TARGET to aarch64-apple-darwin
+        process.env.TARGET = 'aarch64-apple-darwin';
+      }
+
+      // run yarn generate-assets
+      await $`yarn generate-assets`;
+    },
+  },
 };
