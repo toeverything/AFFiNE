@@ -1,10 +1,10 @@
-import { Menu, TextButton } from '@affine/component';
+import { Menu } from '@affine/component';
 import { useState } from 'react';
 
 import Export from './Export';
 import SharePage from './SharePage';
 import ShareWorkspace from './ShareWorkspace';
-import { StyledTabsWrapper } from './styles';
+import { StyledShareButton, StyledTabsWrapper } from './styles';
 
 type SharePanel = 'SharePage' | 'Export' | 'ShareWorkspace';
 const MenuItems: Record<SharePanel, React.FC> = {
@@ -62,13 +62,13 @@ export const ShareMenu = () => {
         trigger={['click']}
         disablePortal={true}
       >
-        <TextButton
+        <StyledShareButton
           onClick={() => {
             setOpen(!open);
           }}
         >
-          Share
-        </TextButton>
+          <div>Share</div>
+        </StyledShareButton>
       </Menu>
     </>
   );
