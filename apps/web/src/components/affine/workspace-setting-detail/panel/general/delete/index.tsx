@@ -37,7 +37,7 @@ export const WorkspaceDeleteModal = ({
 
   const handleDelete = useCallback(() => {
     onDeleteWorkspace();
-    toast(t('Succesfully deleted'));
+    toast(t('Successfully deleted'));
   }, [onDeleteWorkspace, t]);
 
   return (
