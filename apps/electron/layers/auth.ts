@@ -3,7 +3,7 @@ import * as http from 'http';
 import fetch from 'node-fetch';
 
 const oauthLoopbackPort = 43102;
-export const myApiOauth = new ElectronGoogleOAuth2(
+export const electronGoogleOauth = new ElectronGoogleOAuth2(
   process.env.AFFINE_GOOGLE_CLIENT_ID || '',
   process.env.AFFINE_GOOGLE_CLIENT_SECRET || '',
   ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'profile'],

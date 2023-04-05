@@ -5,6 +5,10 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import type { LocalWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { PageBlockModel } from '@blocksuite/blocks';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -16,15 +20,15 @@ import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import {
-  currentWorkspaceIdAtom,
-  jotaiWorkspacesAtom,
-  workspacesAtom,
-} from '../../atoms';
+import { currentWorkspaceIdAtom, workspacesAtom } from '../../atoms';
 import { LocalPlugin } from '../../plugins/local';
-import type { LocalWorkspace } from '../../shared';
-import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
-import { useIsFirstLoad, useOpenTips } from '../affine/use-is-first-load';
+import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
+import {
+  useGuideHidden,
+  useGuideHiddenUntilNextUpdate,
+  useLastVersion,
+  useTipsDisplayStatus,
+} from '../affine/use-is-first-load';
 import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
@@ -33,7 +37,6 @@ import {
   currentWorkspaceAtom,
   useCurrentWorkspace,
 } from '../current/use-current-workspace';
-import { useBlockSuiteWorkspaceName } from '../use-blocksuite-workspace-name';
 import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 import {
   REDIRECT_TIMEOUT,
@@ -51,7 +54,13 @@ vi.mock(
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 beforeAll(() => {
   routerMock.useParser(
-    createDynamicRouteParser(['/workspace/[workspaceId]/[pageId]'])
+    createDynamicRouteParser([
+      `/workspace/[workspaceId/${WorkspaceSubPath.ALL}`,
+      `/workspace/[workspaceId/${WorkspaceSubPath.SETTING}`,
+      `/workspace/[workspaceId/${WorkspaceSubPath.TRASH}`,
+      `/workspace/[workspaceId/${WorkspaceSubPath.FAVORITE}`,
+      '/workspace/[workspaceId]/[pageId]',
+    ])
   );
 });
 
@@ -132,6 +141,27 @@ describe('usePageMetas', async () => {
     rerender();
     expect(result.current[0].mode).toBe('page');
   });
+
+  test('update title', () => {
+    const { result, rerender } = renderHook(() =>
+      usePageMeta(blockSuiteWorkspace)
+    );
+    expect(result.current.length).toBe(3);
+    expect(result.current[0].mode).not.exist;
+    const pageMetaHelperHook = renderHook(() =>
+      usePageMetaHelper(blockSuiteWorkspace)
+    );
+    expect(result.current[0].title).toBe('');
+    pageMetaHelperHook.result.current.setPageTitle('page0', 'test');
+    rerender();
+    const page = blockSuiteWorkspace.getPage('page0');
+    assertExists(page);
+    const pageBlocks = page.getBlockByFlavour('affine:page');
+    expect(pageBlocks.length).toBe(1);
+    const pageBlock = pageBlocks[0] as PageBlockModel;
+    expect(pageBlock.title.toString()).toBe('test');
+    expect(result.current[0].title).toBe('test');
+  });
 });
 
 describe('useWorkspacesHelper', () => {
@@ -181,7 +211,7 @@ describe('useWorkspaces', () => {
     expect(result2.current.length).toEqual(1);
     const firstWorkspace = result2.current[0];
     expect(firstWorkspace.flavour).toBe('local');
-    assert(firstWorkspace.flavour === RemWorkspaceFlavour.LOCAL);
+    assert(firstWorkspace.flavour === WorkspaceFlavour.LOCAL);
     expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
   });
 });
@@ -213,6 +243,34 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });
 
+  test('from empty workspace', async () => {
+    const { ProviderWrapper, store } = await getJotaiContext();
+    const mutationHook = renderHook(() => useWorkspacesHelper(), {
+      wrapper: ProviderWrapper,
+    });
+    const id = await mutationHook.result.current.createLocalWorkspace('test0');
+    const workspaces = await store.get(workspacesAtom);
+    expect(workspaces.length).toEqual(1);
+    mutationHook.rerender();
+    const routerHook = renderHook(() => useRouter());
+    await routerHook.result.current.push(`/workspace/${id}/not_exist`);
+    routerHook.rerender();
+    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/not_exist`);
+    renderHook(
+      ({ router }) => useSyncRouterWithCurrentWorkspaceAndPage(router),
+      {
+        wrapper: ProviderWrapper,
+        initialProps: {
+          router: routerHook.result.current,
+        },
+      }
+    );
+
+    await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT + 50));
+
+    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/all`);
+  });
+
   test('from incorrect "/workspace/[workspaceId]/[pageId]"', async () => {
     const { ProviderWrapper, store } = await getJotaiContext();
     const mutationHook = renderHook(() => useWorkspacesHelper(), {
@@ -237,24 +295,9 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
       }
     );
 
-    await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT));
+    await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT + 50));
 
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
-  });
-});
-
-describe('useBlockSuiteWorkspaceName', () => {
-  test('basic', async () => {
-    blockSuiteWorkspace.meta.setName('test 1');
-    const workspaceNameHook = renderHook(() =>
-      useBlockSuiteWorkspaceName(blockSuiteWorkspace)
-    );
-    expect(workspaceNameHook.result.current[0]).toBe('test 1');
-    blockSuiteWorkspace.meta.setName('test 2');
-    workspaceNameHook.rerender();
-    expect(workspaceNameHook.result.current[0]).toBe('test 2');
-    workspaceNameHook.result.current[1]('test 3');
-    expect(blockSuiteWorkspace.meta.name).toBe('test 3');
   });
 });
 
@@ -266,12 +309,12 @@ describe('useRecentlyViewed', () => {
     store.set(jotaiWorkspacesAtom, [
       {
         id: workspaceId,
-        flavour: RemWorkspaceFlavour.LOCAL,
+        flavour: WorkspaceFlavour.LOCAL,
       },
     ]);
     LocalPlugin.CRUD.get = vi.fn().mockResolvedValue({
       id: workspaceId,
-      flavour: RemWorkspaceFlavour.LOCAL,
+      flavour: WorkspaceFlavour.LOCAL,
       blockSuiteWorkspace,
       providers: [],
     } satisfies LocalWorkspace);
@@ -313,20 +356,47 @@ describe('useRecentlyViewed', () => {
   });
 });
 describe('useIsFirstLoad', () => {
-  test('basic', async () => {
-    const firstLoad = renderHook(() => useIsFirstLoad());
-    const setFirstLoad = firstLoad.result.current[1];
-    expect(firstLoad.result.current[0]).toEqual(true);
-    setFirstLoad(false);
-    firstLoad.rerender();
-    expect(firstLoad.result.current[0]).toEqual(false);
+  test('useLastVersion', async () => {
+    const lastVersion = renderHook(() => useLastVersion());
+    const setLastVersion = lastVersion.result.current[1];
+    expect(lastVersion.result.current[0]).toEqual('0.0.0');
+    setLastVersion('testVersion');
+    lastVersion.rerender();
+    expect(lastVersion.result.current[0]).toEqual('testVersion');
   });
-  test('useOpenTips', async () => {
-    const openTips = renderHook(() => useOpenTips());
-    const setOpenTips = openTips.result.current[1];
-    expect(openTips.result.current[0]).toEqual(false);
-    setOpenTips(true);
-    openTips.rerender();
-    expect(openTips.result.current[0]).toEqual(true);
+  test('useGuideHidden', async () => {
+    const guideHidden = renderHook(() => useGuideHidden());
+    const setGuideHidden = guideHidden.result.current[1];
+    expect(guideHidden.result.current[0]).toEqual({});
+    setGuideHidden({ test: true });
+    guideHidden.rerender();
+    expect(guideHidden.result.current[0]).toEqual({ test: true });
+  });
+  test('useGuideHiddenUntilNextUpdate', async () => {
+    const guideHiddenUntilNextUpdate = renderHook(() =>
+      useGuideHiddenUntilNextUpdate()
+    );
+    const setGuideHiddenUntilNextUpdate =
+      guideHiddenUntilNextUpdate.result.current[1];
+    expect(guideHiddenUntilNextUpdate.result.current[0]).toEqual({});
+    setGuideHiddenUntilNextUpdate({ test: true });
+    guideHiddenUntilNextUpdate.rerender();
+    expect(guideHiddenUntilNextUpdate.result.current[0]).toEqual({
+      test: true,
+    });
+  });
+  test('useTipsDisplayStatus', async () => {
+    const tipsDisplayStatus = renderHook(() => useTipsDisplayStatus());
+    const setTipsDisplayStatus = tipsDisplayStatus.result.current;
+    expect(tipsDisplayStatus.result.current).toEqual({
+      quickSearchTips: {
+        permanentlyHidden: true,
+        hiddenUntilNextUpdate: true,
+      },
+      changeLog: {
+        permanentlyHidden: true,
+        hiddenUntilNextUpdate: true,
+      },
+    });
   });
 });

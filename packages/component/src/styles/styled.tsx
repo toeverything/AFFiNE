@@ -1,5 +1,6 @@
 import { CssBaseline } from '@mui/material';
 import {
+  alpha,
   createTheme as createMuiTheme,
   css,
   keyframes,
@@ -11,7 +12,7 @@ import { useMemo } from 'react';
 
 import type { AffineTheme } from './types';
 
-export { css, keyframes, styled };
+export { alpha, css, keyframes, styled };
 
 export const ThemeProvider = ({
   theme,

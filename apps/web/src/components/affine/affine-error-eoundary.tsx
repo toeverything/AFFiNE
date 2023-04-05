@@ -1,4 +1,4 @@
-import { RequestError } from '@affine/datacenter';
+import { RequestError } from '@affine/workspace/affine/api';
 import type { NextRouter } from 'next/router';
 import type { ErrorInfo } from 'react';
 import type React from 'react';
@@ -88,7 +88,7 @@ export class AffineErrorBoundary extends Component<
               <span> Page error </span>
               <span>
                 Cannot find page {error.pageId} in workspace{' '}
-                {error.workspace.meta.name}
+                {error.workspace.id}
               </span>
               <button
                 onClick={() => {

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { getUaHelper, isElectron } from './ua-helper';
 
 type BrowserBase = {
-  isDesktop: false;
+  isDesktop: boolean;
   isBrowser: true;
   isServer: false;
   isDebug: boolean;
@@ -13,6 +13,7 @@ type BrowserBase = {
   // browser special properties
   isLinux: boolean;
   isMacOs: boolean;
+  isIOS: boolean;
   isSafari: boolean;
   isWindows: boolean;
   isFireFox: boolean;
@@ -40,22 +41,16 @@ type Server = {
   isDebug: boolean;
 };
 
-type Desktop = Browser & {
+interface Desktop extends ChromeBrowser {
   isDesktop: true;
   isBrowser: true;
   isServer: false;
   isDebug: boolean;
-};
+}
 
 export type Environment = Browser | Server | Desktop;
 
 let environment: Environment | null = null;
-
-declare global {
-  interface Window {
-    CLIENT_APP?: boolean;
-  }
-}
 
 export function getEnvironment() {
   if (environment) {
@@ -72,7 +67,7 @@ export function getEnvironment() {
   } else {
     const uaHelper = getUaHelper();
     environment = {
-      isDesktop: window.CLIENT_APP,
+      isDesktop: window.appInfo?.electron,
       isBrowser: true,
       isServer: false,
       isDebug,
@@ -83,8 +78,10 @@ export function getEnvironment() {
       isFireFox: uaHelper.isFireFox,
       isMobile: uaHelper.isMobile,
       isChrome: uaHelper.isChrome,
+      isIOS: uaHelper.isIOS,
     } as Browser;
-    if (environment.isChrome === true) {
+    // Chrome on iOS is still Safari
+    if (environment.isChrome && !environment.isIOS) {
       assertEquals(environment.isSafari, false);
       assertEquals(environment.isFireFox, false);
       environment = {
@@ -110,16 +107,22 @@ export const publicRuntimeConfigSchema = z.object({
   enableIndexedDBProvider: z.boolean(),
   enableBroadCastChannelProvider: z.boolean(),
   prefetchWorkspace: z.boolean(),
+  enableDebugPage: z.boolean(),
   // expose internal api to globalThis, **development only**
   exposeInternal: z.boolean(),
   enableSubpage: z.boolean(),
+  enableChangeLog: z.boolean(),
 });
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
 
-const { publicRuntimeConfig: config } = getConfig() as {
-  publicRuntimeConfig: PublicRuntimeConfig;
-};
+const { publicRuntimeConfig: config } =
+  getConfig() ??
+  ({
+    publicRuntimeConfig: {},
+  } as {
+    publicRuntimeConfig: PublicRuntimeConfig;
+  });
 
 publicRuntimeConfigSchema.parse(config);
 

@@ -1,11 +1,8 @@
-import {
-  Breadcrumbs,
-  displayFlex,
-  IconButton,
-  styled,
-} from '@affine/component';
+import { Breadcrumbs, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { PageIcon } from '@blocksuite/icons';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -20,18 +17,15 @@ import { QueryParamError } from '../../../components/affine/affine-error-eoundar
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
-import { WorkspaceLayout } from '../../../layouts';
+import { PublicWorkspaceLayout } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
-import { initPage } from '../../../utils/blocksuite';
+import { initPage } from '../../../utils';
 
 export const NavContainer = styled('div')(({ theme }) => {
   return {
     width: '100vw',
-    padding: '0 12px',
-    height: '60px',
-    ...displayFlex('start', 'center'),
+    height: '52px',
+    ...displayFlex('space-between', 'center'),
     backgroundColor: theme.colors.pageBackground,
   };
 });
@@ -51,15 +45,6 @@ export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
     ':visited': {
       ':hover': { color: theme.colors.primaryColor },
     },
-  };
-});
-
-export const SearchButton = styled(IconButton)(({ theme }) => {
-  return {
-    color: theme.colors.iconColor,
-    fontSize: '24px',
-    marginLeft: 'auto',
-    padding: '0 24px',
   };
 });
 
@@ -141,5 +126,5 @@ export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
 export default PublicWorkspaceDetailPage;
 
 PublicWorkspaceDetailPage.getLayout = page => {
-  return <WorkspaceLayout>{page}</WorkspaceLayout>;
+  return <PublicWorkspaceLayout>{page}</PublicWorkspaceLayout>;
 };

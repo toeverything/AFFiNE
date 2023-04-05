@@ -1,13 +1,6 @@
 import type { Page } from '@playwright/test';
-import { test } from '@playwright/test';
 
-interface IType {
-  page: Page;
-}
-export function loadPage() {
-  test.beforeEach(async ({ page }: IType) => {
-    await page.goto('http://localhost:8080');
-    // waiting for page loading end
-    await page.waitForSelector('#__next');
-  });
+export async function openHomePage(page: Page) {
+  await page.goto('http://localhost:8080');
+  await page.waitForSelector('#__next');
 }

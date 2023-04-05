@@ -47,6 +47,7 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
     // SSR will always render the light theme, so we need to defer the theme if user selected dark mode
     const [deferTheme, setDeferTheme] = useState('light');
     useEffect(() => {
+      window.apis?.onThemeChange(theme === 'dark' ? 'dark' : 'light');
       setDeferTheme(theme === 'dark' ? 'dark' : 'light');
     }, [theme]);
     return (

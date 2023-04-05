@@ -1,6 +1,13 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
+  getLoginStorage,
+  setLoginStorage,
+  SignMethod,
+} from '@affine/workspace/affine/login';
+import type { LocalWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
+import {
   CloudWorkspaceIcon,
   LocalWorkspaceIcon,
   NoNetworkIcon,
@@ -9,14 +16,10 @@ import { assertEquals, assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
+import { affineAuth } from '../../../../hooks/affine/use-affine-log-in';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useTransformWorkspace } from '../../../../hooks/use-transform-workspace';
-import type {
-  AffineOfficialWorkspace,
-  LocalWorkspace,
-} from '../../../../shared';
-import { RemWorkspaceFlavour } from '../../../../shared';
-import { apis } from '../../../../shared/apis';
+import type { AffineOfficialWorkspace } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
 const IconWrapper = styled('div')(({ theme }) => {
@@ -112,15 +115,20 @@ export const SyncUser = () => {
             setOpen(false);
           }}
           onConform={async () => {
-            if (!apis.auth.isLogin) {
-              await apis.signInWithGoogle();
+            if (!getLoginStorage()) {
+              const response = await affineAuth.generateToken(
+                SignMethod.Google
+              );
+              if (response) {
+                setLoginStorage(response);
+              }
               router.reload();
               return;
             }
-            assertEquals(workspace.flavour, RemWorkspaceFlavour.LOCAL);
+            assertEquals(workspace.flavour, WorkspaceFlavour.LOCAL);
             const id = await transformWorkspace(
-              RemWorkspaceFlavour.LOCAL,
-              RemWorkspaceFlavour.AFFINE,
+              WorkspaceFlavour.LOCAL,
+              WorkspaceFlavour.AFFINE,
               workspace as LocalWorkspace
             );
             // fixme(himself65): refactor this

@@ -1,28 +1,25 @@
+import type { CSSProperties } from 'react';
+
 import { styled } from '../../styles';
 
 export const StyledInput = styled('input')<{
   disabled?: boolean;
   value?: string;
-  width: number;
-  height?: number;
-}>(({ theme, width, disabled, height }) => {
-  const fontWeight = 400;
-  const fontSize = '16px';
+  width?: CSSProperties['width'];
+  height?: CSSProperties['height'];
+  noBorder?: boolean;
+}>(({ theme, width, disabled, height, noBorder }) => {
   return {
-    width: `${width}px`,
+    width: width || '100%',
+    height,
     lineHeight: '22px',
     padding: '8px 12px',
-    fontWeight,
-    fontSize,
-    height: height ? `${height}px` : 'auto',
     color: disabled ? theme.colors.disableColor : theme.colors.textColor,
-    border: `1px solid`,
+    border: noBorder ? 'unset' : `1px solid`,
     borderColor: theme.colors.borderColor, // TODO: check out disableColor,
     backgroundColor: theme.colors.popoverBackground,
     borderRadius: '10px',
     '&::placeholder': {
-      fontWeight,
-      fontSize,
       color: theme.colors.placeHolderColor,
     },
     '&:focus': {

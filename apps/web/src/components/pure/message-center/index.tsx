@@ -1,11 +1,11 @@
-import { toast } from '@affine/component';
-import { MessageCode } from '@affine/datacenter';
-import { messages } from '@affine/datacenter';
+import { MessageCode, Messages } from '@affine/env/constant';
+import { setLoginStorage, SignMethod } from '@affine/workspace/affine/login';
 import type React from 'react';
 import { memo, useEffect, useState } from 'react';
 
-import { useOnGoogleLogout } from '../../../hooks/use-on-google-logout';
-import { apis } from '../../../shared/apis';
+import { affineAuth } from '../../../hooks/affine/use-affine-log-in';
+import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
+import { toast } from '../../../utils';
 
 declare global {
   interface DocumentEventMap {
@@ -17,7 +17,7 @@ declare global {
 
 export const MessageCenter: React.FC = memo(function MessageCenter() {
   const [popup, setPopup] = useState(false);
-  const onLogout = useOnGoogleLogout();
+  const onLogout = useAffineLogOut();
   useEffect(() => {
     const listener = (
       event: CustomEvent<{
@@ -33,9 +33,12 @@ export const MessageCenter: React.FC = memo(function MessageCenter() {
           event.detail.code === MessageCode.loginError)
       ) {
         setPopup(true);
-        apis
-          .signInWithGoogle()
-          .then(() => {
+        affineAuth
+          .generateToken(SignMethod.Google)
+          .then(response => {
+            if (response) {
+              setLoginStorage(response);
+            }
             setPopup(false);
           })
           .catch(() => {
@@ -43,7 +46,7 @@ export const MessageCenter: React.FC = memo(function MessageCenter() {
             onLogout();
           });
       } else {
-        toast(messages[event.detail.code].message);
+        toast(Messages[event.detail.code].message);
       }
     };
 

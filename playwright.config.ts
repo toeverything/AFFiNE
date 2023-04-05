@@ -16,7 +16,7 @@ import type {
  * See https://playwright.dev/docs/test-configuration.
  */
 const config: PlaywrightTestConfig = {
-  testDir: './tests',
+  testDir: './tests/parallels',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {
@@ -36,7 +36,7 @@ const config: PlaywrightTestConfig = {
   },
   forbidOnly: !!process.env.CI,
   workers: 4,
-  retries: 1,
+  retries: 3,
   // 'github' for GitHub Actions CI to generate annotations, plus a concise 'dot'
   // default 'list' when running locally
   // See https://playwright.dev/docs/test-reporters#github-actions-annotations
@@ -56,6 +56,17 @@ const config: PlaywrightTestConfig = {
       },
     },
     {
+      // Intentionally not building the storybook, reminds you to run it by yourself.
+      command: 'yarn run start:storybook',
+      port: 6006,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+      },
+    },
+    {
       command: 'yarn build && yarn start -p 8080',
       port: 8080,
       timeout: 120 * 1000,
@@ -63,6 +74,8 @@ const config: PlaywrightTestConfig = {
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
         ENABLE_DEBUG_PAGE: '1',
+        ENABLE_SUBPAGE: '1',
+        ENABLE_CHANGELOG: '1',
         NODE_API_SERVER: 'local',
       },
     },

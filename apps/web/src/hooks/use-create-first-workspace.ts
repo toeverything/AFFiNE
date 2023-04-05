@@ -1,47 +1,46 @@
+import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
+import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { WorkspaceFlavour } from '@affine/workspace/type';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
-import { useAtom } from 'jotai/index';
 import { useEffect } from 'react';
 
-import { jotaiWorkspacesAtom } from '../atoms';
 import { LocalPlugin } from '../plugins/local';
-import { RemWorkspaceFlavour } from '../shared';
-import { createEmptyBlockSuiteWorkspace } from '../utils';
+
+const logger = new DebugLogger('use-create-first-workspace');
 
 export function useCreateFirstWorkspace() {
-  const [jotaiWorkspaces, set] = useAtom(jotaiWorkspacesAtom);
+  // may not need use effect at all, right?
   useEffect(() => {
-    const controller = new AbortController();
+    return jotaiStore.sub(jotaiWorkspacesAtom, () => {
+      const workspaces = jotaiStore.get(jotaiWorkspacesAtom);
 
-    /**
-     * Create a first workspace, only just once for a browser
-     */
-    async function createFirst() {
-      const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-        nanoid(),
-        (_: string) => undefined
-      );
-      blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-      const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
-      const workspace = await LocalPlugin.CRUD.get(id);
-      assertExists(workspace);
-      assertEquals(workspace.id, id);
-      set([
-        {
-          id: workspace.id,
-          flavour: RemWorkspaceFlavour.LOCAL,
-        },
-      ]);
-    }
-    if (
-      jotaiWorkspaces.length === 0 &&
-      localStorage.getItem('first') !== 'true'
-    ) {
-      localStorage.setItem('first', 'true');
-      createFirst();
-    }
-    return () => {
-      controller.abort();
-    };
-  }, [jotaiWorkspaces.length, set]);
+      if (workspaces.length === 0) {
+        createFirst();
+      }
+
+      /**
+       * Create a first workspace, only just once for a browser
+       */
+      async function createFirst() {
+        const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+          nanoid(),
+          (_: string) => undefined
+        );
+        blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
+        const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
+        const workspace = await LocalPlugin.CRUD.get(id);
+        assertExists(workspace);
+        assertEquals(workspace.id, id);
+        jotaiStore.set(jotaiWorkspacesAtom, [
+          {
+            id: workspace.id,
+            flavour: WorkspaceFlavour.LOCAL,
+          },
+        ]);
+        logger.info('created local workspace', id);
+      }
+    });
+  }, []);
 }

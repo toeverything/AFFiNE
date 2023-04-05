@@ -5,36 +5,51 @@ on:
     branches: [master]
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn lint --max-warnings=0
+
+  build-storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn build:storybook
+      - name: Upload storybook artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+          if-no-files-found: error
+
   build-frontend:
-    name: Build frontend
+    name: Build @affine/web
     runs-on: ubuntu-latest
     environment: production
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Cache Next.js
+        uses: actions/cache@v3
         with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: https://npm.pkg.github.com
-          scope: '@toeverything'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          path: |
+            ${{ github.workspace }}/apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - run: node scripts/module-resolve/ci.cjs
-
-      - run: yarn install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
 
       - name: Build
         run: yarn build
@@ -46,6 +61,7 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
 
       - name: Export
         run: yarn export
@@ -53,7 +69,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
+          name: next-js
           path: ./apps/web/out
+          if-no-files-found: error
 
   publish-frontend:
     name: Push frontend image
@@ -77,8 +95,8 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: artifact
-          path: apps/web/out/
+          name: next-js
+          path: ./apps/web/out
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -105,14 +123,47 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  test-frontend:
-    name: Test Frontend
+  storybook-test:
+    name: Storybook Test
     runs-on: ubuntu-latest
     environment: development
-    needs: build-frontend
+    needs: [build-storybook]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+      - name: Download storybook artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+      - name: Run storybook tests
+        working-directory: ./packages/component
+        run: |
+          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn test-storybook --coverage"
+      - name: Upload storybook test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/component/coverage/storybook/coverage-storybook.json
+          flags: storybook-test
+          name: affine
+          fail_ci_if_error: true
+
+  e2e-test:
+    name: E2E Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    environment: development
+    needs: [build-frontend, build-storybook]
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:canary-f94f1fa59a3ae1e72f4c776ce6ddc18d86c65ed5-1653
         ports:
           - 3000:3000
         env:
@@ -125,34 +176,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
         with:
-          node-version: 18
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn install
+          playwright-install: true
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: artifact
+          name: next-js
           path: ./apps/web/.next
 
-      - name: Install playwright browsers
-        run: npx playwright install chromium
-      - name: Run e2e & unit tests
-        run: |
-          yarn test --forbid-only
-          yarn run test:unit:coverage
+      - name: Download storybook artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+
+      - name: Run playwright tests
+        run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
 
@@ -168,6 +209,45 @@ jobs:
           name: affine
           fail_ci_if_error: true
 
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results-e2e
+          path: ./test-results
+          if-no-files-found: ignore
+
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: build-frontend
+    services:
+      octobase:
+        image: ghcr.io/toeverything/cloud-self-hosted:canary-f94f1fa59a3ae1e72f4c776ce6ddc18d86c65ed5-1653
+        ports:
+          - 3000:3000
+        env:
+          SIGN_KEY: 'test123'
+          RUST_LOG: 'debug'
+          JWST_DEV: '1'
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: next-js
+          path: ./apps/web/.next
+
+      - name: Unit Test
+        run: yarn run test:unit:coverage
+
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
         with:
@@ -176,11 +256,3 @@ jobs:
           flags: unittest
           name: affine
           fail_ci_if_error: true
-
-      - name: Upload test results
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-results-e2e
-          path: ./test-results
-          if-no-files-found: ignore

@@ -1,18 +1,16 @@
 import { displayFlex, styled } from '@affine/component';
 import { Button } from '@affine/component';
-import type { Permission } from '@affine/datacenter';
+import type { Permission } from '@affine/workspace/affine/api';
 import {
   SucessfulDuotoneIcon,
   UnsucessfulDuotoneIcon,
 } from '@blocksuite/icons';
 import { NoSsr } from '@mui/material';
-import Image from 'next/image';
+import Image from 'next/legacy/image';
 import { useRouter } from 'next/router';
 import { Suspense } from 'react';
 import useSWR from 'swr';
 
-import inviteError from '../../../public/imgs/invite-error.svg';
-import inviteSuccess from '../../../public/imgs/invite-success.svg';
 import { PageLoading } from '../../components/pure/loading';
 import { RouteLogic, useRouterHelper } from '../../hooks/use-router-helper';
 import { QueryKey } from '../../plugins/affine/fetcher';
@@ -31,7 +29,13 @@ const InvitePage: NextPageWithLayout = () => {
   if (inviteData?.accepted) {
     return (
       <StyledContainer>
-        <Image src={inviteSuccess} alt="" />
+        <Image
+          src="/imgs/invite-success.svg"
+          alt=""
+          layout="fill"
+          width={300}
+          height={300}
+        />
         <Button
           type="primary"
           shape="round"
@@ -56,7 +60,7 @@ const InvitePage: NextPageWithLayout = () => {
   if (inviteData?.accepted === false) {
     return (
       <StyledContainer>
-        <Image src={inviteError} alt="" />
+        <Image src="/imgs/invite-error.svg" alt="" />
         <Button
           shape="round"
           onClick={() => {

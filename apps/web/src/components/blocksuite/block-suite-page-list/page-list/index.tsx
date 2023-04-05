@@ -1,11 +1,13 @@
 import {
+  Content,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
 } from '@affine/component';
-import { Content, IconButton, toast, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
   EdgelessIcon,
@@ -14,11 +16,7 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import {
-  useMediaQuery,
-  useTheme as useMuiTheme,
-  useTheme,
-} from '@mui/material';
+import { useMediaQuery, useTheme } from '@mui/material';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useCallback, useMemo } from 'react';
@@ -29,6 +27,7 @@ import {
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
+import { toast } from '../../../../utils';
 import DateCell from './DateCell';
 import Empty from './Empty';
 import { OperationCell, TrashOperationCell } from './OperationCell';
@@ -55,7 +54,6 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
       placement="top-start"
     >
       <IconButton
-        darker={true}
         iconSize={[20, 20]}
         onClick={e => {
           e.stopPropagation();
@@ -87,13 +85,12 @@ type PageListProps = {
 };
 
 const filter = {
-  all: (pageMeta: PageMeta, allMetas: PageMeta[]) => !pageMeta.trash,
+  all: (pageMeta: PageMeta) => !pageMeta.trash,
   trash: (pageMeta: PageMeta, allMetas: PageMeta[]) => {
     const parentMeta = allMetas.find(m => m.subpageIds?.includes(pageMeta.id));
     return !parentMeta?.trash && pageMeta.trash;
   },
-  favorite: (pageMeta: PageMeta, allMetas: PageMeta[]) =>
-    pageMeta.favorite && !pageMeta.trash,
+  favorite: (pageMeta: PageMeta) => pageMeta.favorite && !pageMeta.trash,
 };
 
 export const PageList: React.FC<PageListProps> = ({
@@ -105,7 +102,7 @@ export const PageList: React.FC<PageListProps> = ({
   const pageList = usePageMeta(blockSuiteWorkspace);
   const helper = usePageMetaHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
-  const theme = useMuiTheme();
+  const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
   const isTrash = listType === 'trash';
   const record = useAtomValue(workspacePreferredModeAtom);
@@ -155,7 +152,7 @@ export const PageList: React.FC<PageListProps> = ({
           {list.map((pageMeta, index) => {
             return (
               <StyledTableRow
-                data-testid={`page-list-item-${pageMeta.id}}`}
+                data-testid={`page-list-item-${pageMeta.id}`}
                 key={`${pageMeta.id}-${index}`}
               >
                 <TableCell
@@ -224,6 +221,8 @@ export const PageList: React.FC<PageListProps> = ({
                         ) : (
                           <OperationCell
                             pageMeta={pageMeta}
+                            metas={pageList}
+                            blockSuiteWorkspace={blockSuiteWorkspace}
                             onOpenPageInNewTab={pageId => {
                               onClickPage(pageId, true);
                             }}

@@ -5,6 +5,7 @@ import path from 'path';
 import { parse } from 'url';
 
 import { exchangeToken, startAuthListener } from '../../auth';
+import { registerHandlers } from './app-state';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 startAuthListener();
@@ -66,6 +67,7 @@ app.on('activate', restoreOrCreateWindow);
 app
   .whenReady()
   .then(registerProtocol)
+  .then(registerHandlers)
   .then(restoreOrCreateWindow)
   .catch(e => console.error('Failed create window:', e));
 /**

@@ -1,0 +1,6 @@
+{
+  "name": "@affine-test/fixtures",
+  "exports": {
+    "./*": "./*"
+  }
+}

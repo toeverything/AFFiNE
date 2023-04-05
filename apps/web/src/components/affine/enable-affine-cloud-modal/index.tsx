@@ -38,6 +38,7 @@ export const EnableAffineCloudModal: React.FC<EnableAffineCloudModalProps> = ({
           {/* <StyleTips>{t('Retain cached cloud data')}</StyleTips> */}
           <div>
             <StyleButton
+              data-testid="confirm-enable-affine-cloud-button"
               shape="round"
               type="primary"
               onClick={() => {

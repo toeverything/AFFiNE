@@ -1,5 +1,5 @@
+import { atomWithSyncStorage } from '@affine/jotai';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 import { useCallback } from 'react';
 
 import {
@@ -7,9 +7,9 @@ import {
   currentWorkspaceIdAtom,
   workspacesAtom,
 } from '../../atoms';
-import type { RemWorkspace } from '../../shared';
+import type { AllWorkspace } from '../../shared';
 
-export const currentWorkspaceAtom = atom<Promise<RemWorkspace | null>>(
+export const currentWorkspaceAtom = atom<Promise<AllWorkspace | null>>(
   async get => {
     const id = get(currentWorkspaceIdAtom);
     const workspaces = await get(workspacesAtom);
@@ -17,13 +17,13 @@ export const currentWorkspaceAtom = atom<Promise<RemWorkspace | null>>(
   }
 );
 
-export const lastWorkspaceIdAtom = atomWithStorage<string | null>(
+export const lastWorkspaceIdAtom = atomWithSyncStorage<string | null>(
   'last_workspace_id',
   null
 );
 
 export function useCurrentWorkspace(): [
-  RemWorkspace | null,
+  AllWorkspace | null,
   (id: string | null) => void
 ] {
   const currentWorkspace = useAtomValue(currentWorkspaceAtom);

@@ -27,6 +27,9 @@ declare module '@mui/material/styles' {
       tooltipBackground: string;
       hoverBackground: string;
       innerHoverBackground: string;
+      modalBackground: string;
+      // Use for the quick search tips background
+      backgroundTertiaryColor: string;
       codeBackground: string;
       codeBlockBackground: string;
       // Use for blockHub and slide bar background
@@ -37,6 +40,7 @@ declare module '@mui/material/styles' {
       // Use for the page`s text
       textColor: string;
       secondaryTextColor: string;
+      textEmphasisColor: string;
       // Use for the editor`s text, because in edgeless mode text is different form other
       edgelessTextColor: string;
       linkColor: string;
@@ -100,6 +104,9 @@ declare module '@mui/material/styles' {
       tooltipBackground: string;
       hoverBackground: string;
       innerHoverBackground: string;
+      modalBackground: string;
+      // Use for the quick search tips background
+      backgroundTertiaryColor: string;
       codeBackground: string;
       codeBlockBackground: string;
       // Use for blockHub and slide bar background
@@ -110,6 +117,7 @@ declare module '@mui/material/styles' {
       // Use for the page`s text
       textColor: string;
       secondaryTextColor: string;
+      textEmphasisColor: string;
       // Use for the editor`s text, because in edgeless mode text is different form other
       edgelessTextColor: string;
       linkColor: string;

@@ -3,6 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { createStore, getDefaultStore, Provider } from 'jotai';
@@ -20,7 +21,7 @@ import {
 import { useBlockSuiteWorkspaceHelper } from '../../hooks/use-blocksuite-workspace-helper';
 import { useWorkspacesHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
-import { pathGenerator, RemWorkspaceFlavour } from '../../shared';
+import { pathGenerator } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
 
 vi.mock('../blocksuite/header/editor-mode-switch/CustomLottie', () => ({
@@ -92,7 +93,7 @@ describe('WorkSpaceSliderBar', () => {
     currentWorkspaceHook.result.current[1](id);
     const currentWorkspace = await store.get(currentWorkspaceAtom);
     expect(currentWorkspace).toBeDefined();
-    expect(currentWorkspace?.flavour).toBe(RemWorkspaceFlavour.LOCAL);
+    expect(currentWorkspace?.flavour).toBe(WorkspaceFlavour.LOCAL);
     expect(currentWorkspace?.id).toBe(id);
     const app = render(<App />);
     const card = await app.findByTestId('current-workspace');

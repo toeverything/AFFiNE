@@ -1,13 +1,8 @@
-import {
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  toast,
-  Wrapper,
-} from '@affine/component';
-import { PermissionType } from '@affine/datacenter';
+import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { PermissionType } from '@affine/workspace/affine/api';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
   EmailIcon,
@@ -17,8 +12,7 @@ import type React from 'react';
 import { useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../hooks/affine/use-members';
-import type { AffineWorkspace, LocalWorkspace } from '../../../../../shared';
-import { RemWorkspaceFlavour } from '../../../../../shared';
+import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';
 import type { PanelProps } from '../../index';
@@ -194,8 +188,8 @@ const LocalCollaborationPanel: React.FC<
         }}
         onConform={() => {
           onTransferWorkspace(
-            RemWorkspaceFlavour.LOCAL,
-            RemWorkspaceFlavour.AFFINE,
+            WorkspaceFlavour.LOCAL,
+            WorkspaceFlavour.AFFINE,
             workspace
           );
           setOpen(false);
@@ -207,13 +201,13 @@ const LocalCollaborationPanel: React.FC<
 
 export const CollaborationPanel: React.FC<PanelProps> = props => {
   switch (props.workspace.flavour) {
-    case RemWorkspaceFlavour.AFFINE: {
+    case WorkspaceFlavour.AFFINE: {
       const workspace = props.workspace as AffineWorkspace;
       return (
         <AffineRemoteCollaborationPanel {...props} workspace={workspace} />
       );
     }
-    case RemWorkspaceFlavour.LOCAL: {
+    case WorkspaceFlavour.LOCAL: {
       const workspace = props.workspace as LocalWorkspace;
       return <LocalCollaborationPanel {...props} workspace={workspace} />;
     }

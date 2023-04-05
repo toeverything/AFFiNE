@@ -1,3 +1,4 @@
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type {
   GetStaticPaths,
@@ -16,7 +17,6 @@ import {
   StyledWrapper,
 } from '../../layouts/styles';
 import type { BlockSuiteWorkspace } from '../../shared';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
 export type PreviewPageProps = {
   text: string;

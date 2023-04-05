@@ -11,5 +11,5 @@
 
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "../../types/**/*.d.ts", "index.ts"]
+  "include": ["src/**/*.ts", "../../types/**/*.d.ts", "index.ts", "../utils.ts"]
 }

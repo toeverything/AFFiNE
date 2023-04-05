@@ -1,0 +1,160 @@
+name: Release Desktop App
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: App Version
+        required: true
+        default: 0.0.0
+      is-draft:
+        description: 'Draft Release?'
+        type: boolean
+        required: true
+        default: true
+      is-pre-release:
+        description: 'Pre Release? (labeled as "PreRelease")'
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  actions: write
+  contents: write
+  security-events: write
+
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for
+  # pull requests or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+env:
+  APPLE_ID: ${{ secrets.APPLE_ID }}
+  APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+  NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+  NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+
+jobs:
+  make-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-workspace-install: true
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: add arm64 target
+        if: matrix.arch == 'arm64'
+        run: rustup target add aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './packages/octobase-node -> target'
+
+      - name: Signing By Apple Developer ID
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
+      - name: make build
+        run: yarn make-macos-${{ matrix.arch }}
+        working-directory: apps/electron
+
+      - name: Save artifacts
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/make/AFFiNE.dmg ./builds/affine-darwin-${{ matrix.arch }}-${{ github.event.inputs.version }}.dmg
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-darwin-${{ matrix.arch }}-builds
+          path: builds
+
+  make-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-workspace-install: true
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './packages/octobase-node -> target'
+
+      - name: make build
+        run: yarn make-windows-x64
+        working-directory: apps/electron
+
+      - name: Save windows artifacts
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/make/zip/win32/x64/AFFiNE-win32-x64-${{ github.event.inputs.version }}.zip ./builds/affine-windows-x64-${{ github.event.inputs.version }}.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-windows-x64-builds
+          path: builds
+
+  release:
+    needs: [make-macos, make-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download MacOS x64 Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-darwin-x64-builds
+          path: ./
+
+      - name: Download MacOS arm64 Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-darwin-arm64-builds
+          path: ./
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-windows-x64-builds
+          path: ./
+
+      - name: Create Release Draft
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: Desktop APP ${{ github.event.inputs.version }}
+          body: 'TODO: Add release notes here'
+          draft: ${{ github.event.inputs.is-draft }}
+          prerelease: ${{ github.event.inputs.is-pre-release }}
+          files: |
+            ./VERSION
+            ./*.zip
+            ./*.dmg
+            ./*.exe
+            ./*.nupkg
+            ./RELEASES
+            ./*.AppImage
+            ./*.apk

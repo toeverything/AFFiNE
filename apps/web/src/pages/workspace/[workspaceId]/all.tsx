@@ -1,4 +1,6 @@
 import { useTranslation } from '@affine/i18n';
+import type { LocalIndexedDBProvider } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import Head from 'next/head';
@@ -16,11 +18,7 @@ import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import type {
-  LocalIndexedDBProvider,
-  NextPageWithLayout,
-} from '../../../shared';
-import { RemWorkspaceFlavour } from '../../../shared';
+import type { NextPageWithLayout } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
@@ -33,6 +31,10 @@ const AllPage: NextPageWithLayout = () => {
       return;
     }
     if (!currentWorkspace) {
+      return;
+    }
+    if (currentWorkspace.flavour !== WorkspaceFlavour.LOCAL) {
+      // only create a new page for local workspace
       return;
     }
     const localProvider = currentWorkspace.providers.find(
@@ -78,7 +80,7 @@ const AllPage: NextPageWithLayout = () => {
   if (currentWorkspace === null) {
     return <PageLoading />;
   }
-  if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
@@ -92,7 +94,7 @@ const AllPage: NextPageWithLayout = () => {
         />
       </>
     );
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>

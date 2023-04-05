@@ -13,7 +13,7 @@ export type PopperHandler = {
 };
 
 export type PopperArrowProps = {
-  placement: PopperPlacementType;
+  placement?: PopperPlacementType;
 };
 
 export type PopperProps = {

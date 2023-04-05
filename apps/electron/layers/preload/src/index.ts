@@ -5,11 +5,8 @@
 import * as remote from '@electron/remote';
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { myApiOauth } from '../../auth';
-import { sha256sum } from './sha256sum';
-
-// Expose version number to renderer
-contextBridge.exposeInMainWorld('yerba', { version: 0.1 });
+import { electronGoogleOauth } from '../../auth';
+import { isMacOS } from '../../utils';
 
 /**
  * The "Main World" is the JavaScript context that your main renderer code runs in.
@@ -26,17 +23,16 @@ contextBridge.exposeInMainWorld('yerba', { version: 0.1 });
  *
  * @see https://github.com/cawa-93/dts-for-context-bridge
  */
+contextBridge.exposeInMainWorld('apis', {
+  workspaceSync: (id: string) => ipcRenderer.invoke('octo:workspace-sync', id),
+  // ui
+  onThemeChange: (theme: string) =>
+    ipcRenderer.invoke('ui:theme-change', theme),
 
-/**
- * Safe expose node.js API
- * @example
- * window.nodeCrypto('data')
- */
-contextBridge.exposeInMainWorld('nodeCrypto', { sha256sum });
-
-contextBridge.exposeInMainWorld('electron', {
+  onSidebarVisibilityChange: (visible: boolean) =>
+    ipcRenderer.invoke('ui:sidebar-visibility-change', visible),
   signIn: () => {
-    myApiOauth.openAuthWindowAndGetTokens();
+    electronGoogleOauth.openAuthWindowAndGetTokens();
   },
   ipcRenderer: {
     on: (channel: string, listener: (event: any, ...args: any[]) => void) => {
@@ -59,4 +55,9 @@ contextBridge.exposeInMainWorld('electron', {
     if (!mainWindow) return;
     mainWindow.webContents.reload();
   },
+});
+
+contextBridge.exposeInMainWorld('appInfo', {
+  electron: true,
+  isMacOS: isMacOS(),
 });

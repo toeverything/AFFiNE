@@ -10,13 +10,13 @@ import {
   openCreateWorkspaceModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
+import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
+import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useOnGoogleLogout } from '../hooks/use-on-google-logout';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
-import { apis } from '../shared/apis';
 
 const WorkspaceListModal = dynamic(
   async () =>
@@ -43,6 +43,7 @@ export function Modals() {
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useWorkspacesHelper();
+  const handleLogin = useAffineLogIn();
 
   return (
     <>
@@ -70,17 +71,14 @@ export function Modals() {
           },
           [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
-        onClickLogin={useCallback(() => {
+        onClickLogin={async () => {
           if (isElectron()) {
-            //@ts-ignore
-            window.electron.signIn();
-            return;
+            await window.apis.signIn();
+          } else {
+            await handleLogin();
           }
-          apis.signInWithGoogle().then(() => {
-            router.reload();
-          });
-        }, [router])}
-        onClickLogout={useOnGoogleLogout()}
+        }}
+        onClickLogout={useAffineLogOut()}
         onCreateWorkspace={useCallback(() => {
           setOpenCreateWorkspaceModal(true);
         }, [setOpenCreateWorkspaceModal])}

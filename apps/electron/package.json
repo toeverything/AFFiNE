@@ -6,14 +6,19 @@
   "author": "affine",
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
+  "workspaces": [
+    "../../packages/*",
+    "../../tests/fixtures"
+  ],
   "scripts": {
     "dev": "cross-env NODE_ENV=development node scripts/dev.mjs",
     "prod": "cross-env NODE_ENV=production node scripts/dev.mjs",
-    "before-make": "zx scripts/before-make.mjs",
+    "generate-assets": "zx scripts/generate-assets.mjs",
     "make": "electron-forge make",
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
+    "build:octobase-node": "yarn workspace @affine/octobase-node build",
     "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs"
   },
   "config": {
@@ -21,19 +26,20 @@
   },
   "main": "./dist/layers/main/index.js",
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.5",
-    "@electron-forge/core": "^6.0.5",
-    "@electron-forge/core-utils": "^6.0.5",
-    "@electron-forge/maker-deb": "^6.0.5",
-    "@electron-forge/maker-dmg": "^6.0.5",
-    "@electron-forge/maker-squirrel": "^6.0.5",
-    "@electron-forge/maker-zip": "^6.0.5",
-    "@electron-forge/shared-types": "^6.0.5",
+    "@affine/octobase-node": "workspace:*",
+    "@electron-forge/cli": "^6.1.0",
+    "@electron-forge/core": "^6.1.0",
+    "@electron-forge/core-utils": "^6.1.0",
+    "@electron-forge/maker-deb": "^6.1.0",
+    "@electron-forge/maker-dmg": "^6.1.0",
+    "@electron-forge/maker-squirrel": "^6.1.0",
+    "@electron-forge/maker-zip": "^6.1.0",
+    "@electron-forge/shared-types": "^6.1.0",
     "@electron/rebuild": "^3.2.10",
     "@electron/remote": "2.0.9",
     "dts-for-context-bridge": "^0.7.1",
-    "electron": "23.1.4",
-    "esbuild": "^0.17.12",
+    "electron": "24.0.0",
+    "esbuild": "^0.17.15",
     "zx": "^7.2.1"
   },
   "dependencies": {
@@ -41,6 +47,7 @@
     "cross-env": "7.0.3",
     "electron-window-state": "^5.0.3",
     "firebase": "^9.18.0",
+    "fs-extra": "^11.1.1",
     "node-fetch": "3.3.1"
   },
   "build": {
@@ -52,5 +59,6 @@
         ]
       }
     ]
-  }
+  },
+  "packageManager": "yarn@3.5.0"
 }

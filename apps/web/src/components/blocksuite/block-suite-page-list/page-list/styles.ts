@@ -1,11 +1,15 @@
 import { displayFlex, styled } from '@affine/component';
 import { TableRow } from '@affine/component';
 
-export const StyledTableContainer = styled('div')(() => {
+export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
-    height: 'calc(100vh - 60px)',
+    height: 'calc(100vh - 52px)',
     padding: '78px 72px',
+    maxWidth: '100%',
     overflowY: 'auto',
+    [theme.breakpoints.down('md')]: {
+      padding: '12px 24px',
+    },
   };
 });
 export const StyledTitleWrapper = styled('div')(({ theme }) => {

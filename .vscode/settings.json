@@ -5,7 +5,6 @@
   "editor.formatOnSaveMode": "file",
   "cSpell.words": [
     "blocksuite",
-    "datacenter",
     "livedemo",
     "yarn",
     "jwst",
@@ -27,7 +26,7 @@
   "[toml]": {
     "editor.defaultFormatter": "tamasfe.even-better-toml"
   },
-  "rust-analyzer.linkedProjects": ["apps/desktop/src-tauri/Cargo.toml"],
+  "rust-analyzer.linkedProjects": ["packages/octobase-node/Cargo.toml"],
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }

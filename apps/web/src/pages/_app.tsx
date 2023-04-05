@@ -1,7 +1,8 @@
-import '../styles/globals.css';
+import '@affine/component/theme/global.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
+import { jotaiStore } from '@affine/workspace/atom';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
@@ -11,12 +12,10 @@ import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import React, { Suspense, useEffect, useMemo } from 'react';
 
-import { jotaiStore } from '../atoms';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
 import { MessageCenter } from '../components/pure/message-center';
-import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
@@ -30,7 +29,6 @@ type AppPropsWithLayout = AppProps & {
 const EmptyLayout = (page: ReactElement) => page;
 
 const clientSideEmotionCache = createEmotionCache();
-const helmetContext = {};
 
 const App = function App({
   Component,
@@ -58,7 +56,6 @@ const App = function App({
             <ProviderComposer
               contexts={useMemo(
                 () => [
-                  <AffineSWRConfigProvider key="AffineSWRConfigProvider" />,
                   <Provider key="JotaiProvider" store={jotaiStore} />,
                   <ThemeProvider key="ThemeProvider" />,
                 ],
@@ -70,35 +67,6 @@ const App = function App({
                 <meta
                   name="viewport"
                   content="initial-scale=1, width=device-width"
-                />
-                <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:url" content="https://app.affine.pro/" />
-                <meta
-                  name="twitter:title"
-                  content="AFFiNE：There can be more than Notion and Miro."
-                />
-                <meta
-                  name="twitter:description"
-                  content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
-                />
-                <meta name="twitter:site" content="@AffineOfficial" />
-                <meta
-                  name="twitter:image"
-                  content="https://affine.pro/og.jpeg"
-                />
-                <meta
-                  property="og:title"
-                  content="AFFiNE：There can be more than Notion and Miro."
-                />
-                <meta property="og:type" content="website" />
-                <meta
-                  property="og:description"
-                  content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
-                />
-                <meta property="og:url" content="https://app.affine.pro/" />
-                <meta
-                  property="og:image"
-                  content="https://affine.pro/og.jpeg"
                 />
               </Head>
               {getLayout(<Component {...pageProps} />)}

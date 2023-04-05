@@ -3,21 +3,18 @@ import {
   Content,
   FlexWrapper,
   Input,
-  toast,
   Wrapper,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { Box } from '@mui/material';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
-import type {
-  AffineOfficialWorkspace,
-  AffineWorkspace,
-  LocalWorkspace,
-} from '../../../../../shared';
-import { RemWorkspaceFlavour } from '../../../../../shared';
+import type { AffineOfficialWorkspace } from '../../../../../shared';
+import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from '../../index';
@@ -58,7 +55,12 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
           <Content weight="500">{t('Share with link')}</Content>
         </Wrapper>
         <FlexWrapper>
-          <Input width={582} value={shareUrl} disabled={true}></Input>
+          <Input
+            data-testid="share-url"
+            width={582}
+            value={shareUrl}
+            disabled={true}
+          ></Input>
           <Button
             onClick={copyUrl}
             type="light"
@@ -86,6 +88,7 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
     <>
       <Wrapper marginBottom="42px">{t('Publishing Description')}</Wrapper>
       <Button
+        data-testid="publish-to-web-button"
         onClick={() => {
           publishWorkspace(true);
         }}
@@ -118,6 +121,7 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
         {t('Publishing')}
       </Box>
       <Button
+        data-testid="publish-enable-affine-cloud-button"
         type="light"
         shape="circle"
         onClick={() => {
@@ -133,8 +137,8 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
         }}
         onConfirm={() => {
           onTransferWorkspace(
-            RemWorkspaceFlavour.LOCAL,
-            RemWorkspaceFlavour.AFFINE,
+            WorkspaceFlavour.LOCAL,
+            WorkspaceFlavour.AFFINE,
             workspace
           );
           setOpen(false);
@@ -145,9 +149,9 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
 };
 
 export const PublishPanel: React.FC<PublishPanelProps> = props => {
-  if (props.workspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
     return <PublishPanelAffine {...props} workspace={props.workspace} />;
-  } else if (props.workspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <PublishPanelLocal {...props} workspace={props.workspace} />;
   }
   throw new Unreachable();

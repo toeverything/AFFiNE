@@ -24,9 +24,10 @@ const htmlToElement = <T extends ChildNode>(html: string | TemplateResult) => {
   return template.content.firstChild as T;
 };
 
-const createToastContainer = () => {
+const createToastContainer = (portal?: HTMLElement) => {
+  portal = portal || document.body;
   const styles = css`
-    position: fixed;
+    position: absolute;
     z-index: 9999;
     top: 16px;
     left: 16px;
@@ -39,12 +40,13 @@ const createToastContainer = () => {
   `;
   const template = html`<div style="${styles}"></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
-  document.body.appendChild(element);
+  portal.appendChild(element);
   return element;
 };
 
 export type ToastOptions = {
-  duration: number;
+  duration?: number;
+  portal?: HTMLElement;
 };
 
 /**
@@ -55,10 +57,12 @@ export type ToastOptions = {
  */
 export const toast = (
   message: string,
-  { duration }: ToastOptions = { duration: 2500 }
+  { duration = 2500, portal }: ToastOptions = {
+    duration: 2500,
+  }
 ) => {
   if (!ToastContainer) {
-    ToastContainer = createToastContainer();
+    ToastContainer = createToastContainer(portal);
   }
 
   const styles = css`
@@ -103,8 +107,9 @@ export const toast = (
     element.style.margin = '0';
     element.style.padding = '0';
     // wait for transition
-    await sleep(230);
-    element.remove();
+    element.addEventListener('transitionend', () => {
+      element.remove();
+    });
   }, duration);
   return element;
 };

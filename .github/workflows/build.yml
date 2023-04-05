@@ -1,95 +1,68 @@
 name: Build & Test
 
 on:
-  issue_comment:
-    types: [created]
-
-env:
-  BUILD_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+  pull_request:
+    branches:
+      - master
 
 jobs:
-  build:
-    name: Build on Pull Request
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    if: github.repository == 'toeverything/AFFiNE' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/test run')
     environment: development
 
     steps:
-      - uses: actions/github-script@v6
-        with:
-          script: |
-            const user = context.payload.sender.login
-            console.log(`Validate user: ${user}`)
-            let isAffineMember = false
-            try {
-              const { status } = await github.rest.orgs.checkMembershipForUser({
-                org: 'toeverything',
-                username: user
-              });
-              isAffineMember = (status === 204)
-            } catch (e) {}
-            if (isAffineMember) {
-              console.log('Allowed')
-              await github.rest.reactions.createForIssueComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: context.payload.comment.id,
-                content: '+1',
-              })
-            } else {
-              console.log('Not allowed')
-              await github.rest.reactions.createForIssueComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: context.payload.comment.id,
-                content: '-1',
-              })
-              throw new Error('not allowed')
-            }
-      - name: 'Create Build check'
-        uses: actions/github-script@v6
-        id: create-check
-        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            const { data: pull_request } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-            const { data: check } = await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head_sha: pull_request.head.sha,
-              name: "Build on Pull Request",
-              status: "in_progress",
-              details_url: process.env.BUILD_URL
-            });
-            return check.id;
       - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - run: yarn install
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
       - run: yarn lint --max-warnings=0
 
+  install-all:
+    name: Install All Dependencies
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install All Dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          electron-workspace-install: true
+
+  build-storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn build:storybook
+      - name: Upload storybook artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+          if-no-files-found: error
+
+  build:
+    name: Build @affine/web
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Cache Next.js
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
       - name: Build
         run: yarn build
         env:
@@ -101,45 +74,41 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
 
-      - name: Export
-        run: yarn export
-
-      - name: Set Failure Check
-        uses: actions/github-script@v6
-        if: ${{ failure() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "failure",
-              completed_at: new Date().toISOString(),
-            });
-      - name: Set Success Check
-        uses: actions/github-script@v6
-        if: ${{ success() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "success",
-              completed_at: new Date().toISOString(),
-            });
-
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: artifact
+          name: next-js
           path: ./apps/web/.next
+          if-no-files-found: error
+
+  storybook-test:
+    name: Storybook Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: [build-storybook]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+      - name: Download storybook artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+      - name: Run storybook tests
+        working-directory: ./packages/component
+        run: |
+          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn test-storybook --coverage"
+      - name: Upload storybook test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/component/coverage/storybook/coverage-storybook.json
+          flags: storybook-test
+          name: affine
+          fail_ci_if_error: true
 
   e2e-test:
     name: E2E Test
@@ -149,109 +118,39 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: build
-    permissions:
-      contents: read
-      packages: write
-      checks: write
+    needs: [build, build-storybook]
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:canary-f94f1fa59a3ae1e72f4c776ce6ddc18d86c65ed5-1653
         ports:
           - 3000:3000
         env:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
 
     steps:
       - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: 'Create E2E test check'
-        uses: actions/github-script@v6
-        id: create-check
-        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            const { data: pull_request } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-            const { data: check } = await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head_sha: pull_request.head.sha,
-              name: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
-              status: "in_progress",
-              details_url: process.env.BUILD_URL
-            });
-            return check.id;
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn install
+          playwright-install: true
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: artifact
+          name: next-js
           path: ./apps/web/.next
 
-      - name: Install playwright browsers
-        run: npx playwright install chromium
+      - name: Download storybook artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+
       - name: Run playwright tests
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
-
-      - name: Set Failure Check
-        uses: actions/github-script@v6
-        if: ${{ failure() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "failure",
-              completed_at: new Date().toISOString(),
-            });
-      - name: Set Success Check
-        uses: actions/github-script@v6
-        if: ${{ success() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "success",
-              completed_at: new Date().toISOString(),
-            });
 
       - name: Collect code coverage report
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
@@ -277,89 +176,23 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    needs: build
+    services:
+      octobase:
+        image: ghcr.io/toeverything/cloud-self-hosted:canary-f94f1fa59a3ae1e72f4c776ce6ddc18d86c65ed5-1653
+        ports:
+          - 3000:3000
+        env:
+          SIGN_KEY: 'test123'
+          RUST_LOG: 'debug'
+          JWST_DEV: '1'
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: 'Create Unit test check'
-        uses: actions/github-script@v6
-        id: create-check
-        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            const { data: pull_request } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-            const { data: check } = await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head_sha: pull_request.head.sha,
-              name: "Unit Test",
-              status: "in_progress",
-              details_url: process.env.BUILD_URL
-            });
-            return check.id;
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn install
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: artifact
-          path: ./apps/web/.next
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - name: Unit Test
         run: yarn run test:unit:coverage
-
-      - name: Set Failure Check
-        uses: actions/github-script@v6
-        if: ${{ failure() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "failure",
-              completed_at: new Date().toISOString(),
-            });
-      - name: Set Success Check
-        uses: actions/github-script@v6
-        if: ${{ success() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "success",
-              completed_at: new Date().toISOString(),
-            });
 
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3

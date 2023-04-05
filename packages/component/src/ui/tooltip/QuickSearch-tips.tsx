@@ -9,11 +9,11 @@ const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
     minHeight: '92px',
     boxShadow: theme.shadow.tooltip,
     padding: '12px',
-    backgroundColor: theme.colors.hoverBackground,
+    backgroundColor: theme.colors.backgroundTertiaryColor,
     transform: 'all 0.15s',
-    color: theme.colors.primaryColor,
+    color: theme.colors.textEmphasisColor,
     ...displayFlex('center', 'center'),
-    border: `1px solid ${theme.colors.primaryColor}`,
+    border: `1px solid ${theme.colors.textEmphasisColor}`,
     fontSize: theme.font.sm,
     lineHeight: '22px',
     fontWeight: 500,
@@ -29,7 +29,7 @@ const StyledCircleContainer = styled('div')(({ theme }) => {
     transform: translate(0%, 0%);
     width: 0;
     height: 40px;
-    border-right: 1px solid ${theme.colors.primaryColor};
+    border-right: 1px solid ${theme.colors.textEmphasisColor};
     &::after {
       content: '';
       position: absolute;
@@ -39,7 +39,7 @@ const StyledCircleContainer = styled('div')(({ theme }) => {
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      border: 1px solid ${theme.colors.primaryColor};
+      border: 1px solid ${theme.colors.textEmphasisColor};
     }
     &::before {
       content: '';
@@ -50,8 +50,8 @@ const StyledCircleContainer = styled('div')(({ theme }) => {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background-color: ${theme.colors.primaryColor};
-      border: 1px solid ${theme.colors.primaryColor};
+      background-color: ${theme.colors.textEmphasisColor};
+      border: 1px solid ${theme.colors.textEmphasisColor};
     }
   `;
 });

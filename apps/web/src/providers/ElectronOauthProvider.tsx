@@ -1,27 +1,24 @@
-import { useRouter } from 'next/router';
+import { SignMethod } from '@affine/workspace/affine/login';
 import type React from 'react';
 import { useEffect } from 'react';
 
-import { apis } from '../shared/apis';
+import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
 
 export const ElectronOauthProvider: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
-  const router = useRouter();
+  const handleLogin = useAffineLogIn();
   useEffect(() => {
-    // @ts-ignore
-    window.electron?.ipcRenderer.on('send-token', async (code: string) => {
+    window.apis?.ipcRenderer.on('send-token', async (code: string) => {
       try {
-        await apis.signInWithOauthCode(code);
-        router.reload();
+        await handleLogin(SignMethod.Credential, code);
       } catch (e) {
         console.error(e);
       }
     });
     return () => {
-      // @ts-ignore
-      window.electron?.ipcRenderer.off('send-token');
+      window.apis?.ipcRenderer.off('send-token');
     };
-  });
+  }, [handleLogin]);
   return <>{children}</>;
 };

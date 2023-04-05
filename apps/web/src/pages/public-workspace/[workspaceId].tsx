@@ -1,6 +1,7 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
 import { SearchIcon } from '@blocksuite/icons';
-import { Box } from '@mui/material';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
@@ -16,9 +17,7 @@ import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { StyledTableContainer } from '../../components/blocksuite/block-suite-page-list/page-list/styles';
 import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '../../hooks/use-blocksuite-workspace-name';
-import { WorkspaceLayout } from '../../layouts';
+import { PublicWorkspaceLayout } from '../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
@@ -59,7 +58,7 @@ const ListPageInner: React.FC<{
   }
   return (
     <>
-      <NavContainer>
+      <NavContainer sx={{ px: '20px' }}>
         <Breadcrumbs>
           <StyledBreadcrumbs
             href={`/public-workspace/${blockSuiteWorkspace.id}`}
@@ -68,11 +67,6 @@ const ListPageInner: React.FC<{
             <span>{name}</span>
           </StyledBreadcrumbs>
         </Breadcrumbs>
-        <Box
-          sx={{
-            flex: 1,
-          }}
-        />
         <IconButton onClick={handleOpen}>
           <SearchIcon />
         </IconButton>
@@ -123,5 +117,5 @@ const ListPage: NextPageWithLayout = () => {
 export default ListPage;
 
 ListPage.getLayout = page => {
-  return <WorkspaceLayout>{page}</WorkspaceLayout>;
+  return <PublicWorkspaceLayout>{page}</PublicWorkspaceLayout>;
 };
