@@ -1,4 +1,4 @@
-import { isElectron } from '@affine/env';
+import { getEnvironment } from '@affine/env';
 import { useAtom, useAtomValue } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
@@ -44,6 +44,7 @@ export function Modals() {
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useWorkspacesHelper();
   const handleLogin = useAffineLogIn();
+  const environment = getEnvironment();
 
   return (
     <>
@@ -72,7 +73,7 @@ export function Modals() {
           [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
         onClickLogin={async () => {
-          if (isElectron()) {
+          if (environment.isDesktop) {
             await window.apis.signIn();
           } else {
             await handleLogin();
