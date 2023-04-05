@@ -5,6 +5,7 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-w
 import { useCallback, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../../../../shared';
+import { toast } from '../../../../../../utils';
 import {
   StyledButtonContent,
   StyledInputContent,
@@ -36,7 +37,8 @@ export const WorkspaceDeleteModal = ({
 
   const handleDelete = useCallback(() => {
     onDeleteWorkspace();
-  }, [onDeleteWorkspace]);
+    toast(t('Succesfully deleted'));
+  }, [onDeleteWorkspace, t]);
 
   return (
     <Modal open={open} onClose={onClose}>
