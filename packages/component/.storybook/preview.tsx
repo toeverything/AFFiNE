@@ -1,4 +1,7 @@
 import React from 'react';
+import '@rich-data/json-plugin/theme/basic.css';
+import '@rich-data/viewer/theme/basic.css';
+import '@rich-data/color-palette-plugin/style.css';
 import '@blocksuite/editor/themes/affine.css';
 import '../src/theme/global.css';
 

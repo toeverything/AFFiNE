@@ -50,6 +50,9 @@ __metadata:
     "@mui/icons-material": ^5.11.16
     "@mui/material": ^5.11.16
     "@radix-ui/react-avatar": ^1.0.2
+    "@rich-data/color-palette-plugin": ^3.0.0-20230404235326-387ed97
+    "@rich-data/json-plugin": ^3.0.0-20230404235326-387ed97
+    "@rich-data/viewer": ^3.0.0-20230404235326-387ed97
     "@storybook/addon-actions": ^7.0.2
     "@storybook/addon-coverage": ^0.0.8
     "@storybook/addon-essentials": ^7.0.2
@@ -4417,6 +4420,29 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@rich-data/color-palette-plugin@npm:^3.0.0-20230404235326-387ed97":
+  version: 3.0.0-20230404235326-387ed97
+  resolution: "@rich-data/color-palette-plugin@npm:3.0.0-20230404235326-387ed97"
+  peerDependencies:
+    "@rich-data/viewer": 3.0.0-20230404235326-387ed97
+  checksum: 639e9cc6291221449e1b63429c02105f2db30a0f81775bb01a0f6050e7c08243bd623b67b4dd7fb60e6147b8bab727299e13fe1d7da423c91281284f4e6b39eb
+  languageName: node
+  linkType: hard
+
+"@rich-data/json-plugin@npm:^3.0.0-20230404235326-387ed97":
+  version: 3.0.0-20230404235326-387ed97
+  resolution: "@rich-data/json-plugin@npm:3.0.0-20230404235326-387ed97"
+  dependencies:
+    "@tabler/icons-react": ^2.14.0
+    clsx: ^1.2.1
+  peerDependencies:
+    "@rich-data/viewer": ^3.0.0-20230404235326-387ed97
+    react: ^18
+    react-dom: ^18
+  checksum: a59a13abe661e8e123998285ad0ab33624bb644a81e3a25fdd527369f8338e1903ebe98866fb4492c5703bc598b9c58de96068f5ee000134f2ab6cd2b32c0bcf
+  languageName: node
+  linkType: hard
+
 "@rich-data/viewer@npm:^2.15.6":
   version: 2.15.6
   resolution: "@rich-data/viewer@npm:2.15.6"
@@ -4428,6 +4454,19 @@ __metadata:
     react: ^17 || ^18
     react-dom: ^17 || ^18
   checksum: 7cede847831d6030941833b6823db399d577e01c30c8ff46c6eefc063998c9bedfd1971b4f92c19bb03349f34cc3c3e4ab62c6be86eb43326e683f84c40251e6
+  languageName: node
+  linkType: hard
+
+"@rich-data/viewer@npm:^3.0.0-20230404235326-387ed97":
+  version: 3.0.0-20230404235326-387ed97
+  resolution: "@rich-data/viewer@npm:3.0.0-20230404235326-387ed97"
+  dependencies:
+    clsx: ^1.2.1
+    jotai: ^2.0.3
+  peerDependencies:
+    react: ^18
+    react-dom: ^18
+  checksum: 02d3ff829c538a7e0615924b527485fd3ab75e33ca1673ca4663ee4f1e67c194b9dfc7dd6fef0e1b1eb9b9666b0e9c29c383a14711ae569b004aaf3f24823b82
   languageName: node
   linkType: hard
 
@@ -5857,6 +5896,25 @@ __metadata:
   dependencies:
     defer-to-connect: ^2.0.1
   checksum: fc9cb993e808806692e4a3337c90ece0ec00c89f4b67e3652a356b89730da98bc824273a6d67ca84d5f33cd85f317dcd5ce39d8cc0a2f060145a608a7cb8ce92
+  languageName: node
+  linkType: hard
+
+"@tabler/icons-react@npm:^2.14.0":
+  version: 2.14.0
+  resolution: "@tabler/icons-react@npm:2.14.0"
+  dependencies:
+    "@tabler/icons": 2.14.0
+    prop-types: ^15.7.2
+  peerDependencies:
+    react: ^16.5.1 || ^17.0.0 || ^18.0.0
+  checksum: 36de7e92622daaf63df6c4d0309d93f18e78c938006847b7c0c72afff53151969f45f188872027406c634002bec7a1e869179c63580db535c8530b4bdeaba1e0
+  languageName: node
+  linkType: hard
+
+"@tabler/icons@npm:2.14.0":
+  version: 2.14.0
+  resolution: "@tabler/icons@npm:2.14.0"
+  checksum: 9d29f46ddc618c136b070ea33f75ce2c99c3544ea3598be0d33f579013601fc22cc1416894e5de1bb68551cc1422226fb97d96c2cd97e363b21587d57fec331c
   languageName: node
   linkType: hard
 
