@@ -22,6 +22,7 @@ test.describe('Local first delete workspace', () => {
       .getByTestId('delete-workspace-input')
       .type(currentWorkspaceName as string);
     await page.getByTestId('delete-workspace-confirm-button').click();
+    await page.getByTestId('affine-toast').waitFor({ state: 'attached' });
     expect(await page.getByTestId('workspace-card').count()).toBe(0);
     await page.mouse.click(1, 1);
     expect(await page.getByTestId('workspace-card').count()).toBe(0);

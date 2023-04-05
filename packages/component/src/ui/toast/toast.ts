@@ -38,7 +38,10 @@ const createToastContainer = (portal?: HTMLElement) => {
     flex-direction: column-reverse;
     align-items: center;
   `;
-  const template = html`<div style="${styles}"></div>`;
+  const template = html`<div
+    style="${styles}"
+    data-testid="affine-toast-container"
+  ></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
   portal.appendChild(element);
   return element;
@@ -80,7 +83,10 @@ export const toast = (
     opacity: 0;
   `;
 
-  const template = html`<div style="${styles}"></div>`;
+  const template = html`<div
+    style="${styles}"
+    data-testid="affine-toast"
+  ></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
   // message is not trusted
   element.textContent = message;

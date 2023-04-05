@@ -96,7 +96,7 @@ type SettingProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
     currentTab: SettingPanel;
     onChangeTab: (tab: SettingPanel) => void;
-    onDeleteWorkspace: () => void;
+    onDeleteWorkspace: () => Promise<void>;
     onTransformWorkspace: <
       From extends keyof WorkspaceRegistry,
       To extends keyof WorkspaceRegistry
