@@ -160,7 +160,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         controller.abort();
         logger.info('unmount');
       };
-    }, [jotaiWorkspaces.length, set]);
+    }, [jotaiWorkspaces, set]);
 
     useEffect(() => {
       const flavour = jotaiWorkspaces.find(
