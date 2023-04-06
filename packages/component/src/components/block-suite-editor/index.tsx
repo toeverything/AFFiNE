@@ -1,5 +1,6 @@
 import type { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
+import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import type { CSSProperties } from 'react';
 import { useEffect, useRef } from 'react';
@@ -28,36 +29,27 @@ export const BlockSuiteEditor = (props: EditorProps) => {
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
     editorRef.current = new EditorContainer();
-    editorRef.current.page = props.page;
-    editorRef.current.mode = props.mode;
     globalThis.currentEditor = editorRef.current;
   }
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.mode = props.mode;
-    }
-  }, [props.mode]);
-
-  useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor || !ref.current || !page) {
-      return;
-    }
-
-    editor.page = page;
+  const editor = editorRef.current;
+  assertExists(editorRef, 'editorRef.current should not be null');
+  if (editor.mode !== props.mode) {
+    editor.mode = props.mode;
+  }
+  if (editor.page !== props.page) {
+    editor.page = props.page;
     if (page.root === null) {
       props.onInit(page, editor);
     }
     props.onLoad?.(page, editor);
-    return;
-  }, [page, props]);
+  }
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const editor = editorRef.current;
+    assertExists(editor);
     const container = ref.current;
-
-    if (!editor || !container || !page) {
+    if (!container) {
       return;
     }
     if (page.awarenessStore.getFlag('enable_block_hub')) {
@@ -82,7 +74,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       blockHubRef.current?.remove();
       container.removeChild(editor);
     };
-  }, [page, props.mode]);
+  }, [page]);
   return (
     <div
       data-testid={`editor-${props.blockSuiteWorkspace.id}-${props.page.id}`}
