@@ -21,7 +21,7 @@ mod:env: 'packages/env/**/*'
 
 mod:hooks: 'packages/hooks/**/*'
 
-mod:components: 'packages/components/**/*'
+mod:component: 'packages/component/**/*'
 
 mod:store:
   - 'packages/jotai/**/*'
