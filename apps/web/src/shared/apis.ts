@@ -26,6 +26,8 @@ if (typeof window === 'undefined') {
   params.get('prefixUrl') && (prefixUrl = params.get('prefixUrl') as string);
 }
 
+export { prefixUrl };
+
 const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;
 Object.assign(affineApis, createUserApis(prefixUrl));
