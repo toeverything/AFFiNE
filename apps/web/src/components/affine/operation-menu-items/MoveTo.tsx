@@ -39,6 +39,7 @@ export const MoveTo = ({
         }}
         icon={<MoveToIcon />}
         endIcon={<ArrowRightSmallIcon />}
+        data-testid="move-to-menu-item"
       >
         {t('Move to')}
       </MenuItem>

@@ -84,7 +84,7 @@ export const Pivots = ({
   );
 
   return (
-    <>
+    <div data-testid="sidebar-pivots-container">
       <StyledListItem
         onClick={useCallback(() => {
           setShowPivot(!showPivot);
@@ -108,7 +108,7 @@ export const Pivots = ({
           />
         )}
       </MuiCollapse>
-    </>
+    </div>
   );
 };
 export default Pivots;

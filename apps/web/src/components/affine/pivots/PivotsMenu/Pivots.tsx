@@ -27,6 +27,8 @@ export const Pivots = ({
   return (
     <>
       <StyledPivot
+        data-testid="root-pivot-button-in-pivots-menu"
+        id="root-pivot-button-in-pivots-menu"
         onClick={() => {
           setPageMeta(currentMeta.id, { isPivots: true });
           toast(`Moved "${currentMeta.title}" to Pivots`);
