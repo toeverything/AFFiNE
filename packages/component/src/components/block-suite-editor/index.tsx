@@ -1,11 +1,13 @@
 import type { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
-import type { Page, Workspace } from '@blocksuite/store';
-import type { CSSProperties } from 'react';
-import { useEffect, useRef } from 'react';
+import { assertExists } from '@blocksuite/global/utils';
+import type { Page } from '@blocksuite/store';
+import type { CSSProperties, ReactElement } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
+import type { FallbackProps } from 'react-error-boundary';
+import { ErrorBoundary } from 'react-error-boundary';
 
 export type EditorProps = {
-  blockSuiteWorkspace: Workspace;
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
@@ -13,51 +15,45 @@ export type EditorProps = {
   style?: CSSProperties;
 };
 
+export type ErrorBoundaryProps = {
+  onReset?: () => void;
+};
+
 declare global {
-  // eslint-disable-next-line no-var
-  var currentBlockSuiteWorkspace: Workspace | undefined;
   // eslint-disable-next-line no-var
   var currentPage: Page | undefined;
   // eslint-disable-next-line no-var
   var currentEditor: EditorContainer | undefined;
 }
 
-export const BlockSuiteEditor = (props: EditorProps) => {
+const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const page = props.page;
+  assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
     editorRef.current = new EditorContainer();
-    editorRef.current.page = props.page;
-    editorRef.current.mode = props.mode;
     globalThis.currentEditor = editorRef.current;
   }
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.mode = props.mode;
-    }
-  }, [props.mode]);
-
-  useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor || !ref.current || !page) {
-      return;
-    }
-
-    editor.page = page;
+  const editor = editorRef.current;
+  assertExists(editorRef, 'editorRef.current should not be null');
+  if (editor.mode !== props.mode) {
+    editor.mode = props.mode;
+  }
+  if (editor.page !== props.page) {
+    editor.page = props.page;
     if (page.root === null) {
       props.onInit(page, editor);
     }
     props.onLoad?.(page, editor);
-    return;
-  }, [page, props]);
+  }
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const editor = editorRef.current;
+    assertExists(editor);
     const container = ref.current;
-
-    if (!editor || !container || !page) {
+    if (!container) {
       return;
     }
     if (page.awarenessStore.getFlag('enable_block_hub')) {
@@ -82,13 +78,52 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       blockHubRef.current?.remove();
       container.removeChild(editor);
     };
-  }, [page, props.mode]);
+  }, [page]);
   return (
     <div
-      data-testid={`editor-${props.blockSuiteWorkspace.id}-${props.page.id}`}
+      data-testid={`editor-${props.page.id}`}
       className="editor-wrapper"
       style={props.style}
       ref={ref}
     />
   );
 };
+
+const BlockSuiteErrorFallback = (
+  props: FallbackProps & ErrorBoundaryProps
+): ReactElement => {
+  return (
+    <div>
+      <h1>Sorry.. there was an error</h1>
+      <div>{props.error.message}</div>
+      <button
+        data-testid="error-fallback-reset-button"
+        onClick={() => {
+          props.onReset?.();
+          props.resetErrorBoundary();
+        }}
+      >
+        Try again
+      </button>
+    </div>
+  );
+};
+
+export const BlockSuiteEditor = memo(function BlockSuiteEditor(
+  props: EditorProps & ErrorBoundaryProps
+): ReactElement {
+  return (
+    <ErrorBoundary
+      fallbackRender={useCallback(
+        (fallbackProps: FallbackProps) => (
+          <BlockSuiteErrorFallback {...fallbackProps} onReset={props.onReset} />
+        ),
+        [props.onReset]
+      )}
+    >
+      <BlockSuiteEditorImpl {...props} />
+    </ErrorBoundary>
+  );
+});
+
+BlockSuiteEditor.displayName = 'BlockSuiteEditor';
