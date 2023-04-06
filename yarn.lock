@@ -37,12 +37,12 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/jotai": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/editor": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/global": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/icons": 2.1.3
-    "@blocksuite/store": 0.0.0-20230404211759-4cf51928
-    "@emotion/cache": ^11.10.5
+    "@blocksuite/blocks": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/editor": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/global": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/icons": 2.1.4
+    "@blocksuite/store": 0.0.0-20230405154041-de2f96d3
+    "@emotion/cache": ^11.10.7
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
     "@emotion/styled": ^11.10.6
@@ -72,7 +72,7 @@ __metadata:
     clsx: ^1.2.1
     concurrently: ^8.0.1
     jest-mock: ^29.5.0
-    lit: ^2.7.1
+    lit: ^2.7.2
     react: ^18.2.0
     react-dnd: ^16.0.1
     react-dnd-html5-backend: ^16.0.1
@@ -101,8 +101,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230404211759-4cf51928
-    lit: ^2.7.1
+    "@blocksuite/global": 0.0.0-20230405154041-de2f96d3
+    lit: ^2.7.2
     next: =13.2.3
     react: ^18.2.0
     react-dom: ^18.2.0
@@ -164,11 +164,11 @@ __metadata:
     "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/editor": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/icons": ^2.1.3
-    "@blocksuite/store": 0.0.0-20230404211759-4cf51928
-    "@emotion/cache": ^11.10.5
+    "@blocksuite/blocks": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/editor": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/icons": ^2.1.4
+    "@blocksuite/store": 0.0.0-20230405154041-de2f96d3
+    "@emotion/cache": ^11.10.7
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
     "@emotion/styled": ^11.10.6
@@ -176,7 +176,7 @@ __metadata:
     "@perfsee/webpack": ^1.5.0
     "@redux-devtools/extension": ^3.2.5
     "@rich-data/viewer": ^2.15.6
-    "@sentry/nextjs": ^7.46.0
+    "@sentry/nextjs": ^7.47.0
     "@swc-jotai/debug-label": ^0.0.9
     "@swc-jotai/react-refresh": ^0.0.7
     "@toeverything/hooks": "workspace:*"
@@ -192,7 +192,7 @@ __metadata:
     eslint: ^8.37.0
     eslint-config-next: ^13.2.4
     jotai: ^2.0.3
-    lit: ^2.7.1
+    lit: ^2.7.2
     lottie-web: ^5.10.2
     next: =13.2.3
     next-debug-local: ^0.1.5
@@ -206,7 +206,7 @@ __metadata:
     swc-plugin-coverage-instrument: =0.0.14
     swr: ^2.1.2
     typescript: ^5.0.3
-    webpack: ^5.77.0
+    webpack: ^5.78.0
     y-protocols: ^1.0.5
     yjs: ^13.5.52
     zod: ^3.21.4
@@ -221,8 +221,8 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/store": 0.0.0-20230404211759-4cf51928
+    "@blocksuite/blocks": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/store": 0.0.0-20230405154041-de2f96d3
     "@toeverything/y-indexeddb": "workspace:*"
     "@types/ws": ^8.5.4
     firebase: ^9.19.1
@@ -1733,13 +1733,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/blocks@npm:0.0.0-20230404211759-4cf51928":
-  version: 0.0.0-20230404211759-4cf51928
-  resolution: "@blocksuite/blocks@npm:0.0.0-20230404211759-4cf51928"
+"@blocksuite/blocks@npm:0.0.0-20230405154041-de2f96d3":
+  version: 0.0.0-20230405154041-de2f96d3
+  resolution: "@blocksuite/blocks@npm:0.0.0-20230405154041-de2f96d3"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/phasor": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/virgo": 0.0.0-20230404211759-4cf51928
+    "@blocksuite/global": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/phasor": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/virgo": 0.0.0-20230405154041-de2f96d3
     "@popperjs/core": ^2.11.6
     hotkeys-js: ^3.10.1
     lit: ^2.6.1
@@ -1748,29 +1748,29 @@ __metadata:
     turndown: ^7.1.1
     zod: ^3.21.4
   peerDependencies:
-    "@blocksuite/store": 0.0.0-20230404211759-4cf51928
-  checksum: 580cc47802eac5a16d479929e844c92b231e89775cbb66edc19d596861caa4f79aff85e4cfa4c33953aed83e8722255f5e2e6652ce53ddea6d96037c5668cb35
+    "@blocksuite/store": 0.0.0-20230405154041-de2f96d3
+  checksum: ef4807bf7af87e34a4251b3344714a60aaa64769a40f6d7c2cc8f48617f7c18f08ace63d851bf86cf10ebc39429a9f690d6bc6c48a8ef40c42a2286939b41731
   languageName: node
   linkType: hard
 
-"@blocksuite/editor@npm:0.0.0-20230404211759-4cf51928":
-  version: 0.0.0-20230404211759-4cf51928
-  resolution: "@blocksuite/editor@npm:0.0.0-20230404211759-4cf51928"
+"@blocksuite/editor@npm:0.0.0-20230405154041-de2f96d3":
+  version: 0.0.0-20230405154041-de2f96d3
+  resolution: "@blocksuite/editor@npm:0.0.0-20230405154041-de2f96d3"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230404211759-4cf51928
+    "@blocksuite/global": 0.0.0-20230405154041-de2f96d3
     lit: ^2.6.1
     marked: ^4.2.12
     turndown: ^7.1.1
   peerDependencies:
-    "@blocksuite/blocks": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/store": 0.0.0-20230404211759-4cf51928
-  checksum: 5845a77af2d5dc6b9aadd3e1ea7d829192bea297dc17025f5452f475bee04b0854f395689c796a684a6fc48b2301e81dc326f580e5e20f2f9b6a559bacef51a3
+    "@blocksuite/blocks": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/store": 0.0.0-20230405154041-de2f96d3
+  checksum: 987097cff9714bf90c00b11d92dc5bcb8edd4e9e6b343a857a3c5c48bec526f3e1ba6f5f01301643ab898550527d6b441544e073b80d0ca97c0837e82ea81ab1
   languageName: node
   linkType: hard
 
-"@blocksuite/global@npm:0.0.0-20230404211759-4cf51928":
-  version: 0.0.0-20230404211759-4cf51928
-  resolution: "@blocksuite/global@npm:0.0.0-20230404211759-4cf51928"
+"@blocksuite/global@npm:0.0.0-20230405154041-de2f96d3":
+  version: 0.0.0-20230405154041-de2f96d3
+  resolution: "@blocksuite/global@npm:0.0.0-20230405154041-de2f96d3"
   dependencies:
     ansi-colors: ^4.1.3
     zod: ^3.21.4
@@ -1779,40 +1779,40 @@ __metadata:
   peerDependenciesMeta:
     lit:
       optional: true
-  checksum: 1eb7d62bb8ab443482625cd6bf63b96a3ecfd7094fccccc5575b5c8e7faf900d77b7e7d201f15bc11ba3b8c16b62f7881f3bd3cb1243fedf68ab93d317f6e9b1
+  checksum: 6b8da777329f6b3d2f8be1dbbfb3487ebe83cf176d87c8ea58668d46cf10512df7f8e5872d2ed19e7e3d0a70b33ed48bddee38f829f4fb9eaefa3ebf327e42c2
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.3, @blocksuite/icons@npm:^2.1.3":
-  version: 2.1.3
-  resolution: "@blocksuite/icons@npm:2.1.3"
+"@blocksuite/icons@npm:2.1.4, @blocksuite/icons@npm:^2.1.4":
+  version: 2.1.4
+  resolution: "@blocksuite/icons@npm:2.1.4"
   peerDependencies:
     "@types/react": ^18.0.25
     react: ^18.2.0
-  checksum: 170e42f3e62395a7ad1f0611dd0513a435f589205a2deb131a89557ac9f0190ef2d0061ca45bb541c35918f68d8a24c7f08172d7f1fe44eb1eb405f89133d015
+  checksum: 0eff10845afa389fb23ce73838ee0697eaa2af60313e4ee0c139ee14a9bf103a92057c6af6c3eccb40636751d1fb94aa872533cb41f6e25fed4c3ecc530c28bc
   languageName: node
   linkType: hard
 
-"@blocksuite/phasor@npm:0.0.0-20230404211759-4cf51928":
-  version: 0.0.0-20230404211759-4cf51928
-  resolution: "@blocksuite/phasor@npm:0.0.0-20230404211759-4cf51928"
+"@blocksuite/phasor@npm:0.0.0-20230405154041-de2f96d3":
+  version: 0.0.0-20230405154041-de2f96d3
+  resolution: "@blocksuite/phasor@npm:0.0.0-20230405154041-de2f96d3"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230404211759-4cf51928
+    "@blocksuite/global": 0.0.0-20230405154041-de2f96d3
     fractional-indexing: ^3.2.0
     perfect-freehand: ^1.2.0
   peerDependencies:
     nanoid: ^4
     yjs: ^13
-  checksum: 738f35d2d3063606502368ccab4f40ab80c3739df8e5e0ce6cca4dc82e74c13f73621aa78e994e532ed2a7b398612fba286f5fd1cf078eba7612ec2e8a8f8428
+  checksum: 2d2a4f5f6465df3a6b356d9160ca0c71716f597084f3313c44596cd5e25134edf9883765fbc6871002abd41f7f549af6b701ecf3b3b7900265ce81e8cae2bf20
   languageName: node
   linkType: hard
 
-"@blocksuite/store@npm:0.0.0-20230404211759-4cf51928":
-  version: 0.0.0-20230404211759-4cf51928
-  resolution: "@blocksuite/store@npm:0.0.0-20230404211759-4cf51928"
+"@blocksuite/store@npm:0.0.0-20230405154041-de2f96d3":
+  version: 0.0.0-20230405154041-de2f96d3
+  resolution: "@blocksuite/store@npm:0.0.0-20230405154041-de2f96d3"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/virgo": 0.0.0-20230404211759-4cf51928
+    "@blocksuite/global": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/virgo": 0.0.0-20230405154041-de2f96d3
     "@types/flexsearch": ^0.7.3
     buffer: ^6.0.3
     flexsearch: 0.7.21
@@ -1826,20 +1826,20 @@ __metadata:
     zod: ^3.21.4
   peerDependencies:
     yjs: ^13
-  checksum: c2f0181dc8cbf094a1ea208bd5e258671e9a650883bb42dc639324803f1349cb8295b46691409552bfae9d7ebf58c5b4e40860749325acfffcdceff20c68d1bb
+  checksum: d9f65cf3b7a332f5144d348f2e4142b474468d29613e62bf3e0c3f0d58991dcbd002edb294f7589230b088df6fa5e3bb9429219e49f39a2bdb9620c34fb39401
   languageName: node
   linkType: hard
 
-"@blocksuite/virgo@npm:0.0.0-20230404211759-4cf51928":
-  version: 0.0.0-20230404211759-4cf51928
-  resolution: "@blocksuite/virgo@npm:0.0.0-20230404211759-4cf51928"
+"@blocksuite/virgo@npm:0.0.0-20230405154041-de2f96d3":
+  version: 0.0.0-20230405154041-de2f96d3
+  resolution: "@blocksuite/virgo@npm:0.0.0-20230405154041-de2f96d3"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230404211759-4cf51928
+    "@blocksuite/global": 0.0.0-20230405154041-de2f96d3
     zod: ^3.21.4
   peerDependencies:
     lit: ^2
     yjs: ^13
-  checksum: 6ce537111ebf9944b7c627d4714092c8ec7287609e7bc27631523f37ca0cebf4963242a962a19e8fbd90c7e006e5ad4c9175845d37f6a2328de2ef58c1096edc
+  checksum: c004026e2e18bd455c3da6868b9a7b24fdef6a2b3f58aa26165dfdbac6a1fe76cb84537ced8b9d1f16664a085ad271ec505e55c502eb46c8bdb9a6ddefbf7451
   languageName: node
   linkType: hard
 
@@ -1917,6 +1917,19 @@ __metadata:
     "@emotion/weak-memoize": ^0.3.0
     stylis: 4.1.3
   checksum: 1dd2d9af2d3ecbd3d4469ecdf91a335eef6034c851b57a474471b2d2280613eb35bbed98c0368cc4625f188619fbdaf04cf07e8107aaffce94b2178444c0fe7b
+  languageName: node
+  linkType: hard
+
+"@emotion/cache@npm:^11.10.7":
+  version: 11.10.7
+  resolution: "@emotion/cache@npm:11.10.7"
+  dependencies:
+    "@emotion/memoize": ^0.8.0
+    "@emotion/sheet": ^1.2.1
+    "@emotion/utils": ^1.2.0
+    "@emotion/weak-memoize": ^0.3.0
+    stylis: 4.1.3
+  checksum: 6b1efed2dffc93dac419409d91f6d57a200d858ec5ffa4b7c30080fdbd93db431ff86bb779c5b8830b8373f3c5dd754d9beb386604ed2667c7d55608ff653dfc
   languageName: node
   linkType: hard
 
@@ -4523,29 +4536,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry-internal/tracing@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry-internal/tracing@npm:7.46.0"
+"@sentry-internal/tracing@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry-internal/tracing@npm:7.47.0"
   dependencies:
-    "@sentry/core": 7.46.0
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
+    "@sentry/core": 7.47.0
+    "@sentry/types": 7.47.0
+    "@sentry/utils": 7.47.0
     tslib: ^1.9.3
-  checksum: 727f32da229db307391f174e98d819db8cf97e58149e5dea1bfe9b4ab0efc44eec6ad8d93c62051d56f202d5be7895180f4711ca44bf2986714ce8cf8015ab17
+  checksum: 46cb6cdd5b64841acd7b38cdde156e15dcf2c225ccd36219ea5796b7ebad34a3c0db1f4c7545e1fec1a1e5897d4368003b1101845404bcd1c27a21c09784cbd3
   languageName: node
   linkType: hard
 
-"@sentry/browser@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/browser@npm:7.46.0"
+"@sentry/browser@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/browser@npm:7.47.0"
   dependencies:
-    "@sentry-internal/tracing": 7.46.0
-    "@sentry/core": 7.46.0
-    "@sentry/replay": 7.46.0
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
+    "@sentry-internal/tracing": 7.47.0
+    "@sentry/core": 7.47.0
+    "@sentry/replay": 7.47.0
+    "@sentry/types": 7.47.0
+    "@sentry/utils": 7.47.0
     tslib: ^1.9.3
-  checksum: a3c675df84923199f15cec0cf54ebf0a8fef61f38901c2fa665d4e2a139e4b4752bdf1f7f2714448e0031dfc32078cf5d5011b72d86dbd5ea91d68e141002529
+  checksum: fdceac3a68195b4fcc58ab9d7907009cb73350646314100853ed56f4f2f6e00b2916c35037ea055c3d583accdf2356ed0690b59bf63038043b85e737a38382dc
   languageName: node
   linkType: hard
 
@@ -4565,40 +4578,40 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/core@npm:7.46.0"
+"@sentry/core@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/core@npm:7.47.0"
   dependencies:
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
+    "@sentry/types": 7.47.0
+    "@sentry/utils": 7.47.0
     tslib: ^1.9.3
-  checksum: af9733781f1ca9091d42363bf67b23999eebe8a2ea15178d93d942788e2adc2c0ed0709d7553cd03b94e19d6b0376066f4e1c367b4a6855c65114ddc864f26f3
+  checksum: 1cfd41020e5707c7e142dbb7c99118a264bcc5fa64fc06f1e51d8c6166dea0a50fd5896ce5287a4805d088257dc3757cc53ab4f5092166cd759ffeeea1cd8d2e
   languageName: node
   linkType: hard
 
-"@sentry/integrations@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/integrations@npm:7.46.0"
+"@sentry/integrations@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/integrations@npm:7.47.0"
   dependencies:
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
+    "@sentry/types": 7.47.0
+    "@sentry/utils": 7.47.0
     localforage: ^1.8.1
     tslib: ^1.9.3
-  checksum: 5b58f1e204ba74d8b084226e0de657910eb8854cb1a872940a714e9147474bab0afacee3a71a118b4198fda69cceb978cc98c30699fc7d609e24af331cc7582e
+  checksum: 227886380e14f23c58d1d33c782024aaddfbc5c185e5b3058b32fcb612d3abe7094ccbd585805ecc366c55d39dc9b4593a8c07e7bf6159c5ccea2e81406f8ad9
   languageName: node
   linkType: hard
 
-"@sentry/nextjs@npm:^7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/nextjs@npm:7.46.0"
+"@sentry/nextjs@npm:^7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/nextjs@npm:7.47.0"
   dependencies:
     "@rollup/plugin-commonjs": 24.0.0
-    "@sentry/core": 7.46.0
-    "@sentry/integrations": 7.46.0
-    "@sentry/node": 7.46.0
-    "@sentry/react": 7.46.0
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
+    "@sentry/core": 7.47.0
+    "@sentry/integrations": 7.47.0
+    "@sentry/node": 7.47.0
+    "@sentry/react": 7.47.0
+    "@sentry/types": 7.47.0
+    "@sentry/utils": 7.47.0
     "@sentry/webpack-plugin": 1.20.0
     chalk: 3.0.0
     rollup: 2.78.0
@@ -4611,66 +4624,66 @@ __metadata:
   peerDependenciesMeta:
     webpack:
       optional: true
-  checksum: 3c9022fcfd8ff102b6bca922460486ced164fe111b5a815710570e45dee125b06021ff7866cf2f4e86fdf7c3a1cf05a79e08eb7882d021d311a59eb9b67b05cc
+  checksum: ee8114f8bf033fc59a42def07b5f3290d90e5f5a4af8fcbf1fad902151771aadb656f8499a90aa32cd37e825091cd2a896dff0914c0c79baff03a7176b2ea515
   languageName: node
   linkType: hard
 
-"@sentry/node@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/node@npm:7.46.0"
+"@sentry/node@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/node@npm:7.47.0"
   dependencies:
-    "@sentry-internal/tracing": 7.46.0
-    "@sentry/core": 7.46.0
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
+    "@sentry-internal/tracing": 7.47.0
+    "@sentry/core": 7.47.0
+    "@sentry/types": 7.47.0
+    "@sentry/utils": 7.47.0
     cookie: ^0.4.1
     https-proxy-agent: ^5.0.0
     lru_map: ^0.3.3
     tslib: ^1.9.3
-  checksum: 0f97b1a28389cebe3f6c6a40550c9bffd397685a188f7e2e9fa7672e9c6178454125fcd453a5eea241fab8b1c1302b575b6bc18299793f16049ced0db92804a8
+  checksum: 485a3267313cf4475986a4406e213a5139f03a57be4336d088e7d9004f647ea3ff28b13eab4e49e2c0d208dbf5a9ad4188b201f60f094354bcfd0b4c9a07f5d8
   languageName: node
   linkType: hard
 
-"@sentry/react@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/react@npm:7.46.0"
+"@sentry/react@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/react@npm:7.47.0"
   dependencies:
-    "@sentry/browser": 7.46.0
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
+    "@sentry/browser": 7.47.0
+    "@sentry/types": 7.47.0
+    "@sentry/utils": 7.47.0
     hoist-non-react-statics: ^3.3.2
     tslib: ^1.9.3
   peerDependencies:
     react: 15.x || 16.x || 17.x || 18.x
-  checksum: 41786da4050c8d6f450b8ae4389c7cd73dc4337d390dcf6f8c3256cf84984793965e98d5fa55016ea15c3931e184e617c56d481c2609599f37daca3116711e78
+  checksum: 7e42c91c48cf84e36d20433a1b28bf03c801ebed67ccd18e40de279c3a800e8f0818b4af9b9f40471070636a0aa1f58a77610383908f780e0b98efe8eb6c6ebd
   languageName: node
   linkType: hard
 
-"@sentry/replay@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/replay@npm:7.46.0"
+"@sentry/replay@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/replay@npm:7.47.0"
   dependencies:
-    "@sentry/core": 7.46.0
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
-  checksum: 1d91acecf8c1742e47fc87b4cc51d600884063f66918b8e4b194897e6028294416e65ae854f1cef04a46e6466f7d423fb009340e519585fa5d53b98c40257b13
+    "@sentry/core": 7.47.0
+    "@sentry/types": 7.47.0
+    "@sentry/utils": 7.47.0
+  checksum: e4f69a6b698bd38eda4bd16275987d69948ded1dc34253eb804e3b6d09be675fa3c0fcfb85fbfef02c2e863eb80b7148da18b0dd1a7dadaab4353a315733e931
   languageName: node
   linkType: hard
 
-"@sentry/types@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/types@npm:7.46.0"
-  checksum: a61a525e425db76fce792c83677b0be6a9b6311cefe6590cc146cfde17870f02918785cef6af3a345c5b2e8631ef1c76785b5b270d4428d612b1cfe30d07a946
+"@sentry/types@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/types@npm:7.47.0"
+  checksum: 42f1f58bebb2689d609ebc614a04462cb15f749d304dcadc2c93b851ecb88a20d59853b01f22b91f37c7cfb41ed7d0992843043ada7a7592ea1043191092e350
   languageName: node
   linkType: hard
 
-"@sentry/utils@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/utils@npm:7.46.0"
+"@sentry/utils@npm:7.47.0":
+  version: 7.47.0
+  resolution: "@sentry/utils@npm:7.47.0"
   dependencies:
-    "@sentry/types": 7.46.0
+    "@sentry/types": 7.47.0
     tslib: ^1.9.3
-  checksum: cc550dac9105e68e28b770879426e12b52953468f3f34df7ff0f5352cdcc4b8a8af2144fe1a20f0a23d3f0afdbba14661951765e3d9f81335acafc35ffd632f1
+  checksum: d37d6299ef28c7ce32b1af7644f59ab5a5fd7a8155e97b3758c87d11a4b2cb406d4e3d2b260afcd200dadef99582f92b08ef6b89543f11611d2e034b3940d7b3
   languageName: node
   linkType: hard
 
@@ -5942,8 +5955,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
   dependencies:
-    "@blocksuite/blocks": 0.0.0-20230404211759-4cf51928
-    "@blocksuite/store": 0.0.0-20230404211759-4cf51928
+    "@blocksuite/blocks": 0.0.0-20230405154041-de2f96d3
+    "@blocksuite/store": 0.0.0-20230405154041-de2f96d3
     idb: ^7.1.1
     vite: ^4.2.1
     vite-plugin-dts: ^2.2.0
@@ -13708,7 +13721,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lit@npm:^2.6.1, lit@npm:^2.7.1":
+"lit@npm:^2.6.1":
   version: 2.7.1
   resolution: "lit@npm:2.7.1"
   dependencies:
@@ -13716,6 +13729,17 @@ __metadata:
     lit-element: ^3.3.0
     lit-html: ^2.7.0
   checksum: 52a3de2c8720bbfd1aa166f035e53692230426387529d36a0c160680cc0ec0534f5148e83ed035fad8b14d0d6c902d9e9924f86de2bafb825898e6b0bf64a392
+  languageName: node
+  linkType: hard
+
+"lit@npm:^2.7.2":
+  version: 2.7.2
+  resolution: "lit@npm:2.7.2"
+  dependencies:
+    "@lit/reactive-element": ^1.6.0
+    lit-element: ^3.3.0
+    lit-html: ^2.7.0
+  checksum: e8a53a0044c23564c99af6b2bfa68f521d28263354e33049917b9595549d091dd4af332a1b7eede1bfd5ba4fda63d9194659becf7f4c0951e8d83f3f2b0ba071
   languageName: node
   linkType: hard
 
@@ -18930,9 +18954,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webpack@npm:^5.77.0":
-  version: 5.77.0
-  resolution: "webpack@npm:5.77.0"
+"webpack@npm:^5.78.0":
+  version: 5.78.0
+  resolution: "webpack@npm:5.78.0"
   dependencies:
     "@types/eslint-scope": ^3.7.3
     "@types/estree": ^0.0.51
@@ -18963,7 +18987,7 @@ __metadata:
       optional: true
   bin:
     webpack: bin/webpack.js
-  checksum: 21341bb72cbbf61dfb3af91eabe9290a6c05139f268eff3c419e5339deb6c79f2f36de55d9abf017d3ccbad290a535c02325001b2816acc393f3c022e67ac17c
+  checksum: 4213e5bcc23e54c2f2a589e8e96f1fb71a2c05d5033ffda6dd8bae32284abfa0eb6b6d0707806e8dcfa48a8fcda2448d3af6c4539061679251d94c0996bebf99
   languageName: node
   linkType: hard
 
