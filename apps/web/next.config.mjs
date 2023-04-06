@@ -10,6 +10,8 @@ import preset from './preset.config.mjs';
 import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
 
 const require = createRequire(import.meta.url);
+const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin');
+const withVanillaExtract = createVanillaExtractPlugin();
 
 console.info('Runtime Preset', preset);
 
@@ -76,6 +78,10 @@ const nextConfig = {
     '@affine/debug',
     '@affine/env',
     '@affine/templates',
+    '@toeverything/hooks',
+    '@affine/workspace',
+    '@affine/jotai',
+    '@toeverything/y-indexeddb',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
@@ -177,4 +183,12 @@ if (process.env.SENTRY_AUTH_TOKEN) {
   delete config.sentry;
 }
 
-export default config;
+if (process.env.PERFSEE_TOKEN) {
+  console.info('perfsee token found.');
+} else {
+  console.warn(
+    'perfsee token not found. performance monitoring will be disabled.'
+  );
+}
+
+export default withVanillaExtract(config);

@@ -67,13 +67,15 @@ export const StyledPivot = styled('div')<{
   };
 });
 
-export const StyledOperationButton = styled(IconButton)<{ visible: boolean }>(
-  ({ visible }) => {
-    return {
-      visibility: visible ? 'visible' : 'hidden',
-    };
-  }
-);
+export const StyledOperationButton = styled(IconButton, {
+  shouldForwardProp: prop => {
+    return !['visible'].includes(prop as string);
+  },
+})<{ visible: boolean }>(({ visible }) => {
+  return {
+    visibility: visible ? 'visible' : 'hidden',
+  };
+});
 
 export const StyledSearchContainer = styled('div')(({ theme }) => {
   return {

@@ -25,10 +25,10 @@
     "idb": "^7.1.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.5.0-20230324040005-14417c2",
-    "@blocksuite/store": "0.5.0-20230324040005-14417c2",
+    "@blocksuite/blocks": "0.0.0-20230406032111-01cf598b-nightly",
+    "@blocksuite/store": "0.0.0-20230406032111-01cf598b-nightly",
     "vite": "^4.2.1",
-    "vite-plugin-dts": "^2.1.0"
+    "vite-plugin-dts": "^2.2.0"
   },
   "peerDependencies": {
     "yjs": "^13.5.51"

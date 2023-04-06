@@ -1,7 +1,7 @@
 import { MuiFade, Tooltip } from '@affine/component';
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
-import { CloseIcon, DoneIcon } from '@blocksuite/icons';
+import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
@@ -72,7 +72,7 @@ export const HelpIsland = ({
                   window.open('https://affine.pro', '_blank');
                 }}
               >
-                <DoneIcon />
+                <NewIcon />
               </StyledIconWrapper>
             </Tooltip>
           )}

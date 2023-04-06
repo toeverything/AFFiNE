@@ -1,13 +1,13 @@
 import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { Command } from 'cmdk';
+import Image from 'next/legacy/image';
 import { useRouter } from 'next/router';
-import type React from 'react';
+import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../shared';
-import { NoResultSVG } from './NoResultSVG';
 import { StyledListItem, StyledNotFound } from './style';
 
 export type PublishedResultsProps = {
@@ -18,7 +18,7 @@ export type PublishedResultsProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
 };
 
-export const PublishedResults: React.FC<PublishedResultsProps> = ({
+export const PublishedResults: FC<PublishedResultsProps> = ({
   query,
   loading,
   onClose,
@@ -86,7 +86,12 @@ export const PublishedResults: React.FC<PublishedResultsProps> = ({
         ) : (
           <StyledNotFound>
             <span>{t('Find 0 result')}</span>
-            <NoResultSVG />
+            <Image
+              src="/imgs/no-result.svg"
+              alt="no result"
+              width={200}
+              height={200}
+            />
           </StyledNotFound>
         )
       ) : (

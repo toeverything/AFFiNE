@@ -38,7 +38,10 @@ const createToastContainer = (portal?: HTMLElement) => {
     flex-direction: column-reverse;
     align-items: center;
   `;
-  const template = html`<div style="${styles}"></div>`;
+  const template = html`<div
+    style="${styles}"
+    data-testid="affine-toast-container"
+  ></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
   portal.appendChild(element);
   return element;
@@ -80,7 +83,10 @@ export const toast = (
     opacity: 0;
   `;
 
-  const template = html`<div style="${styles}"></div>`;
+  const template = html`<div
+    style="${styles}"
+    data-testid="affine-toast"
+  ></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
   // message is not trusted
   element.textContent = message;
@@ -97,9 +103,12 @@ export const toast = (
     easing: 'cubic-bezier(0.21, 1.02, 0.73, 1)',
     fill: 'forwards' as const,
   }; // satisfies KeyframeAnimationOptions;
-  element.animate(fadeIn, options);
+  // FIXME: Vitest not support element.animate,
+  //  can try it in `apps/web/src/components/__tests__/PinBoard.spec.tsx` `delete pivot`
+  typeof element.animate === 'function' && element.animate(fadeIn, options);
 
   setTimeout(async () => {
+    if (typeof element.animate !== 'function') return;
     const fadeOut = fadeIn.reverse();
     const animation = element.animate(fadeOut, options);
     await animation.finished;

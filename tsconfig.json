@@ -40,9 +40,6 @@
       "path": "./apps/web"
     },
     {
-      "path": "./apps/desktop"
-    },
-    {
       "path": "./packages/component"
     },
     {

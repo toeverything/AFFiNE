@@ -1,19 +1,19 @@
 import { Button, FlexWrapper, MuiFade } from '@affine/component';
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import type React from 'react';
 import { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../../../../hooks/use-blocksuite-workspace-avatar-url';
 import { Upload } from '../../../../pure/file-upload';
 import {
   CloudWorkspaceIcon,
   JoinedWorkspaceIcon,
   LocalWorkspaceIcon,
 } from '../../../../pure/icons';
-import { WorkspaceAvatar } from '../../../../pure/workspace-avatar';
 import type { PanelProps } from '../../index';
 import { StyledRow, StyledSettingKey } from '../../style';
 import { WorkspaceDeleteModal } from './delete';

@@ -8,7 +8,10 @@ import type {
 } from '@affine/workspace/type';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import { IndexeddbPersistence } from 'y-indexeddb';
+import {
+  createIndexedDBProvider as create,
+  EarlyDisconnectError,
+} from '@toeverything/y-indexeddb';
 
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 import { localProviderLogger } from './logger';
@@ -57,7 +60,10 @@ const createAffineWebSocketProvider = (
 const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBProvider => {
-  let indexeddbProvider: IndexeddbPersistence | null = null;
+  const indexeddbProvider = create(
+    blockSuiteWorkspace.id,
+    blockSuiteWorkspace.doc
+  );
   const callbacks = new Set<() => void>();
   return {
     flavour: 'local-indexeddb',
@@ -65,23 +71,25 @@ const createIndexedDBProvider = (
     // fixme: remove background long polling
     background: true,
     cleanup: () => {
-      assertExists(indexeddbProvider);
-      indexeddbProvider.clearData();
-      callbacks.clear();
-      indexeddbProvider = null;
+      // todo: cleanup data
     },
     connect: () => {
       localProviderLogger.info(
         'connect indexeddb provider',
         blockSuiteWorkspace.id
       );
-      indexeddbProvider = new IndexeddbPersistence(
-        blockSuiteWorkspace.id,
-        blockSuiteWorkspace.doc
-      );
-      indexeddbProvider.whenSynced.then(() => {
-        callbacks.forEach(cb => cb());
-      });
+      indexeddbProvider.connect();
+      indexeddbProvider.whenSynced
+        .then(() => {
+          callbacks.forEach(cb => cb());
+        })
+        .catch(error => {
+          if (error instanceof EarlyDisconnectError) {
+            return;
+          } else {
+            throw error;
+          }
+        });
     },
     disconnect: () => {
       assertExists(indexeddbProvider);
@@ -89,8 +97,7 @@ const createIndexedDBProvider = (
         'disconnect indexeddb provider',
         blockSuiteWorkspace.id
       );
-      indexeddbProvider.destroy();
-      indexeddbProvider = null;
+      indexeddbProvider.disconnect();
     },
   };
 };

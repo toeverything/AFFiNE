@@ -1,5 +1,6 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
 import { SearchIcon } from '@blocksuite/icons';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
@@ -16,7 +17,6 @@ import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { StyledTableContainer } from '../../components/blocksuite/block-suite-page-list/page-list/styles';
 import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../hooks/use-blocksuite-workspace-avatar-url';
 import { PublicWorkspaceLayout } from '../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';

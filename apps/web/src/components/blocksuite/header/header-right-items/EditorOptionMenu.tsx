@@ -11,6 +11,7 @@ import {
 import { assertExists } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
 import { useAtom } from 'jotai';
+import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
@@ -45,6 +46,7 @@ export const EditorOptionMenu = () => {
   assertExists(pageMeta);
   const { favorite } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const [openConfirm, setOpenConfirm] = useState(false);
 
   const EditMenu = (
     <>
@@ -87,8 +89,9 @@ export const EditorOptionMenu = () => {
       />
       <MoveToTrash
         testId="editor-option-menu-delete"
-        currentMeta={pageMeta}
-        blockSuiteWorkspace={blockSuiteWorkspace}
+        onItemClick={() => {
+          setOpenConfirm(true);
+        }}
       />
     </>
   );
@@ -107,6 +110,20 @@ export const EditorOptionMenu = () => {
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
+        <MoveToTrash.ConfirmModal
+          open={openConfirm}
+          meta={pageMeta}
+          onConfirm={() => {
+            toast(t('Moved to Trash'));
+            setPageMeta(pageMeta.id, {
+              trash: true,
+              trashDate: +new Date(),
+            });
+          }}
+          onCancel={() => {
+            setOpenConfirm(false);
+          }}
+        />
       </FlexWrapper>
     </>
   );
