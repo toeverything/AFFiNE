@@ -4,10 +4,12 @@ import {
   ModalWrapper,
   Tooltip,
 } from '@affine/component';
-import { WorkspaceCard } from '@affine/component/workspace-card';
+import { WorkspaceList } from '@affine/component/workspace-list';
 import { useTranslation } from '@affine/i18n';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { HelpIcon, PlusIcon } from '@blocksuite/icons';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { useCallback } from 'react';
 
 import type { AllWorkspace } from '../../../shared';
 import { Footer } from '../footer';
@@ -37,6 +39,7 @@ interface WorkspaceModalProps {
   onClickLogin: () => void;
   onClickLogout: () => void;
   onCreateWorkspace: () => void;
+  onMoveWorkspace: (activeId: string, overId: string) => void;
 }
 
 export const WorkspaceListModal = ({
@@ -50,6 +53,7 @@ export const WorkspaceListModal = ({
   onClickWorkspaceSetting,
   onCreateWorkspace,
   currentWorkspaceId,
+  onMoveWorkspace,
 }: WorkspaceModalProps) => {
   const { t } = useTranslation();
 
@@ -91,18 +95,21 @@ export const WorkspaceListModal = ({
         </StyledModalHeader>
 
         <StyledModalContent>
-          {workspaces.map(workspace => {
-            return (
-              <WorkspaceCard
-                workspace={workspace}
-                currentWorkspaceId={currentWorkspaceId}
-                onClick={onClickWorkspace}
-                onSettingClick={onClickWorkspaceSetting}
-                key={workspace.id}
-              />
-            );
-          })}
-
+          <WorkspaceList
+            items={workspaces}
+            currentWorkspaceId={currentWorkspaceId}
+            onClick={onClickWorkspace}
+            onSettingClick={onClickWorkspaceSetting}
+            onDragEnd={useCallback(
+              (event: DragEndEvent) => {
+                const { active, over } = event;
+                if (active.id !== over?.id) {
+                  onMoveWorkspace(active.id as string, over?.id as string);
+                }
+              },
+              [onMoveWorkspace]
+            )}
+          />
           <StyledCreateWorkspaceCard
             data-testid="new-workspace"
             onClick={onCreateWorkspace}
