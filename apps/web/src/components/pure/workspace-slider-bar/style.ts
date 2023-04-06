@@ -34,7 +34,7 @@ export const StyledSliderBar = styled('div')(({ theme }) => {
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden',
+    // overflow: 'hidden',
   };
 });
 export const StyledSidebarSwitchWrapper = styled('div')(() => {
@@ -52,8 +52,8 @@ export const StyledSidebarSwitchWrapper = styled('div')(() => {
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
   return {
     flexGrow: 1,
-    overflowX: 'hidden',
-    overflowY: 'auto',
+    // overflowX: 'hidden',
+    // overflowY: 'auto',
     position: 'relative',
   };
 });

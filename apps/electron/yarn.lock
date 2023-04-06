@@ -40,7 +40,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230406032111-01cf598b-nightly
     "@blocksuite/editor": 0.0.0-20230406032111-01cf598b-nightly
     "@blocksuite/global": 0.0.0-20230406032111-01cf598b-nightly
-    "@blocksuite/icons": 2.1.4
+    "@blocksuite/icons": 2.1.5
     "@blocksuite/store": 0.0.0-20230406032111-01cf598b-nightly
     "@emotion/cache": ^11.10.7
     "@emotion/react": ^11.10.6
@@ -1754,13 +1754,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.4":
-  version: 2.1.4
-  resolution: "@blocksuite/icons@npm:2.1.4"
+"@blocksuite/icons@npm:2.1.5":
+  version: 2.1.5
+  resolution: "@blocksuite/icons@npm:2.1.5"
   peerDependencies:
     "@types/react": ^18.0.25
     react: ^18.2.0
-  checksum: 0eff10845afa389fb23ce73838ee0697eaa2af60313e4ee0c139ee14a9bf103a92057c6af6c3eccb40636751d1fb94aa872533cb41f6e25fed4c3ecc530c28bc
+  checksum: 8452d3f6d6375e597840b240a492f1e414e69f8d7ed677c17ded6409f5a273dfc36509b264e78bdb67d1938cb666575dd5c354d4df189e557b588709a68e019f
   languageName: node
   linkType: hard
 
