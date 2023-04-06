@@ -31,10 +31,12 @@ const revalidate = async () => {
   return true;
 };
 
-export function useAffineRefreshAuthToken() {
+export function useAffineRefreshAuthToken(
+  // every 30 seconds, check if the token is expired
+  refreshInterval = 30 * 1000
+) {
   useSWR('autoRefreshToken', {
     fetcher: revalidate,
-    // every 30 seconds, check if the token is expired
-    refreshInterval: 30 * 1000, // 30 seconds
+    refreshInterval,
   });
 }

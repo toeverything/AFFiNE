@@ -24,7 +24,7 @@ import { PageDetailEditor } from '../../components/page-detail-editor';
 import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh-auth-token';
 import { AffineSWRConfigProvider } from '../../providers/AffineSWRConfigProvider';
 import { BlockSuiteWorkspace } from '../../shared';
-import { affineApis } from '../../shared/apis';
+import { affineApis, prefixUrl } from '../../shared/apis';
 import { initPage, toast } from '../../utils';
 import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
@@ -66,7 +66,7 @@ const getPersistenceAllWorkspace = () => {
   return allWorkspaces;
 };
 
-export const affineAuth = createAffineAuth();
+export const affineAuth = createAffineAuth(prefixUrl);
 
 export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
   flavour: WorkspaceFlavour.AFFINE,
