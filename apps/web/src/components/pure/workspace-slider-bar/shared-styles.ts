@@ -1,4 +1,10 @@
-import { alpha, displayFlex, styled, textEllipsis } from '@affine/component';
+import {
+  alpha,
+  displayFlex,
+  keyframes,
+  styled,
+  textEllipsis,
+} from '@affine/component';
 
 export const StyledListItem = styled('div')<{
   active?: boolean;
@@ -98,5 +104,72 @@ export const StyledCollapseItem = styled('div')<{
             visibility: 'visible',
           },
         },
+  };
+});
+
+const slideIn = keyframes({
+  '0%': {
+    height: '0px',
+  },
+  '50%': {
+    height: '36px',
+  },
+  '100%': {
+    height: '32px',
+  },
+});
+const slideIn2 = keyframes({
+  '0%': {
+    transform: 'translateX(100%)',
+  },
+  '50%': {
+    transform: 'translateX(100%)',
+  },
+  '80%': {
+    transform: 'translateX(-10%)',
+  },
+  '100%': {
+    transform: 'translateX(0%)',
+  },
+});
+
+export const StyledChangeLog = styled('div')(({ theme }) => {
+  return {
+    width: '110%',
+    height: '32px',
+    ...displayFlex('flex-start', 'center'),
+    color: theme.colors.primaryColor,
+    backgroundColor: theme.colors.hoverBackground,
+    border: `1px solid ${theme.colors.primaryColor}`,
+    borderRight: 'none',
+    padding: '0 0 0 16px',
+    borderRadius: '16px 0 0 16px',
+    cursor: 'pointer',
+    zIndex: 1001,
+    position: 'absolute',
+    userSelect: 'none',
+    transition: 'all 0.3s',
+    animation: `${slideIn2} 1s ease-in-out forwards `,
+    '> svg, a > svg': {
+      fontSize: '20px',
+      marginRight: '12px',
+      color: theme.colors.primaryColor,
+    },
+    button: {
+      marginRight: '10%',
+    },
+  };
+});
+export const StyledChangeLogWarper = styled('div')(({ theme }) => {
+  return {
+    width: 'calc(100% + 4px)',
+    height: '0px',
+    animation: `${slideIn} .5s ease-in-out forwards`,
+    ...displayFlex('flex-start', 'center'),
+    marginBottom: '4px',
+    position: 'relative',
+    userSelect: 'none',
+    transition: 'all 0.3s',
+    overflow: 'hidden',
   };
 });

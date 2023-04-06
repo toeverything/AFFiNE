@@ -15,9 +15,9 @@ export const StyledSliderBarWrapper = styled('div')<{
       userSelect: 'none',
     },
     zIndex: theme.zIndex.modal,
-    transition: resizing ? '' : 'transform .3s',
+    transition: resizing ? '' : 'transform .3s, width .3s, max-width .3s',
     transform: show ? 'translateX(0)' : 'translateX(-100%)',
-    maxWidth: floating ? undefined : 'calc(100vw - 698px)',
+    maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
     background:
       !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
     borderRight: macosElectron ? '' : '1px solid',
@@ -34,7 +34,7 @@ export const StyledSliderBar = styled('div')(({ theme }) => {
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden',
+    // overflow: 'hidden',
   };
 });
 export const StyledSidebarSwitchWrapper = styled('div')(() => {
@@ -52,8 +52,8 @@ export const StyledSidebarSwitchWrapper = styled('div')(() => {
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
   return {
     flexGrow: 1,
-    overflowX: 'hidden',
-    overflowY: 'auto',
+    // overflowX: 'hidden',
+    // overflowY: 'auto',
     position: 'relative',
   };
 });
@@ -105,3 +105,46 @@ export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
     };
   }
 );
+export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
+  () => {
+    return {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: '12px',
+      transform: 'translateX(50%)',
+      cursor: 'col-resize',
+      zIndex: 1,
+      userSelect: 'none',
+      ':hover > *': {
+        background: 'rgba(0, 0, 0, 0.1)',
+      },
+    };
+  }
+);
+export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
+  ({ isResizing }) => {
+    return {
+      transition: 'background .15s .1s',
+      position: 'absolute',
+      top: 0,
+      right: '50%',
+      bottom: 0,
+      transform: 'translateX(0.5px)',
+      width: '2px',
+      background: isResizing ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
+    };
+  }
+);
+
+export const StyledScrollWrapper = styled('div')<{
+  showTopBorder: boolean;
+}>(({ showTopBorder, theme }) => {
+  return {
+    maxHeight: '360px',
+    overflowY: 'auto',
+    borderTop: '1px solid',
+    borderColor: showTopBorder ? theme.colors.borderColor : 'transparent',
+  };
+});

@@ -1,3 +1,4 @@
+import type { TreeViewProps } from '@affine/component';
 import { MuiCollapse, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { ArrowDownSmallIcon, PivotsIcon } from '@blocksuite/icons';
@@ -5,48 +6,32 @@ import type { MouseEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
-import { usePivotData } from '../hooks/usePivotData';
-import { usePivotHandler } from '../hooks/usePivotHandler';
-import { PivotRender } from '../PivotRender';
+import { toast } from '../../../../utils';
 import { StyledCollapsedButton, StyledPivot } from '../styles';
+import type { NodeRenderProps } from '../types';
 import EmptyItem from './EmptyItem';
 import type { PivotsMenuProps } from './PivotsMenu';
 
+export type PivotsProps = {
+  data: TreeViewProps<NodeRenderProps>['data'];
+} & Pick<PivotsMenuProps, 'blockSuiteWorkspace' | 'currentMeta'>;
 export const Pivots = ({
-  metas,
+  data,
   blockSuiteWorkspace,
   currentMeta,
-}: Pick<PivotsMenuProps, 'metas' | 'blockSuiteWorkspace' | 'currentMeta'>) => {
+}: PivotsProps) => {
   const { t } = useTranslation();
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [showPivot, setShowPivot] = useState(true);
-  const { handleDrop } = usePivotHandler({
-    blockSuiteWorkspace,
-    metas,
-  });
-  const { data } = usePivotData({
-    metas,
-    pivotRender: PivotRender,
-    blockSuiteWorkspace,
-    onClick: (e, node) => {
-      handleDrop(currentMeta.id, node.id, {
-        bottomLine: false,
-        topLine: false,
-        internal: true,
-      });
-    },
-  });
-
-  const isPivotEmpty = useMemo(
-    () => metas.filter(meta => !meta.trash).length === 0,
-    [metas]
-  );
-
+  const isPivotEmpty = useMemo(() => data.length === 0, [data]);
   return (
     <>
       <StyledPivot
+        data-testid="root-pivot-button-in-pivots-menu"
+        id="root-pivot-button-in-pivots-menu"
         onClick={() => {
           setPageMeta(currentMeta.id, { isPivots: true });
+          toast(`Moved "${currentMeta.title}" to Pivots`);
         }}
       >
         <StyledCollapsedButton

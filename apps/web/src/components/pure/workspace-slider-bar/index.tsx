@@ -9,7 +9,7 @@ import {
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   useSidebarFloating,
@@ -27,6 +27,7 @@ import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
   StyledNewPageButton,
+  StyledScrollWrapper,
   StyledSidebarSwitchWrapper,
   StyledSliderBar,
   StyledSliderBarInnerWrapper,
@@ -71,9 +72,10 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   onOpenWorkspaceListModal,
 }) => {
   const currentWorkspaceId = currentWorkspace?.id || null;
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
-  const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
+  const pageMeta = usePageMeta(blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
     const page = await createPage();
     openPage(page.id);
@@ -81,11 +83,24 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const floatingSlider = useSidebarFloating();
   const [sliderWidth] = useSidebarWidth();
   const [isResizing] = useSidebarResizing();
+  const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const show = isPublicWorkspace ? false : sidebarOpen;
   const actualWidth = floatingSlider ? 'calc(10vw + 400px)' : sliderWidth;
   useEffect(() => {
     window.apis?.onSidebarVisibilityChange(sidebarOpen);
   }, [sidebarOpen]);
+
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if ((e.key === '/' && e.metaKey) || (e.key === '/' && e.ctrlKey)) {
+        setSidebarOpen(!sidebarOpen);
+      }
+    };
+    document.addEventListener('keydown', keydown, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', keydown, { capture: true });
+  }, [sidebarOpen, setSidebarOpen]);
+
   return (
     <>
       <StyledSliderBarWrapper
@@ -157,20 +172,29 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               </StyledLink>
             </StyledListItem>
 
-            <Favorite
-              currentPath={currentPath}
-              paths={paths}
-              currentPageId={currentPageId}
-              openPage={openPage}
-              currentWorkspace={currentWorkspace}
-            />
-            {config.enableSubpage && !!currentWorkspace && (
-              <Pivots
-                currentWorkspace={currentWorkspace}
+            <StyledScrollWrapper
+              showTopBorder={!isScrollAtTop}
+              onScroll={e => {
+                (e.target as HTMLDivElement).scrollTop === 0
+                  ? setIsScrollAtTop(true)
+                  : setIsScrollAtTop(false);
+              }}
+            >
+              <Favorite
+                currentPath={currentPath}
+                paths={paths}
+                currentPageId={currentPageId}
                 openPage={openPage}
-                allMetas={pageMeta}
+                currentWorkspace={currentWorkspace}
               />
-            )}
+              {!!blockSuiteWorkspace && (
+                <Pivots
+                  blockSuiteWorkspace={blockSuiteWorkspace}
+                  openPage={openPage}
+                  allMetas={pageMeta}
+                />
+              )}
+            </StyledScrollWrapper>
 
             <StyledListItem
               active={

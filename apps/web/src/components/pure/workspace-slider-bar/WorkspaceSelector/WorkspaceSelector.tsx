@@ -1,10 +1,11 @@
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import type React from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type { AllWorkspace } from '../../../../shared';
-import { WorkspaceAvatar } from '../../workspace-avatar';
+import { workspaceAvatarStyle } from './index.css';
 import {
   StyledSelectorContainer,
   StyledSelectorWrapper,
@@ -29,9 +30,7 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
     <StyledSelectorContainer onClick={onClick} data-testid="current-workspace">
       <WorkspaceAvatar
         data-testid="workspace-avatar"
-        style={{
-          flexShrink: 0,
-        }}
+        className={workspaceAvatarStyle}
         size={40}
         workspace={currentWorkspace}
       />

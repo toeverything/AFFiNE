@@ -28,12 +28,13 @@ test.describe('affine built in workspace', () => {
     await clickNewPageButton(page);
     const url = page.url();
     await page2.goto(url);
-    await page.type('.affine-default-page-block-title-container', 'hello', {
-      delay: 50,
+    await page.focus('.affine-default-page-block-title');
+    await page.type('.affine-default-page-block-title', 'hello', {
+      delay: 100,
     });
     await page.waitForTimeout(100);
     const title = (await page
-      .locator('.affine-default-page-block-title-container')
+      .locator('.affine-default-page-block-title')
       .textContent()) as string;
     expect(title.trim()).toBe('hello');
   });
