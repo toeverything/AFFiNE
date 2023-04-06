@@ -196,7 +196,6 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
     ws: ^8.13.0
-    y-indexeddb: ^9.0.10
     y-protocols: ^1.0.5
     yjs: ^13.5.52
     zod: ^3.21.4
@@ -12007,7 +12006,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lib0@npm:^0.2.35, lib0@npm:^0.2.42, lib0@npm:^0.2.68, lib0@npm:^0.2.72, lib0@npm:^0.2.73":
+"lib0@npm:^0.2.42, lib0@npm:^0.2.68, lib0@npm:^0.2.72, lib0@npm:^0.2.73":
   version: 0.2.73
   resolution: "lib0@npm:0.2.73"
   dependencies:
@@ -17042,17 +17041,6 @@ __metadata:
   dependencies:
     object-keys: ~0.4.0
   checksum: a8b79f31502c163205984eaa2b196051cd2fab0882b49758e30f2f9018255bc6c462e32a090bf3385d1bda04755ad8cc0052a09e049b0038f49eb9b950d9c447
-  languageName: node
-  linkType: hard
-
-"y-indexeddb@npm:^9.0.10":
-  version: 9.0.10
-  resolution: "y-indexeddb@npm:9.0.10"
-  dependencies:
-    lib0: ^0.2.35
-  peerDependencies:
-    yjs: ^13.0.0
-  checksum: 6a57825b599cdf77da7c9857b1acc0f782492fc41531618bd7392bdfbcf11c783ff1a30b82ae080b050a5ebafd54754a978de7a6ac42144ec59eb1fbdebd090b
   languageName: node
   linkType: hard
 
