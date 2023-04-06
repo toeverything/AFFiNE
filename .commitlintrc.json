@@ -1,0 +1,25 @@
+{
+  "extends": ["@commitlint/config-conventional"],
+  "rules": {
+    "scope-enum": [
+      2,
+      "always",
+      [
+        "electron",
+        "web",
+        "docs",
+        "component",
+        "workspace",
+        "env",
+        "cli",
+        "hooks",
+        "i18n",
+        "jotai",
+        "octobase-node",
+        "templates",
+        "y-indexeddb",
+        "debug"
+      ]
+    ]
+  }
+}
