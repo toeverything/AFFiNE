@@ -7,7 +7,7 @@ import {
 } from '@affine/workspace/affine/login';
 import useSWR from 'swr';
 
-import { affineAuth } from './use-affine-log-in';
+import { affineAuth } from '../../plugins/affine';
 
 const logger = new DebugLogger('auth-token');
 

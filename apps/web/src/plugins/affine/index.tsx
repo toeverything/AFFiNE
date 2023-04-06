@@ -1,4 +1,13 @@
-import { getLoginStorage } from '@affine/workspace/affine/login';
+import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
+import {
+  clearLoginStorage,
+  createAffineAuth,
+  getLoginStorage,
+  parseIdToken,
+  setLoginStorage,
+  SignMethod,
+} from '@affine/workspace/affine/login';
+import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { AffineWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -15,7 +24,7 @@ import { PageDetailEditor } from '../../components/page-detail-editor';
 import { AffineSWRConfigProvider } from '../../providers/AffineSWRConfigProvider';
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
-import { initPage } from '../../utils';
+import { initPage, toast } from '../../utils';
 import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
 
@@ -56,11 +65,32 @@ const getPersistenceAllWorkspace = () => {
   return allWorkspaces;
 };
 
+export const affineAuth = createAffineAuth();
+
 export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
   flavour: WorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
-  cleanup: () => {
-    storage.removeItem(kAffineLocal);
+  Events: {
+    'workspace:access': async () => {
+      const response = await affineAuth.generateToken(SignMethod.Google);
+      if (response) {
+        setLoginStorage(response);
+        const user = parseIdToken(response.token);
+        jotaiStore.set(currentAffineUserAtom, user);
+      } else {
+        toast('Login failed');
+      }
+    },
+    'workspace:revoke': async () => {
+      jotaiStore.set(jotaiWorkspacesAtom, workspaces =>
+        workspaces.filter(
+          workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
+        )
+      );
+      storage.removeItem(kAffineLocal);
+      clearLoginStorage();
+      jotaiStore.set(currentAffineUserAtom, null);
+    },
   },
   CRUD: {
     create: async blockSuiteWorkspace => {
