@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
@@ -122,6 +122,8 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       setUpLanguage(i18n);
     }, [i18n]);
     useCreateFirstWorkspace();
+    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
+    const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
     const set = useSetAtom(jotaiWorkspacesAtom);
     useEffect(() => {
       logger.info('mount');
@@ -131,10 +133,19 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         .map(({ CRUD }) => CRUD.list);
 
       async function fetch() {
+        const jotaiWorkspaces = jotaiStore.get(jotaiWorkspacesAtom);
         const items = [];
         for (const list of lists) {
           try {
             const item = await list();
+            if (jotaiWorkspaces.length) {
+              item.sort((a, b) => {
+                return (
+                  jotaiWorkspaces.findIndex(x => x.id === a.id) -
+                  jotaiWorkspaces.findIndex(x => x.id === b.id)
+                );
+              });
+            }
             items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
           } catch (e) {
             logger.error('list data error:', e);
@@ -153,8 +164,6 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         logger.info('unmount');
       };
     }, [set]);
-    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-    const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
 
     useEffect(() => {
       const flavour = jotaiWorkspaces.find(
