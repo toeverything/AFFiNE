@@ -26,7 +26,7 @@ export type WorkspaceSettingDetailProps = {
   workspace: AffineOfficialWorkspace;
   currentTab: SettingPanel;
   onChangeTab: (tab: SettingPanel) => void;
-  onDeleteWorkspace: () => void;
+  onDeleteWorkspace: () => Promise<void>;
   onTransferWorkspace: <
     From extends WorkspaceFlavour,
     To extends WorkspaceFlavour
