@@ -1,4 +1,5 @@
 import type {
+  AppEvents,
   LoadPriority,
   WorkspaceCRUD,
   WorkspaceUISchema,
@@ -12,8 +13,7 @@ export interface WorkspacePlugin<Flavour extends WorkspaceFlavour> {
   flavour: Flavour;
   // Plugin will be loaded according to the priority
   loadPriority: LoadPriority;
-  // fixme: this is a hack
-  cleanup?: () => void;
+  Events: Partial<AppEvents>;
   // Fetch necessary data for the first render
   CRUD: WorkspaceCRUD<Flavour>;
   UI: WorkspaceUISchema<Flavour>;
