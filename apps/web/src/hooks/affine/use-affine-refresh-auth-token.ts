@@ -20,6 +20,7 @@ const revalidate = async () => {
       logger.debug('need to refresh token');
       const response = await affineAuth.refreshToken(storage);
       if (response) {
+        // todo: need to notify the app that the token has been refreshed
         setLoginStorage(response);
       }
     }
@@ -30,5 +31,7 @@ const revalidate = async () => {
 export function useAffineRefreshAuthToken() {
   useSWR('autoRefreshToken', {
     fetcher: revalidate,
+    // every 30 seconds, check if the token is expired
+    refreshInterval: 30 * 1000, // 30 seconds
   });
 }

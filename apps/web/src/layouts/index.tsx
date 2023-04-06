@@ -25,7 +25,6 @@ import {
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
-import { useAffineRefreshAuthToken } from '../hooks/affine/use-affine-refresh-auth-token';
 import {
   useSidebarFloating,
   useSidebarResizing,
@@ -187,11 +186,6 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     );
   };
 
-function AffineWorkspaceEffect() {
-  useAffineRefreshAuthToken();
-  return null;
-}
-
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
@@ -348,7 +342,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         </StyledSpacer>
         <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
-            <AffineWorkspaceEffect />
             {children}
             <StyledToolWrapper>
               {/* fixme(himself65): remove this */}

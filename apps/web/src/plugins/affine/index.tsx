@@ -21,6 +21,7 @@ import { PageNotFoundError } from '../../components/affine/affine-error-eoundary
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
+import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh-auth-token';
 import { AffineSWRConfigProvider } from '../../providers/AffineSWRConfigProvider';
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
@@ -231,6 +232,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
   },
   UI: {
     Provider: ({ children }) => {
+      useAffineRefreshAuthToken();
       return <AffineSWRConfigProvider>{children}</AffineSWRConfigProvider>;
     },
     PageDetail: ({ currentWorkspace, currentPageId }) => {
