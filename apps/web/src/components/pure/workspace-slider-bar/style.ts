@@ -105,3 +105,46 @@ export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
     };
   }
 );
+export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
+  () => {
+    return {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: '12px',
+      transform: 'translateX(50%)',
+      cursor: 'col-resize',
+      zIndex: 1,
+      userSelect: 'none',
+      ':hover > *': {
+        background: 'rgba(0, 0, 0, 0.1)',
+      },
+    };
+  }
+);
+export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
+  ({ isResizing }) => {
+    return {
+      transition: 'background .15s .1s',
+      position: 'absolute',
+      top: 0,
+      right: '50%',
+      bottom: 0,
+      transform: 'translateX(0.5px)',
+      width: '2px',
+      background: isResizing ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
+    };
+  }
+);
+
+export const StyledScrollWrapper = styled('div')<{
+  showTopBorder: boolean;
+}>(({ showTopBorder, theme }) => {
+  return {
+    maxHeight: '360px',
+    overflowY: 'auto',
+    borderTop: '1px solid',
+    borderColor: showTopBorder ? theme.colors.borderColor : 'transparent',
+  };
+});
