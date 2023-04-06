@@ -1,5 +1,5 @@
 import type { PureMenuProps } from '@affine/component';
-import { Input, PureMenu } from '@affine/component';
+import { Input, PureMenu, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
@@ -18,7 +18,6 @@ import {
   StyledPivot,
   StyledSearchContainer,
 } from '../styles';
-import { Pivots } from './Pivots';
 import { SearchContent } from './SearchContent';
 
 export type PivotsMenuProps = {
@@ -104,11 +103,7 @@ export const PivotsMenu = ({
         {!isSearching && (
           <>
             <StyledMenuSubTitle>Suggested</StyledMenuSubTitle>
-            <Pivots
-              data={data}
-              blockSuiteWorkspace={blockSuiteWorkspace}
-              currentMeta={currentMeta}
-            />
+            <TreeView data={data} indent={16} enableDnd={false} />
           </>
         )}
       </StyledMenuContent>

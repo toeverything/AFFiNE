@@ -18,6 +18,7 @@ import { PivotsMenu } from '../PivotsMenu/PivotsMenu';
 import { StyledOperationButton } from '../styles';
 
 export type OperationButtonProps = {
+  isRoot: boolean;
   onAdd: () => void;
   onDelete: () => void;
   metas: PageMeta[];
@@ -28,6 +29,7 @@ export type OperationButtonProps = {
   onMenuClose?: () => void;
 };
 export const OperationButton = ({
+  isRoot,
   onAdd,
   onDelete,
   metas,
@@ -96,35 +98,41 @@ export const OperationButton = ({
           >
             {t('Add a subpage inside')}
           </MenuItem>
-          <MenuItem
-            data-testid="pivot-operation-move-to"
-            onClick={() => {
-              setOperationMenuOpen(false);
-              setPivotsMenuOpen(true);
-            }}
-            icon={<MoveToIcon />}
-          >
-            {t('Move to')}
-          </MenuItem>
-          <MenuItem
-            data-testid="pivot-operation-rename"
-            onClick={() => {
-              onRename?.();
-              setOperationMenuOpen(false);
-              onMenuClose?.();
-            }}
-            icon={<PenIcon />}
-          >
-            {t('Rename')}
-          </MenuItem>
-          <MoveToTrash
-            testId="pivot-operation-move-to-trash"
-            onItemClick={() => {
-              setOperationMenuOpen(false);
-              setConfirmModalOpen(true);
-              onMenuClose?.();
-            }}
-          />
+          {!isRoot && (
+            <MenuItem
+              data-testid="pivot-operation-move-to"
+              onClick={() => {
+                setOperationMenuOpen(false);
+                setPivotsMenuOpen(true);
+              }}
+              icon={<MoveToIcon />}
+            >
+              {t('Move to')}
+            </MenuItem>
+          )}
+          {!isRoot && (
+            <MenuItem
+              data-testid="pivot-operation-rename"
+              onClick={() => {
+                onRename?.();
+                setOperationMenuOpen(false);
+                onMenuClose?.();
+              }}
+              icon={<PenIcon />}
+            >
+              {t('Rename')}
+            </MenuItem>
+          )}
+          {!isRoot && (
+            <MoveToTrash
+              testId="pivot-operation-move-to-trash"
+              onItemClick={() => {
+                setOperationMenuOpen(false);
+                setConfirmModalOpen(true);
+                onMenuClose?.();
+              }}
+            />
+          )}
           <CopyLink />
         </PureMenu>
 

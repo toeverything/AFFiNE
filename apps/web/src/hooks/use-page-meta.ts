@@ -15,6 +15,7 @@ declare module '@blocksuite/store' {
     init?: boolean;
     // use for subpage
     isPivots?: boolean;
+    isRootPinboard?: boolean;
   }
 }
 
@@ -44,10 +45,13 @@ export function usePageMeta(
   return pageMeta;
 }
 
-export function usePageMetaHelper(blockSuiteWorkspace: BlockSuiteWorkspace) {
+export function usePageMetaHelper(
+  blockSuiteWorkspace: BlockSuiteWorkspace | null
+) {
   return useMemo(
     () => ({
       setPageTitle: (pageId: string, newTitle: string) => {
+        assertExists(blockSuiteWorkspace);
         const page = blockSuiteWorkspace.getPage(pageId);
         assertExists(page);
         const pageBlock = page
@@ -58,15 +62,19 @@ export function usePageMetaHelper(blockSuiteWorkspace: BlockSuiteWorkspace) {
           pageBlock.title.delete(0, pageBlock.title.length);
           pageBlock.title.insert(newTitle, 0);
         });
+        assertExists(blockSuiteWorkspace);
         blockSuiteWorkspace.meta.setPageMeta(pageId, { title: newTitle });
       },
       setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
+        assertExists(blockSuiteWorkspace);
         blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);
       },
       getPageMeta: (pageId: string) => {
+        assertExists(blockSuiteWorkspace);
         return blockSuiteWorkspace.meta.getPageMeta(pageId);
       },
       shiftPageMeta: (pageId: string, index: number) => {
+        assertExists(blockSuiteWorkspace);
         return blockSuiteWorkspace.meta.shiftPageMeta(pageId, index);
       },
     }),
