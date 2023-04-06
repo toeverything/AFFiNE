@@ -142,7 +142,7 @@ jobs:
       - name: Run storybook tests
         working-directory: ./packages/component
         run: |
-          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn test-storybook --coverage"
+          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test-storybook --coverage"
       - name: Upload storybook test coverage results
         uses: codecov/codecov-action@v3
         with:
