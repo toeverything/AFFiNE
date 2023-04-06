@@ -308,6 +308,8 @@ describe('api', () => {
       id,
       public: true,
     });
+    let originalPage0Json: any = null;
+    let originalPage1Json: any = null;
     {
       const binary = await workspaceApis.downloadWorkspace(id, false);
       const workspace = new Workspace({
@@ -316,8 +318,12 @@ describe('api', () => {
         .register(AffineSchemas)
         .register(__unstableSchemas);
       applyUpdate(workspace.doc, new Uint8Array(binary));
-      expect(workspace.getPage('page0')).not.toBeUndefined();
-      expect(workspace.getPage('page1')).not.toBeUndefined();
+      const page0 = workspace.getPage('page0') as Page;
+      const page1 = workspace.getPage('page1') as Page;
+      expect(page0).not.toBeUndefined();
+      expect(page1).not.toBeUndefined();
+      originalPage0Json = workspace.doc.share.get(page0.prefixedId)?.toJSON();
+      originalPage1Json = workspace.doc.share.get(page1.prefixedId)?.toJSON();
     }
     {
       const workspace = new Workspace({
@@ -330,8 +336,12 @@ describe('api', () => {
         'page0'
       );
       applyUpdate(workspace.doc, new Uint8Array(binary));
-      expect(workspace.getPage('page0')).not.toBeNull();
+      const page0 = workspace.getPage('page0') as Page;
+      expect(page0).not.toBeNull();
       expect(workspace.getPage('page1')).toBeNull();
+      expect(workspace.doc.share.get(page0.prefixedId)?.toJSON()).toEqual(
+        originalPage0Json
+      );
     }
     {
       const workspace = new Workspace({
@@ -344,8 +354,12 @@ describe('api', () => {
         'page1'
       );
       applyUpdate(workspace.doc, new Uint8Array(binary));
+      const page1 = workspace.getPage('page1') as Page;
       expect(workspace.getPage('page0')).toBeNull();
-      expect(workspace.getPage('page1')).not.toBeNull();
+      expect(page1).not.toBeNull();
+      expect(workspace.doc.share.get(page1.prefixedId)?.toJSON()).toEqual(
+        originalPage1Json
+      );
     }
   });
 
