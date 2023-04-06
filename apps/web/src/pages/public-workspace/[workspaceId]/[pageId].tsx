@@ -10,8 +10,9 @@ import type React from 'react';
 import { Suspense, useEffect } from 'react';
 
 import {
-  publicBlockSuiteAtom,
+  publicPageBlockSuiteAtom,
   publicWorkspaceIdAtom,
+  publicWorkspacePageIdAtom,
 } from '../../../atoms/public-workspace';
 import { QueryParamError } from '../../../components/affine/affine-error-eoundary';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
@@ -51,7 +52,7 @@ export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
 const PublicWorkspaceDetailPageInner: React.FC<{
   pageId: string;
 }> = ({ pageId }) => {
-  const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
+  const blockSuiteWorkspace = useAtomValue(publicPageBlockSuiteAtom);
   if (!blockSuiteWorkspace) {
     throw new Error('cannot find workspace');
   }
@@ -101,6 +102,7 @@ export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
   const workspaceId = router.query.workspaceId;
   const pageId = router.query.pageId;
   const setWorkspaceId = useSetAtom(publicWorkspaceIdAtom);
+  const setPageId = useSetAtom(publicWorkspacePageIdAtom);
   useEffect(() => {
     if (!router.isReady) {
       return;
@@ -108,7 +110,10 @@ export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
     if (typeof workspaceId === 'string') {
       setWorkspaceId(workspaceId);
     }
-  }, [router.isReady, setWorkspaceId, workspaceId]);
+    if (typeof pageId === 'string') {
+      setPageId(pageId);
+    }
+  }, [pageId, router.isReady, setPageId, setWorkspaceId, workspaceId]);
   const value = useAtomValue(publicWorkspaceIdAtom);
   if (!router.isReady || !value) {
     return <PageLoading />;

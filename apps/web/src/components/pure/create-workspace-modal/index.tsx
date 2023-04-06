@@ -1,7 +1,11 @@
-import { styled } from '@affine/component';
-import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
-import { Button } from '@affine/component';
-import { Input } from '@affine/component';
+import {
+  Button,
+  Input,
+  Modal,
+  ModalCloseButton,
+  ModalWrapper,
+  styled,
+} from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useRef, useState } from 'react';
@@ -33,62 +37,60 @@ export const CreateWorkspaceModal = ({
   );
   const { t } = useTranslation();
   return (
-    <div>
-      <Modal open={open} onClose={onClose}>
-        <ModalWrapper width={560} height={342} style={{ padding: '10px' }}>
-          <Header>
-            <ModalCloseButton
-              top={6}
-              right={6}
-              onClick={() => {
-                onClose();
-              }}
-            />
-          </Header>
-          <Content>
-            <ContentTitle>{t('New Workspace')}</ContentTitle>
-            <p>{t('Workspace description')}</p>
-            <Input
-              ref={ref => {
-                if (ref) {
-                  setTimeout(() => ref.focus(), 0);
-                }
-              }}
-              data-testid="create-workspace-input"
-              onKeyDown={handleKeyDown}
-              placeholder={t('Set a Workspace name')}
-              maxLength={15}
-              minLength={0}
-              onChange={value => {
-                setWorkspaceName(value);
-              }}
-              onCompositionStart={() => {
-                isComposition.current = true;
-              }}
-              onCompositionEnd={() => {
-                isComposition.current = false;
-              }}
-            />
-            <Button
-              data-testid="create-workspace-button"
-              disabled={!workspaceName}
-              style={{
-                width: '260px',
-                textAlign: 'center',
-                marginTop: '16px',
-                opacity: !workspaceName ? 0.5 : 1,
-              }}
-              type="primary"
-              onClick={() => {
-                handleCreateWorkspace();
-              }}
-            >
-              {t('Create')}
-            </Button>
-          </Content>
-        </ModalWrapper>
-      </Modal>
-    </div>
+    <Modal open={open} onClose={onClose}>
+      <ModalWrapper width={560} height={342} style={{ padding: '10px' }}>
+        <Header>
+          <ModalCloseButton
+            top={6}
+            right={6}
+            onClick={() => {
+              onClose();
+            }}
+          />
+        </Header>
+        <Content>
+          <ContentTitle>{t('New Workspace')}</ContentTitle>
+          <p>{t('Workspace description')}</p>
+          <Input
+            ref={ref => {
+              if (ref) {
+                setTimeout(() => ref.focus(), 0);
+              }
+            }}
+            data-testid="create-workspace-input"
+            onKeyDown={handleKeyDown}
+            placeholder={t('Set a Workspace name')}
+            maxLength={15}
+            minLength={0}
+            onChange={value => {
+              setWorkspaceName(value);
+            }}
+            onCompositionStart={() => {
+              isComposition.current = true;
+            }}
+            onCompositionEnd={() => {
+              isComposition.current = false;
+            }}
+          />
+          <Button
+            data-testid="create-workspace-button"
+            disabled={!workspaceName}
+            style={{
+              width: '260px',
+              textAlign: 'center',
+              marginTop: '16px',
+              opacity: !workspaceName ? 0.5 : 1,
+            }}
+            type="primary"
+            onClick={() => {
+              handleCreateWorkspace();
+            }}
+          >
+            {t('Create')}
+          </Button>
+        </Content>
+      </ModalWrapper>
+    </Modal>
   );
 };
 

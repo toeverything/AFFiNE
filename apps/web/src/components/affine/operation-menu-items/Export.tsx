@@ -7,7 +7,12 @@ import {
   ExportToMarkdownIcon,
 } from '@blocksuite/icons';
 
-export const Export = () => {
+import type { CommonMenuItemProps } from './types';
+
+export const Export = ({
+  onSelect,
+  onItemClick,
+}: CommonMenuItemProps<{ type: 'markdown' | 'html' }>) => {
   const { t } = useTranslation();
 
   return (
@@ -21,6 +26,7 @@ export const Export = () => {
             onClick={() => {
               // @ts-expect-error
               globalThis.currentEditor.contentParser.onExportHtml();
+              onSelect?.({ type: 'html' });
             }}
             icon={<ExportToHtmlIcon />}
           >
@@ -30,6 +36,7 @@ export const Export = () => {
             onClick={() => {
               // @ts-expect-error
               globalThis.currentEditor.contentParser.onExportMarkdown();
+              onSelect?.({ type: 'markdown' });
             }}
             icon={<ExportToMarkdownIcon />}
           >
@@ -41,7 +48,10 @@ export const Export = () => {
       <MenuItem
         icon={<ExportIcon />}
         endIcon={<ArrowRightSmallIcon />}
-        onClick={e => e.stopPropagation()}
+        onClick={e => {
+          e.stopPropagation();
+          onItemClick?.();
+        }}
       >
         {t('Export')}
       </MenuItem>

@@ -17,8 +17,8 @@
     "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230404211759-4cf51928",
-    "@blocksuite/store": "0.0.0-20230404211759-4cf51928",
+    "@blocksuite/blocks": "0.0.0-20230406032111-01cf598b-nightly",
+    "@blocksuite/store": "0.0.0-20230406032111-01cf598b-nightly",
     "@toeverything/y-indexeddb": "workspace:*",
     "firebase": "^9.19.1",
     "jotai": "^2.0.3",
@@ -27,7 +27,6 @@
     "lib0": "^0.2.73",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "y-indexeddb": "^9.0.10",
     "y-protocols": "^1.0.5",
     "yjs": "^13.5.52",
     "zod": "^3.21.4"
