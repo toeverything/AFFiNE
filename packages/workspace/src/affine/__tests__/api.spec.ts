@@ -354,7 +354,7 @@ describe('api', () => {
         'page1'
       );
       applyUpdate(workspace.doc, new Uint8Array(binary));
-      const page1 = workspace.getPage('page0') as Page;
+      const page1 = workspace.getPage('page1') as Page;
       expect(workspace.getPage('page0')).toBeNull();
       expect(page1).not.toBeNull();
       expect(workspace.doc.share.get(page1.prefixedId)?.toJSON()).toEqual(
