@@ -8,7 +8,7 @@ import matchers from '@testing-library/jest-dom/matchers';
 import type { RenderResult } from '@testing-library/react';
 import { render, renderHook } from '@testing-library/react';
 import { createStore, getDefaultStore, Provider } from 'jotai';
-import type React from 'react';
+import type { FC, PropsWithChildren } from 'react';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { workspacesAtom } from '../../atoms';
@@ -23,30 +23,33 @@ import type { PivotsProps } from '../pure/workspace-slider-bar/Pivots';
 import Pivots from '../pure/workspace-slider-bar/Pivots';
 
 expect.extend(matchers);
-// fetchMocker.enableMocks();
+
 let store = getDefaultStore();
 beforeEach(async () => {
   store = createStore();
   await store.get(workspacesAtom);
 });
 
-const ProviderWrapper: React.FC<React.PropsWithChildren> = ({ children }) => {
+const ProviderWrapper: FC<PropsWithChildren> = ({ children }) => {
   return <Provider store={store}>{children}</Provider>;
 };
 
 const initPinBoard = async () => {
+  //  create one workspace with 2 root pages and 2 pivot pages
+  //  - hasPivotPage
+  //    - pivot1
+  //    - pivot2
+  //  - noPivotPage
+
   const mutationHook = renderHook(() => useWorkspacesHelper(), {
     wrapper: ProviderWrapper,
   });
-  const rootPageId = 'test1';
+  const rootPageIds = ['hasPivotPage', 'noPivotPage'];
   const pivotPageIds = ['pivot1', 'pivot2'];
   const id = await mutationHook.result.current.createLocalWorkspace('test0');
   await store.get(workspacesAtom);
   mutationHook.rerender();
-  mutationHook.result.current.createWorkspacePage(id, rootPageId);
-  pivotPageIds.forEach(pivotId =>
-    mutationHook.result.current.createWorkspacePage(id, pivotId)
-  );
+
   await store.get(currentWorkspaceAtom);
   const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
     wrapper: ProviderWrapper,
@@ -56,10 +59,20 @@ const initPinBoard = async () => {
   const blockSuiteWorkspace =
     currentWorkspace?.blockSuiteWorkspace as BlockSuiteWorkspace;
 
-  blockSuiteWorkspace.meta.setPageMeta(rootPageId, {
-    isPivots: true,
-    subpageIds: pivotPageIds,
+  rootPageIds.forEach(rootPageId => {
+    mutationHook.result.current.createWorkspacePage(id, rootPageId);
+    blockSuiteWorkspace.meta.setPageMeta(rootPageId, {
+      isPivots: true,
+      subpageIds: rootPageId === rootPageIds[0] ? pivotPageIds : [],
+    });
   });
+  pivotPageIds.forEach(pivotId => {
+    mutationHook.result.current.createWorkspacePage(id, pivotId);
+    blockSuiteWorkspace.meta.setPageMeta(pivotId, {
+      title: pivotId,
+    });
+  });
+
   const App = (props: PivotsProps) => {
     return (
       <ThemeProvider>
@@ -79,7 +92,7 @@ const initPinBoard = async () => {
   );
 
   return {
-    rootPageId,
+    rootPageIds,
     pivotPageIds,
     app,
     blockSuiteWorkspace,
@@ -96,29 +109,35 @@ const openOperationMenu = async (app: RenderResult, pageId: string) => {
 };
 describe('PinBoard', () => {
   test('add pivot', async () => {
-    const { app, blockSuiteWorkspace, rootPageId, pivotPageIds } =
+    const { app, blockSuiteWorkspace, rootPageIds, pivotPageIds } =
       await initPinBoard();
-    await openOperationMenu(app, rootPageId);
+    const [hasPivotPageId] = rootPageIds;
+    await openOperationMenu(app, hasPivotPageId);
 
     const addBtn = await app.findByTestId('pivot-operation-add');
     await addBtn.click();
 
     const metas = blockSuiteWorkspace.meta.pageMetas ?? [];
-    const rootPageMeta = blockSuiteWorkspace.meta.getPageMeta(rootPageId);
+    const rootPageMeta = blockSuiteWorkspace.meta.getPageMeta(hasPivotPageId);
     const addedPageMeta = metas.find(
-      meta => meta.id !== rootPageId && !pivotPageIds.includes(meta.id)
+      meta => !pivotPageIds.includes(meta.id) && !rootPageIds.includes(meta.id)
     ) as PageMeta;
 
     // Page meta have been added
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
+    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(5);
     // New page meta is added in initial page meta
+
     expect(rootPageMeta?.subpageIds.includes(addedPageMeta.id)).toBe(true);
     app.unmount();
   });
 
   test('delete pivot', async () => {
-    const { app, blockSuiteWorkspace, rootPageId } = await initPinBoard();
-    await openOperationMenu(app, rootPageId);
+    const {
+      app,
+      blockSuiteWorkspace,
+      rootPageIds: [hasPivotPageId],
+    } = await initPinBoard();
+    await openOperationMenu(app, hasPivotPageId);
 
     const deleteBtn = await app.findByTestId('pivot-operation-move-to-trash');
     await deleteBtn.click();
@@ -135,13 +154,16 @@ describe('PinBoard', () => {
   });
 
   test('rename pivot', async () => {
-    const { app, rootPageId } = await initPinBoard();
-    await openOperationMenu(app, rootPageId);
+    const {
+      app,
+      rootPageIds: [hasPivotPageId],
+    } = await initPinBoard();
+    await openOperationMenu(app, hasPivotPageId);
 
     const renameBtn = await app.findByTestId('pivot-operation-rename');
     await renameBtn.click();
 
-    const input = await app.findByTestId(`pivot-input-${rootPageId}`);
+    const input = await app.findByTestId(`pivot-input-${hasPivotPageId}`);
     expect(input).toBeInTheDocument();
 
     // TODO: Fix this test
@@ -157,7 +179,7 @@ describe('PinBoard', () => {
     const {
       app,
       blockSuiteWorkspace,
-      rootPageId,
+      rootPageIds: [hasPivotPageId],
       pivotPageIds: [pivotId1, pivotId2],
     } = await initPinBoard();
     await openOperationMenu(app, pivotId1);
@@ -174,15 +196,34 @@ describe('PinBoard', () => {
       ) as HTMLElement
     ).click();
 
-    const rootPageMeta = blockSuiteWorkspace.meta.getPageMeta(rootPageId);
+    const rootPageMeta = blockSuiteWorkspace.meta.getPageMeta(hasPivotPageId);
 
     expect(rootPageMeta?.subpageIds.includes(pivotId1)).toBe(false);
     expect(rootPageMeta?.subpageIds.includes(pivotId2)).toBe(true);
     app.unmount();
   });
-});
 
-// TODO:
-//  1. add Drag and Drop test
-//  2. fix test for rename
-//  3. add test for search
+  test('remove from pivots', async () => {
+    const {
+      app,
+      blockSuiteWorkspace,
+      rootPageIds: [hasPivotPageId],
+      pivotPageIds: [pivotId1],
+    } = await initPinBoard();
+    await openOperationMenu(app, pivotId1);
+
+    const moveToBtn = await app.findByTestId('pivot-operation-move-to');
+    await moveToBtn.click();
+
+    const removeFromPivotsBtn = await app.findByTestId(
+      'remove-from-pivots-button'
+    );
+    removeFromPivotsBtn.click();
+
+    const hasPivotsPageMeta =
+      blockSuiteWorkspace.meta.getPageMeta(hasPivotPageId);
+
+    expect(hasPivotsPageMeta?.subpageIds.length).toBe(1);
+    expect(hasPivotsPageMeta?.subpageIds.includes(pivotId1)).toBe(false);
+  });
+});

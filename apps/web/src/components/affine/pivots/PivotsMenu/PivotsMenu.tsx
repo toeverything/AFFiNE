@@ -93,6 +93,7 @@ export const PivotsMenu = ({
           height={32}
           noBorder={true}
           onClick={e => e.stopPropagation()}
+          data-testid="pivots-menu-search"
         />
       </StyledSearchContainer>
 
@@ -115,6 +116,7 @@ export const PivotsMenu = ({
       {showRemovePivots && (
         <StyledMenuFooter>
           <StyledPivot
+            data-testid={'remove-from-pivots-button'}
             onClick={() => {
               setPageMeta(currentMeta.id, { isPivots: false });
               const parentMeta = metas.find(m =>
