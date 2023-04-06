@@ -29,7 +29,7 @@ describe('storage', () => {
 describe('utils', () => {
   test('isExpired', async () => {
     const now = Math.floor(Date.now() / 1000);
-    expect(isExpired({ exp: now + 1 } as AccessTokenMessage)).toBeFalsy();
+    expect(isExpired({ exp: now + 1 } as AccessTokenMessage, 0)).toBeFalsy();
     const promise = new Promise<void>(resolve => {
       setTimeout(() => {
         expect(isExpired({ exp: now + 1 } as AccessTokenMessage)).toBeTruthy();
