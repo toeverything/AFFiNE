@@ -1,8 +1,12 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import type { Workspace } from '@blocksuite/store';
+import * as RadixAvatar from '@radix-ui/react-avatar';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import clsx from 'clsx';
 import type React from 'react';
-import { memo } from 'react';
+
+import { avatarImageStyle, avatarStyle, avatarTextStyle } from './index.css';
 
 function stringToColour(str: string) {
   str = str || 'affine';
@@ -25,110 +29,52 @@ function stringToColour(str: string) {
   return colour;
 }
 
-interface AvatarProps {
-  size: number;
-  name: string;
-  avatar_url: string;
-  style?: React.CSSProperties;
-}
-
-export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
-  size: _size,
-  avatar_url,
-  style,
-  name,
-  ...props
-}) {
-  const size = _size || 20;
-  const sizeStr = size + 'px';
-
-  return (
-    <>
-      {avatar_url ? (
-        <div
-          {...props}
-          style={{
-            ...style,
-            width: sizeStr,
-            height: sizeStr,
-            color: '#fff',
-            borderRadius: '50%',
-            overflow: 'hidden',
-            display: 'inline-block',
-            verticalAlign: 'middle',
-          }}
-        >
-          <picture>
-            <img
-              style={{ width: sizeStr, height: sizeStr }}
-              src={avatar_url}
-              alt=""
-              referrerPolicy="no-referrer"
-            />
-          </picture>
-        </div>
-      ) : (
-        <div
-          {...props}
-          style={{
-            ...style,
-            width: sizeStr,
-            height: sizeStr,
-            border: '1px solid #fff',
-            color: '#fff',
-            fontSize: Math.ceil(0.5 * size) + 'px',
-            background: stringToColour(name || 'AFFiNE'),
-            borderRadius: '50%',
-            display: 'inline-flex',
-            lineHeight: '1',
-            justifyContent: 'center',
-            alignItems: 'center',
-            userSelect: 'none',
-          }}
-        >
-          {(name || 'AFFiNE').substring(0, 1)}
-        </div>
-      )}
-    </>
-  );
-});
-
-export type WorkspaceUnitAvatarProps = {
+export type WorkspaceAvatarProps = {
   size?: number;
   workspace: LocalWorkspace | AffineWorkspace | null;
-  style?: React.CSSProperties;
+  className?: string;
 };
 
 export type BlockSuiteWorkspaceAvatar = Omit<
-  WorkspaceUnitAvatarProps,
+  WorkspaceAvatarProps,
   'workspace'
 > & {
   workspace: Workspace;
 };
 
 export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
-  size = 20,
+  size,
   workspace,
-  style,
   ...props
 }) => {
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
+  const [name] = useBlockSuiteWorkspaceName(workspace);
 
   return (
-    <Avatar
+    <RadixAvatar.Root
       {...props}
-      size={size}
-      name={workspace.meta.name ?? 'Untitled'}
-      avatar_url={avatar ?? ''}
-      style={style}
-    />
+      className={clsx(avatarStyle, props.className)}
+      style={{
+        height: size,
+        width: size,
+      }}
+    >
+      <RadixAvatar.Image className={avatarImageStyle} src={avatar} alt={name} />
+      <RadixAvatar.Fallback
+        className={avatarTextStyle}
+        style={{
+          backgroundColor: stringToColour(name),
+        }}
+      >
+        {name.substring(0, 1)}
+      </RadixAvatar.Fallback>
+    </RadixAvatar.Root>
   );
 };
 
-export const WorkspaceAvatar: React.FC<WorkspaceUnitAvatarProps> = ({
+export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = ({
   size = 20,
   workspace,
-  style,
   ...props
 }) => {
   if (workspace && 'blockSuiteWorkspace' in workspace) {
@@ -137,11 +83,26 @@ export const WorkspaceAvatar: React.FC<WorkspaceUnitAvatarProps> = ({
         {...props}
         size={size}
         workspace={workspace.blockSuiteWorkspace}
-        style={style}
       />
     );
   }
   return (
-    <Avatar {...props} size={size} name="UNKNOWN" avatar_url="" style={style} />
+    <RadixAvatar.Root
+      {...props}
+      className={clsx(avatarStyle, props.className)}
+      style={{
+        height: size,
+        width: size,
+      }}
+    >
+      <RadixAvatar.Fallback
+        className={avatarTextStyle}
+        style={{
+          backgroundColor: stringToColour('A'),
+        }}
+      >
+        A
+      </RadixAvatar.Fallback>
+    </RadixAvatar.Root>
   );
 };

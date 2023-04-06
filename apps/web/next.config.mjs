@@ -10,6 +10,8 @@ import preset from './preset.config.mjs';
 import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
 
 const require = createRequire(import.meta.url);
+const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin');
+const withVanillaExtract = createVanillaExtractPlugin();
 
 console.info('Runtime Preset', preset);
 
@@ -189,4 +191,4 @@ if (process.env.PERFSEE_TOKEN) {
   );
 }
 
-export default config;
+export default withVanillaExtract(config);
