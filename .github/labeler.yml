@@ -1,0 +1,16 @@
+docs:
+  - 'docs/**/*'
+  - '**/README.md'
+tests:
+  - 'tests/**/*'
+  - '**/tests/**/*'
+  - '**/__tests__/**/*'
+
+mod:workspace: 'packages/workspace/**/*'
+mod:i18n: 'packages/i18n/**/*'
+mod:env: 'packages/env/**/*'
+mod:hooks: 'packages/hooks/**/*'
+mod:components: 'packages/components/**/*'
+
+app:web: 'apps/web/**/*'
+app:electron: 'apps/electron/**/*'
