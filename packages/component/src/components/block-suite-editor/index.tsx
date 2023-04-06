@@ -28,6 +28,8 @@ export const BlockSuiteEditor = (props: EditorProps) => {
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
     editorRef.current = new EditorContainer();
+    editorRef.current.page = props.page;
+    editorRef.current.mode = props.mode;
     globalThis.currentEditor = editorRef.current;
   }
   const ref = useRef<HTMLDivElement>(null);
