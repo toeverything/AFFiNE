@@ -9,15 +9,18 @@ export const ElectronOauthProvider: React.FC<React.PropsWithChildren> = ({
 }) => {
   const handleLogin = useAffineLogIn();
   useEffect(() => {
-    window.apis?.ipcRenderer.on('send-token', async (code: string) => {
-      try {
-        await handleLogin(SignMethod.Credential, code);
-      } catch (e) {
-        console.error(e);
+    window.apis?.ipcRenderer.on(
+      'auth:callback-firebase-token',
+      async (code: string) => {
+        try {
+          await handleLogin(SignMethod.Credential, code);
+        } catch (e) {
+          console.error(e);
+        }
       }
-    });
+    );
     return () => {
-      window.apis?.ipcRenderer.off('send-token');
+      window.apis?.ipcRenderer.off('auth:callback-firebase-token');
     };
   }, [handleLogin]);
   return <>{children}</>;

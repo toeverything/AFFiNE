@@ -4,11 +4,11 @@ import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import { parse } from 'url';
 
-import { exchangeToken, startAuthListener } from '../../auth';
+import { exchangeToken } from '../../auth';
 import { registerHandlers } from './app-state';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
-startAuthListener();
+
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient('affine', process.execPath, [
@@ -34,12 +34,11 @@ app.on('second-instance', (event, argv) => {
 app.on('open-url', async (_, url) => {
   const mainWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
   const urlObj = parse(url, true);
-  console.log('window-open', url);
-  if (!mainWindow || !urlObj.query.code) return;
+  if (!mainWindow || !urlObj.query.code || !url.startsWith('affine://')) return;
   const token = (await exchangeToken(urlObj.query.code as string)) as {
     id_token: string;
   };
-  mainWindow.webContents.send('send-token', token.id_token);
+  mainWindow.webContents.send('auth:callback-firebase-token', token.id_token);
 });
 
 /**

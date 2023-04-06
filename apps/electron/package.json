@@ -43,7 +43,6 @@
     "zx": "^7.2.1"
   },
   "dependencies": {
-    "@nosferatu500/electron-google-oauth2": "3.1.0",
     "cross-env": "7.0.3",
     "electron-window-state": "^5.0.3",
     "firebase": "^9.18.0",
