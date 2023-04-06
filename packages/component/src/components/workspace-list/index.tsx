@@ -1,6 +1,11 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { DndContext } from '@dnd-kit/core';
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import type { FC } from 'react';
 
@@ -28,7 +33,13 @@ const SortableWorkspaceItem: FC<
       }
     : undefined;
   return (
-    <div style={style} ref={setNodeRef} {...attributes} {...listeners}>
+    <div
+      data-testid="draggable-item"
+      style={style}
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+    >
       <WorkspaceCard
         currentWorkspaceId={props.currentWorkspaceId}
         workspace={props.item}
@@ -40,8 +51,15 @@ const SortableWorkspaceItem: FC<
 };
 
 export const WorkspaceList: FC<WorkspaceListProps> = props => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
   return (
-    <DndContext onDragEnd={props.onDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={props.onDragEnd}>
       <SortableContext items={props.items}>
         {props.items.map(item => (
           <SortableWorkspaceItem {...props} item={item} key={item.id} />

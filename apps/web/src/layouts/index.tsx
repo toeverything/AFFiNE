@@ -122,6 +122,8 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       setUpLanguage(i18n);
     }, [i18n]);
     useCreateFirstWorkspace();
+    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
+    const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
     const set = useSetAtom(jotaiWorkspacesAtom);
     useEffect(() => {
       logger.info('mount');
@@ -135,6 +137,12 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         for (const list of lists) {
           try {
             const item = await list();
+            item.sort((a, b) => {
+              return (
+                jotaiWorkspaces.findIndex(x => x.id === a.id) -
+                jotaiWorkspaces.findIndex(x => x.id === b.id)
+              );
+            });
             items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
           } catch (e) {
             logger.error('list data error:', e);
@@ -152,9 +160,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         controller.abort();
         logger.info('unmount');
       };
-    }, [set]);
-    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-    const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
+    }, [jotaiWorkspaces.length, set]);
 
     useEffect(() => {
       const flavour = jotaiWorkspaces.find(
