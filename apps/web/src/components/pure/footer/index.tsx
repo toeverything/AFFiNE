@@ -36,6 +36,7 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
           </FlexWrapper>
           <Tooltip content={t('Sign out')} disablePortal={true}>
             <IconButton
+              data-testid="workspace-list-modal-sign-out"
               onClick={() => {
                 onLogout();
               }}
