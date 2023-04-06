@@ -29,6 +29,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![Node-version-icon]](https://nodejs.org/)
 [![TypeScript-version-icon]](https://www.typescriptlang.org/)
 [![React-version-icon]](https://reactjs.org/)
+[![blocksuite-icon]](https://github.com/toeverything/blocksuite)
 [![Rust-version-icon]](https://www.rust-lang.org/)
 
 </div>
@@ -231,3 +232,4 @@ See [LICENSE] for details.
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.15.0-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
 [react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/react?color=rgb%2897%2C%20218%2C%20251%29
+[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fweb%2Fpackage.json&label=blocksuite
