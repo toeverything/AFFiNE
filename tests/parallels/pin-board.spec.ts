@@ -26,10 +26,36 @@ async function initHomePageWithPinboard(page: Page) {
   return (await getMetas(page)).find(m => m.isRootPinboard);
 }
 
+async function openPinboardPageOperationMenu(page: Page, id: string) {
+  const node = await page
+    .getByTestId('sidebar-pinboard-container')
+    .getByTestId(`pinboard-${id}`);
+  await node.hover();
+  await node.getByTestId('pinboard-operation-button').click();
+}
+
 test.describe('PinBoard interaction', () => {
   test('Have initial root pinboard page when first in', async ({ page }) => {
     const rootPinboardMeta = await initHomePageWithPinboard(page);
     expect(rootPinboardMeta).not.toBeUndefined();
+  });
+
+  test('Root pinboard page have no operation of "trash" ,"rename" and "move to"', async ({
+    page,
+  }) => {
+    const rootPinboardMeta = await initHomePageWithPinboard(page);
+    await openPinboardPageOperationMenu(page, rootPinboardMeta?.id ?? '');
+    expect(
+      await page
+        .locator(`[data-testid="pinboard-operation-move-to-trash"]`)
+        .count()
+    ).toEqual(0);
+    expect(
+      await page.locator(`[data-testid="pinboard-operation-rename"]`).count()
+    ).toEqual(0);
+    expect(
+      await page.locator(`[data-testid="pinboard-operation-move-to"]`).count()
+    ).toEqual(0);
   });
 
   test('Click Pinboard in sidebar should open root pinboard page', async ({
@@ -58,11 +84,8 @@ test.describe('PinBoard interaction', () => {
     await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
     const childMeta = (await getMetas(page)).find(m => m.title === 'test1');
 
-    const child = await page
-      .getByTestId('sidebar-pinboard-container')
-      .getByTestId(`pinboard-${childMeta?.id}`);
-    await child.hover();
-    await child.getByTestId('pinboard-operation-button').click();
+    await openPinboardPageOperationMenu(page, childMeta?.id ?? '');
+
     await page.getByTestId('pinboard-operation-move-to').click();
     await page.getByTestId('remove-from-pinboard-button').click();
     await page.waitForTimeout(1000);
@@ -76,11 +99,8 @@ test.describe('PinBoard interaction', () => {
     await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
     const childMeta = (await getMetas(page)).find(m => m.title === 'test1');
 
-    const child = await page
-      .getByTestId('sidebar-pinboard-container')
-      .getByTestId(`pinboard-${childMeta?.id}`);
-    await child.hover();
-    await child.getByTestId('pinboard-operation-button').click();
+    await openPinboardPageOperationMenu(page, childMeta?.id ?? '');
+
     await page.getByTestId('pinboard-operation-move-to').click();
 
     await page.fill('[data-testid="pinboard-menu-search"]', '111');
@@ -90,5 +110,77 @@ test.describe('PinBoard interaction', () => {
     expect(
       await page.locator('[data-testid="pinboard-search-result"]').count()
     ).toEqual(1);
+  });
+
+  test('Rename pinboard', async ({ page }) => {
+    const rootPinboardMeta = await initHomePageWithPinboard(page);
+    await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
+    const childMeta = (await getMetas(page)).find(m => m.title === 'test1');
+
+    await openPinboardPageOperationMenu(page, childMeta?.id ?? '');
+
+    await page.getByTestId('pinboard-operation-rename').click();
+    await page.fill(`[data-testid="pinboard-input-${childMeta?.id}"]`, 'test2');
+
+    const title = (await page
+      .locator('.affine-default-page-block-title')
+      .textContent()) as string;
+
+    expect(title).toEqual('test2');
+  });
+
+  test('Move pinboard to trash', async ({ page }) => {
+    const rootPinboardMeta = await initHomePageWithPinboard(page);
+    await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
+    const childMeta = (await getMetas(page)).find(m => m.title === 'test1');
+    await createPinboardPage(page, childMeta?.id ?? '', 'test2');
+    const grandChildMeta = (await getMetas(page)).find(
+      m => m.title === 'test2'
+    );
+
+    await openPinboardPageOperationMenu(page, childMeta?.id ?? '');
+
+    await page.getByTestId('pinboard-operation-move-to-trash').click();
+    (
+      await page.waitForSelector('[data-testid="move-to-trash-confirm"]')
+    ).click();
+    await page.waitForTimeout(1000);
+
+    expect(
+      await page
+        .getByTestId('sidebar-pinboard-container')
+        .locator(`[data-testid="pinboard-${childMeta?.id}"]`)
+        .count()
+    ).toEqual(0);
+
+    expect(
+      await page
+        .getByTestId('sidebar-pinboard-container')
+        .locator(`[data-testid="pinboard-${grandChildMeta?.id}"]`)
+        .count()
+    ).toEqual(0);
+  });
+
+  test('Copy link', async ({ page }) => {
+    const rootPinboardMeta = await initHomePageWithPinboard(page);
+    await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
+    const childMeta = (await getMetas(page)).find(m => m.title === 'test1');
+
+    await openPinboardPageOperationMenu(page, childMeta?.id ?? '');
+
+    await page.getByTestId('copy-link').click();
+
+    await page.evaluate(() => {
+      const input = document.createElement('input');
+      input.id = 'paste-input';
+      document.body.appendChild(input);
+      input.focus();
+    });
+    await page.keyboard.press(`Meta+v`, { delay: 50 });
+    await page.keyboard.press(`Control+v`, { delay: 50 });
+    const copiedValue = await page
+      .locator('#paste-input')
+      .evaluate((input: HTMLInputElement) => input.value);
+    expect(copiedValue).toEqual(page.url());
   });
 });

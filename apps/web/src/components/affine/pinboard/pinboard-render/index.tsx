@@ -7,7 +7,7 @@ import {
 } from '@blocksuite/icons';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import type { PinboardNode } from '../../../../hooks/affine/use-pinboard-data';
@@ -110,7 +110,12 @@ export const PinboardRender: PinboardNode['render'] = (
         )}
       </StyledPinboard>
 
-      {isRoot && currentMeta.subpageIds.length === 0 && <EmptyItem />}
+      {useMemo(
+        () =>
+          isRoot &&
+          !metas.find(m => (currentMeta.subpageIds ?? []).includes(m.id)),
+        [currentMeta.subpageIds, isRoot, metas]
+      ) && <EmptyItem />}
     </>
   );
 };
