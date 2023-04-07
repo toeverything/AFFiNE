@@ -68,7 +68,7 @@ const config: PlaywrightTestConfig = {
     },
     {
       // Intentionally not building the web, reminds you to run it by yourself.
-      command: 'next start -p 8080',
+      command: 'yarn exec next start -p 8080',
       port: 8080,
       timeout: 120 * 1000,
       cwd: resolve(__dirname, 'apps', 'web'),
