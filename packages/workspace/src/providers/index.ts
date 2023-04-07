@@ -1,12 +1,18 @@
 import { config } from '@affine/env';
 import { KeckProvider } from '@affine/workspace/affine/keck';
-import { getLoginStorage } from '@affine/workspace/affine/login';
+import {
+  getLoginStorage,
+  storageChangeSlot,
+} from '@affine/workspace/affine/login';
 import type { Provider } from '@affine/workspace/type';
 import type {
   AffineWebSocketProvider,
   LocalIndexedDBProvider,
 } from '@affine/workspace/type';
-import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import type {
+  Disposable,
+  Workspace as BlockSuiteWorkspace,
+} from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import {
   createIndexedDBProvider as create,
@@ -20,15 +26,21 @@ const createAffineWebSocketProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): AffineWebSocketProvider => {
   let webSocketProvider: KeckProvider | null = null;
-  return {
+  let dispose: Disposable | undefined = undefined;
+  const apis: AffineWebSocketProvider = {
     flavour: 'affine-websocket',
     background: false,
     cleanup: () => {
       assertExists(webSocketProvider);
       webSocketProvider.destroy();
       webSocketProvider = null;
+      dispose?.dispose();
     },
     connect: () => {
+      dispose = storageChangeSlot.on(() => {
+        apis.disconnect();
+        apis.connect();
+      });
       const wsUrl = `${
         window.location.protocol === 'https:' ? 'wss' : 'ws'
       }://${window.location.host}/api/sync/`;
@@ -53,8 +65,11 @@ const createAffineWebSocketProvider = (
       localProviderLogger.info('disconnect', webSocketProvider.url);
       webSocketProvider.destroy();
       webSocketProvider = null;
+      dispose?.dispose();
     },
   };
+
+  return apis;
 };
 
 const createIndexedDBProvider = (

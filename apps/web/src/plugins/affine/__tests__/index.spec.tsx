@@ -40,10 +40,11 @@ describe('AFFiNE workspace', () => {
       // but refresh is still valid
       refresh: data.refresh,
     });
-    renderHook(() => useAffineRefreshAuthToken(1));
+    const hook = renderHook(() => useAffineRefreshAuthToken(1));
     await new Promise(resolve => setTimeout(resolve, 3000));
     const userData = parseIdToken(getLoginStorage()?.token as string);
     expect(userData).not.toBeNull();
     expect(isExpired(userData)).toBe(false);
+    hook.unmount();
   });
 });
