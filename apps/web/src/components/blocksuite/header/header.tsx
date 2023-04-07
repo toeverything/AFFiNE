@@ -1,4 +1,3 @@
-import { ShareMenu } from '@affine/component/share-menu';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
@@ -44,15 +43,13 @@ type HeaderRightItemNames =
   | 'editorOptionMenu'
   | 'trashButtonGroup'
   | 'themeModeSwitch'
-  | 'syncUser'
-  | 'shareMenu';
+  | 'syncUser';
 
 const HeaderRightItems: Record<HeaderRightItemNames, React.FC> = {
   editorOptionMenu: EditorOptionMenu,
   trashButtonGroup: TrashButtonGroup,
   themeModeSwitch: ThemeModeSwitch,
   syncUser: SyncUser,
-  shareMenu: ShareMenu,
 };
 
 export type HeaderProps = PropsWithChildren<{
@@ -109,6 +106,7 @@ export const Header = forwardRef<
                 }),
               [rightItems]
             )}
+            {/*<ShareMenu />*/}
           </StyledHeaderRightSide>
         </StyledHeader>
       </StyledHeaderContainer>
