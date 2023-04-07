@@ -133,7 +133,32 @@ const slideIn2 = keyframes({
   },
 });
 
-export const StyledChangeLog = styled('div')(({ theme }) => {
+const slideOut = keyframes({
+  '0%': {
+    height: '32px',
+  },
+  '60%': {
+    height: '32px',
+  },
+  '80%': {
+    height: '32px',
+  },
+  '100%': {
+    height: '0px',
+  },
+});
+const slideOut2 = keyframes({
+  '0%': {
+    transform: 'translateX(0%)',
+  },
+  '100%': {
+    transform: 'translateX(100%)',
+  },
+});
+
+export const StyledChangeLog = styled('div')<{
+  isClose?: boolean;
+}>(({ theme, isClose }) => {
   return {
     width: '110%',
     height: '32px',
@@ -142,29 +167,36 @@ export const StyledChangeLog = styled('div')(({ theme }) => {
     backgroundColor: theme.colors.hoverBackground,
     border: `1px solid ${theme.colors.primaryColor}`,
     borderRight: 'none',
-    padding: '0 0 0 16px',
+    marginLeft: '8px',
+    paddingLeft: '8px',
     borderRadius: '16px 0 0 16px',
     cursor: 'pointer',
     zIndex: 1001,
     position: 'absolute',
     userSelect: 'none',
     transition: 'all 0.3s',
-    animation: `${slideIn2} 1s ease-in-out forwards `,
+    animation: isClose
+      ? `${slideOut2} .3s ease-in-out forwards`
+      : `${slideIn2} 1s ease-in-out forwards`,
     '> svg, a > svg': {
       fontSize: '20px',
       marginRight: '12px',
       color: theme.colors.primaryColor,
     },
     button: {
-      marginRight: '10%',
+      marginRight: '12%',
     },
   };
 });
-export const StyledChangeLogWarper = styled('div')(({ theme }) => {
+export const StyledChangeLogWarper = styled('div')<{
+  isClose?: boolean;
+}>(({ isClose }) => {
   return {
     width: 'calc(100% + 4px)',
     height: '0px',
-    animation: `${slideIn} .5s ease-in-out forwards`,
+    animation: isClose
+      ? `${slideOut} .3s ease-in-out forwards`
+      : `${slideIn} 1s ease-in-out forwards`,
     ...displayFlex('flex-start', 'center'),
     marginBottom: '4px',
     position: 'relative',
