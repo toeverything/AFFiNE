@@ -44,6 +44,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   const { id, favorite } = pageMeta;
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+
   const OperationMenu = (
     <>
       <MenuItem
@@ -65,20 +66,24 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       >
         {t('Open in new tab')}
       </MenuItem>
-      <MoveTo
-        metas={metas}
-        currentMeta={pageMeta}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-      />
-      <MenuItem
-        data-testid="move-to-trash"
-        onClick={() => {
-          setOpen(true);
-        }}
-        icon={<DeleteTemporarilyIcon />}
-      >
-        {t('Move to Trash')}
-      </MenuItem>
+      {!pageMeta.isRootPinboard && (
+        <MoveTo
+          metas={metas}
+          currentMeta={pageMeta}
+          blockSuiteWorkspace={blockSuiteWorkspace}
+        />
+      )}
+      {!pageMeta.isRootPinboard && (
+        <MenuItem
+          data-testid="move-to-trash"
+          onClick={() => {
+            setOpen(true);
+          }}
+          icon={<DeleteTemporarilyIcon />}
+        >
+          {t('Move to Trash')}
+        </MenuItem>
+      )}
     </>
   );
   return (
@@ -90,7 +95,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
           disablePortal={true}
           trigger="click"
         >
-          <IconButton>
+          <IconButton data-testid="page-list-operation-button">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
