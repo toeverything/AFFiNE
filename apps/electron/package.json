@@ -19,7 +19,8 @@
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
     "build:octobase-node": "yarn workspace @affine/octobase-node build",
-    "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs"
+    "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs",
+    "test": "playwright test"
   },
   "config": {
     "forge": "./forge.config.js"
@@ -36,6 +37,7 @@
     "@electron-forge/maker-zip": "^6.1.0",
     "@electron-forge/shared-types": "^6.1.0",
     "@electron/rebuild": "^3.2.10",
+    "@playwright/test": "^1.32.2",
     "dts-for-context-bridge": "^0.7.1",
     "electron": "24.0.0",
     "esbuild": "^0.17.15",
