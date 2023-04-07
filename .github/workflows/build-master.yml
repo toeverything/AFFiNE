@@ -227,7 +227,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js
+          name: next-js-dev
           path: ./apps/web/.next
 
       - name: Download storybook artifact
