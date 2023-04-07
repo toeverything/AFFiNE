@@ -1,4 +1,5 @@
 import { ExportIcon } from '@blocksuite/icons';
+import type { FC } from 'react';
 import { useState } from 'react';
 
 import { Menu } from '../..';
@@ -13,7 +14,7 @@ import {
 } from './styles';
 
 type SharePanel = 'SharePage' | 'Export' | 'ShareWorkspace';
-const MenuItems: Record<SharePanel, React.FC> = {
+const MenuItems: Record<SharePanel, FC> = {
   SharePage: SharePage,
   Export: Export,
   ShareWorkspace: ShareWorkspace,
@@ -30,7 +31,7 @@ export const ShareMenu = () => {
     activeItem: SharePanel;
     onChangeTab: (selectedItem: SharePanel) => void;
   }
-  const ShareMenu: React.FC<ShareMenuProps> = ({ activeItem, onChangeTab }) => {
+  const ShareMenu: FC<ShareMenuProps> = ({ activeItem, onChangeTab }) => {
     const handleButtonClick = (itemName: SharePanel) => {
       onChangeTab(itemName);
       setActiveItem(itemName);
