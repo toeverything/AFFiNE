@@ -79,7 +79,6 @@ export function ensureRootPinboard(blockSuiteWorkspace: BlockSuiteWorkspace) {
 
   blockSuiteWorkspace.meta.setPageMeta(rootPinboardPage.id, {
     isRootPinboard: true,
-    isPivots: true,
     title,
   });
 

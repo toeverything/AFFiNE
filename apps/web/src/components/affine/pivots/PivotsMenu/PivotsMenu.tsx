@@ -113,7 +113,6 @@ export const PivotsMenu = ({
           <StyledPivot
             data-testid={'remove-from-pivots-button'}
             onClick={() => {
-              setPageMeta(currentMeta.id, { isPivots: false });
               const parentMeta = metas.find(m =>
                 m.subpageIds.includes(currentMeta.id)
               );
