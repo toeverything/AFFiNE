@@ -1,22 +1,30 @@
 import { MenuItem } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { CopyIcon } from '@blocksuite/icons';
-// import { useRouter } from "next/router";
-// import { useCallback } from "react";
-//
-// import { toast } from "../../../utils";
+import { useCallback } from 'react';
 
-export const CopyLink = () => {
+//
+import { toast } from '../../../utils';
+import type { CommonMenuItemProps } from './types';
+
+export const CopyLink = ({ onItemClick, onSelect }: CommonMenuItemProps) => {
   const { t } = useTranslation();
-  // const router = useRouter();
-  // const copyUrl = useCallback(() => {
-  //   const workspaceId = router.query.workspaceId;
-  //   navigator.clipboard.writeText(window.location.href);
-  //   toast(t("Copied link to clipboard"));
-  // }, [router.query.workspaceId, t]);
+
+  const copyUrl = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href);
+    toast(t('Copied link to clipboard'));
+  }, [t]);
+
   return (
     <>
-      <MenuItem onClick={() => {}} icon={<CopyIcon />} disabled={true}>
+      <MenuItem
+        onClick={() => {
+          copyUrl();
+          onItemClick?.();
+          onSelect?.();
+        }}
+        icon={<CopyIcon />}
+      >
         {t('Copy Link')}
       </MenuItem>
     </>

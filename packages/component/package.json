@@ -17,11 +17,14 @@
     "@affine/debug": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/jotai": "workspace:*",
+    "@affine/workspace": "workspace:^",
     "@blocksuite/blocks": "0.0.0-20230406032111-01cf598b-nightly",
     "@blocksuite/editor": "0.0.0-20230406032111-01cf598b-nightly",
     "@blocksuite/global": "0.0.0-20230406032111-01cf598b-nightly",
-    "@blocksuite/icons": "2.1.4",
+    "@blocksuite/icons": "2.1.5",
     "@blocksuite/store": "0.0.0-20230406032111-01cf598b-nightly",
+    "@dnd-kit/core": "^6.0.8",
+    "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.10.7",
     "@emotion/react": "^11.10.6",
     "@emotion/server": "^11.10.0",
@@ -37,6 +40,7 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.2.0",
+    "react-error-boundary": "^4.0.3",
     "react-is": "^18.2.0"
   },
   "devDependencies": {
@@ -65,6 +69,7 @@
     "storybook-dark-mode": "^3.0.0",
     "typescript": "^5.0.3",
     "vite": "^4.2.1",
+    "wait-on": "^7.0.1",
     "yjs": "^13.5.52"
   }
 }

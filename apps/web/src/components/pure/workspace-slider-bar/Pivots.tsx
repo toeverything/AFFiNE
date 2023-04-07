@@ -5,7 +5,7 @@ import type { PageMeta } from '@blocksuite/store';
 import type { MouseEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
-import type { AllWorkspace } from '../../../shared';
+import type { BlockSuiteWorkspace } from '../../../shared';
 import type { TreeNode } from '../../affine/pivots';
 import {
   PivotRender,
@@ -16,11 +16,11 @@ import EmptyItem from './favorite/empty-item';
 import { StyledCollapseButton, StyledListItem } from './shared-styles';
 
 export const PivotInternal = ({
-  currentWorkspace,
+  blockSuiteWorkspace,
   openPage,
   allMetas,
 }: {
-  currentWorkspace: AllWorkspace;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
   openPage: (pageId: string) => void;
   allMetas: PageMeta[];
 }) => {
@@ -40,13 +40,13 @@ export const PivotInternal = ({
   const { data } = usePivotData({
     metas: allMetas.filter(meta => !meta.trash),
     pivotRender: PivotRender,
-    blockSuiteWorkspace: currentWorkspace.blockSuiteWorkspace,
+    blockSuiteWorkspace: blockSuiteWorkspace,
     onClick: handlePivotClick,
     showOperationButton: true,
   });
 
   const { handleAdd, handleDelete, handleDrop } = usePivotHandler({
-    blockSuiteWorkspace: currentWorkspace.blockSuiteWorkspace,
+    blockSuiteWorkspace: blockSuiteWorkspace,
 
     metas: allMetas,
     onAdd,
@@ -63,58 +63,52 @@ export const PivotInternal = ({
   );
 };
 
-export const Pivots = ({
-  currentWorkspace,
-  openPage,
-  allMetas,
-}: {
-  currentWorkspace: AllWorkspace;
+export type PivotsProps = {
+  blockSuiteWorkspace: BlockSuiteWorkspace;
   openPage: (pageId: string) => void;
   allMetas: PageMeta[];
-}) => {
+};
+
+export const Pivots = ({
+  blockSuiteWorkspace,
+  openPage,
+  allMetas,
+}: PivotsProps) => {
   const { t } = useTranslation();
 
   const [showPivot, setShowPivot] = useState(true);
-
+  const metas = useMemo(() => allMetas.filter(meta => !meta.trash), [allMetas]);
   const isPivotEmpty = useMemo(
-    () => allMetas.filter(meta => !meta.trash).length === 0,
-    [allMetas]
+    () => metas.filter(meta => meta.isPivots === true).length === 0,
+    [metas]
   );
 
   return (
-    <>
-      <StyledListItem>
-        <StyledCollapseButton
-          onClick={useCallback(() => {
-            setShowPivot(!showPivot);
-          }, [showPivot])}
-          collapse={showPivot}
-        >
+    <div data-testid="sidebar-pivots-container">
+      <StyledListItem
+        onClick={useCallback(() => {
+          setShowPivot(!showPivot);
+        }, [showPivot])}
+      >
+        <StyledCollapseButton collapse={showPivot}>
           <ArrowDownSmallIcon />
         </StyledCollapseButton>
         <PivotsIcon />
         {t('Pivots')}
       </StyledListItem>
 
-      <MuiCollapse
-        in={showPivot}
-        style={{
-          maxHeight: 300,
-          paddingLeft: '16px',
-          overflowY: 'auto',
-        }}
-      >
+      <MuiCollapse in={showPivot} style={{ paddingLeft: '16px' }}>
         {isPivotEmpty ? (
           <EmptyItem />
         ) : (
           <PivotInternal
-            currentWorkspace={currentWorkspace}
+            blockSuiteWorkspace={blockSuiteWorkspace}
             openPage={openPage}
-            allMetas={allMetas}
+            allMetas={metas}
           />
         )}
       </MuiCollapse>
-    </>
+    </div>
   );
 };
 export default Pivots;

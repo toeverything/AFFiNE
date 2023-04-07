@@ -1,13 +1,13 @@
 import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { CloseIcon, DoneIcon } from '@blocksuite/icons';
+import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 
 import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
 } from '../../../../hooks/affine/use-is-first-load';
-import { StyledListItem } from '../shared-styles';
+import { StyledChangeLog, StyledChangeLogWarper } from '../shared-styles';
 import { StyledLink } from '../style';
 export const ChangeLog = () => {
   const [guideHidden, setGuideHidden] = useGuideHidden();
@@ -30,10 +30,10 @@ export const ChangeLog = () => {
     return <></>;
   }
   return (
-    <>
-      <StyledListItem data-testid="change-log">
+    <StyledChangeLogWarper>
+      <StyledChangeLog data-testid="change-log">
         <StyledLink href={'https://affine.pro'} target="_blank">
-          <DoneIcon />
+          <NewIcon />
           {t("Discover what's new!")}
         </StyledLink>
         <IconButton
@@ -44,8 +44,8 @@ export const ChangeLog = () => {
         >
           <CloseIcon />
         </IconButton>
-      </StyledListItem>
-    </>
+      </StyledChangeLog>
+    </StyledChangeLogWarper>
   );
 };
 

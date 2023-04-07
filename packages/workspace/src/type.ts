@@ -128,3 +128,13 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   SettingsDetail: FC<SettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
 }
+
+export interface AppEvents {
+  // event when app is first initialized
+  // usually used to initialize workspace plugin
+  'app:first-init': () => Promise<void>;
+  // request to gain access to workspace plugin
+  'workspace:access': () => Promise<void>;
+  // request to revoke access to workspace plugin
+  'workspace:revoke': () => Promise<void>;
+}

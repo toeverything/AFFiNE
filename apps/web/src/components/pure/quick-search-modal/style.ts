@@ -63,9 +63,8 @@ export const StyledNotFound = styled('div')(({ theme }) => {
       height: '36px',
     },
 
-    '>svg': {
+    img: {
       marginTop: '10px',
-      height: '200px',
     },
   };
 });
@@ -162,7 +161,7 @@ export const StyledModalFooterContent = styled('button')(({ theme }) => {
     },
   };
 });
-export const StyledListItem = styled('button')(({ theme }) => {
+export const StyledListItem = styled('button')(() => {
   return {
     // width: '612px',
     height: '32px',

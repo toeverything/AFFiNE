@@ -71,7 +71,6 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
           height: 'calc(100% - 52px)',
         }}
         key={pageId}
-        blockSuiteWorkspace={blockSuiteWorkspace}
         mode={isPublic ? 'page' : currentMode}
         page={page}
         onInit={useCallback(

@@ -37,6 +37,7 @@ export const StyledIconWrapper = styled('div')(({ theme }) => {
     color: theme.colors.iconColor,
     ...displayFlex('center', 'center'),
     cursor: 'pointer',
+    fontSize: '24px',
     backgroundColor: theme.colors.pageBackground,
     borderRadius: '5px',
     width: '36px',

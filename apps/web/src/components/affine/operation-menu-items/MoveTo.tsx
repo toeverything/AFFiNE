@@ -6,16 +6,24 @@ import { useRef, useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { PivotsMenu } from '../pivots';
+import type { CommonMenuItemProps } from './types';
+
+export type MoveToProps = CommonMenuItemProps<{
+  dragId: string;
+  dropId: string;
+}> & {
+  metas: PageMeta[];
+  currentMeta: PageMeta;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+};
 
 export const MoveTo = ({
   metas,
   currentMeta,
   blockSuiteWorkspace,
-}: {
-  metas: PageMeta[];
-  currentMeta: PageMeta;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-}) => {
+  onSelect,
+  onItemClick,
+}: MoveToProps) => {
   const { t } = useTranslation();
   const ref = useRef<HTMLButtonElement>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -27,9 +35,11 @@ export const MoveTo = ({
         onClick={e => {
           e.stopPropagation();
           setAnchorEl(ref.current);
+          onItemClick?.();
         }}
         icon={<MoveToIcon />}
         endIcon={<ArrowRightSmallIcon />}
+        data-testid="move-to-menu-item"
       >
         {t('Move to')}
       </MenuItem>
@@ -40,6 +50,7 @@ export const MoveTo = ({
         metas={metas.filter(meta => !meta.trash)}
         currentMeta={currentMeta}
         blockSuiteWorkspace={blockSuiteWorkspace}
+        onPivotClick={onSelect}
       />
     </>
   );
