@@ -4,6 +4,8 @@ import { waitMarkdownImported } from '../../libs/page-logic';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const userA = require('../../fixtures/userA.json');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const userB = require('../../fixtures/userB.json');
 import { test } from '../../libs/playwright';
 import { clickCollaborationPanel } from '../../libs/setting';
 import {
@@ -16,13 +18,14 @@ import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
 import {
   assertCurrentWorkspaceFlavour,
   createWorkspace,
+  openWorkspaceListModal,
 } from '../../libs/workspace';
 
 test.describe('affine workspace', () => {
   test('should login with user A', async ({ page }) => {
     await openHomePage(page);
     await waitMarkdownImported(page);
-    const [a] = await createFakeUser();
+    const [a] = await createFakeUser(userA, userB);
     await loginUser(page, a);
     await clickSideBarCurrentWorkspaceBanner(page);
     const footer = page.locator('[data-testid="workspace-list-modal-footer"]');
@@ -53,5 +56,9 @@ test.describe('affine workspace', () => {
       delay: 50,
     });
     await assertCurrentWorkspaceFlavour('affine', page);
+    await openWorkspaceListModal(page);
+    await page.getByTestId('workspace-list-modal-sign-out').click();
+    await page.waitForTimeout(1000);
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });

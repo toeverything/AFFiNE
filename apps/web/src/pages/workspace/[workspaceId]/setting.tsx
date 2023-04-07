@@ -23,13 +23,13 @@ import React, { useCallback, useEffect } from 'react';
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
-import { affineAuth } from '../../../hooks/affine/use-affine-log-in';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { useTransformWorkspace } from '../../../hooks/use-transform-workspace';
 import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
+import { affineAuth } from '../../../plugins/affine';
 import type { NextPageWithLayout } from '../../../shared';
 
 const settingPanelAtom = atomWithSyncStorage<SettingPanel>(

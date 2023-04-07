@@ -1,4 +1,6 @@
-import { useAtom, useAtomValue } from 'jotai';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { arrayMove } from '@dnd-kit/sortable';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -39,6 +41,7 @@ export function Modals() {
   const { jumpToSubPath } = useRouterHelper(router);
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
+  const setWorkspaces = useSetAtom(jotaiWorkspacesAtom);
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useWorkspacesHelper();
@@ -53,6 +56,16 @@ export function Modals() {
         onClose={useCallback(() => {
           setOpenWorkspacesModal(false);
         }, [setOpenWorkspacesModal])}
+        onMoveWorkspace={useCallback(
+          (activeId, overId) => {
+            const oldIndex = workspaces.findIndex(w => w.id === activeId);
+            const newIndex = workspaces.findIndex(w => w.id === overId);
+            setWorkspaces(workspaces =>
+              arrayMove(workspaces, oldIndex, newIndex)
+            );
+          },
+          [setWorkspaces, workspaces]
+        )}
         onClickWorkspace={useCallback(
           workspace => {
             setOpenWorkspacesModal(false);

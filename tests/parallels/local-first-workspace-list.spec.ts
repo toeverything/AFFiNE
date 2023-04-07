@@ -4,7 +4,7 @@ import { openHomePage } from '../libs/load-page';
 import { waitMarkdownImported } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { clickSideBarAllPageButton } from '../libs/sidebar';
-import { createWorkspace } from '../libs/workspace';
+import { createWorkspace, openWorkspaceListModal } from '../libs/workspace';
 
 test.describe('Local first workspace list', () => {
   test('just one item in the workspace list at first', async ({ page }) => {
@@ -59,8 +59,61 @@ test.describe('Local first workspace list', () => {
     const workspaceName = page.getByTestId('workspace-name');
     await workspaceName.click();
 
+    {
+      //check workspace list length
+      const workspaceCards = await page.$$('data-testid=workspace-card');
+      expect(workspaceCards.length).toBe(3);
+    }
+
+    await page.reload();
+    await openWorkspaceListModal(page);
+    await page.getByTestId('draggable-item').nth(1).click();
+    await page.waitForTimeout(50);
+
+    // @ts-expect-error
+    const currentId: string = await page.evaluate(() => currentWorkspace.id);
+
+    await openWorkspaceListModal(page);
+    const sourceElement = await page.getByTestId('draggable-item').nth(2);
+    const targetElement = await page.getByTestId('draggable-item').nth(1);
+
+    const sourceBox = await sourceElement.boundingBox();
+    const targetBox = await targetElement.boundingBox();
+
+    if (!sourceBox || !targetBox) {
+      throw new Error('sourceBox or targetBox is null');
+    }
+
+    await page.mouse.move(
+      sourceBox.x + sourceBox.width / 2,
+      sourceBox.y + sourceBox.height / 2,
+      {
+        steps: 5,
+      }
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      targetBox.x + targetBox.width / 2,
+      targetBox.y + targetBox.height / 2,
+      {
+        steps: 5,
+      }
+    );
+    await page.mouse.up();
+    await page.waitForTimeout(50);
+    await page.reload();
+    await openWorkspaceListModal(page);
+
     //check workspace list length
-    const workspaceCards = await page.$$('data-testid=workspace-card');
-    expect(workspaceCards.length).toBe(3);
+    {
+      const workspaceCards1 = await page.$$('data-testid=workspace-card');
+      expect(workspaceCards1.length).toBe(3);
+    }
+
+    await page.getByTestId('draggable-item').nth(2).click();
+
+    // @ts-expect-error
+    const nextId: string = await page.evaluate(() => currentWorkspace.id);
+    expect(currentId).toBe(nextId);
   });
 });

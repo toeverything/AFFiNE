@@ -4,7 +4,7 @@ import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
-import type React from 'react';
+import type { FC, MouseEvent } from 'react';
 import { useCallback } from 'react';
 
 import { WorkspaceAvatar } from '../workspace-avatar';
@@ -45,7 +45,7 @@ const PublishIcon = () => {
   return <DefaultPublishIcon style={{ color: '#8699FF' }} />;
 };
 
-const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
+const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
   const { t } = useTranslation();
   let isOwner = true;
   if (workspace.flavour === WorkspaceFlavour.AFFINE) {
@@ -83,7 +83,7 @@ export type WorkspaceCardProps = {
   onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
 };
 
-export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
+export const WorkspaceCard: FC<WorkspaceCardProps> = ({
   workspace,
   onClick,
   onSettingClick,
@@ -95,9 +95,12 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
   return (
     <StyledCard
       data-testid="workspace-card"
-      onClick={useCallback(() => {
-        onClick(workspace);
-      }, [onClick, workspace])}
+      onClick={useCallback(
+        (event: MouseEvent) => {
+          onClick(workspace);
+        },
+        [onClick, workspace]
+      )}
       active={workspace.id === currentWorkspaceId}
     >
       <WorkspaceAvatar size={58} workspace={workspace} />

@@ -40,13 +40,7 @@ const Editor: React.FC<{
     return <>loading...</>;
   }
   return (
-    <BlockSuiteEditor
-      blockSuiteWorkspace={blockSuiteWorkspace}
-      page={page}
-      mode="page"
-      onInit={onInit}
-      onLoad={onLoad}
-    />
+    <BlockSuiteEditor page={page} mode="page" onInit={onInit} onLoad={onLoad} />
   );
 };
 
