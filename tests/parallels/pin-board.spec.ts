@@ -79,6 +79,21 @@ test.describe('PinBoard interaction', () => {
     ).not.toBeNull();
   });
 
+  test('Add pinboard by sidebar operation menu', async ({ page }) => {
+    const rootPinboardMeta = await initHomePageWithPinboard(page);
+
+    await openPinboardPageOperationMenu(page, rootPinboardMeta?.id ?? '');
+    await page.getByTestId('pinboard-operation-add').click();
+    const newPageMeta = (await getMetas(page)).find(
+      m => m.id !== rootPinboardMeta?.id
+    );
+    expect(
+      await page
+        .getByTestId('sidebar-pinboard-container')
+        .getByTestId(`pinboard-${newPageMeta?.id}`)
+    ).not.toBeNull();
+  });
+
   test('Remove from pinboard', async ({ page }) => {
     const rootPinboardMeta = await initHomePageWithPinboard(page);
     await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
