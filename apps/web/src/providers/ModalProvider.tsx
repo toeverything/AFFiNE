@@ -4,7 +4,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useTransition } from 'react';
 
 import {
   currentWorkspaceIdAtom,
@@ -45,10 +45,12 @@ export function Modals() {
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useWorkspacesHelper();
+  const [transitioning, transition] = useTransition();
 
   return (
     <>
       <WorkspaceListModal
+        disabled={transitioning}
         user={user}
         workspaces={workspaces}
         currentWorkspaceId={currentWorkspaceId}
@@ -60,8 +62,10 @@ export function Modals() {
           (activeId, overId) => {
             const oldIndex = workspaces.findIndex(w => w.id === activeId);
             const newIndex = workspaces.findIndex(w => w.id === overId);
-            setWorkspaces(workspaces =>
-              arrayMove(workspaces, oldIndex, newIndex)
+            transition(() =>
+              setWorkspaces(workspaces =>
+                arrayMove(workspaces, oldIndex, newIndex)
+              )
             );
           },
           [setWorkspaces, workspaces]
