@@ -3,27 +3,25 @@ import type { PageMeta } from '@blocksuite/store';
 import type { MouseEvent } from 'react';
 import { useCallback } from 'react';
 
+import type { PinboardNode } from '../../../hooks/affine/use-pinboard-data';
+import { usePinboardData } from '../../../hooks/affine/use-pinboard-data';
+import { usePinboardHandler } from '../../../hooks/affine/use-pinboard-handler';
 import type { BlockSuiteWorkspace } from '../../../shared';
-import type { TreeNode } from '../../affine/pivots';
-import {
-  PivotRender,
-  usePivotData,
-  usePivotHandler,
-} from '../../affine/pivots';
+import { PinboardRender } from '../../affine/pinboard';
 
-export type PivotsProps = {
+export type PinboardProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   openPage: (pageId: string) => void;
   allMetas: PageMeta[];
 };
 
-export const Pivots = ({
+export const Pinboard = ({
   blockSuiteWorkspace,
   openPage,
   allMetas,
-}: PivotsProps) => {
-  const handlePivotClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>, node: TreeNode) => {
+}: PinboardProps) => {
+  const handlePinboardClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>, node: PinboardNode) => {
       openPage(node.id);
     },
     [openPage]
@@ -35,15 +33,15 @@ export const Pivots = ({
     [openPage]
   );
 
-  const { data } = usePivotData({
+  const { data } = usePinboardData({
     metas: allMetas.filter(meta => !meta.trash),
-    pivotRender: PivotRender,
+    pivotRender: PinboardRender,
     blockSuiteWorkspace: blockSuiteWorkspace,
-    onClick: handlePivotClick,
+    onClick: handlePinboardClick,
     showOperationButton: true,
   });
 
-  const { handleAdd, handleDelete, handleDrop } = usePivotHandler({
+  const { handleAdd, handleDelete, handleDrop } = usePinboardHandler({
     blockSuiteWorkspace: blockSuiteWorkspace,
     metas: allMetas,
     onAdd,
@@ -61,4 +59,4 @@ export const Pivots = ({
     </div>
   );
 };
-export default Pivots;
+export default Pinboard;

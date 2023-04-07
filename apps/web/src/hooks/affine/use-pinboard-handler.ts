@@ -4,21 +4,21 @@ import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import { useCallback } from 'react';
 
-import { useBlockSuiteWorkspaceHelper } from '../../../../hooks/use-blocksuite-workspace-helper';
-import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
-import type { BlockSuiteWorkspace } from '../../../../shared';
-import type { NodeRenderProps, TreeNode } from '../types';
+import type { BlockSuiteWorkspace } from '../../shared';
+import { useBlockSuiteWorkspaceHelper } from '../use-blocksuite-workspace-helper';
+import { usePageMetaHelper } from '../use-page-meta';
+import type { NodeRenderProps, TreeNode } from './use-pinboard-data';
 
-const logger = new DebugLogger('pivot');
+const logger = new DebugLogger('pinboard');
 
-const findRootIds = (metas: PageMeta[], id: string): string[] => {
+function findRootIds(metas: PageMeta[], id: string): string[] {
   const parentMeta = metas.find(m => m.subpageIds?.includes(id));
   if (!parentMeta) {
     return [id];
   }
   return [parentMeta.id, ...findRootIds(metas, parentMeta.id)];
-};
-export const usePivotHandler = ({
+}
+export function usePinboardHandler({
   blockSuiteWorkspace,
   metas,
   onAdd,
@@ -30,7 +30,7 @@ export const usePivotHandler = ({
   onAdd?: (addedId: string, parentId: string) => void;
   onDelete?: TreeViewProps<NodeRenderProps>['onDelete'];
   onDrop?: TreeViewProps<NodeRenderProps>['onDrop'];
-}) => {
+}) {
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { getPageMeta, setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
 
@@ -158,6 +158,6 @@ export const usePivotHandler = ({
     handleAdd,
     handleDelete,
   };
-};
+}
 
-export default usePivotHandler;
+export default usePinboardHandler;

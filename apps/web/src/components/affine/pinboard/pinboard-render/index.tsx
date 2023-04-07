@@ -10,9 +10,9 @@ import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
+import type { PinboardNode } from '../../../../hooks/affine/use-pinboard-data';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
-import { StyledCollapsedButton, StyledPivot } from '../styles';
-import type { TreeNode } from '../types';
+import { StyledCollapsedButton, StyledPinboard } from '../styles';
 import EmptyItem from './EmptyItem';
 import { OperationButton } from './OperationButton';
 
@@ -27,7 +27,7 @@ const getIcon = (type: 'root' | 'edgeless' | 'page') => {
   }
 };
 
-export const PivotRender: TreeNode['render'] = (
+export const PinboardRender: PinboardNode['render'] = (
   node,
   { isOver, onAdd, onDelete, collapsed, setCollapsed, isSelected },
   renderProps
@@ -51,7 +51,7 @@ export const PivotRender: TreeNode['render'] = (
   const isRoot = !!currentMeta.isRootPinboard;
   return (
     <>
-      <StyledPivot
+      <StyledPinboard
         data-testid={`pivot-${node.id}`}
         onClick={e => {
           onClick?.(e, node);
@@ -108,9 +108,10 @@ export const PivotRender: TreeNode['render'] = (
             }}
           />
         )}
-      </StyledPivot>
+      </StyledPinboard>
 
       {isRoot && currentMeta.subpageIds.length === 0 && <EmptyItem />}
     </>
   );
 };
+export default PinboardRender;

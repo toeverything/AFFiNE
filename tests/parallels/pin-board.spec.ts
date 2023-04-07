@@ -13,7 +13,7 @@ async function createRootPage(page: Page, title: string) {
   });
   await clickPageMoreActions(page);
   await page.getByTestId('move-to-menu-item').click();
-  await page.getByTestId('root-pivot-button-in-pivots-menu').click();
+  await page.getByTestId('root-pivot-button-in-pinboard-menu').click();
 }
 async function createPivotPage(page: Page, title: string, parentTitle: string) {
   await newPage(page);
@@ -23,7 +23,7 @@ async function createPivotPage(page: Page, title: string, parentTitle: string) {
   });
   await clickPageMoreActions(page);
   await page.getByTestId('move-to-menu-item').click();
-  await page.getByTestId('pivots-menu').getByText(parentTitle).click();
+  await page.getByTestId('pinboard-menu').getByText(parentTitle).click();
 }
 export async function initPinBoard(page: Page) {
   await openHomePage(page);
@@ -36,7 +36,7 @@ test.describe('PinBoard interaction', () => {
   test('Add pivot', async ({ page }) => {
     await initPinBoard(page);
   });
-  test('Remove pivots', async ({ page }) => {
+  test('Remove pinboard', async ({ page }) => {
     await initPinBoard(page);
 
     const child2Meta = await page.evaluate(() => {
@@ -46,12 +46,12 @@ test.describe('PinBoard interaction', () => {
     });
 
     const child2 = await page
-      .getByTestId('sidebar-pivots-container')
+      .getByTestId('sidebar-pinboard-container')
       .getByTestId(`pivot-${child2Meta?.id}`);
     await child2.hover();
     await child2.getByTestId('pivot-operation-button').click();
     await page.getByTestId('pivot-operation-move-to').click();
-    await page.getByTestId('remove-from-pivots-button').click();
+    await page.getByTestId('remove-from-pinboard-button').click();
     await page.waitForTimeout(1000);
     expect(
       await page.locator(`[data-testid="pivot-${child2Meta.id}"]`).count()
@@ -68,16 +68,16 @@ test.describe('PinBoard interaction', () => {
     });
 
     const child2 = await page
-      .getByTestId('sidebar-pivots-container')
+      .getByTestId('sidebar-pinboard-container')
       .getByTestId(`pivot-${child2Meta?.id}`);
     await child2.hover();
     await child2.getByTestId('pivot-operation-button').click();
     await page.getByTestId('pivot-operation-move-to').click();
 
-    await page.fill('[data-testid="pivots-menu-search"]', '111');
+    await page.fill('[data-testid="pinboard-menu-search"]', '111');
     expect(await page.locator('[alt="no result"]').count()).toEqual(1);
 
-    await page.fill('[data-testid="pivots-menu-search"]', 'parent2');
+    await page.fill('[data-testid="pinboard-menu-search"]', 'parent2');
     expect(
       await page.locator('[data-testid="pivot-search-result"]').count()
     ).toEqual(1);

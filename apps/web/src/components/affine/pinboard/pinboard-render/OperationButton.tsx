@@ -14,7 +14,7 @@ import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import { CopyLink, MoveToTrash } from '../../operation-menu-items';
-import { PivotsMenu } from '../PivotsMenu/PivotsMenu';
+import { PinboardMenu } from '../pinboard-menu/';
 import { StyledOperationButton } from '../styles';
 
 export type OperationButtonProps = {
@@ -46,7 +46,7 @@ export const OperationButton = ({
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [operationMenuOpen, setOperationMenuOpen] = useState(false);
-  const [pivotsMenuOpen, setPivotsMenuOpen] = useState(false);
+  const [pivotsMenuOpen, setPinboardMenuOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const menuIndex = useMemo(() => modalIndex + 1, [modalIndex]);
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
@@ -55,7 +55,7 @@ export const OperationButton = ({
     <MuiClickAwayListener
       onClickAway={() => {
         setOperationMenuOpen(false);
-        setPivotsMenuOpen(false);
+        setPinboardMenuOpen(false);
       }}
     >
       <div
@@ -64,7 +64,7 @@ export const OperationButton = ({
         }}
         onMouseLeave={() => {
           setOperationMenuOpen(false);
-          setPivotsMenuOpen(false);
+          setPinboardMenuOpen(false);
         }}
       >
         <StyledOperationButton
@@ -103,7 +103,7 @@ export const OperationButton = ({
               data-testid="pivot-operation-move-to"
               onClick={() => {
                 setOperationMenuOpen(false);
-                setPivotsMenuOpen(true);
+                setPinboardMenuOpen(true);
               }}
               icon={<MoveToIcon />}
             >
@@ -136,7 +136,7 @@ export const OperationButton = ({
           <CopyLink />
         </PureMenu>
 
-        <PivotsMenu
+        <PinboardMenu
           anchorEl={anchorEl}
           open={pivotsMenuOpen}
           placement="bottom-start"
@@ -144,7 +144,7 @@ export const OperationButton = ({
           metas={metas}
           currentMeta={currentMeta}
           blockSuiteWorkspace={blockSuiteWorkspace}
-          showRemovePivots={true}
+          showRemovePinboard={true}
         />
         <MoveToTrash.ConfirmModal
           open={confirmModalOpen}

@@ -28,7 +28,7 @@ export const StyledCollapsedButton = styled('button')<{
   };
 });
 
-export const StyledPivot = styled('div')<{
+export const StyledPinboard = styled('div')<{
   disable?: boolean;
   active?: boolean;
   isOver?: boolean;

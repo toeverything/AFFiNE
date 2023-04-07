@@ -5,7 +5,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { useMemo, useRef, useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../../shared';
-import { PivotsMenu } from '../pivots';
+import { Index } from '../pinboard';
 import type { CommonMenuItemProps } from './types';
 
 export type MoveToProps = CommonMenuItemProps<{
@@ -43,7 +43,7 @@ export const MoveTo = ({
       >
         {t('Move to')}
       </MenuItem>
-      <PivotsMenu
+      <Index
         anchorEl={anchorEl}
         open={open}
         placement="left-start"
@@ -53,7 +53,7 @@ export const MoveTo = ({
         )}
         currentMeta={currentMeta}
         blockSuiteWorkspace={blockSuiteWorkspace}
-        onPivotClick={onSelect}
+        onPinboardClick={onSelect}
       />
     </>
   );
