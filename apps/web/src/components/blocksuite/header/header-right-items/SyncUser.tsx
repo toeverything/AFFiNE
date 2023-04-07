@@ -16,9 +16,9 @@ import { assertEquals, assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
-import { affineAuth } from '../../../../hooks/affine/use-affine-log-in';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useTransformWorkspace } from '../../../../hooks/use-transform-workspace';
+import { affineAuth } from '../../../../plugins/affine';
 import type { AffineOfficialWorkspace } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 

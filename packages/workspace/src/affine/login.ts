@@ -43,9 +43,13 @@ export function parseIdToken(token: string): AccessTokenMessage {
   return JSON.parse(decode(token.split('.')[1]));
 }
 
-export const isExpired = (token: AccessTokenMessage): boolean => {
+export const isExpired = (
+  token: AccessTokenMessage,
+  // earlier than `before`, consider it expired
+  before = 60 // 1 minute
+): boolean => {
   const now = Math.floor(Date.now() / 1000);
-  return token.exp < now;
+  return token.exp < now - before;
 };
 
 export const setLoginStorage = (login: LoginResponse) => {

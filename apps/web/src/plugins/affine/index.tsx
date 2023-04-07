@@ -1,4 +1,13 @@
-import { getLoginStorage } from '@affine/workspace/affine/login';
+import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
+import {
+  clearLoginStorage,
+  createAffineAuth,
+  getLoginStorage,
+  parseIdToken,
+  setLoginStorage,
+  SignMethod,
+} from '@affine/workspace/affine/login';
+import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { AffineWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -12,10 +21,11 @@ import { PageNotFoundError } from '../../components/affine/affine-error-eoundary
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
+import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh-auth-token';
 import { AffineSWRConfigProvider } from '../../providers/AffineSWRConfigProvider';
 import { BlockSuiteWorkspace } from '../../shared';
-import { affineApis } from '../../shared/apis';
-import { initPage } from '../../utils';
+import { affineApis, prefixUrl } from '../../shared/apis';
+import { initPage, toast } from '../../utils';
 import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
 
@@ -56,11 +66,32 @@ const getPersistenceAllWorkspace = () => {
   return allWorkspaces;
 };
 
+export const affineAuth = createAffineAuth(prefixUrl);
+
 export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
   flavour: WorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
-  cleanup: () => {
-    storage.removeItem(kAffineLocal);
+  Events: {
+    'workspace:access': async () => {
+      const response = await affineAuth.generateToken(SignMethod.Google);
+      if (response) {
+        setLoginStorage(response);
+        const user = parseIdToken(response.token);
+        jotaiStore.set(currentAffineUserAtom, user);
+      } else {
+        toast('Login failed');
+      }
+    },
+    'workspace:revoke': async () => {
+      jotaiStore.set(jotaiWorkspacesAtom, workspaces =>
+        workspaces.filter(
+          workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
+        )
+      );
+      storage.removeItem(kAffineLocal);
+      clearLoginStorage();
+      jotaiStore.set(currentAffineUserAtom, null);
+    },
   },
   CRUD: {
     create: async blockSuiteWorkspace => {
@@ -201,6 +232,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
   },
   UI: {
     Provider: ({ children }) => {
+      useAffineRefreshAuthToken();
       return <AffineSWRConfigProvider>{children}</AffineSWRConfigProvider>;
     },
     PageDetail: ({ currentWorkspace, currentPageId }) => {
