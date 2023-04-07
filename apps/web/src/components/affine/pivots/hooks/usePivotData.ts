@@ -8,20 +8,6 @@ const flattenToTree = (
   pivotRender: TreeNode['render'],
   renderProps: RenderProps
 ): TreeNode[] => {
-  // Compatibility process: the old data not has `subpageIds`, it is a root page
-  // const rootMetas = metas
-  //   .filter(meta => {
-  //     if (meta.subpageIds) {
-  //       return (
-  //         !meta.isRootPinboard &&
-  //         metas.find(m => {
-  //           return m.subpageIds?.includes(meta.id);
-  //         }) === undefined
-  //       );
-  //     }
-  //     return true;
-  //   })
-  //   .filter(meta => meta.isPivots === true);
   const rootMeta = metas.find(meta => meta.isRootPinboard);
   const helper = (internalMetas: PageMeta[]): TreeNode[] => {
     return internalMetas.reduce<TreeNode[]>((returnedMetas, internalMeta) => {
@@ -44,7 +30,7 @@ const flattenToTree = (
       return returnedMetas;
     }, []);
   };
-  return helper(rootMeta ? [rootMeta] : []);
+  return helper(rootMeta ? [{ ...rootMeta, renderTopLine: false }] : []);
 };
 
 export const usePivotData = ({

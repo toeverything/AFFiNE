@@ -144,11 +144,12 @@ export const TreeNode = <RenderProps,>({
 }: TreeNodeProps<RenderProps>) => {
   const { indent, enableDnd, collapsedIds } = otherProps;
   const collapsed = collapsedIds.includes(node.id);
+  const { renderTopLine = true, renderBottomLine = true } = node;
 
   return (
     <StyledTreeNodeContainer ref={dragRef} isDragging={isDragging}>
       <StyledTreeNodeWrapper>
-        {enableDnd && index === 0 && (
+        {enableDnd && renderTopLine && index === 0 && (
           <NodeLine
             node={node}
             {...otherProps}
@@ -174,13 +175,15 @@ export const TreeNode = <RenderProps,>({
           />
         )}
 
-        {enableDnd && (!node.children?.length || collapsed) && (
-          <NodeLine
-            node={node}
-            {...otherProps}
-            allowDrop={!isDragging && allowDrop}
-          />
-        )}
+        {enableDnd &&
+          renderBottomLine &&
+          (!node.children?.length || collapsed) && (
+            <NodeLine
+              node={node}
+              {...otherProps}
+              allowDrop={!isDragging && allowDrop}
+            />
+          )}
       </StyledTreeNodeWrapper>
       <StyledCollapse in={!collapsed} indent={indent}>
         {node.children &&
