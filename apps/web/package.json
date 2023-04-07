@@ -58,13 +58,13 @@
     "@vanilla-extract/next-plugin": "^2.1.1",
     "dotenv": "^16.0.3",
     "eslint": "^8.37.0",
-    "eslint-config-next": "^13.2.4",
-    "next": "=13.2.3",
+    "eslint-config-next": "^13.3.0",
+    "next": "^13.3.0",
     "next-debug-local": "^0.1.5",
     "next-router-mock": "^0.9.3",
     "raw-loader": "^4.0.2",
     "redux": "^4.2.1",
-    "swc-plugin-coverage-instrument": "=0.0.14",
+    "swc-plugin-coverage-instrument": "^0.0.15",
     "typescript": "^5.0.3",
     "webpack": "^5.78.0"
   }

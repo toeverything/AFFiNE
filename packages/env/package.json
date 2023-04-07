@@ -4,7 +4,7 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "next": "=13.2.3",
+    "next": "^13.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zod": "^3.21.4"
