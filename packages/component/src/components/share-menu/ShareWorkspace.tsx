@@ -1,14 +1,32 @@
-import type { AffineWorkspace } from '@affine/workspace/type';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { FC } from 'react';
 
 import { Button } from '../..';
 import type { ShareMenuProps } from '.';
+import { buttonStyle, descriptionStyle, menuItemStyle } from './index.css';
 
 export const ShareWorkspace: FC<ShareMenuProps> = props => {
   const isAffineWorkspace = props.workspace.flavour === WorkspaceFlavour.AFFINE;
   if (!isAffineWorkspace) {
-    return null;
+    return (
+      <div className={menuItemStyle}>
+        <div className={descriptionStyle}>
+          Sharing page publicly requires AFFiNE Cloud service.
+        </div>
+        <Button
+          data-testid="share-menu-enable-affine-cloud-button"
+          className={buttonStyle}
+          type="light"
+          shape="circle"
+          onClick={() => {
+            props.onEnableAffineCloud(props.workspace as LocalWorkspace);
+          }}
+        >
+          Enable AFFiNE Cloud
+        </Button>
+      </div>
+    );
   }
   const isPublicWorkspace = (props.workspace as AffineWorkspace).public;
   return (
