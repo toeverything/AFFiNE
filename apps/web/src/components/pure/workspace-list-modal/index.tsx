@@ -29,6 +29,7 @@ import {
 } from './styles';
 
 interface WorkspaceModalProps {
+  disabled?: boolean;
   user: AccessTokenMessage | null;
   workspaces: AllWorkspace[];
   currentWorkspaceId: AllWorkspace['id'] | null;
@@ -43,6 +44,7 @@ interface WorkspaceModalProps {
 }
 
 export const WorkspaceListModal = ({
+  disabled,
   open,
   onClose,
   workspaces,
@@ -96,6 +98,7 @@ export const WorkspaceListModal = ({
 
         <StyledModalContent>
           <WorkspaceList
+            disabled={disabled}
             items={workspaces}
             currentWorkspaceId={currentWorkspaceId}
             onClick={onClickWorkspace}
