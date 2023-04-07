@@ -53,7 +53,7 @@ export const StyledCollapseButton = styled('button')<{
     margin: 'auto',
     color: theme.colors.iconColor,
     opacity: '.6',
-    display: show ? 'block' : 'none',
+    display: show ? 'flex' : 'none',
     svg: {
       transform: `rotate(${collapse ? '0' : '-90'}deg)`,
     },
@@ -160,7 +160,7 @@ export const StyledChangeLog = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledChangeLogWarper = styled('div')(({ theme }) => {
+export const StyledChangeLogWrapper = styled('div')(() => {
   return {
     width: 'calc(100% + 4px)',
     height: '0px',

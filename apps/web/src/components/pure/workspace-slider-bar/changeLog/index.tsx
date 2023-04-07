@@ -7,8 +7,9 @@ import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
 } from '../../../../hooks/affine/use-is-first-load';
-import { StyledChangeLog, StyledChangeLogWarper } from '../shared-styles';
+import { StyledChangeLog, StyledChangeLogWrapper } from '../shared-styles';
 import { StyledLink } from '../style';
+
 export const ChangeLog = () => {
   const [guideHidden, setGuideHidden] = useGuideHidden();
   const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
@@ -30,7 +31,7 @@ export const ChangeLog = () => {
     return <></>;
   }
   return (
-    <StyledChangeLogWarper>
+    <StyledChangeLogWrapper>
       <StyledChangeLog data-testid="change-log">
         <StyledLink href={'https://affine.pro'} target="_blank">
           <NewIcon />
@@ -45,7 +46,7 @@ export const ChangeLog = () => {
           <CloseIcon />
         </IconButton>
       </StyledChangeLog>
-    </StyledChangeLogWarper>
+    </StyledChangeLogWrapper>
   );
 };
 

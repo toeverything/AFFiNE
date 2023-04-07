@@ -21,7 +21,7 @@ export const StyledCollapsedButton = styled('button')<{
     margin: 'auto',
     color: theme.colors.iconColor,
     opacity: '.6',
-    display: show ? 'block' : 'none',
+    display: show ? 'flex' : 'none',
     svg: {
       transform: `rotate(${collapse ? '0' : '-90'}deg)`,
     },
