@@ -36,6 +36,8 @@ const AllPage: NextPageWithLayout = () => {
     }
     if (currentWorkspace.flavour !== WorkspaceFlavour.LOCAL) {
       // only create a new page for local workspace
+      // just ensure the root pinboard exists
+      ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
       return;
     }
     const localProvider = currentWorkspace.providers.find(
@@ -53,8 +55,9 @@ const AllPage: NextPageWithLayout = () => {
             init: true,
           });
           jumpToPage(currentWorkspace.id, pageId);
-          ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
         }
+        // no matter workspace is empty, ensure the root pinboard exists
+        ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
       };
       provider.callbacks.add(callback);
       return () => {
