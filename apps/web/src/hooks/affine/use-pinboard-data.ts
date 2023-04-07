@@ -20,7 +20,7 @@ export type PinboardNode = Node<NodeRenderProps>;
 
 function flattenToTree(
   metas: PageMeta[],
-  pivotRender: PinboardNode['render'],
+  pinboardRender: PinboardNode['render'],
   renderProps: RenderProps
 ): PinboardNode[] {
   const rootMeta = metas.find(meta => meta.isRootPinboard);
@@ -36,7 +36,7 @@ function flattenToTree(
           ...internalMeta,
           children: helper(childrenMetas),
           render: (node, props) =>
-            pivotRender(node, props, {
+            pinboardRender(node, props, {
               ...renderProps,
               currentMeta: internalMeta,
               metas,
@@ -53,22 +53,22 @@ function flattenToTree(
 
 export function usePinboardData({
   metas,
-  pivotRender,
+  pinboardRender,
   blockSuiteWorkspace,
   onClick,
   showOperationButton,
 }: {
   metas: PageMeta[];
-  pivotRender: PinboardNode['render'];
+  pinboardRender: PinboardNode['render'];
 } & RenderProps) {
   const data = useMemo(
     () =>
-      flattenToTree(metas, pivotRender, {
+      flattenToTree(metas, pinboardRender, {
         blockSuiteWorkspace,
         onClick,
         showOperationButton,
       }),
-    [blockSuiteWorkspace, metas, onClick, pivotRender, showOperationButton]
+    [blockSuiteWorkspace, metas, onClick, pinboardRender, showOperationButton]
   );
 
   return {

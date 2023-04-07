@@ -67,7 +67,7 @@ export const PinboardMenu = ({
 
   const { data } = usePinboardData({
     metas,
-    pivotRender: PinboardRender,
+    pinboardRender: PinboardRender,
     blockSuiteWorkspace,
     onClick: (e, node) => {
       handleClick(node.id);
@@ -79,7 +79,7 @@ export const PinboardMenu = ({
       width={320}
       height={480}
       {...pureMenuProps}
-      data-testid="pivots-menu"
+      data-testid="pinboard-menu"
     >
       <StyledSearchContainer>
         <label>
@@ -92,7 +92,7 @@ export const PinboardMenu = ({
           height={32}
           noBorder={true}
           onClick={e => e.stopPropagation()}
-          data-testid="pivots-menu-search"
+          data-testid="pinboard-menu-search"
         />
       </StyledSearchContainer>
 

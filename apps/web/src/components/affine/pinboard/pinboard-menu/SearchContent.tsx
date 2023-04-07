@@ -32,7 +32,7 @@ export const SearchContent = ({
               onClick={() => {
                 onClick?.(meta.id);
               }}
-              data-testid="pivot-search-result"
+              data-testid="pinboard-search-result"
             >
               {record[meta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
               {meta.title}

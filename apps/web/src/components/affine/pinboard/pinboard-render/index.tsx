@@ -52,7 +52,7 @@ export const PinboardRender: PinboardNode['render'] = (
   return (
     <>
       <StyledPinboard
-        data-testid={`pivot-${node.id}`}
+        data-testid={`pinboard-${node.id}`}
         onClick={e => {
           onClick?.(e, node);
         }}
@@ -75,7 +75,7 @@ export const PinboardRender: PinboardNode['render'] = (
 
         {showRename ? (
           <Input
-            data-testid={`pivot-input-${node.id}`}
+            data-testid={`pinboard-input-${node.id}`}
             value={currentMeta?.title ?? ''}
             placeholder="Untitled"
             onClick={e => e.stopPropagation()}

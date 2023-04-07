@@ -35,7 +35,7 @@ export const Pinboard = ({
 
   const { data } = usePinboardData({
     metas: allMetas.filter(meta => !meta.trash),
-    pivotRender: PinboardRender,
+    pinboardRender: PinboardRender,
     blockSuiteWorkspace: blockSuiteWorkspace,
     onClick: handlePinboardClick,
     showOperationButton: true,
@@ -47,8 +47,11 @@ export const Pinboard = ({
     onAdd,
   });
 
+  if (!data.length) {
+    return null;
+  }
   return (
-    <div data-testid="sidebar-pivots-container">
+    <div data-testid="sidebar-pinboard-container">
       <TreeView
         data={data}
         onAdd={handleAdd}
