@@ -33,6 +33,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
     editorRef.current = new EditorContainer();
+    editorRef.current.autofocus = true;
     globalThis.currentEditor = editorRef.current;
   }
   const editor = editorRef.current;
