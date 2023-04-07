@@ -35,17 +35,18 @@ const ProviderWrapper: FC<PropsWithChildren> = ({ children }) => {
 };
 
 const initPinBoard = async () => {
-  //  create one workspace with 2 root pages and 2 pivot pages
+  //  create one workspace with 2 root pages and 2 pinboard pages
   //  - hasPinboardPage
-  //    - pivot1
-  //    - pivot2
-  //  - noPinboardPage
+  //    - hasPinboardPage
+  //      - pinboard1
+  //      - pinboard2
+  //    - noPinboardPage
 
   const mutationHook = renderHook(() => useWorkspacesHelper(), {
     wrapper: ProviderWrapper,
   });
   const rootPageIds = ['hasPinboardPage', 'noPinboardPage'];
-  const pivotPageIds = ['pivot1', 'pivot2'];
+  const pinboardPageIds = ['pinboard1', 'pinboard2'];
   const id = await mutationHook.result.current.createLocalWorkspace('test0');
   await store.get(workspacesAtom);
   mutationHook.rerender();
@@ -59,17 +60,24 @@ const initPinBoard = async () => {
   const blockSuiteWorkspace =
     currentWorkspace?.blockSuiteWorkspace as BlockSuiteWorkspace;
 
+  // create root pinboard
+  mutationHook.result.current.createWorkspacePage(id, 'rootPinboard');
+  blockSuiteWorkspace.meta.setPageMeta('rootPinboard', {
+    isRootPinboard: true,
+    subpageIds: rootPageIds,
+  });
+  // create parent
   rootPageIds.forEach(rootPageId => {
     mutationHook.result.current.createWorkspacePage(id, rootPageId);
     blockSuiteWorkspace.meta.setPageMeta(rootPageId, {
-      isPinboard: true,
-      subpageIds: rootPageId === rootPageIds[0] ? pivotPageIds : [],
+      subpageIds: rootPageId === rootPageIds[0] ? pinboardPageIds : [],
     });
   });
-  pivotPageIds.forEach(pivotId => {
-    mutationHook.result.current.createWorkspacePage(id, pivotId);
-    blockSuiteWorkspace.meta.setPageMeta(pivotId, {
-      title: pivotId,
+  // create children to firs parent
+  pinboardPageIds.forEach(pinboardId => {
+    mutationHook.result.current.createWorkspacePage(id, pinboardId);
+    blockSuiteWorkspace.meta.setPageMeta(pinboardId, {
+      title: pinboardId,
     });
   });
 
@@ -93,54 +101,51 @@ const initPinBoard = async () => {
 
   return {
     rootPageIds,
-    pivotPageIds,
+    pinboardPageIds,
     app,
     blockSuiteWorkspace,
   };
 };
 const openOperationMenu = async (app: RenderResult, pageId: string) => {
-  const rootPinboard = await app.findByTestId(`pivot-${pageId}`);
+  const rootPinboard = await app.findByTestId(`pinboard-${pageId}`);
   const operationBtn = (await rootPinboard.querySelector(
-    '[data-testid="pivot-operation-button"]'
+    '[data-testid="pinboard-operation-button"]'
   )) as HTMLElement;
   await operationBtn.click();
-  const menu = await app.findByTestId('pivot-operation-menu');
+  const menu = await app.findByTestId('pinboard-operation-menu');
   expect(menu).toBeInTheDocument();
 };
 describe('PinBoard', () => {
-  test('add pivot', async () => {
-    const { app, blockSuiteWorkspace, rootPageIds, pivotPageIds } =
-      await initPinBoard();
-    const [hasPinboardPageId] = rootPageIds;
-    await openOperationMenu(app, hasPinboardPageId);
+  test('add pinboard', async () => {
+    const { app, blockSuiteWorkspace, rootPageIds } = await initPinBoard();
+    const [hasChildrenPageId] = rootPageIds;
+    await openOperationMenu(app, hasChildrenPageId);
 
-    const addBtn = await app.findByTestId('pivot-operation-add');
+    const addBtn = await app.findByTestId('pinboard-operation-add');
     await addBtn.click();
 
-    const metas = blockSuiteWorkspace.meta.pageMetas ?? [];
-    const rootPageMeta =
-      blockSuiteWorkspace.meta.getPageMeta(hasPinboardPageId);
-    const addedPageMeta = metas.find(
-      meta => !pivotPageIds.includes(meta.id) && !rootPageIds.includes(meta.id)
-    ) as PageMeta;
+    const hasChildrenPageMeta =
+      blockSuiteWorkspace.meta.getPageMeta(hasChildrenPageId);
 
     // Page meta have been added
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(5);
+    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(6);
     // New page meta is added in initial page meta
 
-    expect(rootPageMeta?.subpageIds.includes(addedPageMeta.id)).toBe(true);
+    expect(hasChildrenPageMeta?.subpageIds.length).toBe(3);
     app.unmount();
   });
 
-  test('delete pivot', async () => {
+  test('delete pinboard', async () => {
     const {
       app,
       blockSuiteWorkspace,
-      rootPageIds: [hasPinboardPageId],
+      rootPageIds: [hasChildrenPageId],
     } = await initPinBoard();
-    await openOperationMenu(app, hasPinboardPageId);
+    await openOperationMenu(app, hasChildrenPageId);
 
-    const deleteBtn = await app.findByTestId('pivot-operation-move-to-trash');
+    const deleteBtn = await app.findByTestId(
+      'pinboard-operation-move-to-trash'
+    );
     await deleteBtn.click();
 
     const confirmBtn = await app.findByTestId('move-to-trash-confirm');
@@ -154,54 +159,53 @@ describe('PinBoard', () => {
     app.unmount();
   });
 
-  test('rename pivot', async () => {
+  test('rename pinboard', async () => {
     const {
       app,
-      rootPageIds: [hasPinboardPageId],
+      rootPageIds: [hasChildrenPageId],
     } = await initPinBoard();
-    await openOperationMenu(app, hasPinboardPageId);
+    await openOperationMenu(app, hasChildrenPageId);
 
-    const renameBtn = await app.findByTestId('pivot-operation-rename');
+    const renameBtn = await app.findByTestId('pinboard-operation-rename');
     await renameBtn.click();
 
-    const input = await app.findByTestId(`pivot-input-${hasPinboardPageId}`);
+    const input = await app.findByTestId(`pinboard-input-${hasChildrenPageId}`);
     expect(input).toBeInTheDocument();
 
     // TODO: Fix this test
     // fireEvent.change(input, { target: { value: 'tteesstt' } });
-    //
     // expect(
-    //   blockSuiteWorkspace.meta.getPageMeta(rootPageId)?.name
+    //   blockSuiteWorkspace.meta.getPageMeta(hasChildrenPageId)?.name
     // ).toBe('tteesstt');
     app.unmount();
   });
 
-  test('move pivot', async () => {
+  test('move pinboard', async () => {
     const {
       app,
       blockSuiteWorkspace,
-      rootPageIds: [hasPinboardPageId],
-      pivotPageIds: [pivotId1, pivotId2],
+      rootPageIds: [hasChildrenPageId],
+      pinboardPageIds: [pinboardId1, pinboardId2],
     } = await initPinBoard();
-    await openOperationMenu(app, pivotId1);
+    await openOperationMenu(app, pinboardId1);
 
-    const moveToBtn = await app.findByTestId('pivot-operation-move-to');
+    const moveToBtn = await app.findByTestId('pinboard-operation-move-to');
     await moveToBtn.click();
 
-    const pivotsMenu = await app.findByTestId('pinboard-menu');
-    expect(pivotsMenu).toBeInTheDocument();
+    const pinboardMenu = await app.findByTestId('pinboard-menu');
+    expect(pinboardMenu).toBeInTheDocument();
 
     await (
-      pivotsMenu.querySelector(
-        `[data-testid="pivot-${pivotId2}"]`
+      pinboardMenu.querySelector(
+        `[data-testid="pinboard-${pinboardId2}"]`
       ) as HTMLElement
     ).click();
 
-    const rootPageMeta =
-      blockSuiteWorkspace.meta.getPageMeta(hasPinboardPageId);
+    const hasChildrenPageMeta =
+      blockSuiteWorkspace.meta.getPageMeta(hasChildrenPageId);
 
-    expect(rootPageMeta?.subpageIds.includes(pivotId1)).toBe(false);
-    expect(rootPageMeta?.subpageIds.includes(pivotId2)).toBe(true);
+    expect(hasChildrenPageMeta?.subpageIds.includes(pinboardId1)).toBe(false);
+    expect(hasChildrenPageMeta?.subpageIds.includes(pinboardId2)).toBe(true);
     app.unmount();
   });
 
@@ -209,12 +213,12 @@ describe('PinBoard', () => {
     const {
       app,
       blockSuiteWorkspace,
-      rootPageIds: [hasPinboardPageId],
-      pivotPageIds: [pivotId1],
+      rootPageIds: [hasChildrenPageId],
+      pinboardPageIds: [pinboardId1],
     } = await initPinBoard();
-    await openOperationMenu(app, pivotId1);
+    await openOperationMenu(app, pinboardId1);
 
-    const moveToBtn = await app.findByTestId('pivot-operation-move-to');
+    const moveToBtn = await app.findByTestId('pinboard-operation-move-to');
     await moveToBtn.click();
 
     const removeFromPinboardBtn = await app.findByTestId(
@@ -223,9 +227,10 @@ describe('PinBoard', () => {
     removeFromPinboardBtn.click();
 
     const hasPinboardPageMeta =
-      blockSuiteWorkspace.meta.getPageMeta(hasPinboardPageId);
+      blockSuiteWorkspace.meta.getPageMeta(hasChildrenPageId);
 
     expect(hasPinboardPageMeta?.subpageIds.length).toBe(1);
-    expect(hasPinboardPageMeta?.subpageIds.includes(pivotId1)).toBe(false);
+    expect(hasPinboardPageMeta?.subpageIds.includes(pinboardId1)).toBe(false);
+    app.unmount();
   });
 });
