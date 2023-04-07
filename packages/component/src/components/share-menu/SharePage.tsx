@@ -1,18 +1,22 @@
+import type { FC } from 'react';
+
 import { Button } from '../..';
-import { Switch } from '../../ui/switch/Switch';
-const SharePage = () => {
+import type { ShareMenuProps } from './index';
+import { buttonStyle, descriptionStyle, menuItemStyle } from './index.css';
+const SharePage: FC<ShareMenuProps> = props => {
   const handleSwitchChange = (checked: boolean) => {
     console.log('Switch state:', checked);
   };
   return (
-    <div>
-      <div>Sharing page publicly requires AFFiNE Cloud service.</div>
+    <div className={menuItemStyle}>
+      <div className={descriptionStyle}>
+        Sharing page publicly requires AFFiNE Cloud service.
+      </div>
       <div>
-        <Button type="light" shape="circle">
+        <Button className={buttonStyle} type="light" shape="round">
           Enable AFFiNE Cloud
         </Button>
       </div>
-      <Switch onChange={handleSwitchChange}>ggsimida</Switch>
     </div>
   );
 };

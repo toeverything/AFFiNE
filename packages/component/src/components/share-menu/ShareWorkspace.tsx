@@ -1,6 +1,16 @@
+import type { AffineWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { FC } from 'react';
+
 import { Button } from '../..';
-const ShareWorkspace = () => {
-  const isPublicWorkspace = false;
+import type { ShareMenuProps } from '.';
+
+export const ShareWorkspace: FC<ShareMenuProps> = props => {
+  const isAffineWorkspace = props.workspace.flavour === WorkspaceFlavour.AFFINE;
+  if (!isAffineWorkspace) {
+    return null;
+  }
+  const isPublicWorkspace = (props.workspace as AffineWorkspace).public;
   return (
     <div>
       {isPublicWorkspace ? (
@@ -14,7 +24,7 @@ const ShareWorkspace = () => {
       <Button
         data-testid="share-menu-publish-to-web-button"
         onClick={() => {
-          console.log('Open Workspace Settings');
+          props.onOpenWorkspaceSettings(props.workspace);
         }}
         type="light"
         shape="circle"
@@ -24,5 +34,3 @@ const ShareWorkspace = () => {
     </div>
   );
 };
-
-export default ShareWorkspace;

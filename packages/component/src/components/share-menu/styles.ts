@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { displayFlex, styled, TextButton } from '../..';
+
 export const StyledShareButton = styled(TextButton)(({ theme }) => {
   return {
     padding: '4px 8px',
@@ -18,13 +17,6 @@ export const StyledShareButton = styled(TextButton)(({ theme }) => {
 export const StyledTabsWrapper = styled('div')(() => {
   return {
     ...displayFlex('space-around', 'center'),
-    position: 'relative',
-  };
-});
-export const StyledExportWrapper = styled('div')(() => {
-  return {
-    ...displayFlex('center', 'start'),
-    flexDirection: 'column',
     position: 'relative',
   };
 });
@@ -61,6 +53,7 @@ export const StyledIndicator = styled('div')<{ activeIndex: number }>(
   ({ theme, activeIndex }) => {
     return {
       height: '2px',
+      margin: '0 10px',
       background: theme.colors.textColor,
       position: 'absolute',
       left: `calc(${activeIndex * 100}% / 3)`,
@@ -69,14 +62,3 @@ export const StyledIndicator = styled('div')<{ activeIndex: number }>(
     };
   }
 );
-export const StyledLink = styled(Link)(() => {
-  return {
-    flexGrow: 1,
-    textAlign: 'left',
-    color: 'inherit',
-    ...displayFlex('flex-start', 'center'),
-    ':visited': {
-      color: 'inherit',
-    },
-  };
-});

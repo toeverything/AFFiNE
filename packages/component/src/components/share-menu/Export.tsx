@@ -1,26 +1,35 @@
+import { ContentParser } from '@blocksuite/blocks/content-parser';
+import type { FC } from 'react';
+import { useRef } from 'react';
+
 import { Button } from '../..';
-import { StyledExportWrapper } from './styles';
-const Export = () => {
+import type { ShareMenuProps } from './index';
+const Export: FC<ShareMenuProps> = props => {
+  const contentParserRef = useRef<ContentParser>();
   return (
-    <StyledExportWrapper>
+    <div>
       <div>Download a static copy of your page to share with others.</div>
       <Button
         onClick={() => {
-          // @ts-expect-error
-          globalThis.currentEditor.contentParser.onExportHtml();
+          if (!contentParserRef.current) {
+            contentParserRef.current = new ContentParser(props.currentPage);
+          }
+          return contentParserRef.current.onExportHtml();
         }}
       >
         Export to HTML
       </Button>
       <Button
         onClick={() => {
-          // @ts-expect-error
-          globalThis.currentEditor.contentParser.onExportMarkdown();
+          if (!contentParserRef.current) {
+            contentParserRef.current = new ContentParser(props.currentPage);
+          }
+          return contentParserRef.current.onExportMarkdown();
         }}
       >
         Export to Markdown
       </Button>
-    </StyledExportWrapper>
+    </div>
   );
 };
 

@@ -1,30 +1,45 @@
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { ExportIcon } from '@blocksuite/icons';
+import type { Page } from '@blocksuite/store';
 import type { FC } from 'react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Menu } from '../..';
 import Export from './Export';
+import { tabStyle } from './index.css';
 import SharePage from './SharePage';
-import ShareWorkspace from './ShareWorkspace';
-import {
-  StyledIndicator,
-  StyledShareButton,
-  StyledTabsWrapper,
-  TabItem,
-} from './styles';
+import { ShareWorkspace } from './ShareWorkspace';
+import { StyledIndicator, StyledShareButton, TabItem } from './styles';
 
 type SharePanel = 'SharePage' | 'Export' | 'ShareWorkspace';
-const MenuItems: Record<SharePanel, FC> = {
+const MenuItems: Record<SharePanel, FC<ShareMenuProps>> = {
   SharePage: SharePage,
   Export: Export,
   ShareWorkspace: ShareWorkspace,
 };
-export const ShareMenu = () => {
+
+export type ShareMenuProps<
+  Workspace extends AffineWorkspace | LocalWorkspace =
+    | AffineWorkspace
+    | LocalWorkspace
+> = {
+  workspace: Workspace;
+  currentPage: Page;
+  onEnableAffineCloud: (workspace: LocalWorkspace) => void;
+  onOpenWorkspaceSettings: (workspace: Workspace) => void;
+  togglePagePublic: (page: Page, publish: boolean) => Promise<void>;
+  toggleWorkspacePublish: (
+    workspace: Workspace,
+    publish: boolean
+  ) => Promise<void>;
+};
+
+export const ShareMenu: FC<ShareMenuProps> = props => {
   const [activeItem, setActiveItem] = useState<SharePanel>('SharePage');
   const [open, setOpen] = useState(false);
-  const handleMenuChange = (selectedItem: SharePanel) => {
+  const handleMenuChange = useCallback((selectedItem: SharePanel) => {
     setActiveItem(selectedItem);
-  };
+  }, []);
 
   const ActiveComponent = MenuItems[activeItem];
   interface ShareMenuProps {
@@ -38,7 +53,7 @@ export const ShareMenu = () => {
     };
 
     return (
-      <StyledTabsWrapper>
+      <div className={tabStyle}>
         {Object.keys(MenuItems).map(item => (
           <TabItem
             isActive={activeItem === item}
@@ -48,7 +63,7 @@ export const ShareMenu = () => {
             {item}
           </TabItem>
         ))}
-      </StyledTabsWrapper>
+      </div>
     );
   };
   const activeIndex = Object.keys(MenuItems).indexOf(activeItem);
@@ -56,31 +71,29 @@ export const ShareMenu = () => {
     <>
       <ShareMenu activeItem={activeItem} onChangeTab={handleMenuChange} />
       <StyledIndicator activeIndex={activeIndex} />
-      <ActiveComponent />
+      <ActiveComponent {...props} />
     </>
   );
   return (
-    <>
-      <Menu
-        content={Share}
-        visible={open}
-        width={627}
-        placement="bottom-end"
-        trigger={['click']}
-        disablePortal={true}
-        onClickAway={() => {
-          setOpen(false);
+    <Menu
+      content={Share}
+      visible={open}
+      width={439}
+      placement="bottom-end"
+      trigger={['click']}
+      disablePortal={true}
+      onClickAway={() => {
+        setOpen(false);
+      }}
+    >
+      <StyledShareButton
+        onClick={() => {
+          setOpen(!open);
         }}
       >
-        <StyledShareButton
-          onClick={() => {
-            setOpen(!open);
-          }}
-        >
-          <ExportIcon />
-          <div>Share</div>
-        </StyledShareButton>
-      </Menu>
-    </>
+        <ExportIcon />
+        <div>Share</div>
+      </StyledShareButton>
+    </Menu>
   );
 };
