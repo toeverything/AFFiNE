@@ -34,12 +34,13 @@ const createAffineWebSocketProvider = (
       assertExists(webSocketProvider);
       webSocketProvider.destroy();
       webSocketProvider = null;
+      dispose?.dispose();
+    },
+    connect: () => {
       dispose = storageChangeSlot.on(() => {
         apis.disconnect();
         apis.connect();
       });
-    },
-    connect: () => {
       const wsUrl = `${
         window.location.protocol === 'https:' ? 'wss' : 'ws'
       }://${window.location.host}/api/sync/`;
