@@ -7,6 +7,8 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import type { Atom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import type { FC } from 'react';
 
 import { WorkspaceCard } from '../workspace-card';
@@ -14,7 +16,10 @@ import { WorkspaceCard } from '../workspace-card';
 export type WorkspaceListProps = {
   disabled?: boolean;
   currentWorkspaceId: string | null;
-  items: (AffineWorkspace | LocalWorkspace)[];
+  getWorkspaceAtom: (
+    id: string
+  ) => Atom<Promise<AffineWorkspace | LocalWorkspace>>;
+  items: string[];
   onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
   onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
   onDragEnd: (event: DragEndEvent) => void;
@@ -22,11 +27,11 @@ export type WorkspaceListProps = {
 
 const SortableWorkspaceItem: FC<
   Omit<WorkspaceListProps, 'items'> & {
-    item: AffineWorkspace | LocalWorkspace;
+    item: string;
   }
 > = props => {
   const { setNodeRef, attributes, listeners, transform } = useSortable({
-    id: props.item.id,
+    id: props.item,
   });
   const style: React.CSSProperties = {
     transform: transform
@@ -35,6 +40,8 @@ const SortableWorkspaceItem: FC<
     pointerEvents: props.disabled ? 'none' : undefined,
     opacity: props.disabled ? 0.6 : undefined,
   };
+  const atom = props.getWorkspaceAtom(props.item);
+  const workspace = useAtomValue(atom);
   return (
     <div
       data-testid="draggable-item"
@@ -45,7 +52,7 @@ const SortableWorkspaceItem: FC<
     >
       <WorkspaceCard
         currentWorkspaceId={props.currentWorkspaceId}
-        workspace={props.item}
+        workspace={workspace}
         onClick={props.onClick}
         onSettingClick={props.onSettingClick}
       />
@@ -65,7 +72,7 @@ export const WorkspaceList: FC<WorkspaceListProps> = props => {
     <DndContext sensors={sensors} onDragEnd={props.onDragEnd}>
       <SortableContext items={props.items}>
         {props.items.map(item => (
-          <SortableWorkspaceItem {...props} item={item} key={item.id} />
+          <SortableWorkspaceItem {...props} item={item} key={item} />
         ))}
       </SortableContext>
     </DndContext>

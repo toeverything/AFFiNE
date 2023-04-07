@@ -5,15 +5,14 @@ import { useCallback } from 'react';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-  workspacesAtom,
+  workspaceByIdAtomFamily,
 } from '../../atoms';
 import type { AllWorkspace } from '../../shared';
 
 export const currentWorkspaceAtom = atom<Promise<AllWorkspace | null>>(
   async get => {
     const id = get(currentWorkspaceIdAtom);
-    const workspaces = await get(workspacesAtom);
-    return workspaces.find(workspace => workspace.id === id) ?? null;
+    return id ? get(workspaceByIdAtomFamily(id)) : null;
   }
 );
 

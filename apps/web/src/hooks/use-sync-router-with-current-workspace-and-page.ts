@@ -1,15 +1,15 @@
-import { jotaiStore } from '@affine/workspace/atom';
+import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import { useAtomValue } from 'jotai';
 import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
-import { currentPageIdAtom } from '../atoms';
+import { currentPageIdAtom, workspaceByIdAtomFamily } from '../atoms';
 import type { AllWorkspace } from '../shared';
 import { WorkspaceSubPath } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
 import { useCurrentWorkspace } from './current/use-current-workspace';
 import { RouteLogic, useRouterHelper } from './use-router-helper';
-import { useWorkspaces } from './use-workspaces';
 
 export function findSuitablePageId(
   workspace: AllWorkspace,
@@ -41,7 +41,7 @@ export const REDIRECT_TIMEOUT = 1000;
 export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
   const [currentPageId, setCurrentPageId] = useCurrentPageId();
-  const workspaces = useWorkspaces();
+  const workspaces = useAtomValue(jotaiWorkspacesAtom);
   const { jumpToSubPath } = useRouterHelper(router);
   useEffect(() => {
     const listener: Parameters<typeof router.events.on>[1] = (url: string) => {
@@ -94,16 +94,22 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
         typeof targetWorkspaceId !== 'string'
       ) {
         if (router.asPath === '/') {
-          const first = workspaces.at(0);
-          if (first && 'blockSuiteWorkspace' in first) {
-            const targetWorkspaceId = first.id;
-            const targetPageId =
-              first.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
-            if (targetPageId) {
-              setCurrentWorkspaceId(targetWorkspaceId);
-              setCurrentPageId(targetPageId);
-              router.push(`/workspace/${targetWorkspaceId}/${targetPageId}`);
-            }
+          const id = workspaces.at(0)?.id;
+          if (id) {
+            jotaiStore.get(workspaceByIdAtomFamily(id)).then(first => {
+              if (first && 'blockSuiteWorkspace' in first) {
+                const targetWorkspaceId = first.id;
+                const targetPageId =
+                  first.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
+                if (targetPageId) {
+                  setCurrentWorkspaceId(targetWorkspaceId);
+                  setCurrentPageId(targetPageId);
+                  router.push(
+                    `/workspace/${targetWorkspaceId}/${targetPageId}`
+                  );
+                }
+              }
+            });
           }
         }
         return;

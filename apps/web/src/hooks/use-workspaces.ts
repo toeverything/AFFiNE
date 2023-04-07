@@ -1,19 +1,18 @@
 import { DebugLogger } from '@affine/debug';
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
-import type { LocalWorkspace } from '@affine/workspace/type';
+import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
-import { workspacesAtom } from '../atoms';
+import { workspaceByIdAtomFamily, workspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
-import type { AllWorkspace } from '../shared';
 
-export function useWorkspaces(): AllWorkspace[] {
-  return useAtomValue(workspacesAtom);
+export function useWorkspaces() {
+  const atoms = useAtomValue(workspacesAtom);
+  return atoms;
 }
 
 const logger = new DebugLogger('use-workspaces');
@@ -24,17 +23,17 @@ export function useWorkspacesHelper() {
   const set = useSetAtom(jotaiWorkspacesAtom);
   return {
     createWorkspacePage: useCallback(
-      (workspaceId: string, pageId: string) => {
-        const workspace = workspaces.find(
-          ws => ws.id === workspaceId
-        ) as LocalWorkspace;
+      async (workspaceId: string, pageId: string) => {
+        const workspace = await jotaiStore.get(
+          workspaceByIdAtomFamily(workspaceId)
+        );
         if (workspace && 'blockSuiteWorkspace' in workspace) {
           workspace.blockSuiteWorkspace.createPage(pageId);
         } else {
           throw new Error('cannot create page. blockSuiteWorkspace not found');
         }
       },
-      [workspaces]
+      []
     ),
     createLocalWorkspace: useCallback(
       async (name: string): Promise<string> => {
@@ -61,7 +60,9 @@ export function useWorkspacesHelper() {
         const targetJotaiWorkspace = jotaiWorkspaces.find(
           ws => ws.id === workspaceId
         );
-        const targetWorkspace = workspaces.find(ws => ws.id === workspaceId);
+        const targetWorkspace = await jotaiStore.get(
+          workspaceByIdAtomFamily(workspaceId)
+        );
         if (!targetJotaiWorkspace || !targetWorkspace) {
           throw new Error('page cannot be found');
         }
@@ -74,7 +75,7 @@ export function useWorkspacesHelper() {
         // delete workspace from jotai storage
         set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
       },
-      [jotaiWorkspaces, set, workspaces]
+      [jotaiWorkspaces, set]
     ),
   };
 }

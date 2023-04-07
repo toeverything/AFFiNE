@@ -35,6 +35,7 @@
     "@radix-ui/react-avatar": "^1.0.2",
     "@toeverything/hooks": "workspace:*",
     "clsx": "^1.2.1",
+    "jotai": "^2.0.3",
     "lit": "^2.7.2",
     "react": "^18.2.0",
     "react-dnd": "^16.0.1",

@@ -4,6 +4,7 @@ import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
+import { atomFamily } from 'jotai/utils';
 
 import { WorkspacePlugins } from '../plugins';
 import type { AllWorkspace } from '../shared';
@@ -17,23 +18,36 @@ export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom(false);
 export const openQuickSearchModalAtom = atom(false);
 
-export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
+export const workspacesAtom = atom(get => {
   const flavours: string[] = Object.values(WorkspacePlugins).map(
     plugin => plugin.flavour
   );
   const jotaiWorkspaces = get(jotaiWorkspacesAtom).filter(workspace =>
     flavours.includes(workspace.flavour)
   );
-  const workspaces = await Promise.all(
-    jotaiWorkspaces.map(workspace => {
+  return jotaiWorkspaces.map(workspace => {
+    return atom(() => {
       const plugin =
         WorkspacePlugins[workspace.flavour as keyof typeof WorkspacePlugins];
       assertExists(plugin);
       const { CRUD } = plugin;
-      return CRUD.get(workspace.id);
-    })
-  );
-  return workspaces.filter(workspace => workspace !== null) as AllWorkspace[];
+      return CRUD.get(workspace.id) as Promise<AllWorkspace>;
+    });
+  });
+});
+
+export const workspaceByIdAtomFamily = atomFamily((id: string) => {
+  return atom(async get => {
+    const workspaceAtoms = get(workspacesAtom);
+    const flavours: string[] = Object.values(WorkspacePlugins).map(
+      plugin => plugin.flavour
+    );
+    const jotaiWorkspaces = get(jotaiWorkspacesAtom).filter(workspace =>
+      flavours.includes(workspace.flavour)
+    );
+    const idx = jotaiWorkspaces.findIndex(workspace => workspace.id === id);
+    return await get(workspaceAtoms[idx]);
+  });
 });
 
 type View = { id: string; mode: 'page' | 'edgeless' };

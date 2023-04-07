@@ -17,6 +17,7 @@ import {
   currentWorkspaceIdAtom,
   openQuickSearchModalAtom,
   openWorkspacesModalAtom,
+  workspaceByIdAtomFamily,
 } from '../atoms';
 import {
   publicBlockSuiteAtom,
@@ -37,7 +38,6 @@ import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
 import type { AllWorkspace } from '../shared';
@@ -186,10 +186,27 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     );
   };
 
+function WorkspaceConnector({ id }: { id: string }) {
+  const currentWorkspace = useAtomValue(workspaceByIdAtomFamily(id));
+  useEffect(() => {
+    if (currentWorkspace) {
+      currentWorkspace.providers.forEach(provider => {
+        provider.connect();
+      });
+      return () => {
+        currentWorkspace.providers.forEach(provider => {
+          provider.disconnect();
+        });
+      };
+    }
+  }, [currentWorkspace]);
+  return null;
+}
+
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
-  const workspaces = useWorkspaces();
+  const workspaces = useAtomValue(jotaiWorkspacesAtom);
 
   useEffect(() => {
     logger.info('workspaces: ', workspaces);
@@ -201,19 +218,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     }
   }, [currentWorkspace]);
 
-  useEffect(() => {
-    const providers = workspaces.flatMap(workspace =>
-      workspace.providers.filter(provider => provider.background)
-    );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [workspaces]);
   useEffect(() => {
     if (currentWorkspace) {
       currentWorkspace.providers.forEach(provider => {
@@ -342,6 +346,10 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         </StyledSpacer>
         <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
+            {workspaces.map(w => (
+              <WorkspaceConnector key={w.id} id={w.id} />
+            ))}
+
             {children}
             <StyledToolWrapper>
               {/* fixme(himself65): remove this */}

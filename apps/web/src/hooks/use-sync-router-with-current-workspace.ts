@@ -1,12 +1,13 @@
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { useAtomValue } from 'jotai';
 import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import { useCurrentWorkspace } from './current/use-current-workspace';
-import { useWorkspaces } from './use-workspaces';
 
 export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
-  const workspaces = useWorkspaces();
+  const workspaces = useAtomValue(jotaiWorkspacesAtom);
   useEffect(() => {
     const listener: Parameters<typeof router.events.on>[1] = (url: string) => {
       if (url.startsWith('/')) {

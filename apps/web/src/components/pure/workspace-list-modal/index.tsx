@@ -7,10 +7,13 @@ import {
 import { WorkspaceList } from '@affine/component/workspace-list';
 import { useTranslation } from '@affine/i18n';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
+import { useAtom } from 'jotai';
 import { useCallback } from 'react';
 
+import { workspaceByIdAtomFamily } from '../../../atoms';
 import type { AllWorkspace } from '../../../shared';
 import { Footer } from '../footer';
 import { LanguageMenu } from './language-menu';
@@ -31,7 +34,6 @@ import {
 interface WorkspaceModalProps {
   disabled?: boolean;
   user: AccessTokenMessage | null;
-  workspaces: AllWorkspace[];
   currentWorkspaceId: AllWorkspace['id'] | null;
   open: boolean;
   onClose: () => void;
@@ -47,7 +49,6 @@ export const WorkspaceListModal = ({
   disabled,
   open,
   onClose,
-  workspaces,
   user,
   onClickLogin,
   onClickLogout,
@@ -58,6 +59,7 @@ export const WorkspaceListModal = ({
   onMoveWorkspace,
 }: WorkspaceModalProps) => {
   const { t } = useTranslation();
+  const [workspaces] = useAtom(jotaiWorkspacesAtom);
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -99,7 +101,8 @@ export const WorkspaceListModal = ({
         <StyledModalContent>
           <WorkspaceList
             disabled={disabled}
-            items={workspaces}
+            getWorkspaceAtom={id => workspaceByIdAtomFamily(id)}
+            items={workspaces.map(w => w.id)}
             currentWorkspaceId={currentWorkspaceId}
             onClick={onClickWorkspace}
             onSettingClick={onClickWorkspaceSetting}
