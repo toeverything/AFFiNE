@@ -19,6 +19,7 @@ import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-route
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
+import { ensureRootPinboard } from '../../../utils';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
@@ -35,6 +36,8 @@ const AllPage: NextPageWithLayout = () => {
     }
     if (currentWorkspace.flavour !== WorkspaceFlavour.LOCAL) {
       // only create a new page for local workspace
+      // just ensure the root pinboard exists
+      ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
       return;
     }
     const localProvider = currentWorkspace.providers.find(
@@ -53,6 +56,8 @@ const AllPage: NextPageWithLayout = () => {
           });
           jumpToPage(currentWorkspace.id, pageId);
         }
+        // no matter workspace is empty, ensure the root pinboard exists
+        ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
       };
       provider.callbacks.add(callback);
       return () => {
