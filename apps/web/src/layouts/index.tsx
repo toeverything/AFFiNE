@@ -2,11 +2,11 @@ import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -123,46 +123,6 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     useCreateFirstWorkspace();
     const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
-    const set = useSetAtom(jotaiWorkspacesAtom);
-    useEffect(() => {
-      logger.info('mount');
-      const controller = new AbortController();
-      const lists = Object.values(WorkspacePlugins)
-        .sort((a, b) => a.loadPriority - b.loadPriority)
-        .map(({ CRUD }) => CRUD.list);
-
-      async function fetch() {
-        const jotaiWorkspaces = jotaiStore.get(jotaiWorkspacesAtom);
-        const items = [];
-        for (const list of lists) {
-          try {
-            const item = await list();
-            if (jotaiWorkspaces.length) {
-              item.sort((a, b) => {
-                return (
-                  jotaiWorkspaces.findIndex(x => x.id === a.id) -
-                  jotaiWorkspaces.findIndex(x => x.id === b.id)
-                );
-              });
-            }
-            items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
-          } catch (e) {
-            logger.error('list data error:', e);
-          }
-        }
-        if (controller.signal.aborted) {
-          return;
-        }
-        set([...items]);
-        logger.info('mount first data:', items);
-      }
-
-      fetch();
-      return () => {
-        controller.abort();
-        logger.info('unmount');
-      };
-    }, [set]);
 
     useEffect(() => {
       const flavour = jotaiWorkspaces.find(
