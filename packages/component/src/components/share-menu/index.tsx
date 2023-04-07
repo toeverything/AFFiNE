@@ -5,9 +5,9 @@ import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
 import { Menu } from '../..';
-import Export from './Export';
+import { Export } from './Export';
 import { tabStyle } from './index.css';
-import SharePage from './SharePage';
+import { SharePage } from './SharePage';
 import { ShareWorkspace } from './ShareWorkspace';
 import { StyledIndicator, StyledShareButton, TabItem } from './styles';
 
@@ -87,6 +87,7 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
       }}
     >
       <StyledShareButton
+        data-testid="share-menu-button"
         onClick={() => {
           setOpen(!open);
         }}

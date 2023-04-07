@@ -2,6 +2,7 @@ import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
+import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
 
 import { ShareMenu } from '../components/share-menu';
@@ -57,4 +58,21 @@ export const Basic: StoryFn = () => {
       toggleWorkspacePublish={unimplemented}
     />
   );
+};
+
+Basic.play = async ({ canvasElement }) => {
+  {
+    const button = canvasElement.querySelector(
+      '[data-testid="share-menu-button"]'
+    ) as HTMLButtonElement;
+    expect(button).not.toBeNull();
+    button.click();
+  }
+  await new Promise(resolve => setTimeout(resolve, 100));
+  {
+    const button = canvasElement.querySelector(
+      '[data-testid="share-menu-enable-affine-cloud-button"]'
+    );
+    expect(button).not.toBeNull();
+  }
 };

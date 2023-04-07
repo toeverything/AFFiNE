@@ -6,7 +6,7 @@ import { Button } from '../..';
 import type { ShareMenuProps } from './index';
 import { buttonStyle, descriptionStyle, menuItemStyle } from './index.css';
 
-const SharePage: FC<ShareMenuProps> = props => {
+export const SharePage: FC<ShareMenuProps> = props => {
   if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return (
       <div className={menuItemStyle}>
@@ -14,6 +14,7 @@ const SharePage: FC<ShareMenuProps> = props => {
           Sharing page publicly requires AFFiNE Cloud service.
         </div>
         <Button
+          data-testid="share-menu-enable-affine-cloud-button"
           className={buttonStyle}
           type="light"
           shape="round"
@@ -33,5 +34,3 @@ const SharePage: FC<ShareMenuProps> = props => {
     </div>
   );
 };
-
-export default SharePage;

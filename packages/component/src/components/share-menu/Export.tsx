@@ -4,7 +4,8 @@ import { useRef } from 'react';
 
 import { Button } from '../..';
 import type { ShareMenuProps } from './index';
-const Export: FC<ShareMenuProps> = props => {
+
+export const Export: FC<ShareMenuProps> = props => {
   const contentParserRef = useRef<ContentParser>();
   return (
     <div>
@@ -32,5 +33,3 @@ const Export: FC<ShareMenuProps> = props => {
     </div>
   );
 };
-
-export default Export;
