@@ -73,6 +73,11 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          COVERAGE: true,
+          ENABLE_DEBUG_PAGE: 1
+          ENABLE_SUBPAGE: 1
+          ENABLE_CHANGELOG: 1
+          NODE_API_SERVER: local
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3

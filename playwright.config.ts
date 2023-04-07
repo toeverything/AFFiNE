@@ -73,13 +73,6 @@ const config: PlaywrightTestConfig = {
       timeout: 120 * 1000,
       cwd: resolve(__dirname, 'apps', 'web'),
       reuseExistingServer: !process.env.CI,
-      env: {
-        COVERAGE: process.env.COVERAGE || 'false',
-        ENABLE_DEBUG_PAGE: '1',
-        ENABLE_SUBPAGE: '1',
-        ENABLE_CHANGELOG: '1',
-        NODE_API_SERVER: 'local',
-      },
     },
   ],
 };
