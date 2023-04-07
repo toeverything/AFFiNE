@@ -95,7 +95,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
           disablePortal={true}
           trigger="click"
         >
-          <IconButton>
+          <IconButton data-testid="page-list-operation-button">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
