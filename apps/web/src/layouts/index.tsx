@@ -195,6 +195,10 @@ function WorkspaceConnector({ id }: { id: string }) {
       });
       return () => {
         currentWorkspace.providers.forEach(provider => {
+          // mem leak
+          if (provider.background) {
+            return;
+          }
           provider.disconnect();
         });
       };
@@ -218,24 +222,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     }
   }, [currentWorkspace]);
 
-  useEffect(() => {
-    if (currentWorkspace) {
-      currentWorkspace.providers.forEach(provider => {
-        if (provider.background) {
-          return;
-        }
-        provider.connect();
-      });
-      return () => {
-        currentWorkspace.providers.forEach(provider => {
-          if (provider.background) {
-            return;
-          }
-          provider.disconnect();
-        });
-      };
-    }
-  }, [currentWorkspace]);
   const router = useRouter();
   const { jumpToPage, jumpToPublicWorkspacePage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);

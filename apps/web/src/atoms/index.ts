@@ -36,7 +36,7 @@ export const workspacesAtom = atom(get => {
   });
 });
 
-export const workspaceByIdAtomFamily = atomFamily((id: string) => {
+export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
   return atom(async get => {
     const workspaceAtoms = get(workspacesAtom);
     const flavours: string[] = Object.values(WorkspacePlugins).map(
@@ -46,7 +46,7 @@ export const workspaceByIdAtomFamily = atomFamily((id: string) => {
       flavours.includes(workspace.flavour)
     );
     const idx = jotaiWorkspaces.findIndex(workspace => workspace.id === id);
-    return await get(workspaceAtoms[idx]);
+    return idx === -1 ? null : await get(workspaceAtoms[idx]);
   });
 });
 
