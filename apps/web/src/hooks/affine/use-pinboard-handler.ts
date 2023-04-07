@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 import type { BlockSuiteWorkspace } from '../../shared';
 import { useBlockSuiteWorkspaceHelper } from '../use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from '../use-page-meta';
-import type { NodeRenderProps, TreeNode } from './use-pinboard-data';
+import type { NodeRenderProps, PinboardNode } from './use-pinboard-data';
 
 const logger = new DebugLogger('pinboard');
 
@@ -35,7 +35,7 @@ export function usePinboardHandler({
   const { getPageMeta, setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
 
   const handleAdd = useCallback(
-    (node: TreeNode) => {
+    (node: PinboardNode) => {
       const id = nanoid();
       createPage(id, node.id);
       onAdd?.(id, node.id);
@@ -44,7 +44,7 @@ export function usePinboardHandler({
   );
 
   const handleDelete = useCallback(
-    (node: TreeNode) => {
+    (node: PinboardNode) => {
       const removeToTrash = (currentMeta: PageMeta) => {
         const { subpageIds = [] } = currentMeta;
         setPageMeta(currentMeta.id, {

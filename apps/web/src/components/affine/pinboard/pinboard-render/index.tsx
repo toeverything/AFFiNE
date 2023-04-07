@@ -76,7 +76,7 @@ export const PinboardRender: PinboardNode['render'] = (
         {showRename ? (
           <Input
             data-testid={`pinboard-input-${node.id}`}
-            value={currentMeta?.title ?? ''}
+            value={currentMeta.title || ''}
             placeholder="Untitled"
             onClick={e => e.stopPropagation()}
             height={32}
@@ -89,7 +89,7 @@ export const PinboardRender: PinboardNode['render'] = (
             }}
           />
         ) : (
-          <span>{isRoot ? 'Pinboard' : currentMeta?.title || 'Untitled'}</span>
+          <span>{isRoot ? 'Pinboard' : currentMeta.title || 'Untitled'}</span>
         )}
 
         {showOperationButton && (
