@@ -214,6 +214,11 @@ For feature request please see [community.affine.pro](https://community.affine.p
 
 See [BUILDING.md] for instructions on how to build AFFiNE from source code.
 
+## Contributing
+
+We welcome contributions from everyone.
+See [docs/contributing/tutorial.md](./docs/contributing/tutorial.md) for details.
+
 ## License
 
 See [LICENSE] for details.
