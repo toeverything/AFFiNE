@@ -26,6 +26,8 @@ export type Node<RenderProps = unknown> = {
     },
     renderProps?: RenderProps
   ) => ReactNode;
+  renderTopLine?: boolean;
+  renderBottomLine?: boolean;
 };
 
 type CommonProps<RenderProps = unknown> = {

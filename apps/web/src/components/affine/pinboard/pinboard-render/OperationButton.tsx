@@ -14,10 +14,11 @@ import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import { CopyLink, MoveToTrash } from '../../operation-menu-items';
-import { PivotsMenu } from '../PivotsMenu/PivotsMenu';
+import { PinboardMenu } from '../pinboard-menu/';
 import { StyledOperationButton } from '../styles';
 
 export type OperationButtonProps = {
+  isRoot: boolean;
   onAdd: () => void;
   onDelete: () => void;
   metas: PageMeta[];
@@ -28,6 +29,7 @@ export type OperationButtonProps = {
   onMenuClose?: () => void;
 };
 export const OperationButton = ({
+  isRoot,
   onAdd,
   onDelete,
   metas,
@@ -44,7 +46,7 @@ export const OperationButton = ({
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [operationMenuOpen, setOperationMenuOpen] = useState(false);
-  const [pivotsMenuOpen, setPivotsMenuOpen] = useState(false);
+  const [pinboardMenuOpen, setPinboardMenuOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const menuIndex = useMemo(() => modalIndex + 1, [modalIndex]);
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
@@ -53,7 +55,7 @@ export const OperationButton = ({
     <MuiClickAwayListener
       onClickAway={() => {
         setOperationMenuOpen(false);
-        setPivotsMenuOpen(false);
+        setPinboardMenuOpen(false);
       }}
     >
       <div
@@ -62,11 +64,11 @@ export const OperationButton = ({
         }}
         onMouseLeave={() => {
           setOperationMenuOpen(false);
-          setPivotsMenuOpen(false);
+          setPinboardMenuOpen(false);
         }}
       >
         <StyledOperationButton
-          data-testid="pivot-operation-button"
+          data-testid="pinboard-operation-button"
           ref={ref => setAnchorEl(ref)}
           size="small"
           onClick={() => {
@@ -78,7 +80,7 @@ export const OperationButton = ({
         </StyledOperationButton>
 
         <PureMenu
-          data-testid="pivot-operation-menu"
+          data-testid="pinboard-operation-menu"
           width={256}
           anchorEl={anchorEl}
           open={operationMenuOpen}
@@ -86,7 +88,7 @@ export const OperationButton = ({
           zIndex={menuIndex}
         >
           <MenuItem
-            data-testid="pivot-operation-add"
+            data-testid="pinboard-operation-add"
             onClick={() => {
               onAdd();
               setOperationMenuOpen(false);
@@ -96,47 +98,53 @@ export const OperationButton = ({
           >
             {t('Add a subpage inside')}
           </MenuItem>
-          <MenuItem
-            data-testid="pivot-operation-move-to"
-            onClick={() => {
-              setOperationMenuOpen(false);
-              setPivotsMenuOpen(true);
-            }}
-            icon={<MoveToIcon />}
-          >
-            {t('Move to')}
-          </MenuItem>
-          <MenuItem
-            data-testid="pivot-operation-rename"
-            onClick={() => {
-              onRename?.();
-              setOperationMenuOpen(false);
-              onMenuClose?.();
-            }}
-            icon={<PenIcon />}
-          >
-            {t('Rename')}
-          </MenuItem>
-          <MoveToTrash
-            testId="pivot-operation-move-to-trash"
-            onItemClick={() => {
-              setOperationMenuOpen(false);
-              setConfirmModalOpen(true);
-              onMenuClose?.();
-            }}
-          />
+          {!isRoot && (
+            <MenuItem
+              data-testid="pinboard-operation-move-to"
+              onClick={() => {
+                setOperationMenuOpen(false);
+                setPinboardMenuOpen(true);
+              }}
+              icon={<MoveToIcon />}
+            >
+              {t('Move to')}
+            </MenuItem>
+          )}
+          {!isRoot && (
+            <MenuItem
+              data-testid="pinboard-operation-rename"
+              onClick={() => {
+                onRename?.();
+                setOperationMenuOpen(false);
+                onMenuClose?.();
+              }}
+              icon={<PenIcon />}
+            >
+              {t('Rename')}
+            </MenuItem>
+          )}
+          {!isRoot && (
+            <MoveToTrash
+              testId="pinboard-operation-move-to-trash"
+              onItemClick={() => {
+                setOperationMenuOpen(false);
+                setConfirmModalOpen(true);
+                onMenuClose?.();
+              }}
+            />
+          )}
           <CopyLink />
         </PureMenu>
 
-        <PivotsMenu
+        <PinboardMenu
           anchorEl={anchorEl}
-          open={pivotsMenuOpen}
+          open={pinboardMenuOpen}
           placement="bottom-start"
           zIndex={menuIndex}
           metas={metas}
           currentMeta={currentMeta}
           blockSuiteWorkspace={blockSuiteWorkspace}
-          showRemovePivots={true}
+          showRemovePinboard={true}
         />
         <MoveToTrash.ConfirmModal
           open={confirmModalOpen}

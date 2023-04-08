@@ -4,21 +4,21 @@ import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import { useCallback } from 'react';
 
-import { useBlockSuiteWorkspaceHelper } from '../../../../hooks/use-blocksuite-workspace-helper';
-import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
-import type { BlockSuiteWorkspace } from '../../../../shared';
-import type { NodeRenderProps, TreeNode } from '../types';
+import type { BlockSuiteWorkspace } from '../../shared';
+import { useBlockSuiteWorkspaceHelper } from '../use-blocksuite-workspace-helper';
+import { usePageMetaHelper } from '../use-page-meta';
+import type { NodeRenderProps, PinboardNode } from './use-pinboard-data';
 
-const logger = new DebugLogger('pivot');
+const logger = new DebugLogger('pinboard');
 
-const findRootIds = (metas: PageMeta[], id: string): string[] => {
+function findRootIds(metas: PageMeta[], id: string): string[] {
   const parentMeta = metas.find(m => m.subpageIds?.includes(id));
   if (!parentMeta) {
     return [id];
   }
   return [parentMeta.id, ...findRootIds(metas, parentMeta.id)];
-};
-export const usePivotHandler = ({
+}
+export function usePinboardHandler({
   blockSuiteWorkspace,
   metas,
   onAdd,
@@ -30,13 +30,12 @@ export const usePivotHandler = ({
   onAdd?: (addedId: string, parentId: string) => void;
   onDelete?: TreeViewProps<NodeRenderProps>['onDelete'];
   onDrop?: TreeViewProps<NodeRenderProps>['onDrop'];
-}) => {
+}) {
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
-  const { getPageMeta, setPageMeta, shiftPageMeta } =
-    usePageMetaHelper(blockSuiteWorkspace);
+  const { getPageMeta, setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
 
   const handleAdd = useCallback(
-    (node: TreeNode) => {
+    (node: PinboardNode) => {
       const id = nanoid();
       createPage(id, node.id);
       onAdd?.(id, node.id);
@@ -45,7 +44,7 @@ export const usePivotHandler = ({
   );
 
   const handleDelete = useCallback(
-    (node: TreeNode) => {
+    (node: PinboardNode) => {
       const removeToTrash = (currentMeta: PageMeta) => {
         const { subpageIds = [] } = currentMeta;
         setPageMeta(currentMeta.id, {
@@ -80,90 +79,56 @@ export const usePivotHandler = ({
       if (dropRootIds.includes(dragId)) {
         return;
       }
-
-      const { topLine, bottomLine } = position;
       logger.info('handleDrop', {
         dragId,
         dropId,
-        bottomLine,
+        position,
         metas,
       });
+
+      const { topLine, bottomLine } = position;
 
       const dragParentMeta = metas.find(meta =>
         meta.subpageIds?.includes(dragId)
       );
       if (bottomLine || topLine) {
         const insertOffset = bottomLine ? 1 : 0;
+
         const dropParentMeta = metas.find(m => m.subpageIds?.includes(dropId));
-
-        if (!dropParentMeta) {
-          // drop into root
-          logger.info('drop into root and resort');
-
-          if (dragParentMeta) {
-            const newSubpageIds = [...(dragParentMeta.subpageIds ?? [])];
-
-            const deleteIndex = dragParentMeta.subpageIds?.findIndex(
-              id => id === dragId
-            );
-            newSubpageIds.splice(deleteIndex, 1);
-            setPageMeta(dragParentMeta.id, {
-              subpageIds: newSubpageIds,
-            });
-          }
-
-          logger.info('resort root meta');
-          const insertIndex =
-            metas.findIndex(m => m.id === dropId) + insertOffset;
-          shiftPageMeta(dragId, insertIndex);
-          return onDrop?.(dragId, dropId, position);
-        }
-
-        if (
-          dragParentMeta &&
-          (dragParentMeta.id === dropId ||
-            dragParentMeta.id === dropParentMeta!.id)
-        ) {
-          logger.info('drop to resort');
-          // need to resort
-          const newSubpageIds = [...(dragParentMeta.subpageIds ?? [])];
-
+        if (dropParentMeta?.id === dragParentMeta?.id) {
+          // same parent
+          const newSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
           const deleteIndex = newSubpageIds.findIndex(id => id === dragId);
           newSubpageIds.splice(deleteIndex, 1);
-
           const insertIndex =
             newSubpageIds.findIndex(id => id === dropId) + insertOffset;
           newSubpageIds.splice(insertIndex, 0, dragId);
-          setPageMeta(dropParentMeta.id, {
-            subpageIds: newSubpageIds,
-          });
-
+          dragParentMeta &&
+            setPageMeta(dragParentMeta.id, {
+              subpageIds: newSubpageIds,
+            });
           return onDrop?.(dragId, dropId, position);
         }
+        const newDragParentSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
+        const deleteIndex = newDragParentSubpageIds.findIndex(
+          id => id === dragId
+        );
+        newDragParentSubpageIds.splice(deleteIndex, 1);
 
-        logger.info('drop into drop node parent and resort');
-
-        if (dragParentMeta) {
-          const metaIndex = dragParentMeta.subpageIds.findIndex(
-            id => id === dragId
-          );
-          const newSubpageIds = [...dragParentMeta.subpageIds];
-          newSubpageIds.splice(metaIndex, 1);
+        const newDropParentSubpageIds = [...(dropParentMeta?.subpageIds ?? [])];
+        const insertIndex =
+          newDropParentSubpageIds.findIndex(id => id === dropId) + insertOffset;
+        newDropParentSubpageIds.splice(insertIndex, 0, dragId);
+        dragParentMeta &&
           setPageMeta(dragParentMeta.id, {
-            subpageIds: newSubpageIds,
+            subpageIds: newDragParentSubpageIds,
           });
-        }
-        const newSubpageIds = [...(dropParentMeta!.subpageIds ?? [])];
-        const insertIndex = newSubpageIds.findIndex(id => id === dropId) + 1;
-        newSubpageIds.splice(insertIndex, 0, dragId);
-        setPageMeta(dropParentMeta.id, {
-          subpageIds: newSubpageIds,
-        });
-
+        dropParentMeta &&
+          setPageMeta(dropParentMeta.id, {
+            subpageIds: newDropParentSubpageIds,
+          });
         return onDrop?.(dragId, dropId, position);
       }
-
-      logger.info('drop into the drop node');
 
       // drop into the node
       if (dragParentMeta && dragParentMeta.id === dropId) {
@@ -185,7 +150,7 @@ export const usePivotHandler = ({
         subpageIds: newSubpageIds,
       });
     },
-    [metas, onDrop, setPageMeta, shiftPageMeta]
+    [metas, onDrop, setPageMeta]
   );
 
   return {
@@ -193,6 +158,6 @@ export const usePivotHandler = ({
     handleAdd,
     handleDelete,
   };
-};
+}
 
-export default usePivotHandler;
+export default usePinboardHandler;

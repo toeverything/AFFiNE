@@ -4,6 +4,7 @@ import {
   isExpired,
   parseIdToken,
   setLoginStorage,
+  storageChangeSlot,
 } from '@affine/workspace/affine/login';
 import useSWR from 'swr';
 
@@ -21,10 +22,7 @@ const revalidate = async () => {
       const response = await affineAuth.refreshToken(storage);
       if (response) {
         setLoginStorage(response);
-
-        // todo: need to notify the app that the token has been refreshed
-        //  this is a hack to force a reload
-        window.location.reload();
+        storageChangeSlot.emit();
       }
     }
   }
@@ -38,5 +36,8 @@ export function useAffineRefreshAuthToken(
   useSWR('autoRefreshToken', {
     fetcher: revalidate,
     refreshInterval,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    revalidateOnMount: true,
   });
 }
