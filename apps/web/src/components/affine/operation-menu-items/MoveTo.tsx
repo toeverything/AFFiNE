@@ -2,10 +2,10 @@ import { MenuItem } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { ArrowRightSmallIcon, MoveToIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../../shared';
-import { PivotsMenu } from '../pivots';
+import { PinboardMenu } from '../pinboard';
 import type { CommonMenuItemProps } from './types';
 
 export type MoveToProps = CommonMenuItemProps<{
@@ -43,14 +43,17 @@ export const MoveTo = ({
       >
         {t('Move to')}
       </MenuItem>
-      <PivotsMenu
+      <PinboardMenu
         anchorEl={anchorEl}
         open={open}
         placement="left-start"
-        metas={metas.filter(meta => !meta.trash)}
+        metas={useMemo(
+          () => metas.filter(m => !m.trash && m.id !== currentMeta.id),
+          [metas, currentMeta]
+        )}
         currentMeta={currentMeta}
         blockSuiteWorkspace={blockSuiteWorkspace}
-        onPivotClick={onSelect}
+        onPinboardClick={onSelect}
       />
     </>
   );

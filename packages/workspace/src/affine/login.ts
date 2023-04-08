@@ -1,4 +1,6 @@
 import { DebugLogger } from '@affine/debug';
+import { assertExists } from '@blocksuite/global/utils';
+import { Slot } from '@blocksuite/store';
 import { initializeApp } from 'firebase/app';
 import type { AuthProvider } from 'firebase/auth';
 import {
@@ -76,6 +78,32 @@ export const getLoginStorage = (): LoginResponse | null => {
     }
   }
   return null;
+};
+
+export const storageChangeSlot = new Slot();
+
+export const checkLoginStorage = async (
+  prefixUrl = '/'
+): Promise<LoginResponse> => {
+  const storage = getLoginStorage();
+  assertExists(storage, 'Login token is not set');
+  if (isExpired(parseIdToken(storage.token), 0)) {
+    logger.debug('refresh token needed');
+    const response: LoginResponse = await fetch(prefixUrl + 'api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'Refresh',
+        token: storage.refresh,
+      }),
+    }).then(r => r.json());
+    setLoginStorage(response);
+    logger.debug('refresh token emit');
+    storageChangeSlot.emit();
+  }
+  return getLoginStorage() as LoginResponse;
 };
 
 export const enum SignMethod {
