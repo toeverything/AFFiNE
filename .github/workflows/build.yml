@@ -84,6 +84,7 @@ jobs:
   build-macos:
     name: Build macOS desktop app
     runs-on: macos-latest
+    environment: development
     needs:
       - build
       - install-all
