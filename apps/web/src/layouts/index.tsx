@@ -25,18 +25,18 @@ import {
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
-import {
-  useSidebarFloating,
-  useSidebarResizing,
-  useSidebarStatus,
-  useSidebarWidth,
-} from '../hooks/affine/use-sidebar-status';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
+import {
+  useSidebarFloating,
+  useSidebarResizing,
+  useSidebarStatus,
+  useSidebarWidth,
+} from '../hooks/use-sidebar-status';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';

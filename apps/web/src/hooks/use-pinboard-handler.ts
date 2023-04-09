@@ -4,9 +4,9 @@ import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import { useCallback } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../shared';
-import { useBlockSuiteWorkspaceHelper } from '../use-blocksuite-workspace-helper';
-import { usePageMetaHelper } from '../use-page-meta';
+import type { BlockSuiteWorkspace } from '../shared';
+import { useBlockSuiteWorkspaceHelper } from './use-blocksuite-workspace-helper';
+import { usePageMetaHelper } from './use-page-meta';
 import type { NodeRenderProps, PinboardNode } from './use-pinboard-data';
 
 const logger = new DebugLogger('pinboard');

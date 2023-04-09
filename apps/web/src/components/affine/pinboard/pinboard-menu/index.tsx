@@ -5,9 +5,9 @@ import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import React, { useCallback, useState } from 'react';
 
-import { usePinboardData } from '../../../../hooks/affine/use-pinboard-data';
-import { usePinboardHandler } from '../../../../hooks/affine/use-pinboard-handler';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
+import { usePinboardData } from '../../../../hooks/use-pinboard-data';
+import { usePinboardHandler } from '../../../../hooks/use-pinboard-handler';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import { PinboardRender } from '../pinboard-render/';
