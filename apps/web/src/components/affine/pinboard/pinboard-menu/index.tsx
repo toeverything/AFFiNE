@@ -1,42 +1,41 @@
 import type { PureMenuProps } from '@affine/component';
-import { Input, PureMenu } from '@affine/component';
+import { Input, PureMenu, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import React, { useCallback, useState } from 'react';
 
+import { usePinboardData } from '../../../../hooks/affine/use-pinboard-data';
+import { usePinboardHandler } from '../../../../hooks/affine/use-pinboard-handler';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
-import { usePivotData } from '../hooks/usePivotData';
-import { usePivotHandler } from '../hooks/usePivotHandler';
-import { PivotRender } from '../pivot-render/PivotRender';
+import { PinboardRender } from '../pinboard-render/';
 import {
   StyledMenuContent,
   StyledMenuFooter,
   StyledMenuSubTitle,
-  StyledPivot,
+  StyledPinboard,
   StyledSearchContainer,
 } from '../styles';
-import { Pivots } from './Pivots';
 import { SearchContent } from './SearchContent';
 
-export type PivotsMenuProps = {
+export type PinboardMenuProps = {
   metas: PageMeta[];
   currentMeta: PageMeta;
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  showRemovePivots?: boolean;
-  onPivotClick?: (p: { dragId: string; dropId: string }) => void;
+  showRemovePinboard?: boolean;
+  onPinboardClick?: (p: { dragId: string; dropId: string }) => void;
 } & PureMenuProps;
 
-export const PivotsMenu = ({
+export const PinboardMenu = ({
   metas,
   currentMeta,
   blockSuiteWorkspace,
-  showRemovePivots = false,
-  onPivotClick,
+  showRemovePinboard = false,
+  onPinboardClick,
   ...pureMenuProps
-}: PivotsMenuProps) => {
+}: PinboardMenuProps) => {
   const { t } = useTranslation();
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [query, setQuery] = useState('');
@@ -46,7 +45,7 @@ export const PivotsMenu = ({
     meta => !meta.trash && meta.title.includes(query)
   );
 
-  const { handleDrop } = usePivotHandler({
+  const { handleDrop } = usePinboardHandler({
     blockSuiteWorkspace,
     metas,
   });
@@ -60,15 +59,15 @@ export const PivotsMenu = ({
         topLine: false,
         internal: true,
       });
-      onPivotClick?.({ dragId: currentMeta.id, dropId });
+      onPinboardClick?.({ dragId: currentMeta.id, dropId });
       toast(`Moved "${currentMeta.title}" to "${targetTitle}"`);
     },
-    [currentMeta.id, currentMeta.title, handleDrop, metas, onPivotClick]
+    [currentMeta.id, currentMeta.title, handleDrop, metas, onPinboardClick]
   );
 
-  const { data } = usePivotData({
+  const { data } = usePinboardData({
     metas,
-    pivotRender: PivotRender,
+    pinboardRender: PinboardRender,
     blockSuiteWorkspace,
     onClick: (e, node) => {
       handleClick(node.id);
@@ -80,7 +79,7 @@ export const PivotsMenu = ({
       width={320}
       height={480}
       {...pureMenuProps}
-      data-testid="pivots-menu"
+      data-testid="pinboard-menu"
     >
       <StyledSearchContainer>
         <label>
@@ -93,7 +92,7 @@ export const PivotsMenu = ({
           height={32}
           noBorder={true}
           onClick={e => e.stopPropagation()}
-          data-testid="pivots-menu-search"
+          data-testid="pinboard-menu-search"
         />
       </StyledSearchContainer>
 
@@ -104,21 +103,16 @@ export const PivotsMenu = ({
         {!isSearching && (
           <>
             <StyledMenuSubTitle>Suggested</StyledMenuSubTitle>
-            <Pivots
-              data={data}
-              blockSuiteWorkspace={blockSuiteWorkspace}
-              currentMeta={currentMeta}
-            />
+            <TreeView data={data} indent={16} enableDnd={false} />
           </>
         )}
       </StyledMenuContent>
 
-      {showRemovePivots && (
+      {showRemovePinboard && (
         <StyledMenuFooter>
-          <StyledPivot
-            data-testid={'remove-from-pivots-button'}
+          <StyledPinboard
+            data-testid={'remove-from-pinboard-button'}
             onClick={() => {
-              setPageMeta(currentMeta.id, { isPivots: false });
               const parentMeta = metas.find(m =>
                 m.subpageIds.includes(currentMeta.id)
               );
@@ -132,11 +126,13 @@ export const PivotsMenu = ({
             }}
           >
             <RemoveIcon />
-            {t('Remove from Pivots')}
-          </StyledPivot>
+            {t('Remove from Pinboard')}
+          </StyledPinboard>
           <p>{t('RFP')}</p>
         </StyledMenuFooter>
       )}
     </PureMenu>
   );
 };
+
+export default PinboardMenu;

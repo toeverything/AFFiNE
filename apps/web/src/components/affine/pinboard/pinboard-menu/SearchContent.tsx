@@ -7,7 +7,7 @@ import Image from 'next/legacy/image';
 import React from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import { StyledMenuSubTitle, StyledPivot } from '../styles';
+import { StyledMenuSubTitle, StyledPinboard } from '../styles';
 
 export const SearchContent = ({
   results,
@@ -27,16 +27,16 @@ export const SearchContent = ({
         </StyledMenuSubTitle>
         {results.map(meta => {
           return (
-            <StyledPivot
+            <StyledPinboard
               key={meta.id}
               onClick={() => {
                 onClick?.(meta.id);
               }}
-              data-testid="pivot-search-result"
+              data-testid="pinboard-search-result"
             >
               {record[meta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
               {meta.title}
-            </StyledPivot>
+            </StyledPinboard>
           );
         })}
       </>

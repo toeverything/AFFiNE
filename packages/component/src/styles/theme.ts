@@ -24,7 +24,7 @@ export const getLightTheme = (
       popoverBackground: '#fff',
       tooltipBackground: '#261499',
       codeBackground: '#f2f5f9',
-      codeBlockBackground: '#F9F9FB',
+      codeBlockBackground: '#FAFBFD',
       hubBackground: '#fbfbfc',
       cardHoverBackground: '#f8f9ff',
       warningBackground: '#FFF9C7',
@@ -118,7 +118,7 @@ export const getDarkTheme = (
         editorMode === 'edgeless'
           ? lightTheme.colors.codeBackground
           : '#505662',
-      codeBlockBackground: '#36383D',
+      codeBlockBackground: '#292C33',
       hubBackground: '#272727',
       cardHoverBackground: '#363636',
       warningBackground: '#FFF9C7',
