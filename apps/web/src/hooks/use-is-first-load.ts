@@ -6,7 +6,7 @@ import {
   guideHiddenAtom,
   guideHiddenUntilNextUpdateAtom,
   lastVersionAtom,
-} from '../../atoms/first-load';
+} from '../atoms/first-load';
 
 export function useLastVersion() {
   return useAtom(lastVersionAtom);
