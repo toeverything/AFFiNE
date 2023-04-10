@@ -6,7 +6,7 @@ import { useCallback, useState } from 'react';
 import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
-} from '../../../../hooks/affine/use-is-first-load';
+} from '../../../../hooks/use-is-first-load';
 import { StyledChangeLog, StyledChangeLogWrapper } from '../shared-styles';
 import { StyledLink } from '../style';
 
