@@ -13,16 +13,18 @@
     "./theme/*": "./src/theme/*",
     "./*": "./src/components/*/index.tsx"
   },
+  "peerDependencies": {
+    "@blocksuite/blocks": "0.0.0-20230409084303-221991d4-nightly",
+    "@blocksuite/editor": "0.0.0-20230409084303-221991d4-nightly",
+    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly",
+    "@blocksuite/icons": "2.1.7",
+    "@blocksuite/store": "0.0.0-20230409084303-221991d4-nightly"
+  },
   "dependencies": {
     "@affine/debug": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/jotai": "workspace:*",
     "@affine/workspace": "workspace:^",
-    "@blocksuite/blocks": "0.0.0-20230407072653-ba36ca29-nightly",
-    "@blocksuite/editor": "0.0.0-20230407072653-ba36ca29-nightly",
-    "@blocksuite/global": "0.0.0-20230407072653-ba36ca29-nightly",
-    "@blocksuite/icons": "2.1.5",
-    "@blocksuite/store": "0.0.0-20230407072653-ba36ca29-nightly",
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.10.7",
@@ -44,6 +46,11 @@
     "react-is": "^18.2.0"
   },
   "devDependencies": {
+    "@blocksuite/blocks": "0.0.0-20230409084303-221991d4-nightly",
+    "@blocksuite/editor": "0.0.0-20230409084303-221991d4-nightly",
+    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly",
+    "@blocksuite/icons": "2.1.7",
+    "@blocksuite/store": "0.0.0-20230409084303-221991d4-nightly",
     "@storybook/addon-actions": "^7.0.2",
     "@storybook/addon-coverage": "^0.0.8",
     "@storybook/addon-essentials": "^7.0.2",
@@ -67,7 +74,7 @@
     "serve": "^14.2.0",
     "storybook": "^7.0.2",
     "storybook-dark-mode": "^3.0.0",
-    "typescript": "^5.0.3",
+    "typescript": "^5.0.4",
     "vite": "^4.2.1",
     "wait-on": "^7.0.1",
     "yjs": "^13.5.52"

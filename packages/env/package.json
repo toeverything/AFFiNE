@@ -4,6 +4,7 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
+    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly",
     "next": "=13.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -13,8 +14,10 @@
     ".": "./src/index.ts",
     "./constant": "./src/constant.ts"
   },
+  "peerDependencies": {
+    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
+  },
   "dependencies": {
-    "@blocksuite/global": "0.0.0-20230407072653-ba36ca29-nightly",
     "lit": "^2.7.2"
   }
 }

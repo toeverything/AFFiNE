@@ -24,20 +24,20 @@ import { currentWorkspaceIdAtom, workspacesAtom } from '../../atoms';
 import { LocalPlugin } from '../../plugins/local';
 import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
 import {
+  currentWorkspaceAtom,
+  useCurrentWorkspace,
+} from '../current/use-current-workspace';
+import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
   useLastVersion,
   useTipsDisplayStatus,
-} from '../affine/use-is-first-load';
+} from '../use-is-first-load';
+import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
-} from '../affine/use-recent-views';
-import {
-  currentWorkspaceAtom,
-  useCurrentWorkspace,
-} from '../current/use-current-workspace';
-import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
+} from '../use-recent-views';
 import {
   REDIRECT_TIMEOUT,
   useSyncRouterWithCurrentWorkspaceAndPage,

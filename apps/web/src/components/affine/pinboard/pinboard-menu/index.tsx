@@ -5,9 +5,9 @@ import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import React, { useCallback, useState } from 'react';
 
-import { usePinboardData } from '../../../../hooks/affine/use-pinboard-data';
-import { usePinboardHandler } from '../../../../hooks/affine/use-pinboard-handler';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
+import { usePinboardData } from '../../../../hooks/use-pinboard-data';
+import { usePinboardHandler } from '../../../../hooks/use-pinboard-handler';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import { PinboardRender } from '../pinboard-render/';
@@ -45,7 +45,7 @@ export const PinboardMenu = ({
     meta => !meta.trash && meta.title.includes(query)
   );
 
-  const { handleDrop } = usePinboardHandler({
+  const { dropPin } = usePinboardHandler({
     blockSuiteWorkspace,
     metas,
   });
@@ -54,7 +54,7 @@ export const PinboardMenu = ({
     (dropId: string) => {
       const targetTitle = metas.find(m => m.id === dropId)?.title;
 
-      handleDrop(currentMeta.id, dropId, {
+      dropPin(currentMeta.id, dropId, {
         bottomLine: false,
         topLine: false,
         internal: true,
@@ -62,7 +62,7 @@ export const PinboardMenu = ({
       onPinboardClick?.({ dragId: currentMeta.id, dropId });
       toast(`Moved "${currentMeta.title}" to "${targetTitle}"`);
     },
-    [currentMeta.id, currentMeta.title, handleDrop, metas, onPinboardClick]
+    [currentMeta.id, currentMeta.title, dropPin, metas, onPinboardClick]
   );
 
   const { data } = usePinboardData({

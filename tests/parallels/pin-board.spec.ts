@@ -34,6 +34,16 @@ async function openPinboardPageOperationMenu(page: Page, id: string) {
   await node.getByTestId('pinboard-operation-button').click();
 }
 
+async function checkIsChildInsertToParentInEditor(page: Page, pageId: string) {
+  await page
+    .getByTestId('sidebar-pinboard-container')
+    .getByTestId(`pinboard-${pageId}`)
+    .click();
+  await page.waitForTimeout(200);
+  const referenceLink = await page.locator('.affine-reference');
+  expect(referenceLink).not.toBeNull();
+}
+
 test.describe('PinBoard interaction', () => {
   test('Have initial root pinboard page when first in', async ({ page }) => {
     const rootPinboardMeta = await initHomePageWithPinboard(page);
@@ -77,6 +87,7 @@ test.describe('PinBoard interaction', () => {
         .getByTestId('[data-testid="sidebar-pinboard-container"]')
         .getByTestId(`pinboard-${meta?.id}`)
     ).not.toBeNull();
+    await checkIsChildInsertToParentInEditor(page, rootPinboardMeta?.id ?? '');
   });
 
   test('Add pinboard by sidebar operation menu', async ({ page }) => {
@@ -92,6 +103,8 @@ test.describe('PinBoard interaction', () => {
         .getByTestId('sidebar-pinboard-container')
         .getByTestId(`pinboard-${newPageMeta?.id}`)
     ).not.toBeNull();
+    console.log('rootPinboardMeta', rootPinboardMeta);
+    await checkIsChildInsertToParentInEditor(page, rootPinboardMeta?.id ?? '');
   });
 
   test('Move pinboard to another in sidebar', async ({ page }) => {
@@ -116,7 +129,6 @@ test.describe('PinBoard interaction', () => {
     await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
     await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test2');
     const childMeta = (await getMetas(page)).find(m => m.title === 'test1');
-    const childMeta2 = (await getMetas(page)).find(m => m.title === 'test2');
 
     await page.getByTestId('all-pages').click();
     await page

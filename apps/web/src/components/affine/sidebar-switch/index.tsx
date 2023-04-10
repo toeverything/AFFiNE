@@ -6,8 +6,8 @@ import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
   useUpdateTipsOnVersionChange,
-} from '../../../hooks/affine/use-is-first-load';
-import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
+} from '../../../hooks/use-is-first-load';
+import { useSidebarStatus } from '../../../hooks/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
 type SidebarSwitchProps = {
