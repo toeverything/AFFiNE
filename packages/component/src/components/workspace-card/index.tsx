@@ -78,7 +78,7 @@ const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
 
 export type WorkspaceCardProps = {
   currentWorkspaceId: string | null;
-  workspace: AffineWorkspace | LocalWorkspace | null;
+  workspace?: AffineWorkspace | LocalWorkspace | null;
   onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
   onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
 };

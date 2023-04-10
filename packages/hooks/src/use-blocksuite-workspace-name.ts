@@ -6,9 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 export function useBlockSuiteWorkspaceName(
   blockSuiteWorkspace?: Workspace | null
 ) {
-  const [name, set] = useState(
-    () => blockSuiteWorkspace?.meta.name ?? UNTITLED_WORKSPACE_NAME
-  );
+  const [name, set] = useState(() => blockSuiteWorkspace?.meta.name);
   useEffect(() => {
     if (blockSuiteWorkspace) {
       set(blockSuiteWorkspace.meta.name ?? '');
@@ -28,5 +26,5 @@ export function useBlockSuiteWorkspaceName(
     },
     [blockSuiteWorkspace]
   );
-  return [name, setName] as const;
+  return [name || UNTITLED_WORKSPACE_NAME, setName] as const;
 }

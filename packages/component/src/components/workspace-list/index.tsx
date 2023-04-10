@@ -10,6 +10,7 @@ import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import type { Atom } from 'jotai';
 import { useAtomValue } from 'jotai';
 import type { FC } from 'react';
+import { Suspense } from 'react';
 
 import { WorkspaceCard } from '../workspace-card';
 
@@ -72,7 +73,9 @@ export const WorkspaceList: FC<WorkspaceListProps> = props => {
     <DndContext sensors={sensors} onDragEnd={props.onDragEnd}>
       <SortableContext items={props.items}>
         {props.items.map(item => (
-          <SortableWorkspaceItem {...props} item={item} key={item} />
+          <Suspense key={item} fallback={<WorkspaceCard {...props} />}>
+            <SortableWorkspaceItem {...props} item={item} />
+          </Suspense>
         ))}
       </SortableContext>
     </DndContext>

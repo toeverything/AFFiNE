@@ -34,7 +34,6 @@ const workspaceFlavourAtom = atomFamily((id: string) => {
 
 export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
   return atom(async get => {
-    console.log('created workspaceByIdAtomFamily', id);
     if (!id) return null;
     const flavour = get(workspaceFlavourAtom(id));
     if (!flavour) return null;

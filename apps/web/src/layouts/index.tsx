@@ -189,10 +189,10 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 function WorkspaceConnector({ id }: { id: string }) {
   const workspace = useAtomValue(workspaceByIdAtomFamily(id));
   const providers = workspace?.providers;
-  // is it possible to use .onMount intead of useEffect?
+  // is it possible to use .onMount instead of useEffect?
   useEffect(() => {
     if (providers) {
-      logger.info('connect providers for', id);
+      logger.info('connect providers for', id, performance.now());
       providers.forEach(provider => {
         provider.connect();
       });
@@ -335,9 +335,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         </StyledSpacer>
         <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
-            {workspaces.map(w => (
-              <WorkspaceConnector key={w.id} id={w.id} />
-            ))}
+            <Suspense>
+              {workspaces.map(w => (
+                <WorkspaceConnector key={w.id} id={w.id} />
+              ))}
+            </Suspense>
 
             {children}
             <StyledToolWrapper>
