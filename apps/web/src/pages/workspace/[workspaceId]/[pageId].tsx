@@ -1,13 +1,16 @@
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
+import { useReference } from '../../../hooks/affine/use-reference';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
@@ -21,12 +24,26 @@ function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
   blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', true);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', true);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_surface', true);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_linked_page', true);
 }
 
 const WorkspaceDetail: React.FC = () => {
+  const router = useRouter();
+  const { openPage } = useRouterHelper(router);
   const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
-  useSyncRecentViewsWithRouter(useRouter());
+
+  useSyncRecentViewsWithRouter(router);
+
+  useReference({
+    pageLinkClicked: useCallback(
+      ({ pageId }: { pageId: string }) => {
+        assertExists(currentWorkspace);
+        return openPage(currentWorkspace.id, pageId);
+      },
+      [currentWorkspace, openPage]
+    ),
+  });
   useEffect(() => {
     if (currentWorkspace) {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);

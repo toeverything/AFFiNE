@@ -25,7 +25,7 @@ export function usePinboardHandler({
   onDelete,
   onDrop,
 }: {
-  blockSuiteWorkspace: BlockSuiteWorkspace;
+  blockSuiteWorkspace: BlockSuiteWorkspace | null;
   metas: PageMeta[];
   onAdd?: (addedId: string, parentId: string) => void;
   onDelete?: TreeViewProps<NodeRenderProps>['onDelete'];

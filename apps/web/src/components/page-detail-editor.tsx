@@ -80,7 +80,13 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
           },
           [onInit, setEditor]
         )}
-        onLoad={onLoad}
+        onLoad={useCallback(
+          (page: Page, editor: EditorContainer) => {
+            setEditor(editor);
+            onLoad?.(page, editor);
+          },
+          [onLoad, setEditor]
+        )}
       />
     </>
   );
