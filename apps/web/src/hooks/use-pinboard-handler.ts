@@ -39,7 +39,7 @@ export function usePinboardHandler({
     (pageId: string, referenceId: string) => {
       const page = blockSuiteWorkspace?.getPage(pageId);
       assertExists(page);
-      const text = page.Text.fromDelta([
+      const text = page?.Text.fromDelta([
         {
           insert: ' ',
           attributes: {
