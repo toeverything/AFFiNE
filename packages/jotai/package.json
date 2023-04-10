@@ -4,6 +4,6 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@affine/env": "workspace:*",
-    "jotai": "^2.0.3"
+    "jotai": "^2.0.4"
   }
 }
