@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 import type { BlockSuiteWorkspace } from '../shared';
 import { useBlockSuiteWorkspaceHelper } from './use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from './use-page-meta';
-import type { NodeRenderProps, PinboardNode } from './use-pinboard-data';
+import type { NodeRenderProps } from './use-pinboard-data';
 
 const logger = new DebugLogger('pinboard');
 
@@ -35,16 +35,16 @@ export function usePinboardHandler({
   const { getPageMeta, setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
 
   const addPin = useCallback(
-    (node: PinboardNode) => {
+    (parentId: string) => {
       const id = nanoid();
-      createPage(id, node.id);
-      onAdd?.(id, node.id);
+      createPage(id, parentId);
+      onAdd?.(id, parentId);
     },
     [createPage, onAdd]
   );
 
   const deletePin = useCallback(
-    (node: PinboardNode) => {
+    (deleteId: string) => {
       const removeToTrash = (currentMeta: PageMeta) => {
         const { subpageIds = [] } = currentMeta;
         setPageMeta(currentMeta.id, {
@@ -52,12 +52,12 @@ export function usePinboardHandler({
           trashDate: +new Date(),
         });
         subpageIds.forEach(id => {
-          const subcurrentMeta = getPageMeta(id);
-          subcurrentMeta && removeToTrash(subcurrentMeta);
+          const subCurrentMeta = getPageMeta(id);
+          subCurrentMeta && removeToTrash(subCurrentMeta);
         });
       };
-      removeToTrash(metas.find(m => m.id === node.id)!);
-      onDelete?.(node);
+      removeToTrash(metas.find(m => m.id === deleteId)!);
+      onDelete?.(deleteId);
     },
     [metas, getPageMeta, onDelete, setPageMeta]
   );
