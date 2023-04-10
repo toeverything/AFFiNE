@@ -10,7 +10,7 @@ import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { useAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 
 import { workspaceByIdAtomFamily } from '../../../atoms';
@@ -59,7 +59,7 @@ export const WorkspaceListModal = ({
   onMoveWorkspace,
 }: WorkspaceModalProps) => {
   const { t } = useTranslation();
-  const [workspaces] = useAtom(jotaiWorkspacesAtom);
+  const workspaces = useAtomValue(jotaiWorkspacesAtom);
 
   return (
     <Modal open={open} onClose={onClose}>

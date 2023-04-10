@@ -187,14 +187,15 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
   };
 
 function WorkspaceConnector({ id }: { id: string }) {
-  const currentWorkspace = useAtomValue(workspaceByIdAtomFamily(id));
+  const workspace = useAtomValue(workspaceByIdAtomFamily(id));
+  const providers = workspace?.providers;
   useEffect(() => {
-    if (currentWorkspace) {
-      currentWorkspace.providers.forEach(provider => {
+    if (providers) {
+      providers.forEach(provider => {
         provider.connect();
       });
       return () => {
-        currentWorkspace.providers.forEach(provider => {
+        providers.forEach(provider => {
           // mem leak
           if (provider.background) {
             return;
@@ -203,7 +204,7 @@ function WorkspaceConnector({ id }: { id: string }) {
         });
       };
     }
-  }, [currentWorkspace]);
+  }, [id, providers]);
   return null;
 }
 

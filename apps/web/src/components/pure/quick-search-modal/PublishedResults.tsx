@@ -12,7 +12,7 @@ import { StyledListItem, StyledNotFound } from './style';
 
 export type PublishedResultsProps = {
   query: string;
-  loading: boolean;
+  loading?: boolean;
   setPublishWorkspaceName: (name: string) => void;
   onClose: () => void;
   blockSuiteWorkspace: BlockSuiteWorkspace;

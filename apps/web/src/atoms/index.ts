@@ -18,35 +18,27 @@ export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom(false);
 export const openQuickSearchModalAtom = atom(false);
 
-export const workspacesAtom = atom(get => {
-  const flavours: string[] = Object.values(WorkspacePlugins).map(
-    plugin => plugin.flavour
-  );
-  const jotaiWorkspaces = get(jotaiWorkspacesAtom).filter(workspace =>
-    flavours.includes(workspace.flavour)
-  );
-  return jotaiWorkspaces.map(workspace => {
-    return atom(() => {
-      const plugin =
-        WorkspacePlugins[workspace.flavour as keyof typeof WorkspacePlugins];
-      assertExists(plugin);
-      const { CRUD } = plugin;
-      return CRUD.get(workspace.id) as Promise<AllWorkspace>;
-    });
+// id -> flavour (atom)
+const workspaceFlavourAtom = atomFamily((id: string) => {
+  return atom(get => {
+    const workspace = get(jotaiWorkspacesAtom).find(
+      workspace => workspace.id === id
+    );
+    console.log('workspaceFlavourAtom', workspace);
+    return workspace?.flavour;
   });
 });
 
 export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
   return atom(async get => {
-    const workspaceAtoms = get(workspacesAtom);
-    const flavours: string[] = Object.values(WorkspacePlugins).map(
-      plugin => plugin.flavour
-    );
-    const jotaiWorkspaces = get(jotaiWorkspacesAtom).filter(workspace =>
-      flavours.includes(workspace.flavour)
-    );
-    const idx = jotaiWorkspaces.findIndex(workspace => workspace.id === id);
-    return idx === -1 ? null : await get(workspaceAtoms[idx]);
+    console.log('created workspaceByIdAtomFamily', id);
+    if (!id) return null;
+    const flavour = get(workspaceFlavourAtom(id));
+    if (!flavour) return null;
+    const plugin = WorkspacePlugins[flavour];
+    assertExists(plugin);
+    const { CRUD } = plugin;
+    return CRUD.get(id) as Promise<AllWorkspace>;
   });
 });
 

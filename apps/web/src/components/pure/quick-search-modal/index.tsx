@@ -4,14 +4,7 @@ import { useTranslation } from '@affine/i18n';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';
 import type React from 'react';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { Footer } from './Footer';
@@ -46,12 +39,9 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [loading, startTransition] = useTransition();
   const [query, _setQuery] = useState('');
   const setQuery = useCallback((query: string) => {
-    startTransition(() => {
-      _setQuery(query);
-    });
+    _setQuery(query);
   }, []);
   const isPublicWorkspace = useMemo(
     () => router.pathname.startsWith('/public-workspace'),
@@ -164,7 +154,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                 <PublishedResults
                   blockSuiteWorkspace={blockSuiteWorkspace}
                   query={query}
-                  loading={loading}
                   onClose={handleClose}
                   setPublishWorkspaceName={setPublishWorkspaceName}
                   data-testid="published-search-results"

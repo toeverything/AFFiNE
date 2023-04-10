@@ -6,19 +6,13 @@ import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
-import { workspaceByIdAtomFamily, workspacesAtom } from '../atoms';
+import { workspaceByIdAtomFamily } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
-
-export function useWorkspaces() {
-  const atoms = useAtomValue(workspacesAtom);
-  return atoms;
-}
 
 const logger = new DebugLogger('use-workspaces');
 
 export function useWorkspacesHelper() {
-  const workspaces = useWorkspaces();
   const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
   const set = useSetAtom(jotaiWorkspacesAtom);
   return {

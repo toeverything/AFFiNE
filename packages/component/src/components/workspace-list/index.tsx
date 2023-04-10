@@ -18,7 +18,7 @@ export type WorkspaceListProps = {
   currentWorkspaceId: string | null;
   getWorkspaceAtom: (
     id: string
-  ) => Atom<Promise<AffineWorkspace | LocalWorkspace>>;
+  ) => Atom<Promise<AffineWorkspace | LocalWorkspace | null>>;
   items: string[];
   onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
   onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;

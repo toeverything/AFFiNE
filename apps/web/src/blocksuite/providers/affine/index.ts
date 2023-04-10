@@ -5,7 +5,7 @@ import { BlockSuiteWorkspace } from '../../../shared';
 import { affineApis } from '../../../shared/apis';
 import { providerLogger } from '../../logger';
 
-const hashMap = new Map<string, ArrayBuffer>();
+const hashMap = new Map<string, Promise<ArrayBuffer>>();
 
 export const createAffineDownloadProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
@@ -17,16 +17,11 @@ export const createAffineDownloadProvider = (
     background: true,
     connect: () => {
       providerLogger.info('connect download provider', id);
-      if (hashMap.has(id)) {
-        providerLogger.debug('applyUpdate');
-        BlockSuiteWorkspace.Y.applyUpdate(
-          blockSuiteWorkspace.doc,
-          new Uint8Array(hashMap.get(id) as ArrayBuffer)
-        );
-        return;
+      if (!hashMap.has(id)) {
+        hashMap.set(id, affineApis.downloadWorkspace(id, false));
       }
-      affineApis.downloadWorkspace(id, false).then(binary => {
-        hashMap.set(id, binary);
+
+      hashMap.get(id)?.then(binary => {
         providerLogger.debug('applyUpdate');
         BlockSuiteWorkspace.Y.applyUpdate(
           blockSuiteWorkspace.doc,

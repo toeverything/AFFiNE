@@ -4,7 +4,7 @@ import { assertExists } from '@blocksuite/store';
 import { useCallback, useEffect, useState } from 'react';
 
 export function useBlockSuiteWorkspaceName(
-  blockSuiteWorkspace: Workspace | null
+  blockSuiteWorkspace?: Workspace | null
 ) {
   const [name, set] = useState(
     () => blockSuiteWorkspace?.meta.name ?? UNTITLED_WORKSPACE_NAME

@@ -5,7 +5,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
 
-import { workspacesAtom } from '../../atoms';
+import { workspaceByIdAtomFamily } from '../../atoms';
 import { createAffineProviders } from '../../blocksuite';
 import { Unreachable } from '../../components/affine/affine-error-eoundary';
 import { affineApis } from '../../shared/apis';
@@ -43,8 +43,9 @@ export const fetcher = async (
       if (typeof key !== 'string') {
         throw new TypeError('key must be a string');
       }
-      const workspaces = await jotaiStore.get(workspacesAtom);
-      const workspace = workspaces.find(({ id }) => id === workspaceId);
+      const workspace = await jotaiStore.get(
+        workspaceByIdAtomFamily(workspaceId)
+      );
       assertExists(workspace);
       const storage = await workspace.blockSuiteWorkspace.blobs;
       if (!storage) {

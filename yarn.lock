@@ -200,6 +200,7 @@ __metadata:
     eslint: ^8.37.0
     eslint-config-next: ^13.2.4
     jotai: ^2.0.3
+    jotai-cache: ^0.3.0
     lit: ^2.7.2
     lottie-web: ^5.10.2
     next: =13.2.3
@@ -13808,6 +13809,15 @@ __metadata:
     "@sideway/formula": ^3.0.1
     "@sideway/pinpoint": ^2.0.0
   checksum: 055df3841e00d7ed065ef1cc3330cf69097ab2ffec3083d8b1d6edfd2e25504bf2983f5249d6f0459bcad99fe21bb0c9f6f1cc03569713af27cd5eb00ee7bb7d
+  languageName: node
+  linkType: hard
+
+"jotai-cache@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "jotai-cache@npm:0.3.0"
+  peerDependencies:
+    jotai: ">=1.11.0"
+  checksum: eb6c758f1606989dbb5135317431b375bbdf4ece880f71b78d16c623c86d5c54b45ed9f69378dc1b5c852fd9a03d6bc78b1833e3880bd961ad5e65b045e09aa4
   languageName: node
   linkType: hard
 

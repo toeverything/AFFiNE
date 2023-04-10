@@ -16,7 +16,7 @@ import {
 } from './styles';
 
 export type WorkspaceTypeProps = {
-  workspace: AffineWorkspace | LocalWorkspace;
+  workspace: AffineWorkspace | LocalWorkspace | null;
 };
 
 import {
@@ -48,13 +48,13 @@ const PublishIcon = () => {
 const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
   const { t } = useTranslation();
   let isOwner = true;
-  if (workspace.flavour === WorkspaceFlavour.AFFINE) {
-    isOwner = workspace.permission === PermissionType.Owner;
-  } else if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+  if (workspace?.flavour === WorkspaceFlavour.AFFINE) {
+    isOwner = workspace?.permission === PermissionType.Owner;
+  } else if (workspace?.flavour === WorkspaceFlavour.LOCAL) {
     isOwner = true;
   }
 
-  if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+  if (workspace?.flavour === WorkspaceFlavour.LOCAL) {
     return (
       <p title={t('Local Workspace')}>
         <LocalWorkspaceIcon />
@@ -78,7 +78,7 @@ const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
 
 export type WorkspaceCardProps = {
   currentWorkspaceId: string | null;
-  workspace: AffineWorkspace | LocalWorkspace;
+  workspace: AffineWorkspace | LocalWorkspace | null;
   onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
   onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
 };
@@ -90,31 +90,31 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
   currentWorkspaceId,
 }) => {
   const { t } = useTranslation();
-  const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
+  const [name] = useBlockSuiteWorkspaceName(workspace?.blockSuiteWorkspace);
 
   return (
     <StyledCard
       data-testid="workspace-card"
       onClick={useCallback(
         (event: MouseEvent) => {
-          onClick(workspace);
+          workspace && onClick(workspace);
         },
         [onClick, workspace]
       )}
-      active={workspace.id === currentWorkspaceId}
+      active={workspace?.id === currentWorkspaceId}
     >
       <WorkspaceAvatar size={58} workspace={workspace} />
 
       <StyleWorkspaceInfo>
         <StyleWorkspaceTitle>{name}</StyleWorkspaceTitle>
         <WorkspaceType workspace={workspace} />
-        {workspace.flavour === WorkspaceFlavour.LOCAL && (
+        {workspace?.flavour === WorkspaceFlavour.LOCAL && (
           <p title={t('Available Offline')}>
             <LocalDataIcon />
             <span>{t('Available Offline')}</span>
           </p>
         )}
-        {workspace.flavour === WorkspaceFlavour.AFFINE && workspace.public && (
+        {workspace?.flavour === WorkspaceFlavour.AFFINE && workspace.public && (
           <p title={t('Published to Web')}>
             <PublishIcon />
             <span>{t('Published to Web')}</span>
@@ -126,7 +126,7 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
         hoverBackground="#fff"
         onClick={e => {
           e.stopPropagation();
-          onSettingClick(workspace);
+          workspace && onSettingClick(workspace);
         }}
       >
         <SettingsIcon />
