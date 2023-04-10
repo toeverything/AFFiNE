@@ -19,7 +19,7 @@ import { QueryParamError } from '../../../components/affine/affine-error-eoundar
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
-import { useReference } from '../../../hooks/affine/use-reference';
+import { useReferenceLink } from '../../../hooks/affine/use-reference-link';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { PublicWorkspaceLayout } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
@@ -65,7 +65,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   useEffect(() => {
     blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
   }, [blockSuiteWorkspace]);
-  useReference({
+  useReferenceLink({
     pageLinkClicked: useCallback(
       ({ pageId }: { pageId: string }) => {
         assertExists(currentWorkspace);
