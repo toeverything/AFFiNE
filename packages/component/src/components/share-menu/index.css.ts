@@ -24,3 +24,11 @@ export const buttonStyle = style({
   marginTop: '18px',
   // todo: new color scheme should be used
 });
+
+export const actionsStyle = style({
+  display: 'flex',
+  gap: '9px',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'start',
+});
