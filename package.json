@@ -79,5 +79,10 @@
     "vitest": "^0.30.0",
     "vitest-fetch-mock": "^0.2.2"
   },
+  "resolutions": {
+    "lit": "^2.7.2",
+    "idb": "^7.1.1",
+    "@emotion/cache": "^11.10.7"
+  },
   "packageManager": "yarn@3.5.0"
 }

@@ -89,6 +89,12 @@ __metadata:
     vite: ^4.2.1
     wait-on: ^7.0.1
     yjs: ^13.5.52
+  peerDependencies:
+    "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/editor": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/icons": 2.1.7
+    "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
   languageName: unknown
   linkType: soft
 
@@ -112,6 +118,8 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
     zod: ^3.21.4
+  peerDependencies:
+    "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
   languageName: unknown
   linkType: soft
 
@@ -171,6 +179,7 @@ __metadata:
     "@affine/workspace": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
     "@blocksuite/editor": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
     "@blocksuite/icons": ^2.1.7
     "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
     "@dnd-kit/core": ^6.0.8
@@ -228,8 +237,6 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
-    "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
     "@toeverything/y-indexeddb": "workspace:*"
     "@types/ws": ^8.5.4
     firebase: ^9.19.1
@@ -243,6 +250,9 @@ __metadata:
     y-protocols: ^1.0.5
     yjs: ^13.5.52
     zod: ^3.21.4
+  peerDependencies:
+    "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
   languageName: unknown
   linkType: soft
 
@@ -2165,19 +2175,6 @@ __metadata:
     source-map: ^0.5.7
     stylis: 4.1.3
   checksum: 3eed138932e8edf2598352e69ad949b9db3051a4d6fcff190dacbac9aa838d7ef708b9f3e6c48660625d9311dae82d73477ae4e7a31139feef5eb001a5528421
-  languageName: node
-  linkType: hard
-
-"@emotion/cache@npm:^11.10.5":
-  version: 11.10.5
-  resolution: "@emotion/cache@npm:11.10.5"
-  dependencies:
-    "@emotion/memoize": ^0.8.0
-    "@emotion/sheet": ^1.2.1
-    "@emotion/utils": ^1.2.0
-    "@emotion/weak-memoize": ^0.3.0
-    stylis: 4.1.3
-  checksum: 1dd2d9af2d3ecbd3d4469ecdf91a335eef6034c851b57a474471b2d2280613eb35bbed98c0368cc4625f188619fbdaf04cf07e8107aaffce94b2178444c0fe7b
   languageName: node
   linkType: hard
 
@@ -12425,13 +12422,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"idb@npm:7.0.1":
-  version: 7.0.1
-  resolution: "idb@npm:7.0.1"
-  checksum: 61526789562cc3518a1a030c7a06cc98edfcd62795700ff28c701d6f84c178aee4e98bedfc79e6c394ba26084aa4667d6594b1728e5868f305f9b34148662679
-  languageName: node
-  linkType: hard
-
 "idb@npm:^7.1.1":
   version: 7.1.1
   resolution: "idb@npm:7.1.1"
@@ -14327,17 +14317,6 @@ __metadata:
   dependencies:
     "@types/trusted-types": ^2.0.2
   checksum: 9641bc8e385304899b05c3a268ede7e766a145a1d98449caa1e3d32109197502311a1d35d8ba57a93c884143e6e2d1543e7b025d3607c6675e3d112c0ac2f129
-  languageName: node
-  linkType: hard
-
-"lit@npm:^2.6.1":
-  version: 2.7.1
-  resolution: "lit@npm:2.7.1"
-  dependencies:
-    "@lit/reactive-element": ^1.6.0
-    lit-element: ^3.3.0
-    lit-html: ^2.7.0
-  checksum: 52a3de2c8720bbfd1aa166f035e53692230426387529d36a0c160680cc0ec0534f5148e83ed035fad8b14d0d6c902d9e9924f86de2bafb825898e6b0bf64a392
   languageName: node
   linkType: hard
 

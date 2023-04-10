@@ -89,6 +89,12 @@ __metadata:
     vite: ^4.2.1
     wait-on: ^7.0.1
     yjs: ^13.5.52
+  peerDependencies:
+    "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/editor": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/icons": 2.1.7
+    "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
   languageName: unknown
   linkType: soft
 
@@ -136,6 +142,8 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
     zod: ^3.21.4
+  peerDependencies:
+    "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
   languageName: unknown
   linkType: soft
 
@@ -189,8 +197,6 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
-    "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
     "@toeverything/y-indexeddb": "workspace:*"
     "@types/ws": ^8.5.4
     firebase: ^9.19.1
@@ -204,6 +210,9 @@ __metadata:
     y-protocols: ^1.0.5
     yjs: ^13.5.52
     zod: ^3.21.4
+  peerDependencies:
+    "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
   languageName: unknown
   linkType: soft
 

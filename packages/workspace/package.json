@@ -12,13 +12,15 @@
     "./affine/sync": "./src/affine/sync.js",
     "./affine/keck": "./src/affine/keck/index.ts"
   },
+  "peerDependencies": {
+    "@blocksuite/blocks": "0.0.0-20230409084303-221991d4-nightly",
+    "@blocksuite/store": "0.0.0-20230409084303-221991d4-nightly"
+  },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230409084303-221991d4-nightly",
-    "@blocksuite/store": "0.0.0-20230409084303-221991d4-nightly",
     "@toeverything/y-indexeddb": "workspace:*",
     "firebase": "^9.19.1",
     "jotai": "^2.0.4",
