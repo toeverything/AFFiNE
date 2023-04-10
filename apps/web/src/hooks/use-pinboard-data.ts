@@ -3,7 +3,7 @@ import type { PageMeta } from '@blocksuite/store';
 import type { MouseEvent } from 'react';
 import { useMemo } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 export type RenderProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
