@@ -1,5 +1,6 @@
 import { atomWithSyncStorage } from '@affine/jotai';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -49,15 +50,40 @@ const workspaceFlavourAtom = atomFamily((id: string) => {
 });
 
 export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
-  return atom(async get => {
+  const localValuePromise = (async () => {
     if (!id) return null;
-    const flavour = get(workspaceFlavourAtom(id));
-    if (!flavour) return null;
-    const plugin = WorkspacePlugins[flavour];
+    // load from local first, then from cloud on mount
+    const plugin = WorkspacePlugins.local;
     assertExists(plugin);
     const { CRUD } = plugin;
-    return CRUD.get(id) as Promise<AllWorkspace>;
-  });
+    const workspace = (await CRUD.get(id)) as AllWorkspace;
+    return workspace;
+  })();
+
+  const baseAtom = atom(localValuePromise);
+
+  const anAtom = atom(
+    get => get(baseAtom),
+    async (get, set, action: 'sync') => {
+      if (!id) return null;
+      if (action === 'sync') {
+        const flavour = get(workspaceFlavourAtom(id));
+        if (flavour === WorkspaceFlavour.AFFINE) {
+          const { CRUD } = WorkspacePlugins.affine;
+          const cloudValue = await CRUD.get(id);
+          if (cloudValue) {
+            set(baseAtom, Promise.resolve(cloudValue));
+          }
+        }
+      }
+    }
+  );
+
+  anAtom.onMount = set => {
+    set('sync');
+  };
+
+  return atom(get => get(anAtom));
 });
 
 type View = { id: string; mode: 'page' | 'edgeless' };
