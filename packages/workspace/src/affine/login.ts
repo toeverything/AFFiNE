@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { getEnvironment } from '@affine/env';
 import { initializeApp } from 'firebase/app';
 import type { AuthProvider } from 'firebase/auth';
 import {
@@ -59,16 +60,29 @@ export const setLoginStorage = (login: LoginResponse) => {
   );
 };
 const getIdTokenByOauthCode = async (
-  accessToken = '',
   firebaseAuth: FirebaseAuth | null
-) => {
-  let idToken = '';
-  if (firebaseAuth) {
-    const credential = GoogleAuthProvider.credential(accessToken);
-    const user = await signInWithCredential(firebaseAuth, credential);
-    idToken = await user.user.getIdToken();
-  }
-  return idToken;
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    window.apis?.ipcRenderer.on(
+      'auth:callback-firebase-token',
+      async (code: string) => {
+        window.apis?.ipcRenderer.off('auth:callback-firebase-token');
+        let idToken = '';
+        try {
+          if (firebaseAuth) {
+            const credential = GoogleAuthProvider.credential(code);
+            const user = await signInWithCredential(firebaseAuth, credential);
+            idToken = await user.user.getIdToken();
+          }
+        } catch (e) {
+          console.error(e);
+          reject('');
+        } finally {
+          resolve(idToken);
+        }
+      }
+    );
+  });
 };
 
 export const clearLoginStorage = () => {
@@ -90,7 +104,6 @@ export const getLoginStorage = (): LoginResponse | null => {
 export const enum SignMethod {
   Google = 'Google',
   GitHub = 'GitHub',
-  Credential = 'Credential',
   // Twitter = 'Twitter',
 }
 
@@ -131,10 +144,10 @@ export function createAffineAuth(prefix = '/') {
 
   return {
     generateToken: async (
-      method: SignMethod,
-      accessToken?: string
+      method: SignMethod
     ): Promise<LoginResponse | null> => {
       const auth = getAuth();
+      const environment = getEnvironment();
       if (!auth) {
         throw new Error('Failed to initialize firebase');
       }
@@ -146,16 +159,14 @@ export function createAffineAuth(prefix = '/') {
         case SignMethod.GitHub:
           provider = new GithubAuthProvider();
           break;
-        case SignMethod.Credential:
-          provider = new GoogleAuthProvider();
-          break;
         default:
           throw new Error('Unsupported sign method');
       }
       try {
         let idToken;
-        if (SignMethod.Credential === method) {
-          idToken = await getIdTokenByOauthCode(accessToken!, auth);
+        if (environment.isDesktop) {
+          await window.apis?.signIn();
+          idToken = await getIdTokenByOauthCode(auth);
         } else {
           const response = await signInWithPopup(auth, provider);
           idToken = await response.user.getIdToken();

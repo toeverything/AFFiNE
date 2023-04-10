@@ -73,11 +73,7 @@ export function Modals() {
           [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
         onClickLogin={async () => {
-          if (environment.isDesktop) {
-            await window.apis.signIn();
-          } else {
-            await handleLogin();
-          }
+          await handleLogin();
         }}
         onClickLogout={useAffineLogOut()}
         onCreateWorkspace={useCallback(() => {

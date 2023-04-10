@@ -40,7 +40,6 @@ import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
-import { ElectronOauthProvider } from '../providers/ElectronOauthProvider';
 import { ModalProvider } from '../providers/ModalProvider';
 import type { AllWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
@@ -363,9 +362,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         </MainContainerWrapper>
       </StyledPage>
       <QuickSearch />
-      <NoSsr>
-        <ElectronOauthProvider />
-      </NoSsr>
     </Provider>
   );
 };

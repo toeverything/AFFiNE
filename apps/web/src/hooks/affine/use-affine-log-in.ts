@@ -17,8 +17,8 @@ export function useAffineLogIn() {
   const router = useRouter();
   const setUser = useSetAtom(currentAffineUserAtom);
   return useCallback(
-    async (method: SignMethod = SignMethod.Google, accessToken?: string) => {
-      const response = await affineAuth.generateToken(method, accessToken);
+    async (method: SignMethod = SignMethod.Google) => {
+      const response = await affineAuth.generateToken(method);
       if (response) {
         setLoginStorage(response);
         const user = parseIdToken(response.token);

@@ -33,9 +33,9 @@ app.on('second-instance', (event, argv) => {
 
 app.on('open-url', async (_, url) => {
   const mainWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
-  const urlObj = parse(url, true);
-  if (!mainWindow || !urlObj.query.code || !url.startsWith('affine://')) return;
-  const token = (await exchangeToken(urlObj.query.code as string)) as {
+  const urlObj = parse(url.replace('??', '?'), true);
+  if (!mainWindow || !url.startsWith('affine://')) return;
+  const token = (await exchangeToken(urlObj.query['code'] as string)) as {
     id_token: string;
   };
   mainWindow.webContents.send('auth:callback-firebase-token', token.id_token);
