@@ -11,13 +11,13 @@ import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { usePageMeta } from '../../../hooks/use-page-meta';
 import {
   useSidebarFloating,
   useSidebarResizing,
   useSidebarStatus,
   useSidebarWidth,
-} from '../../../hooks/affine/use-sidebar-status';
-import { usePageMeta } from '../../../hooks/use-page-meta';
+} from '../../../hooks/use-sidebar-status';
 import type { AllWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';

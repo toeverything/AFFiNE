@@ -10,8 +10,8 @@ import { useRouter } from 'next/router';
 import { useMemo, useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import type { PinboardNode } from '../../../../hooks/affine/use-pinboard-data';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
+import type { PinboardNode } from '../../../../hooks/use-pinboard-data';
 import { StyledCollapsedButton, StyledPinboard } from '../styles';
 import EmptyItem from './EmptyItem';
 import { OperationButton } from './OperationButton';

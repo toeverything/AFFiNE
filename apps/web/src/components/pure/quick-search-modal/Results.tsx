@@ -8,9 +8,9 @@ import type { NextRouter } from 'next/router';
 import type { Dispatch, FC, SetStateAction } from 'react';
 import { useEffect } from 'react';
 
-import { useRecentlyViewed } from '../../../hooks/affine/use-recent-views';
 import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMeta } from '../../../hooks/use-page-meta';
+import { useRecentlyViewed } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';

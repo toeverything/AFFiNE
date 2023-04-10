@@ -7,15 +7,17 @@ import { readFile } from 'node:fs/promises';
 
 import { MessageCode } from '@affine/env/constant';
 import { createStatusApis } from '@affine/workspace/affine/api/status';
-import type { KeckProvider } from '@affine/workspace/affine/keck';
+import { KeckProvider } from '@affine/workspace/affine/keck';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Page } from '@blocksuite/store';
+import type { Page, PageMeta } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { WebSocket } from 'ws';
 import { applyUpdate } from 'yjs';
 
 import {
@@ -31,6 +33,9 @@ import {
   loginResponseSchema,
   setLoginStorage,
 } from '../login';
+
+// @ts-expect-error
+globalThis.WebSocket = WebSocket;
 
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
 let userApis: ReturnType<typeof createUserApis>;
@@ -57,6 +62,15 @@ const mockUser = {
   email: faker.internet.email(),
   password: faker.internet.password(),
 };
+
+async function waitForConnected(provider: KeckProvider) {
+  return new Promise<void>(resolve => {
+    provider.once('status', ({ status }: any) => {
+      expect(status).toBe('connected');
+      resolve();
+    });
+  });
+}
 
 beforeEach(() => {
   // create a new user for each test, so that each test can be run independently
@@ -99,30 +113,19 @@ declare global {
   }
 }
 
-const wsUrl = `ws://127.0.0.1:3000/api/sync/`;
-
 async function createWorkspace(
   workspaceApi: typeof workspaceApis,
   callback?: (workspace: Workspace) => void
 ): Promise<string> {
-  const workspace = new Workspace({
-    id: faker.datatype.uuid(),
-  })
-    .register(AffineSchemas)
-    .register(__unstableSchemas);
+  const workspace = createEmptyBlockSuiteWorkspace(
+    faker.datatype.uuid(),
+    _ => undefined
+  );
   if (callback) {
     callback(workspace);
   }
   const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
   const data = await workspaceApi.createWorkspace(binary);
-  function waitForConnected(provider: KeckProvider) {
-    return new Promise<void>(resolve => {
-      provider.once('status', ({ status }: any) => {
-        expect(status).toBe('connected');
-        resolve();
-      });
-    });
-  }
   createWorkspaceResponseSchema.parse(data);
   return data.id;
 }
@@ -384,6 +387,84 @@ describe('api', () => {
         newUsageResponse.blob_usage.usage
       );
       expect(newUsageResponse.blob_usage.usage).equals(96);
+    },
+    {
+      timeout: 30000,
+    }
+  );
+
+  test(
+    'public page',
+    async () => {
+      const id = await createWorkspace(workspaceApis, workspace => {
+        const page = workspace.createPage('page0');
+        const { frameId } = initPage(page);
+        page.addBlock(
+          'affine:paragraph',
+          {
+            text: new page.Text('This is page0'),
+          },
+          frameId
+        );
+      });
+      const binary = await workspaceApis.downloadWorkspace(id, false);
+      const workspace = createEmptyBlockSuiteWorkspace(id, () => undefined);
+      Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(binary));
+      const workspace2 = createEmptyBlockSuiteWorkspace(id, () => undefined);
+      {
+        const wsUrl = `ws://127.0.0.1:3000/api/sync/`;
+        const provider = new KeckProvider(wsUrl, workspace.id, workspace.doc, {
+          params: { token: getLoginStorage()?.token },
+          // @ts-expect-error ignore the type
+          awareness: workspace.awarenessStore.awareness,
+          connect: false,
+        });
+        const provider2 = new KeckProvider(
+          wsUrl,
+          workspace2.id,
+          workspace2.doc,
+          {
+            params: { token: getLoginStorage()?.token },
+            // @ts-expect-error ignore the type
+            awareness: workspace2.awarenessStore.awareness,
+            connect: false,
+          }
+        );
+
+        provider.connect();
+        provider2.connect();
+
+        await Promise.all([
+          await waitForConnected(provider),
+          await waitForConnected(provider2),
+        ]);
+        const pageId = 'page0';
+        const page = workspace.getPage(pageId) as Page;
+        expect(page).not.toBeNull();
+        expect(page).not.toBeUndefined();
+        workspace.setPageMeta(pageId, {
+          isPublic: true,
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const page2 = workspace2.getPage(pageId) as Page;
+        expect(page2).not.toBeNull();
+        const meta = workspace2.meta.getPageMeta(pageId) as PageMeta;
+        expect(meta.isPublic).toBe(true);
+
+        const binary = await workspaceApis.downloadPublicWorkspacePage(
+          id,
+          pageId
+        );
+        const publicWorkspace = createEmptyBlockSuiteWorkspace(
+          id,
+          () => undefined
+        );
+        Workspace.Y.applyUpdate(publicWorkspace.doc, new Uint8Array(binary));
+        const publicPage = publicWorkspace.getPage(pageId) as Page;
+        expect(publicPage).not.toBeNull();
+      }
     },
     {
       timeout: 30000,

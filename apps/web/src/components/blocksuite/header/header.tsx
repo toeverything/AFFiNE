@@ -7,7 +7,7 @@ import { forwardRef, useEffect, useMemo, useState } from 'react';
 import {
   useSidebarFloating,
   useSidebarStatus,
-} from '../../../hooks/affine/use-sidebar-status';
+} from '../../../hooks/use-sidebar-status';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import SyncUser from './header-right-items/SyncUser';

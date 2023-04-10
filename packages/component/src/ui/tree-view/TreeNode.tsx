@@ -110,8 +110,8 @@ const TreeNodeItem = <RenderProps,>({
     <div ref={dropRef}>
       {node.render?.(node, {
         isOver: isOver && canDrop,
-        onAdd: () => onAdd?.(node),
-        onDelete: () => onDelete?.(node),
+        onAdd: () => onAdd?.(node.id),
+        onDelete: () => onDelete?.(node.id),
         collapsed,
         setCollapsed,
         isSelected: selectedId === node.id,

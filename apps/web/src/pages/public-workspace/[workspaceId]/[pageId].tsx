@@ -1,13 +1,14 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { PageIcon } from '@blocksuite/icons';
+import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import {
   publicPageBlockSuiteAtom,
@@ -18,6 +19,8 @@ import { QueryParamError } from '../../../components/affine/affine-error-eoundar
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
+import { useReferenceLink } from '../../../hooks/affine/use-reference-link';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { PublicWorkspaceLayout } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
 import { initPage } from '../../../utils';
@@ -56,9 +59,21 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   if (!blockSuiteWorkspace) {
     throw new Error('cannot find workspace');
   }
+  const router = useRouter();
+  const { openPage } = useRouterHelper(router);
+
   useEffect(() => {
     blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
   }, [blockSuiteWorkspace]);
+  useReferenceLink({
+    pageLinkClicked: useCallback(
+      ({ pageId }: { pageId: string }) => {
+        assertExists(currentWorkspace);
+        return openPage(blockSuiteWorkspace.id, pageId);
+      },
+      [blockSuiteWorkspace.id, openPage]
+    ),
+  });
   const { t } = useTranslation();
   const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(blockSuiteWorkspace);

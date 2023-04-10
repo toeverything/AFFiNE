@@ -8,7 +8,7 @@ import type { HTMLAttributes } from 'react';
 import { forwardRef, useCallback, useRef } from 'react';
 
 import { currentEditorAtom, openQuickSearchModalAtom } from '../../../atoms';
-import { useGuideHidden } from '../../../hooks/affine/use-is-first-load';
+import { useGuideHidden } from '../../../hooks/use-is-first-load';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { useElementResizeEffect } from '../../../hooks/use-workspaces';
 import type { BlockSuiteWorkspace } from '../../../shared';
