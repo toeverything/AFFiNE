@@ -16,17 +16,16 @@ export const CopyLink = ({ onItemClick, onSelect }: CommonMenuItemProps) => {
   }, [t]);
 
   return (
-    <>
-      <MenuItem
-        onClick={() => {
-          copyUrl();
-          onItemClick?.();
-          onSelect?.();
-        }}
-        icon={<CopyIcon />}
-      >
-        {t('Copy Link')}
-      </MenuItem>
-    </>
+    <MenuItem
+      data-testid="copy-link"
+      onClick={() => {
+        copyUrl();
+        onItemClick?.();
+        onSelect?.();
+      }}
+      icon={<CopyIcon />}
+    >
+      {t('Copy Link')}
+    </MenuItem>
   );
 };

@@ -1,25 +1,29 @@
 import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
-} from '../../../../hooks/affine/use-is-first-load';
-import { StyledChangeLog, StyledChangeLogWarper } from '../shared-styles';
+} from '../../../../hooks/use-is-first-load';
+import { StyledChangeLog, StyledChangeLogWrapper } from '../shared-styles';
 import { StyledLink } from '../style';
+
 export const ChangeLog = () => {
   const [guideHidden, setGuideHidden] = useGuideHidden();
   const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
     useGuideHiddenUntilNextUpdate();
+  const [isClose, setIsClose] = useState(false);
   const { t } = useTranslation();
   const onCloseWhatsNew = useCallback(() => {
-    setGuideHiddenUntilNextUpdate({
-      ...guideHiddenUntilNextUpdate,
-      changeLog: true,
-    });
-    setGuideHidden({ ...guideHidden, changeLog: true });
+    setTimeout(() => {
+      setGuideHiddenUntilNextUpdate({
+        ...guideHiddenUntilNextUpdate,
+        changeLog: true,
+      });
+      setGuideHidden({ ...guideHidden, changeLog: true });
+    }, 300);
   }, [
     guideHidden,
     guideHiddenUntilNextUpdate,
@@ -30,14 +34,15 @@ export const ChangeLog = () => {
     return <></>;
   }
   return (
-    <StyledChangeLogWarper>
-      <StyledChangeLog data-testid="change-log">
+    <StyledChangeLogWrapper isClose={isClose}>
+      <StyledChangeLog data-testid="change-log" isClose={isClose}>
         <StyledLink href={'https://affine.pro'} target="_blank">
           <NewIcon />
           {t("Discover what's new!")}
         </StyledLink>
         <IconButton
           onClick={() => {
+            setIsClose(true);
             onCloseWhatsNew();
           }}
           data-testid="change-log-close-button"
@@ -45,7 +50,7 @@ export const ChangeLog = () => {
           <CloseIcon />
         </IconButton>
       </StyledChangeLog>
-    </StyledChangeLogWarper>
+    </StyledChangeLogWrapper>
   );
 };
 

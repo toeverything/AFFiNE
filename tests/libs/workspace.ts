@@ -4,13 +4,17 @@ import { expect } from '@playwright/test';
 interface CreateWorkspaceParams {
   name: string;
 }
+
+export async function openWorkspaceListModal(page: Page) {
+  const workspaceName = page.getByTestId('workspace-name');
+  await workspaceName.click();
+}
+
 export async function createWorkspace(
   params: CreateWorkspaceParams,
   page: Page
 ) {
-  // open workspace list modal
-  const workspaceName = page.getByTestId('workspace-name');
-  await workspaceName.click();
+  await openWorkspaceListModal(page);
 
   // open create workspace modal
   await page.locator('.add-icon').click();

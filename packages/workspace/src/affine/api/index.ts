@@ -1,8 +1,7 @@
 import { MessageCode, Messages } from '@affine/env';
-import { assertExists } from '@blocksuite/global/utils';
 import { z } from 'zod';
 
-import { getLoginStorage } from '../login';
+import { checkLoginStorage } from '../login';
 
 export class RequestError extends Error {
   public readonly code: MessageCode;
@@ -51,8 +50,7 @@ export type UsageResponse = z.infer<typeof usageResponseSchema>;
 export function createUserApis(prefixUrl = '/') {
   return {
     getUsage: async (): Promise<UsageResponse> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + 'api/resource/usage', {
         method: 'GET',
         headers: {
@@ -63,8 +61,7 @@ export function createUserApis(prefixUrl = '/') {
     getUserByEmail: async (
       params: GetUserByEmailParams
     ): Promise<User[] | null> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       const target = new URL(prefixUrl + 'api/user', window.location.origin);
       target.searchParams.append('email', params.email);
       target.searchParams.append('workspace_id', params.workspace_id);
@@ -187,8 +184,7 @@ export const createWorkspaceResponseSchema = z.object({
 export function createWorkspaceApis(prefixUrl = '/') {
   return {
     getWorkspaces: async (): Promise<Workspace[]> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + 'api/workspace', {
         method: 'GET',
         headers: {
@@ -204,8 +200,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
     getWorkspaceDetail: async (
       params: GetWorkspaceDetailParams
     ): Promise<WorkspaceDetail | null> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + `api/workspace/${params.id}`, {
         method: 'GET',
         headers: {
@@ -220,8 +215,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
     getWorkspaceMembers: async (
       params: GetWorkspaceDetailParams
     ): Promise<Member[]> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + `api/workspace/${params.id}/permission`, {
         method: 'GET',
         headers: {
@@ -236,8 +230,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
     createWorkspace: async (
       encodedYDoc: ArrayBuffer
     ): Promise<{ id: string }> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage();
       return fetch(prefixUrl + 'api/workspace', {
         method: 'POST',
         body: encodedYDoc,
@@ -254,8 +247,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
     updateWorkspace: async (
       params: UpdateWorkspaceParams
     ): Promise<{ public: boolean | null }> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + `api/workspace/${params.id}`, {
         method: 'POST',
         body: JSON.stringify({
@@ -274,8 +266,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
     deleteWorkspace: async (
       params: DeleteWorkspaceParams
     ): Promise<boolean> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + `api/workspace/${params.id}`, {
         method: 'DELETE',
         headers: {
@@ -292,8 +283,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
      * Notice: Only support normal(contrast to private) workspace.
      */
     inviteMember: async (params: InviteMemberParams): Promise<void> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + `api/workspace/${params.id}/permission`, {
         method: 'POST',
         body: JSON.stringify({
@@ -310,8 +300,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
         });
     },
     removeMember: async (params: RemoveMemberParams): Promise<void> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + `api/permission/${params.permissionId}`, {
         method: 'DELETE',
         headers: {
@@ -339,8 +328,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
       arrayBuffer: ArrayBuffer,
       type: string
     ): Promise<string> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       const mb = arrayBuffer.byteLength / 1048576;
       if (mb > 10) {
         throw new RequestError(MessageCode.blobTooLarge);
@@ -358,8 +346,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
       workspaceId: string,
       blobId: string
     ): Promise<ArrayBuffer> => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + `api/workspace/${workspaceId}/blob/${blobId}`, {
         method: 'GET',
         headers: {
@@ -372,8 +359,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
         });
     },
     leaveWorkspace: async ({ id }: LeaveWorkspaceParams) => {
-      const auth = getLoginStorage();
-      assertExists(auth);
+      const auth = await checkLoginStorage(prefixUrl);
       return fetch(prefixUrl + `api/workspace/${id}/permission`, {
         method: 'DELETE',
         headers: {
@@ -405,8 +391,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
           method: 'GET',
         }).then(r => r.arrayBuffer());
       } else {
-        const auth = getLoginStorage();
-        assertExists(auth);
+        const auth = await checkLoginStorage(prefixUrl);
         return fetch(prefixUrl + `api/workspace/${workspaceId}/doc`, {
           method: 'GET',
           headers: {

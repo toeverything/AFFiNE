@@ -82,17 +82,21 @@ export const EditorOptionMenu = () => {
         {mode === 'page' ? t('Edgeless') : t('Page')}
       </MenuItem>
       <Export />
-      <MoveTo
-        metas={allMetas}
-        currentMeta={pageMeta}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-      />
-      <MoveToTrash
-        testId="editor-option-menu-delete"
-        onItemClick={() => {
-          setOpenConfirm(true);
-        }}
-      />
+      {!pageMeta.isRootPinboard && (
+        <MoveTo
+          metas={allMetas}
+          currentMeta={pageMeta}
+          blockSuiteWorkspace={blockSuiteWorkspace}
+        />
+      )}
+      {!pageMeta.isRootPinboard && (
+        <MoveToTrash
+          testId="editor-option-menu-delete"
+          onItemClick={() => {
+            setOpenConfirm(true);
+          }}
+        />
+      )}
     </>
   );
 

@@ -1,5 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import { getEnvironment } from '@affine/env';
+import { assertExists } from '@blocksuite/global/utils';
+import { Slot } from '@blocksuite/store';
 import { initializeApp } from 'firebase/app';
 import type { AuthProvider } from 'firebase/auth';
 import {
@@ -45,9 +47,13 @@ export function parseIdToken(token: string): AccessTokenMessage {
   return JSON.parse(decode(token.split('.')[1]));
 }
 
-export const isExpired = (token: AccessTokenMessage): boolean => {
+export const isExpired = (
+  token: AccessTokenMessage,
+  // earlier than `before`, consider it expired
+  before = 60 // 1 minute
+): boolean => {
   const now = Math.floor(Date.now() / 1000);
-  return token.exp < now;
+  return token.exp < now - before;
 };
 
 export const setLoginStorage = (login: LoginResponse) => {
@@ -99,6 +105,32 @@ export const getLoginStorage = (): LoginResponse | null => {
     }
   }
   return null;
+};
+
+export const storageChangeSlot = new Slot();
+
+export const checkLoginStorage = async (
+  prefixUrl = '/'
+): Promise<LoginResponse> => {
+  const storage = getLoginStorage();
+  assertExists(storage, 'Login token is not set');
+  if (isExpired(parseIdToken(storage.token), 0)) {
+    logger.debug('refresh token needed');
+    const response: LoginResponse = await fetch(prefixUrl + 'api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'Refresh',
+        token: storage.refresh,
+      }),
+    }).then(r => r.json());
+    setLoginStorage(response);
+    logger.debug('refresh token emit');
+    storageChangeSlot.emit();
+  }
+  return getLoginStorage() as LoginResponse;
 };
 
 export const enum SignMethod {

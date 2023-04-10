@@ -18,6 +18,7 @@ import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
 import {
   assertCurrentWorkspaceFlavour,
   createWorkspace,
+  openWorkspaceListModal,
 } from '../../libs/workspace';
 
 test.describe('affine workspace', () => {
@@ -55,5 +56,9 @@ test.describe('affine workspace', () => {
       delay: 50,
     });
     await assertCurrentWorkspaceFlavour('affine', page);
+    await openWorkspaceListModal(page);
+    await page.getByTestId('workspace-list-modal-sign-out').click();
+    await page.waitForTimeout(1000);
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });

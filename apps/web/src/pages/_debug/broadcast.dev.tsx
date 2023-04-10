@@ -32,9 +32,6 @@ const BroadcastPage: React.FC = () => {
     null
   );
   useEffect(() => {
-    globalThis.currentBlockSuiteWorkspace = blockSuiteWorkspace;
-  }, [blockSuiteWorkspace]);
-  useEffect(() => {
     const provider = createBroadCastChannelProvider(blockSuiteWorkspace);
     setProvider(provider);
     globalThis.currentBroadCastChannel = provider;

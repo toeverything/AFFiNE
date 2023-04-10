@@ -1,33 +1,16 @@
-import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
-import {
-  createAffineAuth,
-  parseIdToken,
-  setLoginStorage,
-  SignMethod,
-} from '@affine/workspace/affine/login';
-import { useSetAtom } from 'jotai';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
-import { toast } from '../../utils';
-
-export const affineAuth = createAffineAuth();
+import { WorkspacePlugins } from '../../plugins';
 
 export function useAffineLogIn() {
   const router = useRouter();
-  const setUser = useSetAtom(currentAffineUserAtom);
-  return useCallback(
-    async (method: SignMethod = SignMethod.Google) => {
-      const response = await affineAuth.generateToken(method);
-      if (response) {
-        setLoginStorage(response);
-        const user = parseIdToken(response.token);
-        setUser(user);
-        router.reload();
-      } else {
-        toast('Login failed');
-      }
-    },
-    [router, setUser]
-  );
+  return useCallback(async () => {
+    await WorkspacePlugins[WorkspaceFlavour.AFFINE].Events[
+      'workspace:access'
+    ]?.();
+    // todo: remove reload page requirement
+    router.reload();
+  }, [router]);
 }

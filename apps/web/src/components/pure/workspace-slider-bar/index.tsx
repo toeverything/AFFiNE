@@ -11,18 +11,18 @@ import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { usePageMeta } from '../../../hooks/use-page-meta';
 import {
   useSidebarFloating,
   useSidebarResizing,
   useSidebarStatus,
   useSidebarWidth,
-} from '../../../hooks/affine/use-sidebar-status';
-import { usePageMeta } from '../../../hooks/use-page-meta';
+} from '../../../hooks/use-sidebar-status';
 import type { AllWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
-import { Pivots } from './Pivots';
+import { Pinboard } from './Pinboard';
 import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
@@ -188,7 +188,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 currentWorkspace={currentWorkspace}
               />
               {!!blockSuiteWorkspace && (
-                <Pivots
+                <Pinboard
                   blockSuiteWorkspace={blockSuiteWorkspace}
                   openPage={openPage}
                   allMetas={pageMeta}

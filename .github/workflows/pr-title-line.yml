@@ -1,0 +1,23 @@
+name: PR Title Lint
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  check-pull-request-title:
+    name: Check pull request title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: echo "${{ github.event.pull_request.title }}" | npx commitlint -g ./.commitlintrc.json
