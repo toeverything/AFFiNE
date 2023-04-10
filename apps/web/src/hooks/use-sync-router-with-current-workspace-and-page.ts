@@ -96,7 +96,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
         if (router.asPath === '/') {
           const id = workspaces.at(0)?.id;
           if (id) {
-            jotaiStore.get(workspaceByIdAtomFamily(id)).then(first => {
+            jotaiStore.get(workspaceByIdAtomFamily(id))?.then(first => {
               if (first && 'blockSuiteWorkspace' in first) {
                 const targetWorkspaceId = first.id;
                 const targetPageId =

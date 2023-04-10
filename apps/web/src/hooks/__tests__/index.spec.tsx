@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { PageBlockModel } from '@blocksuite/blocks';
@@ -13,7 +13,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
-import { createStore, Provider, useAtomValue } from 'jotai';
+import { Provider, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
@@ -69,11 +69,13 @@ beforeEach(() => {
 });
 
 async function getJotaiContext() {
-  const store = createStore();
+  const store = jotaiStore;
   const ProviderWrapper: React.FC<React.PropsWithChildren> =
     function ProviderWrapper({ children }) {
       return <Provider store={store}>{children}</Provider>;
     };
+  // reset workspaces
+  store.set(jotaiWorkspacesAtom, []);
   const workspaces = store.get(jotaiWorkspacesAtom);
   expect(workspaces.length).toBe(0);
   return {
@@ -193,8 +195,10 @@ describe('useWorkspaces', () => {
     });
     const id = await result.current.createLocalWorkspace('test');
     const workspaces = store.get(jotaiWorkspacesAtom);
-    console.log(workspaces);
+
     expect(workspaces.length).toEqual(1);
+    await store.get(workspaceByIdAtomFamily(id));
+
     const { result: result2 } = renderHook(
       () => useAtomValue(workspaceByIdAtomFamily(id)),
       {
@@ -216,7 +220,7 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
       wrapper: ProviderWrapper,
     });
     const id = await mutationHook.result.current.createLocalWorkspace('test0');
-    await store.get(currentWorkspaceAtom);
+    await store.get(workspaceByIdAtomFamily(id));
     mutationHook.rerender();
     mutationHook.result.current.createWorkspacePage(id, 'page0');
     const routerHook = renderHook(() => useRouter());
@@ -232,7 +236,7 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
         },
       }
     );
-
+    await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT + 50));
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });
 
@@ -242,7 +246,7 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
       wrapper: ProviderWrapper,
     });
     const id = await mutationHook.result.current.createLocalWorkspace('test0');
-    const workspaces = await store.get(jotaiWorkspacesAtom);
+    const workspaces = store.get(jotaiWorkspacesAtom);
     expect(workspaces.length).toEqual(1);
     mutationHook.rerender();
     const routerHook = renderHook(() => useRouter());

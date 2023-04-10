@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { atomWithSyncStorage } from '@affine/jotai';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -9,6 +10,8 @@ import { atomFamily, selectAtom } from 'jotai/utils';
 
 import { WorkspacePlugins } from '../plugins';
 import type { AllWorkspace } from '../shared';
+
+const logger = new DebugLogger('atoms');
 
 function getWorkspaceIdFromPathname(pathname?: string) {
   if (pathname?.startsWith('/')) {
@@ -50,6 +53,10 @@ const workspaceFlavourAtom = atomFamily((id: string) => {
 });
 
 export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
+  let resolve = (v: AllWorkspace | null) => {};
+  const initialPromise: Promise<AllWorkspace | null> = new Promise(_resolve => {
+    resolve = _resolve;
+  });
   const getValue = async (flavour: WorkspaceFlavour, local: boolean) => {
     if (!id) return null;
     // load from local first, then from cloud on mount
@@ -57,23 +64,27 @@ export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
     assertExists(plugin);
     const { CRUD } = plugin;
     const workspace = (await CRUD.get(id, { local })) as AllWorkspace;
-    // console.log('workspaceByIdAtomFamily', id, workspace, local);
+    logger.debug('workspaceByIdAtomFamily', id, workspace, local);
     return workspace;
   };
 
-  const baseAtom = atom<Promise<AllWorkspace | null>>(Promise.resolve(null));
+  const baseAtom = atom<Promise<AllWorkspace | null>>(initialPromise);
 
   const anAtom = atom(
-    get => get(baseAtom),
+    get => {
+      if (!id) return null;
+      const flavour = get(workspaceFlavourAtom(id));
+      if (!flavour) return null;
+      getValue(flavour, true).then(resolve);
+      return get(baseAtom);
+    },
     async (get, set, action: 'mount') => {
       if (!id) return null;
       if (action === 'mount') {
+        logger.debug('workspaceByIdAtomFamily mount', id);
         const flavour = get(workspaceFlavourAtom(id));
 
         if (!flavour) return;
-
-        set(baseAtom, getValue(flavour, true));
-
         if (flavour === WorkspaceFlavour.AFFINE) {
           const cloudValue = await getValue(flavour, false);
           if (cloudValue) {
