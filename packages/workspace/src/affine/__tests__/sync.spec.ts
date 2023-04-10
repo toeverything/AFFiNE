@@ -141,7 +141,13 @@ describe('ydoc sync', () => {
           text: new page1.Text('hello world'),
         }
       );
+      workspace1.meta.setPageMeta(pageId, {
+        foo: 'bar',
+      });
       await new Promise(resolve => setTimeout(resolve, 1000));
+      const pageMeta = workspace2.meta.getPageMeta(pageId);
+      expect(pageMeta).toBeDefined();
+      expect(pageMeta?.foo).toBe('bar');
       const paragraph2 = page2.getBlockById(paragraphId) as ParagraphBlockModel;
       const text = paragraph2.text as Text;
       expect(text.toString()).toEqual(
