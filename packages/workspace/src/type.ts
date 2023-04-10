@@ -79,13 +79,20 @@ export interface WorkspaceRegistry {
   [WorkspaceFlavour.LOCAL]: LocalWorkspace;
 }
 
+interface CRUDOptions {
+  local: boolean;
+}
+
 export interface WorkspaceCRUD<Flavour extends keyof WorkspaceRegistry> {
   create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;
   delete: (workspace: WorkspaceRegistry[Flavour]) => Promise<void>;
-  get: (workspaceId: string) => Promise<WorkspaceRegistry[Flavour] | null>;
+  get: (
+    workspaceId: string,
+    opts?: CRUDOptions
+  ) => Promise<WorkspaceRegistry[Flavour] | null>;
   // not supported yet
   // update: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
-  list: () => Promise<WorkspaceRegistry[Flavour][]>;
+  list: (opts?: CRUDOptions) => Promise<WorkspaceRegistry[Flavour][]>;
 }
 
 type UIBaseProps<Flavour extends keyof WorkspaceRegistry> = {

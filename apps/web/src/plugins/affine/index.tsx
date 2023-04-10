@@ -140,9 +140,9 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       });
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
     },
-    get: async workspaceId => {
+    get: async (workspaceId, opts) => {
       try {
-        if (!getLoginStorage()) {
+        if (!getLoginStorage() || opts?.local) {
           const workspaces = getPersistenceAllWorkspace();
           return (
             workspaces.find(workspace => workspace.id === workspaceId) ?? null
@@ -159,9 +159,9 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
         );
       }
     },
-    list: async () => {
+    list: async opts => {
       const allWorkspaces = getPersistenceAllWorkspace();
-      if (!getLoginStorage()) {
+      if (!getLoginStorage() || opts?.local) {
         return allWorkspaces;
       }
       try {

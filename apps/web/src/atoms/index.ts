@@ -49,7 +49,7 @@ const workspaceFlavourAtom = atomFamily((id: string) => {
   });
 });
 
-export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
+export const workspaceByIdAtomFamily2 = atomFamily((id?: string | null) => {
   const localValuePromise = (async () => {
     if (!id) return null;
     // load from local first, then from cloud on mount
@@ -57,6 +57,7 @@ export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
     assertExists(plugin);
     const { CRUD } = plugin;
     const workspace = (await CRUD.get(id)) as AllWorkspace;
+    console.log('workspaceByIdAtomFamily', id, workspace);
     return workspace;
   })();
 
@@ -81,6 +82,48 @@ export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
 
   anAtom.onMount = set => {
     set('sync');
+  };
+
+  return atom(get => get(anAtom));
+});
+
+export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
+  const getValue = async (flavour: WorkspaceFlavour, local: boolean) => {
+    if (!id) return null;
+    // load from local first, then from cloud on mount
+    const plugin = WorkspacePlugins[flavour];
+    assertExists(plugin);
+    const { CRUD } = plugin;
+    const workspace = (await CRUD.get(id, { local })) as AllWorkspace;
+    // console.log('workspaceByIdAtomFamily', id, workspace, local);
+    return workspace;
+  };
+
+  const baseAtom = atom<Promise<AllWorkspace | null>>(Promise.resolve(null));
+
+  const anAtom = atom(
+    get => get(baseAtom),
+    async (get, set, action: 'mount') => {
+      if (!id) return null;
+      if (action === 'mount') {
+        const flavour = get(workspaceFlavourAtom(id));
+
+        if (!flavour) return;
+
+        set(baseAtom, getValue(flavour, true));
+
+        if (flavour === WorkspaceFlavour.AFFINE) {
+          const cloudValue = await getValue(flavour, false);
+          if (cloudValue) {
+            set(baseAtom, Promise.resolve(cloudValue));
+          }
+        }
+      }
+    }
+  );
+
+  anAtom.onMount = set => {
+    set('mount');
   };
 
   return atom(get => get(anAtom));
