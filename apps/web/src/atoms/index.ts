@@ -49,44 +49,6 @@ const workspaceFlavourAtom = atomFamily((id: string) => {
   });
 });
 
-export const workspaceByIdAtomFamily2 = atomFamily((id?: string | null) => {
-  const localValuePromise = (async () => {
-    if (!id) return null;
-    // load from local first, then from cloud on mount
-    const plugin = WorkspacePlugins.local;
-    assertExists(plugin);
-    const { CRUD } = plugin;
-    const workspace = (await CRUD.get(id)) as AllWorkspace;
-    console.log('workspaceByIdAtomFamily', id, workspace);
-    return workspace;
-  })();
-
-  const baseAtom = atom(localValuePromise);
-
-  const anAtom = atom(
-    get => get(baseAtom),
-    async (get, set, action: 'sync') => {
-      if (!id) return null;
-      if (action === 'sync') {
-        const flavour = get(workspaceFlavourAtom(id));
-        if (flavour === WorkspaceFlavour.AFFINE) {
-          const { CRUD } = WorkspacePlugins.affine;
-          const cloudValue = await CRUD.get(id);
-          if (cloudValue) {
-            set(baseAtom, Promise.resolve(cloudValue));
-          }
-        }
-      }
-    }
-  );
-
-  anAtom.onMount = set => {
-    set('sync');
-  };
-
-  return atom(get => get(anAtom));
-});
-
 export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
   const getValue = async (flavour: WorkspaceFlavour, local: boolean) => {
     if (!id) return null;

@@ -1,4 +1,5 @@
 import { atomWithSyncStorage } from '@affine/jotai';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -12,7 +13,10 @@ import type { AllWorkspace } from '../../shared';
 export const currentWorkspaceAtom = atom<Promise<AllWorkspace | null>>(
   async get => {
     const id = get(currentWorkspaceIdAtom);
-    return get(workspaceByIdAtomFamily(id));
+    const allIds = get(jotaiWorkspacesAtom).map(w => w.id);
+    return get(
+      workspaceByIdAtomFamily(id && allIds.includes(id) ? id : allIds[0])
+    );
   }
 );
 
