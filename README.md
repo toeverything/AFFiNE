@@ -50,17 +50,18 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 <br />
 <div>
-<em>AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
+<em>See docs, canvas and tables are hyper merged with AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
 </div>
 <br />
 
-<img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/4605025/198174913-d4f90da8-ae2a-4eb6-8424-55c94de432a1.jpeg"></div>
+![img_v2_37a7cc04-ab3f-4405-ae9a-f84ceb4c948g](https://user-images.githubusercontent.com/79301703/230892907-5fd5c0c5-1665-4d75-8a35-744e0afc36a5.gif)
+
 
 ## Join our community
 
 Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities across [official social platforms](https://community.affine.pro/c/start-here/)! Once you’re familiar with using the software, maybe you will share your wisdom with others and even consider joining the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador) to help spread AFFiNE to the world.
 
-## Getting started
+## Getting started & Stay tunned with us.
 
 ⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
 
@@ -68,15 +69,21 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 
 [![community.affine.pro](https://img.shields.io/static/v1?label=Join%20the%20community&message=%E2%86%92&style=for-the-badge)](https://community.affine.pro) Our wonderful community, where you can meet and engage with the team, developers and other like-minded enthusiastic user of AFFiNE.
 
+Star us, and you will receive all releases notifications from GitHub without any delay!
+![rbU3YmmsQT](https://user-images.githubusercontent.com/79301703/230891830-0110681e-8c7e-483b-b6d9-9e42b291b9ef.gif)
+
 ## Features
 
+- **Hyper merged** — Write, draw and plan all at once. Assemble any blocks you love on any canvas you like to enjoy seamless transitions bewtween workflows with AFFiNE.
 - **Privacy focussed** — AFFiNE is built with your privacy in mind and is one of our key concerns. We want you to keep control of your data, allowing you to store it as you like, where you like while still being able to freely edit and view your data on-demand.
 - **Offline-first** - With your privacy in mind we also decided to go offline-first. This means that AFFiNE can be used offline, whether you want to view or edit, with support for conflict-free merging when you are back online.
 - **Clean, intuitive design** — With AFFiNE you can concentrate on editing with a clean and modern interface. Which is responsive, so it looks great on tablets too, and mobile support is coming in the future.
-- **Seamless transitions** — However you want your data displayed, whichever viewing mode you use, AFFiNE supports easy transitions to allow you to quickly and effortlessly view your data in the way you want.
-- **Markdown support** — When you write in AFFiNE you can use Markdown syntax which helps create an easier editing experience, that can be experienced with just a keyboard. And this allows you to export your data cleanly into Markdown.
+- **Modern Block Editor with Markdown support** — A modern block editor can help you not only for docs, but slides and tables as well. When you write in AFFiNE you can use Markdown syntax which helps create an easier editing experience, that can be experienced with just a keyboard. And this allows you to export your data cleanly into Markdown.
 - **Collaboration** — Whether you want to collaborate with yourself across multiple devices, or work together with others, support for collaboration and multiplayer is out-of-the-box, which makes it easy for teams to get started with AFFiNE.
 - **Choice of multiple languages** — Thanks to community contributions AFFiNE offers support for multiple languages. If you don't find your language or would like to suggest some changes we welcome your contributions.
+
+![img_v2_3a4ee0da-6dd7-48cb-8f19-5411f86768ag](https://user-images.githubusercontent.com/79301703/230893796-dc707955-e4e5-4a42-a3c9-18d1ea754f6f.gif)
+
 
 ## Contributing
 

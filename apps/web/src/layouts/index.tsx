@@ -25,18 +25,18 @@ import {
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
-import {
-  useSidebarFloating,
-  useSidebarResizing,
-  useSidebarStatus,
-  useSidebarWidth,
-} from '../hooks/affine/use-sidebar-status';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
+import {
+  useSidebarFloating,
+  useSidebarResizing,
+  useSidebarStatus,
+  useSidebarWidth,
+} from '../hooks/use-sidebar-status';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
@@ -233,7 +233,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     }
   }, [currentWorkspace]);
   const router = useRouter();
-  const { jumpToPage, jumpToPublicWorkspacePage } = useRouterHelper(router);
+  const { openPage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(
     currentWorkspace?.blockSuiteWorkspace ?? null
@@ -241,17 +241,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const isPublicWorkspace =
     router.pathname.split('/')[1] === 'public-workspace';
   const title = useRouterTitle(router);
-  const handleOpenPage = useCallback(
-    (pageId: string) => {
-      assertExists(currentWorkspace);
-      if (isPublicWorkspace) {
-        jumpToPublicWorkspacePage(currentWorkspace.id, pageId);
-      } else {
-        jumpToPage(currentWorkspace.id, pageId);
-      }
-    },
-    [currentWorkspace, isPublicWorkspace, jumpToPage, jumpToPublicWorkspacePage]
-  );
   const handleCreatePage = useCallback(() => {
     return helper.createPage(nanoid());
   }, [helper]);
@@ -319,7 +308,13 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           currentWorkspace={currentWorkspace}
           currentPageId={currentPageId}
           onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
-          openPage={handleOpenPage}
+          openPage={useCallback(
+            (pageId: string) => {
+              assertExists(currentWorkspace);
+              return openPage(currentWorkspace.id, pageId);
+            },
+            [currentWorkspace, openPage]
+          )}
           createPage={handleCreatePage}
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}

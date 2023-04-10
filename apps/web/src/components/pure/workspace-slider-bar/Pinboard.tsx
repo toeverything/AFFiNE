@@ -3,9 +3,9 @@ import type { PageMeta } from '@blocksuite/store';
 import type { MouseEvent } from 'react';
 import { useCallback } from 'react';
 
-import type { PinboardNode } from '../../../hooks/affine/use-pinboard-data';
-import { usePinboardData } from '../../../hooks/affine/use-pinboard-data';
-import { usePinboardHandler } from '../../../hooks/affine/use-pinboard-handler';
+import type { PinboardNode } from '../../../hooks/use-pinboard-data';
+import { usePinboardData } from '../../../hooks/use-pinboard-data';
+import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { PinboardRender } from '../../affine/pinboard';
 
@@ -41,7 +41,7 @@ export const Pinboard = ({
     showOperationButton: true,
   });
 
-  const { handleAdd, handleDelete, handleDrop } = usePinboardHandler({
+  const { addPin, deletePin, dropPin } = usePinboardHandler({
     blockSuiteWorkspace: blockSuiteWorkspace,
     metas: allMetas,
     onAdd,
@@ -54,9 +54,9 @@ export const Pinboard = ({
     <div data-testid="sidebar-pinboard-container">
       <TreeView
         data={data}
-        onAdd={handleAdd}
-        onDelete={handleDelete}
-        onDrop={handleDrop}
+        onAdd={addPin}
+        onDelete={deletePin}
+        onDrop={dropPin}
         indent={16}
       />
     </div>

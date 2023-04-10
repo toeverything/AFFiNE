@@ -6,9 +6,9 @@ import {
   workspacePreferredModeAtom,
   workspaceRecentViewsAtom,
   workspaceRecentViresWriteAtom,
-} from '../../atoms';
-import { useCurrentWorkspace } from '../current/use-current-workspace';
-import { usePageMeta } from '../use-page-meta';
+} from '../atoms';
+import { useCurrentWorkspace } from './current/use-current-workspace';
+import { usePageMeta } from './use-page-meta';
 
 export function useRecentlyViewed() {
   const [workspace] = useCurrentWorkspace();
