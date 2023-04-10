@@ -31,7 +31,7 @@ function stringToColour(str: string) {
 
 export type WorkspaceAvatarProps = {
   size?: number;
-  workspace: LocalWorkspace | AffineWorkspace | null;
+  workspace?: LocalWorkspace | AffineWorkspace | null;
   className?: string;
 };
 

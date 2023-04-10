@@ -12,7 +12,7 @@ import type { AllWorkspace } from '../../shared';
 export const currentWorkspaceAtom = atom<Promise<AllWorkspace | null>>(
   async get => {
     const id = get(currentWorkspaceIdAtom);
-    return id ? get(workspaceByIdAtomFamily(id)) : null;
+    return get(workspaceByIdAtomFamily(id));
   }
 );
 
@@ -29,6 +29,7 @@ export function useCurrentWorkspace(): [
   const [, setId] = useAtom(currentWorkspaceIdAtom);
   const [, setPageId] = useAtom(currentPageIdAtom);
   const setLast = useSetAtom(lastWorkspaceIdAtom);
+
   return [
     currentWorkspace,
     useCallback(

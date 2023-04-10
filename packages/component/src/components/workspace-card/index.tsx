@@ -16,7 +16,7 @@ import {
 } from './styles';
 
 export type WorkspaceTypeProps = {
-  workspace: AffineWorkspace | LocalWorkspace | null;
+  workspace?: AffineWorkspace | LocalWorkspace | null;
 };
 
 import {

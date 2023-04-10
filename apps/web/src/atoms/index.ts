@@ -8,8 +8,24 @@ import { atomFamily, selectAtom } from 'jotai/utils';
 
 import { WorkspacePlugins } from '../plugins';
 import type { AllWorkspace } from '../shared';
+
+function getWorkspaceIdFromPathname(pathname?: string) {
+  if (pathname?.startsWith('/')) {
+    const paths = pathname.split('/');
+    if (paths.length > 3 && paths[1] === 'workspace') {
+      return paths[2];
+    }
+  }
+  return null;
+}
+
 // workspace necessary atoms
-export const currentWorkspaceIdAtom = atom<string | null>(null);
+export const currentWorkspaceIdAtom = (() => {
+  const pathname =
+    typeof window !== 'undefined' ? window.location.pathname : '';
+  return atom(getWorkspaceIdFromPathname(pathname));
+})();
+
 export const currentPageIdAtom = atom<string | null>(null);
 export const currentEditorAtom = atom<Readonly<EditorContainer> | null>(null);
 

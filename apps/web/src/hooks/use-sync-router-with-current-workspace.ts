@@ -1,14 +1,14 @@
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
 import type { NextRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 import { useCurrentWorkspace } from './current/use-current-workspace';
 
 export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
   const workspaces = useAtomValue(jotaiWorkspacesAtom);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const listener: Parameters<typeof router.events.on>[1] = (url: string) => {
       if (url.startsWith('/')) {
         const path = url.split('/');
@@ -23,7 +23,7 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
       router.events.off('routeChangeStart', listener);
     };
   }, [currentWorkspace, router, setCurrentWorkspaceId]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!router.isReady) {
       return;
     }
