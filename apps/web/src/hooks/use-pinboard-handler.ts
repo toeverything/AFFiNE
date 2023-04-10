@@ -1,7 +1,7 @@
 import type { TreeViewProps } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import type { PageMeta } from '@blocksuite/store';
-import { assertExists, nanoid } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
 import { useCallback } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
@@ -38,8 +38,10 @@ export function usePinboardHandler({
   const addReferenceLink = useCallback(
     (pageId: string, referenceId: string) => {
       const page = blockSuiteWorkspace?.getPage(pageId);
-      assertExists(page);
-      const text = page?.Text.fromDelta([
+      if (!page) {
+        return;
+      }
+      const text = page.Text.fromDelta([
         {
           insert: ' ',
           attributes: {
@@ -51,8 +53,8 @@ export function usePinboardHandler({
         },
       ]);
       const [frame] = page.getBlockByFlavour('affine:frame');
-      assertExists(frame);
-      page.addBlock('affine:paragraph', { text }, frame.id);
+
+      frame && page.addBlock('affine:paragraph', { text }, frame.id);
     },
     [blockSuiteWorkspace]
   );
