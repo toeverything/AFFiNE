@@ -34,7 +34,7 @@ export function usePinboardHandler({
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { getPageMeta, setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
 
-  const handleAdd = useCallback(
+  const addPin = useCallback(
     (node: PinboardNode) => {
       const id = nanoid();
       createPage(id, node.id);
@@ -43,7 +43,7 @@ export function usePinboardHandler({
     [createPage, onAdd]
   );
 
-  const handleDelete = useCallback(
+  const deletePin = useCallback(
     (node: PinboardNode) => {
       const removeToTrash = (currentMeta: PageMeta) => {
         const { subpageIds = [] } = currentMeta;
@@ -62,7 +62,7 @@ export function usePinboardHandler({
     [metas, getPageMeta, onDelete, setPageMeta]
   );
 
-  const handleDrop = useCallback(
+  const dropPin = useCallback(
     (
       dragId: string,
       dropId: string,
@@ -154,9 +154,9 @@ export function usePinboardHandler({
   );
 
   return {
-    handleDrop,
-    handleAdd,
-    handleDelete,
+    dropPin,
+    addPin,
+    deletePin,
   };
 }
 
