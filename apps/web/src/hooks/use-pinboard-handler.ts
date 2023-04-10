@@ -1,7 +1,7 @@
 import type { TreeViewProps } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import type { PageMeta } from '@blocksuite/store';
-import { nanoid } from '@blocksuite/store';
+import { assertExists, nanoid } from '@blocksuite/store';
 import { useCallback } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
@@ -34,13 +34,37 @@ export function usePinboardHandler({
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { getPageMeta, setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
 
+  // Just need handle add operation, delete check is handled in blockSuite's reference link
+  const addReferenceLink = useCallback(
+    (pageId: string, referenceId: string) => {
+      const page = blockSuiteWorkspace?.getPage(pageId);
+      assertExists(page);
+      const text = page.Text.fromDelta([
+        {
+          insert: ' ',
+          attributes: {
+            reference: {
+              type: 'Subpage',
+              pageId: referenceId,
+            },
+          },
+        },
+      ]);
+      const [frame] = page.getBlockByFlavour('affine:frame');
+      assertExists(frame);
+      page.addBlock('affine:paragraph', { text }, frame.id);
+    },
+    [blockSuiteWorkspace]
+  );
+
   const addPin = useCallback(
     (parentId: string) => {
       const id = nanoid();
       createPage(id, parentId);
       onAdd?.(id, parentId);
+      addReferenceLink(parentId, id);
     },
-    [createPage, onAdd]
+    [addReferenceLink, createPage, onAdd]
   );
 
   const deletePin = useCallback(
@@ -96,7 +120,7 @@ export function usePinboardHandler({
 
         const dropParentMeta = metas.find(m => m.subpageIds?.includes(dropId));
         if (dropParentMeta?.id === dragParentMeta?.id) {
-          // same parent
+          // same parent, resort node
           const newSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
           const deleteIndex = newSubpageIds.findIndex(id => id === dragId);
           newSubpageIds.splice(deleteIndex, 1);
@@ -109,6 +133,7 @@ export function usePinboardHandler({
             });
           return onDrop?.(dragId, dropId, position);
         }
+        // Old parent will delete drag node, new parent will be added
         const newDragParentSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
         const deleteIndex = newDragParentSubpageIds.findIndex(
           id => id === dragId
@@ -127,6 +152,7 @@ export function usePinboardHandler({
           setPageMeta(dropParentMeta.id, {
             subpageIds: newDropParentSubpageIds,
           });
+        dropParentMeta && addReferenceLink(dropParentMeta.id, dragId);
         return onDrop?.(dragId, dropId, position);
       }
 
@@ -149,8 +175,9 @@ export function usePinboardHandler({
       setPageMeta(dropMeta.id, {
         subpageIds: newSubpageIds,
       });
+      addReferenceLink(dropMeta.id, dragId);
     },
-    [metas, onDrop, setPageMeta]
+    [addReferenceLink, metas, onDrop, setPageMeta]
   );
 
   return {

@@ -9,6 +9,8 @@ import { PageLoading } from '../../../components/pure/loading';
 import { useReference } from '../../../hooks/affine/use-reference';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { usePageMeta } from '../../../hooks/use-page-meta';
+import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
@@ -33,6 +35,11 @@ const WorkspaceDetail: React.FC = () => {
   const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
 
+  const { deletePin } = usePinboardHandler({
+    blockSuiteWorkspace: currentWorkspace?.blockSuiteWorkspace ?? null,
+    metas: usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null ?? null),
+  });
+
   useSyncRecentViewsWithRouter(router);
 
   useReference({
@@ -42,6 +49,12 @@ const WorkspaceDetail: React.FC = () => {
         return openPage(currentWorkspace.id, pageId);
       },
       [currentWorkspace, openPage]
+    ),
+    subpageUnlinked: useCallback(
+      ({ pageId }: { pageId: string }) => {
+        deletePin(pageId);
+      },
+      [deletePin]
     ),
   });
   useEffect(() => {
