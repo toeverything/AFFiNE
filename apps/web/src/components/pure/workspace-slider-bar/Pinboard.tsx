@@ -41,7 +41,7 @@ export const Pinboard = ({
     showOperationButton: true,
   });
 
-  const { handleAdd, handleDelete, handleDrop } = usePinboardHandler({
+  const { addPin, deletePin, dropPin } = usePinboardHandler({
     blockSuiteWorkspace: blockSuiteWorkspace,
     metas: allMetas,
     onAdd,
@@ -54,9 +54,9 @@ export const Pinboard = ({
     <div data-testid="sidebar-pinboard-container">
       <TreeView
         data={data}
-        onAdd={handleAdd}
-        onDelete={handleDelete}
-        onDrop={handleDrop}
+        onAdd={addPin}
+        onDelete={deletePin}
+        onDrop={dropPin}
         indent={16}
       />
     </div>
