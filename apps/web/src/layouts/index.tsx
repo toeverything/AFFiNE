@@ -189,8 +189,10 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 function WorkspaceConnector({ id }: { id: string }) {
   const workspace = useAtomValue(workspaceByIdAtomFamily(id));
   const providers = workspace?.providers;
+  // is it possible to use .onMount intead of useEffect?
   useEffect(() => {
     if (providers) {
+      logger.info('connect providers for', id);
       providers.forEach(provider => {
         provider.connect();
       });

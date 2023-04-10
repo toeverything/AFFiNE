@@ -4,7 +4,7 @@ import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
-import { atomFamily } from 'jotai/utils';
+import { atomFamily, selectAtom } from 'jotai/utils';
 
 import { WorkspacePlugins } from '../plugins';
 import type { AllWorkspace } from '../shared';
@@ -18,14 +18,17 @@ export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom(false);
 export const openQuickSearchModalAtom = atom(false);
 
+const workspaceFlavourSelector = (id: string) =>
+  selectAtom(
+    jotaiWorkspacesAtom,
+    workspaces => workspaces.find(workspace => workspace.id === id)?.flavour
+  );
+
 // id -> flavour (atom)
 const workspaceFlavourAtom = atomFamily((id: string) => {
   return atom(get => {
-    const workspace = get(jotaiWorkspacesAtom).find(
-      workspace => workspace.id === id
-    );
-    console.log('workspaceFlavourAtom', workspace);
-    return workspace?.flavour;
+    const flavour = get(workspaceFlavourSelector(id));
+    return flavour;
   });
 });
 
