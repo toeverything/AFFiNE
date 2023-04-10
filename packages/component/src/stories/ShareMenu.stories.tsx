@@ -1,4 +1,5 @@
-import type { LocalWorkspace } from '@affine/workspace/type';
+import { PermissionType, WorkspaceType } from '@affine/workspace/affine/api';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
@@ -43,6 +44,16 @@ const localWorkspace: LocalWorkspace = {
   providers: [],
 };
 
+const affineWorkspace: AffineWorkspace = {
+  id: 'test-workspace',
+  flavour: WorkspaceFlavour.AFFINE,
+  blockSuiteWorkspace,
+  providers: [],
+  public: false,
+  type: WorkspaceType.Normal,
+  permission: PermissionType.Owner,
+};
+
 async function unimplemented() {
   toast('work in progress');
 }
@@ -75,4 +86,17 @@ Basic.play = async ({ canvasElement }) => {
     );
     expect(button).not.toBeNull();
   }
+};
+
+export const AffineBasic: StoryFn = () => {
+  return (
+    <ShareMenu
+      currentPage={blockSuiteWorkspace.getPage('page0') as Page}
+      workspace={affineWorkspace}
+      onEnableAffineCloud={unimplemented}
+      onOpenWorkspaceSettings={unimplemented}
+      togglePagePublic={unimplemented}
+      toggleWorkspacePublish={unimplemented}
+    />
+  );
 };
