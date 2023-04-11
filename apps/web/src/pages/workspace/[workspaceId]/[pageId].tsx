@@ -9,7 +9,7 @@ import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLink } from '../../../hooks/affine/use-reference-link';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { usePageMeta } from '../../../hooks/use-page-meta';
+import { usePageMeta, usePageMetaHelper } from '../../../hooks/use-page-meta';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
@@ -32,11 +32,12 @@ function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
 const WorkspaceDetail: React.FC = () => {
   const router = useRouter();
   const { openPage } = useRouterHelper(router);
-  const [pageId] = useCurrentPageId();
+  const [currentPageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
-
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace ?? null;
+  const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { deletePin } = usePinboardHandler({
-    blockSuiteWorkspace: currentWorkspace?.blockSuiteWorkspace ?? null,
+    blockSuiteWorkspace,
     metas: usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null ?? null),
   });
 
@@ -56,7 +57,20 @@ const WorkspaceDetail: React.FC = () => {
       },
       [deletePin]
     ),
+    subpageLinked: useCallback(
+      ({ pageId }: { pageId: string }) => {
+        const meta = currentPageId && getPageMeta(currentPageId);
+        if (!meta || meta.subpageIds?.includes(pageId)) {
+          return;
+        }
+        setPageMeta(currentPageId, {
+          subpageIds: [...(meta.subpageIds ?? []), pageId],
+        });
+      },
+      [currentPageId, getPageMeta, setPageMeta]
+    ),
   });
+
   useEffect(() => {
     if (currentWorkspace) {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);
@@ -65,18 +79,24 @@ const WorkspaceDetail: React.FC = () => {
   if (currentWorkspace === null) {
     return <PageLoading />;
   }
-  if (!pageId) {
+  if (!currentPageId) {
     return <PageLoading />;
   }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
-      <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
+      <PageDetail
+        currentWorkspace={currentWorkspace}
+        currentPageId={currentPageId}
+      />
     );
   } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
-      <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
+      <PageDetail
+        currentWorkspace={currentWorkspace}
+        currentPageId={currentPageId}
+      />
     );
   }
   throw new Unreachable();
