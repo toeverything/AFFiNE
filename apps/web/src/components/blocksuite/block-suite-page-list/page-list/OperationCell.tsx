@@ -74,7 +74,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       )}
       {!pageMeta.isRootPinboard && (
         <MoveToTrash
-          testId="pinboard-operation-move-to-trash"
+          testId="move-to-trash"
           onItemClick={() => {
             setOpen(true);
           }}
