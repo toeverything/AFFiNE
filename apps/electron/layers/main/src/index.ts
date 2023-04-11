@@ -1,10 +1,8 @@
 import './security-restrictions';
 
-import { app, BrowserWindow } from 'electron';
+import { app } from 'electron';
 import path from 'path';
-import { parse } from 'url';
 
-import { exchangeToken } from '../../auth';
 import { registerHandlers } from './app-state';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
@@ -32,13 +30,7 @@ app.on('second-instance', (event, argv) => {
 });
 
 app.on('open-url', async (_, url) => {
-  const mainWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
-  const urlObj = parse(url.replace('??', '?'), true);
-  if (!mainWindow || !url.startsWith('affine://')) return;
-  const token = (await exchangeToken(urlObj.query['code'] as string)) as {
-    id_token: string;
-  };
-  mainWindow.webContents.send('auth:callback-firebase-token', token.id_token);
+  // todo: handle `affine://...` urls
 });
 
 /**

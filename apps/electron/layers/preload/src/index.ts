@@ -3,9 +3,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { shell } from 'electron';
 
-import { oauthEndpoint } from '../../auth';
 import { isMacOS } from '../../utils';
 
 /**
@@ -31,21 +29,17 @@ contextBridge.exposeInMainWorld('apis', {
 
   onSidebarVisibilityChange: (visible: boolean) =>
     ipcRenderer.invoke('ui:sidebar-visibility-change', visible),
-  signIn: () => {
-    shell.openExternal(oauthEndpoint);
-  },
-  ipcRenderer: {
-    on: (channel: string, listener: (event: any, ...args: any[]) => void) => {
-      const validChannels = ['auth:callback-firebase-token'];
-      if (validChannels.includes(channel)) {
-        // Deliberately strip event as it includes `sender` and is a security risk
-        // @ts-ignore
-        ipcRenderer.on(channel, (event, ...args) => listener(...args));
-      }
-    },
-    off: (channel: string) => {
-      ipcRenderer.removeAllListeners(channel);
-    },
+
+  /**
+   * Try sign in using Google and return a Google IDToken
+   */
+  googleSignIn: (): Promise<string> => ipcRenderer.invoke('ui:google-sign-in'),
+
+  /**
+   * Secret backdoor to update environment variables in main process
+   */
+  updateEnv: (env: string, value: string) => {
+    ipcRenderer.invoke('main:env-update', env, value);
   },
 });
 

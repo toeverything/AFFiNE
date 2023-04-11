@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import * as esbuild from 'esbuild';
 
-import { mainConfig, preloadConfig } from './common.mjs';
+import commonFn from './common.mjs';
 
 const repoRootDir = path.join(__dirname, '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
@@ -62,13 +62,13 @@ async function cleanup() {
 }
 
 async function buildLayers() {
-  await esbuild.build({
-    ...preloadConfig,
-  });
+  const common = commonFn();
+  await esbuild.build(common.preload);
 
   await esbuild.build({
-    ...mainConfig,
+    ...common.main,
     define: {
+      ...common.main.define,
       'process.env.NODE_ENV': `"production"`,
     },
   });

@@ -65,30 +65,12 @@ export const setLoginStorage = (login: LoginResponse) => {
     })
   );
 };
-const getIdTokenByOauthCode = async (
-  firebaseAuth: FirebaseAuth | null
-): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    window.apis?.ipcRenderer.on(
-      'auth:callback-firebase-token',
-      async (code: string) => {
-        window.apis?.ipcRenderer.off('auth:callback-firebase-token');
-        let idToken = '';
-        try {
-          if (firebaseAuth) {
-            const credential = GoogleAuthProvider.credential(code);
-            const user = await signInWithCredential(firebaseAuth, credential);
-            idToken = await user.user.getIdToken();
-          }
-        } catch (e) {
-          console.error(e);
-          reject('');
-        } finally {
-          resolve(idToken);
-        }
-      }
-    );
-  });
+
+const signInWithElectron = async (firebaseAuth: FirebaseAuth) => {
+  const code = await window.apis?.googleSignIn();
+  const credential = GoogleAuthProvider.credential(code);
+  const user = await signInWithCredential(firebaseAuth, credential);
+  return await user.user.getIdToken();
 };
 
 export const clearLoginStorage = () => {
@@ -195,15 +177,14 @@ export function createAffineAuth(prefix = '/') {
           throw new Error('Unsupported sign method');
       }
       try {
-        let idToken;
+        let idToken: string | undefined;
         if (environment.isDesktop) {
-          await window.apis?.signIn();
-          idToken = await getIdTokenByOauthCode(auth);
+          idToken = await signInWithElectron(auth);
         } else {
           const response = await signInWithPopup(auth, provider);
           idToken = await response.user.getIdToken();
         }
-        logger.debug(idToken);
+        logger.debug('idToken', idToken);
         return fetch(prefix + 'api/user/token', {
           method: 'POST',
           headers: {
