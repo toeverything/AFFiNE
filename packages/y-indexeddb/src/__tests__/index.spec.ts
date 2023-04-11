@@ -172,7 +172,7 @@ describe('indexeddb provider', () => {
     }
   });
 
-  test("data won't be lost when merge", async () => {
+  test("data won't be lost", async () => {
     const id = uuidv4();
     const doc = new Workspace.Y.Doc();
     const map = doc.getMap('map');
