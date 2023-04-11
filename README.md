@@ -12,6 +12,8 @@
 </p>
 
 </div>
+
+<div align="center">
 <!--
 Make New Badge Pattern badges inline
 See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
@@ -34,7 +36,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 </div>
 
-<div>
+<div align="center">
     <a href="http://affine.pro"><img src="https://img.shields.io/badge/-AFFiNE-06449d?style=social&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAMAAAAPkIrYAAAAP1BMVEU8b9w8b9w+b947cNw7b9w6b908b909b9w8b9w7b9w8b9w7cN08b9w7b908b9w7b9w8b907cNw8b9w8b91HcEx3NJCJAAAAFXRSTlP/3QWSgA+lHPlu6Di4XtIrxk/xRADGudUoAAAB9UlEQVR42tWYwbKjIBREG0GJKkRj/v9bZ1ZvRC99rzib11tTB9qqnKoW3/+X38vy7ifzQ1b/wk/8Q1bCv3y6Z6wFh2x2llIRGB6xRhzz6p+wVhRJD1gRZZYHrADYSyqsjFPGZtYbuFESesUysZXlcMnYyJpxTW5keQh5N7G6CUJCE2uHFNfEGiBmbmB1H4jxDawNcqbuPmtAJTtj6RZ0lpIwiR5jNmgfNtHHwLXPWfFYcS2NMdxkjac/dNaNCJPo3yf9pFuseHbDrBsRFguGs8te8Q4rXzTjVSPCIHp3FePKWbzi30xE+4zlBMmoJaGLfpLUmAmLiN4Xyibahy76WZRQMLJ2WX27on2oFvQVac8yi4p+J2forA0V8W1c++AVS1f1H6p9KKLHxk9RWKmsyB+VLC76gV65DLjokdg5KmsEMXsiDwXWSmTc9ezSoKJHoi9zUVihbMHfQOSsXB7Mrz1S1huKPde69sEsiKgNt8hYTjiWlAyENeu7IFe1D15RSEBN+yCiXw17K1RZm/w7UtJVWYN8f1ZyLlkVb2bT4vIVVrINH1dqX2YttkHmIWsfVWs646wcRFYis6fIVGpfYq1kjpGSW8kSRD+xYSmXRM0Ang9eSZioVdy/5pWaLqzIRyIpuVxYozvGf1m67I7pf/s3UXv+AP61NI2Y+BbSAAAAAElFTkSuQmCC" height=25></a>
     &nbsp;
     <a href="https://community.affine.pro"><img src="https://img.shields.io/badge/-Community-424549?style=social&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAXNJREFUWEftlitLRUEURtdVEVExWUx2qxgNVouoXYtNDP4Tw20WtftAsItZrHaTYBJREZ98MAc248wcZxi4CGfSeezHmm/23kyPAa/egPPTAXQK/FsFBP7ldVDRZoqcgO9I+2bHy3ZIJBfTCPCZM1tqAxwBmzUBrNQNbEx+5b0B5oEN4NCBrAMnMaiUAuPAs3HU82TLEZwBqwGbaJ4UgKQ8CFR6SoEl4LIWwCJwZQCegKkWBWLHVKSActvdzgG3DqitDf3/VQBskBDALrDnAKXUo3ueAF5KinAf2DKOmnzD7l214bdbA6hC1XHZNQa8hSBC0hwDa57xDHDvvvWB7ciOZoE79+8CWPbsBGc769eFxJdWIKcuyIdRoG3W7AAC1dJkHDIOo8B78+4rEBo8r4AkLFk6Jk3HaeDBBTgHVmIAfpJUz+cAFXVBreQCvQYW/lqEjV1NAMUMqpAaxQMHyDnjYtuS+0BxstwaqJooFqxToFPgB5FuPCEB6XK2AAAAAElFTkSuQmCC" height=25></a>
@@ -49,10 +51,11 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 </div>
 
 <br />
-<div>
+<div align="center">
 <em>See docs, canvas and tables are hyper merged with AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
 </div>
 <br />
+</div>
 
 ![img_v2_37a7cc04-ab3f-4405-ae9a-f84ceb4c948g](https://user-images.githubusercontent.com/79301703/230892907-5fd5c0c5-1665-4d75-8a35-744e0afc36a5.gif)
 
