@@ -126,7 +126,7 @@ describe('indexeddb provider', () => {
     );
     provider.connect();
     const p1 = provider.whenSynced;
-    await provider.whenSynced;
+    await p1;
     provider.disconnect();
     {
       const page = workspace.createPage('page0');
@@ -140,7 +140,7 @@ describe('indexeddb provider', () => {
     }
     provider.connect();
     const p2 = provider.whenSynced;
-    await provider.whenSynced;
+    await p2;
     {
       const updates = await getUpdates(workspace.id);
       expect(updates).not.toEqual([]);
