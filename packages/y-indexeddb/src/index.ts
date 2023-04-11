@@ -238,7 +238,7 @@ export const createIndexedDBProvider = (
       doc.on('destroy', handleDestroy);
       // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
-      if (!allDb) {
+      if (!allDb || localStorage.getItem(`${dbName}-migration`) !== 'true') {
         allDb = await indexedDB.databases();
         // run the migration
         await Promise.all(
@@ -283,6 +283,7 @@ export const createIndexedDBProvider = (
             }
           })
         );
+        localStorage.setItem(`${dbName}-migration`, 'true');
       }
       const store = db
         .transaction('workspace', 'readwrite')
