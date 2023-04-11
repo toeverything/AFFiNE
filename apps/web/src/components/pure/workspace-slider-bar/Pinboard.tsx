@@ -41,6 +41,8 @@ export const Pinboard = ({
     showOperationButton: true,
   });
 
+  console.log(allMetas, data);
+
   const { handleAdd, handleDelete, handleDrop } = usePinboardHandler({
     blockSuiteWorkspace: blockSuiteWorkspace,
     metas: allMetas,

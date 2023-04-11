@@ -3,15 +3,16 @@
  */
 import 'fake-indexeddb/auto';
 
+import { jotaiStore } from '@affine/workspace/atom';
 import type { PageMeta } from '@blocksuite/store';
 import matchers from '@testing-library/jest-dom/matchers';
 import type { RenderResult } from '@testing-library/react';
 import { render, renderHook } from '@testing-library/react';
-import { createStore, getDefaultStore, Provider } from 'jotai';
+import { Provider } from 'jotai';
 import type { FC, PropsWithChildren } from 'react';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { workspacesAtom } from '../../atoms';
+import { workspaceByIdAtomFamily } from '../../atoms';
 import {
   currentWorkspaceAtom,
   useCurrentWorkspace,
@@ -24,10 +25,10 @@ import Pinboard from '../pure/workspace-slider-bar/Pinboard';
 
 expect.extend(matchers);
 
-let store = getDefaultStore();
+const store = jotaiStore;
+
 beforeEach(async () => {
-  store = createStore();
-  await store.get(workspacesAtom);
+  await store.get(currentWorkspaceAtom);
 });
 
 const ProviderWrapper: FC<PropsWithChildren> = ({ children }) => {
@@ -48,24 +49,32 @@ const initPinBoard = async () => {
   const rootPageIds = ['hasPinboardPage', 'noPinboardPage'];
   const pinboardPageIds = ['pinboard1', 'pinboard2'];
   const id = await mutationHook.result.current.createLocalWorkspace('test0');
-  await store.get(workspacesAtom);
+  await store.get(workspaceByIdAtomFamily(id));
   mutationHook.rerender();
 
-  await store.get(currentWorkspaceAtom);
   const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
     wrapper: ProviderWrapper,
   });
+
   currentWorkspaceHook.result.current[1](id);
   const currentWorkspace = await store.get(currentWorkspaceAtom);
   const blockSuiteWorkspace =
     currentWorkspace?.blockSuiteWorkspace as BlockSuiteWorkspace;
 
+  blockSuiteWorkspace.meta.pageMetaAdded.on(v => {
+    console.log('pageMetaAdded', v);
+  });
+
   // create root pinboard
   mutationHook.result.current.createWorkspacePage(id, 'rootPinboard');
+
   blockSuiteWorkspace.meta.setPageMeta('rootPinboard', {
     isRootPinboard: true,
     subpageIds: rootPageIds,
   });
+
+  console.log(blockSuiteWorkspace.meta.pageMetas);
+
   // create parent
   rootPageIds.forEach(rootPageId => {
     mutationHook.result.current.createWorkspacePage(id, rootPageId);
@@ -73,6 +82,7 @@ const initPinBoard = async () => {
       subpageIds: rootPageId === rootPageIds[0] ? pinboardPageIds : [],
     });
   });
+
   // create children to firs parent
   pinboardPageIds.forEach(pinboardId => {
     mutationHook.result.current.createWorkspacePage(id, pinboardId);
@@ -118,6 +128,7 @@ const openOperationMenu = async (app: RenderResult, pageId: string) => {
 describe('PinBoard', () => {
   test('add pinboard', async () => {
     const { app, blockSuiteWorkspace, rootPageIds } = await initPinBoard();
+    app.debug();
     const [hasChildrenPageId] = rootPageIds;
     await openOperationMenu(app, hasChildrenPageId);
 
