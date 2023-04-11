@@ -11,6 +11,7 @@ import {
 } from 'yjs';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
+const selfUpdateOrigin = Symbol('self-update-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
@@ -297,6 +298,8 @@ export const createIndexedDBProvider = (
           id,
           updates: [],
         });
+        early = false;
+        resolve();
       } else {
         const updates = data.updates.map(({ update }) => update);
         const update = mergeUpdates(updates);
@@ -311,14 +314,20 @@ export const createIndexedDBProvider = (
             },
           ],
         });
+        const callback = (_update: Uint8Array, origin: unknown) => {
+          if (origin === selfUpdateOrigin) {
+            early = false;
+            doc.off('update', callback);
+            resolve();
+          }
+        };
+        doc.on('update', callback);
         doc.transact(() => {
           updates.forEach(update => {
             applyUpdate(doc, update);
           });
-        }, indexeddbOrigin);
+        }, selfUpdateOrigin);
       }
-      early = false;
-      resolve();
     },
     disconnect() {
       connect = false;
