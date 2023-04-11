@@ -61,7 +61,7 @@ async function toeverything_single_persistence(n = 1e5) {
   for (let i = 0; i < n; i++) {
     map.set(`${i}`, i);
   }
-  const provider = createIndexedDBProvider('test', yDoc);
+  const provider = createIndexedDBProvider('test', yDoc, 'test');
   provider.connect();
   await provider.whenSynced;
   provider.disconnect();
