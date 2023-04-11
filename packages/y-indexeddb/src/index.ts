@@ -300,14 +300,14 @@ export const createIndexedDBProvider = (
       } else {
         const updates = data.updates.map(({ update }) => update);
         const update = mergeUpdates(updates);
-        const newUpdate = encodeStateAsUpdate(doc);
+        const newUpdate = diffUpdate(update, encodeStateAsUpdate(doc));
         await store.put({
           ...data,
           updates: [
             ...data.updates,
             {
               timestamp: Date.now(),
-              update: diffUpdate(update, newUpdate),
+              update: newUpdate,
             },
           ],
         });
@@ -315,6 +315,7 @@ export const createIndexedDBProvider = (
           updates.forEach(update => {
             applyUpdate(doc, update);
           });
+          applyUpdate(doc, newUpdate);
         }, indexeddbOrigin);
       }
       early = false;
