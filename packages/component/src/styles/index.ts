@@ -1,3 +1,4 @@
+export * from './color-scheme';
 export * from './helper';
 export * from './styled';
 export * from './theme';
