@@ -302,12 +302,12 @@ export const createIndexedDBProvider = (
         const fakeDoc = new Doc();
         fakeDoc.transact(() => {
           updates.forEach(update => {
-            applyUpdate(fakeDoc, update, indexeddbOrigin);
+            applyUpdate(fakeDoc, update);
           });
         }, indexeddbOrigin);
         const newUpdate = diffUpdate(
-          encodeStateAsUpdate(fakeDoc),
-          encodeStateAsUpdate(doc)
+          encodeStateAsUpdate(doc),
+          encodeStateAsUpdate(fakeDoc)
         );
         await store.put({
           ...data,
