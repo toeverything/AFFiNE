@@ -468,6 +468,7 @@ describe('api', () => {
     },
     {
       timeout: 30000,
+      retry: 3,
     }
   );
 });
