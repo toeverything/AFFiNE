@@ -11,7 +11,6 @@ import {
 } from 'yjs';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
-const selfUpdateOrigin = Symbol('self-update-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
@@ -218,14 +217,6 @@ export const createIndexedDBProvider = (
     }
   }
 
-  const handleSelfUpdate = (_update: Uint8Array, origin: unknown) => {
-    if (origin === selfUpdateOrigin) {
-      early = false;
-      doc.off('update', handleSelfUpdate);
-      resolve();
-    }
-  };
-
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
   });
@@ -244,7 +235,6 @@ export const createIndexedDBProvider = (
       });
       connect = true;
       doc.on('update', handleUpdate);
-      doc.on('update', handleSelfUpdate);
       doc.on('destroy', handleDestroy);
       // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
@@ -307,8 +297,6 @@ export const createIndexedDBProvider = (
           id,
           updates: [],
         });
-        early = false;
-        resolve();
       } else {
         const updates = data.updates.map(({ update }) => update);
         const fakeDoc = new Doc();
@@ -332,17 +320,13 @@ export const createIndexedDBProvider = (
           ],
         });
         doc.transact(() => {
-          if (updates.length > 0) {
-            updates.forEach(update => {
-              applyUpdate(doc, update);
-            });
-          } else {
-            doc.off('update', handleSelfUpdate);
-            early = false;
-            resolve();
-          }
-        }, selfUpdateOrigin);
+          updates.forEach(update => {
+            applyUpdate(doc, update);
+          });
+        }, indexeddbOrigin);
       }
+      early = false;
+      resolve();
     },
     disconnect() {
       connect = false;
@@ -350,7 +334,6 @@ export const createIndexedDBProvider = (
         reject(new EarlyDisconnectError());
       }
       doc.off('update', handleUpdate);
-      doc.off('update', handleSelfUpdate);
       doc.off('destroy', handleDestroy);
     },
     cleanup() {
