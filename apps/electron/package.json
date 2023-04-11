@@ -36,6 +36,7 @@
     "@electron-forge/maker-zip": "^6.1.1",
     "@electron-forge/shared-types": "^6.1.1",
     "@electron/rebuild": "^3.2.10",
+    "@electron/remote": "2.0.9",
     "dts-for-context-bridge": "^0.7.1",
     "electron": "24.0.0",
     "esbuild": "^0.17.16",
@@ -44,7 +45,19 @@
   "dependencies": {
     "cross-env": "7.0.3",
     "electron-window-state": "^5.0.3",
-    "fs-extra": "^11.1.1"
+    "firebase": "^9.18.0",
+    "fs-extra": "^11.1.1",
+    "undici": "^5.21.2"
+  },
+  "build": {
+    "protocols": [
+      {
+        "name": "affine",
+        "schemes": [
+          "affine"
+        ]
+      }
+    ]
   },
   "packageManager": "yarn@3.5.0"
 }

@@ -123,12 +123,15 @@ __metadata:
     "@electron-forge/maker-zip": ^6.1.1
     "@electron-forge/shared-types": ^6.1.1
     "@electron/rebuild": ^3.2.10
+    "@electron/remote": 2.0.9
     cross-env: 7.0.3
     dts-for-context-bridge: ^0.7.1
     electron: 24.0.0
     electron-window-state: ^5.0.3
     esbuild: ^0.17.16
+    firebase: ^9.18.0
     fs-extra: ^11.1.1
+    undici: ^5.21.2
     zx: ^7.2.1
   languageName: unknown
   linkType: soft
@@ -2231,6 +2234,15 @@ __metadata:
   bin:
     electron-rebuild: lib/src/cli.js
   checksum: 5bbcc81f1473d29ef5e7aa8826dc6a7bb9c7846d95364687d69e84e925e9b8f38e6b1c9c9a448b9132654ffe3cae2863bdb2e11e585ca502ac90ab29f4d44649
+  languageName: node
+  linkType: hard
+
+"@electron/remote@npm:2.0.9":
+  version: 2.0.9
+  resolution: "@electron/remote@npm:2.0.9"
+  peerDependencies:
+    electron: ">= 13.0.0"
+  checksum: 7949c528df0ecc9661c0b43e7f2586befb9eddfb53739adf204dc2097ba4331fb08b01f6904636e4c566d28b051a80a55718fb643ee2d2df0793c0c05278dbd4
   languageName: node
   linkType: hard
 
@@ -7268,6 +7280,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"busboy@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "busboy@npm:1.6.0"
+  dependencies:
+    streamsearch: ^1.1.0
+  checksum: 32801e2c0164e12106bf236291a00795c3c4e4b709ae02132883fe8478ba2ae23743b11c5735a0aae8afe65ac4b6ca4568b91f0d9fed1fdbc32ede824a73746e
+  languageName: node
+  linkType: hard
+
 "bytes@npm:3.0.0":
   version: 3.0.0
   resolution: "bytes@npm:3.0.0"
@@ -9636,7 +9657,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"firebase@npm:^9.19.1":
+"firebase@npm:^9.18.0, firebase@npm:^9.19.1":
   version: 9.19.1
   resolution: "firebase@npm:9.19.1"
   dependencies:
@@ -15960,6 +15981,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"streamsearch@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "streamsearch@npm:1.1.0"
+  checksum: 1cce16cea8405d7a233d32ca5e00a00169cc0e19fbc02aa839959985f267335d435c07f96e5e0edd0eadc6d39c98d5435fb5bbbdefc62c41834eadc5622ad942
+  languageName: node
+  linkType: hard
+
 "string-argv@npm:~0.3.1":
   version: 0.3.1
   resolution: "string-argv@npm:0.3.1"
@@ -16665,6 +16693,15 @@ __metadata:
   bin:
     uglifyjs: bin/uglifyjs
   checksum: 7b3897df38b6fc7d7d9f4dcd658599d81aa2b1fb0d074829dd4e5290f7318dbca1f4af2f45acb833b95b1fe0ed4698662ab61b87e94328eb4c0a0d3435baf924
+  languageName: node
+  linkType: hard
+
+"undici@npm:^5.21.2":
+  version: 5.21.2
+  resolution: "undici@npm:5.21.2"
+  dependencies:
+    busboy: ^1.6.0
+  checksum: baceaa9e610966631e86ad2869b657556dd465438eed55e8079cec2a306ecbeecfde2d6e37e43baf96a4c59588ebef50476131e96e018dcc0a7f5db7e6a06c85
   languageName: node
   linkType: hard
 

@@ -11,3 +11,4 @@ resources/web-static
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+dev.json
