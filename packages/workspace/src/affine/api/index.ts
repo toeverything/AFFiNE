@@ -380,7 +380,9 @@ export function createWorkspaceApis(prefixUrl = '/') {
         {
           method: 'GET',
         }
-      ).then(r => r.arrayBuffer());
+      ).then(r =>
+        r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status}`))
+      );
     },
     downloadWorkspace: async (
       workspaceId: string,
