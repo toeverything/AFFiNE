@@ -3,7 +3,7 @@ import { Input, PureMenu, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import { usePinboardData } from '../../../../hooks/use-pinboard-data';
@@ -29,13 +29,17 @@ export type PinboardMenuProps = {
 } & PureMenuProps;
 
 export const PinboardMenu = ({
-  metas,
+  metas: propsMetas,
   currentMeta,
   blockSuiteWorkspace,
   showRemovePinboard = false,
   onPinboardClick,
   ...pureMenuProps
 }: PinboardMenuProps) => {
+  const metas = useMemo(
+    () => propsMetas.filter(m => m.id !== currentMeta.id),
+    [currentMeta.id, propsMetas]
+  );
   const { t } = useTranslation();
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [query, setQuery] = useState('');
