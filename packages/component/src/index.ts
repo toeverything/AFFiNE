@@ -12,6 +12,7 @@ export * from './ui/modal';
 export * from './ui/mui';
 export * from './ui/popper';
 export * from './ui/shared/Container';
+export * from './ui/switch';
 export * from './ui/table';
 export * from './ui/toast';
 export * from './ui/tooltip';

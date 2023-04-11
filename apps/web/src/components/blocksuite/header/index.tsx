@@ -109,7 +109,11 @@ export const BlockSuiteEditorHeader = forwardRef<
             ? ['themeModeSwitch']
             : isTrash
             ? ['trashButtonGroup']
-            : ['syncUser', 'themeModeSwitch', 'editorOptionMenu']
+            : [
+                'syncUser',
+                /* 'shareMenu', */ 'themeModeSwitch',
+                'editorOptionMenu',
+              ]
         }
         {...props}
       >
