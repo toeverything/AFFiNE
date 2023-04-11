@@ -59,10 +59,7 @@ const WorkspaceDetail: React.FC = () => {
     ),
     subpageLinked: useCallback(
       ({ pageId }: { pageId: string }) => {
-        if (!currentPageId) {
-          return;
-        }
-        const meta = getPageMeta(currentPageId);
+        const meta = currentPageId && getPageMeta(currentPageId);
         if (!meta || meta.subpageIds?.includes(pageId)) {
           return;
         }
