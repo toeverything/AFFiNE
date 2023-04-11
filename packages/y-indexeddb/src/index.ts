@@ -299,8 +299,16 @@ export const createIndexedDBProvider = (
         });
       } else {
         const updates = data.updates.map(({ update }) => update);
-        const update = mergeUpdates(updates);
-        const newUpdate = diffUpdate(encodeStateAsUpdate(doc), update);
+        const fakeDoc = new Doc();
+        fakeDoc.transact(() => {
+          updates.forEach(update => {
+            applyUpdate(fakeDoc, update);
+          });
+        }, indexeddbOrigin);
+        const newUpdate = diffUpdate(
+          encodeStateAsUpdate(doc),
+          encodeStateAsUpdate(fakeDoc)
+        );
         await store.put({
           ...data,
           updates: [
