@@ -75,6 +75,7 @@ __metadata:
     clsx: ^1.2.1
     concurrently: ^8.0.1
     jest-mock: ^29.5.0
+    kebab-case: ^1.0.2
     lit: ^2.7.2
     react: ^18.2.0
     react-dnd: ^16.0.1
@@ -14127,6 +14128,13 @@ __metadata:
     array-includes: ^3.1.5
     object.assign: ^4.1.3
   checksum: a2ed78cac49a0f0c4be8b1eafe3c5257a1411341d8e7f1ac740debae003de04e5f6372bfcfbd9d082e954ffd99aac85bcda85b7c6bc11609992483f4cdc0f745
+  languageName: node
+  linkType: hard
+
+"kebab-case@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "kebab-case@npm:1.0.2"
+  checksum: bf01164e11c544ee9b3aa1a91c2e7d6aa6b3356b834a5e885d43f36db14aae5d347cd4a298a566133321b82fde6bac6b597f148ac19bfd3d3fc81e1034a79729
   languageName: node
   linkType: hard
 
