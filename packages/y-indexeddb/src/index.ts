@@ -300,14 +300,14 @@ export const createIndexedDBProvider = (
       } else {
         const updates = data.updates.map(({ update }) => update);
         const update = mergeUpdates(updates);
-        const newUpdate = diffUpdate(encodeStateAsUpdate(doc), update);
+        const newUpdate = encodeStateAsUpdate(doc);
         await store.put({
           ...data,
           updates: [
             ...data.updates,
             {
               timestamp: Date.now(),
-              update: newUpdate,
+              update: diffUpdate(update, newUpdate),
             },
           ],
         });
