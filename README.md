@@ -11,7 +11,7 @@
     Privacy first, open-source, customizable and ready to use - a free replacement for Notion & Miro. <br />
 </p>
 
-<div>
+</div>
 <!--
 Make New Badge Pattern badges inline
 See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
