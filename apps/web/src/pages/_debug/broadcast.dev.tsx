@@ -1,14 +1,16 @@
-import { Button, toast } from '@affine/component';
+import { Button } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
+import { createBroadCastChannelProvider } from '@affine/workspace/providers';
+import type { BroadCastChannelProvider } from '@affine/workspace/type';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { Typography } from '@mui/material';
-import React, { useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { createBroadCastChannelProvider } from '../../blocksuite/providers';
 import PageList from '../../components/blocksuite/block-suite-page-list/page-list';
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
-import { BroadCastChannelProvider } from '../../shared';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
+import { toast } from '../../utils';
 
 const logger = new DebugLogger('broadcast');
 
@@ -29,9 +31,6 @@ const BroadcastPage: React.FC = () => {
   const [provider, setProvider] = useState<BroadCastChannelProvider | null>(
     null
   );
-  useEffect(() => {
-    globalThis.currentBlockSuiteWorkspace = blockSuiteWorkspace;
-  }, [blockSuiteWorkspace]);
   useEffect(() => {
     const provider = createBroadCastChannelProvider(blockSuiteWorkspace);
     setProvider(provider);

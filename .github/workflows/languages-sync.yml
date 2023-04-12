@@ -26,23 +26,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-      - run: pnpm i
-
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
       - name: Check Language Key
         if: github.ref != 'refs/heads/master'
         working-directory: ./packages/i18n
-        run: pnpm run sync-languages:check
+        run: yarn run sync-languages:check
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}
 
       - name: Sync Languages
         if: github.ref == 'refs/heads/master'
         working-directory: ./packages/i18n
-        run: pnpm run sync-languages
+        run: yarn run sync-languages
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}

@@ -1,16 +1,22 @@
+import { DebugLogger } from '@affine/debug';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import type { LocalWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
-import { jotaiWorkspacesAtom, workspacesAtom } from '../atoms';
+import { workspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
-import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
-import { createEmptyBlockSuiteWorkspace } from '../utils';
+import type { AllWorkspace } from '../shared';
 
-export function useWorkspaces(): RemWorkspace[] {
+export function useWorkspaces(): AllWorkspace[] {
   return useAtomValue(workspacesAtom);
 }
+
+const logger = new DebugLogger('use-workspaces');
 
 export function useWorkspacesHelper() {
   const workspaces = useWorkspaces();
@@ -42,9 +48,10 @@ export function useWorkspacesHelper() {
           ...workspaces,
           {
             id,
-            flavour: RemWorkspaceFlavour.LOCAL,
+            flavour: WorkspaceFlavour.LOCAL,
           },
         ]);
+        logger.debug('created local workspace', id);
         return id;
       },
       [set]
@@ -71,3 +78,25 @@ export function useWorkspacesHelper() {
     ),
   };
 }
+
+export const useElementResizeEffect = (
+  element: Element | null,
+  fn: () => void | (() => () => void),
+  // TODO: add throttle
+  throttle = 0
+) => {
+  useEffect(() => {
+    if (!element) {
+      return;
+    }
+    let dispose: void | (() => void);
+    const resizeObserver = new ResizeObserver(entries => {
+      dispose = fn();
+    });
+    resizeObserver.observe(element);
+    return () => {
+      dispose?.();
+      resizeObserver.disconnect();
+    };
+  }, [element, fn]);
+};

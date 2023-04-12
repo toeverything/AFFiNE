@@ -27,15 +27,10 @@ const getGitVersion = () => {
     );
     return null;
   }
-  const VERSION = execSync('git describe --always --dirty')
-    .toString()
-    // remove empty line
-    .replace(/[\s\r\n]+$/, '');
-
-  return VERSION;
+  return execSync('git describe --always --dirty').toString().trimEnd();
 };
 
 const getCommitHash = (rev = 'HEAD') =>
-  execSync(`git rev-parse --short ${rev}`).toString();
+  execSync(`git rev-parse --short ${rev}`).toString().trimEnd();
 
 export { getCommitHash, getGitVersion };

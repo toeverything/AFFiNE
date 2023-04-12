@@ -1,12 +1,7 @@
 import type { EmotionJSX } from '@emotion/react/types/jsx-namespace';
 import createEmotionServer from '@emotion/server/create-instance';
-import Document, {
-  DocumentContext,
-  Head,
-  Html,
-  Main,
-  NextScript,
-} from 'next/document';
+import type { DocumentContext } from 'next/document';
+import Document, { Head, Html, Main, NextScript } from 'next/document';
 import * as React from 'react';
 
 import createEmotionCache from '../utils/create-emotion-cache';
@@ -56,6 +51,29 @@ export default class AppDocument extends Document<{
           />
           <link rel="icon" sizes="192x192" href="/chrome-192x192.png" />
           <meta name="emotion-insertion-point" content="" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:url" content="https://app.affine.pro/" />
+          <meta
+            name="twitter:title"
+            content="AFFiNE：There can be more than Notion and Miro."
+          />
+          <meta
+            name="twitter:description"
+            content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
+          />
+          <meta name="twitter:site" content="@AffineOfficial" />
+          <meta name="twitter:image" content="https://affine.pro/og.jpeg" />
+          <meta
+            property="og:title"
+            content="AFFiNE：There can be more than Notion and Miro."
+          />
+          <meta property="og:type" content="website" />
+          <meta
+            property="og:description"
+            content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
+          />
+          <meta property="og:url" content="https://app.affine.pro/" />
+          <meta property="og:image" content="https://affine.pro/og.jpeg" />
           {this.props.emotionStyleTags}
         </Head>
         <body>

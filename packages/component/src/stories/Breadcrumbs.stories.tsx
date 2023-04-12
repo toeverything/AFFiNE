@@ -1,7 +1,7 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
 import { Link, Typography } from '@mui/material';
 import { expect } from '@storybook/jest';
-import { Meta, StoryFn } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import { within } from '@storybook/testing-library';
 
 import { Breadcrumbs } from '..';

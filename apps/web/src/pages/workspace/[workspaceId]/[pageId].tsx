@@ -1,34 +1,76 @@
+import { WorkspaceFlavour } from '@affine/workspace/type';
+import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
-import { useSyncRecentViewsWithRouter } from '../../../hooks/affine/use-recent-views';
+import { useReferenceLink } from '../../../hooks/affine/use-reference-link';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { usePageMeta, usePageMetaHelper } from '../../../hooks/use-page-meta';
+import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
+import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import {
-  BlockSuiteWorkspace,
-  NextPageWithLayout,
-  RemWorkspaceFlavour,
-} from '../../../shared';
+import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 
 function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
   blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_database', false);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_database', true);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', true);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_edgeless_toolbar', true);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', true);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', true);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_surface', true);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_linked_page', true);
 }
 
 const WorkspaceDetail: React.FC = () => {
-  const [pageId] = useCurrentPageId();
+  const router = useRouter();
+  const { openPage } = useRouterHelper(router);
+  const [currentPageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
-  useSyncRecentViewsWithRouter(useRouter());
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace ?? null;
+  const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const { deletePin } = usePinboardHandler({
+    blockSuiteWorkspace,
+    metas: usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null ?? null),
+  });
+
+  useSyncRecentViewsWithRouter(router);
+
+  useReferenceLink({
+    pageLinkClicked: useCallback(
+      ({ pageId }: { pageId: string }) => {
+        assertExists(currentWorkspace);
+        return openPage(currentWorkspace.id, pageId);
+      },
+      [currentWorkspace, openPage]
+    ),
+    subpageUnlinked: useCallback(
+      ({ pageId }: { pageId: string }) => {
+        deletePin(pageId);
+      },
+      [deletePin]
+    ),
+    subpageLinked: useCallback(
+      ({ pageId }: { pageId: string }) => {
+        const meta = currentPageId && getPageMeta(currentPageId);
+        if (!meta || meta.subpageIds?.includes(pageId)) {
+          return;
+        }
+        setPageMeta(currentPageId, {
+          subpageIds: [...(meta.subpageIds ?? []), pageId],
+        });
+      },
+      [currentPageId, getPageMeta, setPageMeta]
+    ),
+  });
+
   useEffect(() => {
     if (currentWorkspace) {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);
@@ -37,18 +79,24 @@ const WorkspaceDetail: React.FC = () => {
   if (currentWorkspace === null) {
     return <PageLoading />;
   }
-  if (!pageId) {
+  if (!currentPageId) {
     return <PageLoading />;
   }
-  if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
-      <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
+      <PageDetail
+        currentWorkspace={currentWorkspace}
+        currentPageId={currentPageId}
+      />
     );
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
-      <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
+      <PageDetail
+        currentWorkspace={currentWorkspace}
+        currentPageId={currentPageId}
+      />
     );
   }
   throw new Unreachable();

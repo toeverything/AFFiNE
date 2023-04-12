@@ -1,7 +1,10 @@
 import { DebugLogger } from '@affine/debug';
 import markdown from '@affine/templates/Welcome-to-AFFiNE.md';
-import { EditorContainer } from '@blocksuite/editor';
-import { Page } from '@blocksuite/store';
+import { ContentParser } from '@blocksuite/blocks/content-parser';
+import type { Page } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
+
+import type { BlockSuiteWorkspace } from '../shared';
 
 const demoTitle = markdown
   .split('\n')
@@ -14,7 +17,7 @@ const demoText = markdown.split('\n').slice(1).join('\n');
 
 const logger = new DebugLogger('init-page');
 
-export function initPage(page: Page, editor: Readonly<EditorContainer>): void {
+export function initPage(page: Page): void {
   logger.debug('initEmptyPage', page.id);
   // Add page block and surface block at root level
   const isFirstPage = page.meta.init === true;
@@ -22,33 +25,62 @@ export function initPage(page: Page, editor: Readonly<EditorContainer>): void {
     page.workspace.setPageMeta(page.id, {
       init: false,
     });
-    _initPageWithDemoMarkdown(page, editor);
+    _initPageWithDemoMarkdown(page);
   } else {
-    _initEmptyPage(page, editor);
+    _initEmptyPage(page);
   }
   page.resetHistory();
 }
 
-export function _initEmptyPage(page: Page, _: Readonly<EditorContainer>) {
-  const pageBlockId = page.addBlockByFlavour('affine:page', {
-    title: new page.Text(''),
+export function _initEmptyPage(page: Page, title?: string): void {
+  const pageBlockId = page.addBlock('affine:page', {
+    title: new page.Text(title ?? ''),
   });
-  page.addBlockByFlavour('affine:surface', {}, null);
-  const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-  page.addBlockByFlavour('affine:paragraph', {}, frameId);
+  page.addBlock('affine:surface', {}, null);
+  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, frameId);
 }
 
-export function _initPageWithDemoMarkdown(
-  page: Page,
-  editor: Readonly<EditorContainer>
-): void {
+export function _initPageWithDemoMarkdown(page: Page): void {
   logger.debug('initPageWithDefaultMarkdown', page.id);
-  const pageBlockId = page.addBlockByFlavour('affine:page', {
+  const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(demoTitle),
   });
-  page.addBlockByFlavour('affine:surface', {}, null);
-  const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-  page.addBlockByFlavour('affine:paragraph', {}, frameId);
-  editor.clipboard.importMarkdown(demoText, frameId);
+  page.addBlock('affine:surface', {}, null);
+  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, frameId);
+  const contentParser = new ContentParser(page);
+  contentParser.importMarkdown(demoText, frameId).then(() => {
+    document.dispatchEvent(
+      new CustomEvent('markdown:imported', {
+        detail: {
+          workspaceId: page.workspace.id,
+          pageId: page.id,
+        },
+      })
+    );
+  });
   page.workspace.setPageMeta(page.id, { demoTitle });
+}
+
+export function ensureRootPinboard(blockSuiteWorkspace: BlockSuiteWorkspace) {
+  const metas = blockSuiteWorkspace.meta.pageMetas;
+  const rootMeta = metas.find(m => m.isRootPinboard);
+
+  if (rootMeta) {
+    return rootMeta.id;
+  }
+
+  const rootPinboardPage = blockSuiteWorkspace.createPage(nanoid());
+
+  const title = `${blockSuiteWorkspace.meta.name}'s Pinboard`;
+
+  _initEmptyPage(rootPinboardPage, title);
+
+  blockSuiteWorkspace.meta.setPageMeta(rootPinboardPage.id, {
+    isRootPinboard: true,
+    title,
+  });
+
+  return rootPinboardPage.id;
 }

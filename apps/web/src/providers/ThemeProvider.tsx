@@ -1,22 +1,37 @@
-import { AffineTheme, ThemeProviderProps } from '@affine/component';
+import type {
+  AffineNextCssVariables,
+  AffineNextLightColorScheme,
+  AffineTheme,
+  ThemeProviderProps,
+} from '@affine/component';
 import {
   getDarkTheme,
   getLightTheme,
   globalThemeVariables,
+  nextDarkColorScheme,
+  nextLightColorScheme,
   ThemeProvider as AffineThemeProvider,
 } from '@affine/component';
 import { GlobalStyles } from '@mui/material';
+import kebabCase from 'kebab-case';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
-import { useCurrentPage } from '../hooks/current/use-current-page-id';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { usePageMeta } from '../hooks/use-page-meta';
+import { useCurrentMode } from '../hooks/current/use-current-mode';
 
-const ThemeInjector = React.memo<{
+const ThemeInjector = memo<{
   themeStyle: AffineTheme;
-}>(function ThemeInjector({ themeStyle }) {
+  nextThemeStyle: AffineNextLightColorScheme;
+}>(function ThemeInjector({ themeStyle, nextThemeStyle }) {
+  const injectAffineNextTheme = useMemo(() => {
+    return Object.entries(nextThemeStyle).reduce((variables, [key, value]) => {
+      variables[`--affine-${kebabCase(key)}` as keyof AffineNextCssVariables] =
+        value;
+      return variables;
+    }, {} as AffineNextCssVariables);
+  }, [nextThemeStyle]);
   return (
     <GlobalStyles
       styles={{
@@ -25,6 +40,7 @@ const ThemeInjector = React.memo<{
         // },
         ':root': {
           ...globalThemeVariables(themeStyle),
+          ...injectAffineNextTheme,
         },
         html: {
           fontFamily: themeStyle.font.family,
@@ -38,12 +54,8 @@ const ThemeInjector = React.memo<{
 
 const ThemeProviderInner = memo<React.PropsWithChildren>(
   function ThemeProviderInner({ children }) {
-    const { theme } = useTheme();
-    const [currentWorkspace] = useCurrentWorkspace();
-    const currentPage = useCurrentPage();
-    const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
-    const editorMode =
-      pageMeta.find(page => page.id === currentPage?.id)?.mode ?? 'page';
+    const { resolvedTheme: theme } = useTheme();
+    const editorMode = useCurrentMode();
     const themeStyle = useMemo(() => getLightTheme(editorMode), [editorMode]);
     const darkThemeStyle = useMemo(
       () => getDarkTheme(editorMode),
@@ -52,6 +64,7 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
     // SSR will always render the light theme, so we need to defer the theme if user selected dark mode
     const [deferTheme, setDeferTheme] = useState('light');
     useEffect(() => {
+      window.apis?.onThemeChange(theme === 'dark' ? 'dark' : 'light');
       setDeferTheme(theme === 'dark' ? 'dark' : 'light');
     }, [theme]);
     return (
@@ -60,6 +73,9 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
       >
         <ThemeInjector
           themeStyle={deferTheme === 'dark' ? darkThemeStyle : themeStyle}
+          nextThemeStyle={
+            deferTheme === 'dark' ? nextDarkColorScheme : nextLightColorScheme
+          }
         />
         {children}
       </AffineThemeProvider>
@@ -71,9 +87,10 @@ const themes = ['dark', 'light'];
 
 export const ThemeProvider = ({
   children,
+  ...props
 }: PropsWithChildren<ThemeProviderProps>) => {
   return (
-    <NextThemeProvider themes={themes}>
+    <NextThemeProvider themes={themes} enableSystem={true} {...props}>
       <ThemeProviderInner>{children}</ThemeProviderInner>
     </NextThemeProvider>
   );

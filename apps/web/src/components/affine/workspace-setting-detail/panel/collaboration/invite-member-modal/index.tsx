@@ -1,11 +1,16 @@
-import { styled } from '@affine/component';
-import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
-import { Button } from '@affine/component';
-import { Input } from '@affine/component';
-import { MuiAvatar } from '@affine/component';
+import {
+  Button,
+  Input,
+  Modal,
+  ModalCloseButton,
+  ModalWrapper,
+  MuiAvatar,
+  styled,
+} from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { EmailIcon } from '@blocksuite/icons';
-import React, { Suspense, useCallback, useState } from 'react';
+import type React from 'react';
+import { Suspense, useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../../hooks/affine/use-members';
 import { useUsersByEmail } from '../../../../../../hooks/affine/use-users-by-email';
@@ -17,7 +22,8 @@ interface LoginModalProps {
   onInviteSuccess: () => void;
 }
 
-const gmailReg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/;
+const gmailReg =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(gmail|example)\.(com|org)$/;
 
 const Result: React.FC<{
   workspaceId: string;
@@ -74,6 +80,7 @@ export const InviteMemberModal = ({
             <ContentTitle>{t('Invite Members')}</ContentTitle>
             <InviteBox>
               <Input
+                data-testid="invite-member-input"
                 width={360}
                 value={email}
                 onChange={inputChange}
@@ -84,7 +91,7 @@ export const InviteMemberModal = ({
                   setShowMemberPreview(false);
                 }, [])}
                 placeholder={t('Invite placeholder')}
-              ></Input>
+              />
               {showMemberPreview && gmailReg.test(email) && (
                 <Suspense fallback="loading...">
                   <Result workspaceId={workspaceId} queryEmail={email} />
@@ -94,6 +101,7 @@ export const InviteMemberModal = ({
           </Content>
           <Footer>
             <Button
+              data-testid="invite-member-button"
               disabled={!gmailReg.test(email)}
               shape="circle"
               type="primary"

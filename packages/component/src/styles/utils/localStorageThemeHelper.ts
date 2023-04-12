@@ -1,4 +1,4 @@
-import { ThemeMode } from '../types';
+import type { ThemeMode } from '../types';
 
 export class LocalStorageThemeHelper {
   name = 'Affine-theme-mode';

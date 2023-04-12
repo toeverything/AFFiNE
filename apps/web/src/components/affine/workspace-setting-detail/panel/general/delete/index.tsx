@@ -1,12 +1,11 @@
 import { Button, Input, Modal, ModalCloseButton } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useCallback, useState } from 'react';
 
-import { useBlockSuiteWorkspaceName } from '../../../../../../hooks/use-blocksuite-workspace-name';
-import {
-  AffineOfficialWorkspace,
-  RemWorkspaceFlavour,
-} from '../../../../../../shared';
+import type { AffineOfficialWorkspace } from '../../../../../../shared';
+import { toast } from '../../../../../../utils';
 import {
   StyledButtonContent,
   StyledInputContent,
@@ -20,7 +19,7 @@ interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
   workspace: AffineOfficialWorkspace;
-  onDeleteWorkspace: () => void;
+  onDeleteWorkspace: () => Promise<void>;
 }
 
 export const WorkspaceDeleteModal = ({
@@ -37,15 +36,19 @@ export const WorkspaceDeleteModal = ({
   const { t } = useTranslation();
 
   const handleDelete = useCallback(() => {
-    onDeleteWorkspace();
-  }, [onDeleteWorkspace]);
+    onDeleteWorkspace().then(() => {
+      toast(t('Successfully deleted'), {
+        portal: document.body,
+      });
+    });
+  }, [onDeleteWorkspace, t]);
 
   return (
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
         <StyledModalHeader>{t('Delete Workspace')}?</StyledModalHeader>
-        {workspace.flavour === RemWorkspaceFlavour.LOCAL ? (
+        {workspace.flavour === WorkspaceFlavour.LOCAL ? (
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description">
               Deleting (
@@ -70,6 +73,11 @@ export const WorkspaceDeleteModal = ({
         )}
         <StyledInputContent>
           <Input
+            ref={ref => {
+              if (ref) {
+                setTimeout(() => ref.focus(), 0);
+              }
+            }}
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
             placeholder={t('Placeholder of delete workspace')}

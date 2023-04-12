@@ -1,5 +1,6 @@
-import { TableCell, TableCellProps } from '@affine/component';
-import { PageMeta } from '@blocksuite/store';
+import type { TableCellProps } from '@affine/component';
+import { TableCell } from '@affine/component';
+import type { PageMeta } from '@blocksuite/store';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import React from 'react';

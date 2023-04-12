@@ -1,32 +1,38 @@
-import { MuiCollapse } from '@affine/component';
-import { IconButton } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import {
-  ArrowDownSmallIcon,
   DeleteTemporarilyIcon,
-  FavoriteIcon,
   FolderIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
-import { PageMeta } from '@blocksuite/store';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import React, { useCallback, useMemo, useState } from 'react';
+import type { Page, PageMeta } from '@blocksuite/store';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
-import { RemWorkspace } from '../../../shared';
+import {
+  useSidebarFloating,
+  useSidebarResizing,
+  useSidebarStatus,
+  useSidebarWidth,
+} from '../../../hooks/use-sidebar-status';
+import type { AllWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
+import { ChangeLog } from './changeLog';
+import Favorite from './favorite';
+import { Pinboard } from './Pinboard';
+import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
-  StyledListItem,
   StyledNewPageButton,
-  StyledSidebarWrapper,
+  StyledScrollWrapper,
+  StyledSidebarSwitchWrapper,
   StyledSliderBar,
+  StyledSliderBarInnerWrapper,
   StyledSliderBarWrapper,
-  StyledSubListItem,
+  StyledSliderModalBackground,
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector';
 
@@ -37,53 +43,14 @@ export type FavoriteListProps = {
   pageMeta: PageMeta[];
 };
 
-const FavoriteList: React.FC<FavoriteListProps> = ({
-  pageMeta,
-  openPage,
-  showList,
-}) => {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const favoriteList = useMemo(
-    () => pageMeta.filter(p => p.favorite && !p.trash),
-    [pageMeta]
-  );
-  return (
-    <MuiCollapse in={showList}>
-      {favoriteList.map((pageMeta, index) => {
-        const active = router.query.pageId === pageMeta.id;
-        return (
-          <div key={`${pageMeta}-${index}`}>
-            <StyledSubListItem
-              data-testid={`favorite-list-item-${pageMeta.id}`}
-              active={active}
-              onClick={() => {
-                if (active) {
-                  return;
-                }
-                openPage(pageMeta.id);
-              }}
-            >
-              {pageMeta.title || 'Untitled'}
-            </StyledSubListItem>
-          </div>
-        );
-      })}
-      {favoriteList.length === 0 && (
-        <StyledSubListItem disable={true}>{t('No item')}</StyledSubListItem>
-      )}
-    </MuiCollapse>
-  );
-};
-
 export type WorkSpaceSliderBarProps = {
   isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
   onOpenWorkspaceListModal: () => void;
-  currentWorkspace: RemWorkspace | null;
+  currentWorkspace: AllWorkspace | null;
   currentPageId: string | null;
   openPage: (pageId: string) => void;
-  createPage: () => Promise<string>;
+  createPage: () => Page;
   currentPath: string;
   paths: {
     all: (workspaceId: string) => string;
@@ -105,147 +72,163 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   onOpenWorkspaceListModal,
 }) => {
   const currentWorkspaceId = currentWorkspace?.id || null;
-  const [showSubFavorite, setOpenSubFavorite] = useState(true);
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const { t } = useTranslation();
-  const [sidebarOpen] = useSidebarStatus();
-  const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
+  const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
+  const pageMeta = usePageMeta(blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
-    const pageId = await createPage();
-    if (pageId) {
-      openPage(pageId);
-    }
+    const page = await createPage();
+    openPage(page.id);
   }, [createPage, openPage]);
+  const floatingSlider = useSidebarFloating();
+  const [sliderWidth] = useSidebarWidth();
+  const [isResizing] = useSidebarResizing();
+  const [isScrollAtTop, setIsScrollAtTop] = useState(true);
+  const show = isPublicWorkspace ? false : sidebarOpen;
+  const actualWidth = floatingSlider ? 'calc(10vw + 400px)' : sliderWidth;
+  useEffect(() => {
+    window.apis?.onSidebarVisibilityChange(sidebarOpen);
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if ((e.key === '/' && e.metaKey) || (e.key === '/' && e.ctrlKey)) {
+        setSidebarOpen(!sidebarOpen);
+      }
+    };
+    document.addEventListener('keydown', keydown, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', keydown, { capture: true });
+  }, [sidebarOpen, setSidebarOpen]);
+
   return (
     <>
-      <StyledSliderBar show={isPublicWorkspace ? false : sidebarOpen}>
-        <StyledSidebarWrapper>
-          <SidebarSwitch
-            visible={sidebarOpen}
-            tooltipContent={t('Collapse sidebar')}
-            testid="sliderBar-arrowButton-collapse"
-          />
-        </StyledSidebarWrapper>
+      <StyledSliderBarWrapper
+        resizing={isResizing}
+        floating={floatingSlider}
+        show={show}
+        style={{ width: actualWidth }}
+        data-testid="sliderBar-root"
+      >
+        <StyledSliderBar>
+          <StyledSidebarSwitchWrapper>
+            <SidebarSwitch
+              visible={sidebarOpen}
+              tooltipContent={t('Collapse sidebar')}
+              testid="sliderBar-arrowButton-collapse"
+            />
+          </StyledSidebarSwitchWrapper>
 
-        <StyledSliderBarWrapper data-testid="sliderBar">
-          <WorkspaceSelector
-            currentWorkspace={currentWorkspace}
-            onClick={onOpenWorkspaceListModal}
-          />
+          <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
+            <WorkspaceSelector
+              currentWorkspace={currentWorkspace}
+              onClick={onOpenWorkspaceListModal}
+            />
+            {config.enableChangeLog && <ChangeLog />}
+            <StyledListItem
+              data-testid="slider-bar-quick-search-button"
+              onClick={useCallback(() => {
+                onOpenQuickSearchModal();
+              }, [onOpenQuickSearchModal])}
+            >
+              <SearchIcon />
+              {t('Quick search')}
+            </StyledListItem>
 
-          <StyledListItem
-            data-testid="slider-bar-quick-search-button"
-            style={{ cursor: 'pointer' }}
-            onClick={useCallback(() => {
-              onOpenQuickSearchModal();
-            }, [onOpenQuickSearchModal])}
-          >
-            <SearchIcon />
-            {t('Quick search')}
-          </StyledListItem>
-          <Link
-            href={{
-              pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
-            }}
-          >
+            <StyledListItem
+              active={
+                currentPath ===
+                (currentWorkspaceId && paths.setting(currentWorkspaceId))
+              }
+              data-testid="slider-bar-workspace-setting-button"
+              style={{
+                marginBottom: '16px',
+              }}
+            >
+              <StyledLink
+                href={{
+                  pathname:
+                    currentWorkspaceId && paths.setting(currentWorkspaceId),
+                }}
+              >
+                <SettingsIcon />
+                {t('Workspace Settings')}
+              </StyledLink>
+            </StyledListItem>
+
             <StyledListItem
               active={
                 currentPath ===
                 (currentWorkspaceId && paths.all(currentWorkspaceId))
               }
             >
-              <FolderIcon />
-              <span data-testid="all-pages">{t('All pages')}</span>
-            </StyledListItem>
-          </Link>
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.favorite(currentWorkspaceId))
-            }
-          >
-            <StyledLink
-              href={{
-                pathname:
-                  currentWorkspaceId && paths.favorite(currentWorkspaceId),
-              }}
-            >
-              <FavoriteIcon />
-              {t('Favorites')}
-            </StyledLink>
-            <IconButton
-              darker={true}
-              onClick={useCallback(() => {
-                setOpenSubFavorite(!showSubFavorite);
-              }, [showSubFavorite])}
-            >
-              <ArrowDownSmallIcon
-                style={{
-                  transform: `rotate(${showSubFavorite ? '180' : '0'}deg)`,
+              <StyledLink
+                href={{
+                  pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
                 }}
-              />
-            </IconButton>
-          </StyledListItem>
-          <FavoriteList
-            currentPageId={currentPageId}
-            showList={showSubFavorite}
-            openPage={openPage}
-            pageMeta={pageMeta}
-          />
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.setting(currentWorkspaceId))
-            }
-            data-testid="slider-bar-workspace-setting-button"
-          >
-            <StyledLink
-              href={{
-                pathname:
-                  currentWorkspaceId && paths.setting(currentWorkspaceId),
+              >
+                <FolderIcon />
+                <span data-testid="all-pages">{t('All pages')}</span>
+              </StyledLink>
+            </StyledListItem>
+
+            <StyledScrollWrapper
+              showTopBorder={!isScrollAtTop}
+              onScroll={e => {
+                (e.target as HTMLDivElement).scrollTop === 0
+                  ? setIsScrollAtTop(true)
+                  : setIsScrollAtTop(false);
               }}
             >
-              <SettingsIcon />
-              {t('Workspace Settings')}
-            </StyledLink>
-          </StyledListItem>
+              <Favorite
+                currentPath={currentPath}
+                paths={paths}
+                currentPageId={currentPageId}
+                openPage={openPage}
+                currentWorkspace={currentWorkspace}
+              />
+              {!!blockSuiteWorkspace && (
+                <Pinboard
+                  blockSuiteWorkspace={blockSuiteWorkspace}
+                  openPage={openPage}
+                  allMetas={pageMeta}
+                />
+              )}
+            </StyledScrollWrapper>
 
-          {/* <WorkspaceSetting
-            isShow={showWorkspaceSetting}
-            onClose={() => {
-              setOpenWorkspaceSetting(false);
-            }}
-          /> */}
-          {/* TODO: will finish the feature next version */}
-          {/* <StyledListItem
-            onClick={() => {
-              triggerImportModal();
-            }}
-          >
-            <ImportIcon /> {t('Import')}
-          </StyledListItem> */}
-
-          <Link
-            href={{
-              pathname: currentWorkspaceId && paths.trash(currentWorkspaceId),
-            }}
-          >
             <StyledListItem
               active={
                 currentPath ===
                 (currentWorkspaceId && paths.trash(currentWorkspaceId))
               }
+              style={{
+                marginTop: '16px',
+              }}
             >
-              <DeleteTemporarilyIcon /> {t('Trash')}
+              <StyledLink
+                href={{
+                  pathname:
+                    currentWorkspaceId && paths.trash(currentWorkspaceId),
+                }}
+              >
+                <DeleteTemporarilyIcon /> {t('Trash')}
+              </StyledLink>
             </StyledListItem>
-          </Link>
+          </StyledSliderBarInnerWrapper>
+
           <StyledNewPageButton
             data-testid="new-page-button"
             onClick={onClickNewPage}
           >
             <PlusIcon /> {t('New Page')}
           </StyledNewPageButton>
-        </StyledSliderBarWrapper>
-      </StyledSliderBar>
+        </StyledSliderBar>
+      </StyledSliderBarWrapper>
+      <StyledSliderModalBackground
+        data-testid="sliderBar-modalBackground"
+        active={floatingSlider && sidebarOpen}
+        onClick={() => setSidebarOpen(false)}
+      />
     </>
   );
 };

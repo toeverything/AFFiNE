@@ -1,5 +1,5 @@
-import { EditorContainer } from '@blocksuite/editor';
-import { CSSProperties } from 'react';
+import type { EditorContainer } from '@blocksuite/editor';
+import type { CSSProperties } from 'react';
 
 export type Theme = 'light' | 'dark';
 export type ThemeMode = Theme | 'auto';
@@ -27,6 +27,9 @@ export interface AffineTheme {
     tooltipBackground: string;
     hoverBackground: string;
     innerHoverBackground: string;
+    modalBackground: string;
+    // Use for the quick search tips background
+    backgroundTertiaryColor: string;
     codeBackground: string;
     codeBlockBackground: string;
     // Use for blockHub and slide bar background
@@ -37,6 +40,7 @@ export interface AffineTheme {
     // Use for the page`s text
     textColor: string;
     secondaryTextColor: string;
+    textEmphasisColor: string;
     // Use for the editor`s text, because in edgeless mode text is different form other
     edgelessTextColor: string;
     linkColor: string;
@@ -88,6 +92,15 @@ export interface AffineTheme {
   };
   radius: {
     popover: string;
+  };
+  breakpoints: {
+    values: {
+      xs: number;
+      sm: number;
+      md: number;
+      lg: number;
+      xl: number;
+    };
   };
 }
 
@@ -147,7 +160,6 @@ export interface AffineThemeCSSVariables {
 
   '--affine-popover-radius': AffineTheme['radius']['popover'];
   // use for blocksuite
-  '--affine-editor-width': CSSProperties['width'];
   '--affine-zoom': CSSProperties['zoom'];
   '--affine-scale': string;
 }

@@ -1,0 +1,15 @@
+{
+  "name": "@affine/jotai",
+  "private": true,
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@affine/env": "workspace:*",
+    "jotai": "^2.0.4"
+  },
+  "devDependencies": {
+    "lottie-web": "^5.11.0"
+  },
+  "peerDependencies": {
+    "lottie-web": "*"
+  }
+}

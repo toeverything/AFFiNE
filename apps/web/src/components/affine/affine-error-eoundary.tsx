@@ -1,8 +1,10 @@
-import { RequestError } from '@affine/datacenter';
-import { NextRouter } from 'next/router';
-import React, { Component, ErrorInfo } from 'react';
+import { RequestError } from '@affine/workspace/affine/api';
+import type { NextRouter } from 'next/router';
+import type { ErrorInfo } from 'react';
+import type React from 'react';
+import { Component } from 'react';
 
-import { BlockSuiteWorkspace } from '../../shared';
+import type { BlockSuiteWorkspace } from '../../shared';
 
 export type AffineErrorBoundaryProps = React.PropsWithChildren<{
   router: NextRouter;
@@ -86,7 +88,7 @@ export class AffineErrorBoundary extends Component<
               <span> Page error </span>
               <span>
                 Cannot find page {error.pageId} in workspace{' '}
-                {error.workspace.meta.name}
+                {error.workspace.id}
               </span>
               <button
                 onClick={() => {

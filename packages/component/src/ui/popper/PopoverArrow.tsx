@@ -1,7 +1,8 @@
-import { CSSProperties, forwardRef } from 'react';
+import type { CSSProperties } from 'react';
+import { forwardRef } from 'react';
 
 import { styled } from '../../styles';
-import { PopperArrowProps } from './interface';
+import type { PopperArrowProps } from './interface';
 
 export const PopperArrow = forwardRef<HTMLElement, PopperArrowProps>(
   function PopperArrow({ placement }, ref) {
@@ -10,7 +11,7 @@ export const PopperArrow = forwardRef<HTMLElement, PopperArrowProps>(
 );
 
 const getArrowStyle = (
-  placement: PopperArrowProps['placement'],
+  placement: PopperArrowProps['placement'] = 'bottom',
   backgroundColor: CSSProperties['backgroundColor']
 ) => {
   if (placement.indexOf('bottom') === 0) {
@@ -71,7 +72,7 @@ const getArrowStyle = (
 };
 
 const StyledArrow = styled('span')<{
-  placement: PopperArrowProps['placement'];
+  placement?: PopperArrowProps['placement'];
 }>(({ placement, theme }) => {
   return {
     position: 'absolute',

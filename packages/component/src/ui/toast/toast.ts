@@ -1,5 +1,6 @@
 // Copyright: https://github.com/toeverything/blocksuite/commit/8032ef3ab97aefce01664b36502fc392c5db8b78#diff-bf5b41be21936f9165a8400c7f20e24d3dbc49644ba57b9258e0943f0dc1c464
-import { css, html, TemplateResult } from 'lit';
+import type { TemplateResult } from 'lit';
+import { css, html } from 'lit';
 
 export const sleep = (ms = 0) =>
   new Promise(resolve => setTimeout(resolve, ms));
@@ -23,9 +24,10 @@ const htmlToElement = <T extends ChildNode>(html: string | TemplateResult) => {
   return template.content.firstChild as T;
 };
 
-const createToastContainer = () => {
+const createToastContainer = (portal?: HTMLElement) => {
+  portal = portal || document.body;
   const styles = css`
-    position: fixed;
+    position: absolute;
     z-index: 9999;
     top: 16px;
     left: 16px;
@@ -36,14 +38,18 @@ const createToastContainer = () => {
     flex-direction: column-reverse;
     align-items: center;
   `;
-  const template = html`<div style="${styles}"></div>`;
+  const template = html`<div
+    style="${styles}"
+    data-testid="affine-toast-container"
+  ></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
-  document.body.appendChild(element);
+  portal.appendChild(element);
   return element;
 };
 
 export type ToastOptions = {
-  duration: number;
+  duration?: number;
+  portal?: HTMLElement;
 };
 
 /**
@@ -54,10 +60,12 @@ export type ToastOptions = {
  */
 export const toast = (
   message: string,
-  { duration }: ToastOptions = { duration: 2500 }
+  { duration = 2500, portal }: ToastOptions = {
+    duration: 2500,
+  }
 ) => {
   if (!ToastContainer) {
-    ToastContainer = createToastContainer();
+    ToastContainer = createToastContainer(portal);
   }
 
   const styles = css`
@@ -75,7 +83,10 @@ export const toast = (
     opacity: 0;
   `;
 
-  const template = html`<div style="${styles}"></div>`;
+  const template = html`<div
+    style="${styles}"
+    data-testid="affine-toast"
+  ></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
   // message is not trusted
   element.textContent = message;
@@ -92,9 +103,12 @@ export const toast = (
     easing: 'cubic-bezier(0.21, 1.02, 0.73, 1)',
     fill: 'forwards' as const,
   }; // satisfies KeyframeAnimationOptions;
-  element.animate(fadeIn, options);
+  // FIXME: Vitest not support element.animate,
+  //  can try it in `apps/web/src/components/__tests__/PinBoard.spec.tsx` `delete pivot`
+  typeof element.animate === 'function' && element.animate(fadeIn, options);
 
   setTimeout(async () => {
+    if (typeof element.animate !== 'function') return;
     const fadeOut = fadeIn.reverse();
     const animation = element.animate(fadeOut, options);
     await animation.finished;
@@ -102,8 +116,9 @@ export const toast = (
     element.style.margin = '0';
     element.style.padding = '0';
     // wait for transition
-    await sleep(230);
-    element.remove();
+    element.addEventListener('transitionend', () => {
+      element.remove();
+    });
   }, duration);
   return element;
 };

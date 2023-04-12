@@ -1,10 +1,11 @@
 import { FlexWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
-import { AccessTokenMessage } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
-import React, { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
+import type React from 'react';
 
 import { stringToColour } from '../../../utils';
 import { StyledFooter, StyledSignInButton, StyleUserInfo } from './styles';
@@ -35,6 +36,7 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
           </FlexWrapper>
           <Tooltip content={t('Sign out')} disablePortal={true}>
             <IconButton
+              data-testid="workspace-list-modal-sign-out"
               onClick={() => {
                 onLogout();
               }}

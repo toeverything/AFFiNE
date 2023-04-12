@@ -1,29 +1,21 @@
-import {
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  toast,
-  Wrapper,
-} from '@affine/component';
-import { PermissionType } from '@affine/datacenter';
+import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { PermissionType } from '@affine/workspace/affine/api';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
   EmailIcon,
   MoreVerticalIcon,
 } from '@blocksuite/icons';
-import React, { useCallback, useState } from 'react';
+import type React from 'react';
+import { useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../hooks/affine/use-members';
-import {
-  AffineWorkspace,
-  LocalWorkspace,
-  RemWorkspaceFlavour,
-} from '../../../../../shared';
+import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';
-import { PanelProps } from '../../index';
+import type { PanelProps } from '../../index';
 import { InviteMemberModal } from './invite-member-modal';
 import {
   StyledMemberAvatar,
@@ -55,7 +47,8 @@ const AffineRemoteCollaborationPanel: React.FC<
         <ul>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>
-              {t('Users')} ({members.length})
+              {t('Users')} (
+              <span data-testid="member-length">{members.length}</span>)
             </StyledMemberNameContainer>
             <StyledMemberRoleContainer>
               {t('Access level')}
@@ -147,6 +140,7 @@ const AffineRemoteCollaborationPanel: React.FC<
               setIsInviteModalShow(true);
             }}
             type="primary"
+            data-testid="invite-members"
             shape="circle"
           >
             {t('Invite Members')}
@@ -178,6 +172,7 @@ const LocalCollaborationPanel: React.FC<
     <>
       <Wrapper marginBottom="42px">{t('Collaboration Description')}</Wrapper>
       <Button
+        data-testid="local-workspace-enable-cloud-button"
         type="light"
         shape="circle"
         onClick={() => {
@@ -193,8 +188,8 @@ const LocalCollaborationPanel: React.FC<
         }}
         onConform={() => {
           onTransferWorkspace(
-            RemWorkspaceFlavour.LOCAL,
-            RemWorkspaceFlavour.AFFINE,
+            WorkspaceFlavour.LOCAL,
+            WorkspaceFlavour.AFFINE,
             workspace
           );
           setOpen(false);
@@ -206,13 +201,13 @@ const LocalCollaborationPanel: React.FC<
 
 export const CollaborationPanel: React.FC<PanelProps> = props => {
   switch (props.workspace.flavour) {
-    case RemWorkspaceFlavour.AFFINE: {
+    case WorkspaceFlavour.AFFINE: {
       const workspace = props.workspace as AffineWorkspace;
       return (
         <AffineRemoteCollaborationPanel {...props} workspace={workspace} />
       );
     }
-    case RemWorkspaceFlavour.LOCAL: {
+    case WorkspaceFlavour.LOCAL: {
       const workspace = props.workspace as LocalWorkspace;
       return <LocalCollaborationPanel {...props} workspace={workspace} />;
     }

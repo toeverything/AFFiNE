@@ -1,14 +1,15 @@
-import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
-import { displayFlex, styled } from '../../styles';
+import { displayFlex, styled, textEllipsis } from '../../styles';
 import StyledPopperContainer from '../shared/Container';
 
 export const StyledMenuWrapper = styled(StyledPopperContainer)<{
   width?: CSSProperties['width'];
-}>(({ theme, width }) => {
+  height?: CSSProperties['height'];
+}>(({ theme, width, height }) => {
   return {
     width,
+    height,
     background: theme.colors.popoverBackground,
     padding: '8px 4px',
     fontSize: '14px',
@@ -17,18 +18,34 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)<{
   };
 });
 
-export const StyledArrow = styled(ArrowRightSmallIcon)({
-  position: 'absolute',
-  right: '12px',
-  top: 0,
-  bottom: 0,
-  margin: 'auto',
-  fontSize: '20px',
+export const StyledStartIconWrapper = styled('div')(({ theme }) => {
+  return {
+    marginRight: '12px',
+    fontSize: '20px',
+    color: theme.colors.iconColor,
+  };
+});
+export const StyledEndIconWrapper = styled('div')(({ theme }) => {
+  return {
+    marginLeft: '12px',
+    fontSize: '20px',
+    color: theme.colors.iconColor,
+  };
+});
+
+export const StyledContent = styled('div')(({ theme }) => {
+  return {
+    textAlign: 'left',
+    flexGrow: 1,
+    fontSize: theme.font.base,
+    ...textEllipsis(1),
+  };
 });
 
 export const StyledMenuItem = styled('button')<{
   isDir?: boolean;
-}>(({ theme, isDir = false }) => {
+  disabled?: boolean;
+}>(({ theme, isDir = false, disabled = false }) => {
   return {
     width: '100%',
     borderRadius: '5px',
@@ -39,10 +56,25 @@ export const StyledMenuItem = styled('button')<{
     cursor: isDir ? 'pointer' : '',
     position: 'relative',
     backgroundColor: 'transparent',
-
-    ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
+    color: disabled ? theme.colors.disableColor : theme.colors.textColor,
+    svg: {
+      color: disabled ? theme.colors.disableColor : theme.colors.iconColor,
     },
+    ...(disabled
+      ? {
+          cursor: 'not-allowed',
+          pointerEvents: 'none',
+        }
+      : {}),
+
+    ':hover': disabled
+      ? {}
+      : {
+          color: theme.colors.primaryColor,
+          backgroundColor: theme.colors.hoverBackground,
+          svg: {
+            color: theme.colors.primaryColor,
+          },
+        },
   };
 });

@@ -1,6 +1,6 @@
 import { Children, cloneElement, forwardRef } from 'react';
 
-import { ButtonProps } from './interface';
+import type { ButtonProps } from './interface';
 import { Loading } from './Loading';
 import { StyledButton } from './styles';
 import { getSize } from './utils';

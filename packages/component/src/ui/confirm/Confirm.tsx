@@ -1,7 +1,8 @@
 import { useTranslation } from '@affine/i18n';
 
 import { Button } from '../button';
-import { Modal, ModalCloseButton, ModalProps } from '../modal';
+import type { ModalProps } from '../modal';
+import { Modal, ModalCloseButton } from '../modal';
 import {
   StyledColumnButtonWrapper,
   StyledConfirmContent,
@@ -9,6 +10,7 @@ import {
   StyledModalWrapper,
   StyledRowButtonWrapper,
 } from './styles';
+
 export type ConfirmProps = {
   title?: string;
   content?: string;
@@ -19,6 +21,8 @@ export type ConfirmProps = {
   buttonDirection?: 'row' | 'column';
   onConfirm?: () => void;
   onCancel?: () => void;
+  cancelButtonTestId?: string;
+  confirmButtonTestId?: string;
 } & Omit<ModalProps, 'children'>;
 
 export const Confirm = ({
@@ -31,10 +35,12 @@ export const Confirm = ({
   buttonDirection = 'row',
   cancelText = 'Cancel',
   open,
+  cancelButtonTestId = '',
+  confirmButtonTestId = '',
 }: ConfirmProps) => {
   const { t } = useTranslation();
   return (
-    <Modal open={open}>
+    <Modal open={open} disablePortal={false}>
       <StyledModalWrapper>
         <ModalCloseButton
           onClick={() => {
@@ -52,6 +58,7 @@ export const Confirm = ({
                 onCancel?.();
               }}
               style={{ marginRight: '24px' }}
+              data-testid={cancelButtonTestId}
             >
               {cancelText === 'Cancel' ? t('Cancel') : cancelText}
             </Button>
@@ -62,6 +69,7 @@ export const Confirm = ({
               onClick={() => {
                 onConfirm?.();
               }}
+              data-testid={confirmButtonTestId}
             >
               {confirmText}
             </Button>
@@ -76,6 +84,7 @@ export const Confirm = ({
                 onConfirm?.();
               }}
               style={{ width: '284px', height: '38px', textAlign: 'center' }}
+              data-testid={confirmButtonTestId}
             >
               {confirmText}
             </Button>
@@ -91,6 +100,7 @@ export const Confirm = ({
                 height: '38px',
                 textAlign: 'center',
               }}
+              data-testid={cancelButtonTestId}
             >
               {cancelText === 'Cancel' ? t('Cancel') : cancelText}
             </Button>

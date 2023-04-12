@@ -2,7 +2,7 @@ import '@emotion/react';
 
 import type { EditorContainer } from '@blocksuite/editor';
 
-import { AffineTheme, AffineThemeCSSVariables } from './types';
+import type { AffineTheme, AffineThemeCSSVariables } from './types';
 
 const basicFontFamily =
   'apple-system, BlinkMacSystemFont,Helvetica Neue, Tahoma, PingFang SC, Microsoft Yahei, Arial,Hiragino Sans GB, sans-serif, Apple Color Emoji, Segoe UI Emoji,Segoe UI Symbol, Noto Color Emoji';
@@ -18,19 +18,22 @@ export const getLightTheme = (
     colors: {
       primaryColor: '#5438FF',
       pageBackground: '#fff',
-      hoverBackground: '#F1F1F4',
+      hoverBackground: 'rgba(0,0,0,.04)',
       innerHoverBackground: '#E9E9EC',
+      backgroundTertiaryColor: '#E9E9EC',
       popoverBackground: '#fff',
       tooltipBackground: '#261499',
       codeBackground: '#f2f5f9',
-      codeBlockBackground: '#F9F9FB',
+      codeBlockBackground: '#FAFBFD',
       hubBackground: '#fbfbfc',
       cardHoverBackground: '#f8f9ff',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
+      modalBackground: 'rgba(0, 0, 0, 0.6)',
 
       textColor: '#424149',
       secondaryTextColor: '#8E8D91',
+      textEmphasisColor: '#5438FF',
       edgelessTextColor: '#3A4C5C',
       iconColor: '#77757D',
       handleColor: '#c7c3d9',
@@ -81,6 +84,15 @@ export const getLightTheme = (
     radius: {
       popover: '10px',
     },
+    breakpoints: {
+      values: {
+        xs: 0,
+        sm: 640,
+        md: 960,
+        lg: 1280,
+        xl: 1920,
+      },
+    },
   };
 };
 
@@ -97,22 +109,25 @@ export const getDarkTheme = (
     colors: {
       primaryColor: '#5438FF',
       pageBackground: '#2c2c2c',
-      hoverBackground: '#3C3C42',
+      hoverBackground: 'rgba(0,0,0,.04)',
       innerHoverBackground: '#5A5A5A',
+      backgroundTertiaryColor: '#1E1E1E',
       popoverBackground: '#1F2021',
       tooltipBackground: '#0C0A15',
       codeBackground:
         editorMode === 'edgeless'
           ? lightTheme.colors.codeBackground
           : '#505662',
-      codeBlockBackground: '#36383D',
+      codeBlockBackground: '#292C33',
       hubBackground: '#272727',
       cardHoverBackground: '#363636',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
+      modalBackground: 'rgba(0, 0, 0, 0.8)',
 
       textColor: '#fff',
       secondaryTextColor: '#8E8D91',
+      textEmphasisColor: '#D0CDDC',
       edgelessTextColor: '#3A4C5C',
       iconColor: '#77757D',
       handleColor: '#c7c3d9',
@@ -141,6 +156,9 @@ export const getDarkTheme = (
   };
 };
 
+/**
+ * @deprecated these theme will be removed in the future
+ */
 export const globalThemeVariables: (
   theme: AffineTheme
 ) => AffineThemeCSSVariables = theme => {
@@ -203,7 +221,6 @@ export const globalThemeVariables: (
     '--affine-paragraph-space': theme.space.paragraph,
     '--affine-popover-radius': theme.radius.popover,
 
-    '--affine-editor-width': '720px',
     '--affine-zoom': '1',
     '--affine-scale': 'calc(1 / var(--affine-zoom))',
   };

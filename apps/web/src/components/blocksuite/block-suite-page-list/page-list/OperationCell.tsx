@@ -6,29 +6,36 @@ import {
   MenuItem,
   Tooltip,
 } from '@affine/component';
-import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
   DeletePermanentlyIcon,
-  DeleteTemporarilyIcon,
   FavoritedIcon,
   FavoriteIcon,
   MoreVerticalIcon,
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import { PageMeta } from '@blocksuite/store';
-import React, { useState } from 'react';
+import type { PageMeta } from '@blocksuite/store';
+import type React from 'react';
+import { useState } from 'react';
+
+import type { BlockSuiteWorkspace } from '../../../../shared';
+import { toast } from '../../../../utils';
+import { MoveTo, MoveToTrash } from '../../../affine/operation-menu-items';
 
 export type OperationCellProps = {
   pageMeta: PageMeta;
+  metas: PageMeta[];
+  blockSuiteWorkspace: BlockSuiteWorkspace;
   onOpenPageInNewTab: (pageId: string) => void;
   onToggleFavoritePage: (pageId: string) => void;
-  onToggleTrashPage: (pageId: string) => void;
+  onToggleTrashPage: (pageId: string, isTrash: boolean) => void;
 };
 
 export const OperationCell: React.FC<OperationCellProps> = ({
   pageMeta,
+  metas,
+  blockSuiteWorkspace,
   onOpenPageInNewTab,
   onToggleFavoritePage,
   onToggleTrashPage,
@@ -36,6 +43,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   const { id, favorite } = pageMeta;
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+
   const OperationMenu = (
     <>
       <MenuItem
@@ -57,15 +65,21 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       >
         {t('Open in new tab')}
       </MenuItem>
-      <MenuItem
-        data-testid="move-to-trash"
-        onClick={() => {
-          setOpen(true);
-        }}
-        icon={<DeleteTemporarilyIcon />}
-      >
-        {t('Move to Trash')}
-      </MenuItem>
+      {!pageMeta.isRootPinboard && (
+        <MoveTo
+          metas={metas}
+          currentMeta={pageMeta}
+          blockSuiteWorkspace={blockSuiteWorkspace}
+        />
+      )}
+      {!pageMeta.isRootPinboard && (
+        <MoveToTrash
+          testId="move-to-trash"
+          onItemClick={() => {
+            setOpen(true);
+          }}
+        />
+      )}
     </>
   );
   return (
@@ -77,21 +91,16 @@ export const OperationCell: React.FC<OperationCellProps> = ({
           disablePortal={true}
           trigger="click"
         >
-          <IconButton darker={true}>
+          <IconButton data-testid="page-list-operation-button">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
       </FlexWrapper>
-      <Confirm
+      <MoveToTrash.ConfirmModal
         open={open}
-        title={t('Delete page?')}
-        content={t('will be moved to Trash', {
-          title: pageMeta.title || 'Untitled',
-        })}
-        confirmText={t('Delete')}
-        confirmType="danger"
+        meta={pageMeta}
         onConfirm={() => {
-          onToggleTrashPage(id);
+          onToggleTrashPage(id, true);
           toast(t('Deleted'));
           setOpen(false);
         }}
@@ -117,7 +126,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
   pageMeta,
   onPermanentlyDeletePage,
   onRestorePage,
-  onOpenPage,
 }) => {
   const { id, title } = pageMeta;
   const { t } = useTranslation();
@@ -126,12 +134,10 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
     <FlexWrapper>
       <Tooltip content={t('Restore it')} placement="top-start">
         <IconButton
-          darker={true}
           style={{ marginRight: '12px' }}
           onClick={() => {
             onRestorePage(id);
             toast(t('restored', { title: title || 'Untitled' }));
-            onOpenPage(id);
           }}
         >
           <ResetIcon />
@@ -139,7 +145,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
       </Tooltip>
       <Tooltip content={t('Delete permanently')} placement="top-start">
         <IconButton
-          darker={true}
           onClick={() => {
             setOpen(true);
           }}

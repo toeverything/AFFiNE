@@ -1,4 +1,5 @@
-import i18next, { i18n, Resource } from 'i18next';
+import type { i18n, Resource } from 'i18next';
+import i18next from 'i18next';
 import {
   I18nextProvider,
   initReactI18next,

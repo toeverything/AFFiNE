@@ -1,21 +1,23 @@
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import React, { useCallback } from 'react';
+import type React from 'react';
+import { useCallback, useTransition } from 'react';
 
 import {
   currentWorkspaceIdAtom,
-  jotaiWorkspacesAtom,
   openCreateWorkspaceModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
+import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
+import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
-import { WorkspacePlugins } from '../plugins';
-import { RemWorkspaceFlavour, WorkspaceSubPath } from '../shared';
-import { apis } from '../shared/apis';
+import { WorkspaceSubPath } from '../shared';
 
 const WorkspaceListModal = dynamic(
   async () =>
@@ -39,14 +41,16 @@ export function Modals() {
   const { jumpToSubPath } = useRouterHelper(router);
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
+  const setWorkspaces = useSetAtom(jotaiWorkspacesAtom);
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useWorkspacesHelper();
-  const set = useSetAtom(jotaiWorkspacesAtom);
+  const [transitioning, transition] = useTransition();
 
   return (
     <>
       <WorkspaceListModal
+        disabled={transitioning}
         user={user}
         workspaces={workspaces}
         currentWorkspaceId={currentWorkspaceId}
@@ -54,6 +58,18 @@ export function Modals() {
         onClose={useCallback(() => {
           setOpenWorkspacesModal(false);
         }, [setOpenWorkspacesModal])}
+        onMoveWorkspace={useCallback(
+          (activeId, overId) => {
+            const oldIndex = workspaces.findIndex(w => w.id === activeId);
+            const newIndex = workspaces.findIndex(w => w.id === overId);
+            transition(() =>
+              setWorkspaces(workspaces =>
+                arrayMove(workspaces, oldIndex, newIndex)
+              )
+            );
+          },
+          [setWorkspaces, workspaces]
+        )}
         onClickWorkspace={useCallback(
           workspace => {
             setOpenWorkspacesModal(false);
@@ -70,21 +86,8 @@ export function Modals() {
           },
           [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
-        onClickLogin={useCallback(() => {
-          apis.signInWithGoogle().then(() => {
-            router.reload();
-          });
-        }, [router])}
-        onClickLogout={useCallback(() => {
-          apis.auth.clear();
-          set(workspaces =>
-            workspaces.filter(
-              workspace => workspace.flavour !== RemWorkspaceFlavour.AFFINE
-            )
-          );
-          WorkspacePlugins[RemWorkspaceFlavour.AFFINE].cleanup?.();
-          router.reload();
-        }, [router, set])}
+        onClickLogin={useAffineLogIn()}
+        onClickLogout={useAffineLogOut()}
         onCreateWorkspace={useCallback(() => {
           setOpenCreateWorkspaceModal(true);
         }, [setOpenCreateWorkspaceModal])}

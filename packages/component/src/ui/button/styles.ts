@@ -1,7 +1,7 @@
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
 import { absoluteCenter, displayInlineFlex, styled } from '../../styles';
-import { ButtonProps } from './interface';
+import type { ButtonProps } from './interface';
 import { getButtonColors, getSize } from './utils';
 
 export const StyledIconButton = styled('button', {
@@ -15,7 +15,7 @@ export const StyledIconButton = styled('button', {
       'hoverBackground',
       'hoverColor',
       'hoverStyle',
-      'darker',
+      'fontSize',
     ].includes(prop as string);
   },
 })<{
@@ -27,7 +27,7 @@ export const StyledIconButton = styled('button', {
   hoverColor?: string;
   hoverStyle?: CSSProperties;
   // In some cases, button is in a normal hover status, it should be darkened
-  darker?: boolean;
+  fontSize?: CSSProperties['fontSize'];
 }>(
   ({
     theme,
@@ -38,11 +38,12 @@ export const StyledIconButton = styled('button', {
     hoverBackground,
     hoverColor,
     hoverStyle,
-    darker = false,
+    fontSize,
   }) => {
     return {
       width,
       height,
+      fontSize,
       color: theme.colors.iconColor,
       ...displayInlineFlex('center', 'center'),
       position: 'relative',
@@ -67,11 +68,7 @@ export const StyledIconButton = styled('button', {
       ':hover': {
         color: hoverColor ?? theme.colors.primaryColor,
         '::after': {
-          background:
-            hoverBackground ||
-            (darker
-              ? theme.colors.innerHoverBackground
-              : theme.colors.hoverBackground),
+          background: hoverBackground || theme.colors.hoverBackground,
         },
         ...(hoverStyle ?? {}),
       },
@@ -120,7 +117,6 @@ export const StyledTextButton = styled('button', {
     // type = 'default',
   }) => {
     const { fontSize, borderRadius, padding, height } = getSize(size);
-    console.log('size', size, height);
 
     return {
       height,
@@ -196,7 +192,7 @@ export const StyledButton = styled('button', {
         ? {
             cursor: 'not-allowed',
             pointerEvents: 'none',
-            color: theme.colors.borderColor,
+            color: theme.colors.disableColor,
           }
         : {}),
       transition: 'background .15s',

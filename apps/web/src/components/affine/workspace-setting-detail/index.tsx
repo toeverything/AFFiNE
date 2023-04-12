@@ -1,23 +1,14 @@
 import { useTranslation } from '@affine/i18n';
-import React, {
-  MouseEvent,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import type { SettingPanel, WorkspaceRegistry } from '@affine/workspace/type';
+import { settingPanel, WorkspaceFlavour } from '@affine/workspace/type';
+import type { MouseEvent } from 'react';
+import type React from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { preload } from 'swr';
 
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
-import {
-  AffineOfficialWorkspace,
-  FlavourToWorkspace,
-  RemWorkspaceFlavour,
-  SettingPanel,
-  settingPanel,
-} from '../../../shared';
+import type { AffineOfficialWorkspace } from '../../../shared';
 import { CollaborationPanel } from './panel/collaboration';
 import { ExportPanel } from './panel/export';
 import { GeneralPanel } from './panel/general';
@@ -35,14 +26,14 @@ export type WorkspaceSettingDetailProps = {
   workspace: AffineOfficialWorkspace;
   currentTab: SettingPanel;
   onChangeTab: (tab: SettingPanel) => void;
-  onDeleteWorkspace: () => void;
+  onDeleteWorkspace: () => Promise<void>;
   onTransferWorkspace: <
-    From extends RemWorkspaceFlavour,
-    To extends RemWorkspaceFlavour
+    From extends WorkspaceFlavour,
+    To extends WorkspaceFlavour
   >(
     from: From,
     to: To,
-    workspace: FlavourToWorkspace[From]
+    workspace: WorkspaceRegistry[From]
   ) => void;
 };
 
@@ -55,8 +46,7 @@ const panelMap = {
   },
   [settingPanel.Sync]: {
     name: 'Sync',
-    enable: (flavour: RemWorkspaceFlavour) =>
-      flavour === RemWorkspaceFlavour.AFFINE,
+    enable: (flavour: WorkspaceFlavour) => flavour === WorkspaceFlavour.AFFINE,
     ui: SyncPanel,
   },
   [settingPanel.Collaboration]: {
@@ -74,7 +64,7 @@ const panelMap = {
 } satisfies {
   [Key in SettingPanel]: {
     name: string;
-    enable?: (flavour: RemWorkspaceFlavour) => boolean;
+    enable?: (flavour: WorkspaceFlavour) => boolean;
     ui: React.FC<PanelProps>;
   };
 };

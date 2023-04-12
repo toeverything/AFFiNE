@@ -113,7 +113,7 @@
   "mobile device description": "We are still working on mobile support and recommend you use a desktop device.",
   "Got it": "Got it",
   "emptyAllPages": "This workspace is empty. Create a new page to begin editing.",
-  "emptyTrash": "Click Add to Trash and the page will appear here.",
+  "emptyTrash": "Deleted pages will appear here.",
   "still designed": "(This page is still being designed.)",
   "My Workspaces": "My Workspaces",
   "Tips": "Tips: ",
@@ -193,5 +193,13 @@
   "Help and Feedback": "Help and Feedback",
   "Please make sure you are online": "Please make sure you are online",
   "Workspace Owner": "Workspace Owner",
-  "Members": "Members"
+  "Members": "Members",
+  "Pivots": "Pivots",
+  "Add a subpage inside": "Add a subpage inside",
+  "Rename": "Rename",
+  "Move to": "Move to",
+  "Move page to...": "Move page to...",
+  "Remove from Pivots": "Remove from Pivots",
+  "RFP": "Pages can be freely added/removed from pivots, remaining accessible from \"All Pages\".",
+  "Discover what's new!": "Discover what's new!"
 }

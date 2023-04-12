@@ -1,38 +1,46 @@
-import {
+import type {
+  CSSProperties,
   FocusEventHandler,
+  ForwardedRef,
   HTMLAttributes,
   InputHTMLAttributes,
   KeyboardEventHandler,
-  useEffect,
-  useState,
 } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 
 import { StyledInput } from './style';
+
 type inputProps = {
   value?: string;
   placeholder?: string;
   disabled?: boolean;
-  width?: number;
-  height?: number;
+  width?: CSSProperties['width'];
+  height?: CSSProperties['height'];
   maxLength?: number;
   minLength?: number;
   onChange?: (value: string) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+  noBorder?: boolean;
 } & Omit<HTMLAttributes<HTMLInputElement>, 'onChange'>;
-export const Input = ({
-  disabled,
-  value: valueProp,
-  placeholder,
-  maxLength,
-  minLength,
-  height,
-  width = 260,
-  onChange,
-  onBlur,
-  onKeyDown,
-  ...otherProps
-}: inputProps) => {
+
+export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
+  {
+    disabled,
+    value: valueProp,
+    placeholder,
+    maxLength,
+    minLength,
+    height,
+    width,
+    onChange,
+    onBlur,
+    onKeyDown,
+    noBorder = false,
+    ...otherProps
+  }: inputProps,
+  ref: ForwardedRef<HTMLInputElement>
+) {
   const [value, setValue] = useState<string>(valueProp || '');
   const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
     const { value } = e.target;
@@ -52,6 +60,7 @@ export const Input = ({
   }, [valueProp]);
   return (
     <StyledInput
+      ref={ref}
       value={value}
       disabled={disabled}
       placeholder={placeholder}
@@ -62,7 +71,8 @@ export const Input = ({
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       height={height}
+      noBorder={noBorder}
       {...otherProps}
-    ></StyledInput>
+    />
   );
-};
+});

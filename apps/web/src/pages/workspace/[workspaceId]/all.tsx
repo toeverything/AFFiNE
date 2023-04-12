@@ -1,6 +1,8 @@
 import { useTranslation } from '@affine/i18n';
+import type { LocalIndexedDBProvider } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
-import { assertExists, nanoid } from '@blocksuite/store';
+import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
@@ -16,11 +18,8 @@ import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import {
-  LocalIndexedDBProvider,
-  NextPageWithLayout,
-  RemWorkspaceFlavour,
-} from '../../../shared';
+import type { NextPageWithLayout } from '../../../shared';
+import { ensureRootPinboard } from '../../../utils';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
@@ -35,6 +34,12 @@ const AllPage: NextPageWithLayout = () => {
     if (!currentWorkspace) {
       return;
     }
+    if (currentWorkspace.flavour !== WorkspaceFlavour.LOCAL) {
+      // only create a new page for local workspace
+      // just ensure the root pinboard exists
+      ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
+      return;
+    }
     const localProvider = currentWorkspace.providers.find(
       provider => provider.flavour === 'local-indexeddb'
     );
@@ -44,15 +49,15 @@ const AllPage: NextPageWithLayout = () => {
         if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
           // this is a new workspace, so we should redirect to the new page
           const pageId = nanoid();
-          currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
-            currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
-              init: true,
-            });
-            assertExists(pageId, id);
-            jumpToPage(currentWorkspace.id, pageId);
+          const page = currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+          assertEquals(page.id, pageId);
+          currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
+            init: true,
           });
-          currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+          jumpToPage(currentWorkspace.id, pageId);
         }
+        // no matter workspace is empty, ensure the root pinboard exists
+        ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
       };
       provider.callbacks.add(callback);
       return () => {
@@ -80,28 +85,44 @@ const AllPage: NextPageWithLayout = () => {
   if (currentWorkspace === null) {
     return <PageLoading />;
   }
-  if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
         <Head>
           <title>{t('All Pages')} - AFFiNE</title>
         </Head>
-        <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
+        <WorkspaceTitle
+          workspace={currentWorkspace}
+          currentPage={null}
+          isPreview={false}
+          isPublic={false}
+          icon={<FolderIcon />}
+        >
+          {t('All pages')}
+        </WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
         />
       </>
     );
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
         <Head>
           <title>{t('All Pages')} - AFFiNE</title>
         </Head>
-        <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
+        <WorkspaceTitle
+          workspace={currentWorkspace}
+          currentPage={null}
+          isPreview={false}
+          isPublic={false}
+          icon={<FolderIcon />}
+        >
+          {t('All pages')}
+        </WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}

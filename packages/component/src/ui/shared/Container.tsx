@@ -1,4 +1,4 @@
-import { PopperPlacementType } from '@mui/material';
+import type { PopperPlacementType } from '@mui/material';
 
 import { styled } from '../../styles';
 

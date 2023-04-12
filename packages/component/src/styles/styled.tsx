@@ -1,5 +1,6 @@
 import { CssBaseline } from '@mui/material';
 import {
+  alpha,
   createTheme as createMuiTheme,
   css,
   keyframes,
@@ -9,9 +10,9 @@ import {
 import type { PropsWithChildren } from 'react';
 import { useMemo } from 'react';
 
-import { AffineTheme } from './types';
+import type { AffineTheme } from './types';
 
-export { css, keyframes, styled };
+export { alpha, css, keyframes, styled };
 
 export const ThemeProvider = ({
   theme,

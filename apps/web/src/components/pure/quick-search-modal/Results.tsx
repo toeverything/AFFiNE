@@ -3,16 +3,17 @@ import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { Command } from 'cmdk';
-import { NextRouter } from 'next/router';
-import React, { Dispatch, SetStateAction, useEffect } from 'react';
+import Image from 'next/legacy/image';
+import type { NextRouter } from 'next/router';
+import type { Dispatch, FC, SetStateAction } from 'react';
+import { useEffect } from 'react';
 
-import { useRecentlyViewed } from '../../../hooks/affine/use-recent-views';
 import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMeta } from '../../../hooks/use-page-meta';
+import { useRecentlyViewed } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
-import { BlockSuiteWorkspace } from '../../../shared';
+import type { BlockSuiteWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
-import { NoResultSVG } from './NoResultSVG';
 import { StyledListItem, StyledNotFound } from './style';
 
 export type ResultsProps = {
@@ -22,7 +23,7 @@ export type ResultsProps = {
   setShowCreatePage: Dispatch<SetStateAction<boolean>>;
   router: NextRouter;
 };
-export const Results: React.FC<ResultsProps> = ({
+export const Results: FC<ResultsProps> = ({
   query,
   blockSuiteWorkspace,
   setShowCreatePage,
@@ -112,7 +113,12 @@ export const Results: React.FC<ResultsProps> = ({
     return (
       <StyledNotFound>
         <span>{t('Find 0 result')}</span>
-        <NoResultSVG />
+        <Image
+          src="/imgs/no-result.svg"
+          alt="no result"
+          width={200}
+          height={200}
+        />
       </StyledNotFound>
     );
   }

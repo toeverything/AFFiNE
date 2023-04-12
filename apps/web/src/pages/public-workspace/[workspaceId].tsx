@@ -1,24 +1,24 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
 import { SearchIcon } from '@blocksuite/icons';
-import { Box } from '@mui/material';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import React, { Suspense, useCallback, useEffect } from 'react';
+import type React from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../../atoms';
 import {
-  publicBlockSuiteAtom,
+  publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../../atoms/public-workspace';
 import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { StyledTableContainer } from '../../components/blocksuite/block-suite-page-list/page-list/styles';
 import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '../../hooks/use-blocksuite-workspace-name';
-import { WorkspaceLayout } from '../../layouts';
-import { NextPageWithLayout } from '../../shared';
+import { PublicWorkspaceLayout } from '../../layouts/public-workspace-layout';
+import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
 const BlockSuitePublicPageList = dynamic(
@@ -31,7 +31,8 @@ const ListPageInner: React.FC<{
   workspaceId: string;
 }> = ({ workspaceId }) => {
   const router = useRouter();
-  const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
+  const publicWorkspace = useAtomValue(publicWorkspaceAtom);
+  const blockSuiteWorkspace = publicWorkspace.blockSuiteWorkspace;
   const handleClickPage = useCallback(
     (pageId: string) => {
       return router.push({
@@ -58,7 +59,7 @@ const ListPageInner: React.FC<{
   }
   return (
     <>
-      <NavContainer>
+      <NavContainer sx={{ px: '20px' }}>
         <Breadcrumbs>
           <StyledBreadcrumbs
             href={`/public-workspace/${blockSuiteWorkspace.id}`}
@@ -67,11 +68,6 @@ const ListPageInner: React.FC<{
             <span>{name}</span>
           </StyledBreadcrumbs>
         </Breadcrumbs>
-        <Box
-          sx={{
-            flex: 1,
-          }}
-        />
         <IconButton onClick={handleOpen}>
           <SearchIcon />
         </IconButton>
@@ -89,6 +85,7 @@ const ListPage: NextPageWithLayout = () => {
   const router = useRouter();
   const workspaceId = router.query.workspaceId;
   const setWorkspaceId = useSetAtom(publicWorkspaceIdAtom);
+  // todo: remove this atom usage here
   const setCurrentWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
   useEffect(() => {
     if (!router.isReady) {
@@ -122,5 +119,5 @@ const ListPage: NextPageWithLayout = () => {
 export default ListPage;
 
 ListPage.getLayout = page => {
-  return <WorkspaceLayout>{page}</WorkspaceLayout>;
+  return <PublicWorkspaceLayout>{page}</PublicWorkspaceLayout>;
 };

@@ -1,67 +1,60 @@
-import { displayFlex, styled, textEllipsis } from '@affine/component';
+import { displayFlex, styled } from '@affine/component';
 import Link from 'next/link';
 
-export const StyledSliderBar = styled('div')<{ show: boolean }>(
-  ({ theme, show }) => {
-    return {
-      width: show ? '256px' : '0',
-      whiteSpace: 'nowrap',
-      height: '100vh',
-      minHeight: '450px',
-      background: theme.colors.hubBackground,
-      boxShadow: theme.shadow.popover,
-      transition: 'width .15s, padding .15s',
-      position: 'relative',
-      zIndex: theme.zIndex.modal,
-      padding: show ? '0 12px' : '0',
-      flexShrink: 0,
-    };
-  }
-);
-export const StyledSidebarWrapper = styled('div')(() => {
-  return {
-    position: 'absolute',
-    right: '12px',
-    top: '16px',
-    zIndex: 1,
-  };
-});
-export const StyledSliderBarWrapper = styled('div')(() => {
+const macosElectron = environment.isDesktop && environment.isMacOs;
+
+export const StyledSliderBarWrapper = styled('div')<{
+  show: boolean;
+  floating: boolean;
+  resizing: boolean;
+}>(({ theme, show, floating, resizing }) => {
   return {
     height: '100%',
-    overflowX: 'hidden',
-    overflowY: 'auto',
-    position: 'relative',
+    position: 'absolute',
+    'button, a': {
+      userSelect: 'none',
+    },
+    zIndex: theme.zIndex.modal,
+    transition: resizing ? '' : 'transform .3s, width .3s, max-width .3s',
+    transform: show ? 'translateX(0)' : 'translateX(-100%)',
+    maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
+    background:
+      !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
+    borderRight: macosElectron ? '' : '1px solid',
+    borderColor: theme.colors.borderColor,
   };
 });
 
-export const StyledListItem = styled('div')<{
-  active?: boolean;
-  disabled?: boolean;
-}>(({ theme, active, disabled }) => {
+export const StyledSliderBar = styled('div')(({ theme }) => {
   return {
-    height: '32px',
-    marginTop: '12px',
-    color: active ? theme.colors.primaryColor : theme.colors.textColor,
-    paddingLeft: '12px',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    ...displayFlex('flex-start', 'center'),
-    ...(disabled
-      ? {
-          cursor: 'not-allowed',
-          color: theme.colors.borderColor,
-        }
-      : {}),
-
-    '>svg': {
-      fontSize: '20px',
-      marginRight: '12px',
+    whiteSpace: 'nowrap',
+    width: '100%',
+    height: '100%',
+    padding: '0 4px',
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    // overflow: 'hidden',
+  };
+});
+export const StyledSidebarSwitchWrapper = styled('div')(() => {
+  return {
+    height: '52px',
+    flexShrink: 0,
+    padding: '0 16px',
+    WebkitAppRegion: 'drag',
+    button: {
+      WebkitAppRegion: 'no-drag',
     },
-    ':hover:not([disabled])': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
-    },
+    ...displayFlex(macosElectron ? 'flex-end' : 'flex-start', 'center'),
+  };
+});
+export const StyledSliderBarInnerWrapper = styled('div')(() => {
+  return {
+    flexGrow: 1,
+    // overflowX: 'hidden',
+    // overflowY: 'auto',
+    position: 'relative',
   };
 });
 
@@ -74,50 +67,84 @@ export const StyledLink = styled(Link)(() => {
     ':visited': {
       color: 'inherit',
     },
-    '>svg': {
+  };
+});
+export const StyledNewPageButton = styled('button')(({ theme }) => {
+  return {
+    height: '52px',
+    ...displayFlex('flex-start', 'center'),
+    borderTop: '1px solid',
+    borderColor: theme.colors.borderColor,
+    padding: '0 8px',
+    svg: {
       fontSize: '20px',
-      marginRight: '12px',
+      color: theme.colors.iconColor,
+      marginRight: '8px',
     },
-  };
-});
-export const StyledNewPageButton = styled(StyledListItem)(() => {
-  return {
-    position: 'absolute',
-    bottom: '24px',
-    left: '0',
-    right: '0',
-    margin: 'auto',
     ':hover': {
-      cursor: 'pointer',
+      color: theme.colors.primaryColor,
+      svg: {
+        color: theme.colors.primaryColor,
+      },
     },
   };
 });
+export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
+  ({ theme, active }) => {
+    return {
+      transition: 'opacity .15s',
+      pointerEvents: active ? 'auto' : 'none',
+      opacity: active ? 1 : 0,
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: active ? 0 : '100%',
+      bottom: 0,
+      zIndex: theme.zIndex.modal - 1,
+      background: theme.colors.modalBackground,
+    };
+  }
+);
+export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
+  () => {
+    return {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: '12px',
+      transform: 'translateX(50%)',
+      cursor: 'col-resize',
+      zIndex: 1,
+      userSelect: 'none',
+      ':hover > *': {
+        background: 'rgba(0, 0, 0, 0.1)',
+      },
+    };
+  }
+);
+export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
+  ({ isResizing }) => {
+    return {
+      transition: 'background .15s .1s',
+      position: 'absolute',
+      top: 0,
+      right: '50%',
+      bottom: 0,
+      transform: 'translateX(0.5px)',
+      width: '2px',
+      background: isResizing ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
+    };
+  }
+);
 
-export const StyledSubListItem = styled('button')<{
-  disable?: boolean;
-  active?: boolean;
-}>(({ theme, disable, active }) => {
+export const StyledScrollWrapper = styled('div')<{
+  showTopBorder: boolean;
+}>(({ showTopBorder, theme }) => {
   return {
-    width: '100%',
-    height: '32px',
-    marginTop: '4px',
-    color: disable
-      ? theme.colors.disableColor
-      : active
-      ? theme.colors.primaryColor
-      : theme.colors.textColor,
-    backgroundColor: active ? theme.colors.hoverBackground : 'unset',
-
-    cursor: disable ? 'not-allowed' : 'pointer',
-    paddingLeft: '45px',
-    lineHeight: '32px',
-    textAlign: 'start',
-    ...textEllipsis(1),
-    ':hover': disable
-      ? {}
-      : {
-          color: theme.colors.primaryColor,
-          backgroundColor: theme.colors.hoverBackground,
-        },
+    maxHeight: '360px',
+    overflowY: 'auto',
+    borderTop: '1px solid',
+    borderColor: showTopBorder ? theme.colors.borderColor : 'transparent',
   };
 });

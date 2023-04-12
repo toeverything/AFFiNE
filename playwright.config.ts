@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import type {
   PlaywrightTestConfig,
   PlaywrightWorkerOptions,
@@ -14,10 +16,11 @@ import type {
  * See https://playwright.dev/docs/test-configuration.
  */
 const config: PlaywrightTestConfig = {
-  testDir: './tests',
+  testDir: './tests/parallels',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {
+    baseURL: 'http://localhost:8080/',
     browserName:
       (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
       'chromium',
@@ -33,22 +36,50 @@ const config: PlaywrightTestConfig = {
   },
   forbidOnly: !!process.env.CI,
   workers: 4,
-  retries: 1,
+  retries: 3,
   // 'github' for GitHub Actions CI to generate annotations, plus a concise 'dot'
   // default 'list' when running locally
   // See https://playwright.dev/docs/test-reporters#github-actions-annotations
   reporter: process.env.CI ? 'github' : 'list',
 
-  webServer: {
-    command: 'pnpm build && pnpm start -p 8080',
-    port: 8080,
-    timeout: 120 * 1000,
-    reuseExistingServer: !process.env.CI,
-    env: {
-      COVERAGE: process.env.COVERAGE || 'false',
-      ENABLE_DEBUG_PAGE: '1',
+  webServer: [
+    {
+      command: 'cargo run -p affine-cloud',
+      port: 3000,
+      timeout: 10 * 1000,
+      reuseExistingServer: true,
+      cwd: process.env.OCTOBASE_CWD ?? resolve(process.cwd(), 'apps', 'server'),
+      env: {
+        SIGN_KEY: 'test123',
+        RUST_LOG: 'debug',
+        JWST_DEV: '1',
+      },
     },
-  },
+    {
+      // Intentionally not building the storybook, reminds you to run it by yourself.
+      command: 'yarn run start:storybook',
+      port: 6006,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+      },
+    },
+    {
+      command: 'yarn build && yarn start -p 8080',
+      port: 8080,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+        ENABLE_SUBPAGE: '1',
+        ENABLE_CHANGELOG: '1',
+        API_SERVER_PROFILE: 'local',
+      },
+    },
+  ],
 };
 
 if (process.env.CI) {

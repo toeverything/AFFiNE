@@ -1,8 +1,21 @@
 import { useTranslation } from '@affine/i18n';
+import { atomWithSyncStorage } from '@affine/jotai';
+import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
+import {
+  getLoginStorage,
+  parseIdToken,
+  setLoginStorage,
+  SignMethod,
+} from '@affine/workspace/affine/login';
+import type { SettingPanel, WorkspaceRegistry } from '@affine/workspace/type';
+import {
+  settingPanel,
+  settingPanelValues,
+  WorkspaceFlavour,
+} from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
+import { useAtom, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
@@ -16,17 +29,10 @@ import { useTransformWorkspace } from '../../../hooks/use-transform-workspace';
 import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import {
-  FlavourToWorkspace,
-  NextPageWithLayout,
-  RemWorkspaceFlavour,
-  SettingPanel,
-  settingPanel,
-  settingPanelValues,
-} from '../../../shared';
-import { apis } from '../../../shared/apis';
+import { affineAuth } from '../../../plugins/affine';
+import type { NextPageWithLayout } from '../../../shared';
 
-const settingPanelAtom = atomWithStorage<SettingPanel>(
+const settingPanelAtom = atomWithSyncStorage<SettingPanel>(
   'workspaceId',
   settingPanel.General
 );
@@ -102,16 +108,20 @@ const SettingPage: NextPageWithLayout = () => {
     return helper.deleteWorkspace(workspaceId);
   }, [currentWorkspace, helper]);
   const transformWorkspace = useTransformWorkspace();
+  const setUser = useSetAtom(currentAffineUserAtom);
   const onTransformWorkspace = useCallback(
-    async <From extends RemWorkspaceFlavour, To extends RemWorkspaceFlavour>(
+    async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
       to: To,
-      workspace: FlavourToWorkspace[From]
+      workspace: WorkspaceRegistry[From]
     ): Promise<void> => {
-      if (to === RemWorkspaceFlavour.AFFINE && !apis.auth.isLogin) {
-        await apis.signInWithGoogle();
-        router.reload();
-        return;
+      const needRefresh = to === WorkspaceFlavour.AFFINE && !getLoginStorage();
+      if (needRefresh) {
+        const response = await affineAuth.generateToken(SignMethod.Google);
+        if (response) {
+          setLoginStorage(response);
+          setUser(parseIdToken(response.token));
+        }
       }
       const workspaceId = await transformWorkspace(from, to, workspace);
       await router.replace({
@@ -122,7 +132,7 @@ const SettingPage: NextPageWithLayout = () => {
         },
       });
     },
-    [router, transformWorkspace]
+    [router, setUser, transformWorkspace]
   );
   if (!router.isReady) {
     return <PageLoading />;
@@ -130,7 +140,7 @@ const SettingPage: NextPageWithLayout = () => {
     return <PageLoading />;
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     return <PageLoading />;
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const Setting =
       WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
     return (
@@ -138,7 +148,13 @@ const SettingPage: NextPageWithLayout = () => {
         <Head>
           <title>{t('Settings')} - AFFiNE</title>
         </Head>
-        <WorkspaceTitle icon={<SettingsIcon />}>
+        <WorkspaceTitle
+          workspace={currentWorkspace}
+          currentPage={null}
+          isPreview={false}
+          isPublic={false}
+          icon={<SettingsIcon />}
+        >
           {t('Workspace Settings')}
         </WorkspaceTitle>
         <Setting
@@ -150,7 +166,7 @@ const SettingPage: NextPageWithLayout = () => {
         />
       </>
     );
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const Setting =
       WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
     return (
@@ -158,7 +174,13 @@ const SettingPage: NextPageWithLayout = () => {
         <Head>
           <title>{t('Settings')} - AFFiNE</title>
         </Head>
-        <WorkspaceTitle icon={<SettingsIcon />}>
+        <WorkspaceTitle
+          workspace={currentWorkspace}
+          currentPage={null}
+          isPreview={false}
+          isPublic={false}
+          icon={<SettingsIcon />}
+        >
           {t('Workspace Settings')}
         </WorkspaceTitle>
         <Setting

@@ -18,15 +18,18 @@
     "baseUrl": ".",
     "paths": {
       "@affine/component": ["./packages/component/src/index"],
-      "@affine/component/block-suite-editor": [
-        "./packages/component/src/components/block-suite-editor/index"
-      ],
+      "@affine/component/*": ["./packages/component/src/components/*/index"],
       "@affine/templates/*": ["./packages/templates/src/*"],
-      "@affine/datacenter": ["./packages/datacenter/src"],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/debug": ["./packages/debug"],
+      "@affine/jotai": ["./packages/jotai"],
       "@affine/env": ["./packages/env"],
-      "@affine/utils": ["./packages/utils"]
+      "@affine/env/*": ["./packages/env/src/*"],
+      "@affine/utils": ["./packages/utils"],
+      "@affine/workspace/*": ["./packages/workspace/src/*"],
+      "@affine-test/fixtures/*": ["./tests/fixtures/*"],
+      "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
+      "@toeverything/hooks/*": ["./packages/hooks/src/*"]
     }
   },
   "references": [
@@ -37,19 +40,28 @@
       "path": "./apps/web"
     },
     {
-      "path": "./apps/desktop"
-    },
-    {
-      "path": "./packages/data-center"
-    },
-    {
       "path": "./packages/component"
+    },
+    {
+      "path": "./packages/hooks"
     },
     {
       "path": "./packages/i18n"
     },
     {
       "path": "./packages/env"
+    },
+    {
+      "path": "./packages/debug"
+    },
+    {
+      "path": "./packages/workspace"
+    },
+    {
+      "path": "./packages/y-indexeddb"
+    },
+    {
+      "path": "./tests/fixtures"
     }
   ],
   "files": [],

@@ -1,7 +1,7 @@
 import { IconButton, Modal, ModalWrapper } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
-import React from 'react';
+import type React from 'react';
 
 import { useCurrentUser } from '../../../hooks/current/use-current-user';
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
@@ -38,6 +38,7 @@ export const EnableAffineCloudModal: React.FC<EnableAffineCloudModalProps> = ({
           {/* <StyleTips>{t('Retain cached cloud data')}</StyleTips> */}
           <div>
             <StyleButton
+              data-testid="confirm-enable-affine-cloud-button"
               shape="round"
               type="primary"
               onClick={() => {

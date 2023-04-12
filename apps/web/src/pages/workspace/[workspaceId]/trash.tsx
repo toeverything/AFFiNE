@@ -12,7 +12,7 @@ import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspac
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
-import { NextPageWithLayout } from '../../../shared';
+import type { NextPageWithLayout } from '../../../shared';
 
 const TrashPage: NextPageWithLayout = () => {
   const router = useRouter();
@@ -44,7 +44,13 @@ const TrashPage: NextPageWithLayout = () => {
       <Head>
         <title>{t('Trash')} - AFFiNE</title>
       </Head>
-      <WorkspaceTitle icon={<DeleteTemporarilyIcon />}>
+      <WorkspaceTitle
+        workspace={currentWorkspace}
+        currentPage={null}
+        isPreview={false}
+        isPublic={false}
+        icon={<DeleteTemporarilyIcon />}
+      >
         {t('Trash')}
       </WorkspaceTitle>
       <PageList

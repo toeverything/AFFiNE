@@ -1,0 +1,134 @@
+name: 'AFFiNE Node.js Setup'
+description: 'Node.js setup for CI, including cache configuration'
+inputs:
+  extra-flags:
+    description: 'Extra flags to pass to the yarn install.'
+    required: false
+    default: '--immutable --inline-builds'
+  package-install:
+    description: 'Run the install step.'
+    required: false
+    default: 'true'
+  electron-workspace-install:
+    description: 'Run the install step for the electron workspace.'
+    required: false
+    default: 'false'
+  playwright-install:
+    description: 'Run the install step for Playwright.'
+    required: false
+    default: 'false'
+  npm-token:
+    description: 'The NPM token to use for private packages.'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version-file: '.nvmrc'
+        registry-url: https://npm.pkg.github.com
+        scope: '@toeverything'
+        cache: 'yarn'
+
+    - name: CI Module Resolve
+      shell: bash
+      run: node scripts/module-resolve/ci.cjs
+
+    - name: Expose yarn config as "$GITHUB_OUTPUT"
+      id: yarn-config
+      shell: bash
+      run: |
+        echo "CACHE_FOLDER=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+
+    - name: Restore yarn cache
+      uses: actions/cache@v3
+      id: yarn-download-cache
+      with:
+        path: ${{ steps.yarn-config.outputs.CACHE_FOLDER }}
+        key: yarn-download-cache-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          yarn-download-cache-
+
+    - name: Restore node_modules cache
+      uses: actions/cache@v3
+      with:
+        path: '**/node_modules'
+        key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+    - name: Restore yarn install state
+      id: yarn-install-state-cache
+      uses: actions/cache@v3
+      with:
+        path: .yarn/ci-cache/
+        key: ${{ runner.os }}-yarn-install-state-cache-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
+
+    - name: yarn install
+      if: ${{ inputs.package-install == 'true' }}
+      continue-on-error: true
+      shell: bash
+      run: yarn install ${{ inputs.extra-flags }}
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+        YARN_ENABLE_GLOBAL_CACHE: 'false'
+        YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
+        HUSKY: '0'
+
+    - name: yarn install (try again)
+      if: ${{ steps.install.outcome == 'failure' }}
+      shell: bash
+      run: yarn install ${{ inputs.extra-flags }}
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+        YARN_ENABLE_GLOBAL_CACHE: 'false'
+        YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
+        HUSKY: '0'
+
+    - name: yarn install (electron)
+      if: ${{ inputs.electron-workspace-install == 'true' }}
+      shell: bash
+      run: yarn install ${{ inputs.extra-flags }}
+      working-directory: apps/electron
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+        YARN_ENABLE_GLOBAL_CACHE: 'false'
+        YARN_INSTALL_STATE_PATH: ../../.yarn/ci-cache/install-state.gz
+        HUSKY: '0'
+
+    - name: Get installed Playwright version
+      id: playwright-version
+      if: ${{ inputs.playwright-install == 'true' }}
+      shell: bash
+      run: echo "version=$(yarn why --json @playwright/test | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://')" >> $GITHUB_OUTPUT
+
+      # Attempt to restore the correct Playwright browser binaries based on the
+      # currently installed version of Playwright (The browser binary versions
+      # may change with Playwright versions).
+      # Note: Playwright's cache directory is hard coded because that's what it
+      # says to do in the docs. There doesn't appear to be a command that prints
+      # it out for us.
+    - uses: actions/cache@v3
+      id: playwright-cache
+      if: ${{ inputs.playwright-install == 'true' }}
+      with:
+        path: '~/.cache/ms-playwright'
+        key: '${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}'
+        # As a fallback, if the Playwright version has changed, try use the
+        # most recently cached version. There's a good chance that at least one
+        # of the browser binary versions haven't been updated, so Playwright can
+        # skip installing that in the next step.
+        # Note: When falling back to an old cache, `cache-hit` (used below)
+        # will be `false`. This allows us to restore the potentially out of
+        # date cache, but still let Playwright decide if it needs to download
+        # new binaries or not.
+        restore-keys: |
+          ${{ runner.os }}-playwright-
+
+    # If the Playwright browser binaries weren't able to be restored, we tell
+    # paywright to install everything for us.
+    - name: Install Playwright's dependencies
+      shell: bash
+      if: inputs.playwright-install == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+      run: yarn playwright install --with-deps
