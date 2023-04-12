@@ -3,9 +3,7 @@ import { useCallback } from 'react';
 import type { BlockSuiteWorkspace } from '../../shared';
 import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 
-export function useAffineHelper(
-  blockSuiteWorkspace: BlockSuiteWorkspace | null
-) {
+export function useMetaHelper(blockSuiteWorkspace: BlockSuiteWorkspace | null) {
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const metas = usePageMeta(blockSuiteWorkspace);
 

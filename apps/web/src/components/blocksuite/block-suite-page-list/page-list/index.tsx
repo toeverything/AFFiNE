@@ -22,7 +22,7 @@ import type React from 'react';
 import { useMemo } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import { useAffineHelper } from '../../../../hooks/affine/use-affine-helper';
+import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
 import {
   usePageMeta,
   usePageMetaHelper,
@@ -103,7 +103,7 @@ export const PageList: React.FC<PageListProps> = ({
   const pageList = usePageMeta(blockSuiteWorkspace);
   const helper = usePageMetaHelper(blockSuiteWorkspace);
   const { removeToTrash, restoreFromTrash } =
-    useAffineHelper(blockSuiteWorkspace);
+    useMetaHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));

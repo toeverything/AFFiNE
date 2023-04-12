@@ -5,7 +5,7 @@ import { nanoid } from '@blocksuite/store';
 import { useCallback } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
-import { useAffineHelper } from './affine/use-affine-helper';
+import { useMetaHelper } from './affine/use-meta-helper';
 import { useBlockSuiteWorkspaceHelper } from './use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from './use-page-meta';
 import type { NodeRenderProps } from './use-pinboard-data';
@@ -35,7 +35,7 @@ export function usePinboardHandler({
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { removeToTrash: removeToTrashHelper } =
-    useAffineHelper(blockSuiteWorkspace);
+    useMetaHelper(blockSuiteWorkspace);
   // Just need handle add operation, delete check is handled in blockSuite's reference link
   const addReferenceLink = useCallback(
     (pageId: string, referenceId: string) => {

@@ -14,7 +14,7 @@ import { useAtom } from 'jotai';
 import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import { useAffineHelper } from '../../../../hooks/affine/use-affine-helper';
+import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import {
@@ -48,7 +48,7 @@ export const EditorOptionMenu = () => {
   const { favorite } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
-  const { removeToTrash } = useAffineHelper(blockSuiteWorkspace);
+  const { removeToTrash } = useMetaHelper(blockSuiteWorkspace);
   const EditMenu = (
     <>
       <MenuItem

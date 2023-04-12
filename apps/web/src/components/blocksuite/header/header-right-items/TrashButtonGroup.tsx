@@ -4,7 +4,7 @@ import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
-import { useAffineHelper } from '../../../../hooks/affine/use-affine-helper';
+import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { usePageMeta } from '../../../../hooks/use-page-meta';
@@ -22,7 +22,7 @@ export const TrashButtonGroup = () => {
   assertExists(pageMeta);
   const { t } = useTranslation();
   const router = useRouter();
-  const { restoreFromTrash } = useAffineHelper(blockSuiteWorkspace);
+  const { restoreFromTrash } = useMetaHelper(blockSuiteWorkspace);
 
   const [open, setOpen] = useState(false);
 
