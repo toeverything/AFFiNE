@@ -26,7 +26,7 @@ const profileTarget = {
   dev: '100.84.105.99:11001',
   test: '100.84.105.99:11001',
   stage: '',
-  pro: 'http://pathfinder.affine.pro',
+  prod: 'http://app.affine.pro',
   local: '127.0.0.1:3000',
 };
 
@@ -89,7 +89,8 @@ const nextConfig = {
     gitVersion: getGitVersion(),
     hash: getCommitHash(),
     serverAPI:
-      profileTarget[process.env.NODE_API_SERVER || 'dev'] ?? profileTarget.dev,
+      profileTarget[process.env.API_SERVER_PROFILE || 'dev'] ??
+      profileTarget.dev,
     editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
     ...preset,
   },
@@ -117,7 +118,7 @@ const nextConfig = {
   },
   rewrites: async () => {
     const [profile, target, desc] = getRedirectConfig(
-      process.env.NODE_API_SERVER
+      process.env.API_SERVER_PROFILE
     );
     console.info(`API request proxy to [${desc} Server]: ` + target);
     return profile;

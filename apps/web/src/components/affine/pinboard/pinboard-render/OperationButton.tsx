@@ -10,7 +10,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
 import { useMemo, useState } from 'react';
 
-import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
+import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import { CopyLink, MoveToTrash } from '../../operation-menu-items';
@@ -49,7 +49,7 @@ export const OperationButton = ({
   const [pinboardMenuOpen, setPinboardMenuOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const menuIndex = useMemo(() => modalIndex + 1, [modalIndex]);
-  const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const { removeToTrash } = useMetaHelper(blockSuiteWorkspace);
 
   return (
     <MuiClickAwayListener
@@ -151,10 +151,7 @@ export const OperationButton = ({
           meta={currentMeta}
           onConfirm={() => {
             toast(t('Moved to Trash'));
-            setPageMeta(currentMeta.id, {
-              trash: true,
-              trashDate: +new Date(),
-            });
+            removeToTrash(currentMeta.id);
             onDelete();
           }}
           onCancel={() => {

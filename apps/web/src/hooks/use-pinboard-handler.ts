@@ -5,6 +5,7 @@ import { nanoid } from '@blocksuite/store';
 import { useCallback } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
+import { useMetaHelper } from './affine/use-meta-helper';
 import { useBlockSuiteWorkspaceHelper } from './use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from './use-page-meta';
 import type { NodeRenderProps } from './use-pinboard-data';
@@ -32,8 +33,9 @@ export function usePinboardHandler({
   onDrop?: TreeViewProps<NodeRenderProps>['onDrop'];
 }) {
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
-  const { getPageMeta, setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-
+  const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const { removeToTrash: removeToTrashHelper } =
+    useMetaHelper(blockSuiteWorkspace);
   // Just need handle add operation, delete check is handled in blockSuite's reference link
   const addReferenceLink = useCallback(
     (pageId: string, referenceId: string) => {
@@ -71,21 +73,10 @@ export function usePinboardHandler({
 
   const deletePin = useCallback(
     (deleteId: string) => {
-      const removeToTrash = (currentMeta: PageMeta) => {
-        const { subpageIds = [] } = currentMeta;
-        setPageMeta(currentMeta.id, {
-          trash: true,
-          trashDate: +new Date(),
-        });
-        subpageIds.forEach(id => {
-          const subCurrentMeta = getPageMeta(id);
-          subCurrentMeta && removeToTrash(subCurrentMeta);
-        });
-      };
-      removeToTrash(metas.find(m => m.id === deleteId)!);
+      removeToTrashHelper(deleteId);
       onDelete?.(deleteId);
     },
-    [metas, getPageMeta, onDelete, setPageMeta]
+    [removeToTrashHelper, onDelete]
   );
 
   const dropPin = useCallback(

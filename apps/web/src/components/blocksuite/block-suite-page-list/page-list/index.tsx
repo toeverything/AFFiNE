@@ -19,9 +19,10 @@ import type { PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
+import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
 import {
   usePageMeta,
   usePageMetaHelper,
@@ -101,6 +102,8 @@ export const PageList: React.FC<PageListProps> = ({
 }) => {
   const pageList = usePageMeta(blockSuiteWorkspace);
   const helper = usePageMetaHelper(blockSuiteWorkspace);
+  const { removeToTrash, restoreFromTrash } =
+    useMetaHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
@@ -112,20 +115,6 @@ export const PageList: React.FC<PageListProps> = ({
         filter[listType ?? 'all'](pageMeta, pageList)
       ),
     [pageList, listType]
-  );
-  const restorePage = useCallback(
-    (pageMeta: PageMeta, allMetas: PageMeta[]) => {
-      helper.setPageMeta(pageMeta.id, {
-        trash: false,
-      });
-
-      allMetas
-        .filter(m => pageMeta?.subpageIds.includes(m.id))
-        .forEach(m => {
-          restorePage(m, allMetas);
-        });
-    },
-    [helper]
   );
   if (list.length === 0) {
     return <Empty listType={listType} />;
@@ -212,7 +201,7 @@ export const PageList: React.FC<PageListProps> = ({
                               blockSuiteWorkspace.removePage(pageId);
                             }}
                             onRestorePage={() => {
-                              restorePage(pageMeta, pageList);
+                              restoreFromTrash(pageMeta.id);
                             }}
                             onOpenPage={pageId => {
                               onClickPage(pageId, false);
@@ -231,11 +220,12 @@ export const PageList: React.FC<PageListProps> = ({
                                 favorite: !pageMeta.favorite,
                               });
                             }}
-                            onToggleTrashPage={() => {
-                              helper.setPageMeta(pageMeta.id, {
-                                trash: !pageMeta.trash,
-                                trashDate: +new Date(),
-                              });
+                            onToggleTrashPage={(pageId, isTrash) => {
+                              if (isTrash) {
+                                removeToTrash(pageId);
+                              } else {
+                                restoreFromTrash(pageId);
+                              }
                             }}
                           />
                         )}

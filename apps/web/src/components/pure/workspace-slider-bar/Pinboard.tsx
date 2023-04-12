@@ -34,7 +34,7 @@ export const Pinboard = ({
   );
 
   const { data } = usePinboardData({
-    metas: allMetas.filter(meta => !meta.trash),
+    metas: allMetas,
     pinboardRender: PinboardRender,
     blockSuiteWorkspace: blockSuiteWorkspace,
     onClick: handlePinboardClick,

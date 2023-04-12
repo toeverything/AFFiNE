@@ -50,7 +50,7 @@ const dev = await p.group(
 );
 
 const env = {
-  NODE_API_SERVER: dev.server,
+  API_SERVER_PROFILE: dev.server,
   PATH: process.env.PATH,
   NODE_ENV: 'development',
 };

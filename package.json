@@ -11,8 +11,8 @@
   ],
   "scripts": {
     "dev": "dev-web",
-    "dev:ac": "NODE_API_SERVER=ac yarn workspace @affine/web dev",
-    "dev:local": "NODE_API_SERVER=local yarn workspace @affine/web dev",
+    "dev:ac": "API_SERVER_PROFILE=ac yarn workspace @affine/web dev",
+    "dev:local": "API_SERVER_PROFILE=local yarn workspace @affine/web dev",
     "dev:app": "yarn workspace @affine/electron dev:app",
     "build": "yarn workspace @affine/web build",
     "build:client": "yarn workspace @affine/client-app build:app",
