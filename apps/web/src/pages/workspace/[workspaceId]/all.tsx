@@ -92,7 +92,15 @@ const AllPage: NextPageWithLayout = () => {
         <Head>
           <title>{t('All Pages')} - AFFiNE</title>
         </Head>
-        <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
+        <WorkspaceTitle
+          workspace={currentWorkspace}
+          currentPage={null}
+          isPreview={false}
+          isPublic={false}
+          icon={<FolderIcon />}
+        >
+          {t('All pages')}
+        </WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
@@ -106,7 +114,15 @@ const AllPage: NextPageWithLayout = () => {
         <Head>
           <title>{t('All Pages')} - AFFiNE</title>
         </Head>
-        <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
+        <WorkspaceTitle
+          workspace={currentWorkspace}
+          currentPage={null}
+          isPreview={false}
+          isPublic={false}
+          icon={<FolderIcon />}
+        >
+          {t('All pages')}
+        </WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}

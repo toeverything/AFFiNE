@@ -148,7 +148,13 @@ const SettingPage: NextPageWithLayout = () => {
         <Head>
           <title>{t('Settings')} - AFFiNE</title>
         </Head>
-        <WorkspaceTitle icon={<SettingsIcon />}>
+        <WorkspaceTitle
+          workspace={currentWorkspace}
+          currentPage={null}
+          isPreview={false}
+          isPublic={false}
+          icon={<SettingsIcon />}
+        >
           {t('Workspace Settings')}
         </WorkspaceTitle>
         <Setting
@@ -168,7 +174,13 @@ const SettingPage: NextPageWithLayout = () => {
         <Head>
           <title>{t('Settings')} - AFFiNE</title>
         </Head>
-        <WorkspaceTitle icon={<SettingsIcon />}>
+        <WorkspaceTitle
+          workspace={currentWorkspace}
+          currentPage={null}
+          isPreview={false}
+          isPublic={false}
+          icon={<SettingsIcon />}
+        >
           {t('Workspace Settings')}
         </WorkspaceTitle>
         <Setting
