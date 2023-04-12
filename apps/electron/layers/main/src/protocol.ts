@@ -1,4 +1,4 @@
-import { protocol } from 'electron';
+import { protocol, session } from 'electron';
 import { join } from 'path';
 
 export function registerProtocol() {
@@ -20,4 +20,15 @@ export function registerProtocol() {
       }
     });
   }
+
+  session.defaultSession.webRequest.onHeadersReceived(
+    (responseDetails, callback) => {
+      const { responseHeaders, url } = responseDetails;
+      if (responseHeaders) {
+        responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+      }
+
+      callback({ responseHeaders });
+    }
+  );
 }
