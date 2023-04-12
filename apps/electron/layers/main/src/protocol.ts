@@ -25,6 +25,7 @@ export function registerProtocol() {
     (responseDetails, callback) => {
       const { responseHeaders, url } = responseDetails;
       if (responseHeaders) {
+        delete responseHeaders['access-control-allow-origin'];
         responseHeaders['Access-Control-Allow-Origin'] = ['*'];
       }
 

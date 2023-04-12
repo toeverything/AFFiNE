@@ -56,7 +56,7 @@ export const registerHandlers = () => {
         };
         app.removeListener('open-url', handleOpenUrl);
         resolve(token.id_token);
-        logger.info('google sign in', token);
+        logger.info('google sign in successful', token);
       };
 
       app.on('open-url', handleOpenUrl);
