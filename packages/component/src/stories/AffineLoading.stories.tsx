@@ -7,4 +7,18 @@ export default {
   component: AffineLoading,
 };
 
-export const Default: StoryFn = () => <AffineLoading />;
+export const Default: StoryFn = ({ width, loop, autoplay }) => (
+  <div
+    style={{
+      width: width,
+      height: width,
+    }}
+  >
+    <AffineLoading loop={loop} autoplay={autoplay} />
+  </div>
+);
+Default.args = {
+  width: 100,
+  loop: true,
+  autoplay: true,
+};
