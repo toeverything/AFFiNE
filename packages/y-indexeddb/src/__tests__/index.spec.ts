@@ -213,16 +213,18 @@ describe('indexeddb provider', () => {
       await provider.whenSynced;
       expect(yDoc.getMap().get('foo')).toBe('bar');
     }
+    localStorage.clear();
     {
-      indexedDB.databases = vi.fn(() => {
+      indexedDB.databases = vi.fn(async () => {
         throw new Error('not supported');
       });
+      expect(indexedDB.databases).rejects.toThrow('not supported');
       const yDoc = new Doc();
+      expect(indexedDB.databases).toBeCalledTimes(1);
       const provider = createIndexedDBProvider('test', yDoc);
-      expect(indexedDB.databases).toBeCalledTimes(0);
       provider.connect();
       await provider.whenSynced;
-      expect(indexedDB.databases).toBeCalledTimes(1);
+      expect(indexedDB.databases).toBeCalledTimes(2);
       expect(yDoc.getMap().get('foo')).toBe('bar');
     }
   });
