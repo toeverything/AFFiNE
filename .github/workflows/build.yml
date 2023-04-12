@@ -81,51 +81,6 @@ jobs:
           path: ./apps/web/.next
           if-no-files-found: error
 
-  build-macos:
-    name: Build macOS desktop app
-    runs-on: macos-latest
-    environment: development
-    needs:
-      - build
-      - install-all
-    strategy:
-      matrix:
-        arch: [arm64]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          electron-workspace-install: true
-
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: next-js
-          path: ./apps/web/.next
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: add arm64 target
-        if: matrix.arch == 'arm64'
-        run: rustup target add aarch64-apple-darwin
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './packages/octobase-node -> target'
-
-      - name: make build
-        run: yarn make-macos-${{ matrix.arch }}
-        working-directory: apps/electron
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: affine-darwin-${{ matrix.arch }}-builds
-          path: builds
-
   storybook-test:
     name: Storybook Test
     runs-on: ubuntu-latest
