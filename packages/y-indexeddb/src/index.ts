@@ -175,12 +175,13 @@ export const getMilestones = async (
   return milestone.milestone;
 };
 
+let allDb: IDBDatabaseInfo[];
+
 export const createIndexedDBProvider = (
   id: string,
   doc: Doc,
   dbName = 'affine-local'
 ): IndexedDBProvider => {
-  let allDb: IDBDatabaseInfo[];
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
   let early = true;
