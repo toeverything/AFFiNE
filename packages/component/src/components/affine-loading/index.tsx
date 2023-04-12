@@ -21,6 +21,7 @@ export const AffineLoading: FC<AffineLoadingProps> = ({
   return (
     <InternalLottie
       key={isDark ? 'dark' : 'light'}
+      speed={2}
       options={{
         loop,
         autoplay,
