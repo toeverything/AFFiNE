@@ -1,8 +1,8 @@
+import { InternalLottie } from '@affine/component/internal-lottie';
 import type { HTMLAttributes } from 'react';
 import type React from 'react';
 import { cloneElement, useState } from 'react';
 
-import Lottie from './CustomLottie';
 import { StyledSwitchItem } from './style';
 
 type HoverAnimateControllerProps = {
@@ -45,7 +45,7 @@ export const PageSwitchItem = (
 ) => {
   return (
     <HoverAnimateController {...props}>
-      <Lottie
+      <InternalLottie
         options={{
           loop: false,
           autoplay: false,
@@ -64,7 +64,7 @@ export const EdgelessSwitchItem = (
 ) => {
   return (
     <HoverAnimateController {...props}>
-      <Lottie
+      <InternalLottie
         options={{
           loop: false,
           autoplay: false,
