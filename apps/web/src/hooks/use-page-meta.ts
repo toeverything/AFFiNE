@@ -9,6 +9,8 @@ declare module '@blocksuite/store' {
   interface PageMeta {
     favorite?: boolean;
     subpageIds: string[];
+    // If a page remove to trash, and it is a subpage, it will remove from its parent `subpageIds`, 'trashRelate' is use for save it parent
+    trashRelate?: string;
     trash?: boolean;
     trashDate?: number;
     // whether to create the page with the default template

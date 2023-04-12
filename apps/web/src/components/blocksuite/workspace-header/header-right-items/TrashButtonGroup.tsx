@@ -4,12 +4,10 @@ import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
+import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import {
-  usePageMeta,
-  usePageMetaHelper,
-} from '../../../../hooks/use-page-meta';
+import { usePageMeta } from '../../../../hooks/use-page-meta';
 
 export const TrashButtonGroup = () => {
   // fixme(himself65): remove these hooks ASAP
@@ -22,12 +20,12 @@ export const TrashButtonGroup = () => {
     meta => meta.id === pageId
   );
   assertExists(pageMeta);
-  const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const { t } = useTranslation();
   const router = useRouter();
-  //
+  const { restoreFromTrash } = useMetaHelper(blockSuiteWorkspace);
+
   const [open, setOpen] = useState(false);
 
-  const { t } = useTranslation();
   return (
     <>
       <Button
@@ -35,7 +33,7 @@ export const TrashButtonGroup = () => {
         shape="round"
         style={{ marginRight: '24px' }}
         onClick={() => {
-          setPageMeta(pageId, { trash: false });
+          restoreFromTrash(pageId);
         }}
       >
         {t('Restore it')}
