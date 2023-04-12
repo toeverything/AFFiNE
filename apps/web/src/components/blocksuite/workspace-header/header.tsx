@@ -1,5 +1,4 @@
 import { useTranslation } from '@affine/i18n';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { CloseIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
@@ -63,7 +62,7 @@ type HeaderItem = {
   Component: React.FC<BaseHeaderProps>;
   // todo: public workspace should be one of the flavour
   availableWhen: (
-    workspace: AffineWorkspace | LocalWorkspace,
+    workspace: AffineOfficialWorkspace,
     currentPage: Page | null,
     status: {
       isPublic: boolean;
