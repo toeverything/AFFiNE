@@ -8,6 +8,7 @@ import { useCallback, useMemo } from 'react';
 import { Button } from '../..';
 import type { ShareMenuProps } from './index';
 import { buttonStyle, descriptionStyle, menuItemStyle } from './index.css';
+import { StyledInput } from './styles';
 
 export const LocalSharePage: FC<ShareMenuProps> = props => {
   return (
@@ -53,7 +54,11 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
       <div className={descriptionStyle}>
         Create a link you can easily share with anyone.
       </div>
-      <span>{isPublic ? sharingUrl : 'not public'}</span>
+      <StyledInput
+        type="text"
+        readOnly
+        value={isPublic ? sharingUrl : 'not public'}
+      />
       {!isPublic && <Button onClick={onClickCreateLink}>Create</Button>}
       {isPublic && <Button onClick={onClickCopyLink}>Copy Link</Button>}
     </div>

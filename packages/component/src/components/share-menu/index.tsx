@@ -1,6 +1,7 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
-import { ExportIcon } from '@blocksuite/icons';
+import { ExportIcon, PublishIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-blocksuite-workspace-page-is-public';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -17,7 +18,11 @@ const MenuItems: Record<SharePanel, FC<ShareMenuProps>> = {
   Export: Export,
   ShareWorkspace: ShareWorkspace,
 };
-
+const tabIcons = {
+  SharePage: <PublishIcon />,
+  Export: <ExportIcon />,
+  ShareWorkspace: <PublishIcon />,
+};
 export type ShareMenuProps<
   Workspace extends AffineWorkspace | LocalWorkspace =
     | AffineWorkspace
@@ -36,6 +41,7 @@ export type ShareMenuProps<
 
 export const ShareMenu: FC<ShareMenuProps> = props => {
   const [activeItem, setActiveItem] = useState<SharePanel>('SharePage');
+  const [isPublic] = useBlockSuiteWorkspacePageIsPublic(props.currentPage);
   const [open, setOpen] = useState(false);
   const handleMenuChange = useCallback((selectedItem: SharePanel) => {
     setActiveItem(selectedItem);
@@ -60,6 +66,7 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
             key={item}
             onClick={() => handleButtonClick(item as SharePanel)}
           >
+            {tabIcons[item as SharePanel]}
             {item}
           </TabItem>
         ))}
@@ -78,7 +85,7 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
     <Menu
       content={Share}
       visible={open}
-      width={439}
+      style={{ minWidth: '439px' }}
       placement="bottom-end"
       trigger={['click']}
       disablePortal={true}
@@ -91,9 +98,9 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
         onClick={() => {
           setOpen(!open);
         }}
+        isShared={isPublic}
       >
-        <ExportIcon />
-        <div>Share</div>
+        <div>{isPublic ? 'Shared' : 'Share'}</div>
       </StyledShareButton>
     </Menu>
   );
