@@ -1,10 +1,16 @@
 import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { generateAsync } from 'dts-for-context-bridge';
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
 
-import { mainConfig, preloadConfig } from './common.mjs';
+import commonFn from './common.mjs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** @type 'production' | 'development'' */
 const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
@@ -16,6 +22,17 @@ const stderrFilterPatterns = [
   // https://github.com/MarshallOfSound/electron-devtools-installer/issues/143
   /ExtensionLoadWarning/,
 ];
+
+// these are set before calling commonFn so we have a chance to override them
+try {
+  const devJson = readFileSync(path.resolve(__dirname, '../dev.json'), 'utf-8');
+  const devEnv = JSON.parse(devJson);
+  Object.assign(process.env, devEnv);
+} catch (err) {
+  console.warn(
+    `Could not read dev.json. Some functions may not work as expected.`
+  );
+}
 
 // hard-coded for now:
 // fixme(xp): report error if app is not running on port 8080
@@ -35,26 +52,28 @@ function spawnOrReloadElectron() {
 
   spawnProcess.stdout.on(
     'data',
-    d => d.toString().trim() && console.warn(d.toString(), { timestamp: true })
+    d => d.toString().trim() && console.warn(d.toString())
   );
   spawnProcess.stderr.on('data', d => {
     const data = d.toString().trim();
     if (!data) return;
     const mayIgnore = stderrFilterPatterns.some(r => r.test(data));
     if (mayIgnore) return;
-    console.error(data, { timestamp: true });
+    console.error(data);
   });
 
   // Stops the watch script when the application has been quit
   spawnProcess.on('exit', process.exit);
 }
 
+const common = commonFn();
+
 async function main() {
   async function watchPreload(onInitialBuild) {
     const preloadBuild = await esbuild.context({
-      ...preloadConfig,
+      ...common.preload,
       plugins: [
-        ...(preloadConfig.plugins ?? []),
+        ...(common.preload.plugins ?? []),
         {
           name: 'affine-dev:reload-app-on-preload-change',
           setup(build) {
@@ -81,13 +100,14 @@ async function main() {
 
   async function watchMain() {
     const mainBuild = await esbuild.context({
-      ...mainConfig,
+      ...common.main,
       define: {
+        ...common.main.define,
         'process.env.NODE_ENV': `"${mode}"`,
         'process.env.DEV_SERVER_URL': `"${process.env.DEV_SERVER_URL}"`,
       },
       plugins: [
-        ...(mainConfig.plugins ?? []),
+        ...(common.main.plugins ?? []),
         {
           name: 'affine-dev:reload-app-on-main-change',
           setup(build) {

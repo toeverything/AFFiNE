@@ -19,7 +19,7 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import {
-  publicBlockSuiteAtom,
+  publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
 import { HelpIsland } from '../components/pure/help-island';
@@ -62,14 +62,14 @@ const QuickSearchModal = dynamic(
 );
 
 export const PublicQuickSearch: FC = () => {
-  const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
+  const publicWorkspace = useAtomValue(publicWorkspaceAtom);
   const router = useRouter();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom
   );
   return (
     <QuickSearchModal
-      blockSuiteWorkspace={blockSuiteWorkspace}
+      blockSuiteWorkspace={publicWorkspace.blockSuiteWorkspace}
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
       router={router}

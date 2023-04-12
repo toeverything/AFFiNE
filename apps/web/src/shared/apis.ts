@@ -12,8 +12,8 @@ import { jotaiStore } from '@affine/workspace/atom';
 import { isValidIPAddress } from '../utils';
 
 let prefixUrl = '/';
-if (typeof window === 'undefined') {
-  // SSR
+if (typeof window === 'undefined' || environment.isDesktop) {
+  // SSR or Desktop
   const serverAPI = config.serverAPI;
   if (isValidIPAddress(serverAPI.split(':')[0])) {
     // This is for Server side rendering support
@@ -21,6 +21,7 @@ if (typeof window === 'undefined') {
   } else {
     prefixUrl = serverAPI;
   }
+  prefixUrl = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
 } else {
   const params = new URLSearchParams(window.location.search);
   params.get('prefixUrl') && (prefixUrl = params.get('prefixUrl') as string);

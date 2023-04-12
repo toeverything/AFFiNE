@@ -10,7 +10,7 @@ import {
 import { test } from '../libs/playwright';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
-test.describe('Local first favorite and cancel favorite  page', () => {
+test.describe('Local first favorite and cancel favorite page', () => {
   test('New a page and open it ,then favorite it', async ({ page }) => {
     await openHomePage(page);
     await waitMarkdownImported(page);

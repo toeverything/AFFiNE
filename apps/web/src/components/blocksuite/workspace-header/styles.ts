@@ -31,7 +31,6 @@ export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
       padding: '0 20px',
       ...displayFlex('space-between', 'center'),
       background: theme.colors.pageBackground,
-      transition: 'background-color 0.5s',
       zIndex: 99,
       position: 'relative',
     };

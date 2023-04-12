@@ -1,4 +1,8 @@
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffinePublicWorkspace,
+  AffineWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import type { Workspace } from '@blocksuite/store';
 import * as RadixAvatar from '@radix-ui/react-avatar';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
@@ -31,7 +35,7 @@ function stringToColour(str: string) {
 
 export type WorkspaceAvatarProps = {
   size?: number;
-  workspace: LocalWorkspace | AffineWorkspace | null;
+  workspace: AffineWorkspace | LocalWorkspace | AffinePublicWorkspace | null;
   className?: string;
 };
 

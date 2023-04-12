@@ -1,11 +1,19 @@
-import type { AffineTheme, ThemeProviderProps } from '@affine/component';
+import type {
+  AffineNextCssVariables,
+  AffineNextLightColorScheme,
+  AffineTheme,
+  ThemeProviderProps,
+} from '@affine/component';
 import {
   getDarkTheme,
   getLightTheme,
   globalThemeVariables,
+  nextDarkColorScheme,
+  nextLightColorScheme,
   ThemeProvider as AffineThemeProvider,
 } from '@affine/component';
 import { GlobalStyles } from '@mui/material';
+import kebabCase from 'kebab-case';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
 import type React from 'react';
@@ -15,7 +23,15 @@ import { useCurrentMode } from '../hooks/current/use-current-mode';
 
 const ThemeInjector = memo<{
   themeStyle: AffineTheme;
-}>(function ThemeInjector({ themeStyle }) {
+  nextThemeStyle: AffineNextLightColorScheme;
+}>(function ThemeInjector({ themeStyle, nextThemeStyle }) {
+  const injectAffineNextTheme = useMemo(() => {
+    return Object.entries(nextThemeStyle).reduce((variables, [key, value]) => {
+      variables[`--affine-${kebabCase(key)}` as keyof AffineNextCssVariables] =
+        value;
+      return variables;
+    }, {} as AffineNextCssVariables);
+  }, [nextThemeStyle]);
   return (
     <GlobalStyles
       styles={{
@@ -24,6 +40,7 @@ const ThemeInjector = memo<{
         // },
         ':root': {
           ...globalThemeVariables(themeStyle),
+          ...injectAffineNextTheme,
         },
         html: {
           fontFamily: themeStyle.font.family,
@@ -56,6 +73,9 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
       >
         <ThemeInjector
           themeStyle={deferTheme === 'dark' ? darkThemeStyle : themeStyle}
+          nextThemeStyle={
+            deferTheme === 'dark' ? nextDarkColorScheme : nextLightColorScheme
+          }
         />
         {children}
       </AffineThemeProvider>

@@ -10,7 +10,7 @@ import { Suspense, useCallback, useEffect } from 'react';
 
 import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../../atoms';
 import {
-  publicBlockSuiteAtom,
+  publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../../atoms/public-workspace';
 import { QueryParamError } from '../../components/affine/affine-error-eoundary';
@@ -31,7 +31,8 @@ const ListPageInner: React.FC<{
   workspaceId: string;
 }> = ({ workspaceId }) => {
   const router = useRouter();
-  const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
+  const publicWorkspace = useAtomValue(publicWorkspaceAtom);
+  const blockSuiteWorkspace = publicWorkspace.blockSuiteWorkspace;
   const handleClickPage = useCallback(
     (pageId: string) => {
       return router.push({
@@ -84,6 +85,7 @@ const ListPage: NextPageWithLayout = () => {
   const router = useRouter();
   const workspaceId = router.query.workspaceId;
   const setWorkspaceId = useSetAtom(publicWorkspaceIdAtom);
+  // todo: remove this atom usage here
   const setCurrentWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
   useEffect(() => {
     if (!router.isReady) {

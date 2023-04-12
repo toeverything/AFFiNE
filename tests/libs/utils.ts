@@ -1,3 +1,6 @@
+import { ok } from 'node:assert';
+import { resolve } from 'node:path';
+
 import type { PageMeta } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
 import type { Page } from '@playwright/test';
@@ -6,6 +9,13 @@ import type { Page } from '@playwright/test';
 const user1 = require('@affine-test/fixtures/built-in-user1.json');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const user2 = require('@affine-test/fixtures/built-in-user2.json');
+
+export const rootDir = resolve(__dirname, '..', '..');
+// assert that the rootDir is the root of the project
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+ok(require(resolve(rootDir, 'package.json')).name.toLowerCase() === 'affine');
+
+export const testResultDir = resolve(rootDir, 'test-results');
 
 export async function getBuiltInUser() {
   return Promise.all([
