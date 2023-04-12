@@ -12,6 +12,7 @@ export const TreeView = <RenderProps,>({
   onSelect,
   enableDnd = true,
   initialCollapsedIds = [],
+  disableCollapse,
   ...otherProps
 }: TreeViewProps<RenderProps>) => {
   const [selectedId, setSelectedId] = useState<string>();
@@ -62,6 +63,9 @@ export const TreeView = <RenderProps,>({
   }, [data, selectedId]);
 
   const setCollapsed: TreeNodeProps['setCollapsed'] = (id, collapsed) => {
+    if (disableCollapse) {
+      return;
+    }
     if (collapsed) {
       setCollapsedIds(ids => [...ids, id]);
     } else {
@@ -81,6 +85,7 @@ export const TreeView = <RenderProps,>({
             node={node}
             selectedId={selectedId}
             enableDnd={enableDnd}
+            disableCollapse={disableCollapse}
             {...otherProps}
           />
         ))}
@@ -99,6 +104,7 @@ export const TreeView = <RenderProps,>({
           node={node}
           selectedId={selectedId}
           enableDnd={enableDnd}
+          disableCollapse={disableCollapse}
           {...otherProps}
         />
       ))}
