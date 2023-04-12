@@ -156,6 +156,9 @@ export const getDarkTheme = (
   };
 };
 
+/**
+ * @deprecated these theme will be removed in the future
+ */
 export const globalThemeVariables: (
   theme: AffineTheme
 ) => AffineThemeCSSVariables = theme => {

@@ -1,11 +1,21 @@
 import './security-restrictions';
 
 import { app } from 'electron';
+import path from 'path';
 
 import { registerHandlers } from './app-state';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('affine', process.execPath, [
+      path.resolve(process.argv[1]),
+    ]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('affine');
+}
 /**
  * Prevent multiple instances
  */
@@ -15,7 +25,13 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-app.on('second-instance', restoreOrCreateWindow);
+app.on('second-instance', (event, argv) => {
+  restoreOrCreateWindow();
+});
+
+app.on('open-url', async (_, url) => {
+  // todo: handle `affine://...` urls
+});
 
 /**
  * Disable Hardware Acceleration for more power-save
@@ -45,7 +61,6 @@ app
   .then(registerHandlers)
   .then(restoreOrCreateWindow)
   .catch(e => console.error('Failed create window:', e));
-
 /**
  * Check new app version in production mode only
  */

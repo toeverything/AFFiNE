@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspacePersist } from '../index';
@@ -20,7 +20,7 @@ import {
 } from '../index';
 
 async function getUpdates(id: string): Promise<ArrayBuffer[]> {
-  const db = await openDB('affine-local', dbVersion);
+  const db = await openDB(rootDBName, dbVersion);
   const store = await db
     .transaction('workspace', 'readonly')
     .objectStore('workspace');
@@ -32,6 +32,7 @@ async function getUpdates(id: string): Promise<ArrayBuffer[]> {
 
 let id: string;
 let workspace: Workspace;
+const rootDBName = 'affine-local';
 
 beforeEach(() => {
   id = uuidv4();
@@ -42,12 +43,16 @@ beforeEach(() => {
   workspace.register(AffineSchemas).register(__unstableSchemas);
 });
 
+afterEach(() => {
+  indexedDB.deleteDatabase('affine-local');
+});
+
 describe('indexeddb provider', () => {
   test('connect', async () => {
     const provider = createIndexedDBProvider(workspace.id, workspace.doc);
     provider.connect();
     await provider.whenSynced;
-    const db = await openDB('affine-local', dbVersion);
+    const db = await openDB(rootDBName, dbVersion);
     {
       const store = await db
         .transaction('workspace', 'readonly')
@@ -89,7 +94,8 @@ describe('indexeddb provider', () => {
       .register(__unstableSchemas);
     const provider2 = createIndexedDBProvider(
       secondWorkspace.id,
-      secondWorkspace.doc
+      secondWorkspace.doc,
+      rootDBName
     );
     provider2.connect();
     await provider2.whenSynced;
@@ -99,7 +105,11 @@ describe('indexeddb provider', () => {
   });
 
   test('disconnect suddenly', async () => {
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(
+      workspace.id,
+      workspace.doc,
+      rootDBName
+    );
     const fn = vi.fn();
     provider.connect();
     provider.disconnect();
@@ -109,10 +119,14 @@ describe('indexeddb provider', () => {
   });
 
   test('connect and disconnect', async () => {
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(
+      workspace.id,
+      workspace.doc,
+      rootDBName
+    );
     provider.connect();
     const p1 = provider.whenSynced;
-    await provider.whenSynced;
+    await p1;
     provider.disconnect();
     {
       const page = workspace.createPage('page0');
@@ -126,7 +140,7 @@ describe('indexeddb provider', () => {
     }
     provider.connect();
     const p2 = provider.whenSynced;
-    await provider.whenSynced;
+    await p2;
     {
       const updates = await getUpdates(workspace.id);
       expect(updates).not.toEqual([]);
@@ -137,7 +151,11 @@ describe('indexeddb provider', () => {
 
   test('merge', async () => {
     setMergeCount(5);
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(
+      workspace.id,
+      workspace.doc,
+      rootDBName
+    );
     provider.connect();
     {
       const page = workspace.createPage('page0');
@@ -151,6 +169,31 @@ describe('indexeddb provider', () => {
     {
       const updates = await getUpdates(id);
       expect(updates.length).lessThanOrEqual(5);
+    }
+  });
+
+  test("data won't be lost", async () => {
+    const id = uuidv4();
+    const doc = new Workspace.Y.Doc();
+    const map = doc.getMap('map');
+    for (let i = 0; i < 100; i++) {
+      map.set(`${i}`, i);
+    }
+    {
+      const provider = createIndexedDBProvider(id, doc, rootDBName);
+      provider.connect();
+      await provider.whenSynced;
+      provider.disconnect();
+    }
+    {
+      const newDoc = new Workspace.Y.Doc();
+      const provider = createIndexedDBProvider(id, newDoc, rootDBName);
+      provider.connect();
+      await provider.whenSynced;
+      provider.disconnect();
+      newDoc.getMap('map').forEach((value, key) => {
+        expect(value).toBe(parseInt(key));
+      });
     }
   });
 });

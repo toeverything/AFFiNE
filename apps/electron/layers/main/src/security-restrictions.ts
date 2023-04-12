@@ -10,6 +10,14 @@ app.on('web-contents-created', (_, contents) => {
    * @see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
    */
   contents.on('will-navigate', (event, url) => {
+    if (
+      (process.env.DEV_SERVER_URL &&
+        url.startsWith(process.env.DEV_SERVER_URL)) ||
+      url.startsWith('affine://') ||
+      url.startsWith('file://.')
+    ) {
+      return;
+    }
     // Prevent navigation
     event.preventDefault();
     shell.openExternal(url).catch(console.error);

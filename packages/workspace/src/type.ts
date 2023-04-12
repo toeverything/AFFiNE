@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path='../../../apps/electron/layers/preload/preload.d.ts' />
 import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { FC, PropsWithChildren } from 'react';

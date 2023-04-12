@@ -21,7 +21,6 @@ import { isMacOS } from '../../utils';
  *
  * @see https://github.com/cawa-93/dts-for-context-bridge
  */
-
 contextBridge.exposeInMainWorld('apis', {
   workspaceSync: (id: string) => ipcRenderer.invoke('octo:workspace-sync', id),
   // ui
@@ -30,6 +29,18 @@ contextBridge.exposeInMainWorld('apis', {
 
   onSidebarVisibilityChange: (visible: boolean) =>
     ipcRenderer.invoke('ui:sidebar-visibility-change', visible),
+
+  /**
+   * Try sign in using Google and return a Google IDToken
+   */
+  googleSignIn: (): Promise<string> => ipcRenderer.invoke('ui:google-sign-in'),
+
+  /**
+   * Secret backdoor to update environment variables in main process
+   */
+  updateEnv: (env: string, value: string) => {
+    ipcRenderer.invoke('main:env-update', env, value);
+  },
 });
 
 contextBridge.exposeInMainWorld('appInfo', {

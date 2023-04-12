@@ -4,7 +4,41 @@ import { z } from 'zod';
 
 import { getUaHelper } from './ua-helper';
 
+export const publicRuntimeConfigSchema = z.object({
+  PROJECT_NAME: z.string(),
+  BUILD_DATE: z.string(),
+  gitVersion: z.string(),
+  hash: z.string(),
+  serverAPI: z.string(),
+  editorVersion: z.string(),
+  enableIndexedDBProvider: z.boolean(),
+  enableBroadCastChannelProvider: z.boolean(),
+  prefetchWorkspace: z.boolean(),
+  enableDebugPage: z.boolean(),
+  // expose internal api to globalThis, **development only**
+  exposeInternal: z.boolean(),
+  enableSubpage: z.boolean(),
+  enableChangeLog: z.boolean(),
+});
+
+export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
+
+const { publicRuntimeConfig: config } =
+  getConfig() ??
+  ({
+    publicRuntimeConfig: {},
+  } as {
+    publicRuntimeConfig: PublicRuntimeConfig;
+  });
+
+publicRuntimeConfigSchema.parse(config);
+
 type BrowserBase = {
+  /**
+   * @example https://app.affine.pro
+   * @example http://localhost:3000
+   */
+  origin: string;
   isDesktop: boolean;
   isBrowser: true;
   isServer: false;
@@ -66,7 +100,9 @@ export function getEnvironment() {
     } satisfies Server;
   } else {
     const uaHelper = getUaHelper();
+
     environment = {
+      origin: window.location.origin,
       isDesktop: window.appInfo?.electron,
       isBrowser: true,
       isServer: false,
@@ -96,35 +132,6 @@ export function getEnvironment() {
   globalThis.environment = environment;
   return environment;
 }
-
-export const publicRuntimeConfigSchema = z.object({
-  PROJECT_NAME: z.string(),
-  BUILD_DATE: z.string(),
-  gitVersion: z.string(),
-  hash: z.string(),
-  serverAPI: z.string(),
-  editorVersion: z.string(),
-  enableIndexedDBProvider: z.boolean(),
-  enableBroadCastChannelProvider: z.boolean(),
-  prefetchWorkspace: z.boolean(),
-  enableDebugPage: z.boolean(),
-  // expose internal api to globalThis, **development only**
-  exposeInternal: z.boolean(),
-  enableSubpage: z.boolean(),
-  enableChangeLog: z.boolean(),
-});
-
-export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
-
-const { publicRuntimeConfig: config } =
-  getConfig() ??
-  ({
-    publicRuntimeConfig: {},
-  } as {
-    publicRuntimeConfig: PublicRuntimeConfig;
-  });
-
-publicRuntimeConfigSchema.parse(config);
 
 function printBuildInfo() {
   console.group('Build info');
