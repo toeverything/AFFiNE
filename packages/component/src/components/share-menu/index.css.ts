@@ -2,7 +2,8 @@ import { style } from '@vanilla-extract/css';
 
 export const tabStyle = style({
   display: 'flex',
-  justifyContent: 'space-around',
+  width: '100%',
+  justifyContent: 'start',
   alignItems: 'center',
   position: 'relative',
   marginTop: '4px',
