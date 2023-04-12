@@ -21,14 +21,14 @@ const QuickSearchModal = dynamic(
 );
 
 export const PublicQuickSearch: React.FC = () => {
-  const blockSuiteWorkspace = useAtomValue(publicWorkspaceAtom);
+  const publicWorkspace = useAtomValue(publicWorkspaceAtom);
   const router = useRouter();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom
   );
   return (
     <QuickSearchModal
-      blockSuiteWorkspace={blockSuiteWorkspace}
+      blockSuiteWorkspace={publicWorkspace.blockSuiteWorkspace}
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
       router={router}
