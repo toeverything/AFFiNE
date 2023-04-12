@@ -5,7 +5,7 @@ import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-blocksu
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type React from 'react';
-import { lazy, useCallback } from 'react';
+import { lazy, startTransition, useCallback } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import { usePageMeta } from '../hooks/use-page-meta';
@@ -73,14 +73,18 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         page={page}
         onInit={useCallback(
           (page: Page, editor: Readonly<EditorContainer>) => {
-            setEditor(editor);
+            startTransition(() => {
+              setEditor(editor);
+            });
             onInit(page, editor);
           },
           [onInit, setEditor]
         )}
         onLoad={useCallback(
           (page: Page, editor: EditorContainer) => {
-            setEditor(editor);
+            startTransition(() => {
+              setEditor(editor);
+            });
             onLoad?.(page, editor);
           },
           [onLoad, setEditor]
