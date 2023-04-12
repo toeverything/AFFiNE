@@ -3,10 +3,9 @@ import { SearchIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { Suspense, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 
 import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../../atoms';
 import {
@@ -21,10 +20,10 @@ import { PublicWorkspaceLayout } from '../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
-const BlockSuitePublicPageList = dynamic(
-  async () =>
-    (await import('../../components/blocksuite/block-suite-page-list'))
-      .BlockSuitePublicPageList
+const BlockSuitePublicPageList = lazy(() =>
+  import('../../components/blocksuite/block-suite-page-list').then(module => ({
+    default: module.BlockSuitePublicPageList,
+  }))
 );
 
 const ListPageInner: React.FC<{

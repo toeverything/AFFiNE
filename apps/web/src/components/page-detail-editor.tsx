@@ -3,10 +3,9 @@ import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-blocksuite-workspace-page-title';
 import { useAtomValue, useSetAtom } from 'jotai';
-import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import type React from 'react';
-import { useCallback } from 'react';
+import { lazy, useCallback } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import { usePageMeta } from '../hooks/use-page-meta';
@@ -24,12 +23,10 @@ export type PageDetailEditorProps = {
   header?: React.ReactNode;
 };
 
-const Editor = dynamic(
-  async () =>
-    (await import('./blocksuite/block-suite-editor')).BlockSuiteEditor,
-  {
-    ssr: false,
-  }
+const Editor = lazy(() =>
+  import('./blocksuite/block-suite-editor').then(module => ({
+    default: module.BlockSuiteEditor,
+  }))
 );
 
 export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
