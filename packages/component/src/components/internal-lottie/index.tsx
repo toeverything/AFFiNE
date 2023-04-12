@@ -1,8 +1,7 @@
-import { atom, useAtomValue } from 'jotai';
+import { lottieAtom } from '@affine/jotai';
+import { useAtomValue } from 'jotai';
 import type { FC } from 'react';
 import { useEffect, useRef } from 'react';
-
-const lottieAtom = atom(async () => import('lottie-web').then(m => m.default));
 
 type CustomLottieProps = {
   options: {
@@ -19,7 +18,7 @@ type CustomLottieProps = {
   height?: number | string | undefined;
 };
 
-const CustomLottie: FC<CustomLottieProps> = ({
+export const InternalLottie: FC<CustomLottieProps> = ({
   options,
   isStopped,
   speed,
@@ -55,4 +54,3 @@ const CustomLottie: FC<CustomLottieProps> = ({
 
   return <div ref={element} style={{ width, height }}></div>;
 };
-export default CustomLottie;

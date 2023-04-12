@@ -77,6 +77,7 @@ __metadata:
     jest-mock: ^29.5.0
     kebab-case: ^1.0.2
     lit: ^2.7.2
+    lottie-web: ^5.11.0
     react: ^18.2.0
     react-dnd: ^16.0.1
     react-dnd-html5-backend: ^16.0.1
@@ -175,6 +176,9 @@ __metadata:
   dependencies:
     "@affine/env": "workspace:*"
     jotai: ^2.0.4
+    lottie-web: ^5.11.0
+  peerDependencies:
+    lottie-web: "*"
   languageName: unknown
   linkType: soft
 
@@ -12628,6 +12632,13 @@ __metadata:
   bin:
     loose-envify: cli.js
   checksum: 6517e24e0cad87ec9888f500c5b5947032cdfe6ef65e1c1936a0c48a524b81e65542c9c3edc91c97d5bddc806ee2a985dbc79be89215d613b1de5db6d1cfe6f4
+  languageName: node
+  linkType: hard
+
+"lottie-web@npm:^5.11.0":
+  version: 5.11.0
+  resolution: "lottie-web@npm:5.11.0"
+  checksum: 4f9c86c7cf0280ccb4380b826213719122a227f50e27e5d6943dff2f05dfe4e569bd8a358a0cb9c96cbdf62f9d70b883b5cb5ec50ecb7a1eed794c5ce5a1e38a
   languageName: node
   linkType: hard
 

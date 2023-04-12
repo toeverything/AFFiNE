@@ -77,6 +77,7 @@ __metadata:
     jest-mock: ^29.5.0
     kebab-case: ^1.0.2
     lit: ^2.7.2
+    lottie-web: ^5.11.0
     react: ^18.2.0
     react-dnd: ^16.0.1
     react-dnd-html5-backend: ^16.0.1
@@ -148,6 +149,9 @@ __metadata:
   dependencies:
     "@affine/env": "workspace:*"
     jotai: ^2.0.4
+    lottie-web: ^5.11.0
+  peerDependencies:
+    lottie-web: "*"
   languageName: unknown
   linkType: soft
 
