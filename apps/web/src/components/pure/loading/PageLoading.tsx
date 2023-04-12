@@ -1,7 +1,22 @@
 import { styled } from '@affine/component';
+import { AffineLoading } from '@affine/component/affine-loading';
 import { useTranslation } from '@affine/i18n';
+import { memo, Suspense } from 'react';
 
-import Loading from './Loading';
+export const Loading = memo(function Loading() {
+  return (
+    <div
+      style={{
+        height: '180px',
+        width: '180px',
+      }}
+    >
+      <Suspense>
+        <AffineLoading loop={true} autoplay={true} autoReverse={true} />
+      </Suspense>
+    </div>
+  );
+});
 
 // Used for the full page loading
 const StyledLoadingContainer = styled('div')(() => {
