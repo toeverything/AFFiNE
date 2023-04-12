@@ -43,11 +43,15 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   }
   if (editor.page !== props.page) {
     editor.page = props.page;
+  }
+
+  useEffect(() => {
     if (page.root === null) {
       props.onInit(page, editor);
     }
     props.onLoad?.(page, editor);
-  }
+  }, [page, props.onInit, props.onLoad]);
+
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
