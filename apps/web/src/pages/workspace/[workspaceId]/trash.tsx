@@ -44,7 +44,13 @@ const TrashPage: NextPageWithLayout = () => {
       <Head>
         <title>{t('Trash')} - AFFiNE</title>
       </Head>
-      <WorkspaceTitle icon={<DeleteTemporarilyIcon />}>
+      <WorkspaceTitle
+        workspace={currentWorkspace}
+        currentPage={null}
+        isPreview={false}
+        isPublic={false}
+        icon={<DeleteTemporarilyIcon />}
+      >
         {t('Trash')}
       </WorkspaceTitle>
       <PageList

@@ -7,6 +7,8 @@ import {
 import { WorkspaceList } from '@affine/component/workspace-list';
 import { useTranslation } from '@affine/i18n';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useCallback } from 'react';
@@ -99,7 +101,11 @@ export const WorkspaceListModal = ({
         <StyledModalContent>
           <WorkspaceList
             disabled={disabled}
-            items={workspaces}
+            items={
+              workspaces.filter(
+                ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
+              ) as (AffineWorkspace | LocalWorkspace)[]
+            }
             currentWorkspaceId={currentWorkspaceId}
             onClick={onClickWorkspace}
             onSettingClick={onClickWorkspaceSetting}

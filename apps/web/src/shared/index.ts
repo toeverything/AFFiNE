@@ -1,11 +1,15 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type { AffinePublicWorkspace } from '@affine/workspace/type';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { NextPage } from 'next';
 import type { ReactElement, ReactNode } from 'react';
 
 export { BlockSuiteWorkspace };
 
-export type AffineOfficialWorkspace = AffineWorkspace | LocalWorkspace;
+export type AffineOfficialWorkspace =
+  | AffineWorkspace
+  | LocalWorkspace
+  | AffinePublicWorkspace;
 
 export type AllWorkspace = AffineOfficialWorkspace;
 

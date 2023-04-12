@@ -247,7 +247,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
         <>
           <PageDetailEditor
             pageId={currentPageId}
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            workspace={currentWorkspace}
             onInit={initPage}
           />
         </>

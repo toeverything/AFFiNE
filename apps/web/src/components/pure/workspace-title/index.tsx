@@ -3,21 +3,25 @@ import type { ReactNode } from 'react';
 import type React from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
-import Header from '../../blocksuite/header/header';
-import { StyledPageListTittleWrapper } from '../../blocksuite/header/styles';
+import type { HeaderProps } from '../../blocksuite/workspace-header/header';
+import { Header } from '../../blocksuite/workspace-header/header';
+import { StyledPageListTittleWrapper } from '../../blocksuite/workspace-header/styles';
 import { QuickSearchButton } from '../quick-search-button';
 
-export type WorkspaceTitleProps = React.PropsWithChildren<{
-  icon?: ReactNode;
-}>;
+export type WorkspaceTitleProps = React.PropsWithChildren<
+  HeaderProps & {
+    icon?: ReactNode;
+  }
+>;
 
 export const WorkspaceTitle: React.FC<WorkspaceTitleProps> = ({
   icon,
   children,
+  ...props
 }) => {
   const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
   return (
-    <Header>
+    <Header {...props}>
       <StyledPageListTittleWrapper>
         {icon}
         {children}

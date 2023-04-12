@@ -55,7 +55,8 @@ export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
 const PublicWorkspaceDetailPageInner: React.FC<{
   pageId: string;
 }> = ({ pageId }) => {
-  const blockSuiteWorkspace = useAtomValue(publicPageBlockSuiteAtom);
+  const publicWorkspace = useAtomValue(publicPageBlockSuiteAtom);
+  const blockSuiteWorkspace = publicWorkspace.blockSuiteWorkspace;
   if (!blockSuiteWorkspace) {
     throw new Error('cannot find workspace');
   }
@@ -83,7 +84,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
       <PageDetailEditor
         isPublic={true}
         pageId={pageId}
-        blockSuiteWorkspace={blockSuiteWorkspace}
+        workspace={publicWorkspace}
         onLoad={(_, editor) => {
           const { page } = editor;
           page.awarenessStore.setReadonly(page, true);

@@ -10,14 +10,14 @@ import { useCallback } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import { usePageMeta } from '../hooks/use-page-meta';
-import type { BlockSuiteWorkspace } from '../shared';
+import type { AffineOfficialWorkspace } from '../shared';
 import { PageNotFoundError } from './affine/affine-error-eoundary';
-import { BlockSuiteEditorHeader } from './blocksuite/header';
+import { WorkspaceHeader } from './blocksuite/workspace-header';
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
   isPreview?: boolean;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
+  workspace: AffineOfficialWorkspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
@@ -33,7 +33,7 @@ const Editor = dynamic(
 );
 
 export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
-  blockSuiteWorkspace,
+  workspace,
   pageId,
   onInit,
   onLoad,
@@ -41,6 +41,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   isPublic,
   isPreview,
 }) => {
+  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const page = blockSuiteWorkspace.getPage(pageId);
   if (!page) {
     throw new PageNotFoundError(blockSuiteWorkspace, pageId);
@@ -58,14 +59,14 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
       <Head>
         <title>{title}</title>
       </Head>
-      <BlockSuiteEditorHeader
-        isPublic={isPublic}
-        isPreview={isPreview}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-        pageId={pageId}
+      <WorkspaceHeader
+        isPublic={isPublic ?? false}
+        isPreview={isPreview ?? false}
+        workspace={workspace}
+        currentPage={page}
       >
         {header}
-      </BlockSuiteEditorHeader>
+      </WorkspaceHeader>
       <Editor
         style={{
           height: 'calc(100% - 52px)',
