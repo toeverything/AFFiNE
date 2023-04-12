@@ -9,16 +9,15 @@ import type React from 'react';
 import { useCallback } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { usePageMeta } from '../hooks/use-page-meta';
-import type { BlockSuiteWorkspace } from '../shared';
+import type { AffineOfficialWorkspace } from '../shared';
 import { PageNotFoundError } from './affine/affine-error-eoundary';
 import { WorkspaceHeader } from './blocksuite/workspace-header';
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
   isPreview?: boolean;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
+  workspace: AffineOfficialWorkspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
@@ -34,7 +33,7 @@ const Editor = dynamic(
 );
 
 export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
-  blockSuiteWorkspace,
+  workspace,
   pageId,
   onInit,
   onLoad,
@@ -42,6 +41,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   isPublic,
   isPreview,
 }) => {
+  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const page = blockSuiteWorkspace.getPage(pageId);
   if (!page) {
     throw new PageNotFoundError(blockSuiteWorkspace, pageId);
@@ -54,9 +54,6 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
     useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
   const setEditor = useSetAtom(currentEditorAtom);
   assertExists(meta);
-  // todo: move this to top level
-  const [currentWorkspace] = useCurrentWorkspace();
-  assertExists(currentWorkspace);
   return (
     <>
       <Head>
@@ -65,7 +62,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
       <WorkspaceHeader
         isPublic={isPublic ?? false}
         isPreview={isPreview ?? false}
-        workspace={currentWorkspace}
+        workspace={workspace}
         currentPage={page}
         key={pageId}
       >

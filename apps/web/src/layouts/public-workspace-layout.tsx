@@ -9,7 +9,7 @@ import { Suspense } from 'react';
 
 import { openQuickSearchModalAtom } from '../atoms';
 import {
-  publicBlockSuiteAtom,
+  publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
 import { StyledTableContainer } from '../components/blocksuite/block-suite-page-list/page-list/styles';
@@ -21,7 +21,7 @@ const QuickSearchModal = dynamic(
 );
 
 export const PublicQuickSearch: React.FC = () => {
-  const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
+  const blockSuiteWorkspace = useAtomValue(publicWorkspaceAtom);
   const router = useRouter();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom

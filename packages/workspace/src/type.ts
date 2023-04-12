@@ -54,6 +54,13 @@ export interface LocalWorkspace {
   providers: Provider[];
 }
 
+export interface AffinePublicWorkspace {
+  flavour: WorkspaceFlavour.PUBLIC;
+  id: string;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+  providers: Provider[];
+}
+
 export const enum LoadPriority {
   HIGH = 1,
   MEDIUM = 2,
@@ -63,6 +70,7 @@ export const enum LoadPriority {
 export const enum WorkspaceFlavour {
   AFFINE = 'affine',
   LOCAL = 'local',
+  PUBLIC = 'affine-public',
 }
 
 export const settingPanel = {
@@ -79,6 +87,7 @@ export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 export interface WorkspaceRegistry {
   [WorkspaceFlavour.AFFINE]: AffineWorkspace;
   [WorkspaceFlavour.LOCAL]: LocalWorkspace;
+  [WorkspaceFlavour.PUBLIC]: AffinePublicWorkspace;
 }
 
 export interface WorkspaceCRUD<Flavour extends keyof WorkspaceRegistry> {
