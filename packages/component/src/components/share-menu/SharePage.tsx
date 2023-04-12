@@ -3,8 +3,10 @@ import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-blocksuite-workspace-page-is-public';
 import type { FC } from 'react';
+import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
+import { PublicLinkDisableModal } from './disable-public-link';
 import type { ShareMenuProps } from './index';
 import {
   descriptionStyle,
@@ -40,6 +42,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   const [isPublic, setIsPublic] = useBlockSuiteWorkspacePageIsPublic(
     props.currentPage
   );
+  const [showDisable, setShowDisable] = useState(false);
   const sharingUrl = useMemo(() => {
     const env = getEnvironment();
     if (env.isBrowser) {
@@ -53,6 +56,10 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   }, [isPublic]);
   const onClickCopyLink = useCallback(() => {
     navigator.clipboard.writeText(sharingUrl);
+  }, []);
+  const onDisablePublicLink = useCallback(() => {
+    //TODO: disable public link
+    console.log('disable');
   }, []);
   return (
     <div className={menuItemStyle}>
@@ -83,9 +90,19 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
         </StyledLinkSpan>
       </div>
       {isPublic && (
-        <StyledDisableButton onClick={() => console.log('disable public link')}>
-          Disable Public Link
-        </StyledDisableButton>
+        <>
+          {' '}
+          <StyledDisableButton onClick={() => setShowDisable(true)}>
+            Disable Public Link
+          </StyledDisableButton>
+          <PublicLinkDisableModal
+            onDisablePublicLink={() => onDisablePublicLink()}
+            open={showDisable}
+            onClose={() => {
+              setShowDisable(false);
+            }}
+          />
+        </>
       )}
     </div>
   );
