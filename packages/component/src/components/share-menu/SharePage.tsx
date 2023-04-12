@@ -5,10 +5,18 @@ import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-bloc
 import type { FC } from 'react';
 import { useCallback, useMemo } from 'react';
 
-import { Button } from '../..';
 import type { ShareMenuProps } from './index';
-import { buttonStyle, descriptionStyle, menuItemStyle } from './index.css';
-import { StyledInput } from './styles';
+import {
+  descriptionStyle,
+  inputButtonRowStyle,
+  menuItemStyle,
+} from './index.css';
+import {
+  StyledButton,
+  StyledDisableButton,
+  StyledInput,
+  StyledLinkSpan,
+} from './styles';
 
 export const LocalSharePage: FC<ShareMenuProps> = props => {
   return (
@@ -16,17 +24,14 @@ export const LocalSharePage: FC<ShareMenuProps> = props => {
       <div className={descriptionStyle}>
         Sharing page publicly requires AFFiNE Cloud service.
       </div>
-      <Button
+      <StyledButton
         data-testid="share-menu-enable-affine-cloud-button"
-        className={buttonStyle}
-        type="light"
-        shape="round"
         onClick={() => {
           props.onEnableAffineCloud(props.workspace as LocalWorkspace);
         }}
       >
         Enable AFFiNE Cloud
-      </Button>
+      </StyledButton>
     </div>
   );
 };
@@ -54,13 +59,28 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
       <div className={descriptionStyle}>
         Create a link you can easily share with anyone.
       </div>
-      <StyledInput
-        type="text"
-        readOnly
-        value={isPublic ? sharingUrl : 'not public'}
-      />
-      {!isPublic && <Button onClick={onClickCreateLink}>Create</Button>}
-      {isPublic && <Button onClick={onClickCopyLink}>Copy Link</Button>}
+      <div className={inputButtonRowStyle}>
+        <StyledInput
+          type="text"
+          readOnly
+          value={isPublic ? sharingUrl : 'not public'}
+        />
+        {!isPublic && (
+          <StyledButton onClick={onClickCreateLink}>Create</StyledButton>
+        )}
+        {isPublic && (
+          <StyledButton onClick={onClickCopyLink}>Copy Link</StyledButton>
+        )}
+      </div>
+      <div className={descriptionStyle}>
+        The entire Workspace is published on the web and can be edited via
+        <StyledLinkSpan>Workspace Settings.</StyledLinkSpan>
+      </div>
+      {isPublic && (
+        <StyledDisableButton onClick={() => console.log('disable public link')}>
+          Disable Public Link
+        </StyledDisableButton>
+      )}
     </div>
   );
 };

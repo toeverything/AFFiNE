@@ -1,5 +1,4 @@
 import { displayFlex, styled, TextButton } from '../..';
-
 export const StyledShareButton = styled(TextButton)<{ isShared?: boolean }>(
   ({ theme, isShared }) => {
     return {
@@ -45,6 +44,7 @@ export const TabItem = styled('li')<{ isActive?: boolean }>(
         padding: '0 10px',
         marginBottom: '4px',
         borderRadius: '4px',
+        position: 'relative',
         ':hover': {
           background: theme.colors.hoverBackground,
           opacity: 1,
@@ -64,7 +64,7 @@ export const TabItem = styled('li')<{ isActive?: boolean }>(
         ':after': {
           content: '""',
           position: 'absolute',
-          bottom: '-2px',
+          bottom: '-6px',
           left: '0',
           width: '100%',
           height: '2px',
@@ -86,11 +86,43 @@ export const StyledIndicator = styled('div')(({ theme }) => {
 });
 export const StyledInput = styled('input')(({ theme }) => {
   return {
+    padding: '4px 8px',
+    height: '28px',
     color: theme.colors.placeHolderColor,
     border: `1px solid ${theme.colors.placeHolderColor}`,
     cursor: 'default',
     overflow: 'hidden',
     userSelect: 'text',
     borderRadius: '4px',
+    flexGrow: 1,
+    marginRight: '10px',
+  };
+});
+export const StyledButton = styled(TextButton)(({ theme }) => {
+  return {
+    color: theme.colors.primaryColor,
+    height: '32px',
+    background: '#F3F0FF',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '4px 20px',
+  };
+});
+export const StyledDisableButton = styled(TextButton)(() => {
+  return {
+    color: '#FF631F',
+    height: '32px',
+    border: 'none',
+    marginTop: '16px',
+    borderRadius: '8px',
+    padding: '0',
+  };
+});
+export const StyledLinkSpan = styled('span')(({ theme }) => {
+  return {
+    marginLeft: '4px',
+    color: theme.colors.primaryColor,
+    fontWeight: '500',
+    cursor: 'pointer',
   };
 });

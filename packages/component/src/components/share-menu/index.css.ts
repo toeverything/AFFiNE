@@ -4,7 +4,7 @@ export const tabStyle = style({
   display: 'flex',
   flex: '1',
   width: '100%',
-  padding: '0',
+  padding: '0 10px',
   margin: '0',
   justifyContent: 'center',
   alignItems: 'center',
@@ -12,15 +12,17 @@ export const tabStyle = style({
 });
 
 export const menuItemStyle = style({
-  marginLeft: '20px',
-  marginRight: '20px',
-  marginTop: '22px',
+  padding: '4px 18px',
+  paddingBottom: '16px',
+  width: '100%',
 });
 
 export const descriptionStyle = style({
-  fontSize: '1rem',
   wordWrap: 'break-word',
-  whiteSpace: 'pre-wrap',
+  // wordBreak: 'break-all',
+  fontSize: '16px',
+  marginTop: '16px',
+  marginBottom: '16px',
 });
 
 export const buttonStyle = style({
@@ -43,4 +45,10 @@ export const containerStyle = style({
 });
 export const indicatorContainerStyle = style({
   position: 'relative',
+});
+export const inputButtonRowStyle = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: '16px',
 });
