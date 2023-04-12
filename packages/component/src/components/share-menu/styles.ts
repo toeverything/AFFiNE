@@ -32,20 +32,40 @@ export const TabItem = styled('li')<{ isActive?: boolean }>(
   ({ theme, isActive }) => {
     {
       return {
-        ...displayFlex('space-between', 'center'),
-        height: '34px',
+        ...displayFlex('center', 'center'),
+        flex: '1',
+        height: '30px',
         color: theme.colors.textColor,
         opacity: isActive ? 1 : 0.2,
         fontWeight: '500',
-        fontSize: theme.font.h6,
+        fontSize: theme.font.base,
         lineHeight: theme.font.lineHeight,
         cursor: 'pointer',
         transition: 'all 0.15s ease',
+        padding: '0 10px',
+        marginBottom: '4px',
+        borderRadius: '4px',
+        ':hover': {
+          background: theme.colors.hoverBackground,
+          opacity: 1,
+          color: isActive
+            ? theme.colors.textColor
+            : theme.colors.secondaryTextColor,
+          svg: {
+            fill: isActive
+              ? theme.colors.textColor
+              : theme.colors.secondaryTextColor,
+          },
+        },
+        svg: {
+          fontSize: '20px',
+          marginRight: '12px',
+        },
         ':after': {
           content: '""',
           position: 'absolute',
           bottom: '-2px',
-          left: '-2px',
+          left: '0',
           width: '100%',
           height: '2px',
           background: theme.colors.textColor,
@@ -55,19 +75,15 @@ export const TabItem = styled('li')<{ isActive?: boolean }>(
     }
   }
 );
-export const StyledIndicator = styled('div')<{ activeIndex: number }>(
-  ({ theme, activeIndex }) => {
-    return {
-      height: '2px',
-      margin: '0 10px',
-      background: theme.colors.textColor,
-      position: 'absolute',
-      left: `calc(${activeIndex * 100}% / 3)`,
-      width: `calc(100% / 3)`,
-      transition: 'left .3s, width .3s',
-    };
-  }
-);
+export const StyledIndicator = styled('div')(({ theme }) => {
+  return {
+    height: '2px',
+    background: theme.colors.textColor,
+    position: 'absolute',
+    left: '0',
+    transition: 'left .3s, width .3s',
+  };
+});
 export const StyledInput = styled('input')(({ theme }) => {
   return {
     color: theme.colors.placeHolderColor,

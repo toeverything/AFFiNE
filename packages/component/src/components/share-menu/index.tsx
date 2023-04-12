@@ -3,11 +3,12 @@ import { ExportIcon, PublishIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-blocksuite-workspace-page-is-public';
 import type { FC } from 'react';
+import { useRef } from 'react';
 import { useCallback, useState } from 'react';
 
 import { Menu } from '../..';
 import { Export } from './Export';
-import { tabStyle } from './index.css';
+import { containerStyle, indicatorContainerStyle, tabStyle } from './index.css';
 import { SharePage } from './SharePage';
 import { ShareWorkspace } from './ShareWorkspace';
 import { StyledIndicator, StyledShareButton, TabItem } from './styles';
@@ -39,13 +40,41 @@ export type ShareMenuProps<
   ) => Promise<void>;
 };
 
+function assertInstanceOf<T, U extends T>(
+  obj: T,
+  type: new (...args: any[]) => U
+): asserts obj is U {
+  if (!(obj instanceof type)) {
+    throw new Error('Object is not instance of type');
+  }
+}
+
 export const ShareMenu: FC<ShareMenuProps> = props => {
   const [activeItem, setActiveItem] = useState<SharePanel>('SharePage');
   const [isPublic] = useBlockSuiteWorkspacePageIsPublic(props.currentPage);
   const [open, setOpen] = useState(false);
-  const handleMenuChange = useCallback((selectedItem: SharePanel) => {
-    setActiveItem(selectedItem);
-  }, []);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const indicatorRef = useRef<HTMLDivElement | null>(null);
+  const startTransaction = useCallback(() => {
+    if (indicatorRef.current && containerRef.current) {
+      const indicator = indicatorRef.current;
+      const activeTabElement = containerRef.current.querySelector(
+        `[data-tab-key="${activeItem}"]`
+      );
+      assertInstanceOf(activeTabElement, HTMLElement);
+      requestAnimationFrame(() => {
+        indicator.style.left = `${activeTabElement.offsetLeft}px`;
+        indicator.style.width = `${activeTabElement.offsetWidth}px`;
+      });
+    }
+  }, [activeItem]);
+  const handleMenuChange = useCallback(
+    (selectedItem: SharePanel) => {
+      setActiveItem(selectedItem);
+      startTransaction();
+    },
+    [setActiveItem, startTransaction]
+  );
 
   const ActiveComponent = MenuItems[activeItem];
   interface ShareMenuProps {
@@ -59,11 +88,12 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
     };
 
     return (
-      <div className={tabStyle}>
+      <div className={tabStyle} ref={containerRef}>
         {Object.keys(MenuItems).map(item => (
           <TabItem
             isActive={activeItem === item}
             key={item}
+            data-tab-key={item}
             onClick={() => handleButtonClick(item as SharePanel)}
           >
             {tabIcons[item as SharePanel]}
@@ -77,17 +107,27 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
   const Share = (
     <>
       <ShareMenu activeItem={activeItem} onChangeTab={handleMenuChange} />
-      <StyledIndicator activeIndex={activeIndex} />
-      <ActiveComponent {...props} />
+      <div className={indicatorContainerStyle}>
+        <StyledIndicator
+          ref={ref => {
+            indicatorRef.current = ref;
+            startTransaction();
+          }}
+        />
+      </div>
+
+      <div className={containerStyle}>
+        <ActiveComponent {...props} />
+      </div>
     </>
   );
   return (
     <Menu
       content={Share}
       visible={open}
-      style={{ minWidth: '439px' }}
       placement="bottom-end"
       trigger={['click']}
+      width={439}
       disablePortal={true}
       onClickAway={() => {
         setOpen(false);
