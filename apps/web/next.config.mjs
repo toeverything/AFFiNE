@@ -26,7 +26,7 @@ const profileTarget = {
   dev: '100.84.105.99:11001',
   test: '100.84.105.99:11001',
   stage: '',
-  prod: 'http://app.affine.pro',
+  prod: 'https://app.affine.pro',
   local: '127.0.0.1:3000',
 };
 
