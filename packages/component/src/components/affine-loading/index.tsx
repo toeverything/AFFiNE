@@ -8,11 +8,13 @@ import light from './loading-white.json';
 export type AffineLoadingProps = {
   loop?: boolean;
   autoplay?: boolean;
+  autoReverse?: boolean;
 };
 
 export const AffineLoading: FC<AffineLoadingProps> = ({
   loop = false,
   autoplay = false,
+  autoReverse = false,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -20,8 +22,9 @@ export const AffineLoading: FC<AffineLoadingProps> = ({
     <InternalLottie
       key={isDark ? 'dark' : 'light'}
       options={{
-        loop: loop,
-        autoplay: autoplay,
+        loop,
+        autoplay,
+        autoReverse,
         animationData: isDark ? light : dark,
         rendererSettings: {
           preserveAspectRatio: 'xMidYMid slice',
