@@ -1,3 +1,5 @@
+import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -10,6 +12,7 @@ import { lazy, startTransition, useCallback, useEffect } from 'react';
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import { usePageMeta } from '../hooks/use-page-meta';
 import type { AffineOfficialWorkspace } from '../shared';
+import { toast } from '../utils';
 import { PageNotFoundError } from './affine/affine-error-eoundary';
 import { WorkspaceHeader } from './blocksuite/workspace-header';
 
@@ -53,17 +56,21 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   assertExists(meta);
 
   // Prevent default "save page as" keyboard shortcut
+  const { t } = useTranslation();
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
       if ((e.key === 's' && e.metaKey) || (e.key === 's' && e.ctrlKey)) {
         e.preventDefault();
+        if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+          toast(t('All changes are saved locally in real time.'));
+        }
       }
     };
     document.addEventListener('keydown', handleKeydown);
     return () => {
       document.removeEventListener('keydown', handleKeydown);
     };
-  }, []);
+  }, [workspace.flavour]);
 
   return (
     <>
