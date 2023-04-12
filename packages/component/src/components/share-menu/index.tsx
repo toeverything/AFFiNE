@@ -97,7 +97,7 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
             onClick={() => handleButtonClick(item as SharePanel)}
           >
             {tabIcons[item as SharePanel]}
-            {item}
+            {isPublic ? (item === 'SharePage' ? 'SharedPage' : item) : item}
           </TabItem>
         ))}
       </div>

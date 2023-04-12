@@ -1,4 +1,4 @@
-import { displayFlex, styled, TextButton } from '../..';
+import { Button, displayFlex, styled, TextButton } from '../..';
 export const StyledShareButton = styled(TextButton)<{ isShared?: boolean }>(
   ({ theme, isShared }) => {
     return {
@@ -108,7 +108,7 @@ export const StyledButton = styled(TextButton)(({ theme }) => {
     padding: '4px 20px',
   };
 });
-export const StyledDisableButton = styled(TextButton)(() => {
+export const StyledDisableButton = styled(Button)(() => {
   return {
     color: '#FF631F',
     height: '32px',
