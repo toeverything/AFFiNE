@@ -75,8 +75,8 @@ __metadata:
     clsx: ^1.2.1
     concurrently: ^8.0.1
     jest-mock: ^29.5.0
-    kebab-case: ^1.0.2
     jotai: ^2.0.3
+    kebab-case: ^1.0.2
     lit: ^2.7.2
     react: ^18.2.0
     react-dnd: ^16.0.1
@@ -13910,7 +13910,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai@npm:^2.0.4":
+"jotai@npm:^2.0.3, jotai@npm:^2.0.4":
   version: 2.0.4
   resolution: "jotai@npm:2.0.4"
   peerDependencies:
