@@ -23,7 +23,7 @@ export function registerProtocol() {
 
   session.defaultSession.webRequest.onHeadersReceived(
     (responseDetails, callback) => {
-      const { responseHeaders, url } = responseDetails;
+      const { responseHeaders } = responseDetails;
       if (responseHeaders) {
         responseHeaders['Access-Control-Allow-Origin'] = ['*'];
       }
