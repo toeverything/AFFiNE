@@ -64,7 +64,7 @@ async function createWindow() {
   const pageUrl =
     IS_DEV && process.env.DEV_SERVER_URL !== undefined
       ? process.env.DEV_SERVER_URL
-      : 'app://./index.html'; // see protocol.ts
+      : 'file://./index.html'; // see protocol.ts
 
   await browserWindow.loadURL(pageUrl);
 

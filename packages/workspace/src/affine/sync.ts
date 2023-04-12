@@ -62,7 +62,7 @@ export function createAffineGlobalChannel(
   let dispose: Disposable | undefined = undefined;
   const apis = {
     connect: () => {
-      client = new WebsocketClient(websocketPrefixUrl);
+      client = new WebsocketClient(websocketPrefixUrl + '/api/global/sync/');
       client.connect(handleMessage);
       dispose = storageChangeSlot.on(() => {
         apis.disconnect();

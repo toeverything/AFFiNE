@@ -1,21 +1,10 @@
 import { protocol, session } from 'electron';
 import { join } from 'path';
 
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'app',
-    privileges: {
-      standard: true,
-      supportFetchAPI: true,
-      corsEnabled: false,
-    },
-  },
-]);
-
 export function registerProtocol() {
   if (process.env.NODE_ENV === 'production') {
-    protocol.registerFileProtocol('app', (request, callback) => {
-      const url = request.url.replace(/^app:\/\//, '');
+    protocol.interceptFileProtocol('file', (request, callback) => {
+      const url = request.url.replace(/^file:\/\//, '');
       const webStaticDir = join(__dirname, '../../../resources/web-static');
       if (url.startsWith('./')) {
         // if is a file type, load the file in resources

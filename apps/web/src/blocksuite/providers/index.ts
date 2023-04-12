@@ -21,7 +21,7 @@ const createAffineWebSocketProvider = (
     },
     connect: () => {
       webSocketProvider = new KeckProvider(
-        websocketPrefixUrl,
+        websocketPrefixUrl + '/api/sync/',
         blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc,
         {

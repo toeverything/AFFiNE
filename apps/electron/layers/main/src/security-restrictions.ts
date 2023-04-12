@@ -14,7 +14,7 @@ app.on('web-contents-created', (_, contents) => {
       (process.env.DEV_SERVER_URL &&
         url.startsWith(process.env.DEV_SERVER_URL)) ||
       url.startsWith('affine://') ||
-      url.startsWith('app://.')
+      url.startsWith('file://.')
     ) {
       return;
     }

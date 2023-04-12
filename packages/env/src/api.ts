@@ -22,8 +22,7 @@ if (typeof window === 'undefined' || getEnvironment().isDesktop) {
 }
 
 const apiUrl = new URL(prefixUrl);
-const websocketPrefixUrl = `${apiUrl.protocol === 'https:' ? 'wss' : 'ws'}://${
-  apiUrl.host
-}/api/sync/`;
+const wsProtocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws';
+const websocketPrefixUrl = `${wsProtocol}://${apiUrl.host}`;
 
 export { prefixUrl, websocketPrefixUrl };
