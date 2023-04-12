@@ -38,7 +38,6 @@ export const InternalLottie: FC<CustomLottieProps> = ({
         return;
       }
       const frame = lottieInstance.current.currentFrame.toFixed(0);
-      console.log(frame);
       if (frame === '1' || frame === '0') {
         directionRef.current = 1;
         lottieInstance.current.setDirection(directionRef.current);
