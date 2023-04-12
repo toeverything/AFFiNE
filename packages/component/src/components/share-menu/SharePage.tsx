@@ -63,7 +63,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
         <StyledInput
           type="text"
           readOnly
-          value={isPublic ? sharingUrl : 'not public'}
+          value={isPublic ? sharingUrl : 'https://app.affine.pro/xxxx'}
         />
         {!isPublic && (
           <StyledButton onClick={onClickCreateLink}>Create</StyledButton>
@@ -74,7 +74,13 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
       </div>
       <div className={descriptionStyle}>
         The entire Workspace is published on the web and can be edited via
-        <StyledLinkSpan>Workspace Settings.</StyledLinkSpan>
+        <StyledLinkSpan
+          onClick={() => {
+            props.onOpenWorkspaceSettings(props.workspace);
+          }}
+        >
+          Workspace Settings.
+        </StyledLinkSpan>
       </div>
       {isPublic && (
         <StyledDisableButton onClick={() => console.log('disable public link')}>
