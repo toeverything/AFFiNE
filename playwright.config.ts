@@ -76,7 +76,7 @@ const config: PlaywrightTestConfig = {
         ENABLE_DEBUG_PAGE: '1',
         ENABLE_SUBPAGE: '1',
         ENABLE_CHANGELOG: '1',
-        NODE_API_SERVER: 'local',
+        API_SERVER_PROFILE: 'local',
       },
     },
   ],
