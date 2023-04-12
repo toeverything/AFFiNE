@@ -41,7 +41,15 @@ const FavouritePage: NextPageWithLayout = () => {
       <Head>
         <title>{t('Favorites')} - AFFiNE</title>
       </Head>
-      <WorkspaceTitle icon={<FavoriteIcon />}>{t('Favorites')}</WorkspaceTitle>
+      <WorkspaceTitle
+        workspace={currentWorkspace}
+        currentPage={null}
+        isPreview={false}
+        isPublic={false}
+        icon={<FavoriteIcon />}
+      >
+        {t('Favorites')}
+      </WorkspaceTitle>
       <PageList
         blockSuiteWorkspace={blockSuiteWorkspace}
         onClickPage={onClickPage}

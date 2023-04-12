@@ -1,11 +1,13 @@
 import { Menu, MenuItem } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { ContentParser } from '@blocksuite/blocks/content-parser';
 import {
   ArrowRightSmallIcon,
   ExportIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
 } from '@blocksuite/icons';
+import { useRef } from 'react';
 
 import type { CommonMenuItemProps } from './types';
 
@@ -14,7 +16,7 @@ export const Export = ({
   onItemClick,
 }: CommonMenuItemProps<{ type: 'markdown' | 'html' }>) => {
   const { t } = useTranslation();
-
+  const contentParserRef = useRef<ContentParser>();
   return (
     <Menu
       width={248}
@@ -23,9 +25,14 @@ export const Export = ({
       content={
         <>
           <MenuItem
+            data-testid="export-to-html"
             onClick={() => {
-              // @ts-expect-error
-              globalThis.currentEditor.contentParser.onExportHtml();
+              if (!contentParserRef.current) {
+                contentParserRef.current = new ContentParser(
+                  globalThis.currentEditor!.page
+                );
+              }
+              contentParserRef.current.onExportHtml();
               onSelect?.({ type: 'html' });
             }}
             icon={<ExportToHtmlIcon />}
@@ -33,9 +40,14 @@ export const Export = ({
             {t('Export to HTML')}
           </MenuItem>
           <MenuItem
+            data-testid="export-to-markdown"
             onClick={() => {
-              // @ts-expect-error
-              globalThis.currentEditor.contentParser.onExportMarkdown();
+              if (!contentParserRef.current) {
+                contentParserRef.current = new ContentParser(
+                  globalThis.currentEditor!.page
+                );
+              }
+              contentParserRef.current.onExportMarkdown();
               onSelect?.({ type: 'markdown' });
             }}
             icon={<ExportToMarkdownIcon />}
@@ -46,6 +58,7 @@ export const Export = ({
       }
     >
       <MenuItem
+        data-testid="export-menu"
         icon={<ExportIcon />}
         endIcon={<ArrowRightSmallIcon />}
         onClick={e => {

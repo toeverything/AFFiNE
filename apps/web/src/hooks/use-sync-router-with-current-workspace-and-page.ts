@@ -34,6 +34,9 @@ export function findSuitablePageId(
         null
       );
     }
+    case WorkspaceFlavour.PUBLIC: {
+      return null;
+    }
   }
 }
 

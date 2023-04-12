@@ -184,6 +184,7 @@ test.describe('PinBoard interaction', () => {
   test('search pinboard', async ({ page }) => {
     const rootPinboardMeta = await initHomePageWithPinboard(page);
     await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
+    await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test2');
     const childMeta = (await getMetas(page)).find(m => m.title === 'test1');
 
     await openPinboardPageOperationMenu(page, childMeta?.id ?? '');
@@ -193,7 +194,7 @@ test.describe('PinBoard interaction', () => {
     await page.fill('[data-testid="pinboard-menu-search"]', '111');
     expect(await page.locator('[alt="no result"]').count()).toEqual(1);
 
-    await page.fill('[data-testid="pinboard-menu-search"]', 'test1');
+    await page.fill('[data-testid="pinboard-menu-search"]', 'test2');
     expect(
       await page.locator('[data-testid="pinboard-search-result"]').count()
     ).toEqual(1);

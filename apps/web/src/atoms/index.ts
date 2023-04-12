@@ -52,7 +52,7 @@ const workspaceFlavourAtom = atomFamily((id: string) => {
   });
 });
 
-export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
+export const workspaceByIdAtomFamily = atomFamily((id?: string) => {
   let resolve = (v: AllWorkspace | null) => {};
   const initialPromise: Promise<AllWorkspace | null> = new Promise(_resolve => {
     resolve = _resolve;
@@ -72,14 +72,14 @@ export const workspaceByIdAtomFamily = atomFamily((id?: string | null) => {
 
   const anAtom = atom(
     get => {
-      if (!id) return null;
+      if (!id) return Promise.resolve(null);
       const flavour = get(workspaceFlavourAtom(id));
-      if (!flavour) return null;
+      if (!flavour) return Promise.resolve(null);
       getValue(flavour, true).then(resolve);
       return get(baseAtom);
     },
     async (get, set, action: 'mount') => {
-      if (!id) return null;
+      if (!id) return;
       if (action === 'mount') {
         logger.debug('workspaceByIdAtomFamily mount', id);
         const flavour = get(workspaceFlavourAtom(id));

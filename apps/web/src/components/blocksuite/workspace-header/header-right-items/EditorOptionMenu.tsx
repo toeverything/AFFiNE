@@ -14,6 +14,7 @@ import { useAtom } from 'jotai';
 import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
+import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import {
@@ -47,7 +48,7 @@ export const EditorOptionMenu = () => {
   const { favorite } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
-
+  const { removeToTrash } = useMetaHelper(blockSuiteWorkspace);
   const EditMenu = (
     <>
       <MenuItem
@@ -118,11 +119,8 @@ export const EditorOptionMenu = () => {
           open={openConfirm}
           meta={pageMeta}
           onConfirm={() => {
+            removeToTrash(pageMeta.id);
             toast(t('Moved to Trash'));
-            setPageMeta(pageMeta.id, {
-              trash: true,
-              trashDate: +new Date(),
-            });
           }}
           onCancel={() => {
             setOpenConfirm(false);

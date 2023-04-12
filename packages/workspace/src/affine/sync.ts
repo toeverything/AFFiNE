@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { websocketPrefixUrl } from '@affine/env/api';
 import {
   workspaceDetailSchema,
   workspaceSchema,
@@ -61,11 +62,7 @@ export function createAffineGlobalChannel(
   let dispose: Disposable | undefined = undefined;
   const apis = {
     connect: () => {
-      client = new WebsocketClient(
-        `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${
-          window.location.host
-        }/api/global/sync`
-      );
+      client = new WebsocketClient(websocketPrefixUrl + '/api/global/sync/');
       client.connect(handleMessage);
       dispose = storageChangeSlot.on(() => {
         apis.disconnect();

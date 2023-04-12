@@ -8,9 +8,11 @@ import { WorkspaceList } from '@affine/component/workspace-list';
 import { useTranslation } from '@affine/i18n';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { useAtomValue } from 'jotai';
+import { atom, useAtomValue } from 'jotai';
+import { atomFamily } from 'jotai/utils';
 import { useCallback } from 'react';
 
 import { workspaceByIdAtomFamily } from '../../../atoms';
@@ -44,6 +46,13 @@ interface WorkspaceModalProps {
   onCreateWorkspace: () => void;
   onMoveWorkspace: (activeId: string, overId: string) => void;
 }
+
+const nonPublicWorkspaceAtom = atomFamily((id: string) => {
+  return atom(async get => {
+    const workspace = await get(workspaceByIdAtomFamily(id));
+    return workspace?.flavour !== WorkspaceFlavour.PUBLIC ? workspace : null;
+  });
+});
 
 export const WorkspaceListModal = ({
   disabled,
@@ -101,8 +110,10 @@ export const WorkspaceListModal = ({
         <StyledModalContent>
           <WorkspaceList
             disabled={disabled}
-            getWorkspaceAtom={id => workspaceByIdAtomFamily(id)}
-            items={workspaces.map(w => w.id)}
+            getWorkspaceAtom={nonPublicWorkspaceAtom}
+            items={workspaces
+              .filter(({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC)
+              .map(w => w.id)}
             currentWorkspaceId={currentWorkspaceId}
             onClick={onClickWorkspace}
             onSettingClick={onClickWorkspaceSetting}
