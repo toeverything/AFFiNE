@@ -31,7 +31,7 @@ export const WorkspaceHeader = forwardRef<
   HTMLDivElement,
   PropsWithChildren<WorkspaceHeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
-  const { workspace, currentPage, children, isPublic, isPreview } = props;
+  const { workspace, currentPage, children, isPublic } = props;
   // fixme(himself65): remove this atom and move it to props
   const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
   const pageMeta = usePageMeta(workspace.blockSuiteWorkspace).find(
@@ -39,7 +39,6 @@ export const WorkspaceHeader = forwardRef<
   );
   assertExists(pageMeta);
   const title = pageMeta.title;
-  const { trash: isTrash } = pageMeta;
   const [isTipsHidden, setTipsHidden] = useGuideHidden();
   const isMac = () => {
     const env = getEnvironment();
