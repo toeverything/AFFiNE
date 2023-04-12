@@ -35,7 +35,7 @@ export const actionsStyle = style({
   gap: '9px',
   flexDirection: 'column',
   justifyContent: 'center',
-  alignItems: 'start',
+  alignItems: 'flex-start',
 });
 
 export const containerStyle = style({
