@@ -1,11 +1,10 @@
 import { ListSkeleton } from '@affine/component';
 import { useAtomValue } from 'jotai';
 import { useAtom } from 'jotai';
-import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 
 import { openQuickSearchModalAtom } from '../atoms';
 import {
@@ -16,8 +15,10 @@ import { StyledTableContainer } from '../components/blocksuite/block-suite-page-
 import { useRouterTitle } from '../hooks/use-router-title';
 import { MainContainer, StyledPage } from './styles';
 
-const QuickSearchModal = dynamic(
-  () => import('../components/pure/quick-search-modal')
+const QuickSearchModal = lazy(() =>
+  import('../components/pure/quick-search-modal').then(module => ({
+    default: module.QuickSearchModal,
+  }))
 );
 
 export const PublicQuickSearch: React.FC = () => {

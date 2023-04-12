@@ -1,10 +1,9 @@
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback, useTransition } from 'react';
+import { lazy, useCallback, useTransition } from 'react';
 
 import {
   currentWorkspaceIdAtom,
@@ -19,14 +18,15 @@ import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
 
-const WorkspaceListModal = dynamic(
-  async () =>
-    (await import('../components/pure/workspace-list-modal')).WorkspaceListModal
+const WorkspaceListModal = lazy(() =>
+  import('../components/pure/workspace-list-modal').then(module => ({
+    default: module.WorkspaceListModal,
+  }))
 );
-const CreateWorkspaceModal = dynamic(
-  async () =>
-    (await import('../components/pure/create-workspace-modal'))
-      .CreateWorkspaceModal
+const CreateWorkspaceModal = lazy(() =>
+  import('../components/pure/create-workspace-modal').then(module => ({
+    default: module.CreateWorkspaceModal,
+  }))
 );
 
 export function Modals() {

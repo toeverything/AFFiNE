@@ -23,9 +23,18 @@ export function registerProtocol() {
 
   session.defaultSession.webRequest.onHeadersReceived(
     (responseDetails, callback) => {
-      const { responseHeaders, url } = responseDetails;
+      const { responseHeaders } = responseDetails;
       if (responseHeaders) {
+        delete responseHeaders['access-control-allow-origin'];
+        delete responseHeaders['access-control-allow-methods'];
         responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+        responseHeaders['Access-Control-Allow-Methods'] = [
+          'GET',
+          'POST',
+          'PUT',
+          'DELETE',
+          'OPTIONS',
+        ];
       }
 
       callback({ responseHeaders });
