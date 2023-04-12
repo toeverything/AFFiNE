@@ -73,16 +73,16 @@ type HeaderItem = {
 };
 
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
-  [HeaderRightItemName.EditorOptionMenu]: {
-    Component: EditorOptionMenu,
-    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !!currentPage && !isPublic && !isPreview;
-    },
-  },
   [HeaderRightItemName.TrashButtonGroup]: {
     Component: TrashButtonGroup,
     availableWhen: (_, currentPage) => {
       return currentPage?.meta.trash === true;
+    },
+  },
+  [HeaderRightItemName.SyncUser]: {
+    Component: SyncUser,
+    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
+      return !isPublic && !isPreview;
     },
   },
   [HeaderRightItemName.ThemeModeSwitch]: {
@@ -91,10 +91,10 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       return currentPage?.meta.trash !== true;
     },
   },
-  [HeaderRightItemName.SyncUser]: {
-    Component: SyncUser,
+  [HeaderRightItemName.EditorOptionMenu]: {
+    Component: EditorOptionMenu,
     availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !isPublic && !isPreview;
+      return !!currentPage && !isPublic && !isPreview;
     },
   },
   [HeaderRightItemName.ShareMenu]: {
