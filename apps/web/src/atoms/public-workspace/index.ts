@@ -23,7 +23,7 @@ function createPublicWorkspace(
   );
   blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_database', false);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_database', true);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_edgeless_toolbar', false);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', false);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', false);
