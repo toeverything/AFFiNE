@@ -59,7 +59,7 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
           <PageDetailEditor
             pageId={currentPageId}
             onInit={initPage}
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            workspace={currentWorkspace}
           />
         </>
       );
