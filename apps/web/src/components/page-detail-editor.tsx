@@ -64,7 +64,6 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         isPreview={isPreview ?? false}
         workspace={workspace}
         currentPage={page}
-        key={pageId}
       >
         {header}
       </WorkspaceHeader>
