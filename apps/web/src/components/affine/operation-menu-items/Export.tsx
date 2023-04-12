@@ -25,6 +25,7 @@ export const Export = ({
       content={
         <>
           <MenuItem
+            data-testid="export-to-html"
             onClick={() => {
               if (!contentParserRef.current) {
                 contentParserRef.current = new ContentParser(
@@ -39,6 +40,7 @@ export const Export = ({
             {t('Export to HTML')}
           </MenuItem>
           <MenuItem
+            data-testid="export-to-markdown"
             onClick={() => {
               if (!contentParserRef.current) {
                 contentParserRef.current = new ContentParser(
@@ -56,6 +58,7 @@ export const Export = ({
       }
     >
       <MenuItem
+        data-testid="export-menu"
         icon={<ExportIcon />}
         endIcon={<ArrowRightSmallIcon />}
         onClick={e => {
