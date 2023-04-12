@@ -17,7 +17,7 @@ let mergeCount = 500;
 
 async function databaseExists(name: string): Promise<boolean> {
   return new Promise(resolve => {
-    const req = indexedDB.open(name);
+    const req = indexedDB.open(name, 1);
     let existed = true;
     req.onsuccess = function () {
       req.result.close();
