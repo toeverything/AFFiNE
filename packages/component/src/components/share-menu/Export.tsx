@@ -1,10 +1,17 @@
 import { ContentParser } from '@blocksuite/blocks/content-parser';
+import { ExportToHtmlIcon, ExportToMarkdownIcon } from '@blocksuite/icons';
 import type { FC } from 'react';
 import { useRef } from 'react';
 
 import { Button } from '../..';
 import type { ShareMenuProps } from './index';
-import { actionsStyle, descriptionStyle, menuItemStyle } from './index.css';
+import {
+  actionsStyle,
+  descriptionStyle,
+  exportButtonStyle,
+  menuItemStyle,
+  svgStyle,
+} from './index.css';
 
 export const Export: FC<ShareMenuProps> = props => {
   const contentParserRef = useRef<ContentParser>();
@@ -15,6 +22,7 @@ export const Export: FC<ShareMenuProps> = props => {
       </div>
       <div className={actionsStyle}>
         <Button
+          className={exportButtonStyle}
           onClick={() => {
             if (!contentParserRef.current) {
               contentParserRef.current = new ContentParser(props.currentPage);
@@ -22,9 +30,11 @@ export const Export: FC<ShareMenuProps> = props => {
             return contentParserRef.current.onExportHtml();
           }}
         >
+          <ExportToHtmlIcon className={svgStyle} />
           Export to HTML
         </Button>
         <Button
+          className={exportButtonStyle}
           onClick={() => {
             if (!contentParserRef.current) {
               contentParserRef.current = new ContentParser(props.currentPage);
@@ -32,6 +42,7 @@ export const Export: FC<ShareMenuProps> = props => {
             return contentParserRef.current.onExportMarkdown();
           }}
         >
+          <ExportToMarkdownIcon className={svgStyle} />
           Export to Markdown
         </Button>
       </div>
