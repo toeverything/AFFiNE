@@ -1,5 +1,6 @@
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
@@ -198,22 +199,37 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               )}
             </StyledScrollWrapper>
 
-            <StyledListItem
-              active={
-                currentPath ===
-                (currentWorkspaceId && paths.shared(currentWorkspaceId))
-              }
-            >
-              <StyledLink
-                href={{
-                  pathname:
-                    currentWorkspaceId && paths.shared(currentWorkspaceId),
-                }}
+            {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
+            currentWorkspace.public ? (
+              <StyledListItem>
+                <StyledLink
+                  href={{
+                    pathname:
+                      currentWorkspaceId && paths.setting(currentWorkspaceId),
+                  }}
+                >
+                  <ShareIcon />
+                  <span data-testid="Published-to-web">Published to web</span>
+                </StyledLink>
+              </StyledListItem>
+            ) : (
+              <StyledListItem
+                active={
+                  currentPath ===
+                  (currentWorkspaceId && paths.shared(currentWorkspaceId))
+                }
               >
-                <ShareIcon />
-                <span data-testid="shared-pages">Shared Pages</span>
-              </StyledLink>
-            </StyledListItem>
+                <StyledLink
+                  href={{
+                    pathname:
+                      currentWorkspaceId && paths.shared(currentWorkspaceId),
+                  }}
+                >
+                  <ShareIcon />
+                  <span data-testid="shared-pages">{t('Shared Pages')}</span>
+                </StyledLink>
+              </StyledListItem>
+            )}
             <StyledListItem
               active={
                 currentPath ===
