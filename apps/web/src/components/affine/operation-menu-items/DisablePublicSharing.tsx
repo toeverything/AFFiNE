@@ -1,6 +1,6 @@
 import { MenuItem, styled } from '@affine/component';
-import type { PublicLinkDisableProps } from '@affine/component/Share-menu';
-import { PublicLinkDisableModal } from '@affine/component/Share-menu';
+import type { PublicLinkDisableProps } from '@affine/component/share-menu';
+import { PublicLinkDisableModal } from '@affine/component/share-menu';
 import { useTranslation } from '@affine/i18n';
 import { ShareIcon } from '@blocksuite/icons';
 
