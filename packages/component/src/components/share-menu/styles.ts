@@ -1,24 +1,25 @@
 import { Button, displayFlex, styled, TextButton } from '../..';
-export const StyledShareButton = styled(TextButton)<{ isShared?: boolean }>(
-  ({ theme, isShared }) => {
-    return {
-      padding: '4px 8px',
-      marginLeft: '4px',
-      marginRight: '16px',
-      border: `1px solid ${
-        isShared ? theme.colors.primaryColor : theme.colors.iconColor
-      }`,
-      color: isShared ? theme.colors.primaryColor : theme.colors.iconColor,
-      borderRadius: '8px',
-      ':hover': {
-        border: `1px solid ${theme.colors.primaryColor}`,
-      },
-      span: {
-        ...displayFlex('center', 'center'),
-      },
-    };
-  }
-);
+
+export const StyledShareButton = styled(TextButton, {
+  shouldForwardProp: prop => prop !== 'isShared',
+})<{ isShared?: boolean }>(({ theme, isShared }) => {
+  return {
+    padding: '4px 8px',
+    marginLeft: '4px',
+    marginRight: '16px',
+    border: `1px solid ${
+      isShared ? theme.colors.primaryColor : theme.colors.iconColor
+    }`,
+    color: isShared ? theme.colors.primaryColor : theme.colors.iconColor,
+    borderRadius: '8px',
+    ':hover': {
+      border: `1px solid ${theme.colors.primaryColor}`,
+    },
+    span: {
+      ...displayFlex('center', 'center'),
+    },
+  };
+});
 
 export const StyledTabsWrapper = styled('div')(() => {
   return {

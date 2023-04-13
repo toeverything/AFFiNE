@@ -103,7 +103,6 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
       </div>
     );
   };
-  const activeIndex = Object.keys(MenuItems).indexOf(activeItem);
   const Share = (
     <>
       <ShareMenu activeItem={activeItem} onChangeTab={handleMenuChange} />
