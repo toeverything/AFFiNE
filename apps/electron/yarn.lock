@@ -49,21 +49,21 @@ __metadata:
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
     "@emotion/styled": ^11.10.6
-    "@mui/base": 5.0.0-alpha.124
+    "@mui/base": 5.0.0-alpha.125
     "@mui/icons-material": ^5.11.16
-    "@mui/material": ^5.11.16
+    "@mui/material": ^5.12.0
     "@radix-ui/react-avatar": ^1.0.2
-    "@storybook/addon-actions": ^7.0.2
+    "@storybook/addon-actions": ^7.0.4
     "@storybook/addon-coverage": ^0.0.8
-    "@storybook/addon-essentials": ^7.0.2
-    "@storybook/addon-interactions": ^7.0.2
-    "@storybook/addon-links": ^7.0.2
-    "@storybook/addon-storysource": ^7.0.2
-    "@storybook/blocks": ^7.0.2
-    "@storybook/builder-vite": ^7.0.2
+    "@storybook/addon-essentials": ^7.0.4
+    "@storybook/addon-interactions": ^7.0.4
+    "@storybook/addon-links": ^7.0.4
+    "@storybook/addon-storysource": ^7.0.4
+    "@storybook/blocks": ^7.0.4
+    "@storybook/builder-vite": ^7.0.4
     "@storybook/jest": ^0.1.0
-    "@storybook/react": ^7.0.2
-    "@storybook/react-vite": ^7.0.2
+    "@storybook/react": ^7.0.4
+    "@storybook/react-vite": ^7.0.4
     "@storybook/test-runner": ^0.10.0
     "@storybook/testing-library": ^0.1.0
     "@toeverything/hooks": "workspace:*"
@@ -85,7 +85,7 @@ __metadata:
     react-error-boundary: ^4.0.3
     react-is: ^18.2.0
     serve: ^14.2.0
-    storybook: ^7.0.2
+    storybook: ^7.0.4
     storybook-dark-mode: ^3.0.0
     typescript: ^5.0.4
     vite: ^4.2.1
@@ -3688,29 +3688,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/base@npm:5.0.0-alpha.124":
-  version: 5.0.0-alpha.124
-  resolution: "@mui/base@npm:5.0.0-alpha.124"
-  dependencies:
-    "@babel/runtime": ^7.21.0
-    "@emotion/is-prop-valid": ^1.2.0
-    "@mui/types": ^7.2.3
-    "@mui/utils": ^5.11.13
-    "@popperjs/core": ^2.11.7
-    clsx: ^1.2.1
-    prop-types: ^15.8.1
-    react-is: ^18.2.0
-  peerDependencies:
-    "@types/react": ^17.0.0 || ^18.0.0
-    react: ^17.0.0 || ^18.0.0
-    react-dom: ^17.0.0 || ^18.0.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: cbe8bcef73e31fca2c4cad462a5e49416e21eacf499c63d67f539716da4224a53bddbf83bb2b80a5ee9e68d67e9b3a6f84d4aa24ba2669c64cc43cf060b92aa2
-  languageName: node
-  linkType: hard
-
 "@mui/base@npm:5.0.0-alpha.125":
   version: 5.0.0-alpha.125
   resolution: "@mui/base@npm:5.0.0-alpha.125"
@@ -3757,7 +3734,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/material@npm:^5.11.16":
+"@mui/material@npm:^5.12.0":
   version: 5.12.0
   resolution: "@mui/material@npm:5.12.0"
   dependencies:
@@ -3856,7 +3833,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/types@npm:^7.2.3, @mui/types@npm:^7.2.4":
+"@mui/types@npm:^7.2.4":
   version: 7.2.4
   resolution: "@mui/types@npm:7.2.4"
   peerDependencies:
@@ -3868,7 +3845,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^5.11.13, @mui/utils@npm:^5.12.0":
+"@mui/utils@npm:^5.12.0":
   version: 5.12.0
   resolution: "@mui/utils@npm:5.12.0"
   dependencies:
@@ -4364,7 +4341,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-actions@npm:7.0.4, @storybook/addon-actions@npm:^7.0.2":
+"@storybook/addon-actions@npm:7.0.4, @storybook/addon-actions@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-actions@npm:7.0.4"
   dependencies:
@@ -4493,7 +4470,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-essentials@npm:^7.0.2":
+"@storybook/addon-essentials@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-essentials@npm:7.0.4"
   dependencies:
@@ -4529,7 +4506,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-interactions@npm:^7.0.2":
+"@storybook/addon-interactions@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-interactions@npm:7.0.4"
   dependencies:
@@ -4558,7 +4535,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-links@npm:^7.0.2":
+"@storybook/addon-links@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-links@npm:7.0.4"
   dependencies:
@@ -4631,7 +4608,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-storysource@npm:^7.0.2":
+"@storybook/addon-storysource@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-storysource@npm:7.0.4"
   dependencies:
@@ -4735,7 +4712,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/blocks@npm:7.0.4, @storybook/blocks@npm:^7.0.2":
+"@storybook/blocks@npm:7.0.4, @storybook/blocks@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/blocks@npm:7.0.4"
   dependencies:
@@ -4792,7 +4769,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/builder-vite@npm:7.0.4, @storybook/builder-vite@npm:^7.0.2":
+"@storybook/builder-vite@npm:7.0.4, @storybook/builder-vite@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/builder-vite@npm:7.0.4"
   dependencies:
@@ -5255,7 +5232,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/react-vite@npm:^7.0.2":
+"@storybook/react-vite@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/react-vite@npm:7.0.4"
   dependencies:
@@ -5275,7 +5252,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/react@npm:7.0.4, @storybook/react@npm:^7.0.2":
+"@storybook/react@npm:7.0.4, @storybook/react@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/react@npm:7.0.4"
   dependencies:
@@ -15695,7 +15672,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"storybook@npm:^7.0.2":
+"storybook@npm:^7.0.4":
   version: 7.0.4
   resolution: "storybook@npm:7.0.4"
   dependencies:

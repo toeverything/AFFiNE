@@ -49,21 +49,21 @@ __metadata:
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
     "@emotion/styled": ^11.10.6
-    "@mui/base": 5.0.0-alpha.124
+    "@mui/base": 5.0.0-alpha.125
     "@mui/icons-material": ^5.11.16
-    "@mui/material": ^5.11.16
+    "@mui/material": ^5.12.0
     "@radix-ui/react-avatar": ^1.0.2
-    "@storybook/addon-actions": ^7.0.2
+    "@storybook/addon-actions": ^7.0.4
     "@storybook/addon-coverage": ^0.0.8
-    "@storybook/addon-essentials": ^7.0.2
-    "@storybook/addon-interactions": ^7.0.2
-    "@storybook/addon-links": ^7.0.2
-    "@storybook/addon-storysource": ^7.0.2
-    "@storybook/blocks": ^7.0.2
-    "@storybook/builder-vite": ^7.0.2
+    "@storybook/addon-essentials": ^7.0.4
+    "@storybook/addon-interactions": ^7.0.4
+    "@storybook/addon-links": ^7.0.4
+    "@storybook/addon-storysource": ^7.0.4
+    "@storybook/blocks": ^7.0.4
+    "@storybook/builder-vite": ^7.0.4
     "@storybook/jest": ^0.1.0
-    "@storybook/react": ^7.0.2
-    "@storybook/react-vite": ^7.0.2
+    "@storybook/react": ^7.0.4
+    "@storybook/react-vite": ^7.0.4
     "@storybook/test-runner": ^0.10.0
     "@storybook/testing-library": ^0.1.0
     "@toeverything/hooks": "workspace:*"
@@ -85,7 +85,7 @@ __metadata:
     react-error-boundary: ^4.0.3
     react-is: ^18.2.0
     serve: ^14.2.0
-    storybook: ^7.0.2
+    storybook: ^7.0.4
     storybook-dark-mode: ^3.0.0
     typescript: ^5.0.4
     vite: ^4.2.1
@@ -193,7 +193,7 @@ __metadata:
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
     "@emotion/styled": ^11.10.6
-    "@mui/material": ^5.11.16
+    "@mui/material": ^5.12.0
     "@perfsee/webpack": ^1.5.0
     "@redux-devtools/extension": ^3.2.5
     "@rich-data/viewer": ^2.15.6
@@ -206,7 +206,7 @@ __metadata:
     "@types/react-dom": ^18.0.11
     "@types/webpack-env": ^1.18.0
     "@vanilla-extract/css": ^1.11.0
-    "@vanilla-extract/next-plugin": ^2.1.1
+    "@vanilla-extract/next-plugin": ^2.1.2
     cmdk: ^0.2.0
     css-spring: ^4.1.0
     dayjs: ^1.11.7
@@ -228,7 +228,7 @@ __metadata:
     swc-plugin-coverage-instrument: =0.0.14
     swr: ^2.1.3
     typescript: ^5.0.4
-    webpack: ^5.78.0
+    webpack: ^5.79.0
     y-protocols: ^1.0.5
     yjs: ^13.5.52
     zod: ^3.21.4
@@ -1903,12 +1903,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@commitlint/cli@npm:^17.5.1":
-  version: 17.5.1
-  resolution: "@commitlint/cli@npm:17.5.1"
+"@commitlint/cli@npm:^17.6.0":
+  version: 17.6.0
+  resolution: "@commitlint/cli@npm:17.6.0"
   dependencies:
     "@commitlint/format": ^17.4.4
-    "@commitlint/lint": ^17.4.4
+    "@commitlint/lint": ^17.6.0
     "@commitlint/load": ^17.5.0
     "@commitlint/read": ^17.5.1
     "@commitlint/types": ^17.4.4
@@ -1919,16 +1919,16 @@ __metadata:
     yargs: ^17.0.0
   bin:
     commitlint: cli.js
-  checksum: 2bdd26b3215796dccb16b0d7459d3b0db7f6324800aa73b97a8cdf79b77f3691d85ee88f37fa6cf20c97ac664f31dcb6ad7aef1da3c3b32d7bb12f18d49a37f2
+  checksum: 3b42aff92bbb882cdff1e54361548fe622ead8eef572d1750fab08e10755b8165dfa79c1e6d71ef2197b9f94223edeee69348bc21a3160d2e18c9ed7dff6e49d
   languageName: node
   linkType: hard
 
-"@commitlint/config-conventional@npm:^17.4.4":
-  version: 17.4.4
-  resolution: "@commitlint/config-conventional@npm:17.4.4"
+"@commitlint/config-conventional@npm:^17.6.0":
+  version: 17.6.0
+  resolution: "@commitlint/config-conventional@npm:17.6.0"
   dependencies:
     conventional-changelog-conventionalcommits: ^5.0.0
-  checksum: 679d92509fe6e53ee0cc4202f8069d88360c4f9dbd7ab74114bb28278a196da517ef711dfe69893033a66e54ffc29e8df2ccf63cfd746a89c82a053949473c4b
+  checksum: ac62e3904d152adc9e1f7e2613918879fd7c0e44e64c8379ca96a3a8ec76367f23d02c1b0f5745d3749d56ddf458c19ebd2ca09bdf5a48d75ac28026ebb8f848
   languageName: node
   linkType: hard
 
@@ -1983,15 +1983,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@commitlint/lint@npm:^17.4.4":
-  version: 17.4.4
-  resolution: "@commitlint/lint@npm:17.4.4"
+"@commitlint/lint@npm:^17.6.0":
+  version: 17.6.0
+  resolution: "@commitlint/lint@npm:17.6.0"
   dependencies:
     "@commitlint/is-ignored": ^17.4.4
     "@commitlint/parse": ^17.4.4
-    "@commitlint/rules": ^17.4.4
+    "@commitlint/rules": ^17.6.0
     "@commitlint/types": ^17.4.4
-  checksum: bf04a9f9a1435e0d3cd03c58b6bf924613d0278b66b0a5d0e18eb96c7af9eeb02871e739a4d7d9312b2b4178f6f8ae9a49ba74382b4e28f623e1bf0af7067946
+  checksum: 0e2901662867ab70c1017e2e501d3a255641972cddbc62f20b53e23de479492b33b60ad5bb74a57372292184ff7acb9e220297871b47b2910ddd2b22c3864a5e
   languageName: node
   linkType: hard
 
@@ -2062,16 +2062,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@commitlint/rules@npm:^17.4.4":
-  version: 17.4.4
-  resolution: "@commitlint/rules@npm:17.4.4"
+"@commitlint/rules@npm:^17.6.0":
+  version: 17.6.0
+  resolution: "@commitlint/rules@npm:17.6.0"
   dependencies:
     "@commitlint/ensure": ^17.4.4
     "@commitlint/message": ^17.4.2
     "@commitlint/to-lines": ^17.4.0
     "@commitlint/types": ^17.4.4
     execa: ^5.0.0
-  checksum: f36525f6e234df6a17d47457b733a1fc10e3e01db1aa6fb45b18cbaf74b7915f634ab65f73d2412787137c366046f8264126c2f21ad9023ac6b68ec8b1cee8f4
+  checksum: 66af1a387b0e6d819e2997423227d7894eb9fd954caf14dab0015094ef4540d615bc3e5d2f8ab720baf264ea9fdc5339728b3c3d23b892b1656236ff96ddd112
   languageName: node
   linkType: hard
 
@@ -3862,29 +3862,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/base@npm:5.0.0-alpha.124":
-  version: 5.0.0-alpha.124
-  resolution: "@mui/base@npm:5.0.0-alpha.124"
-  dependencies:
-    "@babel/runtime": ^7.21.0
-    "@emotion/is-prop-valid": ^1.2.0
-    "@mui/types": ^7.2.3
-    "@mui/utils": ^5.11.13
-    "@popperjs/core": ^2.11.7
-    clsx: ^1.2.1
-    prop-types: ^15.8.1
-    react-is: ^18.2.0
-  peerDependencies:
-    "@types/react": ^17.0.0 || ^18.0.0
-    react: ^17.0.0 || ^18.0.0
-    react-dom: ^17.0.0 || ^18.0.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: cbe8bcef73e31fca2c4cad462a5e49416e21eacf499c63d67f539716da4224a53bddbf83bb2b80a5ee9e68d67e9b3a6f84d4aa24ba2669c64cc43cf060b92aa2
-  languageName: node
-  linkType: hard
-
 "@mui/base@npm:5.0.0-alpha.125":
   version: 5.0.0-alpha.125
   resolution: "@mui/base@npm:5.0.0-alpha.125"
@@ -3931,7 +3908,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/material@npm:^5.11.16":
+"@mui/material@npm:^5.12.0":
   version: 5.12.0
   resolution: "@mui/material@npm:5.12.0"
   dependencies:
@@ -4030,7 +4007,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/types@npm:^7.2.3, @mui/types@npm:^7.2.4":
+"@mui/types@npm:^7.2.4":
   version: 7.2.4
   resolution: "@mui/types@npm:7.2.4"
   peerDependencies:
@@ -4042,7 +4019,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^5.11.13, @mui/utils@npm:^5.12.0":
+"@mui/utils@npm:^5.12.0":
   version: 5.12.0
   resolution: "@mui/utils@npm:5.12.0"
   dependencies:
@@ -5050,7 +5027,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-actions@npm:7.0.4, @storybook/addon-actions@npm:^7.0.2":
+"@storybook/addon-actions@npm:7.0.4, @storybook/addon-actions@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-actions@npm:7.0.4"
   dependencies:
@@ -5179,7 +5156,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-essentials@npm:^7.0.2":
+"@storybook/addon-essentials@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-essentials@npm:7.0.4"
   dependencies:
@@ -5215,7 +5192,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-interactions@npm:^7.0.2":
+"@storybook/addon-interactions@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-interactions@npm:7.0.4"
   dependencies:
@@ -5244,7 +5221,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-links@npm:^7.0.2":
+"@storybook/addon-links@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-links@npm:7.0.4"
   dependencies:
@@ -5317,7 +5294,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-storysource@npm:^7.0.2":
+"@storybook/addon-storysource@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/addon-storysource@npm:7.0.4"
   dependencies:
@@ -5421,7 +5398,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/blocks@npm:7.0.4, @storybook/blocks@npm:^7.0.2":
+"@storybook/blocks@npm:7.0.4, @storybook/blocks@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/blocks@npm:7.0.4"
   dependencies:
@@ -5478,7 +5455,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/builder-vite@npm:7.0.4, @storybook/builder-vite@npm:^7.0.2":
+"@storybook/builder-vite@npm:7.0.4, @storybook/builder-vite@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/builder-vite@npm:7.0.4"
   dependencies:
@@ -5941,7 +5918,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/react-vite@npm:^7.0.2":
+"@storybook/react-vite@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/react-vite@npm:7.0.4"
   dependencies:
@@ -5961,7 +5938,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/react@npm:7.0.4, @storybook/react@npm:^7.0.2":
+"@storybook/react@npm:7.0.4, @storybook/react@npm:^7.0.4":
   version: 7.0.4
   resolution: "@storybook/react@npm:7.0.4"
   dependencies:
@@ -7080,7 +7057,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vanilla-extract/next-plugin@npm:^2.1.1":
+"@vanilla-extract/next-plugin@npm:^2.1.2":
   version: 2.1.2
   resolution: "@vanilla-extract/next-plugin@npm:2.1.2"
   dependencies:
@@ -7142,7 +7119,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/coverage-istanbul@npm:^0.30.0":
+"@vitest/coverage-istanbul@npm:^0.30.1":
   version: 0.30.1
   resolution: "@vitest/coverage-istanbul@npm:0.30.1"
   dependencies:
@@ -7201,7 +7178,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/ui@npm:^0.30.0":
+"@vitest/ui@npm:^0.30.1":
   version: 0.30.1
   resolution: "@vitest/ui@npm:0.30.1"
   dependencies:
@@ -7429,8 +7406,8 @@ __metadata:
   resolution: "AFFiNE@workspace:."
   dependencies:
     "@affine/cli": "workspace:*"
-    "@commitlint/cli": ^17.5.1
-    "@commitlint/config-conventional": ^17.4.4
+    "@commitlint/cli": ^17.6.0
+    "@commitlint/config-conventional": ^17.6.0
     "@faker-js/faker": ^7.6.0
     "@istanbuljs/schema": ^0.1.3
     "@perfsee/sdk": ^1.5.2
@@ -7442,8 +7419,8 @@ __metadata:
     "@typescript-eslint/parser": ^5.58.0
     "@vanilla-extract/vite-plugin": ^3.8.0
     "@vitejs/plugin-react": ^3.1.0
-    "@vitest/coverage-istanbul": ^0.30.0
-    "@vitest/ui": ^0.30.0
+    "@vitest/coverage-istanbul": ^0.30.1
+    "@vitest/ui": ^0.30.1
     eslint: ^8.38.0
     eslint-config-prettier: ^8.8.0
     eslint-plugin-import: ^2.27.5
@@ -7453,7 +7430,7 @@ __metadata:
     eslint-plugin-unused-imports: ^2.0.0
     fake-indexeddb: 4.0.1
     got: ^12.6.0
-    happy-dom: ^9.1.9
+    happy-dom: ^9.5.0
     husky: ^8.0.3
     lint-staged: ^13.2.1
     msw: ^1.2.1
@@ -7466,8 +7443,8 @@ __metadata:
     typescript: ^5.0.4
     vite: ^4.2.1
     vite-plugin-istanbul: ^4.0.1
-    vite-tsconfig-paths: ^4.0.9
-    vitest: ^0.30.0
+    vite-tsconfig-paths: ^4.2.0
+    vitest: ^0.30.1
     vitest-fetch-mock: ^0.2.2
   languageName: unknown
   linkType: soft
@@ -12011,9 +11988,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^9.1.9":
-  version: 9.3.2
-  resolution: "happy-dom@npm:9.3.2"
+"happy-dom@npm:^9.5.0":
+  version: 9.5.0
+  resolution: "happy-dom@npm:9.5.0"
   dependencies:
     css.escape: ^1.5.1
     he: ^1.2.0
@@ -12021,7 +11998,7 @@ __metadata:
     webidl-conversions: ^7.0.0
     whatwg-encoding: ^2.0.0
     whatwg-mimetype: ^3.0.0
-  checksum: d1606f08e9bdd25b1bf06216609c301f32f5f39ce0a0af7f5f54a8c4a98353ec68ff246b8e21c15300e1943b21493c6ff23fc4662f36a67b183c831caaab8e62
+  checksum: c9b159335063b72ef3fbb7b862f265178c9834dfd1c2fed7c83fe6d4654108090a36a5c86924a2229a0f6c319140411b5b06b9ead4b741cfe00249610638eff4
   languageName: node
   linkType: hard
 
@@ -18089,7 +18066,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"storybook@npm:^7.0.2":
+"storybook@npm:^7.0.4":
   version: 7.0.4
   resolution: "storybook@npm:7.0.4"
   dependencies:
@@ -19486,7 +19463,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite-tsconfig-paths@npm:^4.0.9":
+"vite-tsconfig-paths@npm:^4.2.0":
   version: 4.2.0
   resolution: "vite-tsconfig-paths@npm:4.2.0"
   dependencies:
@@ -19551,7 +19528,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest@npm:^0.30.0":
+"vitest@npm:^0.30.1":
   version: 0.30.1
   resolution: "vitest@npm:0.30.1"
   dependencies:
@@ -19760,7 +19737,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webpack@npm:^5.78.0":
+"webpack@npm:^5.79.0":
   version: 5.79.0
   resolution: "webpack@npm:5.79.0"
   dependencies:
