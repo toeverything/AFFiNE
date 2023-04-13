@@ -81,7 +81,7 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
 type PageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   isPublic?: boolean;
-  listType?: 'all' | 'trash' | 'favorite';
+  listType?: 'all' | 'trash' | 'favorite' | 'shared';
   onClickPage: (pageId: string, newTab?: boolean) => void;
 };
 
@@ -92,6 +92,7 @@ const filter = {
     return !parentMeta?.trash && pageMeta.trash;
   },
   favorite: (pageMeta: PageMeta) => pageMeta.favorite && !pageMeta.trash,
+  shared: (pageMeta: PageMeta) => pageMeta.isPublic && !pageMeta.trash,
 };
 
 export const PageList: React.FC<PageListProps> = ({
