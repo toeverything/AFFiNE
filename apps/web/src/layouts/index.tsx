@@ -7,11 +7,10 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren } from 'react';
-import { Suspense, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 
 import {
   currentWorkspaceIdAtom,
@@ -57,8 +56,10 @@ declare global {
   var currentWorkspace: AllWorkspace;
 }
 
-const QuickSearchModal = dynamic(
-  () => import('../components/pure/quick-search-modal')
+const QuickSearchModal = lazy(() =>
+  import('../components/pure/quick-search-modal').then(module => ({
+    default: module.QuickSearchModal,
+  }))
 );
 
 export const PublicQuickSearch: FC = () => {

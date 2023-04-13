@@ -167,9 +167,16 @@ export function createAffineAuth(prefix = '/') {
       }
       let provider: AuthProvider;
       switch (method) {
-        case SignMethod.Google:
-          provider = new GoogleAuthProvider();
+        case SignMethod.Google: {
+          const googleProvider = new GoogleAuthProvider();
+          // make sure the user has a chance to select an account
+          // https://developers.google.com/identity/openid-connect/openid-connect#prompt
+          googleProvider.setCustomParameters({
+            prompt: 'select_account',
+          });
+          provider = googleProvider;
           break;
+        }
         case SignMethod.GitHub:
           provider = new GithubAuthProvider();
           break;

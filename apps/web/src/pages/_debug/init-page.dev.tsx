@@ -1,16 +1,15 @@
 import { NoSsr } from '@mui/material';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
+import { lazy } from 'react';
 
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import type { NextPageWithLayout } from '../../shared';
 import { initPage } from '../../utils/blocksuite';
 
-const Editor = dynamic(
-  () => import('../../components/__debug__/client/Editor'),
-  {
-    ssr: false,
-  }
+const Editor = lazy(() =>
+  import('../../components/__debug__/client/Editor').then(module => ({
+    default: module.default,
+  }))
 );
 
 const InitPagePage: NextPageWithLayout = () => {

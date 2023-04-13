@@ -1,3 +1,4 @@
+import { websocketPrefixUrl } from '@affine/env';
 import { KeckProvider } from '@affine/workspace/affine/keck';
 import { getLoginStorage } from '@affine/workspace/affine/login';
 import type { AffineWebSocketProvider } from '@affine/workspace/type';
@@ -19,11 +20,8 @@ const createAffineWebSocketProvider = (
       webSocketProvider = null;
     },
     connect: () => {
-      const wsUrl = `${
-        window.location.protocol === 'https:' ? 'wss' : 'ws'
-      }://${window.location.host}/api/sync/`;
       webSocketProvider = new KeckProvider(
-        wsUrl,
+        websocketPrefixUrl + '/api/sync/',
         blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc,
         {

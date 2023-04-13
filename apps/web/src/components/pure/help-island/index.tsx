@@ -2,8 +2,7 @@ import { MuiFade, Tooltip } from '@affine/component';
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
-import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { lazy, useState } from 'react';
 
 import { ShortcutsModal } from '../shortcuts-modal';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
@@ -13,14 +12,11 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-const ContactModal = dynamic(
-  () =>
-    import('@affine/component/contact-modal').then(({ ContactModal }) => ({
-      default: ContactModal,
-    })),
-  {
-    ssr: true,
-  }
+
+const ContactModal = lazy(() =>
+  import('@affine/component/contact-modal').then(({ ContactModal }) => ({
+    default: ContactModal,
+  }))
 );
 
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';

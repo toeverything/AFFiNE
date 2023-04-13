@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
+import { prefixUrl } from '@affine/env';
 import {
   createUserApis,
   createWorkspaceApis,
@@ -8,26 +8,6 @@ import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { parseIdToken, setLoginStorage } from '@affine/workspace/affine/login';
 import { jotaiStore } from '@affine/workspace/atom';
-
-import { isValidIPAddress } from '../utils';
-
-let prefixUrl = '/';
-if (typeof window === 'undefined' || environment.isDesktop) {
-  // SSR or Desktop
-  const serverAPI = config.serverAPI;
-  if (isValidIPAddress(serverAPI.split(':')[0])) {
-    // This is for Server side rendering support
-    prefixUrl = new URL('http://' + config.serverAPI + '/').origin;
-  } else {
-    prefixUrl = serverAPI;
-  }
-  prefixUrl = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
-} else {
-  const params = new URLSearchParams(window.location.search);
-  params.get('prefixUrl') && (prefixUrl = params.get('prefixUrl') as string);
-}
-
-export { prefixUrl };
 
 const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;

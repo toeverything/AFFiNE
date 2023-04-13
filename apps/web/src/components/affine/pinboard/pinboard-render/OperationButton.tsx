@@ -58,15 +58,7 @@ export const OperationButton = ({
         setPinboardMenuOpen(false);
       }}
     >
-      <div
-        onClick={e => {
-          e.stopPropagation();
-        }}
-        onMouseLeave={() => {
-          setOperationMenuOpen(false);
-          setPinboardMenuOpen(false);
-        }}
-      >
+      <div>
         <StyledOperationButton
           data-testid="pinboard-operation-button"
           ref={ref => setAnchorEl(ref)}

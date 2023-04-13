@@ -3,7 +3,7 @@ import { fetch, ProxyAgent } from 'undici';
 
 const redirectUri = 'https://affine.pro/client/auth-callback';
 
-export const oauthEndpoint = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.AFFINE_GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=openid https://www.googleapis.com/auth/userinfo.email profile&access_type=offline`;
+export const oauthEndpoint = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.AFFINE_GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=openid https://www.googleapis.com/auth/userinfo.email profile&access_type=offline&customParameters={"prompt":"select_account"}`;
 
 const tokenEndpoint = 'https://oauth2.googleapis.com/token';
 
