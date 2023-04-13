@@ -51,9 +51,15 @@ export const registerHandlers = () => {
         );
         const urlObj = parse(url.replace('??', '?'), true);
         if (!mainWindow || !url.startsWith('affine://')) return;
-        const token = (await exchangeToken(urlObj.query['code'] as string)) as {
+        const code = urlObj.query['code'] as string;
+        if (!code) return;
+
+        logger.info('google sign in code received from callback', code);
+
+        const token = (await exchangeToken(code)) as {
           id_token: string;
         };
+
         app.removeListener('open-url', handleOpenUrl);
         resolve(token.id_token);
         logger.info('google sign in successful', token);
