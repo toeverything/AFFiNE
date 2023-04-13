@@ -44,7 +44,8 @@ export const StyledCollapseButton = styled('button')<{
 }>(({ collapse, show = true, theme }) => {
   return {
     width: '16px',
-    height: '16px',
+    height: '100%',
+    ...displayFlex('center', 'center'),
     fontSize: '16px',
     position: 'absolute',
     left: '0',
@@ -53,9 +54,13 @@ export const StyledCollapseButton = styled('button')<{
     margin: 'auto',
     color: theme.colors.iconColor,
     opacity: '.6',
+    transition: 'opacity .15s ease-in-out',
     display: show ? 'flex' : 'none',
     svg: {
       transform: `rotate(${collapse ? '0' : '-90'}deg)`,
+    },
+    ':hover': {
+      opacity: '1',
     },
   };
 });
