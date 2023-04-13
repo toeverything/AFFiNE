@@ -32,7 +32,7 @@ export type ShareMenuProps<
   currentPage: Page;
   onEnableAffineCloud: (workspace: LocalWorkspace) => void;
   onOpenWorkspaceSettings: (workspace: Workspace) => void;
-  togglePagePublic: (page: Page, publish: boolean) => Promise<void>;
+  togglePagePublic: (page: Page, isPublic: boolean) => Promise<void>;
   toggleWorkspacePublish: (
     workspace: Workspace,
     publish: boolean

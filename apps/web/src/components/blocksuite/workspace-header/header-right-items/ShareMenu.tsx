@@ -2,36 +2,95 @@ import { ShareMenu } from '@affine/component/share-menu';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
+import { assertEquals } from '@blocksuite/store';
+import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback } from 'react';
 
+import { useToggleWorkspacePublish } from '../../../../hooks/affine/use-toggle-workspace-publish';
+import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
+import { useRouterHelper } from '../../../../hooks/use-router-helper';
+import { WorkspaceSubPath } from '../../../../shared';
 import type { BaseHeaderProps } from '../header';
 
 const AffineHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
-  // const toggleWorkspacePublish = useToggleWorkspacePublish(
-  //   props.workspace as AffineWorkspace
-  // );
+  // todo: these hooks should be moved to the top level
+  const togglePublish = useToggleWorkspacePublish(
+    props.workspace as AffineWorkspace
+  );
+  const onTransformWorkspace = useOnTransformWorkspace();
+  const helper = useRouterHelper(useRouter());
   return (
     <ShareMenu
       workspace={props.workspace as AffineWorkspace}
       currentPage={props.currentPage as Page}
-      onEnableAffineCloud={useCallback(async () => {}, [])}
-      onOpenWorkspaceSettings={useCallback(async () => {}, [])}
-      togglePagePublic={useCallback(async () => {}, [])}
-      toggleWorkspacePublish={useCallback(async () => {}, [])}
+      onEnableAffineCloud={useCallback(
+        async workspace => {
+          return onTransformWorkspace(
+            WorkspaceFlavour.LOCAL,
+            WorkspaceFlavour.AFFINE,
+            workspace
+          );
+        },
+        [onTransformWorkspace]
+      )}
+      onOpenWorkspaceSettings={useCallback(
+        async workspace => {
+          return helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+        },
+        [helper]
+      )}
+      togglePagePublic={useCallback(async (page, isPublic) => {
+        page.workspace.setPageMeta(page.id, { isPublic });
+      }, [])}
+      toggleWorkspacePublish={useCallback(
+        async (workspace, publish) => {
+          assertEquals(workspace.flavour, WorkspaceFlavour.AFFINE);
+          assertEquals(workspace.id, props.workspace.id);
+          await togglePublish(publish);
+        },
+        [props.workspace.id, togglePublish]
+      )}
     />
   );
 };
 
 const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
+  // todo: these hooks should be moved to the top level
+  const onTransformWorkspace = useOnTransformWorkspace();
+  const helper = useRouterHelper(useRouter());
   return (
     <ShareMenu
       workspace={props.workspace as LocalWorkspace}
       currentPage={props.currentPage as Page}
-      onEnableAffineCloud={useCallback(async () => {}, [])}
-      onOpenWorkspaceSettings={useCallback(async () => {}, [])}
-      togglePagePublic={useCallback(async () => {}, [])}
-      toggleWorkspacePublish={useCallback(async () => {}, [])}
+      onEnableAffineCloud={useCallback(
+        async workspace => {
+          await onTransformWorkspace(
+            WorkspaceFlavour.LOCAL,
+            WorkspaceFlavour.AFFINE,
+            workspace
+          );
+        },
+        [onTransformWorkspace]
+      )}
+      onOpenWorkspaceSettings={useCallback(
+        async workspace => {
+          await helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+        },
+        [helper]
+      )}
+      togglePagePublic={useCallback(async (page, isPublic) => {
+        // local workspace should not have public page
+        throw new Error('unreachable');
+      }, [])}
+      toggleWorkspacePublish={useCallback(
+        async (workspace, publish) => {
+          assertEquals(workspace.flavour, WorkspaceFlavour.LOCAL);
+          assertEquals(workspace.id, props.workspace.id);
+          await helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+        },
+        [helper, props.workspace.id]
+      )}
     />
   );
 };
