@@ -4,6 +4,7 @@ import {
   parseIdToken,
   setLoginStorage,
   SignMethod,
+  storageChangeSlot,
 } from '@affine/workspace/affine/login';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -30,6 +31,7 @@ export function useOnTransformWorkspace() {
         if (response) {
           setLoginStorage(response);
           setUser(parseIdToken(response.token));
+          storageChangeSlot.emit();
         }
       }
       const workspaceId = await transformWorkspace(from, to, workspace);

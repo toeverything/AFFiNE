@@ -7,7 +7,7 @@ import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
 import { createWorkspace } from '../../libs/workspace';
 
 test.describe('affine single page', () => {
-  test('enable public workspace', async ({ page, browser }) => {
+  test('public single page', async ({ page, browser }) => {
     await openHomePage(page);
     const [a] = await createFakeUser();
     await loginUser(page, a);
