@@ -154,14 +154,11 @@ jobs:
           API_SERVER_PROFILE: local
           ENABLE_DEBUG_PAGE: true
 
-      - name: Export
-        run: yarn export
-
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: next-js-dev
-          path: ./apps/web/out
+          path: ./apps/web/.next
           if-no-files-found: error
 
   storybook-test:
