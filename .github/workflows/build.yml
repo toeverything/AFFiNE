@@ -170,7 +170,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
-          name: test-results-e2e
+          name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
           if-no-files-found: ignore
 
