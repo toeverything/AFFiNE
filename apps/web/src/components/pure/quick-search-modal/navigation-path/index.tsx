@@ -57,7 +57,7 @@ export const NavigationPath = ({
   }
   return (
     <>
-      <StyledNavigationPathContainer>
+      <StyledNavigationPathContainer data-testid="navigation-path">
         {openExtend ? (
           <span>{t('Navigation Path')}</span>
         ) : (
@@ -78,8 +78,10 @@ export const NavigationPath = ({
                   </>
                 )}
                 <StyledNavPathLink
+                  data-testid="navigation-path-link"
                   active={isLast}
                   onClick={() => {
+                    if (isLast) return;
                     jumpToPage(blockSuiteWorkspace.id, meta.id);
                     onJumpToPage?.(meta.id);
                   }}
@@ -100,6 +102,7 @@ export const NavigationPath = ({
           disablePortal={true}
         >
           <IconButton
+            data-testid="navigation-path-expand-btn"
             size="middle"
             className="collapse-btn"
             onClick={() => {
@@ -151,7 +154,10 @@ const NavigationPathExtendPanel = ({
   });
 
   return (
-    <StyledNavPathExtendContainer show={open}>
+    <StyledNavPathExtendContainer
+      show={open}
+      data-testid="navigation-path-expand-panel"
+    >
       <div className="tree-container">
         <TreeView data={data} indent={10} disableCollapse={true} />
       </div>

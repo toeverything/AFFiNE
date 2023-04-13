@@ -6,7 +6,11 @@ import { clickPageMoreActions, newPage } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { getMetas } from '../libs/utils';
 
-async function createPinboardPage(page: Page, parentId: string, title: string) {
+export async function createPinboardPage(
+  page: Page,
+  parentId: string,
+  title: string
+) {
   await newPage(page);
   await page.focus('.affine-default-page-block-title');
   await page.type('.affine-default-page-block-title', title, {
@@ -20,7 +24,7 @@ async function createPinboardPage(page: Page, parentId: string, title: string) {
     .click();
 }
 
-async function initHomePageWithPinboard(page: Page) {
+export async function initHomePageWithPinboard(page: Page) {
   await openHomePage(page);
   await page.waitForSelector('[data-testid="sidebar-pinboard-container"]');
   return (await getMetas(page)).find(m => m.isRootPinboard);
