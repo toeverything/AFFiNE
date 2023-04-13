@@ -54,7 +54,7 @@ test.describe('affine single page', () => {
     );
     const context2 = await browser.newContext();
     const page2 = await context2.newPage();
-    page2.goto(url);
+    await page2.goto(url);
     await page2.waitForSelector('v-line');
     const currentTitle2 = await page2
       .locator('[data-block-is-title="true"]')
