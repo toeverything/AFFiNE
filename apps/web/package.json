@@ -2,10 +2,10 @@
   "name": "@affine/web",
   "private": true,
   "scripts": {
-    "dev": "node src/server.mjs",
+    "dev": "next dev",
     "build": "next build",
     "export": "next export",
-    "start": "NODE_ENV=production node src/server.mjs",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {

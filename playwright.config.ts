@@ -67,8 +67,9 @@ const config: PlaywrightTestConfig = {
         ENABLE_DEBUG_PAGE: '1',
       },
     },
+    // Intentionally not building the web, reminds you to run it by yourself.
     {
-      command: 'yarn build && yarn start -p 8080',
+      command: 'yarn start -p 8080',
       port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
