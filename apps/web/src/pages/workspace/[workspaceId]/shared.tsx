@@ -39,7 +39,7 @@ const SharedPages: NextPageWithLayout = () => {
   return (
     <>
       <Head>
-        <title>Shared Pages - AFFiNE</title>
+        <title>{t('Shared Pages')} - AFFiNE</title>
       </Head>
       <WorkspaceTitle
         workspace={currentWorkspace}
@@ -48,7 +48,7 @@ const SharedPages: NextPageWithLayout = () => {
         isPublic={false}
         icon={<ShareIcon />}
       >
-        Shared Pages
+        {t('Shared Pages')}
       </WorkspaceTitle>
       <PageList
         blockSuiteWorkspace={blockSuiteWorkspace}

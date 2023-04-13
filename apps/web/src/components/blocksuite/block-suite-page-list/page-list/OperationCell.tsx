@@ -51,12 +51,14 @@ export const OperationCell: React.FC<OperationCellProps> = ({
 
   const OperationMenu = (
     <>
-      <DisablePublicSharing
-        testId="disable-public-sharing"
-        onItemClick={() => {
-          setOpenDisableShared(true);
-        }}
-      />
+      {isPublic && (
+        <DisablePublicSharing
+          testId="disable-public-sharing"
+          onItemClick={() => {
+            setOpenDisableShared(true);
+          }}
+        />
+      )}
       <MenuItem
         onClick={() => {
           onToggleFavoritePage(id);

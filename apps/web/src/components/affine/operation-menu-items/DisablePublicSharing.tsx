@@ -29,6 +29,7 @@ export const DisablePublicSharing = ({
   onItemClick,
   testId,
 }: CommonMenuItemProps) => {
+  const { t } = useTranslation();
   return (
     <>
       <StyledMenuItem
@@ -40,7 +41,7 @@ export const DisablePublicSharing = ({
         style={{ color: 'red' }}
         icon={<ShareIcon />}
       >
-        Disable Public Sharing
+        {t('Disable Public Sharing')}
       </StyledMenuItem>
     </>
   );
@@ -51,8 +52,6 @@ const DisablePublicSharingModal = ({
   open,
   onClose,
 }: PublicLinkDisableProps) => {
-  const { t } = useTranslation();
-
   return (
     <PublicLinkDisableModal pageId={pageId} open={open} onClose={onClose} />
   );

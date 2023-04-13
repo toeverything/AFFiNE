@@ -5,13 +5,12 @@ import type { Page } from '@blocksuite/store';
 import type React from 'react';
 import { useCallback } from 'react';
 
-import { useToggleWorkspacePublish } from '../../../../hooks/affine/use-toggle-workspace-publish';
 import type { BaseHeaderProps } from '../header';
 
 const AffineHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
-  const toggleWorkspacePublish = useToggleWorkspacePublish(
-    props.workspace as AffineWorkspace
-  );
+  // const toggleWorkspacePublish = useToggleWorkspacePublish(
+  //   props.workspace as AffineWorkspace
+  // );
   return (
     <ShareMenu
       workspace={props.workspace as AffineWorkspace}

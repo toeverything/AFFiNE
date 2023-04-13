@@ -88,7 +88,6 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
       </div>
       {isPublic && (
         <>
-          {' '}
           <StyledDisableButton onClick={() => setShowDisable(true)}>
             Disable Public Link
           </StyledDisableButton>

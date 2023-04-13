@@ -1,3 +1,4 @@
+import { useTranslation } from '@affine/i18n';
 import { useCallback } from 'react';
 
 import { Modal, ModalCloseButton, toast } from '../../..';
@@ -21,6 +22,7 @@ export const PublicLinkDisableModal = ({
   open,
   onClose,
 }: PublicLinkDisableProps) => {
+  const { t } = useTranslation();
   const handleDisable = useCallback(() => {
     //TODO: disable public link
     console.log('disable', pageId);
@@ -32,21 +34,20 @@ export const PublicLinkDisableModal = ({
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} top={12} right={12} />
-        <StyledModalHeader>Disable Public Link?</StyledModalHeader>
+        <StyledModalHeader>{t('Disable Public Link ?')}</StyledModalHeader>
 
         <StyledTextContent>
-          Disabling this public link will prevent anyone with the link from
-          accessing this page.
+          {t('Disable Public Link Description')}
         </StyledTextContent>
 
         <StyledButtonContent>
-          <StyledButton onClick={onClose}>Cancel</StyledButton>
+          <StyledButton onClick={onClose}>{t('Cancel')}</StyledButton>
           <StyledDangerButton
             data-testid="disable-public-link-confirm-button"
             onClick={handleDisable}
             style={{ marginLeft: '24px' }}
           >
-            Disable
+            {t('Disable')}
           </StyledDangerButton>
         </StyledButtonContent>
       </StyledModalWrapper>
