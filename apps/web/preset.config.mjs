@@ -10,7 +10,7 @@ const config = {
   enableDebugPage: Boolean(
     process.env.ENABLE_DEBUG_PAGE ?? process.env.NODE_ENV === 'development'
   ),
-  enableSubpage: Boolean(process.env.ENABLE_SUBPAGE),
-  enableChangeLog: Boolean(process.env.ENABLE_CHANGELOG),
+  enableSubpage: Boolean(process.env.ENABLE_SUBPAGE ?? '1'),
+  enableChangeLog: Boolean(process.env.ENABLE_CHANGELOG ?? '1'),
 };
 export default config;

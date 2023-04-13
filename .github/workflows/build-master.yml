@@ -123,6 +123,47 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  build-frontend-dev:
+    name: Build @affine/web dev
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Cache Next.js
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
+
+      - name: Build
+        run: yarn build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          API_SERVER_PROFILE: local
+          ENABLE_DEBUG_PAGE: true
+
+      - name: Export
+        run: yarn export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: next-js-dev
+          path: ./apps/web/out
+          if-no-files-found: error
+
   storybook-test:
     name: Storybook Test
     runs-on: ubuntu-latest
@@ -160,7 +201,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: [build-frontend, build-storybook]
+    needs: [build-frontend-dev, build-storybook]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -183,7 +224,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js
+          name: next-js-dev
           path: ./apps/web/.next
 
       - name: Download storybook artifact
@@ -213,7 +254,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
-          name: test-results-e2e
+          name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
           if-no-files-found: ignore
 

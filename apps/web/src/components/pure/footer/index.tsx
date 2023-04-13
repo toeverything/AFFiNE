@@ -6,6 +6,7 @@ import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
 import type { CSSProperties } from 'react';
 import type React from 'react';
+import { forwardRef } from 'react';
 
 import { stringToColour } from '../../../utils';
 import { StyledFooter, StyledSignInButton, StyleUserInfo } from './styles';
@@ -74,54 +75,58 @@ interface WorkspaceAvatarProps {
   style?: CSSProperties;
 }
 
-export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = props => {
-  const size = props.size || 20;
-  const sizeStr = size + 'px';
+export const WorkspaceAvatar = forwardRef<HTMLDivElement, WorkspaceAvatarProps>(
+  function WorkspaceAvatar(props, ref) {
+    const size = props.size || 20;
+    const sizeStr = size + 'px';
 
-  return (
-    <>
-      {props.avatar ? (
-        <div
-          style={{
-            ...props.style,
-            width: sizeStr,
-            height: sizeStr,
-            color: '#fff',
-            borderRadius: '50%',
-            overflow: 'hidden',
-            display: 'inline-block',
-            verticalAlign: 'middle',
-          }}
-        >
-          <picture>
-            <img
-              style={{ width: sizeStr, height: sizeStr }}
-              src={props.avatar}
-              alt=""
-              referrerPolicy="no-referrer"
-            />
-          </picture>
-        </div>
-      ) : (
-        <div
-          style={{
-            ...props.style,
-            width: sizeStr,
-            height: sizeStr,
-            border: '1px solid #fff',
-            color: '#fff',
-            fontSize: Math.ceil(0.5 * size) + 'px',
-            background: stringToColour(props.name || 'AFFiNE'),
-            borderRadius: '50%',
-            textAlign: 'center',
-            lineHeight: size + 'px',
-            display: 'inline-block',
-            verticalAlign: 'middle',
-          }}
-        >
-          {(props.name || 'AFFiNE').substring(0, 1)}
-        </div>
-      )}
-    </>
-  );
-};
+    return (
+      <>
+        {props.avatar ? (
+          <div
+            style={{
+              ...props.style,
+              width: sizeStr,
+              height: sizeStr,
+              color: '#fff',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              display: 'inline-block',
+              verticalAlign: 'middle',
+            }}
+            ref={ref}
+          >
+            <picture>
+              <img
+                style={{ width: sizeStr, height: sizeStr }}
+                src={props.avatar}
+                alt=""
+                referrerPolicy="no-referrer"
+              />
+            </picture>
+          </div>
+        ) : (
+          <div
+            style={{
+              ...props.style,
+              width: sizeStr,
+              height: sizeStr,
+              border: '1px solid #fff',
+              color: '#fff',
+              fontSize: Math.ceil(0.5 * size) + 'px',
+              background: stringToColour(props.name || 'AFFiNE'),
+              borderRadius: '50%',
+              textAlign: 'center',
+              lineHeight: size + 'px',
+              display: 'inline-block',
+              verticalAlign: 'middle',
+            }}
+            ref={ref}
+          >
+            {(props.name || 'AFFiNE').substring(0, 1)}
+          </div>
+        )}
+      </>
+    );
+  }
+);

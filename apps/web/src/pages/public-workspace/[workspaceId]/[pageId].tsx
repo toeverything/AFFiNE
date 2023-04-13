@@ -21,7 +21,10 @@ import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLink } from '../../../hooks/affine/use-reference-link';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
-import { PublicWorkspaceLayout } from '../../../layouts/public-workspace-layout';
+import {
+  PublicQuickSearch,
+  PublicWorkspaceLayout,
+} from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
 import { initPage } from '../../../utils';
 
@@ -62,10 +65,6 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   }
   const router = useRouter();
   const { openPage } = useRouterHelper(router);
-
-  useEffect(() => {
-    blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
-  }, [blockSuiteWorkspace]);
   useReferenceLink({
     pageLinkClicked: useCallback(
       ({ pageId }: { pageId: string }) => {
@@ -81,6 +80,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   const pageTitle = blockSuiteWorkspace.meta.getPageMeta(pageId)?.title;
   return (
     <>
+      <PublicQuickSearch workspace={publicWorkspace} />
       <PageDetailEditor
         isPublic={true}
         pageId={pageId}
