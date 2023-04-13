@@ -137,9 +137,9 @@ jobs:
         with:
           path: |
             ${{ github.workspace }}/apps/web/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          key: ${{ runner.os }}-nextjs-dev-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
+            ${{ runner.os }}-nextjs-dev-${{ hashFiles('**/yarn.lock') }}-
 
       - name: Build
         run: yarn build
