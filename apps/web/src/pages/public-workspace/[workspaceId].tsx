@@ -16,7 +16,10 @@ import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { StyledTableContainer } from '../../components/blocksuite/block-suite-page-list/page-list/styles';
 import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
-import { PublicWorkspaceLayout } from '../../layouts/public-workspace-layout';
+import {
+  PublicQuickSearch,
+  PublicWorkspaceLayout,
+} from '../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
@@ -58,6 +61,7 @@ const ListPageInner: React.FC<{
   }
   return (
     <>
+      <PublicQuickSearch workspace={publicWorkspace} />
       <NavContainer sx={{ px: '20px' }}>
         <Breadcrumbs>
           <StyledBreadcrumbs
