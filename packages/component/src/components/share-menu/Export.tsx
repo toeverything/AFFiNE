@@ -4,7 +4,6 @@ import type { FC } from 'react';
 import { useRef } from 'react';
 
 import { Button } from '../..';
-import type { ShareMenuProps } from './index';
 import {
   actionsStyle,
   descriptionStyle,
@@ -12,6 +11,7 @@ import {
   menuItemStyle,
   svgStyle,
 } from './index.css';
+import type { ShareMenuProps } from './ShareMenu';
 
 export const Export: FC<ShareMenuProps> = props => {
   const contentParserRef = useRef<ContentParser>();

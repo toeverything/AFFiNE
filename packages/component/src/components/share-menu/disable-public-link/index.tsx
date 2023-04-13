@@ -1,26 +1,29 @@
 import { useCallback } from 'react';
 
-import { Button, Modal, ModalCloseButton, toast } from '../../..';
+import { Modal, ModalCloseButton, toast } from '../../..';
 import {
+  StyledButton,
   StyledButtonContent,
+  StyledDangerButton,
   StyledModalHeader,
   StyledModalWrapper,
   StyledTextContent,
 } from './style';
 
-interface PublicLinkDisableProps {
+export type PublicLinkDisableProps = {
+  pageId: string;
   open: boolean;
   onClose: () => void;
-  onDisablePublicLink: () => void;
-}
+};
 
 export const PublicLinkDisableModal = ({
+  pageId,
   open,
   onClose,
-  onDisablePublicLink,
 }: PublicLinkDisableProps) => {
   const handleDisable = useCallback(() => {
-    onDisablePublicLink();
+    //TODO: disable public link
+    console.log('disable', pageId);
     toast('Successfully disabled', {
       portal: document.body,
     });
@@ -37,18 +40,14 @@ export const PublicLinkDisableModal = ({
         </StyledTextContent>
 
         <StyledButtonContent>
-          <Button shape="circle" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
+          <StyledButton onClick={onClose}>Cancel</StyledButton>
+          <StyledDangerButton
             data-testid="disable-public-link-confirm-button"
             onClick={handleDisable}
-            type="danger"
-            shape="circle"
             style={{ marginLeft: '24px' }}
           >
             Disable
-          </Button>
+          </StyledDangerButton>
         </StyledButtonContent>
       </StyledModalWrapper>
     </Modal>

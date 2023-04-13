@@ -1,4 +1,4 @@
-import { styled } from '@affine/component';
+import { styled, TextButton } from '@affine/component';
 
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
@@ -38,5 +38,26 @@ export const StyledButtonContent = styled('div')(() => {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
+  };
+});
+export const StyledButton = styled(TextButton)(({ theme }) => {
+  return {
+    color: theme.colors.primaryColor,
+    height: '32px',
+    background: '#F3F0FF',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '4px 20px',
+  };
+});
+export const StyledDangerButton = styled(TextButton)(({ theme }) => {
+  return {
+    color: '#FF631F',
+    height: '32px',
+    background:
+      'linear-gradient(0deg, rgba(255, 99, 31, 0.1), rgba(255, 99, 31, 0.1)), #FFFFFF;',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '4px 20px',
   };
 });

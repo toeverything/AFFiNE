@@ -1,7 +1,7 @@
 import { Button, displayFlex, styled, TextButton } from '../..';
 
 export const StyledShareButton = styled(TextButton, {
-  shouldForwardProp: prop => prop !== 'isShared',
+  shouldForwardProp: (prop: string) => prop !== 'isShared',
 })<{ isShared?: boolean }>(({ theme, isShared }) => {
   return {
     padding: '4px 8px',

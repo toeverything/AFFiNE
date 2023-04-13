@@ -7,12 +7,12 @@ import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
 import { PublicLinkDisableModal } from './disable-public-link';
-import type { ShareMenuProps } from './index';
 import {
   descriptionStyle,
   inputButtonRowStyle,
   menuItemStyle,
 } from './index.css';
+import type { ShareMenuProps } from './ShareMenu';
 import {
   StyledButton,
   StyledDisableButton,
@@ -57,10 +57,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   const onClickCopyLink = useCallback(() => {
     navigator.clipboard.writeText(sharingUrl);
   }, []);
-  const onDisablePublicLink = useCallback(() => {
-    //TODO: disable public link
-    console.log('disable');
-  }, []);
+
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
@@ -96,7 +93,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
             Disable Public Link
           </StyledDisableButton>
           <PublicLinkDisableModal
-            onDisablePublicLink={() => onDisablePublicLink()}
+            pageId={props.currentPage.id}
             open={showDisable}
             onClose={() => {
               setShowDisable(false);
