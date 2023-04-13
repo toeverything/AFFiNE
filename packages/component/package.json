@@ -1,7 +1,6 @@
 {
   "name": "@affine/component",
   "private": true,
-  "version": "0.3.1",
   "main": "./src/index.ts",
   "scripts": {
     "storybook": "storybook dev -p 6006",
