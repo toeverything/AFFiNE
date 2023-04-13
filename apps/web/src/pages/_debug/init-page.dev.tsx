@@ -1,6 +1,6 @@
 import { NoSsr } from '@mui/material';
 import { useRouter } from 'next/router';
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import type { NextPageWithLayout } from '../../shared';
@@ -26,7 +26,9 @@ const InitPagePage: NextPageWithLayout = () => {
   return (
     <StyledPage>
       <StyledWrapper>
-        <Editor onInit={initPage} testType={testType} />
+        <Suspense>
+          <Editor onInit={initPage} testType={testType} />
+        </Suspense>
         <div id="toolWrapper" />
       </StyledWrapper>
     </StyledPage>
