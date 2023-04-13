@@ -71,10 +71,12 @@ const ListPageInner: React.FC<{
           <SearchIcon />
         </IconButton>
       </NavContainer>
-      <BlockSuitePublicPageList
-        onOpenPage={handleClickPage}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-      />
+      <Suspense>
+        <BlockSuitePublicPageList
+          onOpenPage={handleClickPage}
+          blockSuiteWorkspace={blockSuiteWorkspace}
+        />
+      </Suspense>
     </>
   );
 };
