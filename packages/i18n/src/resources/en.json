@@ -204,5 +204,11 @@
   "Discover what's new!": "Discover what's new!",
   "Navigation Path": "Navigation Path",
   "View Navigation Path": "View Navigation Path",
-  "Back to Quick Search": "Back to Quick Search"
+  "Back to Quick Search": "Back to Quick Search",
+  "Shared Pages": "Shared Pages",
+  "Disable Public Sharing": "Disable Public Sharing",
+  "Disable": "Disable",
+  "Disable Public Link ?": "Disable Public Link ?",
+  "Disable Public Link Description": "Disabling this public link will prevent anyone with the link from accessing this page.",
+  "Export Shared Pages Description": "Download a static copy of your page to share with others."
 }

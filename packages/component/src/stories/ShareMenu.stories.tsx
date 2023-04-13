@@ -6,7 +6,7 @@ import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
 
-import { ShareMenu } from '../components/share-menu';
+import { ShareMenu } from '../components/share-menu/ShareMenu';
 import toast from '../ui/toast/toast';
 
 export default {
