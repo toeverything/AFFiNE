@@ -52,6 +52,7 @@ test.describe('affine single page', () => {
     expect(url.startsWith('http://localhost:8080/public-workspace/')).toBe(
       true
     );
+    await page.waitForTimeout(1000);
     const context2 = await browser.newContext();
     const page2 = await context2.newPage();
     await page2.goto(url);
