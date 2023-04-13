@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { PerfseePlugin } from '@perfsee/webpack';
 import { withSentryConfig } from '@sentry/nextjs';
+import SentryWebpackPlugin from '@sentry/webpack-plugin';
 import debugLocal from 'next-debug-local';
 
 import preset from './preset.config.mjs';
@@ -26,7 +27,7 @@ const profileTarget = {
   dev: '100.84.105.99:11001',
   test: '100.84.105.99:11001',
   stage: '',
-  prod: 'http://app.affine.pro',
+  prod: 'https://app.affine.pro',
   local: '127.0.0.1:3000',
 };
 
@@ -112,6 +113,19 @@ const nextConfig = {
       } else {
         config.plugins = [perfsee];
       }
+    }
+    if (
+      process.env.SENTRY_AUTH_TOKEN &&
+      process.env.SENTRY_ORG &&
+      process.env.SENTRY_PROJECT
+    ) {
+      config.plugins.push(
+        new SentryWebpackPlugin({
+          include: '.next',
+          ignore: ['node_modules', 'cypress', 'test'],
+          urlPrefix: '~/_next',
+        })
+      );
     }
 
     return config;

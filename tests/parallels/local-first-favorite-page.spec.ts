@@ -29,6 +29,27 @@ test.describe('Local first favorite and cancel favorite page', () => {
     await favoriteBtn.click();
     await assertCurrentWorkspaceFlavour('local', page);
   });
+
+  test('Export to html and markdown', async ({ page }) => {
+    await openHomePage(page);
+    await waitMarkdownImported(page);
+    {
+      await clickPageMoreActions(page);
+      await page.getByTestId('export-menu').click();
+      const downloadPromise = page.waitForEvent('download');
+      await page.getByTestId('export-to-markdown').click();
+      await downloadPromise;
+    }
+    await page.waitForTimeout(50);
+    {
+      await clickPageMoreActions(page);
+      await page.getByTestId('export-menu').click();
+      const downloadPromise = page.waitForEvent('download');
+      await page.getByTestId('export-to-html').click();
+      await downloadPromise;
+    }
+  });
+
   test('Cancel favorite', async ({ page }) => {
     await openHomePage(page);
     await waitMarkdownImported(page);

@@ -88,5 +88,6 @@ export async function restoreOrCreateWindow() {
   }
 
   browserWindow.focus();
+
   return browserWindow;
 }

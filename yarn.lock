@@ -198,6 +198,7 @@ __metadata:
     "@redux-devtools/extension": ^3.2.5
     "@rich-data/viewer": ^2.15.6
     "@sentry/nextjs": ^7.47.0
+    "@sentry/webpack-plugin": ^1.20.0
     "@swc-jotai/debug-label": ^0.0.9
     "@swc-jotai/react-refresh": ^0.0.7
     "@toeverything/hooks": "workspace:*"
@@ -4950,7 +4951,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/webpack-plugin@npm:1.20.0":
+"@sentry/webpack-plugin@npm:1.20.0, @sentry/webpack-plugin@npm:^1.20.0":
   version: 1.20.0
   resolution: "@sentry/webpack-plugin@npm:1.20.0"
   dependencies:
