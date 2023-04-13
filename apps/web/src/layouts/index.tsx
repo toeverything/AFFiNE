@@ -69,12 +69,14 @@ export const PublicQuickSearch: FC = () => {
     openQuickSearchModalAtom
   );
   return (
-    <QuickSearchModal
-      blockSuiteWorkspace={publicWorkspace.blockSuiteWorkspace}
-      open={openQuickSearchModal}
-      setOpen={setOpenQuickSearchModalAtom}
-      router={router}
-    />
+    <Suspense>
+      <QuickSearchModal
+        blockSuiteWorkspace={publicWorkspace.blockSuiteWorkspace}
+        open={openQuickSearchModal}
+        setOpen={setOpenQuickSearchModalAtom}
+        router={router}
+      />
+    </Suspense>
   );
 };
 
