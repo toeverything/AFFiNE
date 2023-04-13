@@ -40,6 +40,16 @@ export function useOnTransformWorkspace() {
           workspaceId,
         },
       });
+      window.dispatchEvent(
+        new CustomEvent('affine-workspace:transform', {
+          detail: {
+            from,
+            to,
+            oldId: workspace.id,
+            newId: workspaceId,
+          },
+        })
+      );
     },
     [router, setUser, transformWorkspace]
   );

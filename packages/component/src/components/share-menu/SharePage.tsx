@@ -70,10 +70,20 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
           value={isPublic ? sharingUrl : 'https://app.affine.pro/xxxx'}
         />
         {!isPublic && (
-          <StyledButton onClick={onClickCreateLink}>Create</StyledButton>
+          <StyledButton
+            data-testid="affine-share-create-link"
+            onClick={onClickCreateLink}
+          >
+            Create
+          </StyledButton>
         )}
         {isPublic && (
-          <StyledButton onClick={onClickCopyLink}>Copy Link</StyledButton>
+          <StyledButton
+            data-testid="affine-share-copy-link"
+            onClick={onClickCopyLink}
+          >
+            Copy Link
+          </StyledButton>
         )}
       </div>
       <div className={descriptionStyle}>

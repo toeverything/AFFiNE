@@ -24,6 +24,7 @@ const config: PlaywrightTestConfig = {
     browserName:
       (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
       'chromium',
+    permissions: ['clipboard-read', 'clipboard-write'],
     viewport: { width: 1440, height: 800 },
     actionTimeout: 5 * 1000,
     locale: 'en-US',
