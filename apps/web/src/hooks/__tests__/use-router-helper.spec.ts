@@ -18,6 +18,7 @@ beforeAll(() => {
       '/workspace/[workspaceId]/favorite',
       '/workspace/[workspaceId]/trash',
       '/workspace/[workspaceId]/setting',
+      '/workspace/[workspaceId]/shared',
     ])
   );
 });

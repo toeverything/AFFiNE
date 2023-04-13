@@ -57,6 +57,7 @@ export type WorkSpaceSliderBarProps = {
     favorite: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
     setting: (workspaceId: string) => string;
+    shared: (workspaceId: string) => string;
   };
 };
 
@@ -196,6 +197,22 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               )}
             </StyledScrollWrapper>
 
+            <StyledListItem
+              active={
+                currentPath ===
+                (currentWorkspaceId && paths.shared(currentWorkspaceId))
+              }
+            >
+              <StyledLink
+                href={{
+                  pathname:
+                    currentWorkspaceId && paths.shared(currentWorkspaceId),
+                }}
+              >
+                <FolderIcon />
+                <span data-testid="shared-pages">Shared Pages</span>
+              </StyledLink>
+            </StyledListItem>
             <StyledListItem
               active={
                 currentPath ===
