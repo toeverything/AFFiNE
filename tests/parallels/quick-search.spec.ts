@@ -1,10 +1,13 @@
 import { expect, type Page } from '@playwright/test';
 
 import { withCtrlOrMeta } from '../libs/keyboard';
-import { openHomePage } from '../libs/load-page';
-import { newPage, waitMarkdownImported } from '../libs/page-logic';
+import { initHomePageWithPinboard, openHomePage } from '../libs/load-page';
+import {
+  createPinboardPage,
+  newPage,
+  waitMarkdownImported,
+} from '../libs/page-logic';
 import { test } from '../libs/playwright';
-import { createPinboardPage, initHomePageWithPinboard } from './pin-board.spec';
 
 const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
