@@ -12,8 +12,8 @@ const SIZE_CONFIG = {
     areaSize: 20,
   },
   [SIZE_MIDDLE]: {
-    iconSize: 20,
-    areaSize: 28,
+    iconSize: 16,
+    areaSize: 24,
   },
   [SIZE_NORMAL]: {
     iconSize: 24,

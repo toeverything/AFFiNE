@@ -67,10 +67,13 @@ export const setLoginStorage = (login: LoginResponse) => {
 };
 
 const signInWithElectron = async (firebaseAuth: FirebaseAuth) => {
-  const code = await window.apis?.googleSignIn();
-  const credential = GoogleAuthProvider.credential(code);
-  const user = await signInWithCredential(firebaseAuth, credential);
-  return await user.user.getIdToken();
+  if (window.apis) {
+    const { url, requestInit } = await window.apis.getGoogleOauthCode();
+    const { id_token } = await fetch(url, requestInit).then(res => res.json());
+    const credential = GoogleAuthProvider.credential(id_token);
+    const user = await signInWithCredential(firebaseAuth, credential);
+    return await user.user.getIdToken();
+  }
 };
 
 export const clearLoginStorage = () => {

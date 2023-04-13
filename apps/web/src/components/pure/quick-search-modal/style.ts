@@ -114,9 +114,7 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
     width: 'auto',
     height: '0',
     margin: '6px 16px',
-    position: 'relative',
     borderTop: `0.5px solid ${theme.colors.borderColor}`,
-    transition: 'all 0.15s',
   };
 });
 

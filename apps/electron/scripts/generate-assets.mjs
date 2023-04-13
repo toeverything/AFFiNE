@@ -34,6 +34,22 @@ cd(repoRootDir);
 await $`yarn add`;
 await $`yarn build`;
 await $`yarn export`;
+
+// step 1.5: amend sourceMappingURL to allow debugging in devtools
+await glob('**/*.{js,css}', { cwd: affineWebOutDir }).then(files => {
+  return files.map(async file => {
+    const dir = path.dirname(file);
+    const fullpath = path.join(affineWebOutDir, file);
+    let content = await fs.readFile(fullpath, 'utf-8');
+    // replace # sourceMappingURL=76-6370cd185962bc89.js.map
+    // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
+    content = content.replace(/# sourceMappingURL=(.*)\.map/g, (_, p1) => {
+      return `# sourceMappingURL=assets://./${dir}/${p1}.map`;
+    });
+    await fs.writeFile(fullpath, content);
+  });
+});
+
 await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 
 // step 2: build electron resources

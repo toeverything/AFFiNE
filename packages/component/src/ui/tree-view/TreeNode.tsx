@@ -105,6 +105,7 @@ const TreeNodeItem = <RenderProps,>({
   onAdd,
   onDelete,
   dropRef,
+  disableCollapse,
 }: TreeNodeItemProps<RenderProps>) => {
   return (
     <div ref={dropRef}>
@@ -115,6 +116,7 @@ const TreeNodeItem = <RenderProps,>({
         collapsed,
         setCollapsed,
         isSelected: selectedId === node.id,
+        disableCollapse,
       })}
     </div>
   );
