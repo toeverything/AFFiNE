@@ -23,6 +23,9 @@ function getPathItemWidth(content: string) {
 
 // XXX: this is a static way to calculate the path width, not get the real width
 export function calcHowManyPathShouldBeShown(path: PageMeta[]): PageMeta[] {
+  if (path.length === 0) {
+    return [];
+  }
   const first = path[0];
   const last = path[path.length - 1];
   // 20 is the ellipsis icon width
