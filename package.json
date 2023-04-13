@@ -22,7 +22,7 @@
     "start": "yarn workspace @affine/web start",
     "start:storybook": "yarn exec serve packages/component/storybook-static -l 6006",
     "start:e2e": "yar dlx run-p start start:storybook",
-    "lint": "eslint . --ext .js,mjs,.ts,.tsx",
+    "lint": "eslint . --ext .js,mjs,.ts,.tsx --cache",
     "lint:fix": "yarn lint --fix",
     "test": "playwright test",
     "test:coverage": "COVERAGE=true yarn test --forbid-only",
@@ -33,7 +33,7 @@
     "notify": "node scripts/notify.mjs"
   },
   "lint-staged": {
-    "*": "prettier --write --ignore-unknown",
+    "*": "prettier --write --ignore-unknown --cache",
     "*.{ts,tsx,mjs,js,jsx}": "eslint --cache --fix"
   },
   "devDependencies": {
