@@ -14,9 +14,11 @@ export const EditPage = () => {
     }
   }, [jumpToPage, pageId, workspaceId]);
   return (
-    <StyledEditPageButton onClick={() => onClickPage()}>
-      Edit Page
-    </StyledEditPageButton>
+    <div>
+      <StyledEditPageButton onClick={() => onClickPage()}>
+        Edit Page
+      </StyledEditPageButton>
+    </div>
   );
 };
 export default EditPage;
@@ -26,14 +28,12 @@ const StyledEditPageButton = styled(
   {}
 )(({ theme }) => {
   return {
-    padding: '4px 8px',
-    marginLeft: '4px',
-    marginRight: '16px',
     border: `1px solid ${theme.colors.primaryColor}`,
     color: theme.colors.primaryColor,
+    width: '100%',
     borderRadius: '8px',
-    span: {
-      ...displayFlex('center', 'center'),
-    },
+    whiteSpace: 'nowrap',
+    padding: '0 16px',
+    ...displayFlex('center', 'center'),
   };
 });
