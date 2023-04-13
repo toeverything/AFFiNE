@@ -75,6 +75,7 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: local
           ENABLE_DEBUG_PAGE: true
+          COVERAGE: true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
