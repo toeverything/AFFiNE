@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { initHomePageWithPinboard } from '../libs/load-page';
 import { createPinboardPage } from '../libs/page-logic';
