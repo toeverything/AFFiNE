@@ -2,6 +2,7 @@ import { Input } from '@affine/component';
 import {
   ArrowDownSmallIcon,
   EdgelessIcon,
+  LevelIcon,
   PageIcon,
   PivotsIcon,
 } from '@blocksuite/icons';
@@ -19,17 +20,25 @@ import { OperationButton } from './OperationButton';
 const getIcon = (type: 'root' | 'edgeless' | 'page') => {
   switch (type) {
     case 'root':
-      return <PivotsIcon />;
+      return <PivotsIcon className="mode-icon" />;
     case 'edgeless':
-      return <EdgelessIcon />;
+      return <EdgelessIcon className="mode-icon" />;
     default:
-      return <PageIcon />;
+      return <PageIcon className="mode-icon" />;
   }
 };
 
 export const PinboardRender: PinboardNode['render'] = (
   node,
-  { isOver, onAdd, onDelete, collapsed, setCollapsed, isSelected },
+  {
+    isOver,
+    onAdd,
+    onDelete,
+    collapsed,
+    setCollapsed,
+    isSelected,
+    disableCollapse,
+  },
   renderProps
 ) => {
   const {
@@ -38,6 +47,7 @@ export const PinboardRender: PinboardNode['render'] = (
     currentMeta,
     metas = [],
     blockSuiteWorkspace,
+    asPath,
   } = renderProps!;
   const record = useAtomValue(workspacePreferredModeAtom);
   const { setPageTitle } = usePageMetaHelper(blockSuiteWorkspace);
@@ -60,17 +70,22 @@ export const PinboardRender: PinboardNode['render'] = (
         onMouseLeave={() => setIsHover(false)}
         isOver={isOver || isSelected}
         active={active}
+        disableCollapse={!!disableCollapse}
       >
-        <StyledCollapsedButton
-          collapse={collapsed}
-          show={!!node.children?.length}
-          onClick={e => {
-            e.stopPropagation();
-            setCollapsed(node.id, !collapsed);
-          }}
-        >
-          <ArrowDownSmallIcon />
-        </StyledCollapsedButton>
+        {!disableCollapse && (
+          <StyledCollapsedButton
+            collapse={collapsed}
+            show={!!node.children?.length}
+            onClick={e => {
+              e.stopPropagation();
+              setCollapsed(node.id, !collapsed);
+            }}
+          >
+            <ArrowDownSmallIcon />
+          </StyledCollapsedButton>
+        )}
+
+        {asPath && !isRoot ? <LevelIcon className="path-icon" /> : null}
         {getIcon(isRoot ? 'root' : record[node.id])}
 
         {showRename ? (
