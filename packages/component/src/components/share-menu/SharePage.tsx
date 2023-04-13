@@ -92,7 +92,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
             Disable Public Link
           </StyledDisableButton>
           <PublicLinkDisableModal
-            pageId={props.currentPage.id}
+            page={props.currentPage}
             open={showDisable}
             onClose={() => {
               setShowDisable(false);

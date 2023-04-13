@@ -1,4 +1,6 @@
 import { useTranslation } from '@affine/i18n';
+import type { Page } from '@blocksuite/store';
+import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-blocksuite-workspace-page-is-public';
 import { useCallback } from 'react';
 
 import { Modal, ModalCloseButton, toast } from '../../..';
@@ -12,23 +14,24 @@ import {
 } from './style';
 
 export type PublicLinkDisableProps = {
-  pageId: string;
+  page: Page;
   open: boolean;
   onClose: () => void;
 };
 
 export const PublicLinkDisableModal = ({
-  pageId,
+  page,
   open,
   onClose,
 }: PublicLinkDisableProps) => {
   const { t } = useTranslation();
+  const [, setIsPublic] = useBlockSuiteWorkspacePageIsPublic(page);
   const handleDisable = useCallback(() => {
-    //TODO: disable public link
-    console.log('disable', pageId);
+    setIsPublic(false);
     toast('Successfully disabled', {
       portal: document.body,
     });
+    onClose();
   }, []);
   return (
     <Modal open={open} onClose={onClose}>

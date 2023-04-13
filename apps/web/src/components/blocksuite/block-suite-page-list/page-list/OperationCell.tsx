@@ -16,6 +16,7 @@ import {
   ResetIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/store';
 import type React from 'react';
 import { useState } from 'react';
 
@@ -48,6 +49,9 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [openDisableShared, setOpenDisableShared] = useState(false);
+
+  const page = blockSuiteWorkspace.getPage(id);
+  assertExists(page);
 
   const OperationMenu = (
     <>
@@ -125,7 +129,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         }}
       />
       <DisablePublicSharing.DisablePublicSharingModal
-        pageId={id}
+        page={page}
         open={openDisableShared}
         onClose={() => {
           setOpenDisableShared(false);
