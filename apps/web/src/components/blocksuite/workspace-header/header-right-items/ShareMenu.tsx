@@ -11,6 +11,7 @@ import { useToggleWorkspacePublish } from '../../../../hooks/affine/use-toggle-w
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import { useRouterHelper } from '../../../../hooks/use-router-helper';
 import { WorkspaceSubPath } from '../../../../shared';
+import { Unreachable } from '../../../affine/affine-error-eoundary';
 import type { BaseHeaderProps } from '../header';
 
 const AffineHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
@@ -18,22 +19,16 @@ const AffineHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
   const togglePublish = useToggleWorkspacePublish(
     props.workspace as AffineWorkspace
   );
-  const onTransformWorkspace = useOnTransformWorkspace();
   const helper = useRouterHelper(useRouter());
   return (
     <ShareMenu
       workspace={props.workspace as AffineWorkspace}
       currentPage={props.currentPage as Page}
-      onEnableAffineCloud={useCallback(
-        async workspace => {
-          return onTransformWorkspace(
-            WorkspaceFlavour.LOCAL,
-            WorkspaceFlavour.AFFINE,
-            workspace
-          );
-        },
-        [onTransformWorkspace]
-      )}
+      onEnableAffineCloud={useCallback(async () => {
+        throw new Unreachable(
+          'Affine workspace should not enable affine cloud again'
+        );
+      }, [])}
       onOpenWorkspaceSettings={useCallback(
         async workspace => {
           return helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
