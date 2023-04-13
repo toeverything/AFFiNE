@@ -6,6 +6,7 @@ import {
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  ShareIcon,
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
@@ -175,7 +176,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
 
             <StyledScrollWrapper
               showTopBorder={!isScrollAtTop}
-              onScroll={e => {
+              onScroll={(e: { target: HTMLDivElement }) => {
                 (e.target as HTMLDivElement).scrollTop === 0
                   ? setIsScrollAtTop(true)
                   : setIsScrollAtTop(false);
@@ -209,7 +210,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                     currentWorkspaceId && paths.shared(currentWorkspaceId),
                 }}
               >
-                <FolderIcon />
+                <ShareIcon />
                 <span data-testid="shared-pages">Shared Pages</span>
               </StyledLink>
             </StyledListItem>

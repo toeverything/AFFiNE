@@ -1,5 +1,5 @@
 import { useTranslation } from '@affine/i18n';
-import { FavoriteIcon } from '@blocksuite/icons';
+import { ShareIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -46,7 +46,7 @@ const SharedPages: NextPageWithLayout = () => {
         currentPage={null}
         isPreview={false}
         isPublic={false}
-        icon={<FavoriteIcon />}
+        icon={<ShareIcon />}
       >
         Shared Pages
       </WorkspaceTitle>

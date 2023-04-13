@@ -109,6 +109,7 @@ export const PageList: React.FC<PageListProps> = ({
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
   const isTrash = listType === 'trash';
+  const isShared = listType === 'shared';
   const record = useAtomValue(workspacePreferredModeAtom);
   const list = useMemo(
     () =>
@@ -131,7 +132,11 @@ export const PageList: React.FC<PageListProps> = ({
                 <TableCell proportion={0.5}>{t('Title')}</TableCell>
                 <TableCell proportion={0.2}>{t('Created')}</TableCell>
                 <TableCell proportion={0.2}>
-                  {isTrash ? t('Moved to Trash') : t('Updated')}
+                  {isTrash
+                    ? t('Moved to Trash')
+                    : isShared
+                    ? 'Shared'
+                    : t('Updated')}
                 </TableCell>
                 <TableCell proportion={0.1}></TableCell>
               </>

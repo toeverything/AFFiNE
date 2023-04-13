@@ -21,7 +21,11 @@ import { useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
-import { MoveTo, MoveToTrash } from '../../../affine/operation-menu-items';
+import {
+  DisablePublicSharing,
+  MoveTo,
+  MoveToTrash,
+} from '../../../affine/operation-menu-items';
 
 export type OperationCellProps = {
   pageMeta: PageMeta;
@@ -40,12 +44,19 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   onToggleFavoritePage,
   onToggleTrashPage,
 }) => {
-  const { id, favorite } = pageMeta;
+  const { id, favorite, isPublic } = pageMeta;
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [openDisableShared, setOpenDisableShared] = useState(false);
 
   const OperationMenu = (
     <>
+      <DisablePublicSharing
+        testId="disable-public-sharing"
+        onItemClick={() => {
+          setOpenDisableShared(true);
+        }}
+      />
       <MenuItem
         onClick={() => {
           onToggleFavoritePage(id);
@@ -109,6 +120,13 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         }}
         onCancel={() => {
           setOpen(false);
+        }}
+      />
+      <DisablePublicSharing.DisablePublicSharingModal
+        pageId={id}
+        open={openDisableShared}
+        onClose={() => {
+          setOpenDisableShared(false);
         }}
       />
     </>
