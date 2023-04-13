@@ -211,6 +211,7 @@ describe('indexeddb provider', () => {
       const provider = createIndexedDBProvider('test', yDoc);
       provider.connect();
       await provider.whenSynced;
+      await new Promise(resolve => setTimeout(resolve, 0));
       expect(yDoc.getMap().get('foo')).toBe('bar');
     }
     localStorage.clear();
