@@ -23,6 +23,7 @@ export type Node<RenderProps = unknown> = {
       collapsed: boolean;
       setCollapsed: (id: string, collapsed: boolean) => void;
       isSelected: boolean;
+      disableCollapse?: ReactNode;
     },
     renderProps?: RenderProps
   ) => ReactNode;
@@ -39,6 +40,7 @@ type CommonProps<RenderProps = unknown> = {
   onDrop?: OnDrop;
   // Only trigger when the enableKeyboardSelection is true
   onSelect?: (id: string) => void;
+  disableCollapse?: ReactNode;
 };
 
 export type TreeNodeProps<RenderProps = unknown> = {
@@ -65,6 +67,7 @@ export type TreeNodeItemProps<RenderProps = unknown> = {
 export type TreeViewProps<RenderProps = unknown> = {
   data: Node<RenderProps>[];
   initialCollapsedIds?: string[];
+  disableCollapse?: boolean;
 } & CommonProps<RenderProps>;
 
 export type NodeLIneProps<RenderProps = unknown> = {

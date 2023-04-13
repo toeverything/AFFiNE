@@ -1,30 +1,10 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
-import { clickPageMoreActions, newPage } from '../libs/page-logic';
+import { initHomePageWithPinboard } from '../libs/load-page';
+import { createPinboardPage } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { getMetas } from '../libs/utils';
-
-async function createPinboardPage(page: Page, parentId: string, title: string) {
-  await newPage(page);
-  await page.focus('.affine-default-page-block-title');
-  await page.type('.affine-default-page-block-title', title, {
-    delay: 100,
-  });
-  await clickPageMoreActions(page);
-  await page.getByTestId('move-to-menu-item').click();
-  await page
-    .getByTestId('pinboard-menu')
-    .getByTestId(`pinboard-${parentId}`)
-    .click();
-}
-
-async function initHomePageWithPinboard(page: Page) {
-  await openHomePage(page);
-  await page.waitForSelector('[data-testid="sidebar-pinboard-container"]');
-  return (await getMetas(page)).find(m => m.isRootPinboard);
-}
 
 async function openPinboardPageOperationMenu(page: Page, id: string) {
   const node = await page

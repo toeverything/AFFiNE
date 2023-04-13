@@ -15,6 +15,7 @@ import {
 
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { Footer } from './Footer';
+import { NavigationPath } from './navigation-path';
 import { PublishedResults } from './PublishedResults';
 import { Results } from './Results';
 import { SearchInput } from './SearchInput';
@@ -106,8 +107,15 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
           maxHeight: '80vh',
           minHeight: isPublicAndNoQuery() ? '72px' : '412px',
           top: '80px',
+          overflow: 'hidden',
         }}
       >
+        <NavigationPath
+          blockSuiteWorkspace={blockSuiteWorkspace}
+          onJumpToPage={() => {
+            setOpen(false);
+          }}
+        />
         <Command
           shouldFilter={false}
           //Handle KeyboardEvent conflicts with blocksuite

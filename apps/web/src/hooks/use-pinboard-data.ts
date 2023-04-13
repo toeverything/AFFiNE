@@ -9,6 +9,8 @@ export type RenderProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   onClick?: (e: MouseEvent<HTMLDivElement>, node: PinboardNode) => void;
   showOperationButton?: boolean;
+  // If true, the node will be rendered with path icon at start
+  asPath?: boolean;
 };
 
 export type NodeRenderProps = RenderProps & {
@@ -57,6 +59,7 @@ export function usePinboardData({
   blockSuiteWorkspace,
   onClick,
   showOperationButton,
+  asPath,
 }: {
   metas: PageMeta[];
   pinboardRender: PinboardNode['render'];
@@ -67,8 +70,16 @@ export function usePinboardData({
         blockSuiteWorkspace,
         onClick,
         showOperationButton,
+        asPath,
       }),
-    [blockSuiteWorkspace, metas, onClick, pinboardRender, showOperationButton]
+    [
+      asPath,
+      blockSuiteWorkspace,
+      metas,
+      onClick,
+      pinboardRender,
+      showOperationButton,
+    ]
   );
 
   return {
