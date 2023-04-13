@@ -1,8 +1,8 @@
 import { Menu, MenuItem } from '@affine/component';
-import { SignOutIcon } from '@blocksuite/icons';
+import { AffineIcon, SignOutIcon } from '@blocksuite/icons';
 import type { CSSProperties } from 'react';
-import { useState } from 'react';
 
+import { useCurrentUser } from '../../../../hooks/current/use-current-user';
 const EditMenu = (
   <MenuItem data-testid="editor-option-menu-favorite" icon={<SignOutIcon />}>
     Sign Out
@@ -10,7 +10,7 @@ const EditMenu = (
 );
 
 export const UserAvatar = () => {
-  const [user] = useState(true);
+  const user = useCurrentUser();
   return (
     <Menu
       width={276}
@@ -21,16 +21,12 @@ export const UserAvatar = () => {
     >
       {user ? (
         <WorkspaceAvatar
-          size={20}
-          name={'user.name'}
-          avatar={'user.avatar_url'}
+          size={24}
+          name={user.name}
+          avatar={user.avatar_url}
         ></WorkspaceAvatar>
       ) : (
-        <WorkspaceAvatar
-          size={20}
-          name={'A'}
-          avatar={'user.avatar_url'}
-        ></WorkspaceAvatar>
+        <WorkspaceAvatar size={24}></WorkspaceAvatar>
       )}
     </Menu>
   );
@@ -38,8 +34,8 @@ export const UserAvatar = () => {
 
 interface WorkspaceAvatarProps {
   size: number;
-  name: string | undefined;
-  avatar: string | undefined;
+  name?: string;
+  avatar?: string;
   style?: CSSProperties;
 }
 
@@ -80,7 +76,6 @@ export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = props => {
             border: '1px solid #fff',
             color: '#fff',
             fontSize: Math.ceil(0.5 * size) + 'px',
-            background: '#66ccff',
             borderRadius: '50%',
             textAlign: 'center',
             lineHeight: size + 'px',
@@ -88,7 +83,11 @@ export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = props => {
             verticalAlign: 'middle',
           }}
         >
-          {(props.name || 'AFFiNE').substring(0, 1)}
+          {props.name ? (
+            props.name.substring(0, 1)
+          ) : (
+            <AffineIcon fontSize={24} color={'#5438FF'} />
+          )}
         </div>
       )}
     </>
