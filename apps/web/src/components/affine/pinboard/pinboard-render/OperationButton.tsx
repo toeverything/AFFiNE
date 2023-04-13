@@ -8,7 +8,7 @@ import {
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
@@ -44,6 +44,7 @@ export const OperationButton = ({
   } = useTheme();
   const { t } = useTranslation();
 
+  const timer = useRef<ReturnType<typeof setTimeout>>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [operationMenuOpen, setOperationMenuOpen] = useState(false);
   const [pinboardMenuOpen, setPinboardMenuOpen] = useState(false);
@@ -58,7 +59,20 @@ export const OperationButton = ({
         setPinboardMenuOpen(false);
       }}
     >
-      <div>
+      <div
+        onClick={e => {
+          e.stopPropagation();
+        }}
+        onMouseLeave={() => {
+          timer.current = setTimeout(() => {
+            setOperationMenuOpen(false);
+            setPinboardMenuOpen(false);
+          }, 150);
+        }}
+        onMouseEnter={() => {
+          clearTimeout(timer.current);
+        }}
+      >
         <StyledOperationButton
           data-testid="pinboard-operation-button"
           ref={ref => setAnchorEl(ref)}

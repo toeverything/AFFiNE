@@ -138,6 +138,7 @@ const nextConfig = {
     return profile;
   },
   basePath: process.env.NEXT_BASE_PATH,
+  assetPrefix: process.env.NEXT_ASSET_PREFIX,
   pageExtensions: [...(preset.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx'])],
 };
 
