@@ -46,6 +46,7 @@ beforeEach(() => {
 
 afterEach(() => {
   indexedDB.deleteDatabase('affine-local');
+  localStorage.clear();
 });
 
 describe('indexeddb provider', () => {
