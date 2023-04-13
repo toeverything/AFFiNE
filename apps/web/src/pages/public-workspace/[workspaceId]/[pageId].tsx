@@ -62,10 +62,6 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   }
   const router = useRouter();
   const { openPage } = useRouterHelper(router);
-
-  useEffect(() => {
-    blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
-  }, [blockSuiteWorkspace]);
   useReferenceLink({
     pageLinkClicked: useCallback(
       ({ pageId }: { pageId: string }) => {
