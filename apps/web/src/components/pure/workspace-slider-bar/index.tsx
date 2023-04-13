@@ -23,12 +23,13 @@ import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
 import { Pinboard } from './Pinboard';
+import { RouteNavigation } from './RouteNavigation';
 import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
   StyledNewPageButton,
   StyledScrollWrapper,
-  StyledSidebarSwitchWrapper,
+  StyledSidebarHeader,
   StyledSliderBar,
   StyledSliderBarInnerWrapper,
   StyledSliderBarWrapper,
@@ -111,13 +112,14 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         data-testid="sliderBar-root"
       >
         <StyledSliderBar>
-          <StyledSidebarSwitchWrapper>
+          <StyledSidebarHeader>
+            <RouteNavigation />
             <SidebarSwitch
               visible={sidebarOpen}
               tooltipContent={t('Collapse sidebar')}
               testid="sliderBar-arrowButton-collapse"
             />
-          </StyledSidebarSwitchWrapper>
+          </StyledSidebarHeader>
 
           <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
             <WorkspaceSelector

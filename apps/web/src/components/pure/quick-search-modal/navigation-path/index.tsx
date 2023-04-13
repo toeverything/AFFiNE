@@ -103,7 +103,7 @@ export const NavigationPath = ({
         >
           <IconButton
             data-testid="navigation-path-expand-btn"
-            size="middle"
+            size="small"
             className="collapse-btn"
             onClick={() => {
               setOpenExtend(!openExtend);
@@ -158,9 +158,7 @@ const NavigationPathExtendPanel = ({
       show={open}
       data-testid="navigation-path-expand-panel"
     >
-      <div className="tree-container">
-        <TreeView data={data} indent={10} disableCollapse={true} />
-      </div>
+      <TreeView data={data} indent={10} disableCollapse={true} />
     </StyledNavPathExtendContainer>
   );
 };
