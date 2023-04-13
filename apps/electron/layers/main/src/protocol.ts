@@ -36,6 +36,7 @@ export function registerProtocol() {
       const realpath = toAbsolutePath(url);
       // console.log('realpath', realpath, 'for', url);
       callback(realpath);
+      return true;
     });
 
     protocol.registerFileProtocol('assets', (request, callback) => {
@@ -43,6 +44,7 @@ export function registerProtocol() {
       const realpath = toAbsolutePath(url);
       // console.log('realpath', realpath, 'for', url);
       callback(realpath);
+      return true;
     });
   }
 
@@ -60,7 +62,6 @@ export function registerProtocol() {
           'DELETE',
           'OPTIONS',
         ];
-        // responseHeaders['Content-Security-Policy'] = ["default-src 'self'"];
       }
 
       callback({ responseHeaders });

@@ -7,7 +7,7 @@ import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import fs from 'fs-extra';
 import { parse } from 'url';
 
-import { exchangeToken, oauthEndpoint } from './google-auth';
+import { getExchangeTokenParams, oauthEndpoint } from './google-auth';
 
 const AFFINE_ROOT = path.join(os.homedir(), '.affine');
 
@@ -40,29 +40,24 @@ export const registerHandlers = () => {
     logger.info('sidebar visibility change', visible);
   });
 
-  ipcMain.handle('ui:google-sign-in', async () => {
+  ipcMain.handle('ui:get-google-oauth-code', async () => {
     logger.info('starting google sign in ...');
     shell.openExternal(oauthEndpoint);
 
-    return new Promise<string>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const handleOpenUrl = async (_: any, url: string) => {
         const mainWindow = BrowserWindow.getAllWindows().find(
           w => !w.isDestroyed()
         );
         const urlObj = parse(url.replace('??', '?'), true);
-        if (!mainWindow || !url.startsWith('affine://')) return;
+        if (!mainWindow || !url.startsWith('affine://auth-callback')) return;
         const code = urlObj.query['code'] as string;
         if (!code) return;
 
         logger.info('google sign in code received from callback', code);
 
-        const token = (await exchangeToken(code)) as {
-          id_token: string;
-        };
-
         app.removeListener('open-url', handleOpenUrl);
-        resolve(token.id_token);
-        logger.info('google sign in successful', token);
+        resolve(getExchangeTokenParams(code));
       };
 
       app.on('open-url', handleOpenUrl);
@@ -70,7 +65,7 @@ export const registerHandlers = () => {
       setTimeout(() => {
         reject(new Error('Timed out'));
         app.removeListener('open-url', handleOpenUrl);
-      }, 60000);
+      }, 30000);
     });
   });
 
