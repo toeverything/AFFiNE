@@ -5,13 +5,14 @@ import type { Page } from '@blocksuite/store';
 import { assertEquals } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useToggleWorkspacePublish } from '../../../../hooks/affine/use-toggle-workspace-publish';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import { useRouterHelper } from '../../../../hooks/use-router-helper';
 import { WorkspaceSubPath } from '../../../../shared';
 import { Unreachable } from '../../../affine/affine-error-eoundary';
+import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 import type { BaseHeaderProps } from '../header';
 
 const AffineHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
@@ -54,39 +55,54 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
   // todo: these hooks should be moved to the top level
   const onTransformWorkspace = useOnTransformWorkspace();
   const helper = useRouterHelper(useRouter());
+  const [open, setOpen] = useState(false);
   return (
-    <ShareMenu
-      workspace={props.workspace as LocalWorkspace}
-      currentPage={props.currentPage as Page}
-      onEnableAffineCloud={useCallback(
-        async workspace => {
-          await onTransformWorkspace(
+    <>
+      <ShareMenu
+        workspace={props.workspace as LocalWorkspace}
+        currentPage={props.currentPage as Page}
+        onEnableAffineCloud={useCallback(
+          async workspace => {
+            assertEquals(workspace.flavour, WorkspaceFlavour.LOCAL);
+            assertEquals(workspace.id, props.workspace.id);
+            setOpen(true);
+          },
+          [props.workspace.id]
+        )}
+        onOpenWorkspaceSettings={useCallback(
+          async workspace => {
+            await helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+          },
+          [helper]
+        )}
+        togglePagePublic={useCallback(async (page, isPublic) => {
+          // local workspace should not have public page
+          throw new Error('unreachable');
+        }, [])}
+        toggleWorkspacePublish={useCallback(
+          async (workspace, publish) => {
+            assertEquals(workspace.flavour, WorkspaceFlavour.LOCAL);
+            assertEquals(workspace.id, props.workspace.id);
+            await helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+          },
+          [helper, props.workspace.id]
+        )}
+      />
+      <TransformWorkspaceToAffineModal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+        }}
+        onConform={() => {
+          onTransformWorkspace(
             WorkspaceFlavour.LOCAL,
             WorkspaceFlavour.AFFINE,
-            workspace
+            props.workspace as LocalWorkspace
           );
-        },
-        [onTransformWorkspace]
-      )}
-      onOpenWorkspaceSettings={useCallback(
-        async workspace => {
-          await helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
-        },
-        [helper]
-      )}
-      togglePagePublic={useCallback(async (page, isPublic) => {
-        // local workspace should not have public page
-        throw new Error('unreachable');
-      }, [])}
-      toggleWorkspacePublish={useCallback(
-        async (workspace, publish) => {
-          assertEquals(workspace.flavour, WorkspaceFlavour.LOCAL);
-          assertEquals(workspace.id, props.workspace.id);
-          await helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
-        },
-        [helper, props.workspace.id]
-      )}
-    />
+          setOpen(false);
+        }}
+      />
+    </>
   );
 };
 
