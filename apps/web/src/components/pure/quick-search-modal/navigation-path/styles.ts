@@ -8,6 +8,7 @@ export const StyledNavigationPathContainer = styled('div')(({ theme }) => {
     padding: '0 40px 0 20px',
     position: 'relative',
     fontSize: theme.font.sm,
+    zIndex: 2,
     '.collapse-btn': {
       position: 'absolute',
       right: '12px',
@@ -54,13 +55,9 @@ export const StyledNavPathExtendContainer = styled('div')<{ show: boolean }>(
       transition: 'top .15s',
       fontSize: theme.font.sm,
       color: theme.colors.secondaryTextColor,
+      paddingTop: '46px',
+      paddingRight: '12px',
 
-      '.title': {
-        height: '46px',
-        padding: '0 12px 0 20px',
-
-        ...displayFlex('space-between', 'center'),
-      },
       '.tree-container': {
         padding: '0 12px 0 15px',
       },
