@@ -11,6 +11,7 @@ import {
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
+import type { UIEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
@@ -177,7 +178,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
 
             <StyledScrollWrapper
               showTopBorder={!isScrollAtTop}
-              onScroll={(e: { target: HTMLDivElement }) => {
+              onScroll={(e: UIEvent<HTMLDivElement>) => {
                 (e.target as HTMLDivElement).scrollTop === 0
                   ? setIsScrollAtTop(true)
                   : setIsScrollAtTop(false);
