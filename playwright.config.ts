@@ -76,8 +76,6 @@ const config: PlaywrightTestConfig = {
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
         ENABLE_DEBUG_PAGE: '1',
-        ENABLE_SUBPAGE: '1',
-        ENABLE_CHANGELOG: '1',
         API_SERVER_PROFILE: 'local',
       },
     },
