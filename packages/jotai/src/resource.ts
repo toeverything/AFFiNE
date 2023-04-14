@@ -1,10 +1,14 @@
 import { getEnvironment } from '@affine/env';
+import type { EditorContainer } from '@blocksuite/editor';
 import { atom } from 'jotai';
 
 export const lottieAtom = atom(import('lottie-web').then(m => m.default));
 
-export const editorContainerModuleAtom = atom(
+export const editorContainerModuleAtom = atom<Promise<EditorContainer>>(
   getEnvironment().isServer
-    ? () => import('@blocksuite/editor').then(module => module.EditorContainer)
-    : import('@blocksuite/editor').then(module => module.EditorContainer)
+    ? async () =>
+        import('@blocksuite/editor').then(module => module.EditorContainer)
+    : (import('@blocksuite/editor').then(
+        module => module.EditorContainer
+      ) as any)
 );
