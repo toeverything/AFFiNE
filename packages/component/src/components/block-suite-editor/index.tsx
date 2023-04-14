@@ -50,7 +50,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       }
       props.onLoad?.(page, editor);
     }
-  }, [props.page, props.onInit, props.onLoad]);
+  }, [props.page, props.onInit, props.onLoad, editor, props, page]);
 
   const ref = useRef<HTMLDivElement>(null);
 

@@ -1,3 +1,4 @@
+import { useTranslation } from '@affine/i18n';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { FC } from 'react';
@@ -7,10 +8,11 @@ import type { ShareMenuProps } from './ShareMenu';
 import { StyledButton } from './styles';
 
 const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
+  const { t } = useTranslation();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
-        Invite others to join the Workspace or publish it to web.
+        {t('Share Menu Public Workspace Description1')}
       </div>
       <StyledButton
         data-testid="share-menu-enable-affine-cloud-button"
@@ -18,7 +20,7 @@ const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
           props.onOpenWorkspaceSettings(props.workspace);
         }}
       >
-        Open Workspace Settings
+        {t('Open Workspace Settings')}
       </StyledButton>
     </div>
   );
@@ -26,12 +28,13 @@ const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
 
 const ShareAffineWorkspace: FC<ShareMenuProps<AffineWorkspace>> = props => {
   const isPublicWorkspace = props.workspace.public;
+  const { t } = useTranslation();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
         {isPublicWorkspace
-          ? `Current workspace has been published to the web as a public workspace.`
-          : `Invite others to join the Workspace or publish it to web`}
+          ? t('Share Menu Public Workspace Description2')
+          : t('Share Menu Public Workspace Description1')}
       </div>
       <StyledButton
         data-testid="share-menu-publish-to-web-button"
@@ -39,7 +42,7 @@ const ShareAffineWorkspace: FC<ShareMenuProps<AffineWorkspace>> = props => {
           props.onOpenWorkspaceSettings(props.workspace);
         }}
       >
-        Open Workspace Settings
+        {t('Open Workspace Settings')}
       </StyledButton>
     </div>
   );

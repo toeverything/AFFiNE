@@ -2,10 +2,10 @@ import { Button, Menu, MenuItem, styled } from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
-import type React from 'react';
+import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
 
-const LanguageMenuContent: React.FC = () => {
+const LanguageMenuContent: FC = () => {
   const { i18n } = useTranslation();
   const changeLanguage = useCallback(
     (event: string) => {
@@ -38,7 +38,7 @@ export const LanguageMenu: React.FC = () => {
 
   return (
     <Menu
-      content={<LanguageMenuContent />}
+      content={(<LanguageMenuContent />) as ReactElement}
       placement="bottom"
       trigger="click"
       disablePortal={true}

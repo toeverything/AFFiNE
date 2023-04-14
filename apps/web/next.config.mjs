@@ -22,6 +22,10 @@ if (enableDebugLocal) {
   console.info('Debugging local blocksuite');
 }
 
+if (process.env.COVERAGE === 'true') {
+  console.info('Enable coverage report');
+}
+
 const profileTarget = {
   ac: '100.85.73.88:12001',
   dev: '100.84.105.99:11001',
