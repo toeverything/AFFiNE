@@ -32,7 +32,7 @@ export const PublicLinkDisableModal = ({
       portal: document.body,
     });
     onClose();
-  }, []);
+  }, [onClose, setIsPublic]);
   return (
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>

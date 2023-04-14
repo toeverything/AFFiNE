@@ -53,10 +53,10 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   }, [props.workspace.id, props.currentPage.id]);
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);
-  }, [isPublic]);
+  }, [setIsPublic]);
   const onClickCopyLink = useCallback(() => {
     navigator.clipboard.writeText(sharingUrl);
-  }, []);
+  }, [sharingUrl]);
 
   return (
     <div className={menuItemStyle}>

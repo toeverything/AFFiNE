@@ -14,11 +14,14 @@ export function useBlockSuiteWorkspacePageIsPublic(page: Page) {
       set(page.meta.isPublic ?? false);
     });
   }, [page]);
-  const setIsPublic = useCallback((isPublic: boolean) => {
-    set(isPublic);
-    page.workspace.setPageMeta(page.id, {
-      isPublic,
-    });
-  }, []);
+  const setIsPublic = useCallback(
+    (isPublic: boolean) => {
+      set(isPublic);
+      page.workspace.setPageMeta(page.id, {
+        isPublic,
+      });
+    },
+    [page.id, page.workspace]
+  );
   return [isPublic, setIsPublic] as const;
 }
