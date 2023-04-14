@@ -75,7 +75,13 @@ const ListPageInner: React.FC<{
           <SearchIcon />
         </IconButton>
       </NavContainer>
-      <Suspense>
+      <Suspense
+        fallback={
+          <StyledTableContainer>
+            <ListSkeleton />
+          </StyledTableContainer>
+        }
+      >
         <BlockSuitePublicPageList
           onOpenPage={handleClickPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
