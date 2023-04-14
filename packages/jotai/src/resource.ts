@@ -1,5 +1,3 @@
 import { atom } from 'jotai';
 
-export const lottieAtom = atom(async () =>
-  import('lottie-web').then(m => m.default)
-);
+export const lottieAtom = atom(import('lottie-web').then(m => m.default));

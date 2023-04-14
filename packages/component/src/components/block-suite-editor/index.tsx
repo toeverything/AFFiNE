@@ -9,7 +9,7 @@ import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 
-const editorContainerModuleAtom = atom(async () =>
+const editorContainerModuleAtom = atom(
   import('@blocksuite/editor').then(module => module.EditorContainer)
 );
 
