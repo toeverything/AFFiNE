@@ -254,6 +254,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@toeverything/y-indexeddb": "workspace:*"
     "@types/ws": ^8.5.4
+    async-call-rpc: ^6.1.5
     firebase: ^9.19.1
     jotai: ^2.0.4
     js-base64: ^3.7.5
@@ -7970,6 +7971,13 @@ __metadata:
   version: 2.0.0
   resolution: "astral-regex@npm:2.0.0"
   checksum: 876231688c66400473ba505731df37ea436e574dd524520294cc3bbc54ea40334865e01fa0d074d74d036ee874ee7e62f486ea38bc421ee8e6a871c06f011766
+  languageName: node
+  linkType: hard
+
+"async-call-rpc@npm:^6.1.5":
+  version: 6.1.5
+  resolution: "async-call-rpc@npm:6.1.5"
+  checksum: a3d027c7016b45cc9925cf6a7eee1fde410a0dae789619ba2627361a9faa8441945c28a077052b6120fb17961044843024bef9d4ae8567adac16292c30271090
   languageName: node
   linkType: hard
 

@@ -22,6 +22,11 @@ import createEmotionCache from '../utils/create-emotion-cache';
 
 setupGlobal();
 
+if (typeof window !== 'undefined') {
+  // worker is not supported in SSR
+  import('@affine/workspace/providers/indexeddb-worker/main');
+}
+
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
