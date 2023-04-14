@@ -1,17 +1,13 @@
+import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
-import { atom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
 import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
-
-const editorContainerModuleAtom = atom(
-  import('@blocksuite/editor').then(module => module.EditorContainer)
-);
 
 export type EditorProps = {
   page: Page;
