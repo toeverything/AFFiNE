@@ -11,7 +11,9 @@ import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
   'test',
   _ => undefined,
-  Generator.AutoIncrement
+  {
+    idGenerator: Generator.AutoIncrement,
+  }
 );
 
 const page = blockSuiteWorkspace.createPage('page0');
