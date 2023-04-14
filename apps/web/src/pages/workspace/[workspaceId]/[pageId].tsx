@@ -38,12 +38,12 @@ const WorkspaceDetail: React.FC = () => {
   const [currentPageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
   assertExists(currentWorkspace);
-  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace ?? null;
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace ?? null;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { deletePin } = usePinboardHandler({
     blockSuiteWorkspace,
     metas: useBlockSuitePageMeta(
-      currentWorkspace?.blockSuiteWorkspace ?? null ?? null
+      currentWorkspace.blockSuiteWorkspace ?? null ?? null
     ),
   });
 
