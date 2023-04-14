@@ -1,6 +1,6 @@
 {
   "name": "AFFiNE",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
@@ -22,7 +22,7 @@
     "start": "yarn workspace @affine/web start",
     "start:storybook": "yarn exec serve packages/component/storybook-static -l 6006",
     "start:e2e": "yar dlx run-p start start:storybook",
-    "lint": "eslint . --ext .js,mjs,.ts,.tsx",
+    "lint": "eslint . --ext .js,mjs,.ts,.tsx --cache",
     "lint:fix": "yarn lint --fix",
     "test": "playwright test",
     "test:coverage": "COVERAGE=true yarn test --forbid-only",
@@ -33,13 +33,13 @@
     "notify": "node scripts/notify.mjs"
   },
   "lint-staged": {
-    "*": "prettier --write --ignore-unknown",
+    "*": "prettier --write --ignore-unknown --cache",
     "*.{ts,tsx,mjs,js,jsx}": "eslint --cache --fix"
   },
   "devDependencies": {
     "@affine/cli": "workspace:*",
-    "@commitlint/cli": "^17.5.1",
-    "@commitlint/config-conventional": "^17.4.4",
+    "@commitlint/cli": "^17.6.0",
+    "@commitlint/config-conventional": "^17.6.0",
     "@faker-js/faker": "^7.6.0",
     "@istanbuljs/schema": "^0.1.3",
     "@perfsee/sdk": "^1.5.2",
@@ -51,8 +51,8 @@
     "@typescript-eslint/parser": "^5.58.0",
     "@vanilla-extract/vite-plugin": "^3.8.0",
     "@vitejs/plugin-react": "^3.1.0",
-    "@vitest/coverage-istanbul": "^0.30.0",
-    "@vitest/ui": "^0.30.0",
+    "@vitest/coverage-istanbul": "^0.30.1",
+    "@vitest/ui": "^0.30.1",
     "eslint": "^8.38.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.27.5",
@@ -62,7 +62,7 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "fake-indexeddb": "4.0.1",
     "got": "^12.6.0",
-    "happy-dom": "^9.1.9",
+    "happy-dom": "^9.5.0",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.1",
     "msw": "^1.2.1",
@@ -75,8 +75,8 @@
     "typescript": "^5.0.4",
     "vite": "^4.2.1",
     "vite-plugin-istanbul": "^4.0.1",
-    "vite-tsconfig-paths": "^4.0.9",
-    "vitest": "^0.30.0",
+    "vite-tsconfig-paths": "^4.2.0",
+    "vitest": "^0.30.1",
     "vitest-fetch-mock": "^0.2.2"
   },
   "resolutions": {

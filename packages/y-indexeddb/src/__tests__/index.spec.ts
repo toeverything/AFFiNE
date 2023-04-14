@@ -7,6 +7,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { IndexeddbPersistence } from 'y-indexeddb';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspacePersist } from '../index';
@@ -45,6 +46,7 @@ beforeEach(() => {
 
 afterEach(() => {
   indexedDB.deleteDatabase('affine-local');
+  localStorage.clear();
 });
 
 describe('indexeddb provider', () => {
@@ -194,6 +196,38 @@ describe('indexeddb provider', () => {
       newDoc.getMap('map').forEach((value, key) => {
         expect(value).toBe(parseInt(key));
       });
+    }
+  });
+
+  test('migration', async () => {
+    {
+      const yDoc = new Doc();
+      yDoc.getMap().set('foo', 'bar');
+      const persistence = new IndexeddbPersistence('test', yDoc);
+      await persistence.whenSynced;
+      persistence.destroy();
+    }
+    {
+      const yDoc = new Doc();
+      const provider = createIndexedDBProvider('test', yDoc);
+      provider.connect();
+      await provider.whenSynced;
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(yDoc.getMap().get('foo')).toBe('bar');
+    }
+    localStorage.clear();
+    {
+      indexedDB.databases = vi.fn(async () => {
+        throw new Error('not supported');
+      });
+      expect(indexedDB.databases).rejects.toThrow('not supported');
+      const yDoc = new Doc();
+      expect(indexedDB.databases).toBeCalledTimes(1);
+      const provider = createIndexedDBProvider('test', yDoc);
+      provider.connect();
+      await provider.whenSynced;
+      expect(indexedDB.databases).toBeCalledTimes(2);
+      expect(yDoc.getMap().get('foo')).toBe('bar');
     }
   });
 });

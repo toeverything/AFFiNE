@@ -2,7 +2,7 @@ import { MuiFade, Tooltip } from '@affine/component';
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
-import { lazy, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import { ShortcutsModal } from '../shortcuts-modal';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
@@ -113,11 +113,13 @@ export const HelpIsland = ({
           </StyledTriggerWrapper>
         </MuiFade>
       </StyledIsland>
-      <ContactModal
-        open={open}
-        onClose={() => setOpen(false)}
-        logoSrc="/imgs/affine-text-logo.png"
-      />
+      <Suspense>
+        <ContactModal
+          open={open}
+          onClose={() => setOpen(false)}
+          logoSrc="/imgs/affine-text-logo.png"
+        />
+      </Suspense>
       <ShortcutsModal
         open={openShortCut}
         onClose={() => setOpenShortCut(false)}

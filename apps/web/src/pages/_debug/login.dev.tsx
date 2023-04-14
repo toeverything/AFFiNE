@@ -11,7 +11,7 @@ import {
 } from '@affine/workspace/affine/login';
 import { useAtom } from 'jotai';
 import type { NextPage } from 'next';
-import { lazy, useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 
 import { toast } from '../../utils';
 
@@ -91,10 +91,12 @@ const LoginDevPage: NextPage = () => {
         >
           Check Permission
         </Button>
-        <Viewer
-          theme={useTheme().resolvedTheme === 'light' ? 'light' : 'dark'}
-          value={user}
-        />
+        <Suspense>
+          <Viewer
+            theme={useTheme().resolvedTheme === 'light' ? 'light' : 'dark'}
+            value={user}
+          />
+        </Suspense>
       </StyledWrapper>
     </StyledPage>
   );

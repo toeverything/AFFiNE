@@ -32,13 +32,14 @@ export const StyledPinboard = styled('div')<{
   disable?: boolean;
   active?: boolean;
   isOver?: boolean;
-}>(({ disable = false, active = false, theme, isOver }) => {
+  disableCollapse?: boolean;
+}>(({ disableCollapse, disable = false, active = false, theme, isOver }) => {
   return {
     width: '100%',
     height: '32px',
     borderRadius: '8px',
     ...displayFlex('flex-start', 'center'),
-    padding: '0 2px 0 16px',
+    padding: disableCollapse ? '0 5px' : '0 2px 0 16px',
     position: 'relative',
     color: disable
       ? theme.colors.disableColor
@@ -54,7 +55,11 @@ export const StyledPinboard = styled('div')<{
       textAlign: 'left',
       ...textEllipsis(1),
     },
-    '> svg': {
+    '.path-icon': {
+      fontSize: '16px',
+      transform: 'translateY(-4px)',
+    },
+    '.mode-icon': {
       fontSize: '20px',
       marginRight: '8px',
       flexShrink: '0',

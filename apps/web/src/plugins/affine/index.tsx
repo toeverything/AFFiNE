@@ -52,7 +52,10 @@ const getPersistenceAllWorkspace = () => {
           item.id,
           (k: string) =>
             // fixme: token could be expired
-            ({ api: '/api/workspace', token: getLoginStorage()?.token }[k])
+            ({
+              api: prefixUrl + 'api/workspace',
+              token: getLoginStorage()?.token,
+            }[k])
         );
         const affineWorkspace: AffineWorkspace = {
           ...item,

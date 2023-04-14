@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { PerfseePlugin } from '@perfsee/webpack';
 import { withSentryConfig } from '@sentry/nextjs';
+import SentryWebpackPlugin from '@sentry/webpack-plugin';
 import debugLocal from 'next-debug-local';
 
 import preset from './preset.config.mjs';
@@ -19,6 +20,10 @@ const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
 
 if (enableDebugLocal) {
   console.info('Debugging local blocksuite');
+}
+
+if (process.env.COVERAGE === 'true') {
+  console.info('Enable coverage report');
 }
 
 const profileTarget = {
@@ -113,6 +118,19 @@ const nextConfig = {
         config.plugins = [perfsee];
       }
     }
+    if (
+      process.env.SENTRY_AUTH_TOKEN &&
+      process.env.SENTRY_ORG &&
+      process.env.SENTRY_PROJECT
+    ) {
+      config.plugins.push(
+        new SentryWebpackPlugin({
+          include: '.next',
+          ignore: ['node_modules', 'cypress', 'test'],
+          urlPrefix: '~/_next',
+        })
+      );
+    }
 
     return config;
   },
@@ -124,6 +142,7 @@ const nextConfig = {
     return profile;
   },
   basePath: process.env.NEXT_BASE_PATH,
+  assetPrefix: process.env.NEXT_ASSET_PREFIX,
   pageExtensions: [...(preset.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx'])],
 };
 

@@ -31,9 +31,11 @@ contextBridge.exposeInMainWorld('apis', {
     ipcRenderer.invoke('ui:sidebar-visibility-change', visible),
 
   /**
-   * Try sign in using Google and return a Google IDToken
+   * Try sign in using Google and return a request object to exchange the code for a token
+   * Not exchange in Node side because it is easier to do it in the renderer with VPN
    */
-  googleSignIn: (): Promise<string> => ipcRenderer.invoke('ui:google-sign-in'),
+  getGoogleOauthCode: (): Promise<{ requestInit: RequestInit; url: string }> =>
+    ipcRenderer.invoke('ui:get-google-oauth-code'),
 
   /**
    * Secret backdoor to update environment variables in main process
