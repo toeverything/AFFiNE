@@ -12,6 +12,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@affine-prototype/ssr@workspace:packages/prototype/ssr":
+  version: 0.0.0-use.local
+  resolution: "@affine-prototype/ssr@workspace:packages/prototype/ssr"
+  dependencies:
+    express: ^4.18.2
+    jotai: ^2.0.4
+    react: ^18.2.0
+    react-dom: ^18.2.0
+    vite: ^4.2.1
+  languageName: unknown
+  linkType: soft
+
 "@affine-test/fixtures@workspace:*, @affine-test/fixtures@workspace:tests/fixtures":
   version: 0.0.0-use.local
   resolution: "@affine-test/fixtures@workspace:tests/fixtures"
@@ -10944,7 +10956,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express@npm:^4.17.3":
+"express@npm:^4.17.3, express@npm:^4.18.2":
   version: 4.18.2
   resolution: "express@npm:4.18.2"
   dependencies:

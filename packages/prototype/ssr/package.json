@@ -1,0 +1,14 @@
+{
+  "name": "@affine-prototype/ssr",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node-esm server.mts"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "jotai": "^2.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite": "^4.2.1"
+  }
+}
