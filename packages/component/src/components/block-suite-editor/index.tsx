@@ -29,13 +29,15 @@ declare global {
 }
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
-  const EditorContainer = useAtomValue(editorContainerModuleAtom);
+  const JotaiEditorContainer = useAtomValue(
+    editorContainerModuleAtom
+  ) as typeof EditorContainer;
   const page = props.page;
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
-    editorRef.current = new EditorContainer();
+    editorRef.current = new JotaiEditorContainer();
     editorRef.current.autofocus = true;
     globalThis.currentEditor = editorRef.current;
   }
