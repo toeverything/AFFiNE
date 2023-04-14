@@ -6,12 +6,12 @@ import {
   PageIcon,
   PivotsIcon,
 } from '@blocksuite/icons';
+import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import { useMemo, useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { PinboardNode } from '../../../../hooks/use-pinboard-data';
 import { StyledCollapsedButton, StyledPinboard } from '../styles';
 import EmptyItem from './EmptyItem';

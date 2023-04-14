@@ -1,5 +1,9 @@
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
@@ -9,7 +13,6 @@ import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { usePageMeta, usePageMetaHelper } from '../../../hooks/use-page-meta';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
@@ -34,14 +37,17 @@ const WorkspaceDetail: React.FC = () => {
   const { openPage } = useRouterHelper(router);
   const [currentPageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
+  assertExists(currentWorkspace);
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace ?? null;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { deletePin } = usePinboardHandler({
     blockSuiteWorkspace,
-    metas: usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null ?? null),
+    metas: useBlockSuitePageMeta(
+      currentWorkspace?.blockSuiteWorkspace ?? null ?? null
+    ),
   });
 
-  useSyncRecentViewsWithRouter(router);
+  useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
 
   useReferenceLinkEffect({
     pageLinkClicked: useCallback(

@@ -5,14 +5,13 @@ import 'fake-indexeddb/auto';
 
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-blocksuite-workspace-helper';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { BlockSuiteWorkspace } from '../../shared';
-import { useBlockSuiteWorkspaceHelper } from '../use-blocksuite-workspace-helper';
-import { usePageMeta } from '../use-page-meta';
-
-let blockSuiteWorkspace: BlockSuiteWorkspace;
+let blockSuiteWorkspace: Workspace;
 
 function handleNewPage(page: Page) {
   const pageBlockId = page.addBlock('affine:page', { title: '' });
@@ -21,7 +20,7 @@ function handleNewPage(page: Page) {
 }
 
 beforeEach(() => {
-  blockSuiteWorkspace = new BlockSuiteWorkspace({
+  blockSuiteWorkspace = new Workspace({
     id: 'test',
   })
     .register(AffineSchemas)
@@ -37,7 +36,9 @@ describe('useBlockSuiteWorkspaceHelper', () => {
     const helperHook = renderHook(() =>
       useBlockSuiteWorkspaceHelper(blockSuiteWorkspace)
     );
-    const pageMetaHook = renderHook(() => usePageMeta(blockSuiteWorkspace));
+    const pageMetaHook = renderHook(() =>
+      useBlockSuitePageMeta(blockSuiteWorkspace)
+    );
     expect(pageMetaHook.result.current.length).toBe(3);
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
     const page = helperHook.result.current.createPage('page4');

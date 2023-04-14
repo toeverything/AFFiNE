@@ -2,11 +2,11 @@ import { useTranslation } from '@affine/i18n';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons';
 import { assertEquals, nanoid } from '@blocksuite/store';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-blocksuite-workspace-helper';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';
 import type React from 'react';
 
-import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { StyledModalFooterContent } from './style';

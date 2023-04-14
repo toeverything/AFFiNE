@@ -3,9 +3,9 @@ import { Input, PureMenu, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
+import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import React, { useCallback, useMemo, useState } from 'react';
 
-import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import { usePinboardData } from '../../../../hooks/use-pinboard-data';
 import { usePinboardHandler } from '../../../../hooks/use-pinboard-handler';
 import type { BlockSuiteWorkspace } from '../../../../shared';

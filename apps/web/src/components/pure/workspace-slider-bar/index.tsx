@@ -14,7 +14,6 @@ import type React from 'react';
 import type { UIEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
-import { usePageMeta } from '../../../hooks/use-page-meta';
 import {
   useSidebarFloating,
   useSidebarResizing,
@@ -80,7 +79,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
-  const pageMeta = usePageMeta(blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
     const page = await createPage();
     openPage(page.id);
@@ -183,18 +181,19 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                   : setIsScrollAtTop(false);
               }}
             >
-              <Favorite
-                currentPath={currentPath}
-                paths={paths}
-                currentPageId={currentPageId}
-                openPage={openPage}
-                currentWorkspace={currentWorkspace}
-              />
-              {!!blockSuiteWorkspace && (
+              {blockSuiteWorkspace && (
+                <Favorite
+                  currentPath={currentPath}
+                  paths={paths}
+                  currentPageId={currentPageId}
+                  openPage={openPage}
+                  currentWorkspace={currentWorkspace}
+                />
+              )}
+              {blockSuiteWorkspace && (
                 <Pinboard
                   blockSuiteWorkspace={blockSuiteWorkspace}
                   openPage={openPage}
-                  allMetas={pageMeta}
                 />
               )}
             </StyledScrollWrapper>

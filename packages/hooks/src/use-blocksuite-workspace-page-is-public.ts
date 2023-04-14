@@ -1,12 +1,6 @@
 import type { Page } from '@blocksuite/store';
 import { useCallback, useEffect, useState } from 'react';
 
-declare module '@blocksuite/store' {
-  interface PageMeta {
-    isPublic?: boolean;
-  }
-}
-
 export function useBlockSuiteWorkspacePageIsPublic(page: Page) {
   const [isPublic, set] = useState<boolean>(() => page.meta.isPublic ?? false);
   useEffect(() => {
