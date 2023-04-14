@@ -140,7 +140,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <SearchIcon />
               {t('Quick search')}
             </StyledListItem>
-
             <StyledListItem
               active={
                 currentPath ===
@@ -161,7 +160,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 {t('Workspace Settings')}
               </StyledLink>
             </StyledListItem>
-
             <StyledListItem
               active={
                 currentPath ===
@@ -177,7 +175,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 <span data-testid="all-pages">{t('All pages')}</span>
               </StyledLink>
             </StyledListItem>
-
             <StyledScrollWrapper
               showTopBorder={!isScrollAtTop}
               onScroll={(e: UIEvent<HTMLDivElement>) => {
@@ -201,7 +198,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 />
               )}
             </StyledScrollWrapper>
-
+            <div style={{ height: 16 }}></div>
             {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
             currentWorkspace.public ? (
               <StyledListItem>
@@ -238,9 +235,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 currentPath ===
                 (currentWorkspaceId && paths.trash(currentWorkspaceId))
               }
-              style={{
-                marginTop: '16px',
-              }}
             >
               <StyledLink
                 href={{

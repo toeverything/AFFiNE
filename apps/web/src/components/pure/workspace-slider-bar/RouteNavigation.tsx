@@ -1,12 +1,14 @@
 import { IconButton } from '@affine/component';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
 
+import { StyledRouteNavigationWrapper } from './shared-styles';
+
 export const RouteNavigation = () => {
   if (!environment.isDesktop) {
-    return <div></div>;
+    return <></>;
   }
   return (
-    <div>
+    <StyledRouteNavigationWrapper>
       <IconButton
         size="middle"
         onClick={() => {
@@ -24,6 +26,6 @@ export const RouteNavigation = () => {
       >
         <ArrowRightSmallIcon />
       </IconButton>
-    </div>
+    </StyledRouteNavigationWrapper>
   );
 };

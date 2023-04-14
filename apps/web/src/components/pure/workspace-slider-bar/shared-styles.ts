@@ -18,6 +18,7 @@ export const StyledListItem = styled('div')<{
     cursor: 'pointer',
     marginBottom: '4px',
     position: 'relative',
+    flexShrink: 0,
     userSelect: 'none',
     ...displayFlex('flex-start', 'center'),
     ...(disabled
@@ -209,4 +210,11 @@ export const StyledChangeLogWrapper = styled('div')<{
     transition: 'all 0.3s',
     overflow: 'hidden',
   };
+});
+
+export const StyledRouteNavigationWrapper = styled('div')({
+  height: '32px',
+  width: '80px',
+  marginRight: '16px',
+  ...displayFlex('space-between', 'center'),
 });

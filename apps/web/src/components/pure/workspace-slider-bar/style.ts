@@ -40,12 +40,12 @@ export const StyledSidebarHeader = styled('div')(() => {
   return {
     height: '52px',
     flexShrink: 0,
-    padding: '0 16px',
+    padding: '0 16px 0 10px',
     WebkitAppRegion: 'drag',
     button: {
       WebkitAppRegion: 'no-drag',
     },
-    ...displayFlex('space-between', 'center'),
+    ...displayFlex(macosElectron ? 'flex-end' : 'space-between', 'center'),
   };
 });
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
@@ -54,6 +54,9 @@ export const StyledSliderBarInnerWrapper = styled('div')(() => {
     // overflowX: 'hidden',
     // overflowY: 'auto',
     position: 'relative',
+    height: 'calc(100% - 52px * 2)',
+    display: 'flex',
+    flexDirection: 'column',
   };
 });
 
@@ -74,7 +77,7 @@ export const StyledNewPageButton = styled('button')(({ theme }) => {
     ...displayFlex('flex-start', 'center'),
     borderTop: '1px solid',
     borderColor: theme.colors.borderColor,
-    padding: '0 8px',
+    padding: '0 8px 0 16px',
     svg: {
       fontSize: '20px',
       color: theme.colors.iconColor,
@@ -109,7 +112,6 @@ export const StyledScrollWrapper = styled('div')<{
   showTopBorder: boolean;
 }>(({ showTopBorder, theme }) => {
   return {
-    maxHeight: '360px',
     overflowY: 'auto',
     borderTop: '1px solid',
     borderColor: showTopBorder ? theme.colors.borderColor : 'transparent',
