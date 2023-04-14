@@ -4,7 +4,7 @@ import { atom } from 'jotai';
 
 export const lottieAtom = atom(import('lottie-web').then(m => m.default));
 
-export const editorContainerModuleAtom = atom<Promise<EditorContainer>>(
+export const editorContainerModuleAtom = atom<Promise<typeof EditorContainer>>(
   getEnvironment().isServer
     ? async () =>
         import('@blocksuite/editor').then(module => module.EditorContainer)
