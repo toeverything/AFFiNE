@@ -1,4 +1,3 @@
-'use client';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
