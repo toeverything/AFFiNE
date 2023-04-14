@@ -4,7 +4,7 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230413112150-e058f87e-nightly",
+    "@blocksuite/global": "0.0.0-20230413190748-4d32b79a-nightly",
     "next": "=13.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
