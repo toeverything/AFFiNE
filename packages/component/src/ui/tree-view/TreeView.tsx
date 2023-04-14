@@ -60,7 +60,7 @@ export const TreeView = <RenderProps,>({
       document.removeEventListener('keydown', handleDirectionKeyDown);
       document.removeEventListener('keydown', handleEnterKeyDown);
     };
-  }, [data, selectedId]);
+  }, [data, enableKeyboardSelection, onSelect, selectedId]);
 
   const setCollapsed: TreeNodeProps['setCollapsed'] = (id, collapsed) => {
     if (disableCollapse) {
