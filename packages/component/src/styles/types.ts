@@ -1,6 +1,8 @@
 import type { EditorContainer } from '@blocksuite/editor';
 import type { CSSProperties } from 'react';
 
+import type { AffineNextLightColorScheme } from './color-scheme';
+
 export type Theme = 'light' | 'dark';
 export type ThemeMode = Theme | 'auto';
 
@@ -59,7 +61,7 @@ export interface AffineTheme {
     warningColor: string;
     errorColor: string;
     lineNumberColor: string;
-  };
+  } & AffineNextLightColorScheme;
   font: {
     title: string;
     h1: string;
