@@ -20,7 +20,7 @@ test.describe('Open AFFiNE', () => {
     const workspaceCards = await page.$$('data-testid=workspace-card');
     expect(workspaceCards.length).toBe(2);
     await workspaceCards[1].click();
-    await page.goto('http://localhost:8080');
+    await openHomePage(page);
 
     const workspaceNameDom = await page.getByTestId('workspace-name');
     const currentWorkspaceName = await workspaceNameDom.evaluate(
