@@ -1,4 +1,4 @@
-import { getEnvironment } from '@affine/env';
+import { prefixUrl } from '@affine/env';
 import { Trans, useTranslation } from '@affine/i18n';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -46,12 +46,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   const [showDisable, setShowDisable] = useState(false);
   const { t } = useTranslation();
   const sharingUrl = useMemo(() => {
-    const env = getEnvironment();
-    if (env.isBrowser) {
-      return `${env.origin}/public-workspace/${props.workspace.id}/${props.currentPage.id}`;
-    } else {
-      return '';
-    }
+    return `${prefixUrl}public-workspace/${props.workspace.id}/${props.currentPage.id}`;
   }, [props.workspace.id, props.currentPage.id]);
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);
