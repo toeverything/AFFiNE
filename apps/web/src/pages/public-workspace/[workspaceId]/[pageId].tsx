@@ -1,7 +1,6 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { PageIcon } from '@blocksuite/icons';
-import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -19,7 +18,7 @@ import { QueryParamError } from '../../../components/affine/affine-error-eoundar
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
-import { useReferenceLink } from '../../../hooks/affine/use-reference-link';
+import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import {
   PublicQuickSearch,
@@ -65,10 +64,9 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   }
   const router = useRouter();
   const { openPage } = useRouterHelper(router);
-  useReferenceLink({
+  useReferenceLinkEffect({
     pageLinkClicked: useCallback(
       ({ pageId }: { pageId: string }) => {
-        assertExists(currentWorkspace);
         return openPage(blockSuiteWorkspace.id, pageId);
       },
       [blockSuiteWorkspace.id, openPage]

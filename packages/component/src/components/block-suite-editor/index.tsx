@@ -1,11 +1,17 @@
 import type { BlockHub } from '@blocksuite/blocks';
-import { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
+import { useAtomValue } from 'jotai';
+import { atom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
+
+const editorContainerModuleAtom = atom(async () =>
+  import('@blocksuite/editor').then(module => module.EditorContainer)
+);
 
 export type EditorProps = {
   page: Page;
@@ -27,6 +33,7 @@ declare global {
 }
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
+  const EditorContainer = useAtomValue(editorContainerModuleAtom);
   const page = props.page;
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
@@ -83,7 +90,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       blockHubRef.current?.remove();
       container.removeChild(editor);
     };
-  }, [page]);
+  }, [editor, page]);
   return (
     <div
       data-testid={`editor-${props.page.id}`}
@@ -126,7 +133,9 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
         [props.onReset]
       )}
     >
-      <BlockSuiteEditorImpl {...props} />
+      <Suspense fallback={null}>
+        <BlockSuiteEditorImpl {...props} />
+      </Suspense>
     </ErrorBoundary>
   );
 });
