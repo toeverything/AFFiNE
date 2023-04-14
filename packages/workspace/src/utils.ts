@@ -6,11 +6,17 @@ const hashMap = new Map<string, Workspace>();
 export const createEmptyBlockSuiteWorkspace = (
   id: string,
   blobOptionsGetter?: BlobOptionsGetter,
-  idGenerator?: Generator
-): Workspace => {
-  if (hashMap.has(id)) {
-    return hashMap.get(id) as Workspace;
+  config?: {
+    cachePrefix?: string;
+    idGenerator?: Generator;
   }
+): Workspace => {
+  const prefix: string = config?.cachePrefix ?? '';
+  const cacheKey = `${prefix}${id}`;
+  if (hashMap.has(cacheKey)) {
+    return hashMap.get(cacheKey) as Workspace;
+  }
+  const idGenerator = config?.idGenerator;
   const workspace = new Workspace({
     id,
     isSSR: typeof window === 'undefined',
@@ -19,6 +25,6 @@ export const createEmptyBlockSuiteWorkspace = (
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
-  hashMap.set(id, workspace);
+  hashMap.set(cacheKey, workspace);
   return workspace;
 };

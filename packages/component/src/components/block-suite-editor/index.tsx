@@ -1,9 +1,11 @@
+import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
-import { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
+import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -27,12 +29,15 @@ declare global {
 }
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
+  const JotaiEditorContainer = useAtomValue(
+    editorContainerModuleAtom
+  ) as typeof EditorContainer;
   const page = props.page;
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
-    editorRef.current = new EditorContainer();
+    editorRef.current = new JotaiEditorContainer();
     editorRef.current.autofocus = true;
     globalThis.currentEditor = editorRef.current;
   }
@@ -83,7 +88,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       blockHubRef.current?.remove();
       container.removeChild(editor);
     };
-  }, [page]);
+  }, [editor, page]);
   return (
     <div
       data-testid={`editor-${props.page.id}`}
@@ -126,7 +131,9 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
         [props.onReset]
       )}
     >
-      <BlockSuiteEditorImpl {...props} />
+      <Suspense fallback={null}>
+        <BlockSuiteEditorImpl {...props} />
+      </Suspense>
     </ErrorBoundary>
   );
 });

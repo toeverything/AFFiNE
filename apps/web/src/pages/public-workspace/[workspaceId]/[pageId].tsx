@@ -4,10 +4,10 @@ import { PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import type React from 'react';
+import type { ReactElement } from 'react';
 import { Suspense, useCallback, useEffect } from 'react';
 
 import {
@@ -15,11 +15,10 @@ import {
   publicWorkspaceIdAtom,
   publicWorkspacePageIdAtom,
 } from '../../../atoms/public-workspace';
-import { QueryParamError } from '../../../components/affine/affine-error-eoundary';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
-import { useReferenceLink } from '../../../hooks/affine/use-reference-link';
+import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import {
   PublicQuickSearch,
@@ -55,9 +54,9 @@ export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
   };
 });
 
-const PublicWorkspaceDetailPageInner: React.FC<{
-  pageId: string;
-}> = ({ pageId }) => {
+const PublicWorkspaceDetailPageInner = (): ReactElement => {
+  const pageId = useAtomValue(publicWorkspacePageIdAtom);
+  assertExists(pageId, 'pageId is null');
   const publicWorkspace = useAtomValue(publicPageBlockSuiteAtom);
   const blockSuiteWorkspace = publicWorkspace.blockSuiteWorkspace;
   if (!blockSuiteWorkspace) {
@@ -65,10 +64,9 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   }
   const router = useRouter();
   const { openPage } = useRouterHelper(router);
-  useReferenceLink({
+  useReferenceLinkEffect({
     pageLinkClicked: useCallback(
       ({ pageId }: { pageId: string }) => {
-        assertExists(currentWorkspace);
         return openPage(blockSuiteWorkspace.id, pageId);
       },
       [blockSuiteWorkspace.id, openPage]
@@ -115,31 +113,31 @@ const PublicWorkspaceDetailPageInner: React.FC<{
 
 export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
-  const workspaceId = router.query.workspaceId;
-  const pageId = router.query.pageId;
-  const setWorkspaceId = useSetAtom(publicWorkspaceIdAtom);
-  const setPageId = useSetAtom(publicWorkspacePageIdAtom);
+  const [workspaceId, setWorkspaceId] = useAtom(publicWorkspaceIdAtom);
+  const [pageId, setPageId] = useAtom(publicWorkspacePageIdAtom);
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
-    if (typeof workspaceId === 'string') {
-      setWorkspaceId(workspaceId);
+    if (typeof router.query.workspaceId === 'string') {
+      setWorkspaceId(router.query.workspaceId);
     }
-    if (typeof pageId === 'string') {
-      setPageId(pageId);
+    if (typeof router.query.pageId === 'string') {
+      setPageId(router.query.pageId);
     }
-  }, [pageId, router.isReady, setPageId, setWorkspaceId, workspaceId]);
-  const value = useAtomValue(publicWorkspaceIdAtom);
-  if (!router.isReady || !value) {
+  }, [
+    router.isReady,
+    router.query.pageId,
+    router.query.workspaceId,
+    setPageId,
+    setWorkspaceId,
+  ]);
+  if (!router.isReady || !workspaceId || !pageId) {
     return <PageLoading />;
-  }
-  if (typeof workspaceId !== 'string' || typeof pageId !== 'string') {
-    throw new QueryParamError('workspaceId, pageId', workspaceId);
   }
   return (
     <Suspense fallback={<PageLoading />}>
-      <PublicWorkspaceDetailPageInner pageId={pageId} />
+      <PublicWorkspaceDetailPageInner />
     </Suspense>
   );
 };

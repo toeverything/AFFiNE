@@ -13,11 +13,11 @@
     "./*": "./src/components/*/index.tsx"
   },
   "peerDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230409084303-221991d4-nightly",
-    "@blocksuite/editor": "0.0.0-20230409084303-221991d4-nightly",
-    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly",
-    "@blocksuite/icons": "2.1.10",
-    "@blocksuite/store": "0.0.0-20230409084303-221991d4-nightly"
+    "@blocksuite/blocks": "*",
+    "@blocksuite/editor": "*",
+    "@blocksuite/global": "*",
+    "@blocksuite/icons": "*",
+    "@blocksuite/store": "*"
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
@@ -36,6 +36,7 @@
     "@radix-ui/react-avatar": "^1.0.2",
     "@toeverything/hooks": "workspace:*",
     "clsx": "^1.2.1",
+    "jotai": "^2.0.4",
     "kebab-case": "^1.0.2",
     "lit": "^2.7.2",
     "lottie-web": "^5.11.0",

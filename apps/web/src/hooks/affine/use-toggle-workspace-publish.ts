@@ -15,10 +15,8 @@ export function useToggleWorkspacePublish(workspace: AffineWorkspace) {
         public: isPublish,
       });
       await mutate(QueryKey.getWorkspaces);
-      // force update
-      jotaiStore.set(jotaiWorkspacesAtom, [
-        ...jotaiStore.get(jotaiWorkspacesAtom),
-      ]);
+      // fixme: remove force update
+      jotaiStore.set(jotaiWorkspacesAtom, ws => [...ws]);
     },
     [mutate, workspace.id]
   );

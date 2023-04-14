@@ -89,8 +89,8 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
       <Wrapper marginBottom="42px">{t('Publishing Description')}</Wrapper>
       <Button
         data-testid="publish-to-web-button"
-        onClick={() => {
-          publishWorkspace(true);
+        onClick={async () => {
+          await publishWorkspace(true);
         }}
         type="light"
         shape="circle"

@@ -75,6 +75,7 @@ __metadata:
     clsx: ^1.2.1
     concurrently: ^8.0.1
     jest-mock: ^29.5.0
+    jotai: ^2.0.4
     kebab-case: ^1.0.2
     lit: ^2.7.2
     lottie-web: ^5.11.0
@@ -92,11 +93,11 @@ __metadata:
     wait-on: ^7.0.1
     yjs: ^13.5.52
   peerDependencies:
-    "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
-    "@blocksuite/editor": 0.0.0-20230409084303-221991d4-nightly
-    "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
-    "@blocksuite/icons": 2.1.10
-    "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/blocks": "*"
+    "@blocksuite/editor": "*"
+    "@blocksuite/global": "*"
+    "@blocksuite/icons": "*"
+    "@blocksuite/store": "*"
   languageName: unknown
   linkType: soft
 
@@ -148,9 +149,17 @@ __metadata:
   resolution: "@affine/jotai@workspace:packages/jotai"
   dependencies:
     "@affine/env": "workspace:*"
+    "@blocksuite/blocks": 0.0.0-20230413190748-4d32b79a-nightly
+    "@blocksuite/editor": 0.0.0-20230413190748-4d32b79a-nightly
+    "@blocksuite/global": 0.0.0-20230413190748-4d32b79a-nightly
+    "@blocksuite/store": 0.0.0-20230413190748-4d32b79a-nightly
     jotai: ^2.0.4
     lottie-web: ^5.11.0
   peerDependencies:
+    "@blocksuite/blocks": "*"
+    "@blocksuite/editor": "*"
+    "@blocksuite/global": "*"
+    "@blocksuite/store": "*"
     lottie-web: "*"
   languageName: unknown
   linkType: soft
@@ -257,8 +266,8 @@ __metadata:
     yjs: ^13.5.52
     zod: ^3.21.4
   peerDependencies:
-    "@blocksuite/blocks": 0.0.0-20230409084303-221991d4-nightly
-    "@blocksuite/store": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/blocks": "*"
+    "@blocksuite/store": "*"
   languageName: unknown
   linkType: soft
 
