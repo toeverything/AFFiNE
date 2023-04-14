@@ -1,20 +1,30 @@
+import { useTranslation } from '@affine/i18n';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
+import { ExportToHtmlIcon, ExportToMarkdownIcon } from '@blocksuite/icons';
 import type { FC } from 'react';
 import { useRef } from 'react';
 
 import { Button } from '../..';
-import type { ShareMenuProps } from './index';
-import { actionsStyle, descriptionStyle, menuItemStyle } from './index.css';
+import {
+  actionsStyle,
+  descriptionStyle,
+  exportButtonStyle,
+  menuItemStyle,
+  svgStyle,
+} from './index.css';
+import type { ShareMenuProps } from './ShareMenu';
 
 export const Export: FC<ShareMenuProps> = props => {
   const contentParserRef = useRef<ContentParser>();
+  const { t } = useTranslation();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
-        Download a static copy of your page to share with others.
+        {t('Export Shared Pages Description')}
       </div>
       <div className={actionsStyle}>
         <Button
+          className={exportButtonStyle}
           onClick={() => {
             if (!contentParserRef.current) {
               contentParserRef.current = new ContentParser(props.currentPage);
@@ -22,9 +32,11 @@ export const Export: FC<ShareMenuProps> = props => {
             return contentParserRef.current.onExportHtml();
           }}
         >
-          Export to HTML
+          <ExportToHtmlIcon className={svgStyle} />
+          {t('Export to HTML')}
         </Button>
         <Button
+          className={exportButtonStyle}
           onClick={() => {
             if (!contentParserRef.current) {
               contentParserRef.current = new ContentParser(props.currentPage);
@@ -32,7 +44,8 @@ export const Export: FC<ShareMenuProps> = props => {
             return contentParserRef.current.onExportMarkdown();
           }}
         >
-          Export to Markdown
+          <ExportToMarkdownIcon className={svgStyle} />
+          {t('Export to Markdown')}
         </Button>
       </div>
     </div>

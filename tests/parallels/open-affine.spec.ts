@@ -49,6 +49,7 @@ test.describe('AFFiNE change log', () => {
     const editorRightBottomChangeLog = page.locator(
       '[data-testid=right-bottom-change-log-icon]'
     );
+    await page.waitForTimeout(50);
     expect(await editorRightBottomChangeLog.isVisible()).toEqual(true);
     await page.getByRole('link', { name: 'All pages' }).click();
     const normalRightBottomChangeLog = page.locator(

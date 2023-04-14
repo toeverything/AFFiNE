@@ -2,6 +2,7 @@ import '@emotion/react';
 
 import type { EditorContainer } from '@blocksuite/editor';
 
+import { nextDarkColorScheme, nextLightColorScheme } from './color-scheme';
 import type { AffineTheme, AffineThemeCSSVariables } from './types';
 
 const basicFontFamily =
@@ -16,11 +17,9 @@ export const getLightTheme = (
     },
     editorMode,
     colors: {
-      primaryColor: '#5438FF',
       pageBackground: '#fff',
       hoverBackground: 'rgba(0,0,0,.04)',
       innerHoverBackground: '#E9E9EC',
-      backgroundTertiaryColor: '#E9E9EC',
       popoverBackground: '#fff',
       tooltipBackground: '#261499',
       codeBackground: '#f2f5f9',
@@ -33,23 +32,17 @@ export const getLightTheme = (
 
       textColor: '#424149',
       secondaryTextColor: '#8E8D91',
-      textEmphasisColor: '#5438FF',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#77757D',
       handleColor: '#c7c3d9',
-      linkColor: '#5438FF',
       linkColor2: '#5438FF',
       linkVisitedColor: '#5438FF',
       tooltipColor: '#fff',
       codeColor: '#77757D',
-      quoteColor: '#645F82',
       placeHolderColor: '#C0BFC1',
       selectedColor: 'rgba(84, 56, 255, 0.04)',
-      borderColor: '#E3E2E4',
       disableColor: '#A9A9AD',
-      warningColor: '#906616',
-      errorColor: '#EB4335',
       lineNumberColor: '#77757D',
+      ...nextLightColorScheme,
     },
     font: {
       title: '36px',
@@ -107,11 +100,9 @@ export const getDarkTheme = (
       mode: 'dark',
     },
     colors: {
-      primaryColor: '#5438FF',
       pageBackground: '#2c2c2c',
       hoverBackground: 'rgba(0,0,0,.04)',
       innerHoverBackground: '#5A5A5A',
-      backgroundTertiaryColor: '#1E1E1E',
       popoverBackground: '#1F2021',
       tooltipBackground: '#0C0A15',
       codeBackground:
@@ -127,24 +118,18 @@ export const getDarkTheme = (
 
       textColor: '#fff',
       secondaryTextColor: '#8E8D91',
-      textEmphasisColor: '#D0CDDC',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#77757D',
       handleColor: '#c7c3d9',
-      linkColor: '#7D91FF',
       linkColor2: '#0C0A15',
       linkVisitedColor: '#505FAB',
       tooltipColor: '#fff',
       codeColor:
         editorMode === 'edgeless' ? lightTheme.colors.codeColor : '#BDDBFD',
-      quoteColor: '#C6CBD9',
       placeHolderColor: '#C7C7C7',
       selectedColor: 'rgba(104, 128, 255, 0.1)',
-      borderColor: '#3C3A40',
       disableColor: '#4b4b4b',
-      warningColor: '#906616',
-      errorColor: '#EB4335',
       lineNumberColor: '#888A9E',
+      ...nextDarkColorScheme,
     },
     shadow: {
       popover:

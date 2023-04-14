@@ -11,14 +11,12 @@ import {
 } from '@affine/workspace/affine/login';
 import { useAtom } from 'jotai';
 import type { NextPage } from 'next';
-import dynamic from 'next/dynamic';
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 
 import { toast } from '../../utils';
 
-const Viewer = dynamic(
-  () => import('@rich-data/viewer').then(m => ({ default: m.JsonViewer })),
-  { ssr: false }
+const Viewer = lazy(() =>
+  import('@rich-data/viewer').then(m => ({ default: m.JsonViewer }))
 );
 
 import { useTheme } from 'next-themes';
@@ -93,10 +91,12 @@ const LoginDevPage: NextPage = () => {
         >
           Check Permission
         </Button>
-        <Viewer
-          theme={useTheme().resolvedTheme === 'light' ? 'light' : 'dark'}
-          value={user}
-        />
+        <Suspense>
+          <Viewer
+            theme={useTheme().resolvedTheme === 'light' ? 'light' : 'dark'}
+            value={user}
+          />
+        </Suspense>
       </StyledWrapper>
     </StyledPage>
   );

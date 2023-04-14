@@ -3,10 +3,9 @@ import { SearchIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { Suspense, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 
 import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../../atoms';
 import {
@@ -17,14 +16,17 @@ import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { StyledTableContainer } from '../../components/blocksuite/block-suite-page-list/page-list/styles';
 import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
-import { PublicWorkspaceLayout } from '../../layouts/public-workspace-layout';
+import {
+  PublicQuickSearch,
+  PublicWorkspaceLayout,
+} from '../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
-const BlockSuitePublicPageList = dynamic(
-  async () =>
-    (await import('../../components/blocksuite/block-suite-page-list'))
-      .BlockSuitePublicPageList
+const BlockSuitePublicPageList = lazy(() =>
+  import('../../components/blocksuite/block-suite-page-list').then(module => ({
+    default: module.BlockSuitePublicPageList,
+  }))
 );
 
 const ListPageInner: React.FC<{
@@ -59,6 +61,7 @@ const ListPageInner: React.FC<{
   }
   return (
     <>
+      <PublicQuickSearch workspace={publicWorkspace} />
       <NavContainer sx={{ px: '20px' }}>
         <Breadcrumbs>
           <StyledBreadcrumbs
@@ -72,10 +75,12 @@ const ListPageInner: React.FC<{
           <SearchIcon />
         </IconButton>
       </NavContainer>
-      <BlockSuitePublicPageList
-        onOpenPage={handleClickPage}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-      />
+      <Suspense>
+        <BlockSuitePublicPageList
+          onOpenPage={handleClickPage}
+          blockSuiteWorkspace={blockSuiteWorkspace}
+        />
+      </Suspense>
     </>
   );
 };

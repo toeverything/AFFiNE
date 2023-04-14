@@ -1,51 +1,49 @@
+import { useTranslation } from '@affine/i18n';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { FC } from 'react';
 
-import { Button } from '../..';
-import type { ShareMenuProps } from '.';
-import { buttonStyle, descriptionStyle, menuItemStyle } from './index.css';
+import { descriptionStyle, menuItemStyle } from './index.css';
+import type { ShareMenuProps } from './ShareMenu';
+import { StyledButton } from './styles';
 
 const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
+  const { t } = useTranslation();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
-        Sharing page publicly requires AFFiNE Cloud service.
+        {t('Share Menu Public Workspace Description1')}
       </div>
-      <Button
+      <StyledButton
         data-testid="share-menu-enable-affine-cloud-button"
-        className={buttonStyle}
-        type="light"
-        shape="circle"
         onClick={() => {
-          props.onEnableAffineCloud(props.workspace as LocalWorkspace);
+          props.onOpenWorkspaceSettings(props.workspace);
         }}
       >
-        Enable AFFiNE Cloud
-      </Button>
+        {t('Open Workspace Settings')}
+      </StyledButton>
     </div>
   );
 };
 
 const ShareAffineWorkspace: FC<ShareMenuProps<AffineWorkspace>> = props => {
   const isPublicWorkspace = props.workspace.public;
+  const { t } = useTranslation();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
         {isPublicWorkspace
-          ? `Current workspace has been published to the web as a public workspace.`
-          : `Invite others to join the Workspace or publish it to web`}
+          ? t('Share Menu Public Workspace Description2')
+          : t('Share Menu Public Workspace Description1')}
       </div>
-      <Button
+      <StyledButton
         data-testid="share-menu-publish-to-web-button"
         onClick={() => {
           props.onOpenWorkspaceSettings(props.workspace);
         }}
-        type="light"
-        shape="circle"
       >
-        Open Workspace Settings
-      </Button>
+        {t('Open Workspace Settings')}
+      </StyledButton>
     </div>
   );
 };

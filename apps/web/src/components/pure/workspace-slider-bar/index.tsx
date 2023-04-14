@@ -1,14 +1,17 @@
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  ShareIcon,
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
+import type { UIEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
@@ -23,12 +26,13 @@ import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
 import { Pinboard } from './Pinboard';
+import { RouteNavigation } from './RouteNavigation';
 import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
   StyledNewPageButton,
   StyledScrollWrapper,
-  StyledSidebarSwitchWrapper,
+  StyledSidebarHeader,
   StyledSliderBar,
   StyledSliderBarInnerWrapper,
   StyledSliderBarWrapper,
@@ -57,6 +61,7 @@ export type WorkSpaceSliderBarProps = {
     favorite: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
     setting: (workspaceId: string) => string;
+    shared: (workspaceId: string) => string;
   };
 };
 
@@ -111,13 +116,14 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         data-testid="sliderBar-root"
       >
         <StyledSliderBar>
-          <StyledSidebarSwitchWrapper>
+          <StyledSidebarHeader>
+            <RouteNavigation />
             <SidebarSwitch
               visible={sidebarOpen}
               tooltipContent={t('Collapse sidebar')}
               testid="sliderBar-arrowButton-collapse"
             />
-          </StyledSidebarSwitchWrapper>
+          </StyledSidebarHeader>
 
           <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
             <WorkspaceSelector
@@ -134,7 +140,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <SearchIcon />
               {t('Quick search')}
             </StyledListItem>
-
             <StyledListItem
               active={
                 currentPath ===
@@ -155,7 +160,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 {t('Workspace Settings')}
               </StyledLink>
             </StyledListItem>
-
             <StyledListItem
               active={
                 currentPath ===
@@ -171,10 +175,9 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 <span data-testid="all-pages">{t('All pages')}</span>
               </StyledLink>
             </StyledListItem>
-
             <StyledScrollWrapper
               showTopBorder={!isScrollAtTop}
-              onScroll={e => {
+              onScroll={(e: UIEvent<HTMLDivElement>) => {
                 (e.target as HTMLDivElement).scrollTop === 0
                   ? setIsScrollAtTop(true)
                   : setIsScrollAtTop(false);
@@ -195,15 +198,43 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 />
               )}
             </StyledScrollWrapper>
-
+            <div style={{ height: 16 }}></div>
+            {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
+            currentWorkspace.public ? (
+              <StyledListItem>
+                <StyledLink
+                  href={{
+                    pathname:
+                      currentWorkspaceId && paths.setting(currentWorkspaceId),
+                  }}
+                >
+                  <ShareIcon />
+                  <span data-testid="Published-to-web">Published to web</span>
+                </StyledLink>
+              </StyledListItem>
+            ) : (
+              <StyledListItem
+                active={
+                  currentPath ===
+                  (currentWorkspaceId && paths.shared(currentWorkspaceId))
+                }
+              >
+                <StyledLink
+                  href={{
+                    pathname:
+                      currentWorkspaceId && paths.shared(currentWorkspaceId),
+                  }}
+                >
+                  <ShareIcon />
+                  <span data-testid="shared-pages">{t('Shared Pages')}</span>
+                </StyledLink>
+              </StyledListItem>
+            )}
             <StyledListItem
               active={
                 currentPath ===
                 (currentWorkspaceId && paths.trash(currentWorkspaceId))
               }
-              style={{
-                marginTop: '16px',
-              }}
             >
               <StyledLink
                 href={{

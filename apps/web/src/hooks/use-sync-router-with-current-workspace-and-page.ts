@@ -55,7 +55,8 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
             path[3] === 'all' ||
             path[3] === 'setting' ||
             path[3] === 'trash' ||
-            path[3] === 'favorite'
+            path[3] === 'favorite' ||
+            path[3] === 'shared'
           ) {
             return;
           }

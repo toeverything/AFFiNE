@@ -78,7 +78,7 @@ const TreeNodeItemWithDnd = <RenderProps,>({
     if (isOver && canDrop) {
       setCollapsed(node.id, false);
     }
-  }, [isOver, canDrop]);
+  }, [isOver, canDrop, setCollapsed, node.id]);
 
   return (
     <TreeNodeItem
@@ -105,6 +105,7 @@ const TreeNodeItem = <RenderProps,>({
   onAdd,
   onDelete,
   dropRef,
+  disableCollapse,
 }: TreeNodeItemProps<RenderProps>) => {
   return (
     <div ref={dropRef}>
@@ -115,6 +116,7 @@ const TreeNodeItem = <RenderProps,>({
         collapsed,
         setCollapsed,
         isSelected: selectedId === node.id,
+        disableCollapse,
       })}
     </div>
   );

@@ -1,8 +1,8 @@
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import type { HTMLAttributes, PropsWithChildren } from 'react';
-import type React from 'react';
+import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -12,9 +12,12 @@ import {
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
+import EditPage from './header-right-items/EditPage';
+import { HeaderShareMenu } from './header-right-items/ShareMenu';
 import SyncUser from './header-right-items/SyncUser';
 import ThemeModeSwitch from './header-right-items/theme-mode-switch';
 import TrashButtonGroup from './header-right-items/TrashButtonGroup';
+import UserAvatar from './header-right-items/UserAvatar';
 import {
   StyledBrowserWarning,
   StyledCloseButton,
@@ -56,10 +59,12 @@ export const enum HeaderRightItemName {
   ThemeModeSwitch = 'themeModeSwitch',
   SyncUser = 'syncUser',
   ShareMenu = 'shareMenu',
+  EditPage = 'editPage',
+  UserAvatar = 'userAvatar',
 }
 
 type HeaderItem = {
-  Component: React.FC<BaseHeaderProps>;
+  Component: FC<BaseHeaderProps>;
   // todo: public workspace should be one of the flavour
   availableWhen: (
     workspace: AffineOfficialWorkspace,
@@ -70,7 +75,6 @@ type HeaderItem = {
     }
   ) => boolean;
 };
-
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.TrashButtonGroup]: {
     Component: TrashButtonGroup,
@@ -90,16 +94,28 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       return currentPage?.meta.trash !== true;
     },
   },
+  [HeaderRightItemName.ShareMenu]: {
+    Component: HeaderShareMenu,
+    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+      return workspace.flavour !== WorkspaceFlavour.PUBLIC && !!currentPage;
+    },
+  },
+  [HeaderRightItemName.EditPage]: {
+    Component: EditPage,
+    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+      return isPublic;
+    },
+  },
+  [HeaderRightItemName.UserAvatar]: {
+    Component: UserAvatar,
+    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+      return isPublic;
+    },
+  },
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
     availableWhen: (_, currentPage, { isPublic, isPreview }) => {
       return !!currentPage && !isPublic && !isPreview;
-    },
-  },
-  [HeaderRightItemName.ShareMenu]: {
-    Component: () => null,
-    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return false;
     },
   },
 };

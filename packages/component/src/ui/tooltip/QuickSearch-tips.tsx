@@ -57,7 +57,7 @@ const StyledCircleContainer = styled('div')(({ theme }) => {
 });
 
 export const QuickSearchTips = (
-  props: PopperProps & Omit<TooltipProps, 'title'>
+  props: PopperProps & Omit<TooltipProps, 'title' | 'content'>
 ) => {
   const { content, placement = 'top', children } = props;
   return (

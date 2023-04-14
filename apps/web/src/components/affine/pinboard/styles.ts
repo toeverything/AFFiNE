@@ -12,7 +12,8 @@ export const StyledCollapsedButton = styled('button')<{
 }>(({ collapse, show = true, theme }) => {
   return {
     width: '16px',
-    height: '16px',
+    height: '100%',
+    ...displayFlex('center', 'center'),
     fontSize: '16px',
     position: 'absolute',
     left: '0',
@@ -21,9 +22,13 @@ export const StyledCollapsedButton = styled('button')<{
     margin: 'auto',
     color: theme.colors.iconColor,
     opacity: '.6',
+    transition: 'opacity .15s ease-in-out',
     display: show ? 'flex' : 'none',
     svg: {
-      transform: `rotate(${collapse ? '0' : '-90'}deg)`,
+      transform: `rotate(${collapse ? '-90' : '0'}deg)`,
+    },
+    ':hover': {
+      opacity: '1',
     },
   };
 });
@@ -32,13 +37,14 @@ export const StyledPinboard = styled('div')<{
   disable?: boolean;
   active?: boolean;
   isOver?: boolean;
-}>(({ disable = false, active = false, theme, isOver }) => {
+  disableCollapse?: boolean;
+}>(({ disableCollapse, disable = false, active = false, theme, isOver }) => {
   return {
     width: '100%',
     height: '32px',
     borderRadius: '8px',
     ...displayFlex('flex-start', 'center'),
-    padding: '0 2px 0 16px',
+    padding: disableCollapse ? '0 5px' : '0 2px 0 16px',
     position: 'relative',
     color: disable
       ? theme.colors.disableColor
@@ -54,7 +60,11 @@ export const StyledPinboard = styled('div')<{
       textAlign: 'left',
       ...textEllipsis(1),
     },
-    '> svg': {
+    '.path-icon': {
+      fontSize: '16px',
+      transform: 'translateY(-4px)',
+    },
+    '.mode-icon': {
       fontSize: '20px',
       marginRight: '8px',
       flexShrink: '0',

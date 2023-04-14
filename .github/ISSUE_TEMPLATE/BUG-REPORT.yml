@@ -23,6 +23,11 @@ body:
       options:
         - app.affine.pro
         - stage.affine.pro
+        - dev.affine.live
+        - affine-preview.vercel.app
+        - macOS x64
+        - macOS ARM 64
+        - Windows x64
     validations:
       required: true
   - type: dropdown
