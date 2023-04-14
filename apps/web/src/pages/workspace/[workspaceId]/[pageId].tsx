@@ -4,10 +4,12 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
+import { currentPageIdAtom, currentWorkspaceIdAtom } from '../../../atoms';
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
@@ -38,13 +40,12 @@ const WorkspaceDetail: React.FC = () => {
   const [currentPageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
   assertExists(currentWorkspace);
-  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace ?? null;
+  assertExists(currentPageId);
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { deletePin } = usePinboardHandler({
     blockSuiteWorkspace,
-    metas: useBlockSuitePageMeta(
-      currentWorkspace.blockSuiteWorkspace ?? null ?? null
-    ),
+    metas: useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace),
   });
 
   useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
@@ -82,12 +83,6 @@ const WorkspaceDetail: React.FC = () => {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);
     }
   }, [currentWorkspace]);
-  if (currentWorkspace === null) {
-    return <PageLoading />;
-  }
-  if (!currentPageId) {
-    return <PageLoading />;
-  }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
@@ -111,6 +106,8 @@ const WorkspaceDetail: React.FC = () => {
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   useSyncRouterWithCurrentWorkspaceAndPage(router);
+  const workspaceId = useAtomValue(currentWorkspaceIdAtom);
+  const pageId = useAtomValue(currentPageIdAtom);
   if (!router.isReady) {
     return <PageLoading />;
   } else if (
@@ -118,6 +115,9 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
     typeof router.query.workspaceId !== 'string'
   ) {
     throw new Error('Invalid router query');
+  }
+  if (!workspaceId || !pageId) {
+    return <PageLoading />;
   }
   return <WorkspaceDetail />;
 };
