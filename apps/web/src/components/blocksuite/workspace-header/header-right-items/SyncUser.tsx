@@ -1,6 +1,5 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { useRouter } from '@affine/jotai';
 import {
   getLoginStorage,
   setLoginStorage,
@@ -14,6 +13,7 @@ import {
   NoNetworkIcon,
 } from '@blocksuite/icons';
 import { assertEquals, assertExists } from '@blocksuite/store';
+import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';

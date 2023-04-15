@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
-import { useRouter } from '@affine/jotai';
 import type { NextPage } from 'next';
+import { useRouter } from 'next/router';
 import React, { Suspense, useEffect } from 'react';
 
 import { PageLoading } from '../components/pure/loading';

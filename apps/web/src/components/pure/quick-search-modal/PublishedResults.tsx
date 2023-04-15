@@ -1,8 +1,8 @@
 import { useTranslation } from '@affine/i18n';
-import { useRouter } from '@affine/jotai';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { Command } from 'cmdk';
 import Image from 'next/legacy/image';
+import { useRouter } from 'next/router';
 import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 

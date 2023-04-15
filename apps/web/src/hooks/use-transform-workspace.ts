@@ -1,8 +1,8 @@
-import { useRouter } from '@affine/jotai';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
+import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { WorkspacePlugins } from '../plugins';

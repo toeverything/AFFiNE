@@ -1,6 +1,6 @@
-import { useRouter } from '@affine/jotai';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { useAtom } from 'jotai/index';
+import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import {
   useCallback,

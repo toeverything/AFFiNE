@@ -1,5 +1,5 @@
-import { useRouter } from '@affine/jotai';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { WorkspacePlugins } from '../../plugins';

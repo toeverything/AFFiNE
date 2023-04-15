@@ -1,7 +1,7 @@
 import { Button, Confirm } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { useRouter } from '@affine/jotai';
 import { assertExists } from '@blocksuite/store';
+import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';

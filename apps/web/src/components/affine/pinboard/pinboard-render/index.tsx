@@ -1,5 +1,4 @@
 import { Input } from '@affine/component';
-import { useRouter } from '@affine/jotai';
 import {
   ArrowDownSmallIcon,
   EdgelessIcon,
@@ -8,6 +7,7 @@ import {
   PivotsIcon,
 } from '@blocksuite/icons';
 import { useAtomValue } from 'jotai';
+import { useRouter } from 'next/router';
 import { useMemo, useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';

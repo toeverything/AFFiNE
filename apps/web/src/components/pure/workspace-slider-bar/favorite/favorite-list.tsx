@@ -1,7 +1,7 @@
 import { MuiCollapse } from '@affine/component';
-import { useRouter } from '@affine/jotai';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { useAtomValue } from 'jotai';
+import { useRouter } from 'next/router';
 import { useMemo } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';

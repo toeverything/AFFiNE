@@ -2,12 +2,12 @@ import { SidebarSkeleton } from '@affine/component/sidebar-skeleton';
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
-import { useRouter } from '@affine/jotai';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren } from 'react';
 import { lazy, Suspense, useEffect } from 'react';
 

@@ -3,11 +3,11 @@
  */
 import 'fake-indexeddb/auto';
 
-import { useRouter } from '@affine/jotai';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { createStore, getDefaultStore, Provider } from 'jotai';
+import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';

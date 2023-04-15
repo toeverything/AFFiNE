@@ -1,6 +1,5 @@
 import { displayFlex, styled } from '@affine/component';
 import { Button } from '@affine/component';
-import { useRouter } from '@affine/jotai';
 import type { Permission } from '@affine/workspace/affine/api';
 import {
   SucessfulDuotoneIcon,
@@ -8,6 +7,7 @@ import {
 } from '@blocksuite/icons';
 import { NoSsr } from '@mui/material';
 import Image from 'next/legacy/image';
+import { useRouter } from 'next/router';
 import { Suspense } from 'react';
 import useSWR from 'swr';
 

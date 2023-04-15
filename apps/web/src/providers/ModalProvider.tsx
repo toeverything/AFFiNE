@@ -1,7 +1,7 @@
-import { useRouter } from '@affine/jotai';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useRouter } from 'next/router';
 import type React from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';
 

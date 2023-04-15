@@ -1,6 +1,5 @@
 import { useTranslation } from '@affine/i18n';
 import { atomWithSyncStorage } from '@affine/jotai';
-import { useRouter } from '@affine/jotai';
 import type { SettingPanel } from '@affine/workspace/type';
 import {
   settingPanel,
@@ -11,6 +10,7 @@ import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';

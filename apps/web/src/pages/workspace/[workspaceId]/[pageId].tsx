@@ -1,6 +1,6 @@
-import { useRouter } from '@affine/jotai';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
+import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
