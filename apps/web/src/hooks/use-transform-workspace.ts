@@ -5,8 +5,8 @@ import { useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
+import { currentPageIdAtom, currentWorkspaceIdAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
-import { useRouterHelper } from './use-router-helper';
 
 /**
  * Transform workspace from one flavour to another
@@ -15,8 +15,9 @@ import { useRouterHelper } from './use-router-helper';
  */
 export function useTransformWorkspace() {
   const set = useSetAtom(jotaiWorkspacesAtom);
+  const setWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
+  const setPageId = useSetAtom(currentPageIdAtom);
   const router = useRouter();
-  const helper = useRouterHelper(router);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -35,9 +36,12 @@ export function useTransformWorkspace() {
         });
         return [...workspaces];
       });
-      await helper.jumpToWorkspace(newId);
+      if (typeof router.query.pageId === 'string') {
+        setWorkspaceId(newId);
+        setPageId(router.query.pageId);
+      }
       return newId;
     },
-    [helper, set]
+    [router.query.pageId, set, setPageId, setWorkspaceId]
   );
 }

@@ -7,13 +7,13 @@ import {
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import { currentPageIdAtom, currentWorkspaceIdAtom } from '../../../atoms';
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
-import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
+import { useCurrentPage } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
@@ -37,10 +37,11 @@ function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
 const WorkspaceDetail: React.FC = () => {
   const router = useRouter();
   const { openPage } = useRouterHelper(router);
-  const [currentPageId] = useCurrentPageId();
+  const currentPage = useCurrentPage();
   const [currentWorkspace] = useCurrentWorkspace();
   assertExists(currentWorkspace);
-  assertExists(currentPageId);
+  assertExists(currentPage);
+  const currentPageId = currentPage.id;
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { deletePin } = usePinboardHandler({
@@ -119,7 +120,11 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   if (!workspaceId || !pageId) {
     return <PageLoading />;
   }
-  return <WorkspaceDetail />;
+  return (
+    <Suspense>
+      <WorkspaceDetail />
+    </Suspense>
+  );
 };
 
 export default WorkspaceDetailPage;

@@ -339,7 +339,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         </StyledSpacer>
         <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
-            {children}
+            <Suspense>{children}</Suspense>
             <StyledToolWrapper>
               {/* fixme(himself65): remove this */}
               <div id="toolWrapper" style={{ marginBottom: '12px' }}>

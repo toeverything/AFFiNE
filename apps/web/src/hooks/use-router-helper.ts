@@ -25,27 +25,6 @@ export function useRouterHelper(router: NextRouter) {
     },
     [router]
   );
-  const jumpToWorkspace = useCallback(
-    (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
-      if (router.pathname === '/workspace/[workspaceId]/[pageId]') {
-        return router[logic]({
-          pathname: router.pathname,
-          query: {
-            workspaceId: workspaceId,
-            pageId: router.query.pageId,
-          },
-        });
-      } else {
-        return router[logic]({
-          pathname: router.pathname,
-          query: {
-            workspaceId: workspaceId,
-          },
-        });
-      }
-    },
-    [router]
-  );
   const jumpToPublicWorkspacePage = useCallback(
     (
       workspaceId: string,
@@ -92,7 +71,6 @@ export function useRouterHelper(router: NextRouter) {
 
   return {
     jumpToPage,
-    jumpToWorkspace,
     jumpToPublicWorkspacePage,
     jumpToSubPath,
     openPage,

@@ -1,3 +1,4 @@
+import type { LocalIndexedDBProvider } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { atom, useAtom, useAtomValue } from 'jotai';
 
@@ -10,22 +11,15 @@ export const currentPageAtom = atom<Promise<Page | null>>(async get => {
   if (!workspace || !id) {
     return Promise.resolve(null);
   }
-
-  const page = workspace.blockSuiteWorkspace.getPage(id);
-  if (page) {
-    return page;
-  } else {
-    return new Promise(resolve => {
-      const dispose = workspace.blockSuiteWorkspace.slots.pageAdded.on(
-        pageId => {
-          if (pageId === id) {
-            resolve(page);
-            dispose.dispose();
-          }
-        }
-      );
-    });
+  const provider = workspace.providers.find(
+    provider => provider.flavour === 'local-indexeddb'
+  );
+  if (provider) {
+    const localProvider = provider as LocalIndexedDBProvider;
+    await localProvider.whenSynced;
   }
+
+  return workspace.blockSuiteWorkspace.getPage(id);
 });
 
 export function useCurrentPage(): Page | null {

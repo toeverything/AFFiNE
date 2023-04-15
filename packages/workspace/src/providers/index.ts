@@ -79,7 +79,10 @@ const createIndexedDBProvider = (
   const callbacks = new Set<() => void>();
   return {
     flavour: 'local-indexeddb',
+    // fixme: remove callbacks
     callbacks,
+    // fixme: remove whenSynced
+    whenSynced: indexeddbProvider.whenSynced,
     // fixme: remove background long polling
     background: true,
     cleanup: () => {
