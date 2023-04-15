@@ -39,3 +39,5 @@ export const globalRouterAtom = atom(get => get(globalContextAtom).router);
 export function useRouter() {
   return useAtomValue(globalRouterAtom);
 }
+
+export function setUpDebugEnvironment() {}

@@ -1,8 +1,8 @@
 /**
  * @vitest-environment happy-dom
  */
-import { useRouter } from '@affine/jotai';
 import { renderHook } from '@testing-library/react';
+import { useRouter } from 'next-router-mock';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import { beforeAll, describe, expect, test } from 'vitest';
@@ -71,7 +71,7 @@ describe('useRouterHelper', () => {
 
   test('should jump to the expected page', async () => {
     const routerHook = renderHook(() => useRouter());
-    // set current path to '/'
+    // set a current path to '/'
     await routerHook.result.current.replace('/');
     const helperHook = renderHook(router => useRouterHelper(router), {
       initialProps: routerHook.result.current,
