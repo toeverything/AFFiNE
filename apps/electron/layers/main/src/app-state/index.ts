@@ -7,6 +7,7 @@ import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import fs from 'fs-extra';
 import { parse } from 'url';
 
+import { isMacOS } from '../../../utils';
 import { getExchangeTokenParams, oauthEndpoint } from './google-auth';
 
 const AFFINE_ROOT = path.join(os.homedir(), '.affine');
@@ -32,12 +33,15 @@ export const registerHandlers = () => {
 
   ipcMain.handle('ui:sidebar-visibility-change', async (_, visible) => {
     // todo
-    const windows = BrowserWindow.getAllWindows();
-    windows.forEach(w => {
-      // hide window buttons when sidebar is not visible
-      w.setWindowButtonVisibility(visible);
-    });
-    logger.info('sidebar visibility change', visible);
+    // detect if os is macos
+    if (isMacOS()) {
+      const windows = BrowserWindow.getAllWindows();
+      windows.forEach(w => {
+        // hide window buttons when sidebar is not visible
+        w.setWindowButtonVisibility(visible);
+      });
+      logger.info('sidebar visibility change', visible);
+    }
   });
 
   ipcMain.handle('ui:get-google-oauth-code', async () => {
