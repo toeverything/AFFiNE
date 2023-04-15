@@ -6,3 +6,7 @@ const defaultExclude = require('@istanbuljs/schema/default-exclude');
 module.exports = {
   exclude: [...defaultExclude],
 };
+
+// testing a comment
+
+<script> </script> 
