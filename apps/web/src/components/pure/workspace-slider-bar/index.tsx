@@ -270,5 +270,3 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
     </>
   );
 };
-
-export default WorkSpaceSliderBar;

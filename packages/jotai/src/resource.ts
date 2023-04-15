@@ -14,8 +14,8 @@ export const editorContainerModuleAtom = atom<Promise<typeof EditorContainer>>(
       ) as any)
 );
 
-const unreachable = (...args: any[]): any => {
-  throw new Error(`unreachable. cannot find router context. ${args}`);
+const unreachable = (..._: any[]): any => {
+  throw new Error(`unreachable. cannot find router context.`);
 };
 
 const inaccessible = new Proxy(
@@ -26,6 +26,10 @@ const inaccessible = new Proxy(
     apply: unreachable,
   }
 );
+
+export const isInaccessible = (value: any): value is typeof inaccessible => {
+  return Object.is(value, inaccessible);
+};
 
 export const globalContextAtom = atom({
   router: inaccessible as NextRouter,

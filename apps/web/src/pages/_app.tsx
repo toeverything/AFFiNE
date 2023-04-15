@@ -56,8 +56,8 @@ const App = function App({
           contexts={useMemo(
             () => [
               <Provider key="JotaiProvider" store={jotaiStore} />,
-              <ThemeProvider key="ThemeProvider" />,
               <GlobalContextProvider key="ResourceProvider" />,
+              <ThemeProvider key="ThemeProvider" />,
             ],
             []
           )}

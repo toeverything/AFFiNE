@@ -5,29 +5,20 @@ import { useRouter } from '@affine/jotai';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { assertExists, nanoid } from '@blocksuite/store';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type { FC, PropsWithChildren } from 'react';
-import { lazy, Suspense, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 
-import {
-  currentWorkspaceIdAtom,
-  openQuickSearchModalAtom,
-  openWorkspacesModalAtom,
-} from '../atoms';
+import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../atoms';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
-import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
-import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
-import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import {
   useSidebarFloating,
@@ -39,14 +30,10 @@ import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
 import type { AllWorkspace } from '../shared';
-import { pathGenerator, publicPathGenerator } from '../shared';
 import {
   MainContainer,
   MainContainerWrapper,
   StyledPage,
-  StyledSliderResizer,
-  StyledSliderResizerInner,
-  StyledSpacer,
   StyledToolWrapper,
 } from './styles';
 
@@ -188,9 +175,14 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     );
   };
 
+const WorkspaceSidebarLayout = lazy(() =>
+  import('./workspace-sidebar-layout').then(module => ({
+    default: module.WorkspaceSidebarLayout,
+  }))
+);
+
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const [currentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
 
   useEffect(() => {
@@ -235,64 +227,22 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     }
   }, [currentWorkspace]);
   const router = useRouter();
-  const { openPage } = useRouterHelper(router);
-  const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
-  const helper = useBlockSuiteWorkspaceHelper(
-    currentWorkspace?.blockSuiteWorkspace ?? null
-  );
-  const isPublicWorkspace =
-    router.pathname.split('/')[1] === 'public-workspace';
-  const title = useRouterTitle(router);
-  const handleCreatePage = useCallback(() => {
-    return helper.createPage(nanoid());
-  }, [helper]);
-  const handleOpenWorkspaceListModal = useCallback(() => {
-    setOpenWorkspacesModal(true);
-  }, [setOpenWorkspacesModal]);
-
-  const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
-  const handleOpenQuickSearchModal = useCallback(() => {
-    setOpenQuickSearchModalAtom(true);
-  }, [setOpenQuickSearchModalAtom]);
-  const [resizingSidebar, setIsResizing] = useSidebarResizing();
-  const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
-  const sidebarFloating = useSidebarFloating();
-  const [sidebarWidth, setSliderWidth] = useSidebarWidth();
-  const actualSidebarWidth = !sidebarOpen
-    ? 0
-    : sidebarFloating
-    ? 'calc(10vw + 400px)'
-    : sidebarWidth;
-  const mainWidth =
-    sidebarOpen && !sidebarFloating ? `calc(100% - ${sidebarWidth}px)` : '100%';
-  const [resizing] = useSidebarResizing();
-
-  const onResizeStart = useCallback(() => {
-    let resized = false;
-    function onMouseMove(e: MouseEvent) {
-      const newWidth = Math.min(480, Math.max(e.clientX, 256));
-      setSliderWidth(newWidth);
-      setIsResizing(true);
-      resized = true;
-    }
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener(
-      'mouseup',
-      () => {
-        // if not resized, toggle sidebar
-        if (!resized) {
-          setSidebarOpen(o => !o);
-        }
-        setIsResizing(false);
-        document.removeEventListener('mousemove', onMouseMove);
-      },
-      { once: true }
-    );
-  }, [setIsResizing, setSidebarOpen, setSliderWidth]);
 
   const Provider = currentWorkspace
     ? WorkspacePlugins[currentWorkspace.flavour].UI.Provider
     : DefaultProvider;
+  const title = useRouterTitle(router);
+  const isPublicWorkspace =
+    router.pathname.split('/')[1] === 'public-workspace';
+
+  const [resizing] = useSidebarResizing();
+  const [resizingSidebar, setIsResizing] = useSidebarResizing();
+  const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
+  const sidebarFloating = useSidebarFloating();
+  const [sidebarWidth, setSliderWidth] = useSidebarWidth();
+
+  const mainWidth =
+    sidebarOpen && !sidebarFloating ? `calc(100% - ${sidebarWidth}px)` : '100%';
 
   return (
     <Provider
@@ -304,39 +254,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <title>{title}</title>
       </Head>
       <StyledPage resizing={resizingSidebar}>
-        <WorkSpaceSliderBar
-          isPublicWorkspace={isPublicWorkspace}
-          onOpenQuickSearchModal={handleOpenQuickSearchModal}
-          currentWorkspace={currentWorkspace}
-          currentPageId={currentPageId}
-          onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
-          openPage={useCallback(
-            (pageId: string) => {
-              assertExists(currentWorkspace);
-              return openPage(currentWorkspace.id, pageId);
-            },
-            [currentWorkspace, openPage]
-          )}
-          createPage={handleCreatePage}
-          currentPath={router.asPath.split('?')[0]}
-          paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
-        />
-        <StyledSpacer
-          floating={sidebarFloating}
-          resizing={resizing}
-          sidebarOpen={sidebarOpen}
-          style={{ width: actualSidebarWidth }}
-        >
-          {!sidebarFloating && sidebarOpen && (
-            <StyledSliderResizer
-              data-testid="sliderBar-resizer"
-              isResizing={resizing}
-              onMouseDown={onResizeStart}
-            >
-              <StyledSliderResizerInner isResizing={resizing} />
-            </StyledSliderResizer>
-          )}
-        </StyledSpacer>
+        <WorkspaceSidebarLayout />
         <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
             {children}
