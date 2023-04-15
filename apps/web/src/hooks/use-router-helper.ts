@@ -29,9 +29,10 @@ export function useRouterHelper(router: NextRouter) {
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
       if (router.pathname === '/workspace/[workspaceId]/[pageId]') {
         return router[logic]({
-          pathname: `/workspace/[workspaceId]`,
+          pathname: router.pathname,
           query: {
             workspaceId: workspaceId,
+            pageId: router.query.pageId,
           },
         });
       } else {

@@ -39,7 +39,8 @@ test.describe('affine single page', () => {
     await promise;
     const newPage2Url = page.url().split('/');
     newPage2Url[newPage2Url.length - 1] = page2Id as string;
-    await page.goto(newPage2Url.join('/'));
+    const targetUrl = newPage2Url.join('/');
+    await page.goto(targetUrl);
     await page.waitForSelector('v-line');
     const currentTitle = await page
       .locator('[data-block-is-title="true"]')
