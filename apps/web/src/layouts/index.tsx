@@ -1,3 +1,4 @@
+import { SidebarSkeleton } from '@affine/component/sidebar-skeleton';
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
@@ -254,7 +255,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <title>{title}</title>
       </Head>
       <StyledPage resizing={resizingSidebar}>
-        <WorkspaceSidebarLayout />
+        <Suspense fallback={<SidebarSkeleton />}>
+          <WorkspaceSidebarLayout />
+        </Suspense>
         <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
             {children}

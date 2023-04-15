@@ -217,6 +217,7 @@ __metadata:
     "@types/webpack-env": ^1.18.0
     "@vanilla-extract/css": ^1.11.0
     "@vanilla-extract/next-plugin": ^2.1.2
+    clsx: ^1.2.1
     cmdk: ^0.2.0
     css-spring: ^4.1.0
     dayjs: ^1.11.7

@@ -2,7 +2,7 @@ import { useRouter } from '@affine/jotai';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { useAtom } from 'jotai/index';
 import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { WorkSpaceSliderBar } from '../components/pure/workspace-slider-bar';
@@ -50,11 +50,14 @@ export const WorkspaceSidebarLayout = (): ReactElement => {
   const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
   const sidebarFloating = useSidebarFloating();
   const [sidebarWidth, setSliderWidth] = useSidebarWidth();
-  const actualSidebarWidth = !sidebarOpen
-    ? 0
-    : sidebarFloating
-    ? 'calc(10vw + 400px)'
-    : sidebarWidth;
+  const [actualSidebarWidth, setActualSidebarWidth] = useState<string | number>(
+    256
+  );
+  useEffect(() => {
+    setActualSidebarWidth(
+      !sidebarOpen ? 0 : sidebarFloating ? 'calc(10vw + 400px)' : sidebarWidth
+    );
+  }, [sidebarFloating, sidebarOpen, sidebarWidth]);
 
   const [resizing] = useSidebarResizing();
 

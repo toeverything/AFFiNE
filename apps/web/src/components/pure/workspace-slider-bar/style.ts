@@ -3,11 +3,7 @@ import Link from 'next/link';
 
 const macosElectron = environment.isDesktop && environment.isMacOs;
 
-export const StyledSliderBarWrapper = styled('div')<{
-  show: boolean;
-  floating: boolean;
-  resizing: boolean;
-}>(({ theme, show, floating, resizing }) => {
+export const StyledSliderBarWrapper = styled('div')(({ theme }) => {
   return {
     height: '100%',
     position: 'absolute',
@@ -15,12 +11,8 @@ export const StyledSliderBarWrapper = styled('div')<{
       userSelect: 'none',
     },
     zIndex: theme.zIndex.modal,
-    transition: resizing ? '' : 'transform .3s, width .3s, max-width .3s',
-    transform: show ? 'translateX(0)' : 'translateX(-100%)',
-    maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
-    background:
-      !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
-    borderRight: macosElectron ? '' : '1px solid',
+    background: theme.colors.hubBackground,
+    borderRight: '1px solid',
     borderColor: theme.colors.borderColor,
   };
 });

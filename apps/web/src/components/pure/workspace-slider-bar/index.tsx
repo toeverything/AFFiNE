@@ -10,6 +10,7 @@ import {
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
+import { clsx } from 'clsx';
 import type React from 'react';
 import type { UIEvent } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -37,6 +38,14 @@ import {
   StyledSliderBarWrapper,
   StyledSliderModalBackground,
 } from './style';
+import {
+  floatingStyle,
+  hideStyle,
+  macOSStyle,
+  nonFloatingStyle,
+  resizingStyle,
+  showStyle,
+} from './style.css';
 import { WorkspaceSelector } from './WorkspaceSelector';
 
 const SidebarSwitch = lazy(() =>
@@ -95,7 +104,10 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [isResizing] = useSidebarResizing();
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const show = isPublicWorkspace ? false : sidebarOpen;
-  const actualWidth = floatingSlider ? 'calc(10vw + 400px)' : sliderWidth;
+  const [actualWidth, setActualWidth] = useState<string | number>(256);
+  useEffect(() => {
+    setActualWidth(floatingSlider ? 'calc(10vw + 400px)' : sliderWidth);
+  }, [floatingSlider, sliderWidth]);
   useEffect(() => {
     window.apis?.onSidebarVisibilityChange(sidebarOpen);
   }, [sidebarOpen]);
@@ -114,9 +126,14 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   return (
     <>
       <StyledSliderBarWrapper
-        resizing={isResizing}
-        floating={floatingSlider}
-        show={show}
+        className={clsx({
+          [floatingStyle]: floatingSlider,
+          [macOSStyle]: environment.isDesktop && environment.isMacOs,
+          [nonFloatingStyle]: !floatingSlider,
+          [resizingStyle]: isResizing,
+          [showStyle]: show,
+          [hideStyle]: !show,
+        })}
         style={{ width: actualWidth }}
         data-testid="sliderBar-root"
       >
