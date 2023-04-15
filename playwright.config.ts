@@ -24,6 +24,7 @@ const config: PlaywrightTestConfig = {
     browserName:
       (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
       'chromium',
+    permissions: ['clipboard-read', 'clipboard-write'],
     viewport: { width: 1440, height: 800 },
     actionTimeout: 5 * 1000,
     locale: 'en-US',
@@ -66,16 +67,15 @@ const config: PlaywrightTestConfig = {
         ENABLE_DEBUG_PAGE: '1',
       },
     },
+    // Intentionally not building the web, reminds you to run it by yourself.
     {
-      command: 'yarn build && yarn start -p 8080',
+      command: 'yarn start -p 8080',
       port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
         ENABLE_DEBUG_PAGE: '1',
-        ENABLE_SUBPAGE: '1',
-        ENABLE_CHANGELOG: '1',
         API_SERVER_PROFILE: 'local',
       },
     },

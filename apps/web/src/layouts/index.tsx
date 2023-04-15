@@ -5,7 +5,6 @@ import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists, nanoid } from '@blocksuite/store';
-import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -179,13 +178,13 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       }
     }, [currentWorkspaceId, jotaiWorkspaces]);
     return (
-      <NoSsr>
+      <>
         {/* fixme(himself65): don't re-render whole modals */}
         <ModalProvider key={currentWorkspaceId} />
         <Suspense fallback={<PageLoading />}>
           <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
         </Suspense>
-      </NoSsr>
+      </>
     );
   };
 

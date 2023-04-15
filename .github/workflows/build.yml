@@ -73,6 +73,9 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          API_SERVER_PROFILE: local
+          ENABLE_DEBUG_PAGE: true
+          COVERAGE: true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -147,6 +150,10 @@ jobs:
           name: storybook
           path: ./packages/component/storybook-static
 
+      - name: Wait for Octobase Ready
+        run: |
+          node ./scripts/wait-3000-healthz.mjs
+
       - name: Run playwright tests
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
@@ -168,7 +175,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
-          name: test-results-e2e
+          name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
           if-no-files-found: ignore
 

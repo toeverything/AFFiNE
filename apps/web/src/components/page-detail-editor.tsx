@@ -7,13 +7,14 @@ import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-blocksu
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type React from 'react';
-import { lazy, startTransition, Suspense, useCallback, useEffect } from 'react';
+import { startTransition, useCallback, useEffect } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import { usePageMeta } from '../hooks/use-page-meta';
 import type { AffineOfficialWorkspace } from '../shared';
 import { toast } from '../utils';
 import { PageNotFoundError } from './affine/affine-error-eoundary';
+import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import { WorkspaceHeader } from './blocksuite/workspace-header';
 
 export type PageDetailEditorProps = {
@@ -25,12 +26,6 @@ export type PageDetailEditorProps = {
   onLoad?: (page: Page, editor: EditorContainer) => void;
   header?: React.ReactNode;
 };
-
-const Editor = lazy(() =>
-  import('./blocksuite/block-suite-editor').then(module => ({
-    default: module.BlockSuiteEditor,
-  }))
-);
 
 export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   workspace,
@@ -85,34 +80,32 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
       >
         {header}
       </WorkspaceHeader>
-      <Suspense>
-        <Editor
-          style={{
-            height: 'calc(100% - 52px)',
-          }}
-          key={pageId}
-          mode={isPublic ? 'page' : currentMode}
-          page={page}
-          onInit={useCallback(
-            (page: Page, editor: Readonly<EditorContainer>) => {
-              startTransition(() => {
-                setEditor(editor);
-              });
-              onInit(page, editor);
-            },
-            [onInit, setEditor]
-          )}
-          onLoad={useCallback(
-            (page: Page, editor: EditorContainer) => {
-              startTransition(() => {
-                setEditor(editor);
-              });
-              onLoad?.(page, editor);
-            },
-            [onLoad, setEditor]
-          )}
-        />
-      </Suspense>
+      <Editor
+        style={{
+          height: 'calc(100% - 52px)',
+        }}
+        key={`${workspace.flavour}-${workspace.id}-${[pageId]}`}
+        mode={isPublic ? 'page' : currentMode}
+        page={page}
+        onInit={useCallback(
+          (page: Page, editor: Readonly<EditorContainer>) => {
+            startTransition(() => {
+              setEditor(editor);
+            });
+            onInit(page, editor);
+          },
+          [onInit, setEditor]
+        )}
+        onLoad={useCallback(
+          (page: Page, editor: EditorContainer) => {
+            startTransition(() => {
+              setEditor(editor);
+            });
+            onLoad?.(page, editor);
+          },
+          [onLoad, setEditor]
+        )}
+      />
     </>
   );
 };

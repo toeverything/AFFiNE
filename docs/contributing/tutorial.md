@@ -75,3 +75,7 @@ See [building desktop client app](../building-desktop-client-app.md).
 ```shell
 yarn workspace @affine/component storybook
 ```
+
+## What's next?
+
+- [Behind the code](./behind-the-code.md)

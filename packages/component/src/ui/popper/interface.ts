@@ -60,4 +60,4 @@ export type PopperProps = {
   popperHandlerRef?: Ref<PopperHandler>;
 
   onClickAway?: () => void;
-} & Omit<PopperUnstyledProps, 'open'>;
+} & Omit<PopperUnstyledProps, 'open' | 'content'>;

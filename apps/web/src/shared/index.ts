@@ -25,6 +25,7 @@ export const enum WorkspaceSubPath {
   FAVORITE = 'favorite',
   SETTING = 'setting',
   TRASH = 'trash',
+  SHARED = 'shared',
 }
 
 export const WorkspaceSubPathName = {
@@ -32,6 +33,7 @@ export const WorkspaceSubPathName = {
   [WorkspaceSubPath.FAVORITE]: 'Favorites',
   [WorkspaceSubPath.SETTING]: 'Settings',
   [WorkspaceSubPath.TRASH]: 'Trash',
+  [WorkspaceSubPath.SHARED]: 'Shared',
 } satisfies {
   [Path in WorkspaceSubPath]: string;
 };
@@ -41,6 +43,7 @@ export const pathGenerator = {
   favorite: workspaceId => `/workspace/${workspaceId}/favorite`,
   trash: workspaceId => `/workspace/${workspaceId}/trash`,
   setting: workspaceId => `/workspace/${workspaceId}/setting`,
+  shared: workspaceId => `/workspace/${workspaceId}/shared`,
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
 };
@@ -50,6 +53,7 @@ export const publicPathGenerator = {
   favorite: workspaceId => `/public-workspace/${workspaceId}/favorite`,
   trash: workspaceId => `/public-workspace/${workspaceId}/trash`,
   setting: workspaceId => `/public-workspace/${workspaceId}/setting`,
+  shared: workspaceId => `/public-workspace/${workspaceId}/shared`,
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
 };

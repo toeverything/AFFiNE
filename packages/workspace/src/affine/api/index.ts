@@ -381,7 +381,9 @@ export function createWorkspaceApis(prefixUrl = '/') {
           method: 'GET',
         }
       ).then(r =>
-        r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status}`))
+        r.ok
+          ? r.arrayBuffer()
+          : Promise.reject(new RequestError(MessageCode.noPermission))
       );
     },
     downloadWorkspace: async (

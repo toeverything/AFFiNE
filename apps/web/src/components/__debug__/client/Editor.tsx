@@ -1,4 +1,3 @@
-'use client';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -11,7 +10,9 @@ import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
   'test',
   _ => undefined,
-  Generator.AutoIncrement
+  {
+    idGenerator: Generator.AutoIncrement,
+  }
 );
 
 const page = blockSuiteWorkspace.createPage('page0');

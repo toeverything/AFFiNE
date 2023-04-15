@@ -6,7 +6,7 @@ import { useCallback, useEffect } from 'react';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
-import { useReferenceLink } from '../../../hooks/affine/use-reference-link';
+import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { usePageMeta, usePageMetaHelper } from '../../../hooks/use-page-meta';
@@ -43,7 +43,7 @@ const WorkspaceDetail: React.FC = () => {
 
   useSyncRecentViewsWithRouter(router);
 
-  useReferenceLink({
+  useReferenceLinkEffect({
     pageLinkClicked: useCallback(
       ({ pageId }: { pageId: string }) => {
         assertExists(currentWorkspace);

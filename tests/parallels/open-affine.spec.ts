@@ -20,7 +20,7 @@ test.describe('Open AFFiNE', () => {
     const workspaceCards = await page.$$('data-testid=workspace-card');
     expect(workspaceCards.length).toBe(2);
     await workspaceCards[1].click();
-    await page.goto('http://localhost:8080');
+    await openHomePage(page);
 
     const workspaceNameDom = await page.getByTestId('workspace-name');
     const currentWorkspaceName = await workspaceNameDom.evaluate(
@@ -49,6 +49,7 @@ test.describe('AFFiNE change log', () => {
     const editorRightBottomChangeLog = page.locator(
       '[data-testid=right-bottom-change-log-icon]'
     );
+    await page.waitForTimeout(50);
     expect(await editorRightBottomChangeLog.isVisible()).toEqual(true);
     await page.getByRole('link', { name: 'All pages' }).click();
     const normalRightBottomChangeLog = page.locator(

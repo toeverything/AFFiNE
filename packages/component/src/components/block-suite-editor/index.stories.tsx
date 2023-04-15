@@ -59,13 +59,13 @@ const Template: StoryFn<EditorProps> = (props: EditorProps) => {
 
 export const Empty = Template.bind({});
 Empty.play = async ({ canvasElement }) => {
+  await new Promise<void>(resolve => {
+    setTimeout(() => resolve(), 500);
+  });
   const editorContainer = canvasElement.querySelector(
     '[data-testid="editor-page0"]'
   ) as HTMLDivElement;
   expect(editorContainer).not.toBeNull();
-  await new Promise<void>(resolve => {
-    setTimeout(() => resolve(), 50);
-  });
   const editor = editorContainer.querySelector(
     'editor-container'
   ) as EditorContainer;

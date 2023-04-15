@@ -54,6 +54,46 @@
 
   </p>
   </details>
+  
+- <b>AFFiNE client app</b> @[affine.pro]
+
+  <details><summary>Nodejs · TypeScript · Remote</summary>
+  <p>
+
+    ## What we do
+
+    We **AFFiNE** hold a vision of shaping a world semantically connected through block components in collaboration applications.
+    We're open for Fullstack Engineer internship positions across the **Client Application Development** sub-team on creating **AFFiNE client app** for desktop and mobile devices.
+
+    ## Fullstack Engineer Intern
+
+    ### This position is for
+
+    - Developing AFFiNE **the open source way**, including coding and community engagement.
+    - Build the **client app** for desktop and mobile devices using web technologies.
+
+    ### What we are looking for
+
+    - Software engineering experience with cross-platform client app development and professional real-world use cases.
+    - Experience and proficiency in **TypeScript** and a **second programming language** preferably **Rust**.
+    - Strong communication and writing skills in English.
+    - Ability to work in a diverse and cross-functional team with skill and ease.
+    - A lover for open source, sharing our visions and working under those values.
+
+    ### It would be great if you are
+
+    - Heavy user of knowledge/project management tools.
+    - Experience in Napi.rs, Electron, Tauri, Flutter, React Native, etc.
+    - Enthusiastic about AFFiNE products as a user or contributor.
+
+    ## Contact us
+
+    Interested? Send us your CV to [contact@toeverything.info].
+
+    Feel free to include any extra information (GitHub link, previous projects, personal blog etc.).
+
+  </p>
+  </details>
 
 - <b>Fullstack Engineer - Mainly work with Rust</b> @[affine.pro]
 
@@ -107,7 +147,8 @@
 
   </p>
   </details>
-
+  
+  
 - <b>Senior UI/UX Designer </b> @[affine.pro]
 
   <details><summary>UI / UX · Creative Designer · Singapore / China / Remote</summary>

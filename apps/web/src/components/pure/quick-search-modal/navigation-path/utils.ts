@@ -3,7 +3,7 @@ import type { PageMeta } from '@blocksuite/store';
 export function findPath(metas: PageMeta[], meta: PageMeta): PageMeta[] {
   function helper(group: PageMeta[]): PageMeta[] {
     const last = group[group.length - 1];
-    const parent = metas.find(m => m.subpageIds.includes(last.id));
+    const parent = metas.find(m => (m.subpageIds ?? []).includes(last.id));
     if (parent) {
       return helper([...group, parent]);
     }

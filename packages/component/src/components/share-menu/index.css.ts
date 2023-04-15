@@ -2,22 +2,27 @@ import { style } from '@vanilla-extract/css';
 
 export const tabStyle = style({
   display: 'flex',
-  justifyContent: 'space-around',
+  flex: '1',
+  width: '100%',
+  padding: '0 10px',
+  margin: '0',
+  justifyContent: 'center',
   alignItems: 'center',
   position: 'relative',
-  marginTop: '4px',
-  marginLeft: '10px',
-  marginRight: '10px',
 });
 
 export const menuItemStyle = style({
-  marginLeft: '20px',
-  marginRight: '20px',
-  marginTop: '30px',
+  padding: '4px 18px',
+  paddingBottom: '16px',
+  width: '100%',
 });
 
 export const descriptionStyle = style({
-  fontSize: '1rem',
+  wordWrap: 'break-word',
+  // wordBreak: 'break-all',
+  fontSize: '16px',
+  marginTop: '16px',
+  marginBottom: '16px',
 });
 
 export const buttonStyle = style({
@@ -30,5 +35,32 @@ export const actionsStyle = style({
   gap: '9px',
   flexDirection: 'column',
   justifyContent: 'center',
-  alignItems: 'start',
+  alignItems: 'flex-start',
+});
+
+export const containerStyle = style({
+  display: 'flex',
+  width: '100%',
+  flexDirection: 'column',
+});
+export const indicatorContainerStyle = style({
+  position: 'relative',
+});
+export const inputButtonRowStyle = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: '16px',
+});
+export const exportButtonStyle = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: '0',
+  border: 'none',
+});
+export const svgStyle = style({
+  fontSize: '20px',
+  marginRight: '12px',
+  verticalAlign: 'top',
 });
