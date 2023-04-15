@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document talks about the design and architecture of the AFFiNE platform, which might be helpful for developers who want to contribute to AFFiNE or want to understand the design principles.
+This document delves into the design and architecture of the AFFiNE platform, providing insights for developers interested in contributing to AFFiNE or gaining a better understanding of our design principles.
 
 ## Facing the problem
 
