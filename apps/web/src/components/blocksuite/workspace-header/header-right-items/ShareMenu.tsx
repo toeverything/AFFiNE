@@ -1,9 +1,9 @@
 import { ShareMenu } from '@affine/component/share-menu';
+import { useRouter } from '@affine/jotai';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { assertEquals } from '@blocksuite/store';
-import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useState } from 'react';
 

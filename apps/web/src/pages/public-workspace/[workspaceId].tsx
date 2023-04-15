@@ -1,9 +1,9 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
+import { useRouter } from '@affine/jotai';
 import { SearchIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import type React from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 

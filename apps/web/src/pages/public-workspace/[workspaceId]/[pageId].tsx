@@ -1,12 +1,12 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { useRouter } from '@affine/jotai';
 import { PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtom, useAtomValue } from 'jotai';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useEffect } from 'react';
 

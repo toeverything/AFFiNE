@@ -1,4 +1,4 @@
-import { useRouter } from 'next/router';
+import { useRouter } from '@affine/jotai';
 import { lazy, Suspense } from 'react';
 
 import { StyledPage, StyledWrapper } from '../../layouts/styles';

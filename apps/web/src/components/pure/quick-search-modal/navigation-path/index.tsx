@@ -1,5 +1,6 @@
 import { IconButton, Tooltip, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { useRouter } from '@affine/jotai';
 import {
   ArrowRightSmallIcon,
   CollapseIcon,
@@ -7,7 +8,6 @@ import {
   MoreHorizontalIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { useRouter } from 'next/router';
 import type { MouseEvent } from 'react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 

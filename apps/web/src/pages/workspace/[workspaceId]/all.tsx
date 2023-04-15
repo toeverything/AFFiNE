@@ -1,10 +1,10 @@
 import { useTranslation } from '@affine/i18n';
+import { useRouter } from '@affine/jotai';
 import type { LocalIndexedDBProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
 
 import {

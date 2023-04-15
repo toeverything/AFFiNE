@@ -1,8 +1,8 @@
 import { useTranslation } from '@affine/i18n';
+import { useRouter } from '@affine/jotai';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
 import PageList from '../../../components/blocksuite/block-suite-page-list/page-list';

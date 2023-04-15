@@ -2,13 +2,13 @@ import '@affine/component/theme/global.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
+import { useRouter } from '@affine/jotai';
 import { jotaiStore } from '@affine/workspace/atom';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import React, { Suspense, useEffect, useMemo } from 'react';
 
@@ -16,6 +16,7 @@ import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary'
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
 import { MessageCenter } from '../components/pure/message-center';
+import { GlobalContextProvider } from '../providers/GlobalContextProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
@@ -51,28 +52,29 @@ const App = function App({
     <CacheProvider value={emotionCache}>
       <I18nextProvider i18n={i18n}>
         <MessageCenter />
-        <AffineErrorBoundary router={useRouter()}>
-          <Suspense fallback={<PageLoading key="RootPageLoading" />}>
-            <ProviderComposer
-              contexts={useMemo(
-                () => [
-                  <Provider key="JotaiProvider" store={jotaiStore} />,
-                  <ThemeProvider key="ThemeProvider" />,
-                ],
-                []
-              )}
-            >
-              <Head>
-                <title>AFFiNE</title>
-                <meta
-                  name="viewport"
-                  content="initial-scale=1, width=device-width"
-                />
-              </Head>
+        <ProviderComposer
+          contexts={useMemo(
+            () => [
+              <Provider key="JotaiProvider" store={jotaiStore} />,
+              <ThemeProvider key="ThemeProvider" />,
+              <GlobalContextProvider key="ResourceProvider" />,
+            ],
+            []
+          )}
+        >
+          <Head>
+            <title>AFFiNE</title>
+            <meta
+              name="viewport"
+              content="initial-scale=1, width=device-width"
+            />
+          </Head>
+          <AffineErrorBoundary router={useRouter()}>
+            <Suspense fallback={<PageLoading key="RootPageLoading" />}>
               {getLayout(<Component {...pageProps} />)}
-            </ProviderComposer>
-          </Suspense>
-        </AffineErrorBoundary>
+            </Suspense>
+          </AffineErrorBoundary>
+        </ProviderComposer>
       </I18nextProvider>
     </CacheProvider>
   );

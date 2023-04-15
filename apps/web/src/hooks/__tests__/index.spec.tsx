@@ -5,6 +5,7 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
+import { useRouter } from '@affine/jotai';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -14,7 +15,6 @@ import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { createStore, Provider } from 'jotai';
-import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import type React from 'react';

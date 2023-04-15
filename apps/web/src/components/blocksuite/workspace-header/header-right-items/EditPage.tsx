@@ -1,5 +1,5 @@
 import { displayFlex, styled, TextButton } from '@affine/component';
-import { useRouter } from 'next/router';
+import { useRouter } from '@affine/jotai';
 import { useCallback } from 'react';
 
 import { useRouterHelper } from '../../../../hooks/use-router-helper';
