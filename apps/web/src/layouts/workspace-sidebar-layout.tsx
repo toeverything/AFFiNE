@@ -2,7 +2,13 @@ import { useRouter } from '@affine/jotai';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { useAtom } from 'jotai/index';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { WorkSpaceSliderBar } from '../components/pure/workspace-slider-bar';
@@ -84,6 +90,13 @@ export const WorkspaceSidebarLayout = (): ReactElement => {
     );
   }, [setIsResizing, setSidebarOpen, setSliderWidth]);
 
+  const spacerRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (spacerRef.current) {
+      spacerRef.current.style.width = `${actualSidebarWidth}px`;
+    }
+  }, [actualSidebarWidth]);
+
   return (
     <>
       <WorkSpaceSliderBar
@@ -104,10 +117,10 @@ export const WorkspaceSidebarLayout = (): ReactElement => {
         paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
       />
       <StyledSpacer
+        ref={spacerRef}
         floating={sidebarFloating}
         resizing={resizing}
         sidebarOpen={sidebarOpen}
-        style={{ width: actualSidebarWidth }}
       >
         {!sidebarFloating && sidebarOpen && (
           <StyledSliderResizer
