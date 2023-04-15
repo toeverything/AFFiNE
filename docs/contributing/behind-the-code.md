@@ -4,15 +4,14 @@
 
 This document delves into the design and architecture of the AFFiNE platform, providing insights for developers interested in contributing to AFFiNE or gaining a better understanding of our design principles.
 
-## Facing the problem
+## Addressing the Challenge
 
-AFFiNE is a platform for the next-generation collaborative knowledge base for professionals.
+AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals.
 We might need help in building a platform that different users with different needs can use.
 
 ### Data might come from anywhere and might go anywhere
 
-Many different types of data can be stored in AFFiNE, which might be saved
-in different places.
+AFFiNE is capable of storing a wide variety of data, and the data might be saved in different locations.
 
 For example,
 the user
