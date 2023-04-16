@@ -1,4 +1,7 @@
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import {
+  rootCurrentWorkspaceIdAtom,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
@@ -14,6 +17,7 @@ import { useRouterHelper } from './use-router-helper';
  * The logic here is to delete the old workspace and create a new one.
  */
 export function useTransformWorkspace() {
+  const setCurrentWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
   const set = useSetAtom(rootWorkspacesMetadataAtom);
   const router = useRouter();
   const helper = useRouterHelper(router);
@@ -35,9 +39,10 @@ export function useTransformWorkspace() {
         });
         return [...workspaces];
       });
+      setCurrentWorkspaceId(newId);
       await helper.jumpToWorkspace(newId);
       return newId;
     },
-    [helper, set]
+    [helper, set, setCurrentWorkspaceId]
   );
 }
