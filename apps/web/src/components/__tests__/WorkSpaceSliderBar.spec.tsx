@@ -3,7 +3,10 @@
  */
 import 'fake-indexeddb/auto';
 
-import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
+import {
+  rootCurrentPageIdAtom,
+  rootCurrentWorkspaceIdAtom,
+} from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
@@ -53,6 +56,7 @@ describe('WorkSpaceSliderBar', () => {
     await store.get(workspacesAtom);
     mutationHook.rerender();
     mutationHook.result.current.createWorkspacePage(id, 'test1');
+    store.set(rootCurrentWorkspaceIdAtom, id);
     await store.get(rootCurrentWorkspaceAtom);
     const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,

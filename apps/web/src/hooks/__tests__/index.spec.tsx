@@ -5,7 +5,10 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import {
+  rootCurrentWorkspaceIdAtom,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { PageBlockModel } from '@blocksuite/blocks';
@@ -170,16 +173,17 @@ describe('useWorkspacesHelper', () => {
       'test'
     );
     const workspaces = await store.get(workspacesAtom);
-    expect(workspaces.length).toBe(1);
-    expect(workspaces[0].id).toBe(id);
+    expect(workspaces.length).toBe(2);
+    expect(workspaces[1].id).toBe(id);
     const workspacesHook = renderHook(() => useWorkspaces(), {
       wrapper: ProviderWrapper,
     });
+    store.set(rootCurrentWorkspaceIdAtom, workspacesHook.result.current[1].id);
     await store.get(currentWorkspaceAtom);
     const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,
     });
-    currentWorkspaceHook.result.current[1](workspacesHook.result.current[0].id);
+    currentWorkspaceHook.result.current[1](workspacesHook.result.current[1].id);
   });
 });
 
