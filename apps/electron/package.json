@@ -39,6 +39,7 @@
     "@electron/remote": "2.0.9",
     "dts-for-context-bridge": "^0.7.1",
     "electron": "24.0.0",
+    "electron-squirrel-startup": "1.0.0",
     "esbuild": "^0.17.16",
     "zx": "^7.2.1"
   },
