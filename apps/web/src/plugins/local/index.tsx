@@ -30,6 +30,9 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       const page = blockSuiteWorkspace.createPage('hello-world');
+      blockSuiteWorkspace.setPageMeta(page.id, {
+        init: true,
+      });
       initPage(page);
       const provider = createIndexedDBProvider(blockSuiteWorkspace);
       provider.connect();
