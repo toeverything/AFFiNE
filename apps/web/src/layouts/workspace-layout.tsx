@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
-import { ensureRootPinboard } from '@affine/env/blocksuite';
+import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
@@ -296,6 +296,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
             init: true,
           });
+          initPage(page);
           if (!router.query.pageId) {
             void jumpToPage(currentWorkspace.id, pageId);
           }
