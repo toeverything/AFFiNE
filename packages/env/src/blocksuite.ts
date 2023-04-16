@@ -4,6 +4,12 @@ import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { Page, Workspace } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 
+declare global {
+  interface Window {
+    lastImportedMarkdown: string;
+  }
+}
+
 const demoTitle = markdown
   .split('\n')
   .splice(0, 1)
@@ -49,6 +55,7 @@ export function _initPageWithDemoMarkdown(page: Page): void {
   page.addBlock('affine:paragraph', {}, frameId);
   const contentParser = new ContentParser(page);
   contentParser.importMarkdown(demoText, frameId).then(() => {
+    window.lastImportedMarkdown = page.id;
     document.dispatchEvent(
       new CustomEvent('markdown:imported', {
         detail: {

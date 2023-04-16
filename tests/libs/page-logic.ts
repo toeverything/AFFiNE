@@ -1,12 +1,15 @@
 import type { Page } from '@playwright/test';
 
 export async function waitMarkdownImported(page: Page) {
-  return page.evaluate(
-    () =>
-      new Promise(resolve => {
-        document.addEventListener('markdown:imported', resolve);
-      })
-  );
+  return page.evaluate(async () => {
+    // @ts-expect-error
+    if (window.markdownImported) {
+      return;
+    }
+    await new Promise(resolve => {
+      document.addEventListener('markdown:imported', resolve);
+    });
+  });
 }
 
 export async function newPage(page: Page) {
