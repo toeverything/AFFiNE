@@ -6,7 +6,8 @@ export async function waitMarkdownImported(page: Page) {
     if (window.markdownImported) {
       return;
     }
-    await new Promise(resolve => {
+    await new Promise((resolve, reject) => {
+      setTimeout(() => reject(new Error('markdown:imported timeout')), 3000);
       document.addEventListener('markdown:imported', resolve);
     });
   });
