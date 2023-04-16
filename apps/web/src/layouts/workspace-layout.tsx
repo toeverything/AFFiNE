@@ -120,7 +120,24 @@ const affineGlobalChannel = createAffineGlobalChannel(
 export const AllWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  useWorkspaces();
+  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+  const workspaces = useWorkspaces();
+  useEffect(() => {
+    const providers = workspaces
+      // ignore current workspace
+      .filter(workspace => workspace.id !== currentWorkspaceId)
+      .flatMap(workspace =>
+        workspace.providers.filter(provider => provider.background)
+      );
+    providers.forEach(provider => {
+      provider.connect();
+    });
+    return () => {
+      providers.forEach(provider => {
+        provider.disconnect();
+      });
+    };
+  }, [currentWorkspaceId, workspaces]);
   return <>{children}</>;
 };
 
@@ -228,12 +245,10 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  const workspaces = useWorkspaces();
 
   useEffect(() => {
-    logger.info('workspaces: ', workspaces);
     logger.info('currentWorkspace: ', currentWorkspace);
-  }, [currentWorkspace, workspaces]);
+  }, [currentWorkspace]);
 
   useEffect(() => {
     if (currentWorkspace) {
@@ -242,31 +257,12 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   }, [currentWorkspace]);
 
   useEffect(() => {
-    const providers = workspaces.flatMap(workspace =>
-      workspace.providers.filter(provider => provider.background)
-    );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [workspaces]);
-  useEffect(() => {
     if (currentWorkspace) {
       currentWorkspace.providers.forEach(provider => {
-        if (provider.background) {
-          return;
-        }
         provider.connect();
       });
       return () => {
         currentWorkspace.providers.forEach(provider => {
-          if (provider.background) {
-            return;
-          }
           provider.disconnect();
         });
       };

@@ -11,7 +11,6 @@ export function useBlockSuiteWorkspacePageIsPublic(page: Page) {
   const [isPublic, set] = useState<boolean>(() => page.meta.isPublic ?? false);
   useEffect(() => {
     const disposable = page.workspace.meta.pageMetasUpdated.on(() => {
-      console.log(page);
       set(page.meta.isPublic ?? false);
     });
     return () => {
