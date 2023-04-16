@@ -7,8 +7,6 @@ import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
 import { createWorkspace } from '../../libs/workspace';
 
 test('public single page', async ({ page, browser }) => {
-  // when enable single page, most time the page will crash
-  test.fail();
   await openHomePage(page);
   const [a] = await createFakeUser();
   await loginUser(page, a);
