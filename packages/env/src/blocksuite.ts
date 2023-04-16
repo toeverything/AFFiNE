@@ -1,10 +1,8 @@
 import { DebugLogger } from '@affine/debug';
 import markdown from '@affine/templates/Welcome-to-AFFiNE.md';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
-import type { Page } from '@blocksuite/store';
+import type { Page, Workspace } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
-
-import type { BlockSuiteWorkspace } from '../shared';
 
 const demoTitle = markdown
   .split('\n')
@@ -63,7 +61,7 @@ export function _initPageWithDemoMarkdown(page: Page): void {
   page.workspace.setPageMeta(page.id, { demoTitle });
 }
 
-export function ensureRootPinboard(blockSuiteWorkspace: BlockSuiteWorkspace) {
+export function ensureRootPinboard(blockSuiteWorkspace: Workspace) {
   const metas = blockSuiteWorkspace.meta.pageMetas;
   const rootMeta = metas.find(m => m.isRootPinboard);
 

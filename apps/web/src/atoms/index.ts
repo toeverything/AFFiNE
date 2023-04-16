@@ -20,7 +20,7 @@ const logger = new DebugLogger('web:atoms');
  */
 export const currentWorkspaceIdAtom = rootCurrentWorkspaceIdAtom;
 
-// todo: move this to the workspace package
+// todo(himself65): move this to the workspace package
 rootWorkspacesMetadataAtom.onMount = setAtom => {
   function createFirst(): RootWorkspaceMetadata[] {
     const Plugins = Object.values(WorkspacePlugins).sort(

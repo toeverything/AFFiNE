@@ -1,3 +1,4 @@
+import { ensureRootPinboard } from '@affine/env/blocksuite';
 import { useTranslation } from '@affine/i18n';
 import type { LocalIndexedDBProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -19,7 +20,6 @@ import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-rou
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspacePlugins } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
-import { ensureRootPinboard } from '../../../utils';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();

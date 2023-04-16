@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
+import { initPage } from '@affine/env/blocksuite';
 import {
   CRUD,
   saveWorkspaceToLocalStorage,
@@ -14,7 +15,6 @@ import { PageNotFoundError } from '../../components/affine/affine-error-eoundary
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import { initPage } from '../../utils';
 import type { WorkspacePlugin } from '..';
 
 const logger = new DebugLogger('use-create-first-workspace');
@@ -29,6 +29,8 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
         (_: string) => undefined
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
+      const page = blockSuiteWorkspace.createPage('hello-world');
+      initPage(page);
       const provider = createIndexedDBProvider(blockSuiteWorkspace);
       provider.connect();
       provider.callbacks.add(() => {

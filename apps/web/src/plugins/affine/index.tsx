@@ -1,4 +1,5 @@
 import { prefixUrl } from '@affine/env';
+import { initPage } from '@affine/env/blocksuite';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
@@ -26,7 +27,7 @@ import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh
 import { AffineSWRConfigProvider } from '../../providers/AffineSWRConfigProvider';
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
-import { initPage, toast } from '../../utils';
+import { toast } from '../../utils';
 import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
 
