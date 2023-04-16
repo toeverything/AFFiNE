@@ -100,6 +100,7 @@ test('Enter a keyword to search for', async ({ page }) => {
   const actual = await page.locator('[cmdk-input]').inputValue();
   expect(actual).toBe('test123456');
 });
+
 test('Create a new page and search this page', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
@@ -112,7 +113,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await assertTitle(page, 'test123456');
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
-  await page.waitForTimeout(50);
+  await page.waitForTimeout(100);
   await assertResultList(page, ['test123456']);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
