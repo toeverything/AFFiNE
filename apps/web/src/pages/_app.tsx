@@ -2,14 +2,15 @@ import '@affine/component/theme/global.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
-import { jotaiStore } from '@affine/workspace/atom';
+import { rootStore } from '@affine/workspace/atom';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
+import { DevTools } from 'jotai-devtools';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import type { ReactElement } from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
 import React, { Suspense, useEffect, useMemo } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
@@ -29,6 +30,15 @@ type AppPropsWithLayout = AppProps & {
 const EmptyLayout = (page: ReactElement) => page;
 
 const clientSideEmotionCache = createEmotionCache();
+
+const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
+  return (
+    <>
+      {process.env.DEBUG_JOTAI === 'true' && <DevTools />}
+      {children}
+    </>
+  );
+};
 
 const App = function App({
   Component,
@@ -55,10 +65,12 @@ const App = function App({
           <Suspense fallback={<PageLoading key="RootPageLoading" />}>
             <ProviderComposer
               contexts={useMemo(
-                () => [
-                  <Provider key="JotaiProvider" store={jotaiStore} />,
-                  <ThemeProvider key="ThemeProvider" />,
-                ],
+                () =>
+                  [
+                    <Provider key="JotaiProvider" store={rootStore} />,
+                    <DebugProvider key="DebugProvider" />,
+                    <ThemeProvider key="ThemeProvider" />,
+                  ].filter(Boolean),
                 []
               )}
             >

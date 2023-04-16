@@ -3,23 +3,27 @@
  */
 import 'fake-indexeddb/auto';
 
+import {
+  rootCurrentPageIdAtom,
+  rootCurrentWorkspaceIdAtom,
+} from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
-import { createStore, getDefaultStore, Provider } from 'jotai';
+import { createStore, getDefaultStore, Provider, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { workspacesAtom } from '../../atoms';
-import { useCurrentPageId } from '../../hooks/current/use-current-page-id';
+import { rootCurrentWorkspaceAtom } from '../../atoms/root';
 import {
   currentWorkspaceAtom,
   useCurrentWorkspace,
 } from '../../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../../hooks/use-blocksuite-workspace-helper';
-import { useWorkspacesHelper } from '../../hooks/use-workspaces';
+import { useAppHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
 import { pathGenerator } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
@@ -45,21 +49,22 @@ describe('WorkSpaceSliderBar', () => {
 
     const onOpenWorkspaceListModalFn = vi.fn();
     const onOpenQuickSearchModalFn = vi.fn();
-    const mutationHook = renderHook(() => useWorkspacesHelper(), {
+    const mutationHook = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
     const id = await mutationHook.result.current.createLocalWorkspace('test0');
     await store.get(workspacesAtom);
     mutationHook.rerender();
     mutationHook.result.current.createWorkspacePage(id, 'test1');
-    await store.get(currentWorkspaceAtom);
+    store.set(rootCurrentWorkspaceIdAtom, id);
+    await store.get(rootCurrentWorkspaceAtom);
     const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,
     });
     let i = 0;
     const Component = () => {
       const [currentWorkspace] = useCurrentWorkspace();
-      const [currentPageId] = useCurrentPageId();
+      const currentPageId = useAtomValue(rootCurrentPageIdAtom);
       assertExists(currentWorkspace);
       const helper = useBlockSuiteWorkspaceHelper(
         currentWorkspace.blockSuiteWorkspace

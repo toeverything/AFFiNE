@@ -78,6 +78,7 @@ const nextConfig = {
   },
   reactStrictMode: true,
   transpilePackages: [
+    'jotai-devtools',
     '@affine/component',
     '@affine/i18n',
     '@affine/debug',

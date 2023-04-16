@@ -1,5 +1,6 @@
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';
+export const DEFAULT_HELLO_WORLD_PAGE_ID = 'hello-world';
 
 export const enum MessageCode {
   loginError,
