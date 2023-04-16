@@ -123,11 +123,8 @@ const createIndexedDBProvider = (
       indexeddbProvider.connect();
       indexeddbProvider.whenSynced
         .then(() => {
-          // fixme: remove `setTimeout`
-          setTimeout(() => {
-            callbacks.ready = true;
-            callbacks.forEach(cb => cb());
-          }, 0);
+          callbacks.ready = true;
+          callbacks.forEach(cb => cb());
         })
         .catch(error => {
           if (error instanceof EarlyDisconnectError) {
