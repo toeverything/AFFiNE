@@ -1,4 +1,6 @@
 import { assertExists, nanoid } from '@blocksuite/store';
+import { NoSsr } from '@mui/material';
+import { clsx } from 'clsx';
 import { useAtom } from 'jotai/index';
 import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
@@ -22,12 +24,13 @@ import {
   useSidebarStatus,
   useSidebarWidth,
 } from '../hooks/use-sidebar-status';
-import { pathGenerator, publicPathGenerator } from '../shared';
+import { pathGenerator } from '../shared';
 import {
   StyledSliderResizer,
   StyledSliderResizerInner,
   StyledSpacer,
 } from './styles';
+import { floatingStyle, resizingStyle } from './styles.css';
 
 export const WorkspaceSidebarLayout = (): ReactElement => {
   const [currentWorkspace] = useCurrentWorkspace();
@@ -39,8 +42,6 @@ export const WorkspaceSidebarLayout = (): ReactElement => {
   const helper = useBlockSuiteWorkspaceHelper(
     currentWorkspace?.blockSuiteWorkspace ?? null
   );
-  const isPublicWorkspace =
-    router.pathname.split('/')[1] === 'public-workspace';
   const handleCreatePage = useCallback(() => {
     return helper.createPage(nanoid());
   }, [helper]);
@@ -96,11 +97,9 @@ export const WorkspaceSidebarLayout = (): ReactElement => {
       spacerRef.current.style.width = `${actualSidebarWidth}px`;
     }
   }, [actualSidebarWidth]);
-
   return (
-    <>
+    <NoSsr>
       <WorkSpaceSliderBar
-        isPublicWorkspace={isPublicWorkspace}
         onOpenQuickSearchModal={handleOpenQuickSearchModal}
         currentWorkspace={currentWorkspace}
         currentPageId={currentPageId}
@@ -114,13 +113,14 @@ export const WorkspaceSidebarLayout = (): ReactElement => {
         )}
         createPage={handleCreatePage}
         currentPath={router.asPath.split('?')[0]}
-        paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
+        paths={pathGenerator}
       />
       <StyledSpacer
+        className={clsx({
+          [floatingStyle]: sidebarFloating,
+          [resizingStyle]: resizing,
+        })}
         ref={spacerRef}
-        floating={sidebarFloating}
-        resizing={resizing}
-        sidebarOpen={sidebarOpen}
       >
         {!sidebarFloating && sidebarOpen && (
           <StyledSliderResizer
@@ -132,6 +132,6 @@ export const WorkspaceSidebarLayout = (): ReactElement => {
           </StyledSliderResizer>
         )}
       </StyledSpacer>
-    </>
+    </NoSsr>
   );
 };

@@ -18,17 +18,12 @@ export const StyledPage = styled('div')<{ resizing?: boolean }>(
   }
 );
 
-export const StyledSpacer = styled('div')<{
-  sidebarOpen: boolean;
-  resizing: boolean;
-  floating: boolean;
-}>(({ resizing, floating }) => {
+export const StyledSpacer = styled('div')(() => {
   return {
-    position: floating ? 'absolute' : 'relative',
-    flexGrow: 1,
+    position: 'relative',
     height: '100%',
-    maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
-    transition: resizing ? '' : 'width .3s, min-width .3s, max-width .3s',
+    maxWidth: 'calc(100vw - 698px)',
+    transition: 'width .3s, min-width .3s, max-width .3s',
   };
 });
 

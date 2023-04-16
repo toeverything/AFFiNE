@@ -9,7 +9,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren } from 'react';
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
 
 import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../atoms';
 import {
@@ -242,8 +242,16 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const sidebarFloating = useSidebarFloating();
   const [sidebarWidth, setSliderWidth] = useSidebarWidth();
 
-  const mainWidth =
-    sidebarOpen && !sidebarFloating ? `calc(100% - ${sidebarWidth}px)` : '100%';
+  const containerRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (containerRef.current) {
+      const mainWidth =
+        sidebarOpen && !sidebarFloating
+          ? `calc(100% - ${sidebarWidth}px)`
+          : '100%';
+      containerRef.current.style.width = `${mainWidth}px`;
+    }
+  }, [sidebarFloating, sidebarOpen, sidebarWidth]);
 
   return (
     <Provider
@@ -258,7 +266,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <Suspense fallback={<SidebarSkeleton />}>
           <WorkspaceSidebarLayout />
         </Suspense>
-        <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
+        <MainContainerWrapper resizing={resizing} ref={containerRef}>
           <MainContainer className="main-container">
             {children}
             <StyledToolWrapper>

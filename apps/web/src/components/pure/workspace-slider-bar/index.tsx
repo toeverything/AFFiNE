@@ -13,7 +13,15 @@ import type { Page, PageMeta } from '@blocksuite/store';
 import { clsx } from 'clsx';
 import type React from 'react';
 import type { UIEvent } from 'react';
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import {
@@ -62,7 +70,6 @@ export type FavoriteListProps = {
 };
 
 export type WorkSpaceSliderBarProps = {
-  isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
   onOpenWorkspaceListModal: () => void;
   currentWorkspace: AllWorkspace | null;
@@ -80,7 +87,6 @@ export type WorkSpaceSliderBarProps = {
 };
 
 export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
-  isPublicWorkspace,
   currentWorkspace,
   currentPageId,
   openPage,
@@ -103,7 +109,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [sliderWidth] = useSidebarWidth();
   const [isResizing] = useSidebarResizing();
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
-  const show = isPublicWorkspace ? false : sidebarOpen;
   const [actualWidth, setActualWidth] = useState<string | number>(256);
   useEffect(() => {
     setActualWidth(floatingSlider ? 'calc(10vw + 400px)' : sliderWidth);
@@ -122,20 +127,27 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [sidebarOpen, setSidebarOpen]);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (sidebarRef.current) {
+      sidebarRef.current.style.width = `${actualWidth}px`;
+    }
+  }, [actualWidth]);
 
   return (
     <>
       <StyledSliderBarWrapper
-        className={clsx({
-          [floatingStyle]: floatingSlider,
-          [macOSStyle]: environment.isDesktop && environment.isMacOs,
-          [nonFloatingStyle]: !floatingSlider,
-          [resizingStyle]: isResizing,
-          [showStyle]: show,
-          [hideStyle]: !show,
-        })}
-        style={{ width: actualWidth }}
+        className={clsx(
+          {
+            [floatingStyle]: floatingSlider,
+            [macOSStyle]: environment.isDesktop && environment.isMacOs,
+            [nonFloatingStyle]: !floatingSlider,
+            [resizingStyle]: isResizing,
+          },
+          sidebarOpen ? showStyle : hideStyle
+        )}
         data-testid="sliderBar-root"
+        ref={sidebarRef}
       >
         <StyledSliderBar>
           <StyledSidebarHeader>
