@@ -6,8 +6,8 @@ This document delves into the design and architecture of the AFFiNE platform, pr
 
 ## Addressing the Challenge
 
-AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals.
-We might need help in building a platform that different users with different needs can use.
+AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals. It is local-first, yet collaborative; It is robust as a foundational platform, yet friendly to extend. We believe that a knowledge base that truly meets the needs of professionals in different scenarios should be open-source and open to the community. By using AFFiNE, people can take full control of their data and workflow, thus achieving data sovereignty. 
+To do so, we should have a stable plugin system that is easy to use by the community and a well-modularized editor for customizability. Let's list the challenges from the perspective of data modeling, UI and feature plugins, and cross-platform support.
 
 ### Data might come from anywhere and go anywhere, in spite of the cloud
 
@@ -19,18 +19,16 @@ While a server-centric backend is supported with AFFiNE, it is not suggested. By
 
 ### Customizable UI and features
 
-AFFiNE is a platform, meaning the user can customize the UI and features of each part.
+AFFiNE is a platform that allows users to customize the UI and features of each part.
 
 We need to consider the following cases:
 
-- Pluggable features. Some features can be disabled or enabled. For example, people for personal use might not need authentication or collaboration features. The enterprise user may want to have authentication and strong security.
-- SDK for the developers, the developers can build their features and plugins for AFFiNE. Like AI writing support, self-hosted database, or features for the specific domain.
+- Pluggable features: Some features can be disabled or enabled. For example, individuals who use AFFiNE for personal purposes may not need authentication or collaboration features. On the other hand, enterprise users may require authentication and strong security.
+- SDK for the developers, the developers can modify or build their own feature or UI plugins, such as AI writing support, self-hosted databases, or domain-specific editable blocks.
 
 ### Diverse platforms
 
-AFFiNE has to support different platforms, which means the user can use AFFiNE on devices like Desktop, mobile, and web.
-
-Some features might be different on different platforms. For example, the desktop version might have file system support.
+AFFiNE supports various platforms, including desktop, mobile, and web while being local-first. However, it's important to note that certain features may differ on different platforms, and it's also possible for data and editor versions to become mismatched.
 
 ## The solution
 
