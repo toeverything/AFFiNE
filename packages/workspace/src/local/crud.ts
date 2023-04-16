@@ -58,7 +58,6 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     const storage = getStorage();
     !Array.isArray(storage.getItem(kStoreKey)) &&
       storage.setItem(kStoreKey, []);
-    const data = storage.getItem(kStoreKey) as z.infer<typeof schema>;
     const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdateV2(doc);
     const id = nanoid();
     const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
