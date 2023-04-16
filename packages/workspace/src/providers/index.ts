@@ -123,8 +123,11 @@ const createIndexedDBProvider = (
       indexeddbProvider.connect();
       indexeddbProvider.whenSynced
         .then(() => {
-          callbacks.ready = true;
-          callbacks.forEach(cb => cb());
+          // fixme: remove `setTimeout`
+          setTimeout(() => {
+            callbacks.ready = true;
+            callbacks.forEach(cb => cb());
+          }, 0);
         })
         .catch(error => {
           if (error instanceof EarlyDisconnectError) {
@@ -141,7 +144,7 @@ const createIndexedDBProvider = (
         blockSuiteWorkspace.id
       );
       indexeddbProvider.disconnect();
-      callbacks.ready = true;
+      callbacks.ready = false;
     },
   };
 };

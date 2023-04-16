@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
+import { ensureRootPinboard } from '@affine/env/blocksuite';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
@@ -8,13 +9,14 @@ import {
   rootStore,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import type { LocalIndexedDBProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { assertExists, nanoid } from '@blocksuite/store';
+import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import {
@@ -245,6 +247,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const router = useRouter();
+  const { jumpToPage } = useRouterHelper(router);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     logger.info('currentWorkspace: ', currentWorkspace);
@@ -268,7 +273,43 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       };
     }
   }, [currentWorkspace]);
-  const router = useRouter();
+
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+    if (!currentWorkspace) {
+      return;
+    }
+    const localProvider = currentWorkspace.providers.find(
+      provider => provider.flavour === 'local-indexeddb'
+    );
+    if (localProvider && localProvider.flavour === 'local-indexeddb') {
+      const provider = localProvider as LocalIndexedDBProvider;
+      const callback = () => {
+        setIsLoading(false);
+        if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
+          // this is a new workspace, so we should redirect to the new page
+          const pageId = nanoid();
+          const page = currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+          assertEquals(page.id, pageId);
+          currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
+            init: true,
+          });
+          if (!router.query.pageId) {
+            void jumpToPage(currentWorkspace.id, pageId);
+          }
+        }
+        // no matter the workspace is empty, ensure the root pinboard exists
+        ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
+      };
+      provider.callbacks.add(callback);
+      return () => {
+        provider.callbacks.delete(callback);
+      };
+    }
+  }, [currentWorkspace, jumpToPage, router]);
+
   const { openPage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(
@@ -373,7 +414,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         </StyledSpacer>
         <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
-            {children}
+            <Suspense fallback={<PageLoading text="Page is Loading" />}>
+              {isLoading ? <PageLoading text="Page is Loading" /> : children}
+            </Suspense>
             <StyledToolWrapper>
               {/* fixme(himself65): remove this */}
               <div id="toolWrapper" style={{ marginBottom: '12px' }}>

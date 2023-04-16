@@ -1,12 +1,10 @@
-import { ensureRootPinboard } from '@affine/env/blocksuite';
 import { useTranslation } from '@affine/i18n';
-import type { LocalIndexedDBProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
-import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 
 import {
   QueryParamError,
@@ -27,44 +25,6 @@ const AllPage: NextPageWithLayout = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useSyncRouterWithCurrentWorkspaceId(router);
-  useEffect(() => {
-    if (!router.isReady) {
-      return;
-    }
-    if (!currentWorkspace) {
-      return;
-    }
-    if (currentWorkspace.flavour !== WorkspaceFlavour.LOCAL) {
-      // only create a new page for local workspace
-      // just ensure the root inboard exists
-      ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
-      return;
-    }
-    const localProvider = currentWorkspace.providers.find(
-      provider => provider.flavour === 'local-indexeddb'
-    );
-    if (localProvider && localProvider.flavour === 'local-indexeddb') {
-      const provider = localProvider as LocalIndexedDBProvider;
-      const callback = () => {
-        if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
-          // this is a new workspace, so we should redirect to the new page
-          const pageId = nanoid();
-          const page = currentWorkspace.blockSuiteWorkspace.createPage(pageId);
-          assertEquals(page.id, pageId);
-          currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
-            init: true,
-          });
-          void jumpToPage(currentWorkspace.id, pageId);
-        }
-        // no matter the workspace is empty, ensure the root pinboard exists
-        ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
-      };
-      provider.callbacks.add(callback);
-      return () => {
-        provider.callbacks.delete(callback);
-      };
-    }
-  }, [currentWorkspace, jumpToPage, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
