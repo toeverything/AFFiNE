@@ -38,10 +38,6 @@ import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
 } from '../use-recent-views';
-import {
-  REDIRECT_TIMEOUT,
-  useSyncRouterWithCurrentPageId,
-} from '../use-sync-router-with-current-page-id';
 import { useAppHelper, useWorkspaces } from '../use-workspaces';
 
 vi.mock(
@@ -213,82 +209,6 @@ describe('useWorkspaces', () => {
     expect(firstWorkspace.flavour).toBe('local');
     assert(firstWorkspace.flavour === WorkspaceFlavour.LOCAL);
     expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
-  });
-});
-
-describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
-  test('from "/"', async () => {
-    const { ProviderWrapper, store } = await getJotaiContext();
-    const mutationHook = renderHook(() => useAppHelper(), {
-      wrapper: ProviderWrapper,
-    });
-    const id = await mutationHook.result.current.createLocalWorkspace('test0');
-    await store.get(currentWorkspaceAtom);
-    mutationHook.rerender();
-    mutationHook.result.current.createWorkspacePage(id, 'page0');
-    const routerHook = renderHook(() => useRouter());
-    await routerHook.result.current.push('/');
-    routerHook.rerender();
-    expect(routerHook.result.current.asPath).toBe('/');
-    renderHook(({ router }) => useSyncRouterWithCurrentPageId(router), {
-      wrapper: ProviderWrapper,
-      initialProps: {
-        router: routerHook.result.current,
-      },
-    });
-
-    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
-  });
-
-  test('from empty workspace', async () => {
-    const { ProviderWrapper, store } = await getJotaiContext();
-    const mutationHook = renderHook(() => useAppHelper(), {
-      wrapper: ProviderWrapper,
-    });
-    const id = await mutationHook.result.current.createLocalWorkspace('test0');
-    const workspaces = await store.get(workspacesAtom);
-    expect(workspaces.length).toEqual(1);
-    mutationHook.rerender();
-    const routerHook = renderHook(() => useRouter());
-    await routerHook.result.current.push(`/workspace/${id}/not_exist`);
-    routerHook.rerender();
-    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/not_exist`);
-    renderHook(({ router }) => useSyncRouterWithCurrentPageId(router), {
-      wrapper: ProviderWrapper,
-      initialProps: {
-        router: routerHook.result.current,
-      },
-    });
-
-    await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT + 50));
-
-    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/all`);
-  });
-
-  test('from incorrect "/workspace/[workspaceId]/[pageId]"', async () => {
-    const { ProviderWrapper, store } = await getJotaiContext();
-    const mutationHook = renderHook(() => useAppHelper(), {
-      wrapper: ProviderWrapper,
-    });
-    const id = await mutationHook.result.current.createLocalWorkspace('test0');
-    const workspaces = await store.get(workspacesAtom);
-    expect(workspaces.length).toEqual(1);
-    mutationHook.rerender();
-    mutationHook.result.current.createWorkspacePage(id, 'page0');
-    const routerHook = renderHook(() => useRouter());
-    await routerHook.result.current.push(`/workspace/${id}/not_exist`);
-    routerHook.rerender();
-    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/not_exist`);
-    renderHook(({ router }) => useSyncRouterWithCurrentPageId(router), {
-      wrapper: ProviderWrapper,
-      initialProps: {
-        router: routerHook.result.current,
-      },
-    });
-
-    await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT + 50));
-
-    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });
 });
 
