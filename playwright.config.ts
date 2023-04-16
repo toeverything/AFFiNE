@@ -37,7 +37,7 @@ const config: PlaywrightTestConfig = {
   },
   forbidOnly: !!process.env.CI,
   workers: 4,
-  retries: 3,
+  retries: 1,
   // 'github' for GitHub Actions CI to generate annotations, plus a concise 'dot'
   // default 'list' when running locally
   // See https://playwright.dev/docs/test-reporters#github-actions-annotations
@@ -76,8 +76,6 @@ const config: PlaywrightTestConfig = {
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
         ENABLE_DEBUG_PAGE: '1',
-        ENABLE_SUBPAGE: '1',
-        ENABLE_CHANGELOG: '1',
         API_SERVER_PROFILE: 'local',
       },
     },

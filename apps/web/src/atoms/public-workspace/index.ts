@@ -9,13 +9,17 @@ import { affineApis } from '../../shared/apis';
 
 function createPublicWorkspace(
   workspaceId: string,
-  binary: ArrayBuffer
+  binary: ArrayBuffer,
+  singlePage = false
 ): AffinePublicWorkspace {
   const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
     workspaceId,
     (k: string) =>
       // fixme: token could be expired
-      ({ api: `api/workspace`, token: getLoginStorage()?.token }[k])
+      ({ api: `api/workspace`, token: getLoginStorage()?.token }[k]),
+    {
+      cachePrefix: WorkspaceFlavour.PUBLIC + (singlePage ? '-single-page' : ''),
+    }
   );
   BlockSuiteWorkspace.Y.applyUpdate(
     blockSuiteWorkspace.doc,
@@ -49,7 +53,7 @@ export const publicPageBlockSuiteAtom = atom<Promise<AffinePublicWorkspace>>(
       workspaceId,
       pageId
     );
-    return createPublicWorkspace(workspaceId, binary);
+    return createPublicWorkspace(workspaceId, binary, true);
   }
 );
 export const publicWorkspaceAtom = atom<Promise<AffinePublicWorkspace>>(
@@ -59,6 +63,6 @@ export const publicWorkspaceAtom = atom<Promise<AffinePublicWorkspace>>(
       throw new Error('No workspace id');
     }
     const binary = await affineApis.downloadWorkspace(workspaceId, true);
-    return createPublicWorkspace(workspaceId, binary);
+    return createPublicWorkspace(workspaceId, binary, false);
   }
 );

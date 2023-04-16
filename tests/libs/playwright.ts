@@ -40,7 +40,9 @@ export const test = baseTest.extend({
         }
       );
     }
+
     await use(context);
+
     if (enableCoverage) {
       for (const page of context.pages()) {
         await page.evaluate(() =>

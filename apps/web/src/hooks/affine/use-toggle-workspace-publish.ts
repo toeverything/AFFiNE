@@ -1,4 +1,4 @@
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { AffineWorkspace } from '@affine/workspace/type';
 import { useCallback } from 'react';
 import useSWR from 'swr';
@@ -15,10 +15,8 @@ export function useToggleWorkspacePublish(workspace: AffineWorkspace) {
         public: isPublish,
       });
       await mutate(QueryKey.getWorkspaces);
-      // force update
-      jotaiStore.set(jotaiWorkspacesAtom, [
-        ...jotaiStore.get(jotaiWorkspacesAtom),
-      ]);
+      // fixme: remove force update
+      rootStore.set(rootWorkspacesMetadataAtom, ws => [...ws]);
     },
     [mutate, workspace.id]
   );

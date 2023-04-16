@@ -43,6 +43,6 @@ export function useBlockSuiteWorkspaceAvatarUrl(
         dispose.dispose();
       };
     }
-  }, []);
+  }, [blockSuiteWorkspace]);
   return [avatar ?? null, setAvatar] as const;
 }

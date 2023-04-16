@@ -3,7 +3,7 @@ docs:
   - '**/README.md'
   - 'packages/templates/**/*'
 
-tests:
+test:
   - 'tests/**/*'
   - '**/tests/**/*'
   - '**/__tests__/**/*'

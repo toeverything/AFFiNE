@@ -1,3 +1,4 @@
+import { initPage } from '@affine/env/blocksuite';
 import { useTranslation } from '@affine/i18n';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons';
@@ -5,6 +6,7 @@ import { assertEquals, nanoid } from '@blocksuite/store';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';
 import type React from 'react';
+import { useCallback } from 'react';
 
 import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
@@ -35,25 +37,25 @@ export const Footer: React.FC<FooterProps> = ({
   return (
     <Command.Item
       data-testid="quick-search-add-new-page"
-      onSelect={async () => {
-        onClose();
+      onSelect={useCallback(() => {
         const id = nanoid();
-        const page = await createPage(id);
+        const page = createPage(id);
         assertEquals(page.id, id);
-        await jumpToPage(blockSuiteWorkspace.id, page.id);
-        if (!query) {
-          return;
+        initPage(page);
+        const block = page.getBlockByFlavour(
+          'affine:page'
+        )[0] as PageBlockModel;
+        if (block) {
+          block.title.insert(query, 0);
+        } else {
+          console.warn('No page block found');
         }
-        const newPage = blockSuiteWorkspace.getPage(page.id);
-        if (newPage) {
-          const block = newPage.getBlockByFlavour(
-            'affine:page'
-          )[0] as PageBlockModel;
-          if (block) {
-            block.title.insert(query, 0);
-          }
-        }
-      }}
+        blockSuiteWorkspace.setPageMeta(page.id, {
+          title: query,
+        });
+        onClose();
+        void jumpToPage(blockSuiteWorkspace.id, page.id);
+      }, [blockSuiteWorkspace, createPage, jumpToPage, onClose, query])}
     >
       <StyledModalFooterContent>
         <PlusIcon />

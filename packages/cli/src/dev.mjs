@@ -53,6 +53,7 @@ const env = {
   API_SERVER_PROFILE: dev.server,
   PATH: process.env.PATH,
   NODE_ENV: 'development',
+  PORT: 8080,
 };
 
 if (dev.debugBlockSuite) {

@@ -13,8 +13,8 @@
     "./affine/keck": "./src/affine/keck/index.ts"
   },
   "peerDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230409084303-221991d4-nightly",
-    "@blocksuite/store": "0.0.0-20230409084303-221991d4-nightly"
+    "@blocksuite/blocks": "*",
+    "@blocksuite/store": "*"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",

@@ -18,6 +18,7 @@ export const StyledListItem = styled('div')<{
     cursor: 'pointer',
     marginBottom: '4px',
     position: 'relative',
+    flexShrink: 0,
     userSelect: 'none',
     ...displayFlex('flex-start', 'center'),
     ...(disabled
@@ -44,7 +45,8 @@ export const StyledCollapseButton = styled('button')<{
 }>(({ collapse, show = true, theme }) => {
   return {
     width: '16px',
-    height: '16px',
+    height: '100%',
+    ...displayFlex('center', 'center'),
     fontSize: '16px',
     position: 'absolute',
     left: '0',
@@ -53,9 +55,13 @@ export const StyledCollapseButton = styled('button')<{
     margin: 'auto',
     color: theme.colors.iconColor,
     opacity: '.6',
+    transition: 'opacity .15s ease-in-out',
     display: show ? 'flex' : 'none',
     svg: {
       transform: `rotate(${collapse ? '0' : '-90'}deg)`,
+    },
+    ':hover': {
+      opacity: '1',
     },
   };
 });
@@ -204,4 +210,11 @@ export const StyledChangeLogWrapper = styled('div')<{
     transition: 'all 0.3s',
     overflow: 'hidden',
   };
+});
+
+export const StyledRouteNavigationWrapper = styled('div')({
+  height: '32px',
+  width: '80px',
+  marginRight: '16px',
+  ...displayFlex('space-between', 'center'),
 });

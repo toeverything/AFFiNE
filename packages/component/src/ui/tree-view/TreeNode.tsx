@@ -78,7 +78,7 @@ const TreeNodeItemWithDnd = <RenderProps,>({
     if (isOver && canDrop) {
       setCollapsed(node.id, false);
     }
-  }, [isOver, canDrop]);
+  }, [isOver, canDrop, setCollapsed, node.id]);
 
   return (
     <TreeNodeItem

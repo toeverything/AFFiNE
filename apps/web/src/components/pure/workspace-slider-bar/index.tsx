@@ -12,7 +12,7 @@ import {
 import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
 import type { UIEvent } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import {
@@ -22,22 +22,28 @@ import {
   useSidebarWidth,
 } from '../../../hooks/use-sidebar-status';
 import type { AllWorkspace } from '../../../shared';
-import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
 import { Pinboard } from './Pinboard';
+import { RouteNavigation } from './RouteNavigation';
 import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
   StyledNewPageButton,
   StyledScrollWrapper,
-  StyledSidebarSwitchWrapper,
+  StyledSidebarHeader,
   StyledSliderBar,
   StyledSliderBarInnerWrapper,
   StyledSliderBarWrapper,
   StyledSliderModalBackground,
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector';
+
+const SidebarSwitch = lazy(() =>
+  import('../../affine/sidebar-switch').then(module => ({
+    default: module.SidebarSwitch,
+  }))
+);
 
 export type FavoriteListProps = {
   currentPageId: string | null;
@@ -115,13 +121,16 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         data-testid="sliderBar-root"
       >
         <StyledSliderBar>
-          <StyledSidebarSwitchWrapper>
-            <SidebarSwitch
-              visible={sidebarOpen}
-              tooltipContent={t('Collapse sidebar')}
-              testid="sliderBar-arrowButton-collapse"
-            />
-          </StyledSidebarSwitchWrapper>
+          <StyledSidebarHeader>
+            <RouteNavigation />
+            <Suspense>
+              <SidebarSwitch
+                visible={sidebarOpen}
+                tooltipContent={t('Collapse sidebar')}
+                data-testid="sliderBar-arrowButton-collapse"
+              />
+            </Suspense>
+          </StyledSidebarHeader>
 
           <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
             <WorkspaceSelector
@@ -138,7 +147,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <SearchIcon />
               {t('Quick search')}
             </StyledListItem>
-
             <StyledListItem
               active={
                 currentPath ===
@@ -159,7 +167,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 {t('Workspace Settings')}
               </StyledLink>
             </StyledListItem>
-
             <StyledListItem
               active={
                 currentPath ===
@@ -175,7 +182,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 <span data-testid="all-pages">{t('All pages')}</span>
               </StyledLink>
             </StyledListItem>
-
             <StyledScrollWrapper
               showTopBorder={!isScrollAtTop}
               onScroll={(e: UIEvent<HTMLDivElement>) => {
@@ -199,7 +205,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 />
               )}
             </StyledScrollWrapper>
-
+            <div style={{ height: 16 }}></div>
             {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
             currentWorkspace.public ? (
               <StyledListItem>
@@ -236,9 +242,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 currentPath ===
                 (currentWorkspaceId && paths.trash(currentWorkspaceId))
               }
-              style={{
-                marginTop: '16px',
-              }}
             >
               <StyledLink
                 href={{

@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
@@ -13,8 +14,25 @@ const getStorage = () => createJSONStorage(() => localStorage);
 const kStoreKey = 'affine-local-workspace';
 const schema = z.array(z.string());
 
+const logger = new DebugLogger('affine:workspace:local:crud');
+
+/**
+ * @internal
+ */
+export function saveWorkspaceToLocalStorage(workspaceId: string) {
+  const storage = getStorage();
+  !Array.isArray(storage.getItem(kStoreKey)) && storage.setItem(kStoreKey, []);
+  const data = storage.getItem(kStoreKey) as z.infer<typeof schema>;
+  const id = data.find(id => id === workspaceId);
+  if (!id) {
+    logger.debug('saveWorkspaceToLocalStorage', workspaceId);
+    storage.setItem(kStoreKey, [...data, workspaceId]);
+  }
+}
+
 export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
   get: async workspaceId => {
+    logger.debug('get', workspaceId);
     const storage = getStorage();
     !Array.isArray(storage.getItem(kStoreKey)) &&
       storage.setItem(kStoreKey, []);
@@ -36,10 +54,10 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     return workspace;
   },
   create: async ({ doc }) => {
+    logger.debug('create', doc);
     const storage = getStorage();
     !Array.isArray(storage.getItem(kStoreKey)) &&
       storage.setItem(kStoreKey, []);
-    const data = storage.getItem(kStoreKey) as z.infer<typeof schema>;
     const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdateV2(doc);
     const id = nanoid();
     const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
@@ -52,11 +70,11 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     await persistence.whenSynced.then(() => {
       persistence.disconnect();
     });
-    storage.setItem(kStoreKey, [...data, id]);
-    console.log('create', id, storage.getItem(kStoreKey));
+    saveWorkspaceToLocalStorage(id);
     return id;
   },
   delete: async workspace => {
+    logger.debug('delete', workspace);
     const storage = getStorage();
     !Array.isArray(storage.getItem(kStoreKey)) &&
       storage.setItem(kStoreKey, []);
@@ -69,6 +87,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     storage.setItem(kStoreKey, [...data]);
   },
   list: async () => {
+    logger.debug('list');
     const storage = getStorage();
     !Array.isArray(storage.getItem(kStoreKey)) &&
       storage.setItem(kStoreKey, []);

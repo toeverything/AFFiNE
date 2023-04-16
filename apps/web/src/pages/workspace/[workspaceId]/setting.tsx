@@ -18,9 +18,9 @@ import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-workspace';
-import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
-import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
-import { WorkspaceLayout } from '../../../layouts';
+import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-router-with-current-workspace-id';
+import { useAppHelper } from '../../../hooks/use-workspaces';
+import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspacePlugins } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 
@@ -33,7 +33,7 @@ const SettingPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
-  useSyncRouterWithCurrentWorkspace(router);
+  useSyncRouterWithCurrentWorkspaceId(router);
   const [currentTab, setCurrentTab] = useAtom(settingPanelAtom);
   useEffect(() => {});
   const onChangeTab = useCallback(
@@ -92,7 +92,7 @@ const SettingPage: NextPageWithLayout = () => {
     }
   }, [currentTab, router, setCurrentTab]);
 
-  const helper = useWorkspacesHelper();
+  const helper = useAppHelper();
 
   const onDeleteWorkspace = useCallback(() => {
     assertExists(currentWorkspace);
