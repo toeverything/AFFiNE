@@ -108,6 +108,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await openQuickSearchByShortcut(page);
   // input title and create new page
   await page.keyboard.insertText('test123456');
+  await page.waitForTimeout(300);
   const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
   await addNewPage.click();
 
