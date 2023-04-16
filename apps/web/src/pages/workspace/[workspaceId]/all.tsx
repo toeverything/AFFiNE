@@ -36,7 +36,7 @@ const AllPage: NextPageWithLayout = () => {
     }
     if (currentWorkspace.flavour !== WorkspaceFlavour.LOCAL) {
       // only create a new page for local workspace
-      // just ensure the root pinboard exists
+      // just ensure the root inboard exists
       ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
       return;
     }
@@ -54,7 +54,7 @@ const AllPage: NextPageWithLayout = () => {
           currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
             init: true,
           });
-          jumpToPage(currentWorkspace.id, pageId);
+          void jumpToPage(currentWorkspace.id, pageId);
         }
         // no matter the workspace is empty, ensure the root pinboard exists
         ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
