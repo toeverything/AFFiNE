@@ -197,15 +197,20 @@ describe('useWorkspaces', () => {
     const { result } = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
+    {
+      const workspaces = await store.get(workspacesAtom);
+      expect(workspaces.length).toEqual(1);
+    }
     await result.current.createLocalWorkspace('test');
-    const workspaces = await store.get(workspacesAtom);
-    console.log(workspaces);
-    expect(workspaces.length).toEqual(1);
+    {
+      const workspaces = await store.get(workspacesAtom);
+      expect(workspaces.length).toEqual(2);
+    }
     const { result: result2 } = renderHook(() => useWorkspaces(), {
       wrapper: ProviderWrapper,
     });
-    expect(result2.current.length).toEqual(1);
-    const firstWorkspace = result2.current[0];
+    expect(result2.current.length).toEqual(2);
+    const firstWorkspace = result2.current[1];
     expect(firstWorkspace.flavour).toBe('local');
     assert(firstWorkspace.flavour === WorkspaceFlavour.LOCAL);
     expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
