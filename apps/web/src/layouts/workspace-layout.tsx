@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
+import { config, DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
@@ -246,6 +246,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
+  const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
@@ -298,6 +299,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           });
           initPage(page);
           if (!router.query.pageId) {
+            setCurrentPageId(pageId);
             void jumpToPage(currentWorkspace.id, pageId);
           }
         }
@@ -309,7 +311,32 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         provider.callbacks.delete(callback);
       };
     }
-  }, [currentWorkspace, jumpToPage, router]);
+  }, [currentWorkspace, jumpToPage, router, setCurrentPageId]);
+
+  useEffect(() => {
+    if (!currentWorkspace) {
+      return;
+    }
+    const page = currentWorkspace.blockSuiteWorkspace.getPage(
+      DEFAULT_HELLO_WORLD_PAGE_ID
+    );
+    if (page && page.meta.jumpOnce) {
+      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
+        DEFAULT_HELLO_WORLD_PAGE_ID,
+        {
+          jumpOnce: false,
+        }
+      );
+      setCurrentPageId(currentPageId);
+      void jumpToPage(currentWorkspace.id, page.id);
+    }
+  }, [
+    currentPageId,
+    currentWorkspace,
+    jumpToPage,
+    router.query.pageId,
+    setCurrentPageId,
+  ]);
 
   const { openPage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);

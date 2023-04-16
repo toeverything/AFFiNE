@@ -1,5 +1,8 @@
 import { DebugLogger } from '@affine/debug';
-import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
+import {
+  DEFAULT_HELLO_WORLD_PAGE_ID,
+  DEFAULT_WORKSPACE_NAME,
+} from '@affine/env';
 import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
 import {
   CRUD,
@@ -29,11 +32,14 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
         (_: string) => undefined
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-      const page = blockSuiteWorkspace.createPage('hello-world');
+      const page = blockSuiteWorkspace.createPage(DEFAULT_HELLO_WORLD_PAGE_ID);
       blockSuiteWorkspace.setPageMeta(page.id, {
         init: true,
       });
       initPage(page);
+      blockSuiteWorkspace.setPageMeta(page.id, {
+        jumpOnce: true,
+      });
       const provider = createIndexedDBProvider(blockSuiteWorkspace);
       provider.connect();
       provider.callbacks.add(() => {
