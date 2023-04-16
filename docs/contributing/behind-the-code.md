@@ -6,8 +6,8 @@ This document delves into the design and architecture of the AFFiNE platform, pr
 
 ## Addressing the Challenge
 
-AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals.
-We might need help in building a platform that different users with different needs can use.
+AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals. It is local-first, yet collaborative; It is robust as a foundational platform, yet friendly to extend. We believe that a knowledge base that truly meets the needs of professionals in different scenarios should be open-source and open to the community. By using AFFiNE, people can take full control of their data and workflow, thus achieving data sovereignty. 
+To do so, we should have a stable plugin system that is easy to use by the community and a well-modularized editor for customizability. Let's list the challenges from the perspective of data modeling, UI and feature plugins, and cross-platform support.
 
 ### Data might come from anywhere and go anywhere, in spite of the cloud
 
