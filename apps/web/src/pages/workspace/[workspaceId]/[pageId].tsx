@@ -108,11 +108,13 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
   useRouterAndWorkspaceWithPageIdDefense(router);
   if (!router.isReady) {
     return <PageLoading text="Router is loading" />;
-  } else if (!page) {
+  } else if (
+    !currentPageId ||
+    !currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
+  ) {
     return <PageLoading text="Page is loading" />;
   }
   return <WorkspaceDetail />;
