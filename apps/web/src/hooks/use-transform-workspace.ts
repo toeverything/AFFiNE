@@ -5,11 +5,9 @@ import {
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { WorkspacePlugins } from '../plugins';
-import { useRouterHelper } from './use-router-helper';
 
 /**
  * Transform workspace from one flavour to another
@@ -19,8 +17,6 @@ import { useRouterHelper } from './use-router-helper';
 export function useTransformWorkspace() {
   const setCurrentWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
   const set = useSetAtom(rootWorkspacesMetadataAtom);
-  const router = useRouter();
-  const helper = useRouterHelper(router);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -40,9 +36,8 @@ export function useTransformWorkspace() {
         return [...workspaces];
       });
       setCurrentWorkspaceId(newId);
-      await helper.jumpToWorkspace(newId);
       return newId;
     },
-    [helper, set, setCurrentWorkspaceId]
+    [set, setCurrentWorkspaceId]
   );
 }
