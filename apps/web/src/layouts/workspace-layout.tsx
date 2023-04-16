@@ -3,6 +3,7 @@ import { config } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
+  rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
   rootStore,
   rootWorkspacesMetadataAtom,
@@ -23,11 +24,11 @@ import {
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
-import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
+import { useRouterWithWorkspaceIdDefense } from '../hooks/use-router-with-workspace-id-defense';
 import {
   useSidebarFloating,
   useSidebarResizing,
@@ -130,11 +131,17 @@ export const CurrentWorkspaceContext = ({
   const workspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
   useSyncRouterWithCurrentWorkspaceId(router);
   useSyncRouterWithCurrentPageId(router);
+  useRouterWithWorkspaceIdDefense(router);
+  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
+  const exist = metadata.find(m => m.id === workspaceId);
   if (!router.isReady) {
     return <PageLoading text="Router is loading" />;
   }
   if (!workspaceId) {
     return <PageLoading text="Finding workspace id" />;
+  }
+  if (!exist) {
+    return <PageLoading text="Workspace not found" />;
   }
   return <>{children}</>;
 };
@@ -220,12 +227,13 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const [currentPageId] = useCurrentPageId();
+  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const workspaces = useWorkspaces();
 
   useEffect(() => {
     logger.info('workspaces: ', workspaces);
-  }, [workspaces]);
+    logger.info('currentWorkspace: ', currentWorkspace);
+  }, [currentWorkspace, workspaces]);
 
   useEffect(() => {
     if (currentWorkspace) {

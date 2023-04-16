@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
+import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
@@ -13,6 +14,7 @@ import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspac
 import { usePageMeta, usePageMetaHelper } from '../../../hooks/use-page-meta';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
+import { useRouterAndWorkspaceWithPageIdDefense } from '../../../hooks/use-router-and-workspace-with-page-id-defense';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspacePlugins } from '../../../plugins';
@@ -104,8 +106,14 @@ const WorkspaceDetail: React.FC = () => {
 
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
+  const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
+  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+  useRouterAndWorkspaceWithPageIdDefense(router);
   if (!router.isReady) {
     return <PageLoading text="Router is loading" />;
+  } else if (!page) {
+    return <PageLoading text="Page is loading" />;
   }
   return <WorkspaceDetail />;
 };

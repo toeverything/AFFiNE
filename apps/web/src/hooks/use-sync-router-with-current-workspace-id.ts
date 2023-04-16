@@ -19,23 +19,21 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
     if (typeof workspaceId !== 'string') {
       return;
     }
-    if (!currentWorkspaceId) {
-      const targetWorkspace = metadata.find(
-        workspace => workspace.id === workspaceId
-      );
+    const targetWorkspace = metadata.find(
+      workspace => workspace.id === workspaceId
+    );
+    if (targetWorkspace) {
+      setCurrentWorkspaceId(targetWorkspace.id);
+    } else {
+      const targetWorkspace = metadata.at(0);
       if (targetWorkspace) {
         setCurrentWorkspaceId(targetWorkspace.id);
-      } else {
-        const targetWorkspace = metadata.at(0);
-        if (targetWorkspace) {
-          setCurrentWorkspaceId(targetWorkspace.id);
-          void router.push({
-            pathname: '/workspace/[workspaceId]/all',
-            query: {
-              workspaceId: targetWorkspace.id,
-            },
-          });
-        }
+        void router.push({
+          pathname: '/workspace/[workspaceId]/all',
+          query: {
+            workspaceId: targetWorkspace.id,
+          },
+        });
       }
     }
   }, [currentWorkspaceId, metadata, router, setCurrentWorkspaceId]);
