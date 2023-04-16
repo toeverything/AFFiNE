@@ -82,7 +82,6 @@ test('Add pinboard by sidebar operation menu', async ({ page }) => {
       .getByTestId('sidebar-pinboard-container')
       .getByTestId(`pinboard-${newPageMeta?.id}`)
   ).not.toBeNull();
-  console.log('rootPinboardMeta', rootPinboardMeta);
   await checkIsChildInsertToParentInEditor(page, rootPinboardMeta?.id ?? '');
 });
 
