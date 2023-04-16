@@ -9,17 +9,13 @@ This document delves into the design and architecture of the AFFiNE platform, pr
 AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals.
 We might need help in building a platform that different users with different needs can use.
 
-### Data might come from anywhere and might go anywhere
+### Data might come from anywhere and go anywhere, in spite of the cloud
 
-AFFiNE is capable of storing a wide variety of data, and the data might be saved in different locations.
+AFFiNE provides users with flexibility and control over their data storage. Our platform is designed to prioritize user ownership of data, which means data in AFFiNE is always accessible from local devices like a laptop's local file or the browser's indexedDB. In the mean while, data can also be stored in centralised cloud-native way.
 
-For example,
-the user
-who wants
-to have privacy, can first save their data on their local device(like in the browser's indexedDB or local file of the laptop).
-Or user who wants to share their data with others can save them in the AFFiNE Cloud.
-Or users who want to share their data with others
-but also want privacy can set up their own AFFiNE Cloud server.
+Thanks to our use of CRDTs (Conflict-free Replicated Data Types), data in AFFiNE is always conflict-free, similar to a auto-resolve-conflict Git. This means that data synchronization, sharing, and real-time collaboration are seamless and can occur across any network layer so long as the data as passed. As a result, developers do not need to worry about whether the data was generated locally or remotely, as CRDTs treat both equally.
+
+While a server-centric backend is supported with AFFiNE, it is not suggested. By having a local-first architecture, AFFiNE users can have real-time responsive UI, optimal performance and effortlessly synchronize data across multiple devices and locations. This includes peer-to-peer file replication, storing file in local or cloud storage, saving it to a server-side database, or using AFFiNE Cloud for real-time collaboration and synchronization.
 
 ### Customizable UI and features
 
