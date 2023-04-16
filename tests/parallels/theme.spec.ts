@@ -1,8 +1,11 @@
+import { resolve } from 'node:path';
+
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
 import { waitMarkdownImported } from '../libs/page-logic';
 import { test } from '../libs/playwright';
+import { testResultDir } from '../libs/utils';
 
 // default could be anything according to the system
 test('default white', async ({ browser }) => {
@@ -12,27 +15,20 @@ test('default white', async ({ browser }) => {
   const page = await context.newPage();
   await openHomePage(page);
   await waitMarkdownImported(page);
-  await page.waitForSelector('html');
   const root = page.locator('html');
   const themeMode = await root.evaluate(element =>
     element.getAttribute('data-theme')
   );
   expect(themeMode).toBe('light');
-
+  const prev = await page.screenshot({
+    path: resolve(testResultDir, 'affine-light-theme.png'),
+  });
+  await page.getByTestId('change-theme-dark').click();
   await page.waitForTimeout(50);
-  const rightMenu = page.getByTestId('editor-option-menu');
-  const rightMenuBox = await rightMenu.boundingBox();
-  const lightButton = page.getByTestId('change-theme-light');
-  const lightButtonBox = await lightButton.boundingBox();
-  const darkButton = page.getByTestId('change-theme-dark');
-  const darkButtonBox = await darkButton.boundingBox();
-  if (!rightMenuBox || !lightButtonBox || !darkButtonBox) {
-    throw new Error('rightMenuBox or lightButtonBox or darkButtonBox is nil');
-  }
-  expect(darkButtonBox.x).toBeLessThan(rightMenuBox.x);
-  expect(darkButtonBox.y).toBeGreaterThan(rightMenuBox.y);
-  expect(lightButtonBox.y).toBeCloseTo(rightMenuBox.y);
-  expect(lightButtonBox.x).toBeCloseTo(darkButtonBox.x);
+  const after = await page.screenshot({
+    path: resolve(testResultDir, 'affine-dark-theme.png'),
+  });
+  expect(prev).not.toEqual(after);
 });
 
 // test('change theme to dark', async ({ page }) => {
