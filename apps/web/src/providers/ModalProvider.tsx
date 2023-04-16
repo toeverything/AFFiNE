@@ -1,8 +1,8 @@
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
-import type React from 'react';
+import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import {
@@ -15,7 +15,7 @@ import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
-import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
+import { useAppHelper, useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
 
 const WorkspaceListModal = lazy(() =>
@@ -41,10 +41,10 @@ export function Modals() {
   const { jumpToSubPath } = useRouterHelper(router);
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
-  const setWorkspaces = useSetAtom(jotaiWorkspacesAtom);
+  const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
-  const { createLocalWorkspace } = useWorkspacesHelper();
+  const { createLocalWorkspace } = useAppHelper();
   const [transitioning, transition] = useTransition();
 
   return (
@@ -122,13 +122,10 @@ export function Modals() {
   );
 }
 
-export const ModalProvider: React.FC<React.PropsWithChildren> = ({
-  children,
-}) => {
+export const ModalProvider = (): ReactElement => {
   return (
     <>
       <Modals />
-      {children}
     </>
   );
 };

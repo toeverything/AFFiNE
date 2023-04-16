@@ -41,11 +41,6 @@ export const test = baseTest.extend({
       );
     }
 
-    for (const page of context.pages()) {
-      await page.evaluate(() => window.localStorage.clear());
-      await page.evaluate(() => window.sessionStorage.clear());
-    }
-
     await use(context);
 
     if (enableCoverage) {

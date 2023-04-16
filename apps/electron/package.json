@@ -2,7 +2,7 @@
   "name": "@affine/electron",
   "productName": "AFFiNE",
   "private": true,
-  "version": "0.5.2",
+  "version": "0.5.3",
   "author": "affine",
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",

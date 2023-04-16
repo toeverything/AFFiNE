@@ -2,40 +2,33 @@
 
 ## Introduction
 
-This document talks about the design and architecture of the AFFiNE platform, which might be helpful for developers who want to contribute to AFFiNE or want to understand the design principles.
+This document delves into the design and architecture of the AFFiNE platform, providing insights for developers interested in contributing to AFFiNE or gaining a better understanding of our design principles.
 
-## Facing the problem
+## Addressing the Challenge
 
-AFFiNE is a platform for the next-generation collaborative knowledge base for professionals.
-We might need help in building a platform that different users with different needs can use.
+AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals. It is local-first, yet collaborative; It is robust as a foundational platform, yet friendly to extend. We believe that a knowledge base that truly meets the needs of professionals in different scenarios should be open-source and open to the community. By using AFFiNE, people can take full control of their data and workflow, thus achieving data sovereignty.
+To do so, we should have a stable plugin system that is easy to use by the community and a well-modularized editor for customizability. Let's list the challenges from the perspective of data modeling, UI and feature plugins, and cross-platform support.
 
-### Data might come from anywhere and might go anywhere
+### Data might come from anywhere and go anywhere, in spite of the cloud
 
-Many different types of data can be stored in AFFiNE, which might be saved
-in different places.
+AFFiNE provides users with flexibility and control over their data storage. Our platform is designed to prioritize user ownership of data, which means data in AFFiNE is always accessible from local devices like a laptop's local file or the browser's indexedDB. In the mean while, data can also be stored in centralised cloud-native way.
 
-For example,
-the user
-who wants
-to have privacy, can first save their data on their local device(like in the browser's indexedDB or local file of the laptop).
-Or user who wants to share their data with others can save them in the AFFiNE Cloud.
-Or users who want to share their data with others
-but also want privacy can set up their own AFFiNE Cloud server.
+Thanks to our use of CRDTs (Conflict-free Replicated Data Types), data in AFFiNE is always conflict-free, similar to a auto-resolve-conflict Git. This means that data synchronization, sharing, and real-time collaboration are seamless and can occur across any network layer so long as the data as passed. As a result, developers do not need to worry about whether the data was generated locally or remotely, as CRDTs treat both equally.
+
+While a server-centric backend is supported with AFFiNE, it is not suggested. By having a local-first architecture, AFFiNE users can have real-time responsive UI, optimal performance and effortlessly synchronize data across multiple devices and locations. This includes peer-to-peer file replication, storing file in local or cloud storage, saving it to a server-side database, or using AFFiNE Cloud for real-time collaboration and synchronization.
 
 ### Customizable UI and features
 
-AFFiNE is a platform, meaning the user can customize the UI and features of each part.
+AFFiNE is a platform that allows users to customize the UI and features of each part.
 
 We need to consider the following cases:
 
-- Pluggable features. Some features can be disabled or enabled. For example, people for personal use might not need authentication or collaboration features. The enterprise user may want to have authentication and strong security.
-- SDK for the developers, the developers can build their features and plugins for AFFiNE. Like AI writing support, self-hosted database, or features for the specific domain.
+- Pluggable features: Some features can be disabled or enabled. For example, individuals who use AFFiNE for personal purposes may not need authentication or collaboration features. On the other hand, enterprise users may require authentication and strong security.
+- SDK for the developers, the developers can modify or build their own feature or UI plugins, such as AI writing support, self-hosted databases, or domain-specific editable blocks.
 
 ### Diverse platforms
 
-AFFiNE has to support different platforms, which means the user can use AFFiNE on devices like Desktop, mobile, and web.
-
-Some features might be different on different platforms. For example, the desktop version might have file system support.
+AFFiNE supports various platforms, including desktop, mobile, and web while being local-first. However, it's important to note that certain features may differ on different platforms, and it's also possible for data and editor versions to become mismatched.
 
 ## The solution
 
@@ -236,3 +229,28 @@ graph TB
 
 Notice that we do not assume the Workspace UI has to be written in React.js(for now, it has to be),
 In the future, we can support other UI frameworks instead, like Vue and Svelte.
+
+### Workspace Loading Details
+
+```mermaid
+flowchart TD
+    subgraph JavaScript Runtime
+        subgraph Next.js
+            Start((entry point)) -->|setup environment| OnMount{On mount}
+            OnMount -->|empty data| Init[Init Workspaces]
+            Init --> LoadData
+            OnMount -->|already have data| LoadData>Load data]
+            LoadData --> CurrentWorkspace[Current workspace]
+            LoadData --> Workspaces[Workspaces]
+            Workspaces --> Providers[Providers]
+
+            subgraph React
+                Router([Router]) -->|sync `query.workspaceId`| CurrentWorkspace
+                CurrentWorkspace -->|sync `currentWorkspaceId`| Router
+                CurrentWorkspace -->|render| WorkspaceUI[Workspace UI]
+            end
+        end
+            Providers -->|push new update| Persistence[(Persistence)]
+            Persistence -->|patch workspace| Providers
+    end
+```

@@ -12,7 +12,7 @@ import {
 import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
 import type { UIEvent } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import {
@@ -22,7 +22,6 @@ import {
   useSidebarWidth,
 } from '../../../hooks/use-sidebar-status';
 import type { AllWorkspace } from '../../../shared';
-import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
 import { Pinboard } from './Pinboard';
@@ -39,6 +38,12 @@ import {
   StyledSliderModalBackground,
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector';
+
+const SidebarSwitch = lazy(() =>
+  import('../../affine/sidebar-switch').then(module => ({
+    default: module.SidebarSwitch,
+  }))
+);
 
 export type FavoriteListProps = {
   currentPageId: string | null;
@@ -118,11 +123,13 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         <StyledSliderBar>
           <StyledSidebarHeader>
             <RouteNavigation />
-            <SidebarSwitch
-              visible={sidebarOpen}
-              tooltipContent={t('Collapse sidebar')}
-              testid="sliderBar-arrowButton-collapse"
-            />
+            <Suspense>
+              <SidebarSwitch
+                visible={sidebarOpen}
+                tooltipContent={t('Collapse sidebar')}
+                data-testid="sliderBar-arrowButton-collapse"
+              />
+            </Suspense>
           </StyledSidebarHeader>
 
           <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">

@@ -1,5 +1,6 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import type { AffinePublicWorkspace } from '@affine/workspace/type';
+import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { NextPage } from 'next';
 import type { ReactElement, ReactNode } from 'react';
@@ -11,7 +12,7 @@ export type AffineOfficialWorkspace =
   | LocalWorkspace
   | AffinePublicWorkspace;
 
-export type AllWorkspace = AffineOfficialWorkspace;
+export type AllWorkspace = WorkspaceRegistry[keyof WorkspaceRegistry];
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
   P,
