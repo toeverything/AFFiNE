@@ -1,6 +1,7 @@
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
+import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-blocksuite-workspace-page';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -109,12 +110,13 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   useRouterAndWorkspaceWithPageIdDefense(router);
+  const page = useBlockSuiteWorkspacePage(
+    currentWorkspace.blockSuiteWorkspace,
+    currentPageId
+  );
   if (!router.isReady) {
     return <PageLoading text="Router is loading" />;
-  } else if (
-    !currentPageId ||
-    !currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
-  ) {
+  } else if (!currentPageId || !page) {
     return <PageLoading text="Page is loading" />;
   }
   return <WorkspaceDetail />;
