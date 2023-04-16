@@ -38,7 +38,7 @@ export function useRouterAndWorkspaceWithPageIdDefense(router: NextRouter) {
         },
       });
     }
-  }, [currentPageId, currentWorkspace?.id, router, setCurrentPageId]);
+  }, [currentPageId, currentWorkspace.id, router, setCurrentPageId]);
   useEffect(() => {
     if (fallbackModeRef.current) {
       return;
