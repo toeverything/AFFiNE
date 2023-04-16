@@ -1,16 +1,7 @@
 import type { Page } from '@playwright/test';
 
 export async function waitMarkdownImported(page: Page) {
-  return page.evaluate(async () => {
-    // @ts-expect-error
-    if (window.markdownImported) {
-      return;
-    }
-    await new Promise((resolve, reject) => {
-      setTimeout(() => reject(new Error('markdown:imported timeout')), 3000);
-      document.addEventListener('markdown:imported', resolve);
-    });
-  });
+  await page.waitForSelector('v-line');
 }
 
 export async function newPage(page: Page) {
