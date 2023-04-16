@@ -1,17 +1,53 @@
+import { DebugLogger } from '@affine/debug';
 import { atomWithSyncStorage } from '@affine/jotai';
+import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   rootCurrentEditorAtom,
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
+  rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
+
+import { WorkspacePlugins } from '../plugins';
+
+const logger = new DebugLogger('web:atoms');
 
 // workspace necessary atoms
 /**
  * @deprecated Use `rootCurrentWorkspaceIdAtom` directly instead.
  */
 export const currentWorkspaceIdAtom = rootCurrentWorkspaceIdAtom;
+
+// todo: move this to the workspace package
+rootWorkspacesMetadataAtom.onMount = setAtom => {
+  function createFirst(): RootWorkspaceMetadata[] {
+    const Plugins = Object.values(WorkspacePlugins).sort(
+      (a, b) => a.loadPriority - b.loadPriority
+    );
+
+    return Plugins.flatMap(Plugin => {
+      return Plugin.Events['app:init']?.().map(
+        id =>
+          ({
+            id,
+            flavour: Plugin.flavour,
+          } satisfies RootWorkspaceMetadata)
+      );
+    }).filter((ids): ids is RootWorkspaceMetadata => !!ids);
+  }
+
+  setAtom(metadata => {
+    if (metadata.length === 0) {
+      const newMetadata = createFirst();
+      logger.info('create first workspace', newMetadata);
+      return newMetadata;
+    }
+    return metadata;
+  });
+};
+
 /**
  * @deprecated Use `rootCurrentPageIdAtom` directly instead.
  */

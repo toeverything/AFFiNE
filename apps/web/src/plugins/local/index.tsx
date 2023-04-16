@@ -1,11 +1,13 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { CRUD } from '@affine/workspace/local/crud';
-import type { JotaiStore } from '@affine/workspace/type';
+import {
+  CRUD,
+  saveWorkspaceToLocalStorage,
+} from '@affine/workspace/local/crud';
+import { createIndexedDBProvider } from '@affine/workspace/providers';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
-import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
 import React from 'react';
 
 import { PageNotFoundError } from '../../components/affine/affine-error-eoundary';
@@ -21,24 +23,20 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   Events: {
-    'app:init': async (store: JotaiStore) => {
+    'app:init': () => {
       const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
         nanoid(),
         (_: string) => undefined
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-      const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
-      const workspace = await LocalPlugin.CRUD.get(id);
-      assertExists(workspace);
-      assertEquals(workspace.id, id);
-      store.set(rootWorkspacesMetadataAtom, ws => [
-        ...ws,
-        {
-          id: workspace.id,
-          flavour: WorkspaceFlavour.LOCAL,
-        },
-      ]);
-      logger.debug('create first workspace', workspace);
+      const provider = createIndexedDBProvider(blockSuiteWorkspace);
+      provider.connect();
+      provider.callbacks.add(() => {
+        provider.disconnect();
+      });
+      saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);
+      logger.debug('create first workspace');
+      return [blockSuiteWorkspace.id];
     },
   },
   CRUD,

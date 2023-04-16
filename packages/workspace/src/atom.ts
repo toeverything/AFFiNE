@@ -2,8 +2,7 @@ import { atomWithSyncStorage } from '@affine/jotai';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom, createStore } from 'jotai';
-import { createJSONStorage } from 'jotai/utils';
-import { atomWithStorage } from 'jotai/utils';
+import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 
 export type RootWorkspaceMetadata = {
   id: string;

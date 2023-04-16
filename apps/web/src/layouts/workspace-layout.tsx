@@ -26,7 +26,6 @@ import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
-import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import {
@@ -148,7 +147,6 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       // todo(himself65): this is a hack, we should use a better way to set the language
       setUpLanguage(i18n);
     }, [i18n]);
-    useCreateFirstWorkspace();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const set = useSetAtom(rootWorkspacesMetadataAtom);

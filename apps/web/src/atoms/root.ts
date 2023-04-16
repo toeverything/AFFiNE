@@ -1,4 +1,5 @@
 //#region async atoms that to load the real workspace data
+import { DebugLogger } from '@affine/debug';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -8,6 +9,8 @@ import { atom } from 'jotai';
 
 import { WorkspacePlugins } from '../plugins';
 import type { AllWorkspace } from '../shared';
+
+const logger = new DebugLogger('web:atoms:root');
 
 /**
  * Fetch all workspaces from the Plugin CRUD
@@ -28,6 +31,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
       return CRUD.get(workspace.id);
     })
   );
+  logger.info('workspaces', workspaces);
   workspaces.forEach(workspace => {
     if (workspace === null) {
       console.warn(

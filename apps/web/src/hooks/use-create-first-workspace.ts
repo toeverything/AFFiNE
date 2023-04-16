@@ -1,10 +1,12 @@
 import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { WorkspacePlugins } from '../plugins';
 
+/**
+ * @deprecated DO NOT USE THIS HOOK ANYMORE
+ */
 export function useCreateFirstWorkspace() {
-  const [isReady, setIsReady] = useState(false);
   // may not need use effect at all, right?
   useEffect(() => {
     return rootStore.sub(rootWorkspacesMetadataAtom, () => {
@@ -28,5 +30,4 @@ export function useCreateFirstWorkspace() {
       }
     });
   }, []);
-  return isReady;
 }

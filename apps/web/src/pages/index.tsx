@@ -5,12 +5,11 @@ import React, { Suspense, useEffect } from 'react';
 
 import { PageLoading } from '../components/pure/loading';
 import { useLastWorkspaceId } from '../hooks/affine/use-last-leave-workspace-id';
-import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
 import { useAppHelper, useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
 
-const logger = new DebugLogger('IndexPage');
+const logger = new DebugLogger('index-page');
 
 const IndexPageInner = () => {
   const router = useRouter();
@@ -55,7 +54,6 @@ const IndexPageInner = () => {
         };
       }
     } else {
-      logger.debug('No target workspace. create a new one');
       console.warn('No target workspace. This should not happen in production');
     }
   }, [helper, jumpToPage, jumpToSubPath, lastWorkspaceId, router, workspaces]);
@@ -64,9 +62,8 @@ const IndexPageInner = () => {
 };
 
 const IndexPage: NextPage = () => {
-  useCreateFirstWorkspace();
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PageLoading text="Loading all workspaces" />}>
       <IndexPageInner />
     </Suspense>
   );

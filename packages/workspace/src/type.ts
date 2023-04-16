@@ -146,7 +146,7 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
 export interface AppEvents {
   // event there is no workspace
   // usually used to initialize workspace plugin
-  'app:init': (store: JotaiStore) => Promise<void>;
+  'app:init': () => string[];
   // request to gain access to workspace plugin
   'workspace:access': () => Promise<void>;
   // request to revoke access to workspace plugin
