@@ -35,17 +35,15 @@ export const StyledWrapper = styled('div')(() => {
   };
 });
 
-export const MainContainerWrapper = styled('div')<{ resizing: boolean }>(
-  ({ resizing }) => {
-    return {
-      display: 'flex',
-      flexGrow: 1,
-      position: 'relative',
-      maxWidth: '100vw',
-      overflow: 'auto',
-    };
-  }
-);
+export const MainContainerWrapper = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexGrow: 1,
+    position: 'relative',
+    maxWidth: '100%',
+    overflow: 'auto',
+  };
+});
 
 export const MainContainer = styled('div')(({ theme }) => {
   return {

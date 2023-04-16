@@ -5,11 +5,12 @@ import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren } from 'react';
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 
 import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../atoms';
 import {
@@ -21,12 +22,7 @@ import { PageLoading } from '../components/pure/loading';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useRouterTitle } from '../hooks/use-router-title';
-import {
-  useSidebarFloating,
-  useSidebarResizing,
-  useSidebarStatus,
-  useSidebarWidth,
-} from '../hooks/use-sidebar-status';
+import { useSidebarResizing } from '../hooks/use-sidebar-status';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
@@ -236,22 +232,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const isPublicWorkspace =
     router.pathname.split('/')[1] === 'public-workspace';
 
-  const [resizing] = useSidebarResizing();
-  const [resizingSidebar, setIsResizing] = useSidebarResizing();
-  const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
-  const sidebarFloating = useSidebarFloating();
-  const [sidebarWidth, setSliderWidth] = useSidebarWidth();
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    if (containerRef.current) {
-      const mainWidth =
-        sidebarOpen && !sidebarFloating
-          ? `calc(100% - ${sidebarWidth}px)`
-          : '100%';
-      containerRef.current.style.width = `${mainWidth}px`;
-    }
-  }, [sidebarFloating, sidebarOpen, sidebarWidth]);
+  const [resizingSidebar] = useSidebarResizing();
 
   return (
     <Provider
@@ -263,10 +244,12 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <title>{title}</title>
       </Head>
       <StyledPage resizing={resizingSidebar}>
-        <Suspense fallback={<SidebarSkeleton />}>
-          <WorkspaceSidebarLayout />
-        </Suspense>
-        <MainContainerWrapper resizing={resizing} ref={containerRef}>
+        <NoSsr fallback={<SidebarSkeleton />}>
+          <Suspense fallback={<SidebarSkeleton />}>
+            <WorkspaceSidebarLayout />
+          </Suspense>
+        </NoSsr>
+        <MainContainerWrapper>
           <MainContainer className="main-container">
             {children}
             <StyledToolWrapper>
