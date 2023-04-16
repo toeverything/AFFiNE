@@ -106,14 +106,16 @@ test('Create a new page and search this page', async ({ page }) => {
   await waitMarkdownImported(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
+  // input title and create new page
   await page.keyboard.insertText('test123456');
   const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
   await addNewPage.click();
+
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(300);
   await assertResultList(page, ['test123456']);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);

@@ -52,6 +52,9 @@ export const Footer: React.FC<FooterProps> = ({
           if (block) {
             block.title.insert(query, 0);
           }
+          blockSuiteWorkspace.setPageMeta(newPage.id, {
+            title: query,
+          });
         }
       }}
     >
