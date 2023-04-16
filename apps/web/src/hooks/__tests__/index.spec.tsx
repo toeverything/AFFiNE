@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { PageBlockModel } from '@blocksuite/blocks';
@@ -40,9 +40,9 @@ import {
 } from '../use-recent-views';
 import {
   REDIRECT_TIMEOUT,
-  useSyncRouterWithCurrentWorkspaceAndPage,
-} from '../use-sync-router-with-current-workspace-and-page';
-import { useWorkspaces, useWorkspacesHelper } from '../use-workspaces';
+  useSyncRouterWithCurrentPageId,
+} from '../use-sync-router-with-current-page-id';
+import { useAppHelper, useWorkspaces } from '../use-workspaces';
 
 vi.mock(
   '../../components/blocksuite/header/editor-mode-switch/CustomLottie',
@@ -167,7 +167,7 @@ describe('usePageMetas', async () => {
 describe('useWorkspacesHelper', () => {
   test('basic', async () => {
     const { ProviderWrapper, store } = await getJotaiContext();
-    const workspaceHelperHook = renderHook(() => useWorkspacesHelper(), {
+    const workspaceHelperHook = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
     const id = await workspaceHelperHook.result.current.createLocalWorkspace(
@@ -198,7 +198,7 @@ describe('useWorkspaces', () => {
 
   test('mutation', async () => {
     const { ProviderWrapper, store } = await getJotaiContext();
-    const { result } = renderHook(() => useWorkspacesHelper(), {
+    const { result } = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
     await result.current.createLocalWorkspace('test');
@@ -219,7 +219,7 @@ describe('useWorkspaces', () => {
 describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
   test('from "/"', async () => {
     const { ProviderWrapper, store } = await getJotaiContext();
-    const mutationHook = renderHook(() => useWorkspacesHelper(), {
+    const mutationHook = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
     const id = await mutationHook.result.current.createLocalWorkspace('test0');
@@ -230,22 +230,19 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
     await routerHook.result.current.push('/');
     routerHook.rerender();
     expect(routerHook.result.current.asPath).toBe('/');
-    renderHook(
-      ({ router }) => useSyncRouterWithCurrentWorkspaceAndPage(router),
-      {
-        wrapper: ProviderWrapper,
-        initialProps: {
-          router: routerHook.result.current,
-        },
-      }
-    );
+    renderHook(({ router }) => useSyncRouterWithCurrentPageId(router), {
+      wrapper: ProviderWrapper,
+      initialProps: {
+        router: routerHook.result.current,
+      },
+    });
 
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });
 
   test('from empty workspace', async () => {
     const { ProviderWrapper, store } = await getJotaiContext();
-    const mutationHook = renderHook(() => useWorkspacesHelper(), {
+    const mutationHook = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
     const id = await mutationHook.result.current.createLocalWorkspace('test0');
@@ -256,15 +253,12 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
     await routerHook.result.current.push(`/workspace/${id}/not_exist`);
     routerHook.rerender();
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/not_exist`);
-    renderHook(
-      ({ router }) => useSyncRouterWithCurrentWorkspaceAndPage(router),
-      {
-        wrapper: ProviderWrapper,
-        initialProps: {
-          router: routerHook.result.current,
-        },
-      }
-    );
+    renderHook(({ router }) => useSyncRouterWithCurrentPageId(router), {
+      wrapper: ProviderWrapper,
+      initialProps: {
+        router: routerHook.result.current,
+      },
+    });
 
     await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT + 50));
 
@@ -273,7 +267,7 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
 
   test('from incorrect "/workspace/[workspaceId]/[pageId]"', async () => {
     const { ProviderWrapper, store } = await getJotaiContext();
-    const mutationHook = renderHook(() => useWorkspacesHelper(), {
+    const mutationHook = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
     const id = await mutationHook.result.current.createLocalWorkspace('test0');
@@ -285,15 +279,12 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
     await routerHook.result.current.push(`/workspace/${id}/not_exist`);
     routerHook.rerender();
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/not_exist`);
-    renderHook(
-      ({ router }) => useSyncRouterWithCurrentWorkspaceAndPage(router),
-      {
-        wrapper: ProviderWrapper,
-        initialProps: {
-          router: routerHook.result.current,
-        },
-      }
-    );
+    renderHook(({ router }) => useSyncRouterWithCurrentPageId(router), {
+      wrapper: ProviderWrapper,
+      initialProps: {
+        router: routerHook.result.current,
+      },
+    });
 
     await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT + 50));
 
@@ -306,7 +297,7 @@ describe('useRecentlyViewed', () => {
     const { ProviderWrapper, store } = await getJotaiContext();
     const workspaceId = blockSuiteWorkspace.id;
     const pageId = 'page0';
-    store.set(jotaiWorkspacesAtom, [
+    store.set(rootWorkspacesMetadataAtom, [
       {
         id: workspaceId,
         flavour: WorkspaceFlavour.LOCAL,

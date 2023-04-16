@@ -8,7 +8,7 @@ import {
   setLoginStorage,
   SignMethod,
 } from '@affine/workspace/affine/login';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { AffineWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -81,20 +81,20 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       if (response) {
         setLoginStorage(response);
         const user = parseIdToken(response.token);
-        jotaiStore.set(currentAffineUserAtom, user);
+        rootStore.set(currentAffineUserAtom, user);
       } else {
         toast('Login failed');
       }
     },
     'workspace:revoke': async () => {
-      jotaiStore.set(jotaiWorkspacesAtom, workspaces =>
+      rootStore.set(rootWorkspacesMetadataAtom, workspaces =>
         workspaces.filter(
           workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
         )
       );
       storage.removeItem(kAffineLocal);
       clearLoginStorage();
-      jotaiStore.set(currentAffineUserAtom, null);
+      rootStore.set(currentAffineUserAtom, null);
     },
   },
   CRUD: {

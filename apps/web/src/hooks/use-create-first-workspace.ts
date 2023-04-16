@@ -1,13 +1,14 @@
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
-import { useEffect } from 'react';
+import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { useEffect, useState } from 'react';
 
 import { WorkspacePlugins } from '../plugins';
 
 export function useCreateFirstWorkspace() {
+  const [isReady, setIsReady] = useState(false);
   // may not need use effect at all, right?
   useEffect(() => {
-    return jotaiStore.sub(jotaiWorkspacesAtom, () => {
-      const workspaces = jotaiStore.get(jotaiWorkspacesAtom);
+    return rootStore.sub(rootWorkspacesMetadataAtom, () => {
+      const workspaces = rootStore.get(rootWorkspacesMetadataAtom);
 
       if (workspaces.length === 0) {
         createFirst();
@@ -22,9 +23,10 @@ export function useCreateFirstWorkspace() {
         );
 
         for (const Plugin of Plugins) {
-          await Plugin.Events['app:first-init']?.();
+          await Plugin.Events['app:init']?.(rootStore);
         }
       }
     });
   }, []);
+  return isReady;
 }

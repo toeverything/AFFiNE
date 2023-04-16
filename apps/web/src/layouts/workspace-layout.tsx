@@ -2,20 +2,20 @@ import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import {
+  rootCurrentWorkspaceIdAtom,
+  rootStore,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import type { FC, PropsWithChildren } from 'react';
+import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 
-import {
-  currentWorkspaceIdAtom,
-  openQuickSearchModalAtom,
-  openWorkspacesModalAtom,
-} from '../atoms';
+import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
@@ -35,6 +35,8 @@ import {
   useSidebarStatus,
   useSidebarWidth,
 } from '../hooks/use-sidebar-status';
+import { useSyncRouterWithCurrentPageId } from '../hooks/use-sync-router-with-current-page-id';
+import { useSyncRouterWithCurrentWorkspaceId } from '../hooks/use-sync-router-with-current-workspace-id';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
@@ -114,6 +116,30 @@ const logger = new DebugLogger('workspace-layout');
 const affineGlobalChannel = createAffineGlobalChannel(
   WorkspacePlugins[WorkspaceFlavour.AFFINE].CRUD
 );
+
+export const AllWorkspaceContext = ({
+  children,
+}: PropsWithChildren): ReactElement => {
+  useWorkspaces();
+  return <>{children}</>;
+};
+
+export const CurrentWorkspaceContext = ({
+  children,
+}: PropsWithChildren): ReactElement => {
+  const router = useRouter();
+  const workspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+  useSyncRouterWithCurrentWorkspaceId(router);
+  useSyncRouterWithCurrentPageId(router);
+  if (!router.isReady) {
+    return <PageLoading text="Router is loading" />;
+  }
+  if (!workspaceId) {
+    return <PageLoading text="Finding workspace id" />;
+  }
+  return <>{children}</>;
+};
+
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     const { i18n } = useTranslation();
@@ -123,9 +149,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       setUpLanguage(i18n);
     }, [i18n]);
     useCreateFirstWorkspace();
-    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-    const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
-    const set = useSetAtom(jotaiWorkspacesAtom);
+    const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+    const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
+    const set = useSetAtom(rootWorkspacesMetadataAtom);
     useEffect(() => {
       logger.info('mount');
       const controller = new AbortController();
@@ -134,7 +160,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         .map(({ CRUD }) => CRUD.list);
 
       async function fetch() {
-        const jotaiWorkspaces = jotaiStore.get(jotaiWorkspacesAtom);
+        const jotaiWorkspaces = rootStore.get(rootWorkspacesMetadataAtom);
         const items = [];
         for (const list of lists) {
           try {
@@ -180,10 +206,16 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     return (
       <>
         {/* fixme(himself65): don't re-render whole modals */}
-        <ModalProvider key={currentWorkspaceId} />
-        <Suspense fallback={<PageLoading />}>
-          <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
-        </Suspense>
+        <AllWorkspaceContext>
+          <CurrentWorkspaceContext>
+            <ModalProvider key={currentWorkspaceId} />
+          </CurrentWorkspaceContext>
+        </AllWorkspaceContext>
+        <CurrentWorkspaceContext>
+          <Suspense fallback={<PageLoading text="Finding current workspace" />}>
+            <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+          </Suspense>
+        </CurrentWorkspaceContext>
       </>
     );
   };

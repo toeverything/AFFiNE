@@ -1,5 +1,7 @@
+import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
+import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
@@ -7,14 +9,12 @@ import { useCallback, useEffect } from 'react';
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
-import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { usePageMeta, usePageMetaHelper } from '../../../hooks/use-page-meta';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
-import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
-import { WorkspaceLayout } from '../../../layouts';
+import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspacePlugins } from '../../../plugins';
 import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 
@@ -32,7 +32,7 @@ function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
 const WorkspaceDetail: React.FC = () => {
   const router = useRouter();
   const { openPage } = useRouterHelper(router);
-  const [currentPageId] = useCurrentPageId();
+  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace ?? null;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
@@ -80,7 +80,7 @@ const WorkspaceDetail: React.FC = () => {
     return <PageLoading />;
   }
   if (!currentPageId) {
-    return <PageLoading />;
+    return <PageLoading text="Loading page." />;
   }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
@@ -104,14 +104,8 @@ const WorkspaceDetail: React.FC = () => {
 
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
-  useSyncRouterWithCurrentWorkspaceAndPage(router);
   if (!router.isReady) {
-    return <PageLoading />;
-  } else if (
-    typeof router.query.pageId !== 'string' ||
-    typeof router.query.workspaceId !== 'string'
-  ) {
-    throw new Error('Invalid router query');
+    return <PageLoading text="Router is loading" />;
   }
   return <WorkspaceDetail />;
 };

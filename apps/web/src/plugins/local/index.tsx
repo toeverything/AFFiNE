@@ -1,7 +1,8 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { CRUD } from '@affine/workspace/local/crud';
+import type { JotaiStore } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
@@ -20,7 +21,7 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   Events: {
-    'app:first-init': async () => {
+    'app:init': async (store: JotaiStore) => {
       const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
         nanoid(),
         (_: string) => undefined
@@ -30,8 +31,7 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
       const workspace = await LocalPlugin.CRUD.get(id);
       assertExists(workspace);
       assertEquals(workspace.id, id);
-      // todo: use a better way to set initial workspace
-      jotaiStore.set(jotaiWorkspacesAtom, ws => [
+      store.set(rootWorkspacesMetadataAtom, ws => [
         ...ws,
         {
           id: workspace.id,

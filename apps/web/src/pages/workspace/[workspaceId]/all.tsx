@@ -15,8 +15,8 @@ import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
-import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
-import { WorkspaceLayout } from '../../../layouts';
+import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-router-with-current-workspace-id';
+import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspacePlugins } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 import { ensureRootPinboard } from '../../../utils';
@@ -26,7 +26,7 @@ const AllPage: NextPageWithLayout = () => {
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
-  useSyncRouterWithCurrentWorkspace(router);
+  useSyncRouterWithCurrentWorkspaceId(router);
   useEffect(() => {
     if (!router.isReady) {
       return;
@@ -56,7 +56,7 @@ const AllPage: NextPageWithLayout = () => {
           });
           jumpToPage(currentWorkspace.id, pageId);
         }
-        // no matter workspace is empty, ensure the root pinboard exists
+        // no matter the workspace is empty, ensure the root pinboard exists
         ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
       };
       provider.callbacks.add(callback);

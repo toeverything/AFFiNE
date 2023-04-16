@@ -7,7 +7,7 @@ import { PageLoading } from '../components/pure/loading';
 import { useLastWorkspaceId } from '../hooks/affine/use-last-leave-workspace-id';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
-import { useWorkspaces } from '../hooks/use-workspaces';
+import { useAppHelper, useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
 
 const logger = new DebugLogger('IndexPage');
@@ -17,6 +17,7 @@ const IndexPageInner = () => {
   const { jumpToPage, jumpToSubPath } = useRouterHelper(router);
   const workspaces = useWorkspaces();
   const lastWorkspaceId = useLastWorkspaceId();
+  const helper = useAppHelper();
 
   useEffect(() => {
     if (!router.isReady) {
@@ -32,13 +33,12 @@ const IndexPageInner = () => {
         targetWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
       if (pageId) {
         logger.debug('Found target workspace. Jump to page', pageId);
-        jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
-        return;
+        void jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
       } else {
         const clearId = setTimeout(() => {
           dispose.dispose();
           logger.debug('Found target workspace. Jump to all pages');
-          jumpToSubPath(
+          void jumpToSubPath(
             targetWorkspace.id,
             WorkspaceSubPath.ALL,
             RouteLogic.REPLACE
@@ -47,7 +47,7 @@ const IndexPageInner = () => {
         const dispose =
           targetWorkspace.blockSuiteWorkspace.slots.pageAdded.once(pageId => {
             clearTimeout(clearId);
-            jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
+            void jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
           });
         return () => {
           clearTimeout(clearId);
@@ -55,11 +55,10 @@ const IndexPageInner = () => {
         };
       }
     } else {
-      logger.debug('No target workspace. jump to all pages');
-      // fixme: should create new workspace
-      jumpToSubPath('ERROR', WorkspaceSubPath.ALL, RouteLogic.REPLACE);
+      logger.debug('No target workspace. create a new one');
+      console.warn('No target workspace. This should not happen in production');
     }
-  }, [jumpToPage, jumpToSubPath, lastWorkspaceId, router, workspaces]);
+  }, [helper, jumpToPage, jumpToSubPath, lastWorkspaceId, router, workspaces]);
 
   return <PageLoading key="IndexPageInfinitePageLoading" />;
 };

@@ -16,7 +16,7 @@ import {
   currentWorkspaceAtom,
   useCurrentWorkspace,
 } from '../../hooks/current/use-current-workspace';
-import { useWorkspacesHelper } from '../../hooks/use-workspaces';
+import { useAppHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
 import type { BlockSuiteWorkspace } from '../../shared';
 import type { PinboardProps } from '../pure/workspace-slider-bar/Pinboard';
@@ -42,7 +42,7 @@ const initPinBoard = async () => {
   //      - pinboard2
   //    - noPinboardPage
 
-  const mutationHook = renderHook(() => useWorkspacesHelper(), {
+  const mutationHook = renderHook(() => useAppHelper(), {
     wrapper: ProviderWrapper,
   });
   const rootPageIds = ['hasPinboardPage', 'noPinboardPage'];

@@ -28,7 +28,7 @@ export const WorkspacePlugins = {
     flavour: WorkspaceFlavour.PUBLIC,
     loadPriority: LoadPriority.LOW,
     Events: {
-      'app:first-init': async () => {},
+      'app:init': async () => {},
     },
     // todo: implement this
     CRUD: {
