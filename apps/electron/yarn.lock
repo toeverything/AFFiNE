@@ -115,7 +115,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/electron@workspace:."
   dependencies:
-    "@affine/octobase-node": "workspace:*"
     "@electron-forge/cli": ^6.1.1
     "@electron-forge/core": ^6.1.1
     "@electron-forge/core-utils": ^6.1.1
@@ -192,7 +191,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/octobase-node@workspace:*, @affine/octobase-node@workspace:../../packages/octobase-node":
+"@affine/octobase-node@workspace:../../packages/octobase-node":
   version: 0.0.0-use.local
   resolution: "@affine/octobase-node@workspace:../../packages/octobase-node"
   dependencies:

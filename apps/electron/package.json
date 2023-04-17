@@ -1,6 +1,5 @@
 {
   "name": "@affine/electron",
-  "productName": "AFFiNE",
   "private": true,
   "version": "0.5.3",
   "author": "affine",
@@ -14,11 +13,11 @@
     "dev": "cross-env NODE_ENV=development node scripts/dev.mjs",
     "prod": "cross-env NODE_ENV=production node scripts/dev.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
+    "package": "electron-forge package",
     "make": "electron-forge make",
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
-    "build:octobase-node": "yarn workspace @affine/octobase-node build",
     "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs"
   },
   "config": {
@@ -26,7 +25,6 @@
   },
   "main": "./dist/layers/main/index.js",
   "devDependencies": {
-    "@affine/octobase-node": "workspace:*",
     "@electron-forge/cli": "^6.1.1",
     "@electron-forge/core": "^6.1.1",
     "@electron-forge/core-utils": "^6.1.1",
