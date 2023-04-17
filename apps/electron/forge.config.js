@@ -55,6 +55,7 @@ module.exports = {
         setupIcon: icoPath,
         platforms: ['darwin', 'linux', 'win32'],
       },
+      platforms: ['darwin'],
     },
     {
       name: '@electron-forge/maker-squirrel',
@@ -62,6 +63,7 @@ module.exports = {
         name: 'AFFiNE',
         setupIcon: icoPath,
         // loadingGif: './resources/icons/loading.gif',
+        loadingGif: './resources/loading.gif',
       },
     },
   ],

@@ -2,6 +2,7 @@ import './security-restrictions';
 
 import { app } from 'electron';
 import path from 'path';
+import Update from 'update-electron-app';
 
 import { registerHandlers } from './app-state';
 import { restoreOrCreateWindow } from './main-window';
@@ -16,6 +17,13 @@ if (process.defaultApp) {
   }
 } else {
   app.setAsDefaultProtocolClient('affine');
+}
+const isCanary = process.env.BUILD_TYPE === 'canary';
+if (!isCanary) {
+  Update({
+    updateInterval: '1 hour',
+    notifyUser: true,
+  });
 }
 /**
  * Prevent multiple instances
