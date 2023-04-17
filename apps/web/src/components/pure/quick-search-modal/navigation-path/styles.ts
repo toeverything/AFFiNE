@@ -55,12 +55,7 @@ export const StyledNavPathExtendContainer = styled('div')<{ show: boolean }>(
       transition: 'top .15s',
       fontSize: theme.font.sm,
       color: theme.colors.secondaryTextColor,
-      paddingTop: '46px',
-      paddingRight: '12px',
-
-      '.tree-container': {
-        padding: '0 12px 0 15px',
-      },
+      padding: '46px 12px 0 15px',
     };
   }
 );

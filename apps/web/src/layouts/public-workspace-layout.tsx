@@ -1,4 +1,3 @@
-import { ListSkeleton } from '@affine/component';
 import type { AffinePublicWorkspace } from '@affine/workspace/type';
 import { useAtom } from 'jotai';
 import Head from 'next/head';
@@ -7,7 +6,6 @@ import type React from 'react';
 import { lazy, Suspense } from 'react';
 
 import { openQuickSearchModalAtom } from '../atoms';
-import { StyledTableContainer } from '../components/blocksuite/block-suite-page-list/page-list/styles';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { MainContainer, StyledPage } from './styles';
 
@@ -61,14 +59,6 @@ export const PublicWorkspaceLayout: React.FC<
   React.PropsWithChildren
 > = props => {
   return (
-    <Suspense
-      fallback={
-        <StyledTableContainer>
-          <ListSkeleton />
-        </StyledTableContainer>
-      }
-    >
-      <PublicWorkspaceLayoutInner>{props.children}</PublicWorkspaceLayoutInner>
-    </Suspense>
+    <PublicWorkspaceLayoutInner>{props.children}</PublicWorkspaceLayoutInner>
   );
 };

@@ -65,7 +65,10 @@ export const HelpIsland = ({
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
-                  window.open('https://affine.pro', '_blank');
+                  window.open(
+                    'https://github.com/toeverything/AFFiNE/releases',
+                    '_blank'
+                  );
                 }}
               >
                 <NewIcon />

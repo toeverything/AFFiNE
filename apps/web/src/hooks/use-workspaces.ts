@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -18,10 +18,13 @@ export function useWorkspaces(): AllWorkspace[] {
 
 const logger = new DebugLogger('use-workspaces');
 
-export function useWorkspacesHelper() {
+/**
+ * This hook has the permission to all workspaces. Be careful when using it.
+ */
+export function useAppHelper() {
   const workspaces = useWorkspaces();
-  const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
-  const set = useSetAtom(jotaiWorkspacesAtom);
+  const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
+  const set = useSetAtom(rootWorkspacesMetadataAtom);
   return {
     createWorkspacePage: useCallback(
       (workspaceId: string, pageId: string) => {

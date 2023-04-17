@@ -14,12 +14,12 @@ async function createWindow() {
 
   const browserWindow = new BrowserWindow({
     titleBarStyle: isMacOS() ? 'hiddenInset' : 'default',
-    trafficLightPosition: { x: 20, y: 18 },
+    trafficLightPosition: { x: 24, y: 18 },
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
     minWidth: 640,
-    transparent: true,
+    transparent: isMacOS(),
     visualEffectState: 'active',
     vibrancy: 'under-window',
     height: mainWindowState.height,

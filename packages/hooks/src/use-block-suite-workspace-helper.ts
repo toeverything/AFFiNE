@@ -1,4 +1,4 @@
-import type { Page } from '@blocksuite/store';
+import type { Page, Workspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import {
   getMilestones,
@@ -7,11 +7,7 @@ import {
 } from '@toeverything/y-indexeddb';
 import { useMemo } from 'react';
 
-import type { BlockSuiteWorkspace } from '../shared';
-
-export function useBlockSuiteWorkspaceHelper(
-  blockSuiteWorkspace: BlockSuiteWorkspace | null
-) {
+export function useBlockSuiteWorkspaceHelper(blockSuiteWorkspace: Workspace) {
   return useMemo(
     () => ({
       createPage: (pageId: string, parentId?: string): Page => {

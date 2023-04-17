@@ -1,21 +1,17 @@
 # AFFiNE Electron App
 
-# ⚠️ NOTE ⚠️
-
-Due to PNPM related issues, this project is currently using **yarn 3**.
-See https://github.com/electron/forge/issues/2633
-
 ## Development
 
-```
-# in project root, start web app at :8080
+To run AFFiNE Desktop Client Application locally, run the following commands:
+
+```sh
+# in repo root
+yarn install
 yarn dev
 
-# build octobase-node
-yarn workspace @affine/octobase-node build
-
-# in /apps/electron, start electron app
-yarn dev
+# in apps/electron
+yarn generate-assets
+yarn dev # or yarn prod for production build
 ```
 
 ## Credits

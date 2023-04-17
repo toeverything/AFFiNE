@@ -7,11 +7,11 @@ import {
   MoreHorizontalIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useRouter } from 'next/router';
 import type { MouseEvent } from 'react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 
-import { usePageMeta } from '../../../../hooks/use-page-meta';
 import type { PinboardNode } from '../../../../hooks/use-pinboard-data';
 import { usePinboardData } from '../../../../hooks/use-pinboard-data';
 import { useRouterHelper } from '../../../../hooks/use-router-helper';
@@ -33,7 +33,7 @@ export const NavigationPath = ({
   pageId?: string;
   onJumpToPage?: (pageId: string) => void;
 }) => {
-  const metas = usePageMeta(blockSuiteWorkspace);
+  const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -103,7 +103,7 @@ export const NavigationPath = ({
         >
           <IconButton
             data-testid="navigation-path-expand-btn"
-            size="middle"
+            size="small"
             className="collapse-btn"
             onClick={() => {
               setOpenExtend(!openExtend);
@@ -158,9 +158,7 @@ const NavigationPathExtendPanel = ({
       show={open}
       data-testid="navigation-path-expand-panel"
     >
-      <div className="tree-container">
-        <TreeView data={data} indent={10} disableCollapse={true} />
-      </div>
+      <TreeView data={data} indent={10} disableCollapse={true} />
     </StyledNavPathExtendContainer>
   );
 };

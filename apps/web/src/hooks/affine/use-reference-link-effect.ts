@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 import { currentEditorAtom } from '../../atoms';
 
-export function useReferenceLink(props?: {
+export function useReferenceLinkEffect(props?: {
   pageLinkClicked?: (params: { pageId: string }) => void;
   subpageLinked?: (params: { pageId: string }) => void;
   subpageUnlinked?: (params: { pageId: string }) => void;

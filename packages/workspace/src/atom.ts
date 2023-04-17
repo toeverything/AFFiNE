@@ -1,18 +1,49 @@
 import { atomWithSyncStorage } from '@affine/jotai';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
-import { createStore } from 'jotai/index';
+import type { EditorContainer } from '@blocksuite/editor';
+import { atom, createStore } from 'jotai';
+import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 
-export type JotaiWorkspace = {
+export type RootWorkspaceMetadata = {
   id: string;
   flavour: WorkspaceFlavour;
 };
+// #region root atoms
+// root primitive atom that stores the necessary data for the whole app
+// be careful when you use this atom,
+// it should be used only in the root component
 
-// root primitive atom that stores the list of workspaces which could be used in the app
-// if a workspace is not in this list, it should not be used in the app
-export const jotaiWorkspacesAtom = atomWithSyncStorage<JotaiWorkspace[]>(
+/**
+ * root workspaces atom
+ * this atom stores the metadata of all workspaces,
+ * which is `id` and `flavour`, that is enough to load the real workspace data
+ */
+export const rootWorkspacesMetadataAtom = atomWithSyncStorage<
+  RootWorkspaceMetadata[]
+>(
+  // don't change this key,
+  // otherwise it will cause the data loss in the production
   'jotai-workspaces',
   []
 );
 
-// global jotai store, which is used to store all the atoms
-export const jotaiStore = createStore();
+// two more atoms to store the current workspace and page
+export const rootCurrentWorkspaceIdAtom = atomWithStorage<string | null>(
+  'root-current-workspace-id',
+  null,
+  createJSONStorage(() => sessionStorage)
+);
+export const rootCurrentPageIdAtom = atomWithStorage<string | null>(
+  'root-current-page-id',
+  null,
+  createJSONStorage(() => sessionStorage)
+);
+
+// current editor atom, each app should have only one editor in the same time
+export const rootCurrentEditorAtom = atom<Readonly<EditorContainer> | null>(
+  null
+);
+//#endregion
+
+// global store
+export const rootStore = createStore();

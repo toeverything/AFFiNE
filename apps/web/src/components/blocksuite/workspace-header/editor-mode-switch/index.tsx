@@ -1,9 +1,9 @@
 import { assertExists } from '@blocksuite/store';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import { usePageMeta } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import { StyledEditorModeSwitch } from './style';
@@ -24,7 +24,7 @@ export const EditorModeSwitch = ({
   const currentMode =
     useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
   const setMode = useSetAtom(workspacePreferredModeAtom);
-  const pageMeta = usePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   assertExists(pageMeta);

@@ -9,7 +9,6 @@ import {
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { affineAuth } from '../../plugins/affine';
@@ -18,7 +17,6 @@ import { useTransformWorkspace } from '../use-transform-workspace';
 export function useOnTransformWorkspace() {
   const transformWorkspace = useTransformWorkspace();
   const setUser = useSetAtom(currentAffineUserAtom);
-  const router = useRouter();
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -35,13 +33,6 @@ export function useOnTransformWorkspace() {
         }
       }
       const workspaceId = await transformWorkspace(from, to, workspace);
-      await router.replace({
-        pathname: `/workspace/[workspaceId]/setting`,
-        query: {
-          ...router.query,
-          workspaceId,
-        },
-      });
       window.dispatchEvent(
         new CustomEvent('affine-workspace:transform', {
           detail: {
@@ -53,6 +44,6 @@ export function useOnTransformWorkspace() {
         })
       );
     },
-    [router, setUser, transformWorkspace]
+    [setUser, transformWorkspace]
   );
 }

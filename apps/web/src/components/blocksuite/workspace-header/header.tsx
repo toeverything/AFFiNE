@@ -3,14 +3,20 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import {
+  forwardRef,
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   useSidebarFloating,
   useSidebarStatus,
 } from '../../../hooks/use-sidebar-status';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import EditPage from './header-right-items/EditPage';
 import { HeaderShareMenu } from './header-right-items/ShareMenu';
@@ -26,6 +32,12 @@ import {
   StyledHeaderRightSide,
 } from './styles';
 import { OSWarningMessage, shouldShowWarning } from './utils';
+
+const SidebarSwitch = lazy(() =>
+  import('../../affine/sidebar-switch').then(module => ({
+    default: module.SidebarSwitch,
+  }))
+);
 
 const BrowserWarning = ({
   show,
@@ -152,11 +164,13 @@ export const Header = forwardRef<
         data-testid="editor-header-items"
         data-tauri-drag-region
       >
-        <SidebarSwitch
-          visible={!open}
-          tooltipContent={t('Expand sidebar')}
-          testid="sliderBar-arrowButton-expand"
-        />
+        <Suspense>
+          <SidebarSwitch
+            visible={!open}
+            tooltipContent={t('Expand sidebar')}
+            data-testid="sliderBar-arrowButton-expand"
+          />
+        </Suspense>
 
         {props.children}
         <StyledHeaderRightSide>

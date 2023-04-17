@@ -57,6 +57,7 @@ export const isExpired = (
 };
 
 export const setLoginStorage = (login: LoginResponse) => {
+  loginResponseSchema.parse(login);
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({

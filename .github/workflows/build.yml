@@ -150,6 +150,10 @@ jobs:
           name: storybook
           path: ./packages/component/storybook-static
 
+      - name: Wait for Octobase Ready
+        run: |
+          node ./scripts/wait-3000-healthz.mjs
+
       - name: Run playwright tests
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:

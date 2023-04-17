@@ -29,6 +29,10 @@ console.log('build with following dir', {
 await cleanup();
 echo('Clean up done');
 
+if (process.platform === 'win32') {
+  $.shell = 'powershell.exe';
+  $.prefix = '';
+}
 // step 1: build web (nextjs) dist
 cd(repoRootDir);
 await $`yarn add`;

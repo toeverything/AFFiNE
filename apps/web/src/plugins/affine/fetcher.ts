@@ -1,5 +1,5 @@
 import { getLoginStorage } from '@affine/workspace/affine/login';
-import { jotaiStore } from '@affine/workspace/atom';
+import { rootStore } from '@affine/workspace/atom';
 import type { AffineWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -43,7 +43,7 @@ export const fetcher = async (
       if (typeof key !== 'string') {
         throw new TypeError('key must be a string');
       }
-      const workspaces = await jotaiStore.get(workspacesAtom);
+      const workspaces = await rootStore.get(workspacesAtom);
       const workspace = workspaces.find(({ id }) => id === workspaceId);
       assertExists(workspace);
       const storage = await workspace.blockSuiteWorkspace.blobs;

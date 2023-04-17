@@ -1,5 +1,5 @@
 import { openDB } from 'idb';
-import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
+import type { IDBPDatabase } from 'idb/build/entry';
 import {
   applyUpdate,
   diffUpdate,
@@ -10,10 +10,22 @@ import {
   UndoManager,
 } from 'yjs';
 
+import type {
+  BlockSuiteBinaryDB,
+  IndexedDBProvider,
+  OldYjsDB,
+  WorkspaceMilestone,
+} from './shared';
+import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
+
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
+
+export function setMergeCount(count: number) {
+  mergeCount = count;
+}
 
 async function databaseExists(name: string): Promise<boolean> {
   return new Promise(resolve => {
@@ -78,62 +90,11 @@ export class EarlyDisconnectError extends Error {
   }
 }
 
-export function setMergeCount(count: number) {
-  mergeCount = count;
-}
-
-export const dbVersion = 1;
-
-export function upgradeDB(db: IDBPDatabase<BlockSuiteBinaryDB>) {
-  db.createObjectStore('workspace', { keyPath: 'id' });
-  db.createObjectStore('milestone', { keyPath: 'id' });
-}
-
-export interface IndexedDBProvider {
-  connect: () => void;
-  disconnect: () => void;
-  cleanup: () => void;
-  whenSynced: Promise<void>;
-}
-
-export type UpdateMessage = {
-  timestamp: number;
-  update: Uint8Array;
-};
-
-export type WorkspacePersist = {
-  id: string;
-  updates: UpdateMessage[];
-};
-
-export type WorkspaceMilestone = {
-  id: string;
-  milestone: Record<string, Uint8Array>;
-};
-
-export interface BlockSuiteBinaryDB extends DBSchema {
-  workspace: {
-    key: string;
-    value: WorkspacePersist;
-  };
-  milestone: {
-    key: string;
-    value: WorkspaceMilestone;
-  };
-}
-
-export interface OldYjsDB extends DBSchema {
-  updates: {
-    key: number;
-    value: Uint8Array;
-  };
-}
-
 export const markMilestone = async (
   id: string,
   doc: Doc,
   name: string,
-  dbName = 'affine-local'
+  dbName = DEFAULT_DB_NAME
 ): Promise<void> => {
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
@@ -159,7 +120,7 @@ export const markMilestone = async (
 
 export const getMilestones = async (
   id: string,
-  dbName = 'affine-local'
+  dbName = DEFAULT_DB_NAME
 ): Promise<null | WorkspaceMilestone['milestone']> => {
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
@@ -180,7 +141,7 @@ let allDb: IDBDatabaseInfo[];
 export const createIndexedDBProvider = (
   id: string,
   doc: Doc,
-  dbName = 'affine-local'
+  dbName = DEFAULT_DB_NAME
 ): IndexedDBProvider => {
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
@@ -356,7 +317,12 @@ export const createIndexedDBProvider = (
       if (!data) {
         await db.put('workspace', {
           id,
-          updates: [],
+          updates: [
+            {
+              timestamp: Date.now(),
+              update: encodeStateAsUpdate(doc),
+            },
+          ],
         });
       } else {
         const updates = data.updates.map(({ update }) => update);
@@ -406,3 +372,6 @@ export const createIndexedDBProvider = (
 
   return apis;
 };
+
+export * from './shared';
+export * from './utils';
