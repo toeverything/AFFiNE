@@ -64,13 +64,6 @@ module.exports = {
         // loadingGif: './resources/icons/loading.gif',
       },
     },
-    // {
-    //   name: 'electron-forge-maker-appimage',
-    //   platforms: ['linux'],
-    //   config: {
-    //     mimeType: ['x-scheme-handler/affine'],
-    //   },
-    // },
   ],
   hooks: {
     readPackageJson: async (_, packageJson) => {

@@ -1,7 +1,6 @@
 import * as os from 'node:os';
 import path from 'node:path';
 
-import { Storage } from '@affine/octobase-node';
 import { app, shell } from 'electron';
 import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import fs from 'fs-extra';
@@ -16,16 +15,7 @@ fs.ensureDirSync(AFFINE_ROOT);
 
 const logger = console;
 
-// todo: rethink this
-export const appState = {
-  storage: new Storage(path.join(AFFINE_ROOT, 'test.db')),
-};
-
 export const registerHandlers = () => {
-  ipcMain.handle('octo:workspace-sync', async (_, id) => {
-    return appState.storage.sync(id, '');
-  });
-
   ipcMain.handle('ui:theme-change', async (_, theme) => {
     nativeTheme.themeSource = theme;
     logger.info('theme change', theme);

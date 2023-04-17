@@ -70,19 +70,6 @@ jobs:
         with:
           electron-workspace-install: true
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: add arm64 target
-        if: matrix.arch == 'arm64'
-        run: rustup target add aarch64-apple-darwin
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.arch }}
-          workspaces: './packages/octobase-node -> target'
-
       - name: Signing By Apple Developer ID
         uses: apple-actions/import-codesign-certs@v2
         with:
@@ -130,14 +117,6 @@ jobs:
         with:
           electron-workspace-install: true
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './packages/octobase-node -> target'
-
       - name: make build
         run: yarn make-windows-x64
         working-directory: apps/electron
@@ -181,14 +160,6 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-workspace-install: true
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './packages/octobase-node -> target'
 
       - name: make build
         run: yarn make
