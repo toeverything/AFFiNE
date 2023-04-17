@@ -69,6 +69,36 @@ const createAffineWebSocketProvider = (
   return apis;
 };
 
+class CallbackSet extends Set<() => void> {
+  #ready = false;
+
+  get ready(): boolean {
+    return this.#ready;
+  }
+
+  set ready(v: boolean) {
+    this.#ready = v;
+  }
+
+  add(cb: () => void) {
+    if (this.ready) {
+      cb();
+      return this;
+    }
+    if (this.has(cb)) {
+      return this;
+    }
+    return super.add(cb);
+  }
+
+  delete(cb: () => void) {
+    if (this.has(cb)) {
+      return super.delete(cb);
+    }
+    return false;
+  }
+}
+
 const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBProvider => {
@@ -76,7 +106,7 @@ const createIndexedDBProvider = (
     blockSuiteWorkspace.id,
     blockSuiteWorkspace.doc
   );
-  const callbacks = new Set<() => void>();
+  const callbacks = new CallbackSet();
   return {
     flavour: 'local-indexeddb',
     callbacks,
@@ -93,6 +123,7 @@ const createIndexedDBProvider = (
       indexeddbProvider.connect();
       indexeddbProvider.whenSynced
         .then(() => {
+          callbacks.ready = true;
           callbacks.forEach(cb => cb());
         })
         .catch(error => {
@@ -110,6 +141,7 @@ const createIndexedDBProvider = (
         blockSuiteWorkspace.id
       );
       indexeddbProvider.disconnect();
+      callbacks.ready = false;
     },
   };
 };

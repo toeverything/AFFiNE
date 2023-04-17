@@ -10,9 +10,12 @@ declare module '@blocksuite/store' {
 export function useBlockSuiteWorkspacePageIsPublic(page: Page) {
   const [isPublic, set] = useState<boolean>(() => page.meta.isPublic ?? false);
   useEffect(() => {
-    page.workspace.meta.pageMetasUpdated.on(() => {
+    const disposable = page.workspace.meta.pageMetasUpdated.on(() => {
       set(page.meta.isPublic ?? false);
     });
+    return () => {
+      disposable.dispose();
+    };
   }, [page]);
   const setIsPublic = useCallback(
     (isPublic: boolean) => {

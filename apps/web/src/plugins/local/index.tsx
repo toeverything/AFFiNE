@@ -1,17 +1,23 @@
 import { DebugLogger } from '@affine/debug';
-import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
-import { CRUD } from '@affine/workspace/local/crud';
+import {
+  DEFAULT_HELLO_WORLD_PAGE_ID,
+  DEFAULT_WORKSPACE_NAME,
+} from '@affine/env';
+import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
+import {
+  CRUD,
+  saveWorkspaceToLocalStorage,
+} from '@affine/workspace/local/crud';
+import { createIndexedDBProvider } from '@affine/workspace/providers';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
-import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
 import React from 'react';
 
 import { PageNotFoundError } from '../../components/affine/affine-error-eoundary';
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import { initPage } from '../../utils';
 import type { WorkspacePlugin } from '..';
 
 const logger = new DebugLogger('use-create-first-workspace');
@@ -20,25 +26,29 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   Events: {
-    'app:first-init': async () => {
+    'app:init': () => {
       const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
         nanoid(),
         (_: string) => undefined
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-      const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
-      const workspace = await LocalPlugin.CRUD.get(id);
-      assertExists(workspace);
-      assertEquals(workspace.id, id);
-      // todo: use a better way to set initial workspace
-      jotaiStore.set(jotaiWorkspacesAtom, ws => [
-        ...ws,
-        {
-          id: workspace.id,
-          flavour: WorkspaceFlavour.LOCAL,
-        },
-      ]);
-      logger.debug('create first workspace', workspace);
+      const page = blockSuiteWorkspace.createPage(DEFAULT_HELLO_WORLD_PAGE_ID);
+      blockSuiteWorkspace.setPageMeta(page.id, {
+        init: true,
+      });
+      initPage(page);
+      blockSuiteWorkspace.setPageMeta(page.id, {
+        jumpOnce: true,
+      });
+      const provider = createIndexedDBProvider(blockSuiteWorkspace);
+      provider.connect();
+      provider.callbacks.add(() => {
+        provider.disconnect();
+      });
+      ensureRootPinboard(blockSuiteWorkspace);
+      saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);
+      logger.debug('create first workspace');
+      return [blockSuiteWorkspace.id];
     },
   },
   CRUD,

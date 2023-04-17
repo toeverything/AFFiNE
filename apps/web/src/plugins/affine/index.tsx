@@ -1,4 +1,5 @@
 import { prefixUrl } from '@affine/env';
+import { initPage } from '@affine/env/blocksuite';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
@@ -8,7 +9,7 @@ import {
   setLoginStorage,
   SignMethod,
 } from '@affine/workspace/affine/login';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { AffineWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -26,7 +27,7 @@ import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh
 import { AffineSWRConfigProvider } from '../../providers/AffineSWRConfigProvider';
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
-import { initPage, toast } from '../../utils';
+import { toast } from '../../utils';
 import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
 
@@ -81,20 +82,20 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       if (response) {
         setLoginStorage(response);
         const user = parseIdToken(response.token);
-        jotaiStore.set(currentAffineUserAtom, user);
+        rootStore.set(currentAffineUserAtom, user);
       } else {
         toast('Login failed');
       }
     },
     'workspace:revoke': async () => {
-      jotaiStore.set(jotaiWorkspacesAtom, workspaces =>
+      rootStore.set(rootWorkspacesMetadataAtom, workspaces =>
         workspaces.filter(
           workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
         )
       );
       storage.removeItem(kAffineLocal);
       clearLoginStorage();
-      jotaiStore.set(currentAffineUserAtom, null);
+      rootStore.set(currentAffineUserAtom, null);
     },
   },
   CRUD: {

@@ -6,7 +6,7 @@ import {
 } from '@affine/workspace/affine/api';
 import { WebsocketClient } from '@affine/workspace/affine/channel';
 import { storageChangeSlot } from '@affine/workspace/affine/login';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { WorkspaceCRUD } from '@affine/workspace/type';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/global/utils';
@@ -51,7 +51,7 @@ export function createAffineGlobalChannel(
 
       // If the workspace is not in the current workspace list, remove it
       if (workspaceIndex === -1) {
-        jotaiStore.set(jotaiWorkspacesAtom, workspaces => {
+        rootStore.set(rootWorkspacesMetadataAtom, workspaces => {
           const idx = workspaces.findIndex(workspace => workspace.id === id);
           workspaces.splice(idx, 1);
           return [...workspaces];

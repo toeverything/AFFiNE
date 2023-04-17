@@ -1,12 +1,13 @@
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import {
+  rootCurrentWorkspaceIdAtom,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { WorkspacePlugins } from '../plugins';
-import { useRouterHelper } from './use-router-helper';
 
 /**
  * Transform workspace from one flavour to another
@@ -14,9 +15,8 @@ import { useRouterHelper } from './use-router-helper';
  * The logic here is to delete the old workspace and create a new one.
  */
 export function useTransformWorkspace() {
-  const set = useSetAtom(jotaiWorkspacesAtom);
-  const router = useRouter();
-  const helper = useRouterHelper(router);
+  const setCurrentWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
+  const set = useSetAtom(rootWorkspacesMetadataAtom);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -35,9 +35,9 @@ export function useTransformWorkspace() {
         });
         return [...workspaces];
       });
-      await helper.jumpToWorkspace(newId);
+      setCurrentWorkspaceId(newId);
       return newId;
     },
-    [helper, set]
+    [set, setCurrentWorkspaceId]
   );
 }

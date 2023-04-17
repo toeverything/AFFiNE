@@ -6,7 +6,7 @@ This document delves into the design and architecture of the AFFiNE platform, pr
 
 ## Addressing the Challenge
 
-AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals. It is local-first, yet collaborative; It is robust as a foundational platform, yet friendly to extend. We believe that a knowledge base that truly meets the needs of professionals in different scenarios should be open-source and open to the community. By using AFFiNE, people can take full control of their data and workflow, thus achieving data sovereignty. 
+AFFiNE is a platform designed to be the next-generation collaborative knowledge base for professionals. It is local-first, yet collaborative; It is robust as a foundational platform, yet friendly to extend. We believe that a knowledge base that truly meets the needs of professionals in different scenarios should be open-source and open to the community. By using AFFiNE, people can take full control of their data and workflow, thus achieving data sovereignty.
 To do so, we should have a stable plugin system that is easy to use by the community and a well-modularized editor for customizability. Let's list the challenges from the perspective of data modeling, UI and feature plugins, and cross-platform support.
 
 ### Data might come from anywhere and go anywhere, in spite of the cloud
@@ -229,3 +229,28 @@ graph TB
 
 Notice that we do not assume the Workspace UI has to be written in React.js(for now, it has to be),
 In the future, we can support other UI frameworks instead, like Vue and Svelte.
+
+### Workspace Loading Details
+
+```mermaid
+flowchart TD
+    subgraph JavaScript Runtime
+        subgraph Next.js
+            Start((entry point)) -->|setup environment| OnMount{On mount}
+            OnMount -->|empty data| Init[Init Workspaces]
+            Init --> LoadData
+            OnMount -->|already have data| LoadData>Load data]
+            LoadData --> CurrentWorkspace[Current workspace]
+            LoadData --> Workspaces[Workspaces]
+            Workspaces --> Providers[Providers]
+
+            subgraph React
+                Router([Router]) -->|sync `query.workspaceId`| CurrentWorkspace
+                CurrentWorkspace -->|sync `currentWorkspaceId`| Router
+                CurrentWorkspace -->|render| WorkspaceUI[Workspace UI]
+            end
+        end
+            Providers -->|push new update| Persistence[(Persistence)]
+            Persistence -->|patch workspace| Providers
+    end
+```

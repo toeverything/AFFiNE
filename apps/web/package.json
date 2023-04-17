@@ -36,6 +36,7 @@
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
     "jotai": "^2.0.4",
+    "jotai-devtools": "^0.4.0",
     "lit": "^2.7.2",
     "lottie-web": "^5.11.0",
     "next-themes": "^0.2.1",

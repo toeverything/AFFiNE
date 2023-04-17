@@ -2,7 +2,10 @@
 /// <reference path='../../../apps/electron/layers/preload/preload.d.ts' />
 import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import type { createStore } from 'jotai';
 import type { FC, PropsWithChildren } from 'react';
+
+export type JotaiStore = ReturnType<typeof createStore>;
 
 export type BaseProvider = {
   flavour: string;
@@ -141,9 +144,9 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
 }
 
 export interface AppEvents {
-  // event when app is first initialized
+  // event there is no workspace
   // usually used to initialize workspace plugin
-  'app:first-init': () => Promise<void>;
+  'app:init': () => string[];
   // request to gain access to workspace plugin
   'workspace:access': () => Promise<void>;
   // request to revoke access to workspace plugin
