@@ -112,6 +112,7 @@ export const StyledScrollWrapper = styled('div')<{
   showTopBorder: boolean;
 }>(({ showTopBorder, theme }) => {
   return {
+    maxHeight: '50%',
     overflowY: 'auto',
     borderTop: '1px solid',
     borderColor: showTopBorder ? theme.colors.borderColor : 'transparent',
