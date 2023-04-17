@@ -53,6 +53,7 @@ module.exports = {
         name: 'affine',
         iconUrl: icoPath,
         setupIcon: icoPath,
+        platforms: ['darwin', 'linux', 'win32'],
       },
     },
     {
@@ -63,6 +64,13 @@ module.exports = {
         // loadingGif: './resources/icons/loading.gif',
       },
     },
+    // {
+    //   name: 'electron-forge-maker-appimage',
+    //   platforms: ['linux'],
+    //   config: {
+    //     mimeType: ['x-scheme-handler/affine'],
+    //   },
+    // },
   ],
   hooks: {
     readPackageJson: async (_, packageJson) => {
