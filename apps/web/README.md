@@ -20,7 +20,6 @@ For more information on Next.js, take a look at the [Next.js Documentation](http
 
 `preset.config.mjs` contains the build presets for the application. The presets are used to configure the build process for different environments. The presets are:
 
-- `buildTarget`: The target for the build. This can be `web`, `electron`, or `electron-canary`.
 - `enableBroadCastChannelProvider`: Enables the Broadcast Channel provider for the application. This is used to communicate between local browser tabs.
 - `enableDebugPage`: Enables the debug page for the application. This is used for debugging purposes.
 
