@@ -71,7 +71,6 @@ type Server = {
 
 interface Desktop extends ChromeBrowser {
   isDesktop: true;
-  buildTarget: BuildTarget;
   isBrowser: true;
   isServer: false;
   isDebug: boolean;
