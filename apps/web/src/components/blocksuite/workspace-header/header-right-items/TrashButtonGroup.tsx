@@ -1,13 +1,13 @@
 import { Button, Confirm } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { assertExists } from '@blocksuite/store';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
-import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
+import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import { usePageMeta } from '../../../../hooks/use-page-meta';
 
 export const TrashButtonGroup = () => {
   // fixme(himself65): remove these hooks ASAP
@@ -16,13 +16,13 @@ export const TrashButtonGroup = () => {
   assertExists(workspace);
   assertExists(pageId);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMeta = usePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   assertExists(pageMeta);
   const { t } = useTranslation();
   const router = useRouter();
-  const { restoreFromTrash } = useMetaHelper(blockSuiteWorkspace);
+  const { restoreFromTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
 
   const [open, setOpen] = useState(false);
 

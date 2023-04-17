@@ -36,7 +36,10 @@ export const ChangeLog = () => {
   return (
     <StyledChangeLogWrapper isClose={isClose}>
       <StyledChangeLog data-testid="change-log" isClose={isClose}>
-        <StyledLink href={'https://affine.pro'} target="_blank">
+        <StyledLink
+          href='https://github.com/toeverything/AFFiNE/releases'
+          target="_blank"
+        >
           <NewIcon />
           {t("Discover what's new!")}
         </StyledLink>

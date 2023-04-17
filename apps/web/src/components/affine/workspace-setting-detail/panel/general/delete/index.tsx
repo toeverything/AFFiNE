@@ -1,7 +1,7 @@
 import { Button, Input, Modal, ModalCloseButton } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useCallback, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../../../../shared';

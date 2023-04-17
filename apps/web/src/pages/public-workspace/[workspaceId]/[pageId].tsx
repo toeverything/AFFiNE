@@ -1,9 +1,10 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
+import { initPage } from '@affine/env/blocksuite';
 import { useTranslation } from '@affine/i18n';
 import { PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useAtom, useAtomValue } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -25,7 +26,6 @@ import {
   PublicWorkspaceLayout,
 } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
-import { initPage } from '../../../utils';
 
 export const NavContainer = styled('div')(({ theme }) => {
   return {

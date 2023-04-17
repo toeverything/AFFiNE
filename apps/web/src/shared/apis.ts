@@ -7,7 +7,7 @@ import {
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { parseIdToken, setLoginStorage } from '@affine/workspace/affine/login';
-import { jotaiStore } from '@affine/workspace/atom';
+import { rootStore } from '@affine/workspace/atom';
 
 const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;
@@ -19,7 +19,7 @@ const debugLogger = new DebugLogger('affine-debug-apis');
 if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_APIS = affineApis;
   globalThis.setLogin = (response: LoginResponse) => {
-    jotaiStore.set(currentAffineUserAtom, parseIdToken(response.token));
+    rootStore.set(currentAffineUserAtom, parseIdToken(response.token));
     setLoginStorage(response);
   };
   const loginMockUser1 = async () => {

@@ -3,32 +3,25 @@
  */
 import 'fake-indexeddb/auto';
 
+import { initPage } from '@affine/env/blocksuite';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import type { Page } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { BlockSuiteWorkspace } from '../../shared';
-import { useBlockSuiteWorkspaceHelper } from '../use-blocksuite-workspace-helper';
-import { usePageMeta } from '../use-page-meta';
-
-let blockSuiteWorkspace: BlockSuiteWorkspace;
-
-function handleNewPage(page: Page) {
-  const pageBlockId = page.addBlock('affine:page', { title: '' });
-  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
-  page.addBlock('affine:paragraph', {}, frameId);
-}
+let blockSuiteWorkspace: Workspace;
 
 beforeEach(() => {
-  blockSuiteWorkspace = new BlockSuiteWorkspace({
+  blockSuiteWorkspace = new Workspace({
     id: 'test',
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
-  handleNewPage(blockSuiteWorkspace.createPage('page0'));
-  handleNewPage(blockSuiteWorkspace.createPage('page1'));
-  handleNewPage(blockSuiteWorkspace.createPage('page2'));
+  initPage(blockSuiteWorkspace.createPage('page0'));
+  initPage(blockSuiteWorkspace.createPage('page1'));
+  initPage(blockSuiteWorkspace.createPage('page2'));
 });
 
 describe('useBlockSuiteWorkspaceHelper', () => {
@@ -37,7 +30,9 @@ describe('useBlockSuiteWorkspaceHelper', () => {
     const helperHook = renderHook(() =>
       useBlockSuiteWorkspaceHelper(blockSuiteWorkspace)
     );
-    const pageMetaHook = renderHook(() => usePageMeta(blockSuiteWorkspace));
+    const pageMetaHook = renderHook(() =>
+      useBlockSuitePageMeta(blockSuiteWorkspace)
+    );
     expect(pageMetaHook.result.current.length).toBe(3);
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
     const page = helperHook.result.current.createPage('page4');
@@ -54,7 +49,7 @@ describe('useBlockSuiteWorkspaceHelper', () => {
     );
     await helperHook.result.current.markMilestone('test');
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
-    handleNewPage(helperHook.result.current.createPage('page4'));
+    initPage(helperHook.result.current.createPage('page4'));
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
     expect(await helperHook.result.current.listMilestone()).toHaveProperty(
       'test'

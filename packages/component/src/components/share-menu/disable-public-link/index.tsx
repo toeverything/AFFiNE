@@ -1,6 +1,6 @@
 import { useTranslation } from '@affine/i18n';
 import type { Page } from '@blocksuite/store';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-blocksuite-workspace-page-is-public';
+import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import { useCallback } from 'react';
 
 import { Modal, ModalCloseButton, toast } from '../../..';

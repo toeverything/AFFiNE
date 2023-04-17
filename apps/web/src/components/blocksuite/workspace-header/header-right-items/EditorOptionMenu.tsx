@@ -10,17 +10,17 @@ import {
 } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtom } from 'jotai';
 import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
+import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import {
-  usePageMeta,
-  usePageMetaHelper,
-} from '../../../../hooks/use-page-meta';
 import { toast } from '../../../../utils';
 import {
   Export,
@@ -38,17 +38,17 @@ export const EditorOptionMenu = () => {
   assertExists(workspace);
   assertExists(pageId);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMeta = usePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const allMetas = usePageMeta(blockSuiteWorkspace);
+  const allMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const [record, set] = useAtom(workspacePreferredModeAtom);
   const mode = record[pageId] ?? 'page';
   assertExists(pageMeta);
   const { favorite } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
-  const { removeToTrash } = useMetaHelper(blockSuiteWorkspace);
+  const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const EditMenu = (
     <>
       <MenuItem

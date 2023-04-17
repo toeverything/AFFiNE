@@ -13,12 +13,14 @@ import { StyledSidebarSwitch } from './style';
 type SidebarSwitchProps = {
   visible?: boolean;
   tooltipContent?: string;
-  testid?: string;
 };
+
+// fixme: the following code is not correct, SSR will fail because hydrate will not match the client side render
+//  in `StyledSidebarSwitch` component
 export const SidebarSwitch = ({
   visible = true,
   tooltipContent,
-  testid = '',
+  ...props
 }: SidebarSwitchProps) => {
   useUpdateTipsOnVersionChange();
   const [open, setOpen] = useSidebarStatus();
@@ -38,9 +40,9 @@ export const SidebarSwitch = ({
       visible={tooltipVisible}
     >
       <StyledSidebarSwitch
+        {...props}
         visible={visible}
         disabled={!visible}
-        data-testid={testid}
         onClick={useCallback(() => {
           setOpen(!open);
           setTooltipVisible(false);
