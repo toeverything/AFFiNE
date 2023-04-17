@@ -17,6 +17,11 @@ on:
         type: boolean
         required: true
         default: true
+      is-canary:
+        description: 'Canary Release? The app will be named as "AFFiNE Canary"'
+        type: boolean
+        required: true
+        default: true
 
 permissions:
   actions: write
@@ -29,9 +34,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: true
 
+env:
+  BUILD_TYPE: ${{ github.event.inputs.is-canary == 'true' && 'canary' || 'stable' }}
+
 jobs:
   make-macos:
-    environment: production
+    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -62,19 +70,6 @@ jobs:
         with:
           electron-workspace-install: true
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: add arm64 target
-        if: matrix.arch == 'arm64'
-        run: rustup target add aarch64-apple-darwin
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.arch }}
-          workspaces: './packages/octobase-node -> target'
-
       - name: Signing By Apple Developer ID
         uses: apple-actions/import-codesign-certs@v2
         with:
@@ -88,7 +83,7 @@ jobs:
       - name: Save artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/make/AFFiNE.dmg ./builds/affine-darwin-${{ matrix.arch }}.dmg
+          mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-darwin-${{ matrix.arch }}.dmg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
@@ -98,11 +93,8 @@ jobs:
 
   make-windows:
     runs-on: windows-latest
-    environment: production
+    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
     env:
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
       NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
@@ -125,14 +117,6 @@ jobs:
         with:
           electron-workspace-install: true
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './packages/octobase-node -> target'
-
       - name: make build
         run: yarn make-windows-x64
         working-directory: apps/electron
@@ -140,19 +124,60 @@ jobs:
       - name: Save windows artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/make/zip/win32/x64/AFFiNE-win32-x64-*.zip ./builds/affine-windows-x64.zip
-          mv apps/electron/out/make/squirrel.windows/x64/*.exe ./builds/affine-windows-x64.exe
-          mv apps/electron/out/make/squirrel.windows/x64/*.msi ./builds/affine-windows-x64.msi
-          mv apps/electron/out/make/squirrel.windows/x64/*.nupkg ./builds/affine-windows-x64.nupkg
-          mv apps/electron/out/make/squirrel.windows/x64/RELEASES ./builds/RELEASES
+          mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
+          mv apps/electron/out/*/make/squirrel.windows/x64/RELEASES ./builds/RELEASES
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: affine-windows-x64-builds
           path: builds
 
+  make-linux:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+      AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
+      AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      API_SERVER_PROFILE: prod
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-workspace-install: true
+
+      - name: make build
+        run: yarn make
+        working-directory: apps/electron
+
+      - name: Save Linux artifacts
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-Linux-x64-builds
+          path: builds
+
   release:
-    needs: [make-macos, make-windows]
+    needs: [make-macos, make-windows, make-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Download MacOS x64 Artifacts
@@ -170,6 +195,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: affine-windows-x64-builds
+          path: ./
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-Linux-x64-builds
           path: ./
 
       - name: Create Release Draft

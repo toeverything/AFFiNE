@@ -33,10 +33,6 @@ runs:
         scope: '@toeverything'
         cache: 'yarn'
 
-    - name: CI Module Resolve
-      shell: bash
-      run: node scripts/module-resolve/ci.cjs
-
     - name: Expose yarn config as "$GITHUB_OUTPUT"
       id: yarn-config
       shell: bash

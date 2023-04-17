@@ -60,17 +60,6 @@ await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 await buildLayers();
 echo('Build layers done');
 
-// step 3: build octobase-node
-let buildOctobaseNode = 'yarn workspace @affine/octobase-node build';
-if (process.env.TARGET) {
-  buildOctobaseNode += ` --target=${process.env.TARGET}`;
-}
-await $([buildOctobaseNode]);
-
-// step 4: copy octobase-node to electron dist
-await fs.ensureDir('./apps/electron/dist/layers/main/');
-await $`cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/`;
-
 /// --------
 /// --------
 /// --------
