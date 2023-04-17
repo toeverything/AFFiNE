@@ -6,12 +6,11 @@ import { rootStore } from '@affine/workspace/atom';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
-import { DevTools } from 'jotai-devtools';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { PropsWithChildren, ReactElement } from 'react';
-import React, { Suspense, useEffect, useMemo } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { ProviderComposer } from '../components/provider-composer';
@@ -31,10 +30,14 @@ const EmptyLayout = (page: ReactElement) => page;
 
 const clientSideEmotionCache = createEmotionCache();
 
+const DevTools = lazy(() =>
+  import('jotai-devtools').then(m => ({ default: m.DevTools }))
+);
+
 const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
   return (
     <>
-      {process.env.DEBUG_JOTAI === 'true' && <DevTools />}
+      <Suspense>{process.env.DEBUG_JOTAI === 'true' && <DevTools />}</Suspense>
       {children}
     </>
   );
