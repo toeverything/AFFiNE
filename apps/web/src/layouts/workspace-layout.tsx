@@ -12,7 +12,7 @@ import {
 import type { LocalIndexedDBProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-blocksuite-workspace-helper';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';

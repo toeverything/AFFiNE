@@ -2,7 +2,7 @@ import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-blocksuite-workspace-page-title';
+import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type React from 'react';

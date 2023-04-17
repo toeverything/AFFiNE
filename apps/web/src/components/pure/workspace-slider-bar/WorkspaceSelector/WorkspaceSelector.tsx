@@ -1,6 +1,6 @@
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type React from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';

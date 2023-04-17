@@ -3,7 +3,7 @@ import { DebugLogger } from '@affine/debug';
 import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-blocksuite-workspace-helper';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useCallback } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';

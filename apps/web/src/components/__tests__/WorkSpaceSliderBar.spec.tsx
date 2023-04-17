@@ -10,7 +10,7 @@ import {
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-blocksuite-workspace-helper';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { createStore, getDefaultStore, Provider, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';

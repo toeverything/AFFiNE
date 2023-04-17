@@ -3,7 +3,7 @@ import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-blocksuite-workspace-helper';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
 import Image from 'next/legacy/image';
 import type { NextRouter } from 'next/router';

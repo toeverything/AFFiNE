@@ -3,7 +3,7 @@ import { useTranslation } from '@affine/i18n';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons';
 import { assertEquals, nanoid } from '@blocksuite/store';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-blocksuite-workspace-helper';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';
 import type React from 'react';

@@ -8,7 +8,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-blocksuite-workspace-helper';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 let blockSuiteWorkspace: Workspace;
