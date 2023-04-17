@@ -3,11 +3,13 @@ const {
   utils: { fromBuildIdentifier },
 } = require('@electron-forge/core');
 
-const productName = process.env.CANARY_BUILD ? 'AFFiNE Canary' : 'AFFiNE';
-const icoPath = process.env.CANARY_BUILD
+const isCanary = process.env.BUILD_TYPE === 'canary';
+
+const productName = isCanary ? 'AFFiNE Canary' : 'AFFiNE';
+const icoPath = isCanary
   ? './resources/icons/icon_canary.ico'
   : './resources/icons/icon.ico';
-const icnsPath = process.env.CANARY_BUILD
+const icnsPath = isCanary
   ? './resources/icons/icon_canary.icns'
   : './resources/icons/icon.icns';
 
@@ -15,7 +17,7 @@ const icnsPath = process.env.CANARY_BUILD
  * @type {import('@electron-forge/shared-types').ForgeConfig}
  */
 module.exports = {
-  buildIdentifier: process.env.CANARY_BUILD ? 'canary' : 'stable',
+  buildIdentifier: isCanary ? 'canary' : 'stable',
   packagerConfig: {
     name: productName,
     appBundleId: fromBuildIdentifier({
