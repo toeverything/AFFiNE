@@ -88,7 +88,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-${{ env.BUILD_TYPE }}-darwin-${{ matrix.arch }}-builds
+          name: affine-darwin-${{ matrix.arch }}-builds
           path: builds
 
   make-windows:
