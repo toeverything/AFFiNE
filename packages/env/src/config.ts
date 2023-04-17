@@ -98,7 +98,6 @@ export function getEnvironment() {
     environment = {
       origin: window.location.origin,
       isDesktop: !!window.appInfo?.electron,
-      buildTarget: !!window.appInfo?.buildTarget ?? BuildTarget.Stable,
       isBrowser: true,
       isServer: false,
       isDebug,
