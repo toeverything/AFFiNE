@@ -1,5 +1,5 @@
 import { TreeView } from '@affine/component';
-import type { PageMeta } from '@blocksuite/store';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import type { MouseEvent } from 'react';
 import { useCallback } from 'react';
 
@@ -12,14 +12,10 @@ import { PinboardRender } from '../../affine/pinboard';
 export type PinboardProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   openPage: (pageId: string) => void;
-  allMetas: PageMeta[];
 };
 
-export const Pinboard = ({
-  blockSuiteWorkspace,
-  openPage,
-  allMetas,
-}: PinboardProps) => {
+export const Pinboard = ({ blockSuiteWorkspace, openPage }: PinboardProps) => {
+  const allMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const handlePinboardClick = useCallback(
     (e: MouseEvent<HTMLDivElement>, node: PinboardNode) => {
       openPage(node.id);

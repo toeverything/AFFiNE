@@ -17,7 +17,7 @@ export const lastWorkspaceIdAtom = atomWithSyncStorage<string | null>(
 );
 
 export function useCurrentWorkspace(): [
-  AllWorkspace | null,
+  AllWorkspace,
   (id: string | null) => void
 ] {
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);

@@ -1,8 +1,8 @@
 import { Content, FlexWrapper, styled } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type React from 'react';
 
 import { useCurrentUser } from '../../../../../hooks/current/use-current-user';

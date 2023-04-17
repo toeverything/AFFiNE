@@ -16,6 +16,10 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import { createStore, Provider } from 'jotai';
 import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
@@ -36,7 +40,6 @@ import {
   useLastVersion,
   useTipsDisplayStatus,
 } from '../use-is-first-load';
-import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
@@ -103,7 +106,7 @@ beforeEach(async () => {
 describe('usePageMetas', async () => {
   test('basic', async () => {
     const Component = () => {
-      const pageMetas = usePageMeta(blockSuiteWorkspace);
+      const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
       return (
         <div>
           {pageMetas.map(meta => (
@@ -121,7 +124,7 @@ describe('usePageMetas', async () => {
 
   test('mutation', () => {
     const { result, rerender } = renderHook(() =>
-      usePageMeta(blockSuiteWorkspace)
+      useBlockSuitePageMeta(blockSuiteWorkspace)
     );
     expect(result.current.length).toBe(3);
     expect(result.current[0].mode).not.exist;
@@ -143,7 +146,7 @@ describe('usePageMetas', async () => {
 
   test('update title', () => {
     const { result, rerender } = renderHook(() =>
-      usePageMeta(blockSuiteWorkspace)
+      useBlockSuitePageMeta(blockSuiteWorkspace)
     );
     expect(result.current.length).toBe(3);
     expect(result.current[0].mode).not.exist;
@@ -260,7 +263,7 @@ describe('useRecentlyViewed', () => {
     });
     routerHook.rerender();
     const syncHook = renderHook(
-      router => useSyncRecentViewsWithRouter(router),
+      router => useSyncRecentViewsWithRouter(router, blockSuiteWorkspace),
       {
         wrapper: ProviderWrapper,
         initialProps: routerHook.result.current,

@@ -2,14 +2,14 @@ import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
 import Image from 'next/legacy/image';
 import type { NextRouter } from 'next/router';
 import type { Dispatch, FC, SetStateAction } from 'react';
 import { useEffect } from 'react';
 
-import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
-import { usePageMeta } from '../../../hooks/use-page-meta';
 import { useRecentlyViewed } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
@@ -31,7 +31,7 @@ export const Results: FC<ResultsProps> = ({
   onClose,
 }) => {
   useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
-  const pageList = usePageMeta(blockSuiteWorkspace);
+  const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   assertExists(blockSuiteWorkspace.id);
   const List = useSwitchToConfig(blockSuiteWorkspace.id);
 

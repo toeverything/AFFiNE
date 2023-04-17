@@ -2,7 +2,7 @@ import { prefixUrl } from '@affine/env';
 import { Trans, useTranslation } from '@affine/i18n';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-blocksuite-workspace-page-is-public';
+import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import type { FC } from 'react';
 import { useState } from 'react';
 import { useCallback, useMemo } from 'react';

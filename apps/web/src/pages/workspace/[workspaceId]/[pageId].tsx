@@ -1,7 +1,11 @@
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
-import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-blocksuite-workspace-page';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -12,7 +16,6 @@ import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { usePageMeta, usePageMetaHelper } from '../../../hooks/use-page-meta';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterAndWorkspaceWithPageIdDefense } from '../../../hooks/use-router-and-workspace-with-page-id-defense';
@@ -37,14 +40,15 @@ const WorkspaceDetail: React.FC = () => {
   const { openPage } = useRouterHelper(router);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
-  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace ?? null;
+  assertExists(currentWorkspace);
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { deletePin } = usePinboardHandler({
     blockSuiteWorkspace,
-    metas: usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null ?? null),
+    metas: useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace),
   });
 
-  useSyncRecentViewsWithRouter(router);
+  useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
 
   useReferenceLinkEffect({
     pageLinkClicked: useCallback(
@@ -79,9 +83,6 @@ const WorkspaceDetail: React.FC = () => {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);
     }
   }, [currentWorkspace]);
-  if (currentWorkspace === null) {
-    return <PageLoading />;
-  }
   if (!currentPageId) {
     return <PageLoading text="Loading page." />;
   }

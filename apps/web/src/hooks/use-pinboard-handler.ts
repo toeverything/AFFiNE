@@ -2,12 +2,12 @@ import type { TreeViewProps } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
+import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useCallback } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
-import { useMetaHelper } from './affine/use-meta-helper';
-import { useBlockSuiteWorkspaceHelper } from './use-blocksuite-workspace-helper';
-import { usePageMetaHelper } from './use-page-meta';
+import { useBlockSuiteMetaHelper } from './affine/use-block-suite-meta-helper';
 import type { NodeRenderProps } from './use-pinboard-data';
 
 const logger = new DebugLogger('pinboard');
@@ -26,7 +26,7 @@ export function usePinboardHandler({
   onDelete,
   onDrop,
 }: {
-  blockSuiteWorkspace: BlockSuiteWorkspace | null;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
   metas: PageMeta[];
   onAdd?: (addedId: string, parentId: string) => void;
   onDelete?: TreeViewProps<NodeRenderProps>['onDelete'];
@@ -35,7 +35,7 @@ export function usePinboardHandler({
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { removeToTrash: removeToTrashHelper } =
-    useMetaHelper(blockSuiteWorkspace);
+    useBlockSuiteMetaHelper(blockSuiteWorkspace);
   // Just need handle add operation, delete check is handled in blockSuite's reference link
   const addReferenceLink = useCallback(
     (pageId: string, referenceId: string) => {

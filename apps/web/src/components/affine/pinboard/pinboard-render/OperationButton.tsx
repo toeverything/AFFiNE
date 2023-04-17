@@ -10,7 +10,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
 import { useMemo, useRef, useState } from 'react';
 
-import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
+import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import { CopyLink, MoveToTrash } from '../../operation-menu-items';
@@ -50,7 +50,7 @@ export const OperationButton = ({
   const [pinboardMenuOpen, setPinboardMenuOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const menuIndex = useMemo(() => modalIndex + 1, [modalIndex]);
-  const { removeToTrash } = useMetaHelper(blockSuiteWorkspace);
+  const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
 
   return (
     <MuiClickAwayListener

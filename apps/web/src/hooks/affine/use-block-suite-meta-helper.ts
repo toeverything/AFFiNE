@@ -1,11 +1,16 @@
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useCallback } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../shared';
-import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 
-export function useMetaHelper(blockSuiteWorkspace: BlockSuiteWorkspace | null) {
+export function useBlockSuiteMetaHelper(
+  blockSuiteWorkspace: BlockSuiteWorkspace
+) {
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-  const metas = usePageMeta(blockSuiteWorkspace);
+  const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
 
   const removeToTrash = useCallback(
     (pageId: string, isRoot = true) => {
