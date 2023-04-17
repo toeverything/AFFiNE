@@ -35,18 +35,18 @@
     "@electron-forge/maker-squirrel": "^6.1.1",
     "@electron-forge/maker-zip": "^6.1.1",
     "@electron-forge/shared-types": "^6.1.1",
-    "@electron/rebuild": "^3.2.10",
+    "@electron/rebuild": "^3.2.12",
     "@electron/remote": "2.0.9",
     "dts-for-context-bridge": "^0.7.1",
-    "electron": "24.0.0",
+    "electron": "24.1.2",
     "electron-squirrel-startup": "1.0.0",
-    "esbuild": "^0.17.16",
+    "esbuild": "^0.17.17",
     "zx": "^7.2.1"
   },
   "dependencies": {
     "cross-env": "7.0.3",
     "electron-window-state": "^5.0.3",
-    "firebase": "^9.18.0",
+    "firebase": "^9.19.1",
     "fs-extra": "^11.1.1",
     "undici": "^5.21.2"
   },
