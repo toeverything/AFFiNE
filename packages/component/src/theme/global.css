@@ -195,7 +195,7 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 .affine-default-page-block-title-container {
-  margin-top: 78px;
+  margin-top: 40px;
   margin-bottom: 40px;
   transition: margin-top 0.2s;
 }
