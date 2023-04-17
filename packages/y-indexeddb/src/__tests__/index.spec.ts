@@ -3,6 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
+import { initPage } from '@affine/env/blocksuite';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
@@ -14,13 +15,15 @@ import type { WorkspacePersist } from '../index';
 import {
   createIndexedDBProvider,
   dbVersion,
+  DEFAULT_DB_NAME,
+  downloadBinary,
   getMilestones,
   markMilestone,
   revertUpdate,
   setMergeCount,
 } from '../index';
 
-async function getUpdates(id: string): Promise<ArrayBuffer[]> {
+async function getUpdates(id: string): Promise<Uint8Array[]> {
   const db = await openDB(rootDBName, dbVersion);
   const store = await db
     .transaction('workspace', 'readonly')
@@ -33,7 +36,7 @@ async function getUpdates(id: string): Promise<ArrayBuffer[]> {
 
 let id: string;
 let workspace: Workspace;
-const rootDBName = 'affine-local';
+const rootDBName = DEFAULT_DB_NAME;
 
 beforeEach(() => {
   id = uuidv4();
@@ -62,7 +65,12 @@ describe('indexeddb provider', () => {
       const data = await store.get(id);
       expect(data).toEqual({
         id,
-        updates: [],
+        updates: [
+          {
+            timestamp: expect.any(Number),
+            update: encodeStateAsUpdate(workspace.doc),
+          },
+        ],
       });
       const page = workspace.createPage('page0');
       const pageBlockId = page.addBlock('affine:page', { title: '' });
@@ -129,6 +137,7 @@ describe('indexeddb provider', () => {
     provider.connect();
     const p1 = provider.whenSynced;
     await p1;
+    const snapshot = encodeStateAsUpdate(workspace.doc);
     provider.disconnect();
     {
       const page = workspace.createPage('page0');
@@ -138,7 +147,8 @@ describe('indexeddb provider', () => {
     }
     {
       const updates = await getUpdates(workspace.id);
-      expect(updates).toEqual([]);
+      expect(updates.length).toBe(1);
+      expect(updates[0]).toEqual(snapshot);
     }
     provider.connect();
     const p2 = provider.whenSynced;
@@ -290,5 +300,34 @@ describe('milestone', () => {
       const map = doc2.getMap('map');
       expect(map.get('1')).toBe(1);
     }
+  });
+});
+
+describe('utils', () => {
+  test('download binary', async () => {
+    const page = workspace.createPage('page0');
+    initPage(page);
+    const provider = createIndexedDBProvider(
+      workspace.id,
+      workspace.doc,
+      rootDBName
+    );
+    provider.connect();
+    await provider.whenSynced;
+    provider.disconnect();
+    const update = await downloadBinary(workspace.id, rootDBName);
+    expect(update).toBeInstanceOf(Uint8Array);
+    const newWorkspace = new Workspace({
+      id,
+      isSSR: true,
+    });
+    newWorkspace.register(AffineSchemas).register(__unstableSchemas);
+    applyUpdate(newWorkspace.doc, update);
+    await new Promise<void>(resolve =>
+      setTimeout(() => {
+        expect(workspace.doc.toJSON()).toEqual(newWorkspace.doc.toJSON());
+        resolve();
+      }, 0)
+    );
   });
 });
