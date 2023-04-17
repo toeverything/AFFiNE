@@ -17,6 +17,11 @@ on:
         type: boolean
         required: true
         default: true
+      is-canary:
+        description: 'Canary Release? The app will be named as "AFFiNE Canary"'
+        type: boolean
+        required: true
+        default: true
 
 permissions:
   actions: write
@@ -28,6 +33,9 @@ concurrency:
   # pull requests or the commit hash for any other events.
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: true
+
+env:
+  CANARY_BUILD: ${{ github.event.inputs.is-canary == 'true' }}
 
 jobs:
   make-macos:
