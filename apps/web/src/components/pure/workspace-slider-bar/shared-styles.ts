@@ -70,13 +70,15 @@ export const StyledCollapseItem = styled('div')<{
   disable?: boolean;
   active?: boolean;
   isOver?: boolean;
-}>(({ disable = false, active = false, theme, isOver }) => {
+  textWrap?: boolean;
+}>(({ disable = false, active = false, theme, isOver, textWrap = false }) => {
   return {
     width: '100%',
-    height: '32px',
+    lineHeight: '1.5',
+    minHeight: '32px',
     borderRadius: '8px',
     ...displayFlex('flex-start', 'center'),
-    padding: '0 2px 0 16px',
+    paddingRight: '2px',
     position: 'relative',
     color: disable
       ? theme.colors.disableColor
@@ -86,7 +88,12 @@ export const StyledCollapseItem = styled('div')<{
     cursor: disable ? 'not-allowed' : 'pointer',
     background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
     userSelect: 'none',
-
+    ...(textWrap
+      ? {
+          wordBreak: 'break-all',
+          whiteSpace: 'pre-wrap',
+        }
+      : {}),
     span: {
       flexGrow: '1',
       textAlign: 'left',
@@ -97,9 +104,6 @@ export const StyledCollapseItem = styled('div')<{
       marginRight: '8px',
       flexShrink: '0',
       color: active ? theme.colors.primaryColor : theme.colors.iconColor,
-    },
-    '.operation-button': {
-      visibility: 'hidden',
     },
 
     ':hover': disable

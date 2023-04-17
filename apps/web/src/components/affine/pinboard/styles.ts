@@ -38,44 +38,62 @@ export const StyledPinboard = styled('div')<{
   active?: boolean;
   isOver?: boolean;
   disableCollapse?: boolean;
-}>(({ disableCollapse, disable = false, active = false, theme, isOver }) => {
-  return {
-    width: '100%',
-    height: '32px',
-    borderRadius: '8px',
-    ...displayFlex('flex-start', 'center'),
-    padding: disableCollapse ? '0 5px' : '0 2px 0 16px',
-    position: 'relative',
-    color: disable
-      ? theme.colors.disableColor
-      : active
-      ? theme.colors.primaryColor
-      : theme.colors.textColor,
-    cursor: disable ? 'not-allowed' : 'pointer',
-    background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
-    fontSize: theme.font.base,
-    userSelect: 'none',
-    span: {
-      flexGrow: '1',
-      textAlign: 'left',
-      ...textEllipsis(1),
-    },
-    '.path-icon': {
-      fontSize: '16px',
-      transform: 'translateY(-4px)',
-    },
-    '.mode-icon': {
-      fontSize: '20px',
-      marginRight: '8px',
-      flexShrink: '0',
-      color: active ? theme.colors.primaryColor : theme.colors.iconColor,
-    },
+  textWrap?: boolean;
+}>(
+  ({
+    disableCollapse,
+    disable = false,
+    active = false,
+    theme,
+    isOver,
+    textWrap = false,
+  }) => {
+    return {
+      width: '100%',
+      lineHeight: '1.5',
+      minHeight: '32px',
+      borderRadius: '8px',
+      ...displayFlex('flex-start', 'center'),
+      padding: disableCollapse ? '0 5px' : '0 2px 0 16px',
+      position: 'relative',
+      color: disable
+        ? theme.colors.disableColor
+        : active
+        ? theme.colors.primaryColor
+        : theme.colors.textColor,
+      cursor: disable ? 'not-allowed' : 'pointer',
+      background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
+      fontSize: theme.font.base,
+      userSelect: 'none',
+      ...(textWrap
+        ? {
+            wordBreak: 'break-all',
+            whiteSpace: 'pre-wrap',
+          }
+        : {}),
 
-    ':hover': {
-      backgroundColor: disable ? '' : theme.colors.hoverBackground,
-    },
-  };
-});
+      span: {
+        flexGrow: '1',
+        textAlign: 'left',
+        ...textEllipsis(1),
+      },
+      '.path-icon': {
+        fontSize: '16px',
+        transform: 'translateY(-4px)',
+      },
+      '.mode-icon': {
+        fontSize: '20px',
+        marginRight: '8px',
+        flexShrink: '0',
+        color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+      },
+
+      ':hover': {
+        backgroundColor: disable ? '' : theme.colors.hoverBackground,
+      },
+    };
+  }
+);
 
 export const StyledOperationButton = styled(IconButton, {
   shouldForwardProp: prop => {

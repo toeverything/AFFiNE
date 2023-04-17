@@ -212,6 +212,8 @@
   "Disable Public Link ?": "Disable Public Link ?",
   "Disable Public Link Description": "Disabling this public link will prevent anyone with the link from accessing this page.",
   "Export Shared Pages Description": "Download a static copy of your page to share with others.",
+  "Organize pages to build knowledge": "Organize pages to build knowledge",
+  "Favorite pages for easy access": "Favorite pages for easy access",
   "Shared Pages Description": "Sharing page publicly requires AFFiNE Cloud service.",
   "Create Shared Link Description": "Create a link you can easily share with anyone.",
   "Shared Pages In Public Workspace Description": "The entire Workspace is published on the web and can be edited via <1>Workspace Settings</1>.",
