@@ -1,6 +1,5 @@
 {
   "name": "@affine/electron",
-  "productName": "AFFiNE",
   "private": true,
   "version": "0.5.3",
   "author": "affine",
@@ -14,6 +13,7 @@
     "dev": "cross-env NODE_ENV=development node scripts/dev.mjs",
     "prod": "cross-env NODE_ENV=production node scripts/dev.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
+    "package": "electron-forge package",
     "make": "electron-forge make",
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
