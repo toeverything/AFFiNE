@@ -1,0 +1,79 @@
+{
+  "name": "@affine/server",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Affine Node.js server",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon ./src/index.ts",
+    "test": "ava"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.6.0",
+    "@nestjs/apollo": "^11.0.5",
+    "@nestjs/common": "^9.4.0",
+    "@nestjs/core": "^9.4.0",
+    "@nestjs/graphql": "^11.0.5",
+    "@nestjs/platform-express": "^9.4.0",
+    "@prisma/client": "^4.12.0",
+    "dotenv": "^16.0.3",
+    "graphql": "^16.6.0",
+    "graphql-type-json": "^0.3.2",
+    "lodash-es": "^4.17.21",
+    "prisma": "^4.12.0",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^9.4.0",
+    "@types/lodash-es": "^4.14.194",
+    "@types/node": "^18.15.11",
+    "ava": "^5.2.0",
+    "nodemon": "^2.0.22",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
+  },
+  "nodemonConfig": {
+    "exec": "node",
+    "script": "./src/index.ts",
+    "nodeArgs": [
+      "--loader",
+      "ts-node/esm.mjs",
+      "--es-module-specifier-resolution",
+      "node"
+    ],
+    "ignore": [
+      "**/__tests__/**",
+      "**/dist/**"
+    ],
+    "env": {
+      "TS_NODE_PROJECT": "./tsconfig.json",
+      "NODE_ENV": "development",
+      "DEBUG": "affine:*",
+      "FORCE_COLOR": true,
+      "DEBUG_COLORS": true
+    },
+    "delay": 1000
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--loader",
+      "ts-node/esm.mjs",
+      "--es-module-specifier-resolution",
+      "node"
+    ],
+    "files": [
+      "src/**/*.spec.ts"
+    ],
+    "require": [
+      "./src/prelude.ts"
+    ],
+    "environmentVariables": {
+      "TS_NODE_PROJECT": "./tsconfig.json",
+      "NODE_ENV": "test"
+    }
+  }
+}

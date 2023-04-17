@@ -3,7 +3,6 @@
 
 # check lockfile is up to date
 yarn install
-cd ./apps/eletron && yarn install
 
 # lint staged files
 yarn exec lint-staged
