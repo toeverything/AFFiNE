@@ -206,7 +206,7 @@ jobs:
           path: builds
 
   release:
-    needs: [make-macos, make-windows]
+    needs: [make-macos, make-windows, make-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Download MacOS x64 Artifacts
