@@ -12,7 +12,6 @@ export const publicRuntimeConfigSchema = z.object({
   serverAPI: z.string(),
   editorVersion: z.string(),
   enableBroadCastChannelProvider: z.boolean(),
-  prefetchWorkspace: z.boolean(),
   enableDebugPage: z.boolean(),
 });
 
@@ -72,6 +71,7 @@ type Server = {
 
 interface Desktop extends ChromeBrowser {
   isDesktop: true;
+  buildTarget: BuildTarget;
   isBrowser: true;
   isServer: false;
   isDebug: boolean;
@@ -98,7 +98,8 @@ export function getEnvironment() {
 
     environment = {
       origin: window.location.origin,
-      isDesktop: window.appInfo?.electron,
+      isDesktop: !!window.appInfo?.electron,
+      buildTarget: !!window.appInfo?.buildTarget ?? BuildTarget.Stable,
       isBrowser: true,
       isServer: false,
       isDebug,
