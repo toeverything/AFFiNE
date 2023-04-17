@@ -5,7 +5,7 @@ const {
 
 const isCanary = process.env.BUILD_TYPE === 'canary';
 
-const productName = isCanary ? 'AFFiNE Canary' : 'AFFiNE';
+const productName = isCanary ? 'AFFiNE-Canary' : 'AFFiNE';
 const icoPath = isCanary
   ? './resources/icons/icon_canary.ico'
   : './resources/icons/icon.ico';
