@@ -1,11 +1,12 @@
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import {
+  rootCurrentWorkspaceIdAtom,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
-import { currentPageIdAtom, currentWorkspaceIdAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 
 /**
@@ -14,10 +15,8 @@ import { WorkspacePlugins } from '../plugins';
  * The logic here is to delete the old workspace and create a new one.
  */
 export function useTransformWorkspace() {
-  const set = useSetAtom(jotaiWorkspacesAtom);
-  const setWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
-  const setPageId = useSetAtom(currentPageIdAtom);
-  const router = useRouter();
+  const setCurrentWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
+  const set = useSetAtom(rootWorkspacesMetadataAtom);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -36,12 +35,9 @@ export function useTransformWorkspace() {
         });
         return [...workspaces];
       });
-      if (typeof router.query.pageId === 'string') {
-        setWorkspaceId(newId);
-        setPageId(router.query.pageId);
-      }
+      setCurrentWorkspaceId(newId);
       return newId;
     },
-    [router.query.pageId, set, setPageId, setWorkspaceId]
+    [set, setCurrentWorkspaceId]
   );
 }

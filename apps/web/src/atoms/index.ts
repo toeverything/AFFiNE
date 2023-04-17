@@ -1,40 +1,68 @@
+import { DebugLogger } from '@affine/debug';
 import { atomWithSyncStorage } from '@affine/jotai';
-import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
-import type { EditorContainer } from '@blocksuite/editor';
+import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import {
+  rootCurrentEditorAtom,
+  rootCurrentPageIdAtom,
+  rootCurrentWorkspaceIdAtom,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
 import type { Page } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
 import { WorkspacePlugins } from '../plugins';
-import type { AllWorkspace } from '../shared';
+
+const logger = new DebugLogger('web:atoms');
+
 // workspace necessary atoms
-export const currentWorkspaceIdAtom = atom<string | null>(null);
-export const currentPageIdAtom = atom<string | null>(null);
-export const currentEditorAtom = atom<Readonly<EditorContainer> | null>(null);
+/**
+ * @deprecated Use `rootCurrentWorkspaceIdAtom` directly instead.
+ */
+export const currentWorkspaceIdAtom = rootCurrentWorkspaceIdAtom;
+
+// todo(himself65): move this to the workspace package
+rootWorkspacesMetadataAtom.onMount = setAtom => {
+  function createFirst(): RootWorkspaceMetadata[] {
+    const Plugins = Object.values(WorkspacePlugins).sort(
+      (a, b) => a.loadPriority - b.loadPriority
+    );
+
+    return Plugins.flatMap(Plugin => {
+      return Plugin.Events['app:init']?.().map(
+        id =>
+          ({
+            id,
+            flavour: Plugin.flavour,
+          } satisfies RootWorkspaceMetadata)
+      );
+    }).filter((ids): ids is RootWorkspaceMetadata => !!ids);
+  }
+
+  setAtom(metadata => {
+    if (metadata.length === 0) {
+      const newMetadata = createFirst();
+      logger.info('create first workspace', newMetadata);
+      return newMetadata;
+    }
+    return metadata;
+  });
+};
+
+/**
+ * @deprecated Use `rootCurrentPageIdAtom` directly instead.
+ */
+export const currentPageIdAtom = rootCurrentPageIdAtom;
+/**
+ * @deprecated Use `rootCurrentEditorAtom` directly instead.
+ */
+export const currentEditorAtom = rootCurrentEditorAtom;
 
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom(false);
 export const openQuickSearchModalAtom = atom(false);
 
-export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
-  const flavours: string[] = Object.values(WorkspacePlugins).map(
-    plugin => plugin.flavour
-  );
-  const jotaiWorkspaces = get(jotaiWorkspacesAtom).filter(workspace =>
-    flavours.includes(workspace.flavour)
-  );
-  const workspaces = await Promise.all(
-    jotaiWorkspaces.map(workspace => {
-      const plugin =
-        WorkspacePlugins[workspace.flavour as keyof typeof WorkspacePlugins];
-      assertExists(plugin);
-      const { CRUD } = plugin;
-      return CRUD.get(workspace.id);
-    })
-  );
-  return workspaces.filter(workspace => workspace !== null) as AllWorkspace[];
-});
+export { workspacesAtom } from './root';
 
 type View = { id: string; mode: 'page' | 'edgeless' };
 

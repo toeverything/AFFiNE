@@ -19,7 +19,7 @@ async function createWindow() {
     y: mainWindowState.y,
     width: mainWindowState.width,
     minWidth: 640,
-    transparent: true,
+    transparent: isMacOS(),
     visualEffectState: 'active',
     vibrancy: 'under-window',
     height: mainWindowState.height,

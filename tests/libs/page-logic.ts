@@ -1,12 +1,7 @@
 import type { Page } from '@playwright/test';
 
 export async function waitMarkdownImported(page: Page) {
-  return page.evaluate(
-    () =>
-      new Promise(resolve => {
-        document.addEventListener('markdown:imported', resolve);
-      })
-  );
+  await page.waitForSelector('v-line');
 }
 
 export async function newPage(page: Page) {

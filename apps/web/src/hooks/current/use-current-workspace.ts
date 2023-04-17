@@ -1,21 +1,15 @@
 import { atomWithSyncStorage } from '@affine/jotai';
-import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-  workspacesAtom,
-} from '../../atoms';
+import { currentPageIdAtom, currentWorkspaceIdAtom } from '../../atoms';
+import { rootCurrentWorkspaceAtom } from '../../atoms/root';
 import type { AllWorkspace } from '../../shared';
 
-export const currentWorkspaceAtom = atom<Promise<AllWorkspace | null>>(
-  async get => {
-    const id = get(currentWorkspaceIdAtom);
-    const workspaces = await get(workspacesAtom);
-    return workspaces.find(workspace => workspace.id === id) ?? null;
-  }
-);
+/**
+ * @deprecated use `rootCurrentWorkspaceAtom` instead
+ */
+export const currentWorkspaceAtom = rootCurrentWorkspaceAtom;
 
 export const lastWorkspaceIdAtom = atomWithSyncStorage<string | null>(
   'last_workspace_id',
@@ -26,7 +20,7 @@ export function useCurrentWorkspace(): [
   AllWorkspace | null,
   (id: string | null) => void
 ] {
-  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
+  const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const [, setId] = useAtom(currentWorkspaceIdAtom);
   const [, setPageId] = useAtom(currentPageIdAtom);
   const setLast = useSetAtom(lastWorkspaceIdAtom);

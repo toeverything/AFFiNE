@@ -1,4 +1,5 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
+import { initPage } from '@affine/env/blocksuite';
 import { useTranslation } from '@affine/i18n';
 import { PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
@@ -25,7 +26,6 @@ import {
   PublicWorkspaceLayout,
 } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
-import { initPage } from '../../../utils';
 
 export const NavContainer = styled('div')(({ theme }) => {
   return {

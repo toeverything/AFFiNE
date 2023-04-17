@@ -3,6 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
+import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import type { PageMeta } from '@blocksuite/store';
 import matchers from '@testing-library/jest-dom/matchers';
 import type { RenderResult } from '@testing-library/react';
@@ -12,11 +13,9 @@ import type { FC, PropsWithChildren } from 'react';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { workspacesAtom } from '../../atoms';
-import {
-  currentWorkspaceAtom,
-  useCurrentWorkspace,
-} from '../../hooks/current/use-current-workspace';
-import { useWorkspacesHelper } from '../../hooks/use-workspaces';
+import { rootCurrentWorkspaceAtom } from '../../atoms/root';
+import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
+import { useAppHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
 import type { BlockSuiteWorkspace } from '../../shared';
 import type { PinboardProps } from '../pure/workspace-slider-bar/Pinboard';
@@ -42,24 +41,26 @@ const initPinBoard = async () => {
   //      - pinboard2
   //    - noPinboardPage
 
-  const mutationHook = renderHook(() => useWorkspacesHelper(), {
+  const mutationHook = renderHook(() => useAppHelper(), {
     wrapper: ProviderWrapper,
   });
   const rootPageIds = ['hasPinboardPage', 'noPinboardPage'];
   const pinboardPageIds = ['pinboard1', 'pinboard2'];
   const id = await mutationHook.result.current.createLocalWorkspace('test0');
-  await store.get(workspacesAtom);
-  mutationHook.rerender();
 
-  await store.get(currentWorkspaceAtom);
+  store.set(rootCurrentWorkspaceIdAtom, id);
+  await store.get(workspacesAtom);
+
+  await store.get(rootCurrentWorkspaceAtom);
   const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
     wrapper: ProviderWrapper,
   });
   currentWorkspaceHook.result.current[1](id);
-  const currentWorkspace = await store.get(currentWorkspaceAtom);
+  const currentWorkspace = await store.get(rootCurrentWorkspaceAtom);
   const blockSuiteWorkspace =
     currentWorkspace?.blockSuiteWorkspace as BlockSuiteWorkspace;
 
+  mutationHook.rerender();
   // create root pinboard
   mutationHook.result.current.createWorkspacePage(id, 'rootPinboard');
   blockSuiteWorkspace.meta.setPageMeta('rootPinboard', {
@@ -73,7 +74,7 @@ const initPinBoard = async () => {
       subpageIds: rootPageId === rootPageIds[0] ? pinboardPageIds : [],
     });
   });
-  // create children to firs parent
+  // create children to first parent
   pinboardPageIds.forEach(pinboardId => {
     mutationHook.result.current.createWorkspacePage(id, pinboardId);
     blockSuiteWorkspace.meta.setPageMeta(pinboardId, {

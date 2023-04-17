@@ -7,6 +7,7 @@ import { registerHandlers } from './app-state';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 
+if (require('electron-squirrel-startup')) app.exit();
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient('affine', process.execPath, [
