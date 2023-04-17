@@ -32,6 +32,14 @@ module.exports = {
         setupIcon: './resources/icons/icon.ico',
       },
     },
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        name: 'AFFiNE',
+        setupIcon: './resources/icons/icon.ico',
+        // loadingGif: './resources/icons/loading.gif',
+      },
+    },
   ],
   hooks: {
     generateAssets: async (_, platform, arch) => {
@@ -41,6 +49,11 @@ module.exports = {
         // In GitHub Actions runner, MacOS is always x64
         // we need to manually set TARGET to aarch64-apple-darwin
         process.env.TARGET = 'aarch64-apple-darwin';
+      }
+
+      if (platform === 'win32') {
+        $.shell = 'powershell.exe';
+        $.prefix = '';
       }
 
       // run yarn generate-assets

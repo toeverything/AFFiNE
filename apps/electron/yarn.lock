@@ -129,6 +129,7 @@ __metadata:
     cross-env: 7.0.3
     dts-for-context-bridge: ^0.7.1
     electron: 24.0.0
+    electron-squirrel-startup: 1.0.0
     electron-window-state: ^5.0.3
     esbuild: ^0.17.16
     firebase: ^9.18.0
@@ -8566,6 +8567,15 @@ __metadata:
   bin:
     electron-packager: bin/electron-packager.js
   checksum: db59ef057c47e1e2bb4b3c701a767aedef80893472d78e33ab73dd7dcf8bb77f6d5c80fe8d6f8afcd5a36bb5efe6a05f8fc425acb366f7871ad362cd6aefd9d5
+  languageName: node
+  linkType: hard
+
+"electron-squirrel-startup@npm:1.0.0":
+  version: 1.0.0
+  resolution: "electron-squirrel-startup@npm:1.0.0"
+  dependencies:
+    debug: ^2.2.0
+  checksum: a1f658e326bd0f5c24aec95fd9a94a2e2b8b645adbd421465829f32719d15e85d6469d9369914c3b766d61e71eebb9f6725057b7fafa78adbcc5d6d3ce5d7a22
   languageName: node
   linkType: hard
 
