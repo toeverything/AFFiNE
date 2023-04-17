@@ -197,7 +197,7 @@ jobs:
       - name: Save Linux artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/*/make/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
+          mv apps/electron/out/**/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
