@@ -393,16 +393,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     );
   }, [setIsResizing, setSidebarOpen, setSliderWidth]);
 
-  const Provider = currentWorkspace
-    ? WorkspacePlugins[currentWorkspace.flavour].UI.Provider
-    : DefaultProvider;
+  const Provider =
+    WorkspacePlugins[currentWorkspace.flavour].UI.Provider ?? DefaultProvider;
 
   return (
-    <Provider
-      key={`${
-        currentWorkspace ? currentWorkspace.flavour : 'default'
-      }-provider`}
-    >
+    <Provider>
       <Head>
         <title>{title}</title>
       </Head>
