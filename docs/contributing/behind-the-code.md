@@ -143,7 +143,7 @@ With this design concept, we have the following data structure:
 ```ts
 import { Workspace as Store } from '@blocksuite/store';
 
-interface Prpvider {
+interface Provider {
   type: 'local-indexeddb' | 'affine-cloud' | 'desktop-sqlite';
   background: boolean; // if the provider is background, we will load the data in the background
   necessary: boolean; // if the provider is necessary, we will block the UI rendering until this provider is ready
