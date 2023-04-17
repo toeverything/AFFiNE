@@ -83,9 +83,6 @@ const WorkspaceDetail: React.FC = () => {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);
     }
   }, [currentWorkspace]);
-  if (currentWorkspace === null) {
-    return <PageLoading />;
-  }
   if (!currentPageId) {
     return <PageLoading text="Loading page." />;
   }
