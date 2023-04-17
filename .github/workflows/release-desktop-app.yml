@@ -36,10 +36,11 @@ concurrency:
 
 env:
   BUILD_TYPE: ${{ github.event.inputs.is-canary == 'true' && 'canary' || 'stable' }}
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
 jobs:
   make-macos:
-    environment: production
+    environment: ${{ env.GITHUB_REF_NAME == "master" && 'production' || 'development' }}
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -106,7 +107,7 @@ jobs:
 
   make-windows:
     runs-on: windows-latest
-    environment: production
+    environment: ${{ env.GITHUB_REF_NAME == "master" && 'production' || 'development' }}
     env:
       NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
       NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
