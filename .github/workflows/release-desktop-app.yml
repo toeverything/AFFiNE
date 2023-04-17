@@ -145,11 +145,11 @@ jobs:
       - name: Save windows artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/make/*/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
-          mv apps/electron/out/make/*/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv apps/electron/out/make/*/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
-          mv apps/electron/out/make/*/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
-          mv apps/electron/out/make/*/squirrel.windows/x64/RELEASES ./builds/RELEASES
+          mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
+          mv apps/electron/out/*/make/squirrel.windows/x64/RELEASES ./builds/RELEASES
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
