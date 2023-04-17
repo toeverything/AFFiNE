@@ -7,9 +7,7 @@ import {
 } from '@toeverything/y-indexeddb';
 import { useMemo } from 'react';
 
-export function useBlockSuiteWorkspaceHelper(
-  blockSuiteWorkspace: Workspace | null
-) {
+export function useBlockSuiteWorkspaceHelper(blockSuiteWorkspace: Workspace) {
   return useMemo(
     () => ({
       createPage: (pageId: string, parentId?: string): Page => {
