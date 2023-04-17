@@ -210,5 +210,7 @@
   "Disable": "Disable",
   "Disable Public Link ?": "Disable Public Link ?",
   "Disable Public Link Description": "Disabling this public link will prevent anyone with the link from accessing this page.",
-  "Export Shared Pages Description": "Download a static copy of your page to share with others."
+  "Export Shared Pages Description": "Download a static copy of your page to share with others.",
+  "Organize pages to build knowledge": "Organize pages to build knowledge",
+  "Favorite pages for easy access": "Favorite pages for easy access"
 }
