@@ -35,6 +35,10 @@ export interface LocalIndexedDBProvider extends BackgroundProvider {
   whenSynced: Promise<void>;
 }
 
+export interface LocalIndexedDBWorkerProvider extends BackgroundProvider {
+  flavour: 'local-indexeddb-worker';
+}
+
 export interface AffineWebSocketProvider extends BaseProvider {
   flavour: 'affine-websocket';
 }
@@ -42,7 +46,8 @@ export interface AffineWebSocketProvider extends BaseProvider {
 export type Provider =
   | LocalIndexedDBProvider
   | AffineWebSocketProvider
-  | BroadCastChannelProvider;
+  | BroadCastChannelProvider
+  | LocalIndexedDBWorkerProvider;
 
 export interface AffineWorkspace extends RemoteWorkspace {
   flavour: WorkspaceFlavour.AFFINE;

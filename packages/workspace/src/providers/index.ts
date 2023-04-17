@@ -9,6 +9,7 @@ import type {
   AffineWebSocketProvider,
   LocalIndexedDBProvider,
 } from '@affine/workspace/type';
+import { CallbackSet } from '@affine/workspace/utils';
 import type {
   Disposable,
   Workspace as BlockSuiteWorkspace,
@@ -19,6 +20,7 @@ import {
   EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
 
+import { createIndexeddbWorkerProvider } from '../providers/indexeddb-worker';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 import { localProviderLogger } from './logger';
 
@@ -68,36 +70,6 @@ const createAffineWebSocketProvider = (
 
   return apis;
 };
-
-class CallbackSet extends Set<() => void> {
-  #ready = false;
-
-  get ready(): boolean {
-    return this.#ready;
-  }
-
-  set ready(v: boolean) {
-    this.#ready = v;
-  }
-
-  add(cb: () => void) {
-    if (this.ready) {
-      cb();
-      return this;
-    }
-    if (this.has(cb)) {
-      return this;
-    }
-    return super.add(cb);
-  }
-
-  delete(cb: () => void) {
-    if (this.has(cb)) {
-      return super.delete(cb);
-    }
-    return false;
-  }
-}
 
 const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
@@ -163,7 +135,7 @@ export const createLocalProviders = (
       config.enableBroadCastChannelProvider &&
         createBroadCastChannelProvider(blockSuiteWorkspace),
       config.enableIndexedDBProvider &&
-        createIndexedDBProvider(blockSuiteWorkspace),
+        createIndexeddbWorkerProvider(blockSuiteWorkspace),
     ] as any[]
   ).filter(v => Boolean(v));
 };

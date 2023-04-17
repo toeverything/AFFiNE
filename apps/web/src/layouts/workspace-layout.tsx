@@ -9,7 +9,7 @@ import {
   rootStore,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { LocalIndexedDBProvider } from '@affine/workspace/type';
+import type { LocalIndexedDBWorkerProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
@@ -283,10 +283,10 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       return;
     }
     const localProvider = currentWorkspace.providers.find(
-      provider => provider.flavour === 'local-indexeddb'
+      provider => provider.flavour === 'local-indexeddb-worker'
     );
-    if (localProvider && localProvider.flavour === 'local-indexeddb') {
-      const provider = localProvider as LocalIndexedDBProvider;
+    if (localProvider && localProvider.flavour === 'local-indexeddb-worker') {
+      const provider = localProvider as LocalIndexedDBWorkerProvider;
       const callback = () => {
         setIsLoading(false);
         if (currentWorkspace.blockSuiteWorkspace.isEmpty) {

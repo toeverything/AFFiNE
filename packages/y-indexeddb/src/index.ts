@@ -18,7 +18,7 @@ import type {
 } from './shared';
 import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
 
-const indexeddbOrigin = Symbol('indexeddb-provider-origin');
+export const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
@@ -218,7 +218,13 @@ export const createIndexedDBProvider = (
       // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
       do {
-        if (!allDb || localStorage.getItem(`${dbName}-migration`) !== 'true') {
+        if (
+          !allDb ||
+          (globalThis.localStorage &&
+            localStorage.getItem(`${dbName}-migration`) !== 'true') ||
+          // @ts-expect-error
+          globalThis.migration === true
+        ) {
           try {
             allDb = await indexedDB.databases();
           } catch {
@@ -302,7 +308,12 @@ export const createIndexedDBProvider = (
               }
             })
           );
-          localStorage.setItem(`${dbName}-migration`, 'true');
+          if (globalThis.localStorage) {
+            localStorage.setItem(`${dbName}-migration`, 'true');
+          } else {
+            // @ts-expect-error
+            globalThis.migration = true;
+          }
           break;
         }
         // eslint-disable-next-line no-constant-condition
