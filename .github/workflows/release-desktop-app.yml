@@ -96,12 +96,12 @@ jobs:
       - name: Save artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/make/AFFiNE.dmg ./builds/affine-darwin-${{ env.BUILD_TYPE }}-${{ matrix.arch }}.dmg
+          mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-darwin-${{ matrix.arch }}.dmg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-darwin-${{ env.BUILD_TYPE }}-${{ matrix.arch }}-builds
+          name: affine-${{ env.BUILD_TYPE }}-darwin-${{ matrix.arch }}-builds
           path: builds
 
   make-windows:
@@ -145,11 +145,11 @@ jobs:
       - name: Save windows artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-windows-${{ env.BUILD_TYPE }}-x64.zip
-          mv apps/electron/out/make/squirrel.windows/x64/*.exe ./builds/affine-windows-${{ env.BUILD_TYPE }}-x64.exe
-          mv apps/electron/out/make/squirrel.windows/x64/*.msi ./builds/affine-windows-${{ env.BUILD_TYPE }}-x64.msi
-          mv apps/electron/out/make/squirrel.windows/x64/*.nupkg ./builds/affine-windows-${{ env.BUILD_TYPE }}-x64.nupkg
-          mv apps/electron/out/make/squirrel.windows/x64/RELEASES ./builds/RELEASES
+          mv apps/electron/out/make/*/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv apps/electron/out/make/*/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv apps/electron/out/make/*/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv apps/electron/out/make/*/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
+          mv apps/electron/out/make/*/squirrel.windows/x64/RELEASES ./builds/RELEASES
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
