@@ -1,7 +1,7 @@
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { ExportIcon, PublishIcon, ShareIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-blocksuite-workspace-page-is-public';
+import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import type { FC } from 'react';
 import { useRef } from 'react';
 import { useCallback, useState } from 'react';

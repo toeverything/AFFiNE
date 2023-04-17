@@ -3,13 +3,13 @@ import { QuickSearchTips } from '@affine/component';
 import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { forwardRef, useCallback, useRef } from 'react';
 
 import { currentEditorAtom, openQuickSearchModalAtom } from '../../../atoms';
 import { useGuideHidden } from '../../../hooks/use-is-first-load';
-import { usePageMeta } from '../../../hooks/use-page-meta';
 import { useElementResizeEffect } from '../../../hooks/use-workspaces';
 import { QuickSearchButton } from '../../pure/quick-search-button';
 import { EditorModeSwitch } from './editor-mode-switch';
@@ -34,7 +34,7 @@ export const WorkspaceHeader = forwardRef<
   const { workspace, currentPage, children, isPublic } = props;
   // fixme(himself65): remove this atom and move it to props
   const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
-  const pageMeta = usePageMeta(workspace.blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
     meta => meta.id === currentPage?.id
   );
   assertExists(pageMeta);

@@ -12,6 +12,7 @@ import {
 import type { LocalIndexedDBProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -27,7 +28,6 @@ import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useRouterWithWorkspaceIdDefense } from '../hooks/use-router-with-workspace-id-defense';
@@ -341,7 +341,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const { openPage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(
-    currentWorkspace?.blockSuiteWorkspace ?? null
+    currentWorkspace.blockSuiteWorkspace
   );
   const isPublicWorkspace =
     router.pathname.split('/')[1] === 'public-workspace';
@@ -393,16 +393,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     );
   }, [setIsResizing, setSidebarOpen, setSliderWidth]);
 
-  const Provider = currentWorkspace
-    ? WorkspacePlugins[currentWorkspace.flavour].UI.Provider
-    : DefaultProvider;
+  const Provider =
+    WorkspacePlugins[currentWorkspace.flavour].UI.Provider ?? DefaultProvider;
 
   return (
-    <Provider
-      key={`${
-        currentWorkspace ? currentWorkspace.flavour : 'default'
-      }-provider`}
-    >
+    <Provider>
       <Head>
         <title>{title}</title>
       </Head>

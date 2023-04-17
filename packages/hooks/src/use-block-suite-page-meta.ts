@@ -1,9 +1,7 @@
 import type { PageBlockModel } from '@blocksuite/blocks';
-import type { PageMeta } from '@blocksuite/store';
+import type { PageMeta, Workspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useEffect, useMemo, useState } from 'react';
-
-import type { BlockSuiteWorkspace } from '../shared';
 
 declare module '@blocksuite/store' {
   interface PageMeta {
@@ -15,12 +13,14 @@ declare module '@blocksuite/store' {
     trashDate?: number;
     // whether to create the page with the default template
     init?: boolean;
+    // todo: support `number` in the future
+    isPublic?: boolean;
     isRootPinboard?: boolean;
   }
 }
 
-export function usePageMeta(
-  blockSuiteWorkspace: BlockSuiteWorkspace | null
+export function useBlockSuitePageMeta(
+  blockSuiteWorkspace: Workspace
 ): PageMeta[] {
   const [pageMeta, setPageMeta] = useState<PageMeta[]>(
     () => blockSuiteWorkspace?.meta.pageMetas ?? []
@@ -45,9 +45,7 @@ export function usePageMeta(
   return pageMeta;
 }
 
-export function usePageMetaHelper(
-  blockSuiteWorkspace: BlockSuiteWorkspace | null
-) {
+export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
   return useMemo(
     () => ({
       setPageTitle: (pageId: string, newTitle: string) => {

@@ -32,6 +32,7 @@ export interface BroadCastChannelProvider extends BaseProvider {
 
 export interface LocalIndexedDBProvider extends BackgroundProvider {
   flavour: 'local-indexeddb';
+  whenSynced: Promise<void>;
 }
 
 export interface AffineWebSocketProvider extends BaseProvider {

@@ -1,3 +1,5 @@
+import type { Workspace } from '@blocksuite/store';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -8,7 +10,6 @@ import {
   workspaceRecentViresWriteAtom,
 } from '../atoms';
 import { useCurrentWorkspace } from './current/use-current-workspace';
-import { usePageMeta } from './use-page-meta';
 
 export function useRecentlyViewed() {
   const [workspace] = useCurrentWorkspace();
@@ -19,13 +20,14 @@ export function useRecentlyViewed() {
   return recentlyViewed[workspaceId] ?? [];
 }
 
-export function useSyncRecentViewsWithRouter(router: NextRouter) {
-  const [workspace] = useCurrentWorkspace();
-  const workspaceId = workspace?.id || null;
-  const blockSuiteWorkspace = workspace?.blockSuiteWorkspace || null;
+export function useSyncRecentViewsWithRouter(
+  router: NextRouter,
+  blockSuiteWorkspace: Workspace
+) {
+  const workspaceId = blockSuiteWorkspace.id;
   const pageId = router.query.pageId;
   const set = useSetAtom(workspaceRecentViresWriteAtom);
-  const meta = usePageMeta(blockSuiteWorkspace).find(
+  const meta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   const currentMode = useAtomValue(workspacePreferredModeAtom)[
