@@ -54,3 +54,4 @@ Example:
 - Fangdun Tsai, @fundon, 2023/03/21
 - Zhilin Liu, @lzlme, 2023/04/09
 - Skye Sun, @skyesun, 2023/04/14
+- Jordy Delgado, @Jdelgad8, 2023/04/17
