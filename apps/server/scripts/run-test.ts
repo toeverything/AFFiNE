@@ -7,17 +7,12 @@ import { readdir } from 'fs/promises';
 import * as process from 'process';
 import { fileURLToPath } from 'url';
 
+import pkg from '../package.json' assert { type: 'json' };
 const root = fileURLToPath(new URL('..', import.meta.url));
 const testDir = resolve(root, 'src', 'tests');
 const files = await readdir(testDir);
 
-const args = [
-  '--loader',
-  'ts-node/esm.mjs',
-  '--es-module-specifier-resolution',
-  'node',
-  '--test',
-];
+const args = [...pkg.nodemonConfig.nodeArgs, '--test'];
 
 const env = {
   PATH: process.env.PATH,
