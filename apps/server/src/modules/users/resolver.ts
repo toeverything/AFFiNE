@@ -27,11 +27,11 @@ export class UserResolver {
 
   @Query(() => User, {
     name: 'user',
-    description: 'Get user by id',
+    description: 'Get user by email',
   })
-  async user(@Args('id') id: string) {
+  async user(@Args('email') email: string) {
     return this.prisma.users.findUnique({
-      where: { id },
+      where: { email },
     });
   }
 }
