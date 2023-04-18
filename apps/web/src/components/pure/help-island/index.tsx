@@ -58,7 +58,7 @@ export const HelpIsland = ({
           style={{ height: spread ? `${showList.length * 44}px` : 0 }}
         >
           {showList.includes('whatNew') && (
-            <Tooltip content={t("Discover what's new")} placement="left-end">
+            <Tooltip content={t("Discover what's new!")} placement="left-end">
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {

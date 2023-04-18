@@ -1,7 +1,8 @@
 import { DebugLogger } from '@affine/debug';
+import { useTranslation } from '@affine/i18n';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
-import React, { Suspense, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 
 import { PageLoading } from '../components/pure/loading';
 import { useLastWorkspaceId } from '../hooks/affine/use-last-leave-workspace-id';
@@ -62,8 +63,9 @@ const IndexPageInner = () => {
 };
 
 const IndexPage: NextPage = () => {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<PageLoading text="Loading all workspaces" />}>
+    <Suspense fallback={<PageLoading text={t('Loading All Workspaces')} />}>
       <IndexPageInner />
     </Suspense>
   );
