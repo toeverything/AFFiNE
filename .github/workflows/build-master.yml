@@ -215,6 +215,7 @@ jobs:
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE affine;"
           psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+          psql -h localhost -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE affine TO affine;"
         env:
           PGPASSWORD: affine
       - name: Generate prisma client
