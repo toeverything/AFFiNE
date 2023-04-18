@@ -121,7 +121,7 @@ jobs:
         if: ${{ matrix.spec.platform == 'macos' }}
         run: |
           mkdir -p builds
-          mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-darwin-${{ matrix.arch }}.dmg
+          mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
 
       - name: Save artifacts (windows)
         if: ${{ matrix.spec.platform == 'windows' }}
