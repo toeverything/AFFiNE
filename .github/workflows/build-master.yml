@@ -199,7 +199,8 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: 123456
+          POSTGRES_DB: affine
+          POSTGRES_PASSWORD: affine
           POSTGRES_USER: affine
         options: >-
           --health-cmd pg_isready
@@ -217,7 +218,7 @@ jobs:
         run: yarn test:coverage
         working-directory: apps/server
         env:
-          DATABASE_URL: postgresql://affine:123456@localhost:5432/affine
+          DATABASE_URL: postgresql://affine:affine@postgres:5432/affine
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
         with:
