@@ -26,11 +26,14 @@ const env = {
 };
 
 if (process.argv[2] === 'all') {
-  spawn('node', [...args, resolve(testDir, '*')], {
+  const cp = spawn('node', [...args, resolve(testDir, '*')], {
     cwd: root,
     env,
     stdio: 'inherit',
     shell: true,
+  });
+  cp.on('exit', code => {
+    process.exit(code);
   });
 } else {
   const result = await p.group({
