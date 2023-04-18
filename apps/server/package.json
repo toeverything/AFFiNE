@@ -1,12 +1,13 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.5.3",
   "description": "Affine Node.js server",
   "type": "module",
   "scripts": {
     "dev": "nodemon ./src/index.ts",
-    "test": "ava"
+    "test": "NODE_ENV=test node --loader ts-node/esm.mjs --es-module-specifier-resolution node --test ./src/tests/*",
+    "test:coverage": "NODE_V8_COVERAGE=.coverage NODE_ENV=test node --loader ts-node/esm.mjs --es-module-specifier-resolution node --experimental-test-coverage ./src/tests/*"
   },
   "dependencies": {
     "@apollo/server": "^4.6.0",
@@ -28,10 +29,10 @@
     "@nestjs/testing": "^9.4.0",
     "@types/lodash-es": "^4.14.194",
     "@types/node": "^18.15.11",
-    "ava": "^5.2.0",
     "nodemon": "^2.0.22",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "vitest": "^0.30.1"
   },
   "nodemonConfig": {
     "exec": "node",
@@ -54,26 +55,5 @@
       "DEBUG_COLORS": true
     },
     "delay": 1000
-  },
-  "ava": {
-    "extensions": {
-      "ts": "module"
-    },
-    "nodeArguments": [
-      "--loader",
-      "ts-node/esm.mjs",
-      "--es-module-specifier-resolution",
-      "node"
-    ],
-    "files": [
-      "src/**/*.spec.ts"
-    ],
-    "require": [
-      "./src/prelude.ts"
-    ],
-    "environmentVariables": {
-      "TS_NODE_PROJECT": "./tsconfig.json",
-      "NODE_ENV": "test"
-    }
   }
 }

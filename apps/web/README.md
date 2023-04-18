@@ -20,10 +20,7 @@ For more information on Next.js, take a look at the [Next.js Documentation](http
 
 `preset.config.mjs` contains the build presets for the application. The presets are used to configure the build process for different environments. The presets are:
 
-- `enableIndexedDBProvider`: Enables the IndexedDB provider for the application. This is used to store data in the browser.
 - `enableBroadCastChannelProvider`: Enables the Broadcast Channel provider for the application. This is used to communicate between local browser tabs.
-- `prefetchWorkspace`: **deprecated**
-- `exposeInternal`: Exposes internal variables into `globalThis` for debugging purposes.
 - `enableDebugPage`: Enables the debug page for the application. This is used for debugging purposes.
 
 ## BlockSuite Integration

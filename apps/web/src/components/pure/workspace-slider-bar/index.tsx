@@ -1,4 +1,3 @@
-import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
@@ -135,7 +134,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               currentWorkspace={currentWorkspace}
               onClick={onOpenWorkspaceListModal}
             />
-            {config.enableChangeLog && <ChangeLog />}
+            <ChangeLog />
             <StyledListItem
               data-testid="slider-bar-quick-search-button"
               onClick={useCallback(() => {

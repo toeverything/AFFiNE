@@ -67,8 +67,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-        with:
-          electron-workspace-install: true
 
       - name: Signing By Apple Developer ID
         uses: apple-actions/import-codesign-certs@v2
@@ -114,8 +112,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-        with:
-          electron-workspace-install: true
 
       - name: make build
         run: yarn make-windows-x64
@@ -158,8 +154,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-        with:
-          electron-workspace-install: true
 
       - name: make build
         run: yarn make

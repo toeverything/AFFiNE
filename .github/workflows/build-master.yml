@@ -191,6 +191,18 @@ jobs:
           name: affine
           fail_ci_if_error: true
 
+  server-test:
+    name: Server Test
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Run server tests
+        run: yarn test:coverage
+        working-directory: apps/server
+
   e2e-test:
     name: E2E Test
     runs-on: ubuntu-latest
