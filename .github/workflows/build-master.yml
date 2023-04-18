@@ -195,6 +195,17 @@ jobs:
     name: Server Test
     runs-on: ubuntu-latest
     environment: development
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: 123456
+          POSTGRES_USER: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -205,6 +216,8 @@ jobs:
       - name: Run server tests
         run: yarn test:coverage
         working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:123456@localhost:5432/affine
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
         with:
