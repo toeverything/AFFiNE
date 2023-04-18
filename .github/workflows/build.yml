@@ -84,6 +84,18 @@ jobs:
           path: ./apps/web/.next
           if-no-files-found: error
 
+  server-test:
+    name: Server Test
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Run server tests
+        run: yarn test:coverage
+        working-directory: apps/server
+
   storybook-test:
     name: Storybook Test
     runs-on: ubuntu-latest
