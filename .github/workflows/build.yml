@@ -105,7 +105,7 @@ jobs:
       - name: Initialize database
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE affine;"
-          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD affine;"
+          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
         env:
           PGPASSWORD: affine
       - name: Generate prisma client
