@@ -1,5 +1,5 @@
 import { equal, ok } from 'node:assert';
-import { afterEach, beforeEach, describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
 
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -13,7 +13,7 @@ const gql = '/graphql';
 globalThis.AFFiNE = getDefaultAFFiNEConfig();
 let app: INestApplication;
 
-beforeEach(async () => {
+before(async () => {
   const module = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
@@ -21,7 +21,7 @@ beforeEach(async () => {
   await app.init();
 });
 
-afterEach(async () => {
+after(async () => {
   await app.close();
 });
 
