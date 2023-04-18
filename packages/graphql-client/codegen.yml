@@ -1,0 +1,31 @@
+hooks:
+  afterOneFileWrite:
+    - prettier --write
+config:
+  strict: true
+  maybeValue: T | null
+  declarationKind: interface
+  avoidOptionals: true
+  preResolveTypes: true
+  onlyOperationTypes: true
+  namingConvention:
+    enumValues: keep
+  scalars:
+    DateTime: string
+    Date: string
+    Decimal: number
+    UUID: string
+    ID: string
+    JSON: any
+overwrite: true
+schema: ../../apps/server/src/schema.gql
+documents: ./src/**/*.gql
+generates:
+  ./src/schema.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+      - add:
+          content: '/* eslint-disable */'
+      - ./export-gql-plugin.cjs:
+          output: ./src/graphql/index.ts
