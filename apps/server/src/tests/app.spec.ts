@@ -24,7 +24,11 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await app.close();
+  try {
+    await app.close();
+  } catch (e) {
+    console.log('Error in afterEach');
+  }
 });
 
 test('should init app', () => {
