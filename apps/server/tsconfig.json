@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "bundler",
+    "isolatedModules": false,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "outDir": "dist",
+    "noEmit": false
+  },
+  "include": ["src", "package.json"],
+  "exclude": ["dist", "node_modules"],
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
+}

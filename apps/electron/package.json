@@ -5,10 +5,6 @@
   "author": "affine",
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
-  "workspaces": [
-    "../../packages/*",
-    "../../tests/fixtures"
-  ],
   "scripts": {
     "dev": "cross-env NODE_ENV=development node scripts/dev.mjs",
     "prod": "cross-env NODE_ENV=production node scripts/dev.mjs",
