@@ -198,10 +198,6 @@ jobs:
     services:
       postgres:
         image: postgres
-        env:
-          POSTGRES_DB: affine
-          POSTGRES_PASSWORD: affine
-          POSTGRES_USER: affine
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
