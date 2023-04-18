@@ -43,7 +43,6 @@ jobs:
     environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
 
