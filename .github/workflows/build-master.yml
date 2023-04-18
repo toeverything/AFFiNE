@@ -202,6 +202,14 @@ jobs:
       - name: Run server tests
         run: yarn test:coverage
         working-directory: apps/server
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./apps/server/.coverage/lcov.info
+          flags: server-test
+          name: affine
+          fail_ci_if_error: true
 
   e2e-test:
     name: E2E Test
