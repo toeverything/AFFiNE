@@ -7,6 +7,7 @@ import type { TreeNodeProps, TreeViewProps } from './types';
 import { flattenIds } from './utils';
 
 export const TreeView = <RenderProps,>({
+  context,
   data,
   enableKeyboardSelection,
   onSelect,
@@ -74,8 +75,13 @@ export const TreeView = <RenderProps,>({
   };
 
   if (enableDnd) {
+    if (!context) return null;
+    // The context is set by default to window, which will break the drag and drop elements in blocksuite.
+    // @ts-ignore
+    context.clearTimeout = (id?: number) => window.clearTimeout(id);
+
     return (
-      <DndProvider backend={HTML5Backend}>
+      <DndProvider backend={HTML5Backend} context={context}>
         {data.map((node, index) => (
           <TreeNodeWithDnd
             key={node.id}

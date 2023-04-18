@@ -46,9 +46,11 @@ export const Pinboard = ({ blockSuiteWorkspace, openPage }: PinboardProps) => {
   if (!data.length) {
     return null;
   }
+
   return (
     <div data-testid="sidebar-pinboard-container">
       <TreeView
+        context={document.querySelector('[data-testid="sliderBar-inner"]')}
         data={data}
         onAdd={addPin}
         onDelete={deletePin}

@@ -65,6 +65,7 @@ export type TreeNodeItemProps<RenderProps = unknown> = {
 } & TreeNodeProps<RenderProps>;
 
 export type TreeViewProps<RenderProps = unknown> = {
+  context: HTMLDivElement | null;
   data: Node<RenderProps>[];
   initialCollapsedIds?: string[];
   disableCollapse?: boolean;
