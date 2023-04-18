@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon ./src/index.ts",
     "test": "NODE_ENV=test node --loader ts-node/esm.mjs --es-module-specifier-resolution node --test ./src/tests/*",
-    "test:coverage": "NODE_V8_COVERAGE=.coverage NODE_ENV=test node --loader ts-node/esm.mjs --es-module-specifier-resolution node --experimental-test-coverage ./src/tests/*"
+    "test:coverage": "NODE_ENV=test c8 node --loader ts-node/esm.mjs --es-module-specifier-resolution node --experimental-test-coverage ./src/tests/*"
   },
   "dependencies": {
     "@apollo/server": "^4.6.0",
@@ -29,6 +29,7 @@
     "@nestjs/testing": "^9.4.0",
     "@types/lodash-es": "^4.14.194",
     "@types/node": "^18.15.11",
+    "c8": "^7.13.0",
     "nodemon": "^2.0.22",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4",
@@ -55,5 +56,16 @@
       "DEBUG_COLORS": true
     },
     "delay": 1000
+  },
+  "c8": {
+    "reporter": [
+      "text",
+      "lcov"
+    ],
+    "report-dir": ".coverage",
+    "exclude": [
+      "node_modules",
+      "**/*.spec.ts"
+    ]
   }
 }
