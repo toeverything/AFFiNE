@@ -11,7 +11,6 @@ globalThis.AFFiNE = getDefaultAFFiNEConfig();
 let app: INestApplication;
 
 beforeEach(async () => {
-  console.log(process.env.DATABASE_URL);
   try {
     const module = await Test.createTestingModule({
       imports: [AppModule],
@@ -19,6 +18,7 @@ beforeEach(async () => {
     app = module.createNestApplication();
     await app.init();
   } catch (e) {
+    console.log('Error in beforeEach');
     console.error(e);
   }
 });
