@@ -1,4 +1,5 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import {
   getLoginStorage,
@@ -79,6 +80,10 @@ export const SyncUser = () => {
 
   const { t } = useTranslation();
   const transformWorkspace = useTransformWorkspace();
+
+  if (!config.enableLegacyCloud) {
+    return null;
+  }
 
   if (status === 'offline') {
     return (
