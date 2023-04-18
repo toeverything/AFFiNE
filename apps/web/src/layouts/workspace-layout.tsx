@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { config, DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
+import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
@@ -448,11 +448,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
               {!isPublicWorkspace && (
                 <HelpIsland
                   showList={
-                    router.query.pageId
-                      ? undefined
-                      : config.enableChangeLog
-                      ? ['whatNew', 'contact']
-                      : ['contact']
+                    router.query.pageId ? undefined : ['whatNew', 'contact']
                   }
                 />
               )}

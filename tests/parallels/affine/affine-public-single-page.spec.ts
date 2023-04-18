@@ -10,7 +10,6 @@ test('public single page', async ({ page, browser }) => {
   await openHomePage(page);
   const [a] = await createFakeUser();
   await loginUser(page, a);
-  await waitMarkdownImported(page);
   const name = `test-${Date.now()}`;
   await createWorkspace({ name }, page);
   await waitMarkdownImported(page);

@@ -11,14 +11,8 @@ export const publicRuntimeConfigSchema = z.object({
   hash: z.string(),
   serverAPI: z.string(),
   editorVersion: z.string(),
-  enableIndexedDBProvider: z.boolean(),
   enableBroadCastChannelProvider: z.boolean(),
-  prefetchWorkspace: z.boolean(),
   enableDebugPage: z.boolean(),
-  // expose internal api to globalThis, **development only**
-  exposeInternal: z.boolean(),
-  enableSubpage: z.boolean(),
-  enableChangeLog: z.boolean(),
 });
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
@@ -103,7 +97,7 @@ export function getEnvironment() {
 
     environment = {
       origin: window.location.origin,
-      isDesktop: window.appInfo?.electron,
+      isDesktop: !!window.appInfo?.electron,
       isBrowser: true,
       isServer: false,
       isDebug,
