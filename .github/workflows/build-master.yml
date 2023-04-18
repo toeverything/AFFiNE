@@ -221,7 +221,7 @@ jobs:
         run: yarn exec prisma generate
         working-directory: apps/server
       - name: Run init-db script
-        run: ts-node-esm ./scripts/init-db.ts
+        run: yarn exec ts-node-esm ./scripts/init-db.ts
       - name: Run server tests
         run: yarn test:coverage
         working-directory: apps/server
