@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   Args,
   Field,
   ID,
+  Mutation,
   ObjectType,
   Query,
   registerEnumType,
@@ -18,6 +21,15 @@ export enum WorkspaceType {
 
 registerEnumType(WorkspaceType, {
   name: 'WorkspaceType',
+  description: 'Workspace type',
+  valuesMap: {
+    Normal: {
+      description: 'Normal workspace',
+    },
+    Private: {
+      description: 'Private workspace',
+    },
+  },
 });
 
 @ObjectType()
@@ -52,6 +64,22 @@ export class WorkspaceResolver {
   async workspace(@Args('id') id: string) {
     return this.prisma.workspaces.findUnique({
       where: { id },
+    });
+  }
+
+  // create workspace
+  @Mutation(() => Workspace, {
+    name: 'createWorkspace',
+    description: 'Create workspace',
+  })
+  async createWorkspace() {
+    return this.prisma.workspaces.create({
+      data: {
+        id: randomUUID(),
+        type: WorkspaceType.Private,
+        public: false,
+        created_at: new Date(),
+      },
     });
   }
 }
