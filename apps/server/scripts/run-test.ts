@@ -28,7 +28,7 @@ if (process.argv[2] === 'all') {
     shell: true,
   });
   cp.on('exit', code => {
-    process.exit(code);
+    process.exit(code ?? 0);
   });
 } else {
   const result = await p.group({
@@ -51,6 +51,6 @@ if (process.argv[2] === 'all') {
     shell: true,
   });
   cp.on('exit', code => {
-    process.exit(code);
+    process.exit(code ?? 0);
   });
 }
