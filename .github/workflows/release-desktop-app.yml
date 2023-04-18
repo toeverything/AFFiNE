@@ -82,10 +82,10 @@ jobs:
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
         spec:
-          - { os: ubuntu-latest, arch: x64 }
-          - { os: macos-latest, arch: x64 }
-          - { os: macos-latest, arch: arm64 }
-          - { os: windows-latest, arch: x64 }
+          - { os: macos-latest, platform: macos, arch: x64 }
+          - { os: macos-latest, platform: macos, arch: arm64 }
+          - { os: ubuntu-latest, platform: linux, arch: x64 }
+          - { os: windows-latest, platform: windows, arch: x64 }
     runs-on: ${{ matrix.spec.os }}
     needs: before-make
     env:
@@ -107,24 +107,24 @@ jobs:
           path: apps/electron/dist
 
       - name: Signing By Apple Developer ID
-        if: ${{ matrix.spec.os == 'macos-latest' }}
+        if: ${{ matrix.spec.platform == 'macos' }}
         uses: apple-actions/import-codesign-certs@v2
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
       - name: make
-        run: yarn make-${{ matrix.spec.os == 'macos-latest' && 'macos' || matrix.spec.os == 'windows-latest' && 'windows' || 'linux' }}-${{ matrix.spec.arch || 'x64' }}
+        run: yarn make-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
         working-directory: apps/electron
 
       - name: Save artifacts (mac)
-        if: ${{ matrix.spec.os == 'macos-latest' }}
+        if: ${{ matrix.spec.platform == 'macos' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-darwin-${{ matrix.arch }}.dmg
 
       - name: Save artifacts (windows)
-        if: ${{ matrix.spec.os == 'windows-latest' }}
+        if: ${{ matrix.spec.platform == 'windows' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
@@ -133,7 +133,7 @@ jobs:
           mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
 
       - name: Save artifacts (linux)
-        if: ${{ matrix.spec.os == 'ubuntu-latest' }}
+        if: ${{ matrix.spec.platform == 'linux' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
@@ -141,7 +141,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-${{ matrix.spec.os }}-${{ matrix.spec.arch }}-builds
+          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
 
   release:
