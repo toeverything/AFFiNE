@@ -217,19 +217,14 @@ jobs:
           psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
         env:
           PGPASSWORD: affine
-      - name: Make .env file
-        uses: SpicyPizza/create-envfile@v1.3
-        with:
-          envkey_DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-          directory: ./apps/server
-          file_name: .env
-          fail_on_empty: true
       - name: Generate prisma client
         run: yarn exec prisma generate
         working-directory: apps/server
       - name: Run server tests
         run: yarn test:coverage
         working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
         with:
