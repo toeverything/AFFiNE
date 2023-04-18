@@ -27,7 +27,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
       // TODO: remove this when we remove the legacy cloud
     )
     .filter(workspace =>
-      config.enableLegacyCloud
+      !config.enableLegacyCloud
         ? workspace.flavour !== WorkspaceFlavour.AFFINE
         : true
     );
