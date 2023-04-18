@@ -45,11 +45,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-
-      - name: make build
-        run: yarn make-macos-${{ matrix.arch }}
-        working-directory: apps/electron
-
       - name: generate-assets
         working-directory: apps/electron
         run: yarn generate-assets
