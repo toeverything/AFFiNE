@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TreeNode, TreeNodeWithDnd } from './TreeNode';
 import type { TreeNodeProps, TreeViewProps } from './types';
 import { flattenIds } from './utils';
-
+import { DndContext, DragOverlay } from '@dnd-kit/core';
 export const TreeView = <RenderProps,>({
   data,
   enableKeyboardSelection,
@@ -19,6 +19,7 @@ export const TreeView = <RenderProps,>({
   // TODO: should record collapsedIds in localStorage
   const [collapsedIds, setCollapsedIds] =
     useState<string[]>(initialCollapsedIds);
+  const [draggedId, setDraggedId] = useState<string>();
 
   useEffect(() => {
     if (!enableKeyboardSelection) {
@@ -75,7 +76,14 @@ export const TreeView = <RenderProps,>({
 
   if (enableDnd) {
     return (
-      <DndProvider backend={HTML5Backend}>
+      <DndContext
+        onDragMove={e => {
+          console.log('onDragMove', e);
+        }}
+        onDragEnd={e => {
+          console.log('onDragEnd', e);
+        }}
+      >
         {data.map((node, index) => (
           <TreeNodeWithDnd
             key={node.id}
@@ -89,7 +97,18 @@ export const TreeView = <RenderProps,>({
             {...otherProps}
           />
         ))}
-      </DndProvider>
+
+        <DragOverlay>
+          {draggedId && (
+            <TreeNode
+              node={childNode}
+              index={0}
+              allowDrop={false}
+              {...otherProps}
+            />
+          )}
+        </DragOverlay>
+      </DndContext>
     );
   }
 

@@ -1,4 +1,6 @@
 import type { CSSProperties, ReactNode, Ref } from 'react';
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { DraggableAttributes } from '@dnd-kit/core/dist/hooks/useDraggable';
 
 export type DropPosition = {
   topLine: boolean;
@@ -52,6 +54,9 @@ export type TreeNodeProps<RenderProps = unknown> = {
   selectedId?: string;
   isDragging?: boolean;
   dragRef?: Ref<HTMLDivElement>;
+  style?: CSSProperties;
+  attributes?: DraggableAttributes;
+  listeners?: SyntheticListenerMap | undefined;
 } & CommonProps<RenderProps>;
 
 export type TreeNodeItemProps<RenderProps = unknown> = {
