@@ -46,10 +46,15 @@ jobs:
       - uses: pnpm/action-setup@v2
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+
+      - name: Signing By Apple Developer ID
+        uses: apple-actions/import-codesign-certs@v2
         with:
-          electron-workspace-install: true
-      - name: Install dependencies
-        run: yarn install
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
+      - name: make build
+        run: yarn make-macos-${{ matrix.arch }}
         working-directory: apps/electron
 
       - name: generate-assets
@@ -105,8 +110,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-        with:
-          electron-workspace-install: true
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static

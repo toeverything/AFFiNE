@@ -40,3 +40,5 @@ package:y-indexeddb: 'packages/y-indexeddb/**/*'
 app:web: 'apps/web/**/*'
 
 app:electron: 'apps/electron/**/*'
+
+app:server: 'apps/server/**/*'

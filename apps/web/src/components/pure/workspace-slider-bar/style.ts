@@ -69,6 +69,12 @@ export const StyledLink = styled(Link)(() => {
     ':visited': {
       color: 'inherit',
     },
+    userDrag: 'none',
+    userSelect: 'none',
+    appRegion: 'no-drag',
+    '-webkit-user-select': 'none',
+    '-webkit-user-drag': 'none',
+    '-webkit-app-region': 'no-drag',
   };
 });
 export const StyledNewPageButton = styled('button')(({ theme }) => {

@@ -35,6 +35,15 @@ export class Workspace implements workspaces {
 export class WorkspaceResolver {
   constructor(private readonly prisma: PrismaService) {}
 
+  // debug only query should be removed
+  @Query(() => [Workspace], {
+    name: 'workspaces',
+    description: 'Get all workspaces',
+  })
+  async workspaces() {
+    return this.prisma.workspaces.findMany();
+  }
+
   @Query(() => Workspace, {
     name: 'workspace',
     description: 'Get workspace by id',

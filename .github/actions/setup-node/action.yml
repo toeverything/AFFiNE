@@ -9,10 +9,6 @@ inputs:
     description: 'Run the install step.'
     required: false
     default: 'true'
-  electron-workspace-install:
-    description: 'Run the install step for the electron workspace.'
-    required: false
-    default: 'false'
   playwright-install:
     description: 'Run the install step for Playwright.'
     required: false
@@ -80,17 +76,6 @@ runs:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
         YARN_ENABLE_GLOBAL_CACHE: 'false'
         YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
-        HUSKY: '0'
-
-    - name: yarn install (electron)
-      if: ${{ inputs.electron-workspace-install == 'true' }}
-      shell: bash
-      run: yarn install ${{ inputs.extra-flags }}
-      working-directory: apps/electron
-      env:
-        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-        YARN_ENABLE_GLOBAL_CACHE: 'false'
-        YARN_INSTALL_STATE_PATH: ../../.yarn/ci-cache/install-state.gz
         HUSKY: '0'
 
     - name: Get installed Playwright version
