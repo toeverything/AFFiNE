@@ -116,13 +116,26 @@ jobs:
       - name: make
         run: yarn make-${{ matrix.spec.os == 'macos-latest' && 'macos' || matrix.spec.os == 'windows-latest' && 'windows' || 'linux' }}-${{ matrix.spec.arch || 'x64' }}
         working-directory: apps/electron
-      - name: Save artifacts
+
+      - name: Save artifacts (mac)
+        if: ${{ matrix.spec.os == 'macos-latest' }}
         run: |
           mkdir -p builds
-          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.dmg 2>/dev/null; true
-          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.exe 2>/dev/null; true
-          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.zip 2>/dev/null; true
-          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.nupkg 2>/dev/null; true
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.dmg
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.zip
+
+      - name: Save artifacts (windows)
+        if: ${{ matrix.spec.os == 'windows-latest' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.exe
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.nupkg
+
+      - name: Save artifacts (linux)
+        if: ${{ matrix.spec.os == 'ubuntu-latest' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
