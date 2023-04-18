@@ -199,6 +199,9 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Generate prisma client
+        run: prisma generate
+        working-directory: apps/server
       - name: Run server tests
         run: yarn test:coverage
         working-directory: apps/server
