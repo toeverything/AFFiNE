@@ -19,7 +19,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
   },
   https: false,
   host: 'localhost',
-  port: 3000,
+  port: 3010,
   path: '',
   get origin() {
     return this.dev
