@@ -79,15 +79,14 @@ jobs:
   make-distribution:
     environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
     strategy:
-      fail-fast: true
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-        include:
-          - arch: x64
-          - os: macos-latest
-            arch: arm64
-    runs-on: ${{ matrix.os }}
+        spec:
+          - { os: ubuntu-latest, arch: x64 }
+          - { os: macos-latest, arch: x64 }
+          - { os: macos-latest, arch: arm64 }
+          - { os: windows-latest, arch: x64 }
+    runs-on: ${{ matrix.spec.os }}
     needs: before-make
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -108,27 +107,27 @@ jobs:
           path: apps/electron/dist
 
       - name: Signing By Apple Developer ID
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ matrix.spec.os == 'macos-latest' }}
         uses: apple-actions/import-codesign-certs@v2
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
       - name: make
-        run: yarn make-${{ matrix.os == 'macos-latest' && 'macos' || matrix.os == 'windows-latest' && 'windows' || 'linux' }}-${{ matrix.arch || 'x64' }}
+        run: yarn make-${{ matrix.spec.os == 'macos-latest' && 'macos' || matrix.spec.os == 'windows-latest' && 'windows' || 'linux' }}-${{ matrix.spec.arch || 'x64' }}
         working-directory: apps/electron
       - name: Save artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.os }}-${{ matrix.arch }}.dmg
-          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.os }}-${{ matrix.arch }}.exe
-          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.os }}-${{ matrix.arch }}.zip
-          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.os }}-${{ matrix.arch }}.nupkg
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.dmg 2>/dev/null; true
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.exe 2>/dev/null; true
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.zip 2>/dev/null; true
+          mv apps/electron/out/${{ env.BUILD_TYPE }}/make/**/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-${{ matrix.spec.os }}-${{ matrix.spec.arch }}.nupkg 2>/dev/null; true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-${{ matrix.os }}-${{ matrix.arch }}-builds
+          name: affine-${{ matrix.spec.os }}-${{ matrix.spec.arch }}-builds
           path: builds
 
   release:
@@ -147,7 +146,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v3
         with:
-          name: affine-${{ matrix.os }}-${{ matrix.arch }}-builds
+          name: affine-${{ matrix.spec.os }}-${{ matrix.spec.arch }}-builds
           path: ./
 
       - name: Create Release Draft
