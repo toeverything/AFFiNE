@@ -33,7 +33,7 @@
   "devDependencies": {
     "@types/node": "^18.15.11",
     "@types/prettier": "^2.7.2",
-    "next": "=13.2.3",
+    "next": "=13.3.1-canary.12",
     "prettier": "^2.8.7",
     "react-dom": "^18.2.0",
     "ts-node": "^10.9.1",

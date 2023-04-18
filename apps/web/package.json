@@ -63,12 +63,12 @@
     "dotenv": "^16.0.3",
     "eslint": "^8.38.0",
     "eslint-config-next": "^13.3.0",
-    "next": "=13.2.3",
+    "next": "=13.3.1-canary.12",
     "next-debug-local": "^0.1.5",
     "next-router-mock": "^0.9.3",
     "raw-loader": "^4.0.2",
     "redux": "^4.2.1",
-    "swc-plugin-coverage-instrument": "=0.0.14",
+    "swc-plugin-coverage-instrument": "^0.0.16",
     "typescript": "^5.0.4",
     "webpack": "^5.79.0"
   }
