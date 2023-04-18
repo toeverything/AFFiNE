@@ -218,7 +218,9 @@ jobs:
         env:
           PGPASSWORD: affine
       - name: Generate prisma client
-        run: yarn exec prisma generate
+        run: |
+          yarn exec prisma generate
+          yarn exec prisma db push
         working-directory: apps/server
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
