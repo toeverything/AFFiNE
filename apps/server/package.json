@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon ./src/index.ts",
     "test": "NODE_ENV=test node --loader ts-node/esm.mjs --es-module-specifier-resolution node --test ./src/tests/*",
-    "test:coverage": "NODE_ENV=test c8 node --loader ts-node/esm.mjs --es-module-specifier-resolution node --experimental-test-coverage ./src/tests/*"
+    "test:coverage": "NODE_ENV=test c8 node --loader ts-node/esm.mjs --es-module-specifier-resolution node ./src/tests/*"
   },
   "dependencies": {
     "@apollo/server": "^4.6.0",

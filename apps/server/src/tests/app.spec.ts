@@ -11,24 +11,15 @@ globalThis.AFFiNE = getDefaultAFFiNEConfig();
 let app: INestApplication;
 
 beforeEach(async () => {
-  try {
-    const module = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = module.createNestApplication();
-    await app.init();
-  } catch (e) {
-    console.log('Error in beforeEach');
-    console.error(e);
-  }
+  const module = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
+  app = module.createNestApplication();
+  await app.init();
 });
 
 afterEach(async () => {
-  try {
-    await app.close();
-  } catch (e) {
-    console.log('Error in afterEach');
-  }
+  await app.close();
 });
 
 test('should init app', () => {
