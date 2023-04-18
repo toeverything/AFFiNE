@@ -19,13 +19,16 @@ const args = [
   '--test',
 ];
 
+const env = {
+  PATH: process.env.PATH,
+  NODE_ENV: 'test',
+  DATABASE_URL: process.env.DATABASE_URL,
+};
+
 if (process.argv[2] === 'all') {
   spawn('node', [...args, resolve(testDir, '*')], {
     cwd: root,
-    env: {
-      PATH: process.env.PATH,
-      NODE_ENV: 'test',
-    },
+    env,
     stdio: 'inherit',
     shell: true,
   });
@@ -45,10 +48,7 @@ if (process.argv[2] === 'all') {
 
   spawn('node', [...args, target], {
     cwd: root,
-    env: {
-      PATH: process.env.PATH,
-      NODE_ENV: 'test',
-    },
+    env,
     stdio: 'inherit',
     shell: true,
   });
