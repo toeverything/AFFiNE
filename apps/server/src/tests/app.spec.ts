@@ -11,11 +11,16 @@ globalThis.AFFiNE = getDefaultAFFiNEConfig();
 let app: INestApplication;
 
 beforeEach(async () => {
-  const module = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
-  app = module.createNestApplication();
-  await app.init();
+  console.log(process.env.DATABASE_URL);
+  try {
+    const module = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    app = module.createNestApplication();
+    await app.init();
+  } catch (e) {
+    console.error(e);
+  }
 });
 
 afterEach(async () => {
