@@ -9,8 +9,8 @@
   },
   "scripts": {
     "dev": "nodemon ./src/index.ts",
-    "test": "ts-node-esm ./scripts/run-test.ts all",
-    "test:coverage": "c8 ts-node-esm ./scripts/run-test.ts all"
+    "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",
+    "test:coverage": "c8 yarn exec ts-node-esm ./scripts/run-test.ts all"
   },
   "dependencies": {
     "@apollo/server": "^4.6.0",
