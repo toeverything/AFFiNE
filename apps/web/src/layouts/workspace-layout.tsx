@@ -153,21 +153,22 @@ export const CurrentWorkspaceContext = ({
   useRouterWithWorkspaceIdDefense(router);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
+  const { t } = useTranslation();
   if (!router.isReady) {
-    return <PageLoading text="Router is loading" />;
+    return <PageLoading text={t('Router is Loading')} />;
   }
   if (!workspaceId) {
-    return <PageLoading text="Finding workspace id" />;
+    return <PageLoading text={t('Finding Workspace ID')} />;
   }
   if (!exist) {
-    return <PageLoading text="Workspace not found" />;
+    return <PageLoading text={t('Workspace Not Found')} />;
   }
   return <>{children}</>;
 };
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    const { i18n } = useTranslation();
+    const { i18n, t } = useTranslation();
     useEffect(() => {
       document.documentElement.lang = i18n.language;
       // todo(himself65): this is a hack, we should use a better way to set the language
@@ -236,7 +237,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
           </CurrentWorkspaceContext>
         </AllWorkspaceContext>
         <CurrentWorkspaceContext>
-          <Suspense fallback={<PageLoading text="Finding current workspace" />}>
+          <Suspense
+            fallback={<PageLoading text={t('Finding Current Workspace')} />}
+          >
             <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
           </Suspense>
         </CurrentWorkspaceContext>
@@ -251,6 +254,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     logger.info('currentWorkspace: ', currentWorkspace);
@@ -437,8 +441,12 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         </StyledSpacer>
         <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
           <MainContainer className="main-container">
-            <Suspense fallback={<PageLoading text="Page is Loading" />}>
-              {isLoading ? <PageLoading text="Page is Loading" /> : children}
+            <Suspense fallback={<PageLoading text={t('Page is Loading')} />}>
+              {isLoading ? (
+                <PageLoading text={t('Page is Loading')} />
+              ) : (
+                children
+              )}
             </Suspense>
             <StyledToolWrapper>
               {/* fixme(himself65): remove this */}
