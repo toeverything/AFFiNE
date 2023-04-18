@@ -224,7 +224,7 @@ jobs:
         run: yarn test:coverage
         working-directory: apps/server
         env:
-          DATABASE_URL: postgresql://affine:affine@postgres:5432/affine
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
         with:
