@@ -11,22 +11,23 @@ import { getDefaultAFFiNEConfig } from '../config/default';
 const gql = '/graphql';
 
 globalThis.AFFiNE = getDefaultAFFiNEConfig();
-let app: INestApplication;
-
-before(async () => {
-  const module = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
-  app = module.createNestApplication();
-  await app.init();
-});
-
-after(async () => {
-  await app.close();
-});
 
 // please run `ts-node-esm ./scripts/init-db.ts` before running this test
 describe('AppModule', () => {
+  let app: INestApplication;
+
+  before(async () => {
+    const module = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    app = module.createNestApplication();
+    await app.init();
+  });
+
+  after(async () => {
+    await app.close();
+  });
+
   test('should init app', async () => {
     ok(typeof app === 'object');
     await request(app.getHttpServer())

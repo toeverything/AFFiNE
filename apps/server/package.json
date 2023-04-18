@@ -4,6 +4,9 @@
   "version": "0.5.3",
   "description": "Affine Node.js server",
   "type": "module",
+  "bin": {
+    "run-test": "./scripts/run-test.ts"
+  },
   "scripts": {
     "dev": "nodemon ./src/index.ts",
     "test": "NODE_ENV=test node --loader ts-node/esm.mjs --es-module-specifier-resolution node --test ./src/tests/*",
