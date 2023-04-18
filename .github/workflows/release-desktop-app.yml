@@ -38,128 +38,102 @@ env:
   BUILD_TYPE: ${{ github.event.inputs.is-canary == 'true' && 'canary' || 'stable' }}
 
 jobs:
-  make-macos:
+  before-make:
+    runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
-    env:
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-      AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
-      AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      API_SERVER_PROFILE: prod
-
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        arch: [x64, arm64]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: generate-assets
+        working-directory: apps/electron
+        run: yarn generate-assets
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
+          AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          API_SERVER_PROFILE: prod
+
+      - name: Upload Artifact (web-static)
+        uses: actions/upload-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+
+      - name: Upload Artifact (electron dist)
+        uses: actions/upload-artifact@v3
+        with:
+          name: before-make-electron-dist
+          path: apps/electron/dist
+
+  make-distribution:
+    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
+    strategy:
+      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      matrix:
+        spec:
+          - { os: ubuntu-latest, arch: x64 }
+          - { os: macos-latest, arch: x64 }
+          - { os: macos-latest, arch: arm64 }
+          - { os: windows-latest, arch: x64 }
+    runs-on: ${{ matrix.spec.os }}
+    needs: before-make
+    env:
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      SKIP_GENERATE_ASSETS: 1
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-electron-dist
+          path: apps/electron/dist
 
       - name: Signing By Apple Developer ID
+        if: ${{ matrix.spec.os == 'macos-latest' }}
         uses: apple-actions/import-codesign-certs@v2
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
-      - name: make build
-        run: yarn make-macos-${{ matrix.arch }}
+      - name: make
+        run: yarn make-${{ matrix.spec.os == 'macos-latest' && 'macos' || matrix.spec.os == 'windows-latest' && 'windows' || 'linux' }}-${{ matrix.spec.arch || 'x64' }}
         working-directory: apps/electron
 
-      - name: Save artifacts
+      - name: Save artifacts (mac)
+        if: ${{ matrix.spec.os == 'macos-latest' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-darwin-${{ matrix.arch }}.dmg
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: affine-darwin-${{ matrix.arch }}-builds
-          path: builds
-
-  make-windows:
-    runs-on: windows-latest
-    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
-    env:
-      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-      AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
-      AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      API_SERVER_PROFILE: prod
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-
-      - name: make build
-        run: yarn make-windows-x64
-        working-directory: apps/electron
-
-      - name: Save windows artifacts
+      - name: Save artifacts (windows)
+        if: ${{ matrix.spec.os == 'windows-latest' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
           mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
           mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
           mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
-          mv apps/electron/out/*/make/squirrel.windows/x64/RELEASES ./builds/RELEASES
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: affine-windows-x64-builds
-          path: builds
 
-  make-linux:
-    runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
-    env:
-      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-      AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
-      AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      API_SERVER_PROFILE: prod
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-
-      - name: make build
-        run: yarn make
-        working-directory: apps/electron
-
-      - name: Save Linux artifacts
+      - name: Save artifacts (linux)
+        if: ${{ matrix.spec.os == 'ubuntu-latest' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
@@ -167,33 +141,26 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-Linux-x64-builds
+          name: affine-${{ matrix.spec.os }}-${{ matrix.spec.arch }}-builds
           path: builds
 
   release:
-    needs: [make-macos, make-windows, make-linux]
+    needs: make-distribution
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      matrix:
+        spec:
+          - { os: ubuntu-latest, arch: x64 }
+          - { os: macos-latest, arch: x64 }
+          - { os: macos-latest, arch: arm64 }
+          - { os: windows-latest, arch: x64 }
     steps:
-      - name: Download MacOS x64 Artifacts
+      - name: Download Artifacts
         uses: actions/download-artifact@v3
         with:
-          name: affine-darwin-x64-builds
-          path: ./
-
-      - name: Download MacOS arm64 Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: affine-darwin-arm64-builds
-          path: ./
-      - name: Download Windows Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: affine-windows-x64-builds
-          path: ./
-      - name: Download Linux Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: affine-Linux-x64-builds
+          name: affine-${{ matrix.spec.os }}-${{ matrix.spec.arch }}-builds
           path: ./
 
       - name: Create Release Draft

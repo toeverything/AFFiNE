@@ -23,6 +23,7 @@ import { isMacOS } from '../../utils';
  */
 contextBridge.exposeInMainWorld('apis', {
   workspaceSync: (id: string) => ipcRenderer.invoke('octo:workspace-sync', id),
+
   // ui
   onThemeChange: (theme: string) =>
     ipcRenderer.invoke('ui:theme-change', theme),

@@ -72,8 +72,14 @@ module.exports = {
       packageJson.productName = productName;
     },
     generateAssets: async (_, platform, arch) => {
+      if (process.env.SKIP_GENERATE_ASSETS) {
+        return;
+      }
+
       const { $ } = await import('zx');
 
+      // TODO: right now we do not need the following
+      // it is for octobase-node, but we dont use it for now.
       if (platform === 'darwin' && arch === 'arm64') {
         // In GitHub Actions runner, MacOS is always x64
         // we need to manually set TARGET to aarch64-apple-darwin
