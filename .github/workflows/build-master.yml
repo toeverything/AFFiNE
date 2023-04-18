@@ -200,7 +200,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Generate prisma client
-        run: prisma generate
+        run: yarn exec prisma generate
         working-directory: apps/server
       - name: Run server tests
         run: yarn test:coverage
