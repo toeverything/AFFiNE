@@ -25,7 +25,7 @@ afterEach(async () => {
   await app.close();
 });
 
-// please run `ts-node-esm /scripts/init-db.ts` before running this test
+// please run `ts-node-esm ./scripts/init-db.ts` before running this test
 describe('AppModule', () => {
   test('should init app', async () => {
     ok(typeof app === 'object');
