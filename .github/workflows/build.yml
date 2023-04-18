@@ -104,6 +104,8 @@ jobs:
         run: |
           psql -h postgres -U postgres -c 'CREATE DATABASE affine;'
           psql -h postgres -U postgres -c 'CREATE USER affine WITH PASSWORD ''affine'';'
+        env:
+          PGPASSWORD: affine
       - name: Generate prisma client
         run: yarn exec prisma generate
         working-directory: apps/server
