@@ -1,8 +1,11 @@
-import { Test } from '@nestjs/testing';
-import { beforeEach, expect, test } from 'vitest';
+import { equal, ok } from 'node:assert';
+import { beforeEach, test } from 'node:test';
 
-import { Config, ConfigModule } from '..';
-import { getDefaultAFFiNEConfig } from '../default';
+import { Test } from '@nestjs/testing';
+
+import { Config, ConfigModule } from '../config';
+import { getDefaultAFFiNEConfig } from '../config/default';
+
 globalThis.AFFiNE = getDefaultAFFiNEConfig();
 
 let config: Config;
@@ -14,8 +17,8 @@ beforeEach(async () => {
 });
 
 test('should be able to get config', t => {
-  expect(typeof config.host === 'string');
-  expect(config.env).toEqual('test');
+  ok(typeof config.host === 'string');
+  equal(config.env, 'test');
 });
 
 test('should be able to override config', async t => {
@@ -28,5 +31,5 @@ test('should be able to override config', async t => {
   }).compile();
   const config = module.get(Config);
 
-  expect(config.host).toEqual('testing');
+  ok(config.host, 'testing');
 });

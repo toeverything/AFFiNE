@@ -21,10 +21,13 @@ export default defineConfig({
       resolve(rootDir, './scripts/setup/search.ts'),
       resolve(rootDir, './scripts/setup/lottie-web.ts'),
     ],
-    exclude: [
-      // e2e tests
-      '**/parallels/**',
-      '**/node_modules/**',
+    include: [
+      'packages/**/*.spec.ts',
+      'packages/**/*.spec.tsx',
+      'apps/web/**/*.spec.ts',
+      'apps/web/**/*.spec.tsx',
+      'tests/unit/**/*.spec.ts',
+      'tests/unit/**/*.spec.tsx',
     ],
     testTimeout: 5000,
     coverage: {
