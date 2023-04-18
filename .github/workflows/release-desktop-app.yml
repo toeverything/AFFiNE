@@ -147,20 +147,27 @@ jobs:
   release:
     needs: make-distribution
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
-      matrix:
-        spec:
-          - { os: ubuntu-latest, arch: x64 }
-          - { os: macos-latest, arch: x64 }
-          - { os: macos-latest, arch: arm64 }
-          - { os: windows-latest, arch: x64 }
+
     steps:
-      - name: Download Artifacts
+      - name: Download Artifacts (macos-x64)
         uses: actions/download-artifact@v3
         with:
-          name: affine-${{ matrix.spec.os }}-${{ matrix.spec.arch }}-builds
+          name: affine-macos-x64-builds
+          path: ./
+      - name: Download Artifacts (macos-arm64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-macos-arm64-builds
+          path: ./
+      - name: Download Artifacts (windows-x64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-windows-x64-builds
+          path: ./
+      - name: Download Artifacts (linux-x64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-linux-x64-builds
           path: ./
 
       - name: Create Release Draft
