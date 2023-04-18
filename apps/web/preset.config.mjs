@@ -3,9 +3,7 @@ import 'dotenv/config';
 const config = {
   enableLegacyCloud: process.env.ENABLE_LEGACY_PROVIDER
     ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
-      ? 1
-      : 0
-    : 1,
+    : true,
   enableBroadCastChannelProvider: Boolean(
     process.env.ENABLE_BC_PROVIDER ?? '1'
   ),
