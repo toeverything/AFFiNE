@@ -174,7 +174,7 @@ const LocalCollaborationPanel: React.FC<
       <Wrapper marginBottom="42px">{t('Collaboration Description')}</Wrapper>
       {config.enableLegacyCloud && (
         <Button
-          data-testid="publish-enable-affine-cloud-button"
+          data-testid="local-workspace-enable-cloud-button"
           type="light"
           shape="circle"
           onClick={() => {
