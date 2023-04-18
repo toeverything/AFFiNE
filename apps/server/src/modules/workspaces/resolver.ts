@@ -1,6 +1,7 @@
 import {
   Args,
   Field,
+  ID,
   ObjectType,
   Query,
   registerEnumType,
@@ -21,7 +22,7 @@ registerEnumType(WorkspaceType, {
 
 @ObjectType()
 export class Workspace implements workspaces {
-  @Field()
+  @Field(() => ID)
   id!: string;
   @Field({ description: 'is Public workspace' })
   public!: boolean;
