@@ -15,6 +15,11 @@
   },
   "include": ["src", "package.json"],
   "exclude": ["dist", "node_modules"],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
