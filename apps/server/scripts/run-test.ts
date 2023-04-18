@@ -49,10 +49,13 @@ if (process.argv[2] === 'all') {
 
   const target = resolve(testDir, result.file);
 
-  spawn('node', [...args, target], {
+  const cp = spawn('node', [...args, target], {
     cwd: root,
     env,
     stdio: 'inherit',
     shell: true,
+  });
+  cp.on('exit', code => {
+    process.exit(code);
   });
 }
