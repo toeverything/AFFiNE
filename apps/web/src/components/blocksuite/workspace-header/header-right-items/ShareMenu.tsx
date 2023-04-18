@@ -1,4 +1,5 @@
 import { ShareMenu } from '@affine/component/share-menu';
+import { config } from '@affine/env';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
@@ -107,6 +108,9 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
 };
 
 export const HeaderShareMenu: React.FC<BaseHeaderProps> = props => {
+  if (!config.enableLegacyCloud) {
+    return null;
+  }
   if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
     return <AffineHeaderShareMenu {...props} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
