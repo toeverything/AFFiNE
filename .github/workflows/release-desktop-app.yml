@@ -151,11 +151,11 @@ jobs:
       fail-fast: true
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-        include:
-          - arch: x64
-          - os: macos-latest
-            arch: arm64
+        spec:
+          - { os: ubuntu-latest, arch: x64 }
+          - { os: macos-latest, arch: x64 }
+          - { os: macos-latest, arch: arm64 }
+          - { os: windows-latest, arch: x64 }
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v3
