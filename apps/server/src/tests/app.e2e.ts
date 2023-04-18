@@ -1,5 +1,5 @@
 import { equal, ok } from 'node:assert';
-import { after, before, describe, test } from 'node:test';
+import { afterEach, beforeEach, describe, test } from 'node:test';
 
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -16,7 +16,7 @@ globalThis.AFFiNE = getDefaultAFFiNEConfig();
 describe('AppModule', () => {
   let app: INestApplication;
 
-  before(async () => {
+  beforeEach(async () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -24,7 +24,7 @@ describe('AppModule', () => {
     await app.init();
   });
 
-  after(async () => {
+  afterEach(async () => {
     await app.close();
   });
 
