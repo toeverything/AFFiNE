@@ -14,7 +14,7 @@
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
-    "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs"
+    "make-linux-x64": "electron-forge make --platform=linux --arch=x64"
   },
   "config": {
     "forge": "./forge.config.js"
