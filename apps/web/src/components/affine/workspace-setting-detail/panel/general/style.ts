@@ -42,6 +42,7 @@ export const StyledAvatar = styled('div')(
         backgroundColor: 'rgba(60, 61, 63, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 10,
       },
     };
   }
