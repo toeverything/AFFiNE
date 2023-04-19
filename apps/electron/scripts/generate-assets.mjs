@@ -34,6 +34,7 @@ if (process.platform === 'win32') {
   $.prefix = '';
 }
 // step 1: build web (nextjs) dist
+process.env.ENABLE_LEGACY_PROVIDER = 'false';
 cd(repoRootDir);
 await $`yarn add`;
 await $`yarn build`;

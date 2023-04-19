@@ -162,8 +162,7 @@ export const createLocalProviders = (
     [
       config.enableBroadCastChannelProvider &&
         createBroadCastChannelProvider(blockSuiteWorkspace),
-      config.enableIndexedDBProvider &&
-        createIndexedDBProvider(blockSuiteWorkspace),
+      createIndexedDBProvider(blockSuiteWorkspace),
     ] as any[]
   ).filter(v => Boolean(v));
 };

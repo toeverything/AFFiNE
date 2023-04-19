@@ -6,6 +6,7 @@
       "always",
       [
         "electron",
+        "server",
         "web",
         "docs",
         "component",

@@ -219,5 +219,12 @@
   "Shared Pages In Public Workspace Description": "The entire Workspace is published on the web and can be edited via <1>Workspace Settings</1>.",
   "Open Workspace Settings": "Open Workspace Settings",
   "Share Menu Public Workspace Description1": "Invite others to join the Workspace or publish it to web.",
-  "Share Menu Public Workspace Description2": "Current workspace has been published to the web as a public workspace."
+  "Share Menu Public Workspace Description2": "Current workspace has been published to the web as a public workspace.",
+  "Router is Loading": "Router is Loading",
+  "Finding Workspace ID": "Finding Workspace ID",
+  "Workspace Not Found": "Workspace Not Found",
+  "Finding Current Workspace": "Finding Current Workspace",
+  "Page is Loading": "Page is Loading",
+  "Loading All Workspaces": "Loading All Workspaces",
+  "Loading Page": "Loading Page"
 }

@@ -1,4 +1,4 @@
-import { prefixUrl } from '@affine/env';
+import { config, prefixUrl } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
@@ -78,6 +78,10 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
   loadPriority: LoadPriority.HIGH,
   Events: {
     'workspace:access': async () => {
+      if (!config.enableLegacyCloud) {
+        console.warn('Legacy cloud is disabled');
+        return;
+      }
       const response = await affineAuth.generateToken(SignMethod.Google);
       if (response) {
         setLoginStorage(response);
@@ -88,6 +92,10 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       }
     },
     'workspace:revoke': async () => {
+      if (!config.enableLegacyCloud) {
+        console.warn('Legacy cloud is disabled');
+        return;
+      }
       rootStore.set(rootWorkspacesMetadataAtom, workspaces =>
         workspaces.filter(
           workspace => workspace.flavour !== WorkspaceFlavour.AFFINE

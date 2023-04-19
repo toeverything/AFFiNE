@@ -15,6 +15,7 @@
     "jsx": "preserve",
     "incremental": true,
     "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
       "@affine/component": ["./packages/component/src/index"],
@@ -62,6 +63,9 @@
     },
     {
       "path": "./tests/fixtures"
+    },
+    {
+      "path": "./tsconfig.node.json"
     }
   ],
   "files": [],
