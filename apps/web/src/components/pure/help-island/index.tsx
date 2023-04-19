@@ -1,5 +1,4 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import { lazy, Suspense, useState } from 'react';
@@ -21,9 +20,7 @@ const ContactModal = lazy(() =>
 
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 export const HelpIsland = ({
-  showList = config.enableChangeLog
-    ? ['whatNew', 'contact', 'shortcuts']
-    : ['contact', 'shortcuts'],
+  showList = ['whatNew', 'contact', 'shortcuts'],
 }: {
   showList?: IslandItemNames[];
 }) => {
@@ -61,7 +58,7 @@ export const HelpIsland = ({
           style={{ height: spread ? `${showList.length * 44}px` : 0 }}
         >
           {showList.includes('whatNew') && (
-            <Tooltip content={t("Discover what's new")} placement="left-end">
+            <Tooltip content={t("Discover what's new!")} placement="left-end">
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {

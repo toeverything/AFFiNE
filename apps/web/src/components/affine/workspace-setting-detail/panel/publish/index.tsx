@@ -5,6 +5,7 @@ import {
   Input,
   Wrapper,
 } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -120,16 +121,18 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
       >
         {t('Publishing')}
       </Box>
-      <Button
-        data-testid="publish-enable-affine-cloud-button"
-        type="light"
-        shape="circle"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {t('Enable AFFiNE Cloud')}
-      </Button>
+      {config.enableLegacyCloud && (
+        <Button
+          data-testid="publish-enable-affine-cloud-button"
+          type="light"
+          shape="circle"
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          {t('Enable AFFiNE Cloud')}
+        </Button>
+      )}
       <EnableAffineCloudModal
         open={open}
         onClose={() => {

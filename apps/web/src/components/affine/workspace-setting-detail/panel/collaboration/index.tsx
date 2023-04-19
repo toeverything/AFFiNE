@@ -1,4 +1,5 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { PermissionType } from '@affine/workspace/affine/api';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
@@ -171,16 +172,18 @@ const LocalCollaborationPanel: React.FC<
   return (
     <>
       <Wrapper marginBottom="42px">{t('Collaboration Description')}</Wrapper>
-      <Button
-        data-testid="local-workspace-enable-cloud-button"
-        type="light"
-        shape="circle"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {t('Enable AFFiNE Cloud')}
-      </Button>
+      {config.enableLegacyCloud && (
+        <Button
+          data-testid="local-workspace-enable-cloud-button"
+          type="light"
+          shape="circle"
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          {t('Enable AFFiNE Cloud')}
+        </Button>
+      )}
       <TransformWorkspaceToAffineModal
         open={open}
         onClose={() => {

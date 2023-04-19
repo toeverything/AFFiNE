@@ -1,6 +1,7 @@
 import { FlexWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
@@ -19,6 +20,10 @@ export type FooterProps = {
 
 export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
   const { t } = useTranslation();
+
+  if (!config.enableLegacyCloud) {
+    return null;
+  }
 
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">

@@ -34,6 +34,7 @@ if (process.platform === 'win32') {
   $.prefix = '';
 }
 // step 1: build web (nextjs) dist
+process.env.ENABLE_LEGACY_PROVIDER = 'false';
 cd(repoRootDir);
 await $`yarn add`;
 await $`yarn build`;
@@ -59,17 +60,6 @@ await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 // step 2: build electron resources
 await buildLayers();
 echo('Build layers done');
-
-// step 3: build octobase-node
-let buildOctobaseNode = 'yarn workspace @affine/octobase-node build';
-if (process.env.TARGET) {
-  buildOctobaseNode += ` --target=${process.env.TARGET}`;
-}
-await $([buildOctobaseNode]);
-
-// step 4: copy octobase-node to electron dist
-await fs.ensureDir('./apps/electron/dist/layers/main/');
-await $`cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/`;
 
 /// --------
 /// --------
