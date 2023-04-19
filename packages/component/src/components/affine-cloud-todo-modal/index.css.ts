@@ -1,14 +1,14 @@
 import { style } from '@vanilla-extract/css';
 
 export const dialogOverlayStyle = style({
-  backgroundColor: '#333',
+  backgroundColor: 'var(--affine-background-modal-color)',
   position: 'fixed',
   inset: 0,
   animation: 'overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
 });
 
 export const dialogContentStyle = style({
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--affine-background-primary-color)',
   borderRadius: '4px',
   position: 'fixed',
   top: '50%',
@@ -18,4 +18,9 @@ export const dialogContentStyle = style({
   maxWidth: '600px',
   padding: '24px',
   animation: 'contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
+});
+
+export const buttonStyle = style({
+  backgroundColor: 'var(--affine-primary-color)',
+  color: 'var(--affine-white)',
 });

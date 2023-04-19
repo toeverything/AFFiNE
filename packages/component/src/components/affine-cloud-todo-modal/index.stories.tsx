@@ -1,6 +1,7 @@
 import type { Meta } from '@storybook/react';
 
 import { AffineCloudTodoModal } from './index';
+import { buttonStyle } from './index.css';
 
 export default {
   title: 'components/affine-cloud-todo-button',
@@ -9,7 +10,7 @@ export default {
 export const Default = () => {
   return (
     <AffineCloudTodoModal>
-      <button>Enable Affine Cloud</button>
+      <button className={buttonStyle}>Enable Affine Cloud</button>
     </AffineCloudTodoModal>
   );
 };
