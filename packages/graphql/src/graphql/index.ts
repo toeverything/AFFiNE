@@ -6,6 +6,20 @@ export interface GraphQLQuery {
   query: string;
 }
 
+export const createWorkspaceMutation = {
+  id: 'createWorkspaceMutation' as const,
+  operationName: 'createWorkspace',
+  definitionName: 'createWorkspace',
+  query: `
+mutation createWorkspace {
+  createWorkspace {
+    id
+    public
+    created_at
+  }
+}`,
+};
+
 export const workspaceByIdQuery = {
   id: 'workspaceByIdQuery' as const,
   operationName: 'workspaceById',

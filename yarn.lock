@@ -154,9 +154,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/graphql-client@workspace:packages/graphql-client":
+"@affine/graphql@workspace:*, @affine/graphql@workspace:packages/graphql":
   version: 0.0.0-use.local
-  resolution: "@affine/graphql-client@workspace:packages/graphql-client"
+  resolution: "@affine/graphql@workspace:packages/graphql"
   dependencies:
     "@graphql-codegen/add": ^4.0.1
     "@graphql-codegen/cli": 3.3.0
@@ -263,6 +263,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
+    "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
@@ -299,6 +300,7 @@ __metadata:
     dotenv: ^16.0.3
     eslint: ^8.39.0
     eslint-config-next: ^13.3.1
+    graphql: ^16.6.0
     jotai: ^2.0.4
     jotai-devtools: ^0.4.0
     lit: ^2.7.2

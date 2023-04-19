@@ -21,10 +21,25 @@ export interface Scalars {
   DateTime: string;
 }
 
+/** Workspace type */
 export enum WorkspaceType {
+  /** Normal workspace */
   Normal = 'Normal',
+  /** Private workspace */
   Private = 'Private',
 }
+
+export type CreateWorkspaceMutationVariables = Exact<{ [key: string]: never }>;
+
+export type CreateWorkspaceMutation = {
+  __typename?: 'Mutation';
+  createWorkspace: {
+    __typename?: 'Workspace';
+    id: string;
+    public: boolean;
+    created_at: string;
+  };
+};
 
 export type WorkspaceByIdQueryVariables = Exact<{
   id: Scalars['String'];
@@ -45,4 +60,10 @@ export type Queries = {
   name: 'workspaceByIdQuery';
   variables: WorkspaceByIdQueryVariables;
   response: WorkspaceByIdQuery;
+};
+
+export type Mutations = {
+  name: 'createWorkspaceMutation';
+  variables: CreateWorkspaceMutationVariables;
+  response: CreateWorkspaceMutation;
 };

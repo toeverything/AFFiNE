@@ -28,7 +28,7 @@
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
-      "@affine/graphql-client": ["./packages/graphql-client/src/index.ts"],
+      "@affine/graphql": ["./packages/graphql/src/index.ts"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"]
@@ -54,7 +54,7 @@
       "path": "./packages/env"
     },
     {
-      "path": "./packages/graphql-client"
+      "path": "./packages/graphql"
     },
     {
       "path": "./packages/debug"
