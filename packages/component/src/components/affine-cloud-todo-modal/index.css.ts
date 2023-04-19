@@ -17,6 +17,7 @@ export const dialogContentStyle = style({
   width: '100%',
   maxWidth: '600px',
   padding: '24px',
+  color: 'var(--affine-white)',
   animation: 'contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
 });
 
