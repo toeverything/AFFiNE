@@ -33,9 +33,15 @@ if (process.platform === 'win32') {
   $.shell = 'powershell.exe';
   $.prefix = '';
 }
-// step 1: build web (nextjs) dist
-process.env.ENABLE_LEGACY_PROVIDER = 'false';
+
 cd(repoRootDir);
+
+// step 1: build electron resources
+await buildLayers();
+echo('Build layers done');
+
+// step 2: build web (nextjs) dist
+process.env.ENABLE_LEGACY_PROVIDER = 'false';
 await $`yarn add`;
 await $`yarn build`;
 await $`yarn export`;
@@ -56,10 +62,6 @@ await glob('**/*.{js,css}', { cwd: affineWebOutDir }).then(files => {
 });
 
 await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
-
-// step 2: build electron resources
-await buildLayers();
-echo('Build layers done');
 
 /// --------
 /// --------

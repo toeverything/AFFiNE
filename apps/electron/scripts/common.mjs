@@ -1,4 +1,3 @@
-
 const NODE_MAJOR_VERSION = 18;
 
 const nativeNodeModulesPlugin = {
@@ -29,7 +28,7 @@ export default () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron'],
+      external: ['electron', 'sqlite3'],
       plugins: [nativeNodeModulesPlugin],
       define: define,
     },

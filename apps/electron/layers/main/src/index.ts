@@ -3,7 +3,7 @@ import './security-restrictions';
 import { app } from 'electron';
 import path from 'path';
 
-import { registerHandlers } from './app-state';
+import { registerHandlers } from './handlers';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 

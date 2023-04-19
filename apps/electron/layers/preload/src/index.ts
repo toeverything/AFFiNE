@@ -22,7 +22,22 @@ import { isMacOS } from '../../utils';
  * @see https://github.com/cawa-93/dts-for-context-bridge
  */
 contextBridge.exposeInMainWorld('apis', {
-  workspaceSync: (id: string) => ipcRenderer.invoke('octo:workspace-sync', id),
+  db: {
+    // TODO: do we need to store the workspace list locally?
+    // workspace providers
+    getDoc: (id: string) => ipcRenderer.invoke('db:get-doc', id),
+    applyDocUpdate: (id: string, update: Uint8Array) =>
+      ipcRenderer.invoke('db:apply-doc-update', id, update),
+    addBlob: (workspaceId: string, key: string, data: Uint8Array) =>
+      ipcRenderer.invoke('db:add-blob', workspaceId, key, data),
+    getBlob: (workspaceId: string, key: string): Promise<Uint8Array> =>
+      ipcRenderer.invoke('db:get-blob', workspaceId, key),
+    getPersistedBlobs: (workspaceId: string): Promise<string[]> =>
+      ipcRenderer.invoke('db:get-persisted-blobs', workspaceId),
+  },
+
+  openLoadDBFileDialog: () => ipcRenderer.invoke('ui:open-load-db-file-dialog'),
+  openSaveDBFileDialog: () => ipcRenderer.invoke('ui:open-save-db-file-dialog'),
 
   // ui
   onThemeChange: (theme: string) =>
