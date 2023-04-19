@@ -32,6 +32,7 @@ import {
   StyledHorizontalDivider,
   StyledHorizontalDividerContainer,
 } from '../styles';
+import { LanguageMenu } from './LanguageMenu';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
@@ -113,6 +114,7 @@ export const EditorOptionMenu = () => {
         }}
       >
         <MenuThemeModeSwitch />
+        <LanguageMenu />
       </div>
     </>
   );
