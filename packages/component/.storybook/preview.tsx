@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import '@blocksuite/editor/themes/affine.css';
 import '../src/theme/global.css';
 
-import { getDarkTheme, getLightTheme, ThemeProvider } from '@affine/component';
+import {
+  AffineCssVariables,
+  AffineMuiThemeProvider,
+  getTheme,
+  muiThemes,
+} from '@affine/component';
 import { useDarkMode } from 'storybook-dark-mode';
+import { GlobalStyles } from '@mui/material';
+import kebabCase from 'kebab-case';
 export const parameters = {
   actions: { argTypesRegex: '^on[A-Z].*' },
   controls: {
@@ -14,16 +21,35 @@ export const parameters = {
   },
 };
 
-const lightTheme = getLightTheme('page');
-const darkTheme = getDarkTheme('page');
-
 export const decorators = [
   (Story: React.ComponentType) => {
     const isDark = useDarkMode();
+
+    const theme = useMemo(
+      () => getTheme(isDark ? 'dark' : 'light', 'page'),
+      [isDark]
+    );
     return (
-      <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
+      <AffineMuiThemeProvider theme={muiThemes}>
+        <GlobalStyles
+          styles={{
+            ':root': {
+              ...Object.entries(theme).reduce((variables, [key, value]) => {
+                variables[
+                  `--affine-${kebabCase(key)}` as keyof AffineCssVariables
+                ] = value;
+                return variables;
+              }, {} as AffineCssVariables),
+            },
+            html: {
+              fontFamily: theme.fontFamily,
+              fontSize: theme.fontBase,
+              lineHeight: theme.lineHeight,
+            },
+          }}
+        />
         <Story />
-      </ThemeProvider>
+      </AffineMuiThemeProvider>
     );
   },
 ];
