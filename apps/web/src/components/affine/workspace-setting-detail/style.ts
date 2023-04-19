@@ -32,10 +32,12 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
         display: 'flex',
         margin: '0 48px 0 0',
         height: '34px',
-        color: isActive ? theme.colors.primaryColor : theme.colors.textColor,
+        color: isActive
+          ? 'var(--affine-primary-color)'
+          : 'var(--affine-text-primary-color)',
         fontWeight: '500',
-        fontSize: theme.font.h6,
-        lineHeight: theme.font.lineHeight,
+        fontSize: 'var(--affine-font-h6)',
+        lineHeight: 'var(--affine-line-height)',
         cursor: 'pointer',
         transition: 'all 0.15s ease',
       };
@@ -46,7 +48,7 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
 export const StyledSettingKey = styled('div')(({ theme }) => {
   return {
     width: '140px',
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     fontWeight: 500,
     marginRight: '56px',
     flexShrink: 0,
@@ -61,14 +63,14 @@ export const StyledRow = styled(FlexWrapper)(() => {
 export const StyledWorkspaceName = styled('span')(({ theme }) => {
   return {
     fontWeight: '400',
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
   };
 });
 
 export const StyledIndicator = styled('div')(({ theme }) => {
   return {
     height: '2px',
-    background: theme.colors.primaryColor,
+    background: 'var(--affine-primary-color)',
     position: 'absolute',
     left: '0',
     bottom: '0',
@@ -90,8 +92,8 @@ export const StyledTabButtonWrapper = styled('div')(() => {
 //       height: '86px',
 //       border: '1px solid',
 //       borderColor: active
-//         ? theme.colors.primaryColor
-//         : theme.colors.borderColor,
+//         ? 'var(--affine-primary-color)'
+//         : 'var(--affine-border-color)',
 //       borderRadius: '10px',
 //       padding: '8px 12px',
 //       position: 'relative',
@@ -107,7 +109,7 @@ export const StyledTabButtonWrapper = styled('div')(() => {
 // );
 // export const StyledDownloadCardDes = styled('div')(({ theme }) => {
 //   return {
-//     fontSize: theme.font.sm,
-//     color: theme.colors.iconColor,
+//     fontSize: 'var(--affine-font-sm)',
+//     color: 'var(--affine-icon-color)',
 //   };
 // });

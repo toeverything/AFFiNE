@@ -61,7 +61,7 @@ export const EditorOptionMenu = () => {
         }}
         icon={
           favorite ? (
-            <FavoritedIcon style={{ color: theme.colors.primaryColor }} />
+            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
           ) : (
             <FavoriteIcon />
           )

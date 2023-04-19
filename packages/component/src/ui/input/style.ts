@@ -14,16 +14,18 @@ export const StyledInput = styled('input')<{
     height,
     lineHeight: '22px',
     padding: '8px 12px',
-    color: disabled ? theme.colors.disableColor : theme.colors.textColor,
+    color: disabled
+      ? 'var(--affine-text-disable-color)'
+      : 'var(--affine-text-primary-color)',
     border: noBorder ? 'unset' : `1px solid`,
-    borderColor: theme.colors.borderColor, // TODO: check out disableColor,
-    backgroundColor: theme.colors.popoverBackground,
+    borderColor: 'var(--affine-border-color)', // TODO: check out disableColor,
+    backgroundColor: 'var(--affine-white)',
     borderRadius: '10px',
     '&::placeholder': {
-      color: theme.colors.placeHolderColor,
+      color: 'var(--affine-placeholder-color)',
     },
     '&:focus': {
-      borderColor: theme.colors.primaryColor,
+      borderColor: 'var(--affine-primary-color)',
     },
   };
 });

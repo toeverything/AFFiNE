@@ -8,10 +8,10 @@ export const StyledSelectorContainer = styled('div')(({ theme }) => {
     padding: '0 6px',
     marginBottom: '16px',
     borderRadius: '8px',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     ':hover': {
       cursor: 'pointer',
-      background: theme.colors.hoverBackground,
+      background: 'var(--affine-hover-color)',
     },
   };
 });
@@ -36,12 +36,12 @@ export const StyledWorkspaceStatus = styled('div')(({ theme }) => {
   return {
     height: '22px',
     ...displayFlex('flex-start', 'center'),
-    fontSize: theme.font.sm,
-    color: theme.colors.secondaryTextColor,
+    fontSize: 'var(--affine-font-sm)',
+    color: 'var(--affine-text-secondary-color)',
     userSelect: 'none',
     svg: {
-      color: theme.colors.iconColor,
-      fontSize: theme.font.base,
+      color: 'var(--affine-icon-color)',
+      fontSize: 'var(--affine-font-base)',
       marginRight: '4px',
     },
   };

@@ -5,7 +5,7 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
     position: 'relative',
     padding: '0px',
     width: '560px',
-    background: theme.colors.popoverBackground,
+    background: 'var(--affine-white)',
     borderRadius: '12px',
     // height: '312px',
   };
@@ -16,7 +16,7 @@ export const StyledModalHeader = styled('div')(({ theme }) => {
     margin: '44px 0px 12px 0px',
     width: '560px',
     fontWeight: '600',
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
     textAlign: 'center',
   };
 });
@@ -27,7 +27,7 @@ export const StyledTextContent = styled('div')(({ theme }) => {
     width: '560px',
     padding: '0px 84px',
     fontWeight: '400',
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     textAlign: 'center',
   };
 });
@@ -42,7 +42,7 @@ export const StyledButtonContent = styled('div')(() => {
 });
 export const StyledButton = styled(TextButton)(({ theme }) => {
   return {
-    color: theme.colors.primaryColor,
+    color: 'var(--affine-primary-color)',
     height: '32px',
     background: '#F3F0FF',
     border: 'none',

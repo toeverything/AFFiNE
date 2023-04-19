@@ -12,7 +12,7 @@ export const StyledThemeModeSwitch = styled('button')(({ theme }) => {
     overflow: 'hidden',
     backgroundColor: 'transparent',
     position: 'relative',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     fontSize: '24px',
   };
 });
@@ -35,7 +35,7 @@ export const StyledSwitchItem = styled('div')<{
 
   const activeStyle = active
     ? {
-        color: theme.colors.iconColor,
+        color: 'var(--affine-icon-color)',
         top: '0',
         animation: css`
           ${keyframes`${
@@ -46,8 +46,8 @@ export const StyledSwitchItem = styled('div')<{
       }
     : {
         top: '100%',
-        color: theme.colors.primaryColor,
-        backgroundColor: theme.colors.hoverBackground,
+        color: 'var(--affine-primary-color)',
+        backgroundColor: 'var(--affine-hover-color)',
         animation: css`
           ${keyframes`${
             isHover ? raiseAnimate : declineAnimate

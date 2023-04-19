@@ -12,7 +12,9 @@ export const StyledListItem = styled('div')<{
 }>(({ theme, active, disabled }) => {
   return {
     height: '32px',
-    color: active ? theme.colors.primaryColor : theme.colors.textColor,
+    color: active
+      ? 'var(--affine-primary-color)'
+      : 'var(--affine-text-primary-color)',
     padding: '0 16px',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -24,17 +26,19 @@ export const StyledListItem = styled('div')<{
     ...(disabled
       ? {
           cursor: 'not-allowed',
-          color: theme.colors.borderColor,
+          color: 'var(--affine-border-color)',
         }
       : {}),
 
     '> svg, a > svg': {
       fontSize: '20px',
       marginRight: '12px',
-      color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+      color: active
+        ? 'var(--affine-primary-color)'
+        : 'var(--affine-icon-color)',
     },
     ':hover:not([disabled])': {
-      backgroundColor: theme.colors.hoverBackground,
+      backgroundColor: 'var(--affine-hover-color)',
     },
   };
 });
@@ -53,7 +57,7 @@ export const StyledCollapseButton = styled('button')<{
     top: '0',
     bottom: '0',
     margin: 'auto',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     opacity: '.6',
     transition: 'opacity .15s ease-in-out',
     display: show ? 'flex' : 'none',
@@ -81,12 +85,12 @@ export const StyledCollapseItem = styled('div')<{
     paddingRight: '2px',
     position: 'relative',
     color: disable
-      ? theme.colors.disableColor
+      ? 'var(--affine-text-disable-color)'
       : active
-      ? theme.colors.primaryColor
-      : theme.colors.textColor,
+      ? 'var(--affine-primary-color)'
+      : 'var(--affine-text-primary-color)',
     cursor: disable ? 'not-allowed' : 'pointer',
-    background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
+    background: isOver ? alpha('var(--affine-primary-color)', 0.06) : '',
     userSelect: 'none',
     ...(textWrap
       ? {
@@ -103,13 +107,15 @@ export const StyledCollapseItem = styled('div')<{
       fontSize: '20px',
       marginRight: '8px',
       flexShrink: '0',
-      color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+      color: active
+        ? 'var(--affine-primary-color)'
+        : 'var(--affine-icon-color)',
     },
 
     ':hover': disable
       ? {}
       : {
-          backgroundColor: theme.colors.hoverBackground,
+          backgroundColor: 'var(--affine-hover-color)',
           '.operation-button': {
             visibility: 'visible',
           },
@@ -173,9 +179,9 @@ export const StyledChangeLog = styled('div')<{
     width: '110%',
     height: '32px',
     ...displayFlex('flex-start', 'center'),
-    color: theme.colors.primaryColor,
-    backgroundColor: theme.colors.hoverBackground,
-    border: `1px solid ${theme.colors.primaryColor}`,
+    color: 'var(--affine-primary-color)',
+    backgroundColor: 'var(--affine-hover-color)',
+    border: '1px solid var(--affine-primary-color)',
     borderRight: 'none',
     marginLeft: '8px',
     paddingLeft: '8px',
@@ -191,7 +197,7 @@ export const StyledChangeLog = styled('div')<{
     '> svg, a > svg': {
       fontSize: '20px',
       marginRight: '12px',
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-primary-color)',
     },
     button: {
       marginRight: '12%',

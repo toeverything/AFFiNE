@@ -44,7 +44,7 @@ export const StyledIconButton = styled('button', {
       width,
       height,
       fontSize,
-      color: theme.colors.iconColor,
+      color: 'var(--affine-hover-color)',
       ...displayInlineFlex('center', 'center'),
       position: 'relative',
       ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
@@ -66,9 +66,9 @@ export const StyledIconButton = styled('button', {
       },
 
       ':hover': {
-        color: hoverColor ?? theme.colors.primaryColor,
+        color: hoverColor ?? 'var(--affine-primary-color)',
         '::after': {
-          background: hoverBackground || theme.colors.hoverBackground,
+          background: hoverBackground || 'var(--affine-hover-color)',
         },
         ...(hoverStyle ?? {}),
       },
@@ -132,8 +132,8 @@ export const StyledTextButton = styled('button', {
       fontWeight: bold ? '500' : '400',
 
       ':hover': {
-        color: hoverColor ?? theme.colors.primaryColor,
-        background: hoverBackground ?? theme.colors.hoverBackground,
+        color: hoverColor ?? 'var(--affine-primary-color)',
+        background: hoverBackground ?? 'var(--affine-hover-color)',
         ...(hoverStyle ?? {}),
       },
     };
@@ -192,7 +192,7 @@ export const StyledButton = styled('button', {
         ? {
             cursor: 'not-allowed',
             pointerEvents: 'none',
-            color: theme.colors.disableColor,
+            color: 'var(--affine-text-disable-color)',
           }
         : {}),
       transition: 'background .15s',
@@ -201,10 +201,10 @@ export const StyledButton = styled('button', {
       fontSize,
       fontWeight: bold ? '500' : '400',
       '.affine-button-icon': {
-        color: theme.colors.iconColor,
+        color: 'var(--affine-icon-color)',
       },
       '.affine-button-icon__fixed': {
-        color: theme.colors.iconColor,
+        color: 'var(--affine-icon-color)',
       },
       '>span': {
         marginLeft: '5px',
@@ -221,8 +221,8 @@ export const StyledButton = styled('button', {
       // TODO: disabled hover should be implemented
       //
       // ':hover': {
-      //   color: hoverColor ?? theme.colors.primaryColor,
-      //   background: hoverBackground ?? theme.colors.hoverBackground,
+      //   color: hoverColor ?? 'var(--affine-primary-color)',
+      //   background: hoverBackground ?? 'var(--affine-hover-color)',
       //   '.affine-button-icon':{
       //
       //   }

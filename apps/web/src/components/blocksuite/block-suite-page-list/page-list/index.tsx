@@ -64,7 +64,9 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
           );
         }}
         style={{
-          color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
+          color: favorite
+            ? 'var(--affine-primary-color)'
+            : 'var(--affine-icon-color)',
         }}
         className={favorite ? '' : 'favorite-button'}
       >

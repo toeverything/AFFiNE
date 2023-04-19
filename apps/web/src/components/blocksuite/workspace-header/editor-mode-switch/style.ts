@@ -25,7 +25,7 @@ export const StyledEditorModeSwitch = styled('div')<{
       display: showAlone ? 'none' : 'block',
       width: '24px',
       height: '24px',
-      background: theme.colors.pageBackground,
+      background: 'var(--affine-background-primary-color)',
       boxShadow:
         mode === 'dark'
           ? '0px 0px 6px rgba(22, 22, 22, 0.6)'
@@ -47,7 +47,7 @@ export const StyledSwitchItem = styled('button')<{
     width: '24px',
     height: '24px',
     borderRadius: '8px',
-    color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+    color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
     display: hide ? 'none' : 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',

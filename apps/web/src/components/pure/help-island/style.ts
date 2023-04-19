@@ -12,7 +12,7 @@ export const StyledIsland = styled('div')<{
       : 'unset',
     padding: '0 4px 44px',
     borderRadius: '10px',
-    backgroundColor: theme.colors.pageBackground,
+    backgroundColor: 'var(--affine-background-primary-color)',
     ':hover': {
       boxShadow:
         '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)',
@@ -21,7 +21,7 @@ export const StyledIsland = styled('div')<{
       content: '""',
       width: '36px',
       height: '1px',
-      background: spread ? theme.colors.borderColor : 'transparent',
+      background: spread ? 'var(--affine-border-color)' : 'transparent',
       ...positionAbsolute({
         left: 0,
         right: 0,
@@ -34,11 +34,11 @@ export const StyledIsland = styled('div')<{
 });
 export const StyledIconWrapper = styled('div')(({ theme }) => {
   return {
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     ...displayFlex('center', 'center'),
     cursor: 'pointer',
     fontSize: '24px',
-    backgroundColor: theme.colors.pageBackground,
+    backgroundColor: 'var(--affine-background-primary-color)',
     borderRadius: '5px',
     width: '36px',
     height: '36px',
@@ -46,8 +46,8 @@ export const StyledIconWrapper = styled('div')(({ theme }) => {
     transition: 'background-color 0.2s',
     position: 'relative',
     ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
+      color: 'var(--affine-primary-color)',
+      backgroundColor: 'var(--affine-hover-color)',
     },
   };
 });
@@ -62,14 +62,14 @@ export const StyledTriggerWrapper = styled('div')(({ theme }) => {
     width: '36px',
     height: '36px',
     cursor: 'pointer',
-    backgroundColor: theme.colors.pageBackground,
-    color: theme.colors.iconColor,
+    backgroundColor: 'var(--affine-background-primary-color)',
+    color: 'var(--affine-icon-color)',
     borderRadius: '5px',
     fontSize: '24px',
     ...displayFlex('center', 'center'),
     ...positionAbsolute({ left: '4px', bottom: '4px' }),
     ':hover': {
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-primary-color)',
     },
   };
 });

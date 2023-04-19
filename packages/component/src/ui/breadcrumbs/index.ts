@@ -4,6 +4,6 @@ import { styled } from '../../styles';
 
 export const Breadcrumbs = styled(MuiBreadcrumbs)(({ theme }) => {
   return {
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
   };
 });

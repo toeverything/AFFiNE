@@ -14,7 +14,7 @@ export const StyledHeaderContainer = styled('div')<{
     flexShrink: 0,
     position: 'sticky',
     top: 0,
-    background: theme.colors.pageBackground,
+    background: 'var(--affine-background-primary-color)',
     zIndex: 1,
     WebkitAppRegion: sidebarFloating ? '' : 'drag',
     button: {
@@ -30,7 +30,7 @@ export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
       width: '100%',
       padding: '0 20px',
       ...displayFlex('space-between', 'center'),
-      background: theme.colors.pageBackground,
+      background: 'var(--affine-background-primary-color)',
       zIndex: 99,
       position: 'relative',
     };
@@ -44,7 +44,7 @@ export const StyledTitleContainer = styled('div')(({ theme }) => ({
   margin: 'auto',
   ...absoluteCenter({ horizontal: true, position: { top: 0 } }),
   ...displayFlex('center', 'center'),
-  fontSize: theme.font.base,
+  fontSize: 'var(--affine-font-base)',
 }));
 
 export const StyledTitle = styled('div')(({ theme }) => {
@@ -83,10 +83,10 @@ export const StyledHeaderRightSide = styled('div')({
 export const StyledBrowserWarning = styled('div')<{ show: boolean }>(
   ({ theme, show }) => {
     return {
-      backgroundColor: theme.colors.warningBackground,
-      color: theme.colors.warningColor,
+      backgroundColor: 'var(--affine-background-warning-color)',
+      color: 'var(--affine-background-warning-color)',
       height: '36px',
-      fontSize: theme.font.sm,
+      fontSize: 'var(--affine-font-sm)',
       display: show ? 'flex' : 'none',
       justifyContent: 'center',
       alignItems: 'center',
@@ -98,7 +98,7 @@ export const StyledCloseButton = styled('div')(({ theme }) => {
   return {
     width: '36px',
     height: '36px',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     cursor: 'pointer',
     ...displayFlex('center', 'center'),
     position: 'absolute',
@@ -138,8 +138,8 @@ export const StyledSearchArrowWrapper = styled('div')(() => {
 
 export const StyledPageListTittleWrapper = styled(StyledTitle)(({ theme }) => {
   return {
-    fontSize: theme.font.base,
-    color: theme.colors.textColor,
+    fontSize: 'var(--affine-font-base)',
+    color: 'var(--affine-text-primary-color)',
     ...displayFlex('center', 'center'),
     '>svg': {
       fontSize: '20px',
@@ -154,9 +154,9 @@ export const StyledQuickSearchTipButton = styled('div')(({ theme }) => {
     color: '#FFFFFF',
     width: '48px',
     height: ' 26px',
-    fontSize: theme.font.sm,
+    fontSize: 'var(--affine-font-sm)',
     lineHeight: '22px',
-    background: theme.colors.primaryColor,
+    background: 'var(--affine-primary-color)',
     borderRadius: '8px',
     textAlign: 'center',
     cursor: 'pointer',

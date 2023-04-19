@@ -5,20 +5,19 @@ import {
   css,
   keyframes,
   styled,
+  type ThemeOptions,
   ThemeProvider as MuiThemeProvider,
 } from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
 import { useMemo } from 'react';
 
-import type { AffineTheme } from './types';
-
 export { alpha, css, keyframes, styled };
 
-export const ThemeProvider = ({
+export const AffineMuiThemeProvider = ({
   theme,
   children,
 }: PropsWithChildren<{
-  theme: AffineTheme;
+  theme: ThemeOptions;
 }>) => {
   const muiTheme = useMemo(() => createMuiTheme(theme), [theme]);
   return (
