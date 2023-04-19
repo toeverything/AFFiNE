@@ -2,6 +2,7 @@
 dist
 
 resources/web-static
+resources/layers
 
 # yarn (3)
 .pnp.*

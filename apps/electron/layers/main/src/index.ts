@@ -7,7 +7,8 @@ import Update from 'update-electron-app';
 import { registerHandlers } from './app-state';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
-
+app.commandLine.appendSwitch('disable-web-security');
+app.commandLine.appendSwitch('allow-file-access-from-files');
 if (require('electron-squirrel-startup')) app.exit();
 if (process.defaultApp) {
   if (process.argv.length >= 2) {

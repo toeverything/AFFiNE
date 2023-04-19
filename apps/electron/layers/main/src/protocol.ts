@@ -16,7 +16,7 @@ protocol.registerSchemesAsPrivileged([
 
 function toAbsolutePath(url: string) {
   let realpath = decodeURIComponent(url);
-  const webStaticDir = join(__dirname, '../../../resources/web-static');
+  const webStaticDir = join(__dirname, '../renderer');
   if (url.startsWith('./')) {
     // if is a file type, load the file in resources
     if (url.split('/').at(-1)?.includes('.')) {

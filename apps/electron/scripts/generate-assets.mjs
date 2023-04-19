@@ -9,10 +9,10 @@ import commonFn from './common.mjs';
 
 const repoRootDir = path.join(__dirname, '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
-const publicDistDir = path.join(electronRootDir, 'resources');
+const publicDistDir = path.join(electronRootDir, 'dist/layers');
 const affineWebDir = path.join(repoRootDir, 'apps', 'web');
 const affineWebOutDir = path.join(affineWebDir, 'out');
-const publicAffineOutDir = path.join(publicDistDir, `web-static`);
+const publicAffineOutDir = path.join(publicDistDir, `renderer`);
 
 console.log('build with following dir', {
   repoRootDir,
