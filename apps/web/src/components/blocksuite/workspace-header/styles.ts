@@ -168,3 +168,16 @@ export const StyledQuickSearchTipContent = styled('div')(() => {
     flexDirection: 'column',
   };
 });
+
+export const StyledHorizontalDivider = styled('div')(({ theme }) => {
+  return {
+    width: '100%',
+    borderTop: `1px solid ${theme.colors.borderColor}`,
+  };
+});
+export const StyledHorizontalDividerContainer = styled('div')(({ theme }) => {
+  return {
+    width: '100%',
+    padding: '14px',
+  };
+});

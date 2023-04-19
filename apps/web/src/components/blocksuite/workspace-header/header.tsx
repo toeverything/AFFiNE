@@ -103,7 +103,7 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.ThemeModeSwitch]: {
     Component: ThemeModeSwitch,
     availableWhen: (_, currentPage) => {
-      return currentPage?.meta.trash !== true;
+      return !currentPage;
     },
   },
   [HeaderRightItemName.ShareMenu]: {

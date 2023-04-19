@@ -27,6 +27,11 @@ import {
   MoveTo,
   MoveToTrash,
 } from '../../../affine/operation-menu-items';
+import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
+import {
+  StyledHorizontalDivider,
+  StyledHorizontalDividerContainer,
+} from '../styles';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
@@ -98,6 +103,17 @@ export const EditorOptionMenu = () => {
           }}
         />
       )}
+      <StyledHorizontalDividerContainer>
+        <StyledHorizontalDivider />
+      </StyledHorizontalDividerContainer>
+
+      <div
+        onClick={e => {
+          e.stopPropagation();
+        }}
+      >
+        <MenuThemeModeSwitch />
+      </div>
     </>
   );
 
