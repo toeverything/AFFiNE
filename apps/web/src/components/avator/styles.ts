@@ -26,7 +26,7 @@ export const StyledBottomItem = styled('div')<{
     filter: 'blur(12px)',
     transformOrigin: 'center center',
     animation: startAnimate
-      ? `${bottomAnimation} 3s ease-in-out forwards`
+      ? `${bottomAnimation} 3s ease-in-out forwards infinite`
       : 'unset',
   };
 });
@@ -46,7 +46,7 @@ export const StyledMiddleItem = styled('div')<{
     filter: 'blur(12px)',
     transformOrigin: 'center center',
     animation: startAnimate
-      ? `${middleAnimation} 6s ease-in-out forwards`
+      ? `${middleAnimation} 6s ease-in-out infinite`
       : 'unset',
   };
 });
