@@ -1,6 +1,4 @@
-import type { CSSProperties, ReactNode, Ref } from 'react';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
-import { DraggableAttributes } from '@dnd-kit/core/dist/hooks/useDraggable';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type DropPosition = {
   topLine: boolean;
@@ -52,11 +50,7 @@ export type TreeNodeProps<RenderProps = unknown> = {
   setCollapsed: (id: string, collapsed: boolean) => void;
   allowDrop?: boolean;
   selectedId?: string;
-  isDragging?: boolean;
-  dragRef?: Ref<HTMLDivElement>;
-  style?: CSSProperties;
-  attributes?: DraggableAttributes;
-  listeners?: SyntheticListenerMap | undefined;
+  draggingId?: string;
 } & CommonProps<RenderProps>;
 
 export type TreeNodeItemProps<RenderProps = unknown> = {
@@ -64,9 +58,6 @@ export type TreeNodeItemProps<RenderProps = unknown> = {
   setCollapsed: (id: string, collapsed: boolean) => void;
 
   isOver?: boolean;
-  canDrop?: boolean;
-
-  dropRef?: Ref<HTMLDivElement>;
 } & TreeNodeProps<RenderProps>;
 
 export type TreeViewProps<RenderProps = unknown> = {
@@ -78,4 +69,4 @@ export type TreeViewProps<RenderProps = unknown> = {
 export type NodeLIneProps<RenderProps = unknown> = {
   allowDrop: boolean;
   isTop?: boolean;
-} & Pick<TreeNodeProps<RenderProps>, 'node' | 'onDrop'>;
+} & Pick<TreeNodeProps<RenderProps>, 'node'>;

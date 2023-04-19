@@ -19,25 +19,24 @@ export const StyledTreeNodeContainer = styled('div')<{ isDragging?: boolean }>(
   ({ isDragging = false, theme }) => {
     return {
       background: isDragging ? theme.colors.hoverBackground : '',
-      // opacity: isDragging ? 0.4 : 1,
     };
   }
 );
 
-export const StyledNodeLine = styled('div')<{ show: boolean; isTop?: boolean }>(
-  ({ show, isTop = false, theme }) => {
-    return {
-      position: 'absolute',
-      left: '0',
-      ...(isTop ? { top: '-1px' } : { bottom: '-1px' }),
-      width: '100%',
-      paddingTop: '2x',
-      borderTop: '2px solid',
-      borderColor: show ? theme.colors.primaryColor : 'transparent',
-      boxShadow: show
-        ? `0px 0px 8px ${alpha(theme.colors.primaryColor, 0.35)}`
-        : 'none',
-      zIndex: 1,
-    };
-  }
-);
+export const StyledNodeLine = styled('div')<{
+  isOver?: boolean;
+  isTop?: boolean;
+}>(({ isOver = false, isTop = false, theme }) => {
+  return {
+    position: 'absolute',
+    left: '0',
+    ...(isTop ? { top: '-1px' } : { bottom: '-1px' }),
+    width: '100%',
+    borderTop: '2px solid',
+    borderColor: isOver ? theme.colors.primaryColor : 'transparent',
+    boxShadow: isOver
+      ? `0px 0px 8px ${alpha(theme.colors.primaryColor, 0.35)}`
+      : 'none',
+    zIndex: 1,
+  };
+});
