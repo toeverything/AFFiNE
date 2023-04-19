@@ -7,79 +7,74 @@ import {
   Mutation,
   ObjectType,
   Query,
-  registerEnumType,
   Resolver,
 } from '@nestjs/graphql';
-import type { workspaces } from '@prisma/client';
+import type { User, Workspace } from '@prisma/client';
 
-import { PrismaService } from '../../prisma/service';
-
-export enum WorkspaceType {
-  Private = 0,
-  Normal = 1,
-}
-
-registerEnumType(WorkspaceType, {
-  name: 'WorkspaceType',
-  description: 'Workspace type',
-  valuesMap: {
-    Normal: {
-      description: 'Normal workspace',
-    },
-    Private: {
-      description: 'Private workspace',
-    },
-  },
-});
+import { PrismaService } from '../../prisma';
+import { CurrentUser } from '../users';
+import { Permission } from './types';
 
 @ObjectType()
-export class Workspace implements workspaces {
+export class WorkspaceType implements Partial<Workspace> {
   @Field(() => ID)
   id!: string;
+
   @Field({ description: 'is Public workspace' })
   public!: boolean;
-  @Field(() => WorkspaceType, { description: 'Workspace type' })
-  type!: WorkspaceType;
+
   @Field({ description: 'Workspace created date' })
   created_at!: Date;
 }
 
-@Resolver(() => Workspace)
+@Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
   constructor(private readonly prisma: PrismaService) {}
 
   // debug only query should be removed
-  @Query(() => [Workspace], {
+  @Query(() => [WorkspaceType], {
     name: 'workspaces',
     description: 'Get all workspaces',
   })
   async workspaces() {
-    return this.prisma.workspaces.findMany();
+    return this.prisma.workspace.findMany();
   }
 
-  @Query(() => Workspace, {
+  @Query(() => WorkspaceType, {
     name: 'workspace',
     description: 'Get workspace by id',
   })
   async workspace(@Args('id') id: string) {
-    return this.prisma.workspaces.findUnique({
+    return this.prisma.workspace.findUnique({
       where: { id },
     });
   }
 
   // create workspace
-  @Mutation(() => Workspace, {
+  @Mutation(() => WorkspaceType, {
     name: 'createWorkspace',
     description: 'Create workspace',
   })
-  async createWorkspace() {
-    return this.prisma.workspaces.create({
-      data: {
-        id: randomUUID(),
-        type: WorkspaceType.Private,
-        public: false,
-        created_at: new Date(),
-      },
-    });
+  async createWorkspace(@CurrentUser() user: User) {
+    const workspaceId = randomUUID();
+    const [ws] = await this.prisma.$transaction([
+      this.prisma.workspace.create({
+        data: {
+          id: workspaceId,
+          public: false,
+        },
+      }),
+      this.prisma.permission.create({
+        data: {
+          id: randomUUID(),
+          userId: user.id,
+          workspaceId,
+          type: Permission.Owner,
+          accepted: true,
+        },
+      }),
+    ]);
+
+    return ws;
   }
 }

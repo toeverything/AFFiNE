@@ -6,3 +6,4 @@ import { UserResolver } from './resolver';
   providers: [UserResolver],
 })
 export class UsersModule {}
+export * from './guard';

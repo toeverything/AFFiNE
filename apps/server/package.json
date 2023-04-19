@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "nodemon ./src/index.ts",
     "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",
-    "test:coverage": "c8 yarn exec ts-node-esm ./scripts/run-test.ts all"
+    "test:coverage": "c8 yarn exec ts-node-esm ./scripts/run-test.ts all",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@apollo/server": "^4.7.0",
@@ -21,6 +22,7 @@
     "@nestjs/platform-express": "^9.4.0",
     "@prisma/client": "^4.13.0",
     "dotenv": "^16.0.3",
+    "express": "^4.18.2",
     "graphql": "^16.6.0",
     "graphql-type-json": "^0.3.2",
     "lodash-es": "^4.17.21",
@@ -54,6 +56,7 @@
       "**/dist/**"
     ],
     "env": {
+      "TS_NODE_TRANSPILE_ONLY": true,
       "TS_NODE_PROJECT": "./tsconfig.json",
       "NODE_ENV": "development",
       "DEBUG": "affine:*",

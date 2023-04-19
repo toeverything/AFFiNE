@@ -7,46 +7,45 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model google_users {
-  id        String @id @db.VarChar
-  user_id   String @db.VarChar
-  google_id String @unique @db.VarChar
-  users     users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
-}
-
-model permissions {
-  id           String     @id @db.VarChar
-  workspace_id String     @db.VarChar
-  user_id      String?    @db.VarChar
-  user_email   String?
-  type         Int        @db.SmallInt
-  accepted     Boolean    @default(false)
-  created_at   DateTime?  @default(now()) @db.Timestamptz(6)
-  users        users?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspaces   workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
-}
-
-model seaql_migrations {
-  version    String @id @db.VarChar
-  applied_at BigInt
-}
-
-model users {
-  id           String         @id @db.VarChar
+model User {
+  @@map("users")
+  id           String         @id @default(uuid()) @db.VarChar
   name         String         @db.VarChar
   email        String         @unique @db.VarChar
-  avatar_url   String?        @db.VarChar
-  token_nonce  Int?           @default(0) @db.SmallInt
-  password     String?        @db.VarChar
-  created_at   DateTime?      @default(now()) @db.Timestamptz(6)
-  google_users google_users[]
-  permissions  permissions[]
+  avatarUrl    String?        @db.VarChar @map("avatar_url")
+  tokenNonce   Int            @default(0) @db.SmallInt @map("token_nonce")
+  password     String         @db.VarChar
+  createdAt    DateTime       @default(now()) @db.Timestamptz(6) @map("created_at")
+  googleUsers  GoogleUser[]   
+  permissions  Permission[]
 }
 
-model workspaces {
-  id          String        @id @db.VarChar
+model Workspace {
+  @@map("workspaces")
+  id          String        @id @default(uuid()) @db.VarChar
   public      Boolean
-  type        Int           @db.SmallInt
-  created_at  DateTime?     @default(now()) @db.Timestamptz(6)
-  permissions permissions[]
+  type        Int           @default(1) @db.SmallInt @map("type")
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6) @map("created_at")
+  permissions Permission[]
+}
+
+model GoogleUser {
+  @@map("google_users")
+  id        String @id @default(uuid()) @db.VarChar
+  userId    String @db.VarChar @map("user_id")
+  googleId  String @unique @db.VarChar @map("google_id")
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Permission {
+  @@map("permissions")
+  id           String     @id @default(uuid()) @db.VarChar
+  workspaceId  String     @db.VarChar @map("workspace_id")
+  userId       String?    @db.VarChar @map("user_id")
+  userEmail    String?    @map("user_email")
+  type         Int        @db.SmallInt
+  accepted     Boolean    @default(false)
+  createdAt    DateTime   @default(now()) @db.Timestamptz(6) @map("created_at")
+  user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }

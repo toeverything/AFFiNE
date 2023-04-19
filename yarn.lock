@@ -218,6 +218,7 @@ __metadata:
     "@types/supertest": ^2.0.12
     c8: ^7.13.0
     dotenv: ^16.0.3
+    express: ^4.18.2
     graphql: ^16.6.0
     graphql-type-json: ^0.3.2
     lodash-es: ^4.17.21
@@ -12899,7 +12900,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express@npm:4.18.2, express@npm:^4.17.1, express@npm:^4.17.3":
+"express@npm:4.18.2, express@npm:^4.17.1, express@npm:^4.17.3, express@npm:^4.18.2":
   version: 4.18.2
   resolution: "express@npm:4.18.2"
   dependencies:
