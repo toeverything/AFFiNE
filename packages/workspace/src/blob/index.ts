@@ -30,17 +30,17 @@ export const createAffineBlobStorage = (
     },
   });
   dbPromise.then(async db => {
-    const t = db.transaction('uploading', 'readwrite');
-    const uploading: Promise<unknown>[] = [];
-    for await (const cursor of t.store) {
-      const { key, arrayBuffer, type } = cursor.value;
-      uploading.push(
-        workspaceApis
-          .uploadBlob(workspaceId, arrayBuffer, type)
-          .then(() => t.store.delete(key))
-      );
-    }
-    await Promise.all(uploading);
+    const t = db.transaction('uploading', 'readwrite').objectStore('uploading');
+    await t.getAll().then(blobs =>
+      blobs.map(({ arrayBuffer, type }) =>
+        workspaceApis.uploadBlob(workspaceId, arrayBuffer, type).then(key => {
+          const t = db
+            .transaction('uploading', 'readwrite')
+            .objectStore('uploading');
+          return t.delete(key);
+        })
+      )
+    );
   });
   return {
     crud: {
