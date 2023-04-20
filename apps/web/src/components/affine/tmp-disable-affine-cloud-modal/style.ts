@@ -1,4 +1,4 @@
-import { Button, styled } from '@affine/component';
+import { Button, displayFlex, styled } from '@affine/component';
 
 export const Header = styled('div')({
   height: '44px',
@@ -10,31 +10,46 @@ export const Header = styled('div')({
 });
 
 export const Content = styled('div')({
-  textAlign: 'center',
+  padding: '0 40px',
 });
 
-export const ContentTitle = styled('h1')({
-  fontSize: '20px',
-  lineHeight: '28px',
-  fontWeight: 600,
-  textAlign: 'center',
-});
-
-export const StyleTips = styled('div')(() => {
+export const ContentTitle = styled('h1')(({ theme }) => {
   return {
-    userSelect: 'none',
-    width: '400px',
-    margin: 'auto',
-    marginBottom: '32px',
-    marginTop: '12px',
+    fontSize: theme.font.h6,
+    lineHeight: '28px',
+    fontWeight: 600,
   };
 });
 
-export const StyleButton = styled(Button)(() => {
+export const StyleTips = styled('div')(({ theme }) => {
   return {
-    width: '284px',
-    display: 'block',
-    margin: 'auto',
-    marginTop: '16px',
+    userSelect: 'none',
+    margin: '20px 0',
+    a: {
+      color: theme.colors.primaryColor,
+    },
+  };
+});
+
+export const StyleButton = styled(Button)(({ theme }) => {
+  return {
+    textAlign: 'center',
+    margin: '20px 0',
+    borderRadius: '8px',
+    backgroundColor: theme.colors.primaryColor,
+    span: {
+      margin: '0',
+    },
+  };
+});
+export const StyleButtonContainer = styled('div')(() => {
+  return {
+    width: '100%',
+    ...displayFlex('flex-end', 'center'),
+  };
+});
+export const StyleImage = styled('div')(() => {
+  return {
+    width: '100%',
   };
 });
