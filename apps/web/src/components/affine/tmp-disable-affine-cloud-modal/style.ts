@@ -26,7 +26,7 @@ export const StyleTips = styled('div')(({ theme }) => {
     userSelect: 'none',
     margin: '20px 0',
     a: {
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-background-primary-color)',
     },
   };
 });
@@ -36,7 +36,7 @@ export const StyleButton = styled(Button)(({ theme }) => {
     textAlign: 'center',
     margin: '20px 0',
     borderRadius: '8px',
-    backgroundColor: theme.colors.primaryColor,
+    backgroundColor: 'var(--affine-background-primary-color)',
     span: {
       margin: '0',
     },

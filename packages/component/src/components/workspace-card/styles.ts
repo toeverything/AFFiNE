@@ -84,7 +84,7 @@ export const StyledSettingLink = styled(IconButton)(({ theme }) => {
     bottom: '6px',
     opacity: 0,
     borderRadius: '4px',
-    color: theme.colors.primaryColor,
+    color: 'var(--affine-background-primary-color)',
     pointerEvents: 'none',
     transition: 'all .15s',
     ':hover': {
