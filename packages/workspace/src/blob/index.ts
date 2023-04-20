@@ -92,12 +92,13 @@ export const createAffineBlobStorage = (
       delete: async (key: string) => {
         await Promise.all([
           storage.crud.delete(key),
-          // we don't support deleting a blob?
+          // we don't support deleting a blob in API?
           // workspaceApis.deleteBlob(workspaceId, key)
         ]);
       },
       list: async () => {
         const blobs = await storage.crud.list();
+        // we don't support listing blobs in API?
         return [...blobs];
       },
     },
