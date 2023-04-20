@@ -1,6 +1,6 @@
 {
   "name": "AFFiNE",
-  "version": "0.5.4",
+  "version": "0.5.4-canary.4",
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
@@ -86,5 +86,6 @@
     "idb": "^7.1.1",
     "@emotion/cache": "^11.10.7"
   },
-  "packageManager": "yarn@3.5.0"
+  "packageManager": "yarn@3.5.0",
+  "stableVersion": "0.5.4"
 }
