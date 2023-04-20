@@ -51,12 +51,10 @@ const getPersistenceAllWorkspace = () => {
       ...items.map((item: z.infer<typeof schema>) => {
         const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
           item.id,
-          (k: string) =>
-            // fixme: token could be expired
-            ({
-              api: prefixUrl + 'api/workspace',
-              token: getLoginStorage()?.token,
-            }[k])
+          WorkspaceFlavour.AFFINE,
+          {
+            workspaceApis: affineApis,
+          }
         );
         const affineWorkspace: AffineWorkspace = {
           ...item,
@@ -116,19 +114,15 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       const newWorkspaceId = id;
 
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const blobs = await blockSuiteWorkspace.blobs;
-      if (blobs) {
-        const ids = await blobs.blobs;
-        for (const id of ids) {
-          const url = await blobs.get(id);
-          if (url) {
-            const blob = await fetch(url).then(res => res.blob());
-            await affineApis.uploadBlob(
-              newWorkspaceId,
-              await blob.arrayBuffer(),
-              blob.type
-            );
-          }
+      const blobManager = blockSuiteWorkspace.blobs;
+      for (const id of await blobManager.list()) {
+        const blob = await blobManager.get(id);
+        if (blob) {
+          await affineApis.uploadBlob(
+            newWorkspaceId,
+            await blob.arrayBuffer(),
+            blob.type
+          );
         }
       }
 
@@ -182,9 +176,10 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           return workspaces.map(workspace => {
             const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
               workspace.id,
-              (k: string) =>
-                // fixme: token could be expired
-                ({ api: '/api/workspace', token: getLoginStorage()?.token }[k])
+              WorkspaceFlavour.AFFINE,
+              {
+                workspaceApis: affineApis,
+              }
             );
             const dump = workspaces.map(workspace => {
               return {

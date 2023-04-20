@@ -31,7 +31,10 @@ function initPage(page: Page): void {
   page.resetHistory();
 }
 
-const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace('test-workspace');
+const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+  'test-workspace',
+  WorkspaceFlavour.LOCAL
+);
 
 initPage(blockSuiteWorkspace.createPage('page0'));
 initPage(blockSuiteWorkspace.createPage('page1'));

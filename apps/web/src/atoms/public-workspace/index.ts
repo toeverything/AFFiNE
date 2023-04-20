@@ -1,4 +1,3 @@
-import { getLoginStorage } from '@affine/workspace/affine/login';
 import type { AffinePublicWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -14,10 +13,9 @@ function createPublicWorkspace(
 ): AffinePublicWorkspace {
   const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
     workspaceId,
-    (k: string) =>
-      // fixme: token could be expired
-      ({ api: `api/workspace`, token: getLoginStorage()?.token }[k]),
+    WorkspaceFlavour.AFFINE,
     {
+      workspaceApis: affineApis,
       cachePrefix: WorkspaceFlavour.PUBLIC + (singlePage ? '-single-page' : ''),
     }
   );
