@@ -9,12 +9,8 @@ import type {
   AffineWebSocketProvider,
   LocalIndexedDBProvider,
 } from '@affine/workspace/type';
-import type {
-  BlobStorage,
-  Disposable,
-  Workspace as BlockSuiteWorkspace,
-} from '@blocksuite/store';
-import { Y } from '@blocksuite/store';
+import type { BlobManager, Disposable } from '@blocksuite/store';
+import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import {
   createIndexedDBProvider as create,
@@ -23,6 +19,8 @@ import {
 
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 import { localProviderLogger as logger } from './logger';
+
+const Y = BlockSuiteWorkspace.Y;
 
 const createAffineWebSocketProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
@@ -159,37 +157,27 @@ const createSQLiteProvider = (
     window.apis.db.applyDocUpdate(blockSuiteWorkspace.id, update);
   }
 
-  async function syncBlobIntoSQLite(bs: BlobStorage) {
+  async function syncBlobIntoSQLite(bs: BlobManager) {
     const persistedKeys = await window.apis.db.getPersistedBlobs(
       blockSuiteWorkspace.id
     );
 
-    const allKeys = await bs.blobs;
+    const allKeys = await bs.list();
     const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
 
     logger.info('persisting blobs', keysToPersist, 'to sqlite');
     keysToPersist.forEach(async k => {
-      const blobUrl = await bs.get(k);
-      if (!blobUrl) {
+      const blob = await bs.get(k);
+      if (!blob) {
         logger.warn('blob url not found', k);
         return;
       }
-      const blob = await fetch(blobUrl).then(r => r.arrayBuffer());
-      window.apis.db.addBlob(blockSuiteWorkspace.id, k, new Uint8Array(blob));
+      window.apis.db.addBlob(
+        blockSuiteWorkspace.id,
+        k,
+        new Uint8Array(await blob.arrayBuffer())
+      );
     });
-
-    // // sync to bs
-    // const keysToSync = persistedKeys.filter(k => !allKeys.includes(k));
-    // logger.info('syncing blobs', keysToSync, 'from sqlite');
-    // keysToSync.forEach(async k => {
-    //   const blob = await window.apis.db.getBlob(blockSuiteWorkspace.id, k);
-    //   if (!blob) {
-    //     logger.warn('blob not found', k);
-    //     return;
-    //   }
-    //   // todo: fixme
-    //   // await bs.set(k, new Blob([blob.buffer]));
-    // });
   }
 
   const provider = {
@@ -211,12 +199,11 @@ const createSQLiteProvider = (
 
       blockSuiteWorkspace.doc.on('update', handleUpdate);
 
-      blockSuiteWorkspace.blobs.then(bs => {
-        if (bs) {
-          syncBlobIntoSQLite(bs);
-          bs.slots.onBlobSyncStateChange.on(() => syncBlobIntoSQLite(bs));
-        }
-      });
+      const bs = blockSuiteWorkspace.blobs;
+
+      if (bs) {
+        syncBlobIntoSQLite(bs);
+      }
 
       // blockSuiteWorkspace.doc.on('destroy', ...);
       logger.info('connecting sqlite done', blockSuiteWorkspace.id);
