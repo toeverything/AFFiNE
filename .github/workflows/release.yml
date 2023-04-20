@@ -2,12 +2,12 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
 
 jobs:
   release:
-    name: Publish npm release
+    name: Try publishing npm@latest release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
