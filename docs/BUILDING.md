@@ -31,6 +31,15 @@ nvm use 18
 
 ## Setup Environment
 
+This setup requires modern yarn (currently `3.5.0`), run this if your yarn version is `1.x`
+
+Reference: [Yarn installation doc](https://yarnpkg.com/getting-started/install)
+
+```sh
+corepack enable
+corepack prepare yarn@3.5.0 --activate
+```
+
 ```sh
 # install dependencies
 yarn install

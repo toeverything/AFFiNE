@@ -98,7 +98,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   height={38}
                   value={input}
                   placeholder={t('Workspace Name')}
-                  maxLength={15}
+                  maxLength={50}
                   minLength={0}
                   onChange={newName => {
                     setInput(newName);
