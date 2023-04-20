@@ -21,7 +21,9 @@ const colorsSchema = [
   ['#BD08EB', '#755FFF', '#6967E4'],
 ];
 
-export const DefaultAvatar = ({ name }: { name: string }) => {
+export const DefaultAvatar = ({ name: propsName }: { name: string }) => {
+  // Sometimes name is ' '
+  const name = propsName || 'A';
   const colors = useMemo(() => {
     const index = name[0].toUpperCase().charCodeAt(0);
     return colorsSchema[index % colorsSchema.length];
