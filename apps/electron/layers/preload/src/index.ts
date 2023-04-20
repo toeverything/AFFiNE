@@ -25,15 +25,23 @@ contextBridge.exposeInMainWorld('apis', {
   db: {
     // TODO: do we need to store the workspace list locally?
     // workspace providers
-    getDoc: (id: string) => ipcRenderer.invoke('db:get-doc', id),
+    getDoc: (id: string): Promise<Uint8Array | null> =>
+      ipcRenderer.invoke('db:get-doc', id),
     applyDocUpdate: (id: string, update: Uint8Array) =>
       ipcRenderer.invoke('db:apply-doc-update', id, update),
     addBlob: (workspaceId: string, key: string, data: Uint8Array) =>
       ipcRenderer.invoke('db:add-blob', workspaceId, key, data),
-    getBlob: (workspaceId: string, key: string): Promise<Uint8Array> =>
+    getBlob: (workspaceId: string, key: string): Promise<Uint8Array | null> =>
       ipcRenderer.invoke('db:get-blob', workspaceId, key),
     getPersistedBlobs: (workspaceId: string): Promise<string[]> =>
       ipcRenderer.invoke('db:get-persisted-blobs', workspaceId),
+  },
+
+  workspace: {
+    list: (): Promise<string[]> => ipcRenderer.invoke('workspace:list'),
+    delete: (id: string): Promise<void> =>
+      ipcRenderer.invoke('workspace:delete', id),
+    // create will be implicitly called by db functions
   },
 
   openLoadDBFileDialog: () => ipcRenderer.invoke('ui:open-load-db-file-dialog'),
@@ -45,6 +53,11 @@ contextBridge.exposeInMainWorld('apis', {
 
   onSidebarVisibilityChange: (visible: boolean) =>
     ipcRenderer.invoke('ui:sidebar-visibility-change', visible),
+
+  onWorkspaceChange: (workspaceId: string) =>
+    ipcRenderer.invoke('ui:workspace-change', workspaceId),
+
+  openDBFolder: () => ipcRenderer.invoke('ui:open-db-folder'),
 
   /**
    * Try sign in using Google and return a request object to exchange the code for a token

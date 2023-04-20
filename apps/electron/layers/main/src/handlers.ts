@@ -1,13 +1,40 @@
 import { app, BrowserWindow, ipcMain, nativeTheme, shell } from 'electron';
 import { parse } from 'url';
 
+import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
 import { appContext } from './context';
+import type { WorkspaceDatabase } from './data/sqlite';
+import { openWorkspaceDatabase } from './data/sqlite';
+import { deleteWorkspace, listWorkspaces } from './data/workspace';
 import { getExchangeTokenParams, oauthEndpoint } from './google-auth';
-import type { WorkspaceDatabase } from './sqlite/db';
-import { openWorkspaceDatabase } from './sqlite/db';
 
-const logger = console;
+let currentWorkspaceId = '';
+
+const dbMapping = new Map<string, WorkspaceDatabase>();
+
+async function ensureWorkspaceDB(id: string) {
+  let workspaceDB = dbMapping.get(id);
+  if (!workspaceDB) {
+    // hmm... potential race condition?
+    workspaceDB = await openWorkspaceDatabase(appContext, id);
+    dbMapping.set(id, workspaceDB);
+  }
+  await workspaceDB.ready;
+  return workspaceDB;
+}
+
+function registerWorkspaceHandlers() {
+  ipcMain.handle('workspace:list', async _ => {
+    logger.info('list workspaces');
+    return listWorkspaces(appContext);
+  });
+
+  ipcMain.handle('workspace:delete', async (_, id) => {
+    logger.info('delete workspace', id);
+    return deleteWorkspace(appContext, id);
+  });
+}
 
 function registerUIHandlers() {
   ipcMain.handle('ui:theme-change', async (_, theme) => {
@@ -26,6 +53,11 @@ function registerUIHandlers() {
       });
       logger.info('sidebar visibility change', visible);
     }
+  });
+
+  ipcMain.handle('ui:workspace-change', async (_, workspaceId) => {
+    logger.info('workspace change', workspaceId);
+    currentWorkspaceId = workspaceId;
   });
 
   // @deprecated
@@ -64,53 +96,52 @@ function registerUIHandlers() {
 }
 
 function registerDBHandlers() {
-  const dbMapping = new Map<string, WorkspaceDatabase>();
-
-  async function ensureWorkspaceDB(id: string) {
-    let workspaceDB = dbMapping.get(id);
-    if (!workspaceDB) {
-      workspaceDB = openWorkspaceDatabase(appContext, id);
-      dbMapping.set(id, workspaceDB);
-    }
-    await workspaceDB.ready;
-    return workspaceDB;
-  }
-
   app.on('activate', () => {
     for (const [_, workspaceDB] of dbMapping) {
       workspaceDB.reconnectDB();
     }
   });
 
-  // data related
   ipcMain.handle('db:get-doc', async (_, id) => {
-    console.log('main: get doc', id);
+    logger.log('main: get doc', id);
     const workspaceDB = await ensureWorkspaceDB(id);
     return workspaceDB.getEncodedDocUpdates();
   });
 
   ipcMain.handle('db:apply-doc-update', async (_, id, update) => {
-    console.log('main: apply doc update', id);
+    logger.log('main: apply doc update', id);
     const workspaceDB = await ensureWorkspaceDB(id);
     return workspaceDB.applyUpdate(update);
   });
 
   ipcMain.handle('db:add-blob', async (_, workspaceId, key, data) => {
-    console.log('main: add blob', workspaceId, key);
+    logger.log('main: add blob', workspaceId, key);
     const workspaceDB = await ensureWorkspaceDB(workspaceId);
     return workspaceDB.addBlob(key, data);
   });
 
   ipcMain.handle('db:get-blob', async (_, workspaceId, key) => {
-    console.log('main: get blob', workspaceId, key);
+    logger.log('main: get blob', workspaceId, key);
     const workspaceDB = await ensureWorkspaceDB(workspaceId);
     return workspaceDB.getBlob(key);
   });
 
   ipcMain.handle('db:get-persisted-blobs', async (_, workspaceId) => {
-    console.log('main: get persisted blob keys', workspaceId);
+    logger.log('main: get persisted blob keys', workspaceId);
     const workspaceDB = await ensureWorkspaceDB(workspaceId);
     return workspaceDB.getPersistentBlobKeys();
+  });
+
+  ipcMain.handle('db:delete-blob', async (_, workspaceId, key) => {
+    logger.log('main: delete blob', workspaceId, key);
+    const workspaceDB = await ensureWorkspaceDB(workspaceId);
+    return workspaceDB.deleteBlob(key);
+  });
+
+  ipcMain.handle('ui:open-db-folder', async _ => {
+    logger.log('main: open db folder');
+    const workspaceDB = await ensureWorkspaceDB(currentWorkspaceId);
+    shell.showItemInFolder(workspaceDB.path);
   });
 
   ipcMain.handle('ui:open-load-db-file-dialog', async () => {
@@ -123,6 +154,7 @@ function registerDBHandlers() {
 }
 
 export const registerHandlers = () => {
+  registerWorkspaceHandlers();
   registerUIHandlers();
   registerDBHandlers();
 };

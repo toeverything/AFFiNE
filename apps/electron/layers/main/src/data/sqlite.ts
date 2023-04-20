@@ -5,7 +5,9 @@ import type { Database } from 'sqlite3';
 import sqlite3Default from 'sqlite3';
 import * as Y from 'yjs';
 
+import { logger } from '../../../logger';
 import type { AppContext } from '../context';
+import { appContext } from '../context';
 
 const sqlite3 = sqlite3Default.verbose();
 
@@ -45,7 +47,7 @@ export class WorkspaceDatabase {
 
   constructor(public path: string) {
     this.sqliteDB$ = this.reconnectDB();
-    console.log('open db', path);
+    logger.log('open db', path);
 
     this.ydoc.on('update', update => {
       this.addUpdateToSQLite(update);
@@ -67,7 +69,7 @@ export class WorkspaceDatabase {
   };
 
   reconnectDB = async () => {
-    console.log('open db', this.path);
+    logger.log('open db', this.path);
     if (this._db) {
       const _db = this._db;
       await new Promise<void>(res =>
@@ -78,7 +80,15 @@ export class WorkspaceDatabase {
     }
     return (this.sqliteDB$ = new Promise(res => {
       // use cached version?
-      const db = new sqlite3.Database(this.path);
+      const db = new sqlite3.Database(this.path, error => {
+        if (error) {
+          logger.error('open db error', error);
+        }
+        fs.writeFileSync(
+          path.join(appContext.appDataPath, 'test.txt'),
+          error?.message ?? 'no error'
+        );
+      });
       this._db = db;
 
       db.exec(schemas.join(';'), () => {
@@ -109,6 +119,7 @@ export class WorkspaceDatabase {
         [key, data, data],
         err => {
           if (err) {
+            logger.error('addBlob', err);
             reject(err);
           } else {
             resolve();
@@ -120,13 +131,17 @@ export class WorkspaceDatabase {
 
   getBlob = async (key: string) => {
     const db = await this.sqliteDB$;
-    return new Promise<Uint8Array>((resolve, reject) => {
+    return new Promise<Uint8Array | null>((resolve, reject) => {
       db.get<BlobRow>(
         'SELECT data FROM blobs WHERE key = ?',
         [key],
         (err, row) => {
           if (err) {
+            logger.error('getBlob', err);
             reject(err);
+          } else if (!row) {
+            logger.error('getBlob', 'not found');
+            resolve(null);
           } else {
             resolve(row.data);
           }
@@ -135,11 +150,26 @@ export class WorkspaceDatabase {
     });
   };
 
+  deleteBlob = async (key: string) => {
+    const db = await this.sqliteDB$;
+    return new Promise<void>((resolve, reject) => {
+      db.run('DELETE FROM blobs WHERE key = ?', [key], err => {
+        if (err) {
+          logger.error('deleteBlob', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  };
+
   getPersistentBlobKeys = async () => {
     const db = await this.sqliteDB$;
     return new Promise<string[]>((resolve, reject) => {
       db.all<BlobRow>('SELECT key FROM blobs', (err, rows) => {
         if (err) {
+          logger.error('getPersistentBlobKeys', err);
           reject(err);
         } else {
           resolve(rows.map(row => row.key));
@@ -154,6 +184,7 @@ export class WorkspaceDatabase {
       // do we need to order by id?
       db.all<UpdateRow>('SELECT * FROM updates', (err, rows) => {
         if (err) {
+          logger.error('getUpdates', err);
           reject(err);
         } else {
           resolve(rows);
@@ -167,6 +198,7 @@ export class WorkspaceDatabase {
     return new Promise<void>((resolve, reject) => {
       db.run('INSERT INTO updates (data) VALUES (?)', [data], err => {
         if (err) {
+          logger.error('addUpdateToSQLite', err);
           reject(err);
         } else {
           resolve();
@@ -176,13 +208,14 @@ export class WorkspaceDatabase {
   };
 }
 
-export function openWorkspaceDatabase(
+export async function openWorkspaceDatabase(
   context: AppContext,
   workspaceId: string
 ) {
   const basePath = path.join(context.appDataPath, 'workspaces', workspaceId);
   // hmmm.... blocking api but it should be fine, right?
-  fs.ensureDirSync(basePath);
+  await fs.ensureDir(basePath);
   const dbPath = path.join(basePath, 'storage.db');
+
   return new WorkspaceDatabase(dbPath);
 }

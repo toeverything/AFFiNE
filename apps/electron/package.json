@@ -40,6 +40,7 @@
     "zx": "^7.2.1"
   },
   "dependencies": {
+    "electron-log": "^5.0.0-beta.22",
     "electron-window-state": "^5.0.3",
     "fs-extra": "^11.1.1",
     "sqlite3": "^5.1.6",

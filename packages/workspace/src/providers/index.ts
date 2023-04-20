@@ -190,7 +190,9 @@ const createSQLiteProvider = (
       logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
       const updates = await window.apis.db.getDoc(blockSuiteWorkspace.id);
 
-      Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
+      if (updates) {
+        Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
+      }
 
       const mergeUpdates = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc);
 

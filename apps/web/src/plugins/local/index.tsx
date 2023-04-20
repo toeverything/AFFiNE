@@ -4,10 +4,7 @@ import {
   DEFAULT_WORKSPACE_NAME,
 } from '@affine/env';
 import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
-import {
-  CRUD,
-  saveWorkspaceToLocalStorage,
-} from '@affine/workspace/local/crud';
+import { CRUD } from '@affine/workspace/local/crud';
 import { createIndexedDBProvider } from '@affine/workspace/providers';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -46,7 +43,6 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
         provider.disconnect();
       });
       ensureRootPinboard(blockSuiteWorkspace);
-      saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);
       logger.debug('create first workspace');
       return [blockSuiteWorkspace.id];
     },

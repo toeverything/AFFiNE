@@ -1,20 +1,23 @@
 import fs from 'fs-extra';
 
-import type { WorkspaceDatabase } from './db';
+import { logger } from '../../../logger';
+import type { WorkspaceDatabase } from './sqlite';
 
 /**
  * Start a backup of the database to the given destination.
  */
-export function startBackup(db: WorkspaceDatabase, dest: string) {
+export async function startBackup(db: WorkspaceDatabase, dest: string) {
   let timeout: NodeJS.Timeout | null;
   async function backup() {
     await fs.copyFile(db.path, dest);
-    console.log('backup: ', dest);
+    logger.log('backup: ', dest);
   }
 
   backup();
 
-  db.sqliteDB$.on('change', () => {
+  const _db = await db.sqliteDB$;
+
+  _db.on('change', () => {
     if (timeout) {
       clearTimeout(timeout);
     }

@@ -15,7 +15,7 @@ export const createSQLiteStorage = (workspaceId: string): BlobStorage => {
         );
       },
       delete: async (key: string) => {
-        // todo: fixme
+        return window.apis.db.deleteBlob(workspaceId, key);
       },
       list: async () => {
         return window.apis.db.getPersistedBlobs(workspaceId);
