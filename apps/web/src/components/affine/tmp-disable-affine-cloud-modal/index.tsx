@@ -1,8 +1,16 @@
-import { IconButton, Modal, ModalWrapper } from '@affine/component';
+import { Empty, IconButton, Modal, ModalWrapper } from '@affine/component';
 import { CloseIcon } from '@blocksuite/icons';
 import type React from 'react';
 
-import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
+import {
+  Content,
+  ContentTitle,
+  Header,
+  StyleButton,
+  StyleButtonContainer,
+  StyleImage,
+  StyleTips,
+} from './style';
 
 interface TmpDisableAffineCloudModalProps {
   open: boolean;
@@ -14,7 +22,7 @@ export const TmpDisableAffineCloudModal: React.FC<
 > = ({ open, onClose }) => {
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalWrapper width={560} height={292}>
+      <ModalWrapper width={480}>
         <Header>
           <IconButton
             onClick={() => {
@@ -29,9 +37,24 @@ export const TmpDisableAffineCloudModal: React.FC<
           <StyleTips>
             We are upgrading the AFFiNE Cloud service and it is temporarily
             unavailable on the client side. If you wish to be notified the first
-            time it&apos;s available, please <a href="#">click here</a>
+            time it&apos;s available, please&nbsp;
+            <a
+              href="https://github.com/toeverything/AFFiNE/releases"
+              target="_blank"
+            >
+              click here
+            </a>
+            .
           </StyleTips>
-          <div>
+          <StyleImage>
+            <Empty
+              containerStyle={{
+                width: '200px',
+                height: '112px',
+              }}
+            />
+          </StyleImage>
+          <StyleButtonContainer>
             <StyleButton
               shape="round"
               type="primary"
@@ -41,7 +64,7 @@ export const TmpDisableAffineCloudModal: React.FC<
             >
               Got it
             </StyleButton>
-          </div>
+          </StyleButtonContainer>
         </Content>
       </ModalWrapper>
     </Modal>
