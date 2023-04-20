@@ -1,9 +1,17 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  nativeTheme,
+  shell,
+} from 'electron';
 import { parse } from 'url';
 
 import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
 import { appContext } from './context';
+import { exportDatabase } from './data/export';
 import type { WorkspaceDatabase } from './data/sqlite';
 import { openWorkspaceDatabase } from './data/sqlite';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
@@ -149,7 +157,23 @@ function registerDBHandlers() {
   });
 
   ipcMain.handle('ui:open-save-db-file-dialog', async () => {
-    // todo
+    logger.log('main: open save db file dialog', currentWorkspaceId);
+    const ret = await dialog.showSaveDialog({
+      properties: ['showOverwriteConfirmation'],
+      title: 'Save Workspace',
+      buttonLabel: 'Save',
+      defaultPath: currentWorkspaceId + '.db',
+      message: 'Save Workspace as SQLite Database',
+    });
+    const filePath = ret.filePath;
+    if (ret.canceled || !filePath) {
+      return null;
+    }
+
+    const workspaceDB = await ensureWorkspaceDB(currentWorkspaceId);
+    await exportDatabase(workspaceDB, filePath);
+    shell.showItemInFolder(filePath);
+    return filePath;
   });
 }
 

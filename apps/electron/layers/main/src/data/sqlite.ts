@@ -7,7 +7,6 @@ import * as Y from 'yjs';
 
 import { logger } from '../../../logger';
 import type { AppContext } from '../context';
-import { appContext } from '../context';
 
 const sqlite3 = sqlite3Default.verbose();
 
@@ -84,10 +83,6 @@ export class WorkspaceDatabase {
         if (error) {
           logger.error('open db error', error);
         }
-        fs.writeFileSync(
-          path.join(appContext.appDataPath, 'test.txt'),
-          error?.message ?? 'no error'
-        );
       });
       this._db = db;
 
