@@ -12,6 +12,7 @@
     ".": "./src/index.ts"
   },
   "publishConfig": {
+    "access": "public",
     "main": "dist/index.umd.cjs",
     "module": "dist/index.js",
     "exports": {
