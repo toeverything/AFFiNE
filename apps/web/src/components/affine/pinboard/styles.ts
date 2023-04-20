@@ -1,5 +1,4 @@
 import {
-  alpha,
   displayFlex,
   IconButton,
   styled,
@@ -62,7 +61,7 @@ export const StyledPinboard = styled('div')<{
         ? 'var(--affine-primary-color)'
         : 'var(--affine-text-primary-color)',
       cursor: disable ? 'not-allowed' : 'pointer',
-      background: isOver ? alpha('var(--affine-primary-color)', 0.06) : '',
+      background: isOver ? 'rgba(118, 95, 254, 0.06)' : '',
       fontSize: 'var(--affine-font-base)',
       userSelect: 'none',
       ...(textWrap
