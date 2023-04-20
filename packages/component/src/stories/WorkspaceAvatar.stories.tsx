@@ -21,7 +21,6 @@ export default {
 
 const basicBlockSuiteWorkspace = new Workspace({
   id: 'blocksuite-local',
-  blobOptionsGetter: (_: string) => undefined,
 });
 
 basicBlockSuiteWorkspace.meta.setName('Hello World');
