@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import {
   DefaultAvatarBottomItemStyle,
@@ -27,14 +27,23 @@ export const DefaultAvatar = ({ name }: { name: string }) => {
     return colorsSchema[index % colorsSchema.length];
   }, [name]);
 
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
   const [topColor, middleColor, bottomColor] = colors;
   const [isHover, setIsHover] = useState(false);
 
   return (
     <div
       className={DefaultAvatarContainerStyle}
-      onMouseEnter={() => setIsHover(true)}
-      onMouseLeave={() => setIsHover(false)}
+      onMouseEnter={() => {
+        timer.current = setTimeout(() => {
+          setIsHover(true);
+        }, 300);
+      }}
+      onMouseLeave={() => {
+        clearTimeout(timer.current);
+        setIsHover(false);
+      }}
     >
       <div
         className={DefaultAvatarTopItemStyle}

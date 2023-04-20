@@ -109,9 +109,11 @@ export const DefaultAvatarMiddleItemStyle = style({
   opacity: '0.8',
   filter: 'blur(12px)',
   transformOrigin: 'center center',
+  animation: `${middleAnimation} 3s ease-in-out forwards infinite`,
+  animationPlayState: 'paused',
 });
 export const DefaultAvatarMiddleItemWithAnimationStyle = style({
-  animation: `${middleAnimation} 3s ease-in-out forwards infinite`,
+  animationPlayState: 'running',
 });
 export const DefaultAvatarBottomItemStyle = style({
   width: '98%',
@@ -123,9 +125,12 @@ export const DefaultAvatarBottomItemStyle = style({
   opacity: '0.8',
   filter: 'blur(12px)',
   transformOrigin: 'center center',
+  willChange: 'left, top, transform',
+  animation: `${bottomAnimation} 3s ease-in-out forwards infinite`,
+  animationPlayState: 'paused',
 });
 export const DefaultAvatarBottomItemWithAnimationStyle = style({
-  animation: `${bottomAnimation} 3s ease-in-out forwards infinite`,
+  animationPlayState: 'running',
 });
 export const DefaultAvatarTopItemStyle = style({
   width: '104%',
