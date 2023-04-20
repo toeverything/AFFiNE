@@ -13,6 +13,7 @@ export const publicRuntimeConfigSchema = z.object({
   editorVersion: z.string(),
   enableBroadCastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
+  enableLegacyCloud: z.boolean(),
 });
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;

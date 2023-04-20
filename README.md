@@ -217,6 +217,7 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
     <td align="center"><a href="https://adityash1.github.io/"><img src="https://avatars.githubusercontent.com/u/65771169?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Aditya Sharma</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=adityash1" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/sheben404"><img src="https://avatars.githubusercontent.com/u/61317160?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Kehan Wang</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=sheben404" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/VictorNanka"><img src="https://avatars.githubusercontent.com/u/30154366?v=4?s=50" width="50px;" alt=""/><br /><sub><b>VictorNanka</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=VictorNanka" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/howarddo2208"><img src="https://avatars.githubusercontent.com/u/62332195?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Howard Do</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=howarddo2208" title="Documentation">📖</a></td>
   </tr>
 </table>
 

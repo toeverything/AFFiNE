@@ -1,13 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import * as url from 'node:url';
-const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
-const { node } = JSON.parse(
-  fs.readFileSync(
-    path.join(__dirname, '../electron-vendors.autogen.json'),
-    'utf-8'
-  )
-);
+
+const NODE_MAJOR_VERSION = 18;
 
 const nativeNodeModulesPlugin = {
   name: 'native-node-modules',
@@ -35,7 +27,7 @@ export default () => {
       entryPoints: ['layers/main/src/index.ts'],
       outdir: 'dist/layers/main',
       bundle: true,
-      target: `node${node}`,
+      target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
       external: ['electron'],
       plugins: [nativeNodeModulesPlugin],
@@ -45,7 +37,7 @@ export default () => {
       entryPoints: ['layers/preload/src/index.ts'],
       outdir: 'dist/layers/preload',
       bundle: true,
-      target: `node${node}`,
+      target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
       external: ['electron'],
       define: define,

@@ -7,6 +7,7 @@ export default function getConfig() {
       hash: 'UNKNOWN',
       editorVersion: 'UNKNOWN',
       serverAPI: 'http://127.0.0.1:3000/',
+      enableLegacyCloud: true,
       enableBroadCastChannelProvider: true,
       enableDebugPage: true,
     },
