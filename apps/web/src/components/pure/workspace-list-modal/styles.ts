@@ -41,28 +41,6 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledCard = styled('div')<{
-  active?: boolean;
-}>(({ theme, active }) => {
-  const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
-  return {
-    width: '310px',
-    height: '124px',
-    cursor: 'pointer',
-    padding: '16px',
-    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
-    borderRadius: '12px',
-    border: `1px solid ${borderColor}`,
-    ...displayFlex('flex-start', 'flex-start'),
-    marginBottom: '24px',
-    transition: 'background .2s',
-    background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
-    ':hover': {
-      background: 'var(--affine-hover-color)',
-    },
-  };
-});
-
 export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
   return {
     width: '310px',
