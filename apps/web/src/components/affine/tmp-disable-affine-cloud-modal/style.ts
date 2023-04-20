@@ -15,7 +15,7 @@ export const Content = styled('div')({
 
 export const ContentTitle = styled('h1')(({ theme }) => {
   return {
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
     lineHeight: '28px',
     fontWeight: 600,
   };
