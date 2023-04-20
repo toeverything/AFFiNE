@@ -43,7 +43,7 @@ export function useAppHelper() {
       async (name: string): Promise<string> => {
         const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
           nanoid(),
-          _ => undefined
+          WorkspaceFlavour.LOCAL
         );
         blockSuiteWorkspace.meta.setName(name);
         const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
