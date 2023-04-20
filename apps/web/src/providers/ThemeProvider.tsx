@@ -30,6 +30,9 @@ const CssVariablesInjector = memo<{
             return variables;
           }, {} as AffineCssVariables),
         },
+        body: {
+          color: 'var(--affine-text-primary-colorr)',
+        },
         html: {
           fontFamily: theme.fontFamily,
           fontSize: theme.fontBase,
