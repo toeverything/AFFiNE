@@ -10,28 +10,8 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import clsx from 'clsx';
 import type React from 'react';
 
-import { avatarImageStyle, avatarStyle, avatarTextStyle } from './index.css';
-
-function stringToColour(str: string) {
-  str = str || 'affine';
-  let colour = '#';
-  let hash = 0;
-  // str to hash
-  for (
-    let i = 0;
-    i < str.length;
-    hash = str.charCodeAt(i++) + ((hash << 5) - hash)
-  );
-
-  // int/hash to hex
-  for (
-    let i = 0;
-    i < 3;
-    colour += ('00' + ((hash >> (i++ * 8)) & 0xff).toString(16)).slice(-2)
-  );
-
-  return colour;
-}
+import { DefaultAvatar } from './DefaultAvatar';
+import { avatarImageStyle, avatarStyle } from './index.css';
 
 export type WorkspaceAvatarProps = {
   size?: number;
@@ -64,13 +44,8 @@ export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
       }}
     >
       <RadixAvatar.Image className={avatarImageStyle} src={avatar} alt={name} />
-      <RadixAvatar.Fallback
-        className={avatarTextStyle}
-        style={{
-          backgroundColor: stringToColour(name),
-        }}
-      >
-        {name.substring(0, 1)}
+      <RadixAvatar.Fallback>
+        <DefaultAvatar name={name}></DefaultAvatar>
       </RadixAvatar.Fallback>
     </RadixAvatar.Root>
   );
@@ -99,13 +74,8 @@ export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = ({
         width: size,
       }}
     >
-      <RadixAvatar.Fallback
-        className={avatarTextStyle}
-        style={{
-          backgroundColor: stringToColour('A'),
-        }}
-      >
-        A
+      <RadixAvatar.Fallback>
+        <DefaultAvatar name="A"></DefaultAvatar>
       </RadixAvatar.Fallback>
     </RadixAvatar.Root>
   );

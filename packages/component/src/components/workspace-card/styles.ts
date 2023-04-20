@@ -48,7 +48,7 @@ export const StyledCard = styled('div')<{
     ...displayFlex('flex-start', 'flex-start'),
     marginBottom: '24px',
     transition: 'background .2s',
-    background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
+    background: 'var(--affine-background-primary-color)',
     position: 'relative',
     ':hover': {
       background: 'var(--affine-hover-color)',

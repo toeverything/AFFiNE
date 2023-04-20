@@ -44,7 +44,7 @@ export const StyledIconButton = styled('button', {
       width,
       height,
       fontSize,
-      color: 'var(--affine-hover-color)',
+      color: 'var(--affine-icon-color)',
       ...displayInlineFlex('center', 'center'),
       position: 'relative',
       ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
