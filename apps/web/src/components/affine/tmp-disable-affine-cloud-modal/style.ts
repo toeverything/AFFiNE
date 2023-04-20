@@ -15,7 +15,7 @@ export const Content = styled('div')({
 
 export const ContentTitle = styled('h1')(({ theme }) => {
   return {
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
     lineHeight: '28px',
     fontWeight: 600,
   };
@@ -26,7 +26,7 @@ export const StyleTips = styled('div')(({ theme }) => {
     userSelect: 'none',
     margin: '20px 0',
     a: {
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-background-primary-color)',
     },
   };
 });
@@ -36,7 +36,7 @@ export const StyleButton = styled(Button)(({ theme }) => {
     textAlign: 'center',
     margin: '20px 0',
     borderRadius: '8px',
-    backgroundColor: theme.colors.primaryColor,
+    backgroundColor: 'var(--affine-background-primary-color)',
     span: {
       margin: '0',
     },

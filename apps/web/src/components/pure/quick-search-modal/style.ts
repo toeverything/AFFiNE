@@ -9,7 +9,7 @@ export const StyledContent = styled('div')(({ theme }) => {
     marginBottom: '10px',
     ...displayFlex('flex-start', 'flex-start'),
     flexDirection: 'column',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     transition: 'all 0.15s',
     letterSpacing: '0.06em',
     '[cmdk-group]': {
@@ -20,8 +20,8 @@ export const StyledContent = styled('div')(({ theme }) => {
       margin: '0 16px',
       height: '36px',
       lineHeight: '22px',
-      fontSize: theme.font.sm,
-      color: theme.colors.secondaryTextColor,
+      fontSize: 'var(--affine-font-sm)',
+      color: 'var(--affine-text-secondary-color)',
     },
     '[cmdk-item]': {
       margin: '0 4px',
@@ -29,8 +29,8 @@ export const StyledContent = styled('div')(({ theme }) => {
     '[aria-selected="true"]': {
       transition: 'all 0.15s',
       borderRadius: '4px',
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
+      color: 'var(--affine-primary-color)',
+      backgroundColor: 'var(--affine-hover-color)',
       padding: '0 2px',
     },
   };
@@ -40,7 +40,7 @@ export const StyledJumpTo = styled('div')(({ theme }) => {
     ...displayFlex('center', 'start'),
     flexDirection: 'column',
     padding: '10px 10px 10px 0',
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     strong: {
       fontWeight: '500',
       marginBottom: '10px',
@@ -53,9 +53,9 @@ export const StyledNotFound = styled('div')(({ theme }) => {
     ...displayFlex('center', 'center'),
     flexDirection: 'column',
     padding: '0 16px',
-    fontSize: theme.font.sm,
+    fontSize: 'var(--affine-font-sm)',
     lineHeight: '22px',
-    color: theme.colors.secondaryTextColor,
+    color: 'var(--affine-text-secondary-color)',
     span: {
       ...displayFlex('flex-start', 'center'),
       width: '100%',
@@ -75,20 +75,20 @@ export const StyledInputContent = styled('div')(({ theme }) => {
       width: '492px',
       height: '22px',
       padding: '0 12px',
-      fontSize: theme.font.base,
+      fontSize: 'var(--affine-font-base)',
       ...displayFlex('space-between', 'center'),
       letterSpacing: '0.06em',
-      color: theme.colors.textColor,
+      color: 'var(--affine-text-primary-color)',
       '::placeholder': {
-        color: theme.colors.placeHolderColor,
+        color: 'var(--affine-placeholder-color)',
       },
     },
   };
 });
 export const StyledShortcut = styled('div')(({ theme }) => {
   return {
-    color: theme.colors.placeHolderColor,
-    fontSize: theme.font.sm,
+    color: 'var(--affine-placeholder-color)',
+    fontSize: 'var(--affine-font-sm)',
     whiteSpace: 'nowrap',
   };
 });
@@ -97,7 +97,7 @@ export const StyledLabel = styled('label')(({ theme }) => {
   return {
     width: '20px',
     height: '20px',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     fontSize: '20px',
   };
 });
@@ -114,7 +114,7 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
     width: 'auto',
     height: '0',
     margin: '6px 16px',
-    borderTop: `0.5px solid ${theme.colors.borderColor}`,
+    borderTop: '0.5px solid var(--affine-border-color)',
   };
 });
 
@@ -124,7 +124,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     lineHeight: '22px',
     marginBottom: '8px',
     textAlign: 'center',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     ...displayFlex('center', 'center'),
     transition: 'all .15s',
     '[cmdk-item]': {
@@ -133,8 +133,8 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     '[aria-selected="true"]': {
       transition: 'all 0.15s',
       borderRadius: '4px',
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
+      color: 'var(--affine-primary-color)',
+      backgroundColor: 'var(--affine-hover-color)',
       'span,svg': {
         transition: 'all 0.15s',
         transform: 'scale(1.02)',
@@ -146,7 +146,7 @@ export const StyledModalFooterContent = styled('button')(({ theme }) => {
   return {
     width: '600px',
     height: '32px',
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     lineHeight: '22px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),

@@ -4,10 +4,10 @@ export const StyledNavigationPathContainer = styled('div')(({ theme }) => {
   return {
     height: '46px',
     ...displayFlex('flex-start', 'center'),
-    background: theme.colors.hubBackground,
+    background: 'var(--affine-background-secondary-color)',
     padding: '0 40px 0 20px',
     position: 'relative',
-    fontSize: theme.font.sm,
+    fontSize: 'var(--affine-font-sm)',
     zIndex: 2,
     '.collapse-btn': {
       position: 'absolute',
@@ -18,7 +18,7 @@ export const StyledNavigationPathContainer = styled('div')(({ theme }) => {
     },
     '.path-arrow': {
       fontSize: '16px',
-      color: theme.colors.iconColor,
+      color: 'var(--affine-icon-color)',
     },
   };
 });
@@ -26,7 +26,9 @@ export const StyledNavigationPathContainer = styled('div')(({ theme }) => {
 export const StyledNavPathLink = styled('div')<{ active?: boolean }>(
   ({ theme, active }) => {
     return {
-      color: active ? theme.colors.textColor : theme.colors.secondaryTextColor,
+      color: active
+        ? 'var(--affine-text-primary-color)'
+        : 'var(--affine-text-secondary-color)',
       cursor: active ? 'auto' : 'pointer',
       maxWidth: '160px',
       ...textEllipsis(1),
@@ -35,7 +37,7 @@ export const StyledNavPathLink = styled('div')<{ active?: boolean }>(
       ':hover': active
         ? {}
         : {
-            background: theme.colors.hoverBackground,
+            background: 'var(--affine-hover-color)',
             borderRadius: '4px',
           },
     };
@@ -51,10 +53,10 @@ export const StyledNavPathExtendContainer = styled('div')<{ show: boolean }>(
       zIndex: '1',
       height: '100%',
       width: '100%',
-      background: theme.colors.hubBackground,
+      background: 'var(--affine-background-secondary-color)',
       transition: 'top .15s',
-      fontSize: theme.font.sm,
-      color: theme.colors.secondaryTextColor,
+      fontSize: 'var(--affine-font-sm)',
+      color: 'var(--affine-text-secondary-color)',
       padding: '46px 12px 0 15px',
     };
   }

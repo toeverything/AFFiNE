@@ -1,4 +1,4 @@
-import { displayFlex, styled } from '@affine/component';
+import { baseTheme, displayFlex, styled } from '@affine/component';
 import Link from 'next/link';
 
 const macosElectron = environment.isDesktop && environment.isMacOs;
@@ -14,14 +14,16 @@ export const StyledSliderBarWrapper = styled('div')<{
     'button, a': {
       userSelect: 'none',
     },
-    zIndex: theme.zIndex.modal,
+    zIndex: 'var(--affine-z-index-modal)',
     transition: resizing ? '' : 'transform .3s, width .3s, max-width .3s',
     transform: show ? 'translateX(0)' : 'translateX(-100%)',
     maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
     background:
-      !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
+      !floating && macosElectron
+        ? 'transparent'
+        : 'var(--affine-background-secondary-color)',
     borderRight: macosElectron ? '' : '1px solid',
-    borderColor: theme.colors.borderColor,
+    borderColor: 'var(--affine-border-color)',
   };
 });
 
@@ -82,17 +84,17 @@ export const StyledNewPageButton = styled('button')(({ theme }) => {
     height: '52px',
     ...displayFlex('flex-start', 'center'),
     borderTop: '1px solid',
-    borderColor: theme.colors.borderColor,
+    borderColor: 'var(--affine-border-color)',
     padding: '0 8px 0 16px',
     svg: {
       fontSize: '20px',
-      color: theme.colors.iconColor,
+      color: 'var(--affine-icon-color)',
       marginRight: '8px',
     },
     ':hover': {
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-primary-color)',
       svg: {
-        color: theme.colors.primaryColor,
+        color: 'var(--affine-primary-color)',
       },
     },
   };
@@ -108,8 +110,8 @@ export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
       left: 0,
       right: active ? 0 : '100%',
       bottom: 0,
-      zIndex: theme.zIndex.modal - 1,
-      background: theme.colors.modalBackground,
+      zIndex: parseInt(baseTheme.zIndexModal) - 1,
+      background: 'var(--affine-background-modal-color)',
     };
   }
 );
@@ -121,6 +123,6 @@ export const StyledScrollWrapper = styled('div')<{
     maxHeight: '50%',
     overflowY: 'auto',
     borderTop: '1px solid',
-    borderColor: showTopBorder ? theme.colors.borderColor : 'transparent',
+    borderColor: showTopBorder ? 'var(--affine-border-color)' : 'transparent',
   };
 });

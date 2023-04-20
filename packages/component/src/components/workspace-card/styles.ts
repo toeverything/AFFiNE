@@ -7,7 +7,7 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
     width: '202px',
     p: {
       height: '20px',
-      fontSize: theme.font.sm,
+      fontSize: 'var(--affine-font-sm)',
       ...displayFlex('flex-start', 'center'),
     },
     svg: {
@@ -24,7 +24,7 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
 
 export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
   return {
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
     lineHeight: '24px',
     marginBottom: '10px',
@@ -36,7 +36,7 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
 export const StyledCard = styled('div')<{
   active?: boolean;
 }>(({ theme, active }) => {
-  const borderColor = active ? theme.colors.primaryColor : 'transparent';
+  const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
   return {
     width: '310px',
     height: '124px',
@@ -51,10 +51,10 @@ export const StyledCard = styled('div')<{
     background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
     position: 'relative',
     ':hover': {
-      background: theme.colors.cardHoverBackground,
+      background: 'var(--affine-hover-color)',
       '.add-icon': {
-        borderColor: theme.colors.primaryColor,
-        color: theme.colors.primaryColor,
+        borderColor: 'var(--affine-primary-color)',
+        color: 'var(--affine-primary-color)',
       },
       '.setting-entry': {
         opacity: 1,
@@ -84,11 +84,11 @@ export const StyledSettingLink = styled(IconButton)(({ theme }) => {
     bottom: '6px',
     opacity: 0,
     borderRadius: '4px',
-    color: theme.colors.primaryColor,
+    color: 'var(--affine-background-primary-color)',
     pointerEvents: 'none',
     transition: 'all .15s',
     ':hover': {
-      background: theme.colors.pageBackground,
+      background: 'var(--affine-background-primary-color)',
     },
   };
 });

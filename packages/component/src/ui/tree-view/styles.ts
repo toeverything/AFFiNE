@@ -1,7 +1,7 @@
 import MuiCollapse from '@mui/material/Collapse';
 import type { CSSProperties } from 'react';
 
-import { alpha, styled } from '../../styles';
+import { alpha, lightTheme, styled } from '../../styles';
 
 export const StyledCollapse = styled(MuiCollapse)<{
   indent?: CSSProperties['paddingLeft'];
@@ -18,7 +18,7 @@ export const StyledTreeNodeWrapper = styled('div')(() => {
 export const StyledTreeNodeContainer = styled('div')<{ isDragging?: boolean }>(
   ({ isDragging = false, theme }) => {
     return {
-      background: isDragging ? theme.colors.hoverBackground : '',
+      background: isDragging ? 'var(--affine-hover-color)' : '',
       // opacity: isDragging ? 0.4 : 1,
     };
   }
@@ -33,9 +33,9 @@ export const StyledNodeLine = styled('div')<{ show: boolean; isTop?: boolean }>(
       width: '100%',
       paddingTop: '2x',
       borderTop: '2px solid',
-      borderColor: show ? theme.colors.primaryColor : 'transparent',
+      borderColor: show ? 'var(--affine-primary-color)' : 'transparent',
       boxShadow: show
-        ? `0px 0px 8px ${alpha(theme.colors.primaryColor, 0.35)}`
+        ? `0px 0px 8px ${alpha(lightTheme.primaryColor, 0.35)}`
         : 'none',
       zIndex: 1,
     };

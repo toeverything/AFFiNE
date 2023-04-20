@@ -12,7 +12,7 @@ import type { PanelProps } from '../../index';
 export const StyledWorkspaceName = styled('span')(({ theme }) => {
   return {
     fontWeight: '400',
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
   };
 });
 
