@@ -1,9 +1,11 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
+import { config } from '@affine/env';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
@@ -19,9 +21,16 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
   const flavours: string[] = Object.values(WorkspacePlugins).map(
     plugin => plugin.flavour
   );
-  const jotaiWorkspaces = get(rootWorkspacesMetadataAtom).filter(workspace =>
-    flavours.includes(workspace.flavour)
-  );
+  const jotaiWorkspaces = get(rootWorkspacesMetadataAtom)
+    .filter(
+      workspace => flavours.includes(workspace.flavour)
+      // TODO: remove this when we remove the legacy cloud
+    )
+    .filter(workspace =>
+      !config.enableLegacyCloud
+        ? workspace.flavour !== WorkspaceFlavour.AFFINE
+        : true
+    );
   const workspaces = await Promise.all(
     jotaiWorkspaces.map(workspace => {
       const plugin =

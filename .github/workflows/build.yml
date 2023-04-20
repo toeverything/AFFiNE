@@ -86,13 +86,46 @@ jobs:
     name: Server Test
     runs-on: ubuntu-latest
     environment: development
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Initialize database
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE affine;"
+          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+          psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
+        env:
+          PGPASSWORD: affine
+      - name: Generate prisma client
+        run: |
+          yarn exec prisma generate
+          yarn exec prisma db push
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Run init-db script
+        run: yarn exec ts-node-esm ./scripts/init-db.ts
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Run server tests
         run: yarn test:coverage
         working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
         with:

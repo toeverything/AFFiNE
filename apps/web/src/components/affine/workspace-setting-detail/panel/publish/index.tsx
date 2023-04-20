@@ -5,6 +5,7 @@ import {
   Input,
   Wrapper,
 } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -17,6 +18,7 @@ import type { AffineOfficialWorkspace } from '../../../../../shared';
 import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
+import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from '../../index';
 
 export type PublishPanelProps = WorkspaceSettingDetailProps & {
@@ -120,6 +122,8 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
       >
         {t('Publishing')}
       </Box>
+      {/* TmpDisableAffineCloudModal */}
+
       <Button
         data-testid="publish-enable-affine-cloud-button"
         type="light"
@@ -130,20 +134,29 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
       >
         {t('Enable AFFiNE Cloud')}
       </Button>
-      <EnableAffineCloudModal
-        open={open}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onConfirm={() => {
-          onTransferWorkspace(
-            WorkspaceFlavour.LOCAL,
-            WorkspaceFlavour.AFFINE,
-            workspace
-          );
-          setOpen(false);
-        }}
-      />
+      {config.enableLegacyCloud ? (
+        <EnableAffineCloudModal
+          open={open}
+          onClose={() => {
+            setOpen(false);
+          }}
+          onConfirm={() => {
+            onTransferWorkspace(
+              WorkspaceFlavour.LOCAL,
+              WorkspaceFlavour.AFFINE,
+              workspace
+            );
+            setOpen(false);
+          }}
+        />
+      ) : (
+        <TmpDisableAffineCloudModal
+          open={open}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
     </>
   );
 };
