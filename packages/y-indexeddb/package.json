@@ -1,7 +1,7 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.5.2",
+  "version": "0.5.4-canary.4",
   "scripts": {
     "build": "vite build"
   },
@@ -34,5 +34,6 @@
   },
   "peerDependencies": {
     "yjs": "^13.5.51"
-  }
+  },
+  "stableVersion": "0.5.2"
 }
