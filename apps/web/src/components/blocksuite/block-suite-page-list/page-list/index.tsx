@@ -47,7 +47,6 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
   pageMeta: { favorite },
   onClick,
 }) => {
-  const theme = useTheme();
   const { t } = useTranslation();
   return (
     <Tooltip

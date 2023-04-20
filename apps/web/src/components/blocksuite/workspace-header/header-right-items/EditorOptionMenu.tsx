@@ -9,7 +9,6 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useTheme } from '@mui/material';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -30,7 +29,6 @@ import {
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
 
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
