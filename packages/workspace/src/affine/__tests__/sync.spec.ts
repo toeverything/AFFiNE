@@ -1,3 +1,8 @@
+/**
+ * @vitest-environment happy-dom
+ */
+import 'fake-indexeddb/auto';
+
 import type { Workspace } from '@affine/workspace/affine/api';
 import {
   createWorkspaceApis,
