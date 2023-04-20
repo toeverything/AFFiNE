@@ -16,7 +16,7 @@ And Read the semver specification to understand how to version your release. htt
 ### 1. Update the version in `package.json`
 
 ```shell
-yarn workspaces foreach exec yarn version 0.5.4-canary.5
+yarn workspaces foreach exec npm version 0.5.4-canary.5
 ```
 
 ### 2. Commit changes and push to `master`
