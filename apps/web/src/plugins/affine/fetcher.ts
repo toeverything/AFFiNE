@@ -1,4 +1,3 @@
-import { getLoginStorage } from '@affine/workspace/affine/login';
 import { rootStore } from '@affine/workspace/atom';
 import type { AffineWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -66,9 +65,10 @@ export const fetcher = async (
         return workspaces.map(workspace => {
           const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
             workspace.id,
-            (k: string) =>
-              // fixme: token could be expired
-              ({ api: '/api/workspace', token: getLoginStorage()?.token }[k])
+            WorkspaceFlavour.AFFINE,
+            {
+              workspaceApis: affineApis,
+            }
           );
           const remWorkspace: AffineWorkspace = {
             ...workspace,

@@ -2,7 +2,7 @@
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
-import { Workspace } from '@blocksuite/store';
+import { createMemoryStorage, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
@@ -29,8 +29,9 @@ function initPage(page: Page): void {
 
 const blockSuiteWorkspace = new Workspace({
   id: 'test',
-  blobOptionsGetter: () => void 0,
+  blobStorages: [createMemoryStorage],
 });
+
 blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
 const page = blockSuiteWorkspace.createPage('page0');
 initPage(page);

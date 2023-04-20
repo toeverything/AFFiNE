@@ -43,7 +43,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     }
     const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
       id,
-      (_: string) => undefined
+      WorkspaceFlavour.LOCAL
     );
     const workspace: LocalWorkspace = {
       id,
@@ -62,7 +62,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     const id = nanoid();
     const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
       id,
-      (_: string) => undefined
+      WorkspaceFlavour.LOCAL
     );
     BlockSuiteWorkspace.Y.applyUpdateV2(blockSuiteWorkspace.doc, binary);
     const persistence = createIndexedDBProvider(id, blockSuiteWorkspace.doc);

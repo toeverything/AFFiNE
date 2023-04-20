@@ -29,7 +29,7 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
     'app:init': () => {
       const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
         nanoid(),
-        (_: string) => undefined
+        WorkspaceFlavour.LOCAL
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       const page = blockSuiteWorkspace.createPage(DEFAULT_HELLO_WORLD_PAGE_ID);

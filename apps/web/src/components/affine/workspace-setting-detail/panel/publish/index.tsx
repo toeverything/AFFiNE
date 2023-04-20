@@ -18,6 +18,7 @@ import type { AffineOfficialWorkspace } from '../../../../../shared';
 import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
+import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from '../../index';
 
 export type PublishPanelProps = WorkspaceSettingDetailProps & {
@@ -121,32 +122,41 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
       >
         {t('Publishing')}
       </Box>
-      {config.enableLegacyCloud && (
-        <Button
-          data-testid="publish-enable-affine-cloud-button"
-          type="light"
-          shape="circle"
-          onClick={() => {
-            setOpen(true);
+      {/* TmpDisableAffineCloudModal */}
+
+      <Button
+        data-testid="publish-enable-affine-cloud-button"
+        type="light"
+        shape="circle"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {t('Enable AFFiNE Cloud')}
+      </Button>
+      {config.enableLegacyCloud ? (
+        <EnableAffineCloudModal
+          open={open}
+          onClose={() => {
+            setOpen(false);
           }}
-        >
-          {t('Enable AFFiNE Cloud')}
-        </Button>
+          onConfirm={() => {
+            onTransferWorkspace(
+              WorkspaceFlavour.LOCAL,
+              WorkspaceFlavour.AFFINE,
+              workspace
+            );
+            setOpen(false);
+          }}
+        />
+      ) : (
+        <TmpDisableAffineCloudModal
+          open={open}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
       )}
-      <EnableAffineCloudModal
-        open={open}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onConfirm={() => {
-          onTransferWorkspace(
-            WorkspaceFlavour.LOCAL,
-            WorkspaceFlavour.AFFINE,
-            workspace
-          );
-          setOpen(false);
-        }}
-      />
     </>
   );
 };
