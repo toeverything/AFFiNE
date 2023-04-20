@@ -4,5 +4,6 @@
   "sideEffect": false,
   "exports": {
     "./*.md": "./src/*.md"
-  }
+  },
+  "version": "0.5.4-canary.6"
 }

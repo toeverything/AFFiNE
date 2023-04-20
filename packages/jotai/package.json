@@ -19,5 +19,6 @@
     "@blocksuite/global": "*",
     "@blocksuite/store": "*",
     "lottie-web": "*"
-  }
+  },
+  "version": "0.5.4-canary.6"
 }

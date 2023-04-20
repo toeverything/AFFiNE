@@ -20,5 +20,6 @@
   },
   "dependencies": {
     "lit": "^2.7.2"
-  }
+  },
+  "version": "0.5.4-canary.6"
 }
