@@ -13,7 +13,7 @@ export const StyledModalWrapper = styled(ModalWrapper)(() => {
 
 export const StyledConfirmTitle = styled('div')(({ theme }) => {
   return {
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
     fontWeight: 600,
     textAlign: 'center',
     lineHeight: '28px',
@@ -22,10 +22,10 @@ export const StyledConfirmTitle = styled('div')(({ theme }) => {
 
 export const StyledConfirmContent = styled('div')(({ theme }) => {
   return {
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     textAlign: 'center',
     marginTop: '12px',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     lineHeight: '26px',
   };
 });

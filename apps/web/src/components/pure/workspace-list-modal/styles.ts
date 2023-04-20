@@ -4,7 +4,7 @@ export const StyledSplitLine = styled('div')(({ theme }) => {
   return {
     width: '1px',
     height: '20px',
-    background: theme.colors.borderColor,
+    background: 'var(--affine-border-color)',
     marginRight: '12px',
   };
 });
@@ -15,7 +15,7 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
     width: '202px',
     p: {
       height: '20px',
-      fontSize: theme.font.sm,
+      fontSize: 'var(--affine-font-sm)',
       ...displayFlex('flex-start', 'center'),
     },
     svg: {
@@ -32,7 +32,7 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
 
 export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
   return {
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
     lineHeight: '24px',
     marginBottom: '10px',
@@ -44,7 +44,7 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
 export const StyledCard = styled('div')<{
   active?: boolean;
 }>(({ theme, active }) => {
-  const borderColor = active ? theme.colors.primaryColor : 'transparent';
+  const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
   return {
     width: '310px',
     height: '124px',
@@ -58,7 +58,7 @@ export const StyledCard = styled('div')<{
     transition: 'background .2s',
     background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
     ':hover': {
-      background: theme.colors.cardHoverBackground,
+      background: 'var(--affine-hover-color)',
     },
   };
 });
@@ -73,14 +73,14 @@ export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
     borderRadius: '12px',
     transition: 'all .1s',
     ...displayFlex('flex-start', 'flex-start'),
-    color: theme.colors.secondaryTextColor,
+    color: 'var(--affine-text-secondary-color)',
 
     ':hover': {
-      background: theme.colors.cardHoverBackground,
-      color: theme.colors.textColor,
+      background: 'var(--affine-hover-color)',
+      color: 'var(--affine-text-primary-color)',
       '.add-icon': {
-        borderColor: theme.colors.primaryColor,
-        color: theme.colors.primaryColor,
+        borderColor: 'var(--affine-primary-color)',
+        color: 'var(--affine-primary-color)',
       },
     },
   };
@@ -92,16 +92,16 @@ export const StyledModalHeaderLeft = styled('div')(() => {
 export const StyledModalTitle = styled('div')(({ theme }) => {
   return {
     fontWeight: 600,
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
   };
 });
 
 export const StyledHelperContainer = styled('div')(({ theme }) => {
   return {
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     marginLeft: '15px',
     fontWeight: 400,
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
     ...displayFlex('center', 'center'),
   };
 });

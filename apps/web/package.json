@@ -1,6 +1,7 @@
 {
   "name": "@affine/web",
   "private": true,
+  "version": "0.5.4-canary.4",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -71,5 +72,6 @@
     "swc-plugin-coverage-instrument": "=0.0.14",
     "typescript": "^5.0.4",
     "webpack": "^5.79.0"
-  }
+  },
+  "stableVersion": "0.0.0"
 }

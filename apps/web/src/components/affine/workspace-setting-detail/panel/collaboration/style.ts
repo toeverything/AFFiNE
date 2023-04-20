@@ -66,7 +66,7 @@ export const StyledMemberName = styled('div')(({ theme }) => {
     fontWeight: '400',
     fontSize: '18px',
     lineHeight: '26px',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
   };
 });
 
@@ -75,7 +75,7 @@ export const StyledMemberEmail = styled('div')(({ theme }) => {
     fontWeight: '400',
     fontSize: '16px',
     lineHeight: '22px',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
   };
 });
 

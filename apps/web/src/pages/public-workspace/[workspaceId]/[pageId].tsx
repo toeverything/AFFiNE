@@ -32,7 +32,7 @@ export const NavContainer = styled('div')(({ theme }) => {
     width: '100vw',
     height: '52px',
     ...displayFlex('space-between', 'center'),
-    backgroundColor: theme.colors.pageBackground,
+    backgroundColor: 'var(--affine-background-primary-color)',
   };
 });
 
@@ -43,13 +43,13 @@ export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
     paddingLeft: '12px',
     span: {
       padding: '0 12px',
-      fontSize: theme.font.base,
-      lineHeight: theme.font.lineHeight,
+      fontSize: 'var(--affine-font-base)',
+      lineHeight: 'var(--affine-line-height)',
     },
-    ':hover': { color: theme.colors.primaryColor },
+    ':hover': { color: 'var(--affine-primary-color)' },
     transition: 'all .15s',
     ':visited': {
-      ':hover': { color: theme.colors.primaryColor },
+      ':hover': { color: 'var(--affine-primary-color)' },
     },
   };
 });
