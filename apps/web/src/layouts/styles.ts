@@ -57,7 +57,7 @@ export const MainContainer = styled('div')(({ theme }) => {
     position: 'relative',
     flexGrow: 1,
     maxWidth: '100%',
-    backgroundColor: theme.colors.pageBackground,
+    backgroundColor: 'var(--affine-background-primary-color)',
     [theme.breakpoints.up('md')]: {
       minWidth: '686px',
     },
@@ -72,7 +72,7 @@ export const StyledToolWrapper = styled('div')(({ theme }) => {
     position: 'fixed',
     right: '30px',
     bottom: '30px',
-    zIndex: theme.zIndex.popover,
+    zIndex: 'var(--affine-z-index-popover)',
     [theme.breakpoints.down('md')]: {
       right: 'calc((100vw - 640px) * 3 / 19 + 5px)',
     },
@@ -93,7 +93,7 @@ export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
       width: '12px',
       transform: 'translateX(50%)',
       cursor: 'col-resize',
-      zIndex: theme.zIndex.modal,
+      zIndex: 'var(--affine-z-index-modal)',
       userSelect: 'none',
       ':hover > *': {
         background: 'rgba(0, 0, 0, 0.1)',

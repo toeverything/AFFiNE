@@ -154,7 +154,7 @@ const Members = styled('div')(({ theme }) => {
   return {
     position: 'absolute',
     width: '100%',
-    background: theme.colors.pageBackground,
+    background: 'var(--affine-background-primary-color)',
     textAlign: 'left',
     zIndex: 1,
     borderRadius: '0px 10px 10px 10px',
@@ -162,7 +162,7 @@ const Members = styled('div')(({ theme }) => {
     padding: '8px 12px',
     input: {
       '&::placeholder': {
-        color: theme.colors.placeHolderColor,
+        color: 'var(--affine-placeholder-color)',
       },
     },
   };
@@ -170,8 +170,8 @@ const Members = styled('div')(({ theme }) => {
 
 // const NoFind = styled('div')(({ theme }) => {
 //   return {
-//     color: theme.colors.iconColor,
-//     fontSize: theme.font.sm,
+//     color: 'var(--affine-icon-color)',
+//     fontSize: 'var(--affine-font-sm)',
 //     lineHeight: '40px',
 //     userSelect: 'none',
 //     width: '100%',
@@ -180,8 +180,8 @@ const Members = styled('div')(({ theme }) => {
 
 const Member = styled('div')(({ theme }) => {
   return {
-    color: theme.colors.iconColor,
-    fontSize: theme.font.sm,
+    color: 'var(--affine-icon-color)',
+    fontSize: 'var(--affine-font-sm)',
     lineHeight: '40px',
     userSelect: 'none',
     display: 'flex',
@@ -193,7 +193,7 @@ const MemberIcon = styled('div')(({ theme }) => {
     width: '40px',
     height: '40px',
     borderRadius: '50%',
-    color: theme.colors.primaryColor,
+    color: 'var(--affine-primary-color)',
     background: '#F5F5F5',
     textAlign: 'center',
     lineHeight: '45px',

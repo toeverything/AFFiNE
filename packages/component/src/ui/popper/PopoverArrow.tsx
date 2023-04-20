@@ -92,6 +92,6 @@ const StyledArrow = styled('span')<{
       bottom: 0,
     },
 
-    ...getArrowStyle(placement, theme.colors.tooltipBackground),
+    ...getArrowStyle(placement, 'var(--affine-tooltip)'),
   };
 });

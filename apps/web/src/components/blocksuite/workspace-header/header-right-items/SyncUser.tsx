@@ -29,7 +29,7 @@ const IconWrapper = styled('div')(({ theme }) => {
     height: '32px',
     marginRight: '12px',
     fontSize: '24px',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     ...displayFlex('center', 'center'),
   };
 });

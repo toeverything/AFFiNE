@@ -1,212 +1,216 @@
-import '@emotion/react';
-
 import type { EditorContainer } from '@blocksuite/editor';
 
-import { nextDarkColorScheme, nextLightColorScheme } from './color-scheme';
-import type { AffineTheme, AffineThemeCSSVariables } from './types';
+import type { Theme } from './types';
+
+type Kebab<
+  T extends string,
+  A extends string = ''
+> = T extends `${infer F}${infer R}`
+  ? Kebab<R, `${A}${F extends Lowercase<F> ? '' : '-'}${Lowercase<F>}`>
+  : A;
+
+export type AffineTheme = typeof lightTheme & {
+  editorMode: NonNullable<EditorContainer['mode']>;
+};
+
+export type AffineCssVariables = {
+  [Key in `--affine-${Kebab<keyof AffineTheme>}`]: string;
+};
 
 const basicFontFamily =
   'apple-system, BlinkMacSystemFont,Helvetica Neue, Tahoma, PingFang SC, Microsoft Yahei, Arial,Hiragino Sans GB, sans-serif, Apple Color Emoji, Segoe UI Emoji,Segoe UI Symbol, Noto Color Emoji';
 
-export const getLightTheme = (
-  editorMode: EditorContainer['mode']
-): AffineTheme => {
+export const baseTheme = {
+  // shadow
+  popoverShadow:
+    '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
+  modalShadow: '0px 4px 24px #161616',
+  tooltipShadow: '0px 0px 4px rgba(0, 0, 0, 0.14)',
+
+  // font
+  fontFamily: `Avenir Next, Poppins, ${basicFontFamily}`,
+  fontNumberFamily: `Roboto Mono, ${basicFontFamily}`,
+  fontCodeFamily: `Space Mono, Consolas, Menlo, Monaco, Courier, monospace, ${basicFontFamily}`,
+  fontH1: '28px',
+  fontH2: '26px',
+  fontH3: '24px',
+  fontH4: '22px',
+  fontH5: '20px',
+  fontH6: '18px',
+  fontBase: '16px',
+  fontSm: '14px',
+  fontXs: '12px',
+
+  lineHeight: 'calc(1em + 8px)',
+
+  zIndexModal: '1000',
+  zIndexPopover: '100',
+
+  paragraphSpace: '8px',
+  popoverRadius: '10px',
+
+  zoom: '1',
+  scale: 'calc(1 / var(--affine-zoom))',
+};
+
+// Refs: https://github.com/toeverything/AFFiNE/issues/1796
+export const lightTheme = {
+  ...baseTheme,
+
+  themeMode: 'light',
+
+  brandColor: 'rgb(84, 56, 255)',
+  tertiaryColor: 'rgb(243, 240, 255)',
+  primaryColor: 'rgb(84, 56, 255)',
+  secondaryColor: 'rgb(125, 145, 255)',
+  backgroundSuccessColor: 'rgb(255, 255, 255)',
+  backgroundErrorColor: 'rgba(255, 255, 255, 0.2)',
+  backgroundProcessingColor: 'rgb(255, 255, 255)',
+  backgroundWarningColor: 'rgb(255, 255, 255)',
+  backgroundPrimaryColor: 'rgb(255, 255, 255)',
+  backgroundOverlayPanelColor: 'rgb(251, 251, 252)',
+  backgroundSecondaryColor: 'rgb(251, 250, 252)',
+  backgroundTertiaryColor: 'rgb(233, 233, 236)',
+  backgroundCodeBlock: 'rgb(250, 251, 253)',
+  backgroundModalColor: 'rgba(0, 0, 0, 0.6)',
+  textPrimaryColor: 'rgb(66, 65, 73)',
+  textSecondaryColor: 'rgb(142, 141, 145)',
+  textDisableColor: 'rgb(169, 169, 173)',
+  textEmphasisColor: 'rgb(84, 56, 255)',
+  hoverColor: 'rgba(0, 0, 0, 0.04)',
+  linkColor: 'rgb(125, 145, 255)',
+  quoteColor: 'rgb(100, 95, 130)',
+  iconColor: 'rgb(119, 117, 125)',
+  iconSecondary: 'rgba(119, 117, 125, 0.6)',
+  borderColor: 'rgb(227, 226, 228)',
+  dividerColor: 'rgb(227, 226, 228)',
+  placeholderColor: 'rgb(192, 191, 193)',
+  edgelessGridColor: 'rgb(230, 230, 230)',
+  successColor: 'rgb(16, 203, 134)',
+  warningColor: 'rgb(255, 99, 31)',
+  errorColor: 'rgb(235, 67, 53)',
+  processingColor: 'rgb(39, 118, 255)',
+  black10: 'rgba(0, 0, 0, 0.1)',
+  black30: 'rgba(0, 0, 0, 0.3)',
+  black50: 'rgba(0, 0, 0, 0.5)',
+  black60: 'rgba(0, 0, 0, 0.6)',
+  black80: 'rgba(0, 0, 0, 0.8)',
+  black90: 'rgba(0, 0, 0, 0.9)',
+  black: 'rgb(0, 0, 0)',
+  white10: 'rgba(255, 255, 255, 0.1)',
+  white30: 'rgba(255, 255, 255, 0.3)',
+  white50: 'rgba(255, 255, 255, 0.5)',
+  white60: 'rgba(255, 255, 255, 0.6)',
+  white80: 'rgba(255, 255, 255, 0.8)',
+  white90: 'rgba(255, 255, 255, 0.9)',
+  white: 'rgb(255, 255, 255)',
+  tagWhite: 'rgb(245, 245, 245)',
+  tagGray: 'rgb(227, 226, 224)',
+  tagRed: 'rgb(255, 225, 225)',
+  tagOrange: 'rgb(255, 234, 202)',
+  tagYellow: 'rgb(255, 244, 216)',
+  tagGreen: 'rgb(223, 244, 232)',
+  tagTeal: 'rgb(223, 244, 243)',
+  tagBlue: 'rgb(225, 239, 255)',
+  tagPurple: 'rgb(243, 240, 255)',
+  tagPink: 'rgb(252, 232, 255)',
+  paletteYellow: 'rgb(255, 232, 56)',
+  paletteOrange: 'rgb(255, 175, 56)',
+  paletteTangerine: 'rgb(255, 99, 31)',
+  paletteRed: 'rgb(252, 63, 85)',
+  paletteMagenta: 'rgb(255, 56, 179)',
+  palettePurple: 'rgb(182, 56, 255)',
+  paletteNavy: 'rgb(59, 37, 204)',
+  paletteBlue: 'rgb(79, 144, 255)',
+  paletteGreen: 'rgb(16, 203, 134)',
+  paletteGrey: 'rgb(153, 153, 153)',
+  paletteWhite: 'rgb(255, 255, 255)',
+  paletteBlack: 'rgb(0, 0, 0)',
+  tooltip: '#424149',
+};
+
+export const darkTheme = {
+  ...baseTheme,
+
+  themeMode: 'dark',
+
+  brandColor: 'rgb(84, 56, 255)',
+  primaryColor: 'rgb(118, 95, 254)',
+  secondaryColor: 'rgb(144, 150, 245)',
+  tertiaryColor: 'rgb(30, 30, 30)',
+  hoverColor: 'rgba(255, 255, 255, 0.1)',
+  iconColor: 'rgb(168, 168, 160)',
+  iconSecondary: 'rgba(168,168,160,0.6)',
+  borderColor: 'rgb(57, 57, 57)',
+  dividerColor: 'rgb(114, 114, 114)',
+  placeholderColor: 'rgb(62, 62, 63)',
+  quoteColor: 'rgb(147, 144, 163)',
+  linkColor: 'rgb(185, 191, 227)',
+  edgelessGridColor: 'rgb(49, 49, 49)',
+  successColor: 'rgb(77, 213, 181)',
+  warningColor: 'rgb(255, 123, 77)',
+  errorColor: 'rgb(212, 140, 130)',
+  processingColor: 'rgb(195, 215, 255)',
+  textEmphasisColor: 'rgb(208, 205, 220)',
+  textPrimaryColor: 'rgb(234, 234, 234)',
+  textSecondaryColor: 'rgb(156, 156, 160)',
+  textDisableColor: 'rgb(119, 117, 125)',
+  black10: 'rgba(255, 255, 255, 0.1)',
+  black30: 'rgba(255, 255, 255, 0.3)',
+  black50: 'rgba(255, 255, 255, 0.5)',
+  black60: 'rgba(255, 255, 255, 0.6)',
+  black80: 'rgba(255, 255, 255, 0.8)',
+  black90: 'rgba(255, 255, 255, 0.9)',
+  black: 'rgb(255, 255, 255)',
+  white10: 'rgba(0, 0, 0, 0.1)',
+  white30: 'rgba(0, 0, 0, 0.3)',
+  white50: 'rgba(0, 0, 0, 0.5)',
+  white60: 'rgba(0, 0, 0, 0.6)',
+  white80: 'rgba(0, 0, 0, 0.8)',
+  white90: 'rgba(0, 0, 0, 0.9)',
+  white: 'rgb(0, 0, 0)',
+  backgroundCodeBlock: 'rgb(41, 44, 51)',
+  backgroundTertiaryColor: 'rgb(30, 30, 30)',
+  backgroundProcessingColor: 'rgb(255, 255, 255)',
+  backgroundErrorColor: 'rgb(255, 255, 255)',
+  backgroundWarningColor: 'rgb(255, 255, 255)',
+  backgroundSuccessColor: 'rgb(255, 255, 255)',
+  backgroundPrimaryColor: 'rgb(20, 20, 20)',
+  backgroundSecondaryColor: 'rgb(32, 32, 32)',
+  backgroundModalColor: 'rgba(0, 0, 0, 0.8)',
+  backgroundOverlayPanelColor: 'rgb(30, 30, 30)',
+  tagBlue: 'rgb(10, 84, 170)',
+  tagGreen: 'rgb(55, 135, 79)',
+  tagTeal: 'rgb(33, 145, 138)',
+  tagWhite: 'rgb(84, 84, 84)',
+  tagPurple: 'rgb(59, 38, 141)',
+  tagRed: 'rgb(139, 63, 63)',
+  tagPink: 'rgb(194, 132, 132)',
+  tagYellow: 'rgb(187, 165, 61)',
+  tagOrange: 'rgb(231, 161, 58)',
+  tagGray: 'rgb(41, 41, 41)',
+  paletteYellow: 'rgb(255, 232, 56)',
+  paletteOrange: 'rgb(255, 175, 56)',
+  paletteTangerine: 'rgb(255, 99, 31)',
+  paletteRed: 'rgb(252, 63, 85)',
+  paletteMagenta: 'rgb(255, 56, 179)',
+  palettePurple: 'rgb(182, 56, 255)',
+  paletteNavy: 'rgb(59, 37, 204)',
+  paletteBlue: 'rgb(79, 144, 255)',
+  paletteGreen: 'rgb(16, 203, 134)',
+  paletteGrey: 'rgb(153, 153, 153)',
+  paletteWhite: 'rgb(255, 255, 255)',
+  paletteBlack: 'rgb(0, 0, 0)',
+  tooltip: '#EAEAEA',
+} satisfies Omit<AffineTheme, 'editorMode'>;
+
+export const getTheme: (
+  themeMode: Theme,
+  editorMode: NonNullable<EditorContainer['mode']>
+) => AffineTheme = (themeMode, editorMode) => {
   return {
-    palette: {
-      mode: 'light',
-    },
     editorMode,
-    colors: {
-      pageBackground: '#fff',
-      hoverBackground: 'rgba(0,0,0,.04)',
-      innerHoverBackground: '#E9E9EC',
-      popoverBackground: '#fff',
-      tooltipBackground: '#261499',
-      codeBackground: '#f2f5f9',
-      codeBlockBackground: '#FAFBFD',
-      hubBackground: '#fbfbfc',
-      cardHoverBackground: '#f8f9ff',
-      warningBackground: '#FFF9C7',
-      errorBackground: '#FFDED8',
-      modalBackground: 'rgba(0, 0, 0, 0.6)',
 
-      textColor: '#424149',
-      secondaryTextColor: '#8E8D91',
-      edgelessTextColor: '#3A4C5C',
-      handleColor: '#c7c3d9',
-      linkColor2: '#5438FF',
-      linkVisitedColor: '#5438FF',
-      tooltipColor: '#fff',
-      codeColor: '#77757D',
-      placeHolderColor: '#C0BFC1',
-      selectedColor: 'rgba(84, 56, 255, 0.04)',
-      disableColor: '#A9A9AD',
-      lineNumberColor: '#77757D',
-      ...nextLightColorScheme,
-    },
-    font: {
-      title: '36px',
-      h1: '28px',
-      h2: '26px',
-      h3: '24px',
-      h4: '22px',
-      h5: '20px',
-      h6: '18px',
-      base: '16px',
-      sm: '14px',
-      xs: '12px',
-
-      family: `Avenir Next, Poppins, ${basicFontFamily}`,
-      numberFamily: `Roboto Mono, ${basicFontFamily}`,
-      codeFamily: `Space Mono, Consolas, Menlo, Monaco, Courier, monospace, ${basicFontFamily}`,
-      lineHeight: 'calc(1em + 8px)',
-    },
-    zIndex: {
-      modal: 1000,
-      popover: 100,
-    },
-    shadow: {
-      popover: '0px 0px 12px rgba(66, 65, 73, 0.14)',
-      modal:
-        '0px 0px 20px 4px rgba(65, 64, 72, 0.24), 0px 0px 12px rgba(66, 65, 73, 0.14)',
-      tooltip: '0px 0px 4px rgba(0, 0, 0, 0.14)',
-    },
-    space: {
-      paragraph: '8px',
-    },
-    radius: {
-      popover: '10px',
-    },
-    breakpoints: {
-      values: {
-        xs: 0,
-        sm: 640,
-        md: 960,
-        lg: 1280,
-        xl: 1920,
-      },
-    },
-  };
-};
-
-export const getDarkTheme = (
-  editorMode: EditorContainer['mode']
-): AffineTheme => {
-  const lightTheme = getLightTheme(editorMode);
-
-  return {
-    ...lightTheme,
-    palette: {
-      mode: 'dark',
-    },
-    colors: {
-      pageBackground: '#2c2c2c',
-      hoverBackground: 'rgba(0,0,0,.04)',
-      innerHoverBackground: '#5A5A5A',
-      popoverBackground: '#1F2021',
-      tooltipBackground: '#0C0A15',
-      codeBackground:
-        editorMode === 'edgeless'
-          ? lightTheme.colors.codeBackground
-          : '#505662',
-      codeBlockBackground: '#292C33',
-      hubBackground: '#272727',
-      cardHoverBackground: '#363636',
-      warningBackground: '#FFF9C7',
-      errorBackground: '#FFDED8',
-      modalBackground: 'rgba(0, 0, 0, 0.8)',
-
-      textColor: '#fff',
-      secondaryTextColor: '#8E8D91',
-      edgelessTextColor: '#3A4C5C',
-      handleColor: '#c7c3d9',
-      linkColor2: '#0C0A15',
-      linkVisitedColor: '#505FAB',
-      tooltipColor: '#fff',
-      codeColor:
-        editorMode === 'edgeless' ? lightTheme.colors.codeColor : '#BDDBFD',
-      placeHolderColor: '#C7C7C7',
-      selectedColor: 'rgba(104, 128, 255, 0.1)',
-      disableColor: '#4b4b4b',
-      lineNumberColor: '#888A9E',
-      ...nextDarkColorScheme,
-    },
-    shadow: {
-      popover:
-        '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
-      modal: '0px 4px 24px #161616',
-
-      tooltip: '1px 1px 4px rgba(0, 0, 0, 0.14)',
-    },
-  };
-};
-
-/**
- * @deprecated these theme will be removed in the future
- */
-export const globalThemeVariables: (
-  theme: AffineTheme
-) => AffineThemeCSSVariables = theme => {
-  return {
-    '--affine-theme-mode': theme.palette.mode,
-    '--affine-editor-mode': theme.editorMode,
-
-    '--affine-primary-color': theme.colors.primaryColor,
-
-    '--affine-page-background': theme.colors.pageBackground,
-    '--affine-popover-background': theme.colors.popoverBackground,
-    '--affine-hover-background': theme.colors.hoverBackground,
-    '--affine-code-background': theme.colors.codeBackground,
-    '--affine-tooltip-background': theme.colors.tooltipBackground,
-
-    '--affine-hub-background': theme.colors.hubBackground,
-    '--affine-card-hover-background': theme.colors.cardHoverBackground,
-
-    '--affine-text-color': theme.colors.textColor,
-    '--affine-secondary-text-color': theme.colors.secondaryTextColor,
-    '--affine-edgeless-text-color': theme.colors.edgelessTextColor,
-    '--affine-link-color': theme.colors.linkColor,
-    // In dark mode, normal text`s (not bold) color
-    '--affine-link-color2': theme.colors.linkColor2,
-    '--affine-link-visited-color': theme.colors.linkVisitedColor,
-    '--affine-icon-color': theme.colors.iconColor,
-    '--affine-block-handle-color': theme.colors.handleColor,
-    '--affine-code-color': theme.colors.codeColor,
-    '--affine-code-block-background': theme.colors.codeBlockBackground,
-    '--affine-quote-color': theme.colors.quoteColor,
-    '--affine-selected-color': theme.colors.selectedColor,
-    '--affine-placeholder-color': theme.colors.placeHolderColor,
-    '--affine-border-color': theme.colors.borderColor,
-    '--affine-disable-color': theme.colors.disableColor,
-    '--affine-tooltip-color': theme.colors.tooltipColor,
-    '--affine-line-number-color': theme.colors.lineNumberColor,
-
-    '--affine-modal-shadow': theme.shadow.modal,
-    '--affine-popover-shadow': theme.shadow.popover,
-
-    '--affine-font-h1': theme.font.h1,
-    '--affine-font-h2': theme.font.h2,
-    '--affine-font-h3': theme.font.h3,
-    '--affine-font-h4': theme.font.h4,
-    '--affine-font-h5': theme.font.h5,
-    '--affine-font-h6': theme.font.h6,
-    '--affine-font-base': theme.font.base,
-    '--affine-font-sm': theme.font.sm, // small
-    '--affine-font-xs': theme.font.xs, // tiny
-
-    '--affine-line-height': theme.font.lineHeight,
-
-    '--affine-z-index-modal': theme.zIndex.modal,
-    '--affine-z-index-popover': theme.zIndex.popover,
-
-    '--affine-font-family': theme.font.family,
-    '--affine-font-number-family': theme.font.numberFamily,
-    '--affine-font-code-family': theme.font.codeFamily,
-
-    '--affine-paragraph-space': theme.space.paragraph,
-    '--affine-popover-radius': theme.radius.popover,
-
-    '--affine-zoom': '1',
-    '--affine-scale': 'calc(1 / var(--affine-zoom))',
+    ...(themeMode === 'light' ? lightTheme : darkTheme),
   };
 };

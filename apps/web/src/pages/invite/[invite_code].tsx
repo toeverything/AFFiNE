@@ -94,7 +94,7 @@ const StyledContainer = styled('div')(({ theme }) => {
     height: '100vh',
     ...displayFlex('center', 'center'),
     flexDirection: 'column',
-    backgroundColor: theme.colors.pageBackground,
+    backgroundColor: 'var(--affine-background-primary-color)',
     img: {
       width: '300px',
       height: '300px',
@@ -103,7 +103,7 @@ const StyledContainer = styled('div')(({ theme }) => {
       ...displayFlex('center', 'center'),
       marginTop: '24px',
       svg: {
-        color: theme.colors.primaryColor,
+        color: 'var(--affine-primary-color)',
         fontSize: '24px',
         marginRight: '12px',
       },

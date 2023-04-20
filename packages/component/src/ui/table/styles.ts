@@ -4,8 +4,8 @@ import type { TableCellProps } from './interface';
 export const StyledTable = styled('table')<{ tableLayout: 'auto' | 'fixed' }>(
   ({ theme, tableLayout }) => {
     return {
-      fontSize: theme.font.base,
-      color: theme.colors.textColor,
+      fontSize: 'var(--affine-font-base)',
+      color: 'var(--affine-text-primary-color)',
       tableLayout,
       width: '100%',
       borderCollapse: 'separate',
@@ -69,7 +69,7 @@ export const StyledTableRow = styled('tr')(({ theme }) => {
 
     ':hover': {
       td: {
-        background: theme.colors.hoverBackground,
+        background: 'var(--affine-hover-color)',
       },
     },
   };

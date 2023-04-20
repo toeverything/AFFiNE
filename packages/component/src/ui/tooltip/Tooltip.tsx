@@ -6,11 +6,11 @@ import StyledPopperContainer from '../shared/Container';
 const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   return {
     maxWidth: '320px',
-    boxShadow: theme.shadow.popover,
+    boxShadow: 'var(--affine-text-popover-shadow)',
     padding: '4px 12px',
-    backgroundColor: theme.colors.tooltipBackground,
+    backgroundColor: 'var(--affine-tooltip)',
     color: '#fff',
-    fontSize: theme.font.sm,
+    fontSize: 'var(--affine-font-sm)',
   };
 });
 
