@@ -3,6 +3,7 @@
   "private": true,
   "exports": {
     "./atom": "./src/atom.ts",
+    "./blob": "./src/blob/index.ts",
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
     "./local/crud": "./src/local/crud.ts",
