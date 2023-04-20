@@ -5,7 +5,7 @@ export const createSQLiteStorage = (workspaceId: string): BlobStorage => {
     crud: {
       get: async (key: string) => {
         const buffer = await window.apis.db.getBlob(workspaceId, key);
-        return new Blob([buffer]);
+        return buffer ? new Blob([buffer]) : null;
       },
       set: async (key: string, value: Blob) => {
         return window.apis.db.addBlob(

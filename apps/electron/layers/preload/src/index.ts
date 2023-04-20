@@ -33,6 +33,8 @@ contextBridge.exposeInMainWorld('apis', {
       ipcRenderer.invoke('db:add-blob', workspaceId, key, data),
     getBlob: (workspaceId: string, key: string): Promise<Uint8Array | null> =>
       ipcRenderer.invoke('db:get-blob', workspaceId, key),
+    deleteBlob: (workspaceId: string, key: string) =>
+      ipcRenderer.invoke('db:delete-blob', workspaceId, key),
     getPersistedBlobs: (workspaceId: string): Promise<string[]> =>
       ipcRenderer.invoke('db:get-persisted-blobs', workspaceId),
   },

@@ -147,8 +147,8 @@ function registerDBHandlers() {
   });
 
   ipcMain.handle('ui:open-db-folder', async _ => {
-    logger.log('main: open db folder');
     const workspaceDB = await ensureWorkspaceDB(currentWorkspaceId);
+    logger.log('main: open db folder', workspaceDB.path);
     shell.showItemInFolder(workspaceDB.path);
   });
 
@@ -158,6 +158,7 @@ function registerDBHandlers() {
 
   ipcMain.handle('ui:open-save-db-file-dialog', async () => {
     logger.log('main: open save db file dialog', currentWorkspaceId);
+    const workspaceDB = await ensureWorkspaceDB(currentWorkspaceId);
     const ret = await dialog.showSaveDialog({
       properties: ['showOverwriteConfirmation'],
       title: 'Save Workspace',
@@ -170,7 +171,6 @@ function registerDBHandlers() {
       return null;
     }
 
-    const workspaceDB = await ensureWorkspaceDB(currentWorkspaceId);
     await exportDatabase(workspaceDB, filePath);
     shell.showItemInFolder(filePath);
     return filePath;
