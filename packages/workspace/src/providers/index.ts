@@ -178,18 +178,18 @@ const createSQLiteProvider = (
       window.apis.db.addBlob(blockSuiteWorkspace.id, k, new Uint8Array(blob));
     });
 
-    // sync to bs
-    const keysToSync = persistedKeys.filter(k => !allKeys.includes(k));
-    logger.info('syncing blobs', keysToSync, 'from sqlite');
-    keysToSync.forEach(async k => {
-      const blob = await window.apis.db.getBlob(blockSuiteWorkspace.id, k);
-      if (!blob) {
-        logger.warn('blob not found', k);
-        return;
-      }
-      // todo: fixme
-      // await bs.set(k, new Blob([blob.buffer]));
-    });
+    // // sync to bs
+    // const keysToSync = persistedKeys.filter(k => !allKeys.includes(k));
+    // logger.info('syncing blobs', keysToSync, 'from sqlite');
+    // keysToSync.forEach(async k => {
+    //   const blob = await window.apis.db.getBlob(blockSuiteWorkspace.id, k);
+    //   if (!blob) {
+    //     logger.warn('blob not found', k);
+    //     return;
+    //   }
+    //   // todo: fixme
+    //   // await bs.set(k, new Blob([blob.buffer]));
+    // });
   }
 
   const provider = {

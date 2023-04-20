@@ -42,7 +42,6 @@ echo('Build layers done');
 
 // step 2: build web (nextjs) dist
 process.env.ENABLE_LEGACY_PROVIDER = 'false';
-await $`yarn add`;
 await $`yarn build`;
 await $`yarn export`;
 

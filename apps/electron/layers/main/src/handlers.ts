@@ -1,5 +1,4 @@
-import { app, shell } from 'electron';
-import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme, shell } from 'electron';
 import { parse } from 'url';
 
 import { isMacOS } from '../../utils';
@@ -76,6 +75,12 @@ function registerDBHandlers() {
     await workspaceDB.ready;
     return workspaceDB;
   }
+
+  app.on('activate', () => {
+    for (const [_, workspaceDB] of dbMapping) {
+      workspaceDB.reconnectDB();
+    }
+  });
 
   // data related
   ipcMain.handle('db:get-doc', async (_, id) => {

@@ -14,7 +14,7 @@ export function startBackup(db: WorkspaceDatabase, dest: string) {
 
   backup();
 
-  db.sqliteDB.on('change', () => {
+  db.sqliteDB$.on('change', () => {
     if (timeout) {
       clearTimeout(timeout);
     }

@@ -37,15 +37,15 @@ interface BlobRow {
 }
 
 export class WorkspaceDatabase {
-  sqliteDB: Database;
+  sqliteDB$: Promise<Database>;
   ydoc = new Y.Doc();
+  _db: Database | null = null;
 
   ready: Promise<Uint8Array>;
 
   constructor(public path: string) {
-    this.sqliteDB = new sqlite3.Database(path);
+    this.sqliteDB$ = this.reconnectDB();
     console.log('open db', path);
-    schemas.forEach(schema => this.sqliteDB.run(schema));
 
     this.ydoc.on('update', update => {
       this.addUpdateToSQLite(update);
@@ -62,8 +62,29 @@ export class WorkspaceDatabase {
 
   // release resources
   destroy = () => {
-    this.sqliteDB.close();
+    this._db?.close();
     this.ydoc.destroy();
+  };
+
+  reconnectDB = async () => {
+    console.log('open db', this.path);
+    if (this._db) {
+      const _db = this._db;
+      await new Promise<void>(res =>
+        _db.close(() => {
+          res();
+        })
+      );
+    }
+    return (this.sqliteDB$ = new Promise(res => {
+      // use cached version?
+      const db = new sqlite3.Database(this.path);
+      this._db = db;
+
+      db.exec(schemas.join(';'), () => {
+        res(db);
+      });
+    }));
   };
 
   getEncodedDocUpdates = () => {
@@ -81,10 +102,11 @@ export class WorkspaceDatabase {
   };
 
   addBlob = async (key: string, data: Uint8Array) => {
+    const db = await this.sqliteDB$;
     return new Promise<void>((resolve, reject) => {
-      this.sqliteDB.run(
-        'INSERT INTO blobs (key, data) VALUES (?, ?)',
-        [key, data],
+      db.run(
+        'INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?',
+        [key, data, data],
         err => {
           if (err) {
             reject(err);
@@ -97,8 +119,9 @@ export class WorkspaceDatabase {
   };
 
   getBlob = async (key: string) => {
+    const db = await this.sqliteDB$;
     return new Promise<Uint8Array>((resolve, reject) => {
-      this.sqliteDB.get<BlobRow>(
+      db.get<BlobRow>(
         'SELECT data FROM blobs WHERE key = ?',
         [key],
         (err, row) => {
@@ -113,8 +136,9 @@ export class WorkspaceDatabase {
   };
 
   getPersistentBlobKeys = async () => {
+    const db = await this.sqliteDB$;
     return new Promise<string[]>((resolve, reject) => {
-      this.sqliteDB.all<BlobRow>('SELECT key FROM blobs', (err, rows) => {
+      db.all<BlobRow>('SELECT key FROM blobs', (err, rows) => {
         if (err) {
           reject(err);
         } else {
@@ -125,9 +149,10 @@ export class WorkspaceDatabase {
   };
 
   private getUpdates = async () => {
+    const db = await this.sqliteDB$;
     return new Promise<{ id: number; data: any }[]>((resolve, reject) => {
       // do we need to order by id?
-      this.sqliteDB.all<UpdateRow>('SELECT * FROM updates', (err, rows) => {
+      db.all<UpdateRow>('SELECT * FROM updates', (err, rows) => {
         if (err) {
           reject(err);
         } else {
@@ -138,18 +163,15 @@ export class WorkspaceDatabase {
   };
 
   private addUpdateToSQLite = async (data: Uint8Array) => {
+    const db = await this.sqliteDB$;
     return new Promise<void>((resolve, reject) => {
-      this.sqliteDB.run(
-        'INSERT INTO updates (data) VALUES (?)',
-        [data],
-        err => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
+      db.run('INSERT INTO updates (data) VALUES (?)', [data], err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
         }
-      );
+      });
     });
   };
 }
