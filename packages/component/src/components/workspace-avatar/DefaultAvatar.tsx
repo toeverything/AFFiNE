@@ -23,7 +23,7 @@ const colorsSchema = [
 
 export const DefaultAvatar = ({ name }: { name: string }) => {
   const colors = useMemo(() => {
-    const index = name[0].toUpperCase().charCodeAt(0) - 65;
+    const index = name[0].toUpperCase().charCodeAt(0);
     return colorsSchema[index % colorsSchema.length];
   }, [name]);
 
