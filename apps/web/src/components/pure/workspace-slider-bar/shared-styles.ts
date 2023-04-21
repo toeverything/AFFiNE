@@ -9,7 +9,7 @@ import {
 export const StyledListItem = styled('div')<{
   active?: boolean;
   disabled?: boolean;
-}>(({ theme, active, disabled }) => {
+}>(({ active, disabled }) => {
   return {
     height: '32px',
     color: active
@@ -46,7 +46,7 @@ export const StyledListItem = styled('div')<{
 export const StyledCollapseButton = styled('button')<{
   collapse: boolean;
   show?: boolean;
-}>(({ collapse, show = true, theme }) => {
+}>(({ collapse, show = true }) => {
   return {
     width: '16px',
     height: '100%',
@@ -75,7 +75,7 @@ export const StyledCollapseItem = styled('div')<{
   active?: boolean;
   isOver?: boolean;
   textWrap?: boolean;
-}>(({ disable = false, active = false, theme, isOver, textWrap = false }) => {
+}>(({ disable = false, active = false, isOver, textWrap = false }) => {
   return {
     width: '100%',
     lineHeight: '1.5',
@@ -94,7 +94,7 @@ export const StyledCollapseItem = styled('div')<{
     userSelect: 'none',
     ...(textWrap
       ? {
-          wordBreak: 'break-all',
+          wordBreak: 'break-word',
           whiteSpace: 'pre-wrap',
         }
       : {}),
@@ -174,7 +174,7 @@ const slideOut2 = keyframes({
 
 export const StyledChangeLog = styled('div')<{
   isClose?: boolean;
-}>(({ theme, isClose }) => {
+}>(({ isClose }) => {
   return {
     width: '110%',
     height: '32px',
