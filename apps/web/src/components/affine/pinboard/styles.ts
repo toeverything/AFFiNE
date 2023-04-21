@@ -8,7 +8,7 @@ import {
 export const StyledCollapsedButton = styled('button')<{
   collapse: boolean;
   show?: boolean;
-}>(({ collapse, show = true, theme }) => {
+}>(({ collapse, show = true }) => {
   return {
     width: '16px',
     height: '100%',
@@ -43,7 +43,6 @@ export const StyledPinboard = styled('div')<{
     disableCollapse,
     disable = false,
     active = false,
-    theme,
     isOver,
     textWrap = false,
   }) => {
@@ -66,7 +65,7 @@ export const StyledPinboard = styled('div')<{
       userSelect: 'none',
       ...(textWrap
         ? {
-            wordBreak: 'break-all',
+            wordBreak: 'break-word',
             whiteSpace: 'pre-wrap',
           }
         : {}),
@@ -106,7 +105,7 @@ export const StyledOperationButton = styled(IconButton, {
   };
 });
 
-export const StyledSearchContainer = styled('div')(({ theme }) => {
+export const StyledSearchContainer = styled('div')(() => {
   return {
     width: 'calc(100% - 24px)',
     margin: '0 auto',
@@ -125,7 +124,7 @@ export const StyledMenuContent = styled('div')(() => {
     overflow: 'auto',
   };
 });
-export const StyledMenuSubTitle = styled('div')(({ theme }) => {
+export const StyledMenuSubTitle = styled('div')(() => {
   return {
     color: 'var(--affine-text-secondary-color)',
     lineHeight: '36px',
@@ -133,7 +132,7 @@ export const StyledMenuSubTitle = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledMenuFooter = styled('div')(({ theme }) => {
+export const StyledMenuFooter = styled('div')(() => {
   return {
     width: 'calc(100% - 24px)',
     margin: '0 auto',

@@ -1,11 +1,20 @@
-import { useEffect, useState } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import type {
+  DragEndEvent} from '@dnd-kit/core';
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
+import { useCallback, useState } from 'react';
 
+import useCollapsed from './hooks/useCollapsed';
+import useSelectWithKeyboard from './hooks/useSelectWithKeyboard';
 import { TreeNode, TreeNodeWithDnd } from './TreeNode';
-import type { TreeNodeProps, TreeViewProps } from './types';
-import { flattenIds } from './utils';
-
+import type { TreeViewProps } from './types';
+import { findNode } from './utils';
 export const TreeView = <RenderProps,>({
   data,
   enableKeyboardSelection,
@@ -13,69 +22,51 @@ export const TreeView = <RenderProps,>({
   enableDnd = true,
   initialCollapsedIds = [],
   disableCollapse,
+  onDrop,
   ...otherProps
 }: TreeViewProps<RenderProps>) => {
-  const [selectedId, setSelectedId] = useState<string>();
-  // TODO: should record collapsedIds in localStorage
-  const [collapsedIds, setCollapsedIds] =
-    useState<string[]>(initialCollapsedIds);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+  const { selectedId } = useSelectWithKeyboard({
+    data,
+    onSelect,
+    enableKeyboardSelection,
+  });
 
-  useEffect(() => {
-    if (!enableKeyboardSelection) {
-      return;
-    }
+  const { collapsedIds, setCollapsed } = useCollapsed({ disableCollapse });
 
-    const flattenedIds = flattenIds<RenderProps>(data);
+  const [draggingId, setDraggingId] = useState<string>();
 
-    const handleDirectionKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') {
+  const onDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      const { active, over } = e;
+      const position = over?.data.current?.position;
+      const dropId = over?.data.current?.node.id;
+
+      if (!over || !active || !position) {
         return;
       }
-      if (selectedId === undefined) {
-        setSelectedId(flattenedIds[0]);
-        return;
-      }
-      let selectedIndex = flattenedIds.indexOf(selectedId);
-      if (e.key === 'ArrowDown') {
-        selectedIndex < flattenedIds.length - 1 && selectedIndex++;
-      }
-      if (e.key === 'ArrowUp') {
-        selectedIndex > 0 && selectedIndex--;
-      }
 
-      setSelectedId(flattenedIds[selectedIndex]);
-    };
-
-    const handleEnterKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter') {
-        return;
-      }
-      selectedId && onSelect?.(selectedId);
-    };
-
-    document.addEventListener('keydown', handleDirectionKeyDown);
-    document.addEventListener('keydown', handleEnterKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleDirectionKeyDown);
-      document.removeEventListener('keydown', handleEnterKeyDown);
-    };
-  }, [data, enableKeyboardSelection, onSelect, selectedId]);
-
-  const setCollapsed: TreeNodeProps['setCollapsed'] = (id, collapsed) => {
-    if (disableCollapse) {
-      return;
-    }
-    if (collapsed) {
-      setCollapsedIds(ids => [...ids, id]);
-    } else {
-      setCollapsedIds(ids => ids.filter(i => i !== id));
-    }
-  };
-
+      onDrop?.(active.id as string, dropId, position);
+    },
+    [onDrop]
+  );
+  const onDragMove = useCallback((e: DragEndEvent) => {
+    setDraggingId(e.active.id as string);
+  }, []);
   if (enableDnd) {
     return (
-      <DndProvider backend={HTML5Backend}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragMove={onDragMove}
+        onDragEnd={onDragEnd}
+      >
         {data.map((node, index) => (
           <TreeNodeWithDnd
             key={node.id}
@@ -86,10 +77,24 @@ export const TreeView = <RenderProps,>({
             selectedId={selectedId}
             enableDnd={enableDnd}
             disableCollapse={disableCollapse}
+            draggingId={draggingId}
             {...otherProps}
           />
         ))}
-      </DndProvider>
+
+        <DragOverlay>
+          {draggingId && (
+            <TreeNode
+              node={findNode(draggingId, data)!}
+              index={0}
+              allowDrop={false}
+              collapsedIds={collapsedIds}
+              setCollapsed={() => {}}
+              {...otherProps}
+            />
+          )}
+        </DragOverlay>
+      </DndContext>
     );
   }
 

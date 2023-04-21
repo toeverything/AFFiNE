@@ -4,7 +4,6 @@
 import 'fake-indexeddb/auto';
 
 import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
-import type { PageMeta } from '@blocksuite/store';
 import matchers from '@testing-library/jest-dom/matchers';
 import type { RenderResult } from '@testing-library/react';
 import { render, renderHook } from '@testing-library/react';
@@ -95,7 +94,6 @@ const initPinBoard = async () => {
   const app = render(
     <App
       blockSuiteWorkspace={blockSuiteWorkspace as BlockSuiteWorkspace}
-      allMetas={blockSuiteWorkspace.meta.pageMetas as PageMeta[]}
       openPage={() => {}}
     />
   );
