@@ -26,6 +26,7 @@ const StyledLoadingContainer = styled('div')(() => {
     justifyContent: 'center',
     alignItems: 'center',
     color: '#6880FF',
+    flexDirection: 'column',
     h1: {
       fontSize: '2em',
       marginTop: '15px',
@@ -38,10 +39,8 @@ export const PageLoading = ({ text }: { text?: string }) => {
   const { t } = useTranslation();
   return (
     <StyledLoadingContainer>
-      <div className="wrapper">
-        <Loading />
-        <h1>{text ? text : t('Loading')}</h1>
-      </div>
+      <Loading />
+      <h1>{text ? text : t('Loading')}</h1>
     </StyledLoadingContainer>
   );
 };
