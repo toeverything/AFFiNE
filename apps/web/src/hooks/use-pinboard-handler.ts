@@ -1,6 +1,5 @@
 import type { TreeViewProps } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
-import { initPage } from '@affine/env/blocksuite';
 import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
@@ -65,16 +64,7 @@ export function usePinboardHandler({
   const addPin = useCallback(
     (parentId: string) => {
       const id = nanoid();
-      const page = createPage(id);
-      initPage(page);
-      page.addBlock('affine:paragraph', {
-        text: page.Text.fromDelta([
-          {
-            insert: ' ',
-            attributes: { reference: { type: 'LinkedPage', pageId: page.id } },
-          },
-        ]),
-      });
+      createPage(id, parentId);
       onAdd?.(id, parentId);
       addReferenceLink(parentId, id);
     },
