@@ -17,11 +17,11 @@ on:
         type: boolean
         required: true
         default: true
-      is-canary:
-        description: 'Canary Release? The app will be named as "AFFiNE Canary"'
-        type: boolean
+      build-type:
+        description: 'Build Type (canary, beta or stable)'
+        type: string
         required: true
-        default: true
+        default: canary
 
 permissions:
   actions: write
@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BUILD_TYPE: ${{ github.event.inputs.is-canary == 'true' && 'canary' || 'stable' }}
+  BUILD_TYPE: ${{ github.event.inputs.build-type }}
 
 jobs:
   before-make:
