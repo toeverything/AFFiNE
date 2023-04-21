@@ -3,9 +3,10 @@ CREATE TABLE "users" (
     "id" VARCHAR NOT NULL,
     "name" VARCHAR NOT NULL,
     "email" VARCHAR NOT NULL,
-    "avatar_url" VARCHAR,
     "token_nonce" SMALLINT NOT NULL DEFAULT 0,
-    "password" VARCHAR NOT NULL,
+    "avatar_url" VARCHAR,
+    "password" VARCHAR,
+    "fulfilled" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
@@ -15,27 +16,26 @@ CREATE TABLE "users" (
 CREATE TABLE "workspaces" (
     "id" VARCHAR NOT NULL,
     "public" BOOLEAN NOT NULL,
-    "type" SMALLINT NOT NULL DEFAULT 1,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "workspaces_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "google_users" (
+CREATE TABLE "connected_accounts" (
     "id" VARCHAR NOT NULL,
-    "user_id" VARCHAR NOT NULL,
-    "google_id" VARCHAR NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "provider" VARCHAR NOT NULL,
+    "provider_user_id" VARCHAR NOT NULL,
 
-    CONSTRAINT "google_users_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "connected_accounts_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "permissions" (
     "id" VARCHAR NOT NULL,
     "workspace_id" VARCHAR NOT NULL,
-    "user_id" VARCHAR,
-    "user_email" TEXT,
+    "entity_id" VARCHAR NOT NULL,
     "type" SMALLINT NOT NULL,
     "accepted" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -47,13 +47,13 @@ CREATE TABLE "permissions" (
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "google_users_google_id_key" ON "google_users"("google_id");
+CREATE UNIQUE INDEX "connected_accounts_provider_user_id_key" ON "connected_accounts"("provider_user_id");
 
 -- AddForeignKey
-ALTER TABLE "google_users" ADD CONSTRAINT "google_users_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "permissions" ADD CONSTRAINT "permissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "connected_accounts" ADD CONSTRAINT "connected_accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "permissions" ADD CONSTRAINT "permissions_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "permissions" ADD CONSTRAINT "permissions_entity_id_fkey" FOREIGN KEY ("entity_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

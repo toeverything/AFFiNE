@@ -8,44 +8,56 @@ generator client {
 }
 
 model User {
+  id                String                    @id @default(uuid()) @db.VarChar
+  name              String                    @db.VarChar
+  email             String                    @unique @db.VarChar
+  tokenNonce        Int                       @default(0) @map("token_nonce") @db.SmallInt
+  avatarUrl         String?                   @map("avatar_url") @db.VarChar
+  /// Available if user signed up through OAuth providers
+  password          String?                   @db.VarChar
+  /// User may created by email collobration invitation before signup.
+  /// We will precreate a user entity in such senarios but leave fulfilled as false until they signed up
+  /// This implementation is convenient for handing unregistered user permissoin
+  fulfilled         Boolean                   @default(true)
+  createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  connectedAccounts ConnectedAccount[]
+  workspaces        UserWorkspacePermission[]
+
   @@map("users")
-  id           String         @id @default(uuid()) @db.VarChar
-  name         String         @db.VarChar
-  email        String         @unique @db.VarChar
-  avatarUrl    String?        @db.VarChar @map("avatar_url")
-  tokenNonce   Int            @default(0) @db.SmallInt @map("token_nonce")
-  password     String         @db.VarChar
-  createdAt    DateTime       @default(now()) @db.Timestamptz(6) @map("created_at")
-  googleUsers  GoogleUser[]   
-  permissions  Permission[]
 }
 
 model Workspace {
+  id        String                    @id @default(uuid()) @db.VarChar
+  public    Boolean
+  createdAt DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  users     UserWorkspacePermission[]
+
   @@map("workspaces")
-  id          String        @id @default(uuid()) @db.VarChar
-  public      Boolean
-  type        Int           @default(1) @db.SmallInt @map("type")
-  createdAt   DateTime      @default(now()) @db.Timestamptz(6) @map("created_at")
-  permissions Permission[]
 }
 
-model GoogleUser {
-  @@map("google_users")
-  id        String @id @default(uuid()) @db.VarChar
-  userId    String @db.VarChar @map("user_id")
-  googleId  String @unique @db.VarChar @map("google_id")
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+model ConnectedAccount {
+  id             String @id @default(uuid()) @db.VarChar
+  userId         String @map("user_id")
+  /// the general provider name, e.g. google, github, facebook
+  provider       String @db.VarChar
+  /// the user id provided by OAuth providers, or other user identitive credential like `username` provided by GitHub
+  providerUserId String @unique @map("provider_user_id") @db.VarChar
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("connected_accounts")
 }
 
-model Permission {
-  @@map("permissions")
-  id           String     @id @default(uuid()) @db.VarChar
-  workspaceId  String     @db.VarChar @map("workspace_id")
-  userId       String?    @db.VarChar @map("user_id")
-  userEmail    String?    @map("user_email")
-  type         Int        @db.SmallInt
-  accepted     Boolean    @default(false)
-  createdAt    DateTime   @default(now()) @db.Timestamptz(6) @map("created_at")
-  user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+model UserWorkspacePermission {
+  id          String    @id @default(uuid()) @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  userId      String    @map("entity_id") @db.VarChar
+  /// Read/Write/Admin/Owner
+  type        Int       @db.SmallInt
+  /// Whether the permission invitation is accepted by the user
+  accepted    Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_workspace_permissions")
 }
