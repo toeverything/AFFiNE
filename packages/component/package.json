@@ -45,11 +45,11 @@
     "react-is": "^18.2.0"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230420160324-857b396c-nightly",
-    "@blocksuite/editor": "0.0.0-20230420160324-857b396c-nightly",
-    "@blocksuite/global": "0.0.0-20230420160324-857b396c-nightly",
+    "@blocksuite/blocks": "0.0.0-20230420210727-85b7de79-nightly",
+    "@blocksuite/editor": "0.0.0-20230420210727-85b7de79-nightly",
+    "@blocksuite/global": "0.0.0-20230420210727-85b7de79-nightly",
     "@blocksuite/icons": "^2.1.10",
-    "@blocksuite/store": "0.0.0-20230420160324-857b396c-nightly",
+    "@blocksuite/store": "0.0.0-20230420210727-85b7de79-nightly",
     "@storybook/addon-actions": "^7.0.5",
     "@storybook/addon-coverage": "^0.0.8",
     "@storybook/addon-essentials": "^7.0.5",

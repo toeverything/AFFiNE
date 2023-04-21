@@ -1,12 +1,11 @@
-import type {
-  DragEndEvent} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
   closestCenter,
   DndContext,
   DragOverlay,
   PointerSensor,
   useSensor,
-  useSensors
+  useSensors,
 } from '@dnd-kit/core';
 import { useCallback, useState } from 'react';
 
@@ -47,7 +46,7 @@ export const TreeView = <RenderProps,>({
       const { active, over } = e;
       const position = over?.data.current?.position;
       const dropId = over?.data.current?.node.id;
-
+      setDraggingId(undefined);
       if (!over || !active || !position) {
         return;
       }
