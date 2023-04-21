@@ -5,11 +5,14 @@ import {
 import { useCallback } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../shared';
+import { useReferenceLinkHelper } from './use-reference-link-helper';
 
 export function useBlockSuiteMetaHelper(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ) {
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const { addReferenceLink, removeReferenceLink } =
+    useReferenceLinkHelper(blockSuiteWorkspace);
   const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
 
   const removeToTrash = useCallback(
@@ -29,17 +32,10 @@ export function useBlockSuiteMetaHelper(
 
       // Just the trash root need delete its id from parent
       if (parentMeta && isRoot) {
-        const deleteIndex = parentMeta.subpageIds.findIndex(
-          id => id === pageId
-        );
-        const newSubpageIds = [...parentMeta.subpageIds];
-        newSubpageIds.splice(deleteIndex, 1);
-        setPageMeta(parentMeta.id, {
-          subpageIds: newSubpageIds,
-        });
+        removeReferenceLink(pageId);
       }
     },
-    [getPageMeta, metas, setPageMeta]
+    [getPageMeta, metas, removeReferenceLink, setPageMeta]
   );
 
   const restoreFromTrash = useCallback(
@@ -47,11 +43,7 @@ export function useBlockSuiteMetaHelper(
       const { subpageIds = [], trashRelate } = getPageMeta(pageId) ?? {};
 
       if (trashRelate) {
-        const parentMeta = metas.find(m => m.id === trashRelate);
-        parentMeta &&
-          setPageMeta(parentMeta.id, {
-            subpageIds: [...parentMeta.subpageIds, pageId],
-          });
+        addReferenceLink(trashRelate, pageId);
       }
 
       setPageMeta(pageId, {
@@ -63,7 +55,7 @@ export function useBlockSuiteMetaHelper(
         restoreFromTrash(id);
       });
     },
-    [getPageMeta, metas, setPageMeta]
+    [addReferenceLink, getPageMeta, setPageMeta]
   );
 
   return {
