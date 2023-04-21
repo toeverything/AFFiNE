@@ -12,6 +12,13 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
 
   const edgeless = page.locator('affine-edgeless-page');
   expect(await edgeless.isVisible()).toBe(true);
+
+  const editorWrapperPadding = await page
+    .locator('.editor-wrapper.edgeless-mode')
+    .evaluate(element => {
+      return window.getComputedStyle(element).getPropertyValue('padding');
+    });
+  expect(editorWrapperPadding).toBe('0px');
 });
 
 test('Convert to edgeless by editor header items', async ({ page }) => {
