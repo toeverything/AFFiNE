@@ -14,7 +14,8 @@
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
-    "make-linux-x64": "electron-forge make --platform=linux --arch=x64"
+    "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
+    "electron-rebuild": "electron-rebuild"
   },
   "config": {
     "forge": "./forge.config.js"
@@ -31,20 +32,21 @@
     "@electron-forge/shared-types": "^6.1.1",
     "@electron/rebuild": "^3.2.12",
     "@electron/remote": "2.0.9",
+    "@types/better-sqlite3": "^7.6.4",
     "@types/fs-extra": "^11.0.1",
     "cross-env": "7.0.3",
     "dts-for-context-bridge": "^0.7.1",
     "electron": "24.1.2",
+    "electron-log": "^5.0.0-beta.22",
     "electron-squirrel-startup": "1.0.0",
+    "electron-window-state": "^5.0.3",
     "esbuild": "^0.17.17",
+    "fs-extra": "^11.1.1",
+    "undici": "^5.21.2",
     "zx": "^7.2.1"
   },
   "dependencies": {
-    "electron-log": "^5.0.0-beta.22",
-    "electron-window-state": "^5.0.3",
-    "fs-extra": "^11.1.1",
-    "sqlite3": "^5.1.6",
-    "undici": "^5.21.2",
+    "better-sqlite3": "^8.3.0",
     "yjs": "^13.5.53"
   },
   "build": {

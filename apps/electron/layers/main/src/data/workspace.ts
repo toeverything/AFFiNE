@@ -2,11 +2,17 @@ import path from 'node:path';
 
 import fs from 'fs-extra';
 
+import { logger } from '../../../logger';
 import type { AppContext } from '../context';
 
 export async function listWorkspaces(context: AppContext) {
   const basePath = path.join(context.appDataPath, 'workspaces');
-  return fs.readdir(basePath);
+  try {
+    return fs.readdir(basePath);
+  } catch (error) {
+    logger.error('listWorkspaces', error);
+    return [];
+  }
 }
 
 export async function deleteWorkspace(context: AppContext, id: string) {
@@ -16,5 +22,9 @@ export async function deleteWorkspace(context: AppContext, id: string) {
     'delete-workspaces',
     `${id}`
   );
-  return fs.move(basePath, movedPath);
+  try {
+    return fs.move(basePath, movedPath);
+  } catch (error) {
+    logger.error('deleteWorkspace', error);
+  }
 }
