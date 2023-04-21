@@ -55,13 +55,14 @@ export const createAffineBlobStorage = (
       },
       set: async (key, value) => {
         const db = await dbPromise;
+        const arrayBuffer = await value.arrayBuffer();
         const t = db
           .transaction('uploading', 'readwrite')
           .objectStore('uploading');
         let uploaded = false;
         t.put({
           key,
-          arrayBuffer: await value.arrayBuffer(),
+          arrayBuffer,
           type: value.type,
         }).then(() => {
           // delete the uploading blob after uploaded
