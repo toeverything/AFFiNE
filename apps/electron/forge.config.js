@@ -49,6 +49,7 @@ module.exports = {
     {
       name: '@electron-forge/maker-dmg',
       config: {
+        format: 'ULFO',
         icon: icnsPath,
         name: 'AFFiNE',
         'icon-size': 128,
