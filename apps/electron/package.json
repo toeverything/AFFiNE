@@ -47,7 +47,6 @@
   },
   "dependencies": {
     "better-sqlite3": "^8.3.0",
-    "sqlite3": "^5.1.6",
     "yjs": "^13.5.53"
   },
   "build": {
