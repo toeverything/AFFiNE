@@ -37,7 +37,6 @@
     "@toeverything/hooks": "workspace:*",
     "clsx": "^1.2.1",
     "jotai": "^2.0.4",
-    "kebab-case": "^1.0.2",
     "lit": "^2.7.2",
     "lottie-web": "^5.11.0",
     "react": "^18.2.0",

@@ -76,7 +76,6 @@ __metadata:
     concurrently: ^8.0.1
     jest-mock: ^29.5.0
     jotai: ^2.0.4
-    kebab-case: ^1.0.2
     lit: ^2.7.2
     lottie-web: ^5.11.0
     react: ^18.2.0
@@ -16664,13 +16663,6 @@ __metadata:
   version: 3.1.0
   resolution: "junk@npm:3.1.0"
   checksum: 6c4d68e8f8bc25b546baed802cd0e7be6a971e92f1e885c92cbfe98946d5690b961a32f8e7909e77765d3204c3e556d13c17f73e31697ffae1db07a58b9e68c0
-  languageName: node
-  linkType: hard
-
-"kebab-case@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "kebab-case@npm:1.0.2"
-  checksum: bf01164e11c544ee9b3aa1a91c2e7d6aa6b3356b834a5e885d43f36db14aae5d347cd4a298a566133321b82fde6bac6b597f148ac19bfd3d3fc81e1034a79729
   languageName: node
   linkType: hard
 
