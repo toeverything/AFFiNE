@@ -1,0 +1,19 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    name: Try publishing npm@latest release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Try publishing to NPM
+        run: ./scripts/publish.sh
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
