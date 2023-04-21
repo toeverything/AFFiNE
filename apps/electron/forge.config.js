@@ -32,10 +32,10 @@ module.exports = {
       stable: 'pro.affine.app',
     }),
     icon: icnsPath,
-    // osxSign: {
-    //   identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
-    //   'hardened-runtime': true,
-    // },
+    osxSign: {
+      identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
+      'hardened-runtime': true,
+    },
     osxNotarize: process.env.APPLE_ID
       ? {
           tool: 'notarytool',
