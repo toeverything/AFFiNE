@@ -148,7 +148,7 @@ const createSQLiteProvider = (
 ): SQLiteProvider => {
   const sqliteOrigin = Symbol('sqlite-provider-origin');
   // make sure it is being used in Electron with APIs
-  assertExists(window.apis);
+  assertExists(environment.isDesktop && window.apis);
 
   function handleUpdate(update: Uint8Array, origin: unknown) {
     if (origin === sqliteOrigin) {
@@ -204,6 +204,7 @@ const createSQLiteProvider = (
       const bs = blockSuiteWorkspace.blobs;
 
       if (bs) {
+        // this can be non-blocking
         syncBlobIntoSQLite(bs);
       }
 
