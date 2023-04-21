@@ -74,14 +74,16 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       >
         {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>
-      <MenuItem
-        onClick={() => {
-          onOpenPageInNewTab(id);
-        }}
-        icon={<OpenInNewIcon />}
-      >
-        {t('Open in new tab')}
-      </MenuItem>
+      {!environment.isDesktop && (
+        <MenuItem
+          onClick={() => {
+            onOpenPageInNewTab(id);
+          }}
+          icon={<OpenInNewIcon />}
+        >
+          {t('Open in new tab')}
+        </MenuItem>
+      )}
       {!pageMeta.isRootPinboard && (
         <MoveTo
           metas={metas}
