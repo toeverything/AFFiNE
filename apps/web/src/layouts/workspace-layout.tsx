@@ -17,7 +17,14 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import {
@@ -176,6 +183,10 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     }, [i18n]);
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
+    const meta = useMemo(
+      () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
+      [currentWorkspaceId, jotaiWorkspaces]
+    );
     const set = useSetAtom(rootWorkspacesMetadataAtom);
     useEffect(() => {
       logger.info('mount');
@@ -228,6 +239,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         };
       }
     }, [currentWorkspaceId, jotaiWorkspaces]);
+
+    const Provider =
+      (meta && WorkspacePlugins[meta.flavour].UI.Provider) ?? DefaultProvider;
     return (
       <>
         {/* fixme(himself65): don't re-render whole modals */}
@@ -240,7 +254,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
           <Suspense
             fallback={<PageLoading text={t('Finding Current Workspace')} />}
           >
-            <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+            <Provider>
+              <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+            </Provider>
           </Suspense>
         </CurrentWorkspaceContext>
       </>
@@ -397,11 +413,8 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     );
   }, [setIsResizing, setSidebarOpen, setSliderWidth]);
 
-  const Provider =
-    WorkspacePlugins[currentWorkspace.flavour].UI.Provider ?? DefaultProvider;
-
   return (
-    <Provider>
+    <>
       <Head>
         <title>{title}</title>
       </Head>
@@ -465,6 +478,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         </MainContainerWrapper>
       </StyledPage>
       <QuickSearch />
-    </Provider>
+    </>
   );
 };
