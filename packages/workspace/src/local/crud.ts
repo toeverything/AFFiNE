@@ -86,7 +86,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     data.splice(idx, 1);
     storage.setItem(kStoreKey, [...data]);
     // flywire
-    if (window.apis) {
+    if (window.apis && environment.isDesktop) {
       await window.apis.workspace.delete(workspace.id);
     }
   },
