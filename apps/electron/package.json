@@ -35,16 +35,16 @@
     "cross-env": "7.0.3",
     "dts-for-context-bridge": "^0.7.1",
     "electron": "24.1.2",
+    "electron-log": "^5.0.0-beta.22",
     "electron-squirrel-startup": "1.0.0",
+    "electron-window-state": "^5.0.3",
     "esbuild": "^0.17.17",
+    "fs-extra": "^11.1.1",
+    "undici": "^5.21.2",
     "zx": "^7.2.1"
   },
   "dependencies": {
-    "electron-log": "^5.0.0-beta.22",
-    "electron-window-state": "^5.0.3",
-    "fs-extra": "^11.1.1",
     "sqlite3": "^5.1.6",
-    "undici": "^5.21.2",
     "yjs": "^13.5.53"
   },
   "build": {
@@ -57,8 +57,5 @@
       }
     ]
   },
-  "stableVersion": "0.5.3",
-  "installConfig": {
-    "hoistingLimits": "workspaces"
-  }
+  "stableVersion": "0.5.3"
 }

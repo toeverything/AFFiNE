@@ -28,7 +28,7 @@ export default () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', 'sqlite3'],
+      external: ['electron', 'sqlite3', 'yjs'],
       plugins: [nativeNodeModulesPlugin],
       define: define,
     },
