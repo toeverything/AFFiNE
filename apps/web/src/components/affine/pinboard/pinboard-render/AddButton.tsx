@@ -11,7 +11,8 @@ export const AddButton = ({
     <StyledOperationButton
       visible={visible}
       size="small"
-      onClick={() => {
+      onClick={e => {
+        e.stopPropagation();
         onAdd();
       }}
     >
