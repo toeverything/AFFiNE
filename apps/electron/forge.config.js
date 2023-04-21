@@ -3,8 +3,10 @@ const {
   utils: { fromBuildIdentifier },
 } = require('@electron-forge/core');
 
-const isCanary = process.env.BUILD_TYPE === 'canary';
+const path = require('node:path');
 
+const isCanary = process.env.BUILD_TYPE === 'canary';
+const buildType = isCanary ? 'canary' : 'stable';
 const productName = isCanary ? 'AFFiNE-Canary' : 'AFFiNE';
 const icoPath = isCanary
   ? './resources/icons/icon_canary.ico'
@@ -12,6 +14,11 @@ const icoPath = isCanary
 const icnsPath = isCanary
   ? './resources/icons/icon_canary.icns'
   : './resources/icons/icon.icns';
+
+const arch =
+  process.argv.indexOf('--arch') > 0
+    ? process.argv[process.argv.indexOf('--arch') + 1]
+    : process.arch;
 
 /**
  * @type {import('@electron-forge/shared-types').ForgeConfig}
@@ -25,10 +32,10 @@ module.exports = {
       stable: 'pro.affine.app',
     }),
     icon: icnsPath,
-    osxSign: {
-      identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
-      'hardened-runtime': true,
-    },
+    // osxSign: {
+    //   identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
+    //   'hardened-runtime': true,
+    // },
     osxNotarize: process.env.APPLE_ID
       ? {
           tool: 'notarytool',
@@ -42,9 +49,25 @@ module.exports = {
     {
       name: '@electron-forge/maker-dmg',
       config: {
-        format: 'ULFO',
         icon: icnsPath,
         name: 'AFFiNE',
+        'icon-size': 128,
+        background: './resources/icons/dmg-background.png',
+        contents: [
+          {
+            x: 176,
+            y: 192,
+            type: 'file',
+            path: path.resolve(
+              __dirname,
+              'out',
+              buildType,
+              `${productName}-darwin-${arch}`,
+              `${productName}.app`
+            ),
+          },
+          { x: 432, y: 192, type: 'link', path: '/Applications' },
+        ],
       },
     },
     {

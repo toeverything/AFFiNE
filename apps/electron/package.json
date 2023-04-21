@@ -31,6 +31,8 @@
     "@electron-forge/shared-types": "^6.1.1",
     "@electron/rebuild": "^3.2.12",
     "@electron/remote": "2.0.9",
+    "@types/fs-extra": "^11.0.1",
+    "cross-env": "7.0.3",
     "dts-for-context-bridge": "^0.7.1",
     "electron": "24.1.2",
     "electron-squirrel-startup": "1.0.0",
@@ -38,11 +40,12 @@
     "zx": "^7.2.1"
   },
   "dependencies": {
-    "cross-env": "7.0.3",
+    "electron-log": "^5.0.0-beta.22",
     "electron-window-state": "^5.0.3",
-    "firebase": "^9.19.1",
     "fs-extra": "^11.1.1",
-    "undici": "^5.21.2"
+    "sqlite3": "^5.1.6",
+    "undici": "^5.21.2",
+    "yjs": "^13.5.53"
   },
   "build": {
     "protocols": [
@@ -54,6 +57,8 @@
       }
     ]
   },
-  "packageManager": "yarn@3.5.0",
-  "stableVersion": "0.5.3"
+  "stableVersion": "0.5.3",
+  "installConfig": {
+    "hoistingLimits": "workspaces"
+  }
 }

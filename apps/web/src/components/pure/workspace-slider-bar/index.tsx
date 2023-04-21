@@ -95,7 +95,9 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const show = isPublicWorkspace ? false : sidebarOpen;
   const actualWidth = floatingSlider ? 'calc(10vw + 400px)' : sliderWidth;
   useEffect(() => {
-    window.apis?.onSidebarVisibilityChange(sidebarOpen);
+    if (environment.isDesktop) {
+      window.apis?.onSidebarVisibilityChange(sidebarOpen);
+    }
   }, [sidebarOpen]);
 
   useEffect(() => {

@@ -7,7 +7,9 @@ export const ThemeModeSwitch = () => {
   const { setTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
-    window.apis?.onThemeChange(resolvedTheme === 'dark' ? 'dark' : 'light');
+    if (environment.isDesktop) {
+      window.apis?.onThemeChange(resolvedTheme === 'dark' ? 'dark' : 'light');
+    }
   }, [resolvedTheme]);
 
   const [isHover, setIsHover] = useState(false);

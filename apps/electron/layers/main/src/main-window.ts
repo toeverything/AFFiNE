@@ -2,6 +2,7 @@ import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
+import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
@@ -87,7 +88,7 @@ export async function restoreOrCreateWindow() {
     browserWindow.restore();
   }
 
-  browserWindow.focus();
+  logger.info('Create main window');
 
   return browserWindow;
 }
