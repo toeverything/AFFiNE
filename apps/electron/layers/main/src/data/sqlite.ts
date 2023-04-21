@@ -1,14 +1,12 @@
 import path from 'node:path';
 
+import type { Database } from 'better-sqlite3';
+import sqlite from 'better-sqlite3';
 import fs from 'fs-extra';
-import type { Database } from 'sqlite3';
-import sqlite3Default from 'sqlite3';
 import * as Y from 'yjs';
 
 import { logger } from '../../../logger';
 import type { AppContext } from '../context';
-
-const sqlite3 = sqlite3Default.verbose();
 
 const schemas = [
   `CREATE TABLE IF NOT EXISTS "updates" (
@@ -23,8 +21,6 @@ const schemas = [
 )`,
 ];
 
-sqlite3.verbose();
-
 interface UpdateRow {
   id: number;
   data: Buffer;
@@ -38,14 +34,14 @@ interface BlobRow {
 }
 
 export class WorkspaceDatabase {
-  sqliteDB$: Promise<Database>;
+  sqliteDB: Database;
   ydoc = new Y.Doc();
   _db: Database | null = null;
 
   ready: Promise<Uint8Array>;
 
   constructor(public path: string) {
-    this.sqliteDB$ = this.reconnectDB();
+    this.sqliteDB = this.reconnectDB();
     logger.log('open db', path);
 
     this.ydoc.on('update', update => {
@@ -67,29 +63,21 @@ export class WorkspaceDatabase {
     this.ydoc.destroy();
   };
 
-  reconnectDB = async () => {
+  reconnectDB = () => {
     logger.log('open db', this.path);
     if (this._db) {
-      const _db = this._db;
-      await new Promise<void>(res =>
-        _db.close(() => {
-          res();
-        })
-      );
+      this._db.close();
     }
-    return (this.sqliteDB$ = new Promise(res => {
-      // use cached version?
-      const db = new sqlite3.Database(this.path, error => {
-        if (error) {
-          logger.error('open db error', error);
-        }
-      });
-      this._db = db;
-
-      db.exec(schemas.join(';'), () => {
-        res(db);
-      });
-    }));
+    // use cached version?
+    const db = sqlite(this.path);
+    // const db = new sqlite.Database(this.path, error => {
+    //   if (error) {
+    //     logger.error('open db error', error);
+    //   }
+    // });
+    this._db = db;
+    db.exec(schemas.join(';'));
+    return db;
   };
 
   getEncodedDocUpdates = () => {
@@ -106,100 +94,75 @@ export class WorkspaceDatabase {
     // yjs-idb will always trim the db for the first time after DB is loaded
   };
 
-  addBlob = async (key: string, data: Uint8Array) => {
-    const db = await this.sqliteDB$;
-    return new Promise<void>((resolve, reject) => {
-      db.run(
-        'INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?',
-        [key, data, data],
-        err => {
-          if (err) {
-            logger.error('addBlob', err);
-            reject(err);
-          } else {
-            resolve();
-          }
-        }
+  addBlob = (key: string, data: Uint8Array) => {
+    try {
+      const statement = this.sqliteDB.prepare(
+        'INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?'
       );
-    });
+      statement.run(key, data, data);
+    } catch (error) {
+      logger.error('addBlob', error);
+    }
   };
 
-  getBlob = async (key: string) => {
-    const db = await this.sqliteDB$;
-    return new Promise<Uint8Array | null>((resolve, reject) => {
-      db.get<BlobRow>(
-        'SELECT data FROM blobs WHERE key = ?',
-        [key],
-        (err, row) => {
-          if (err) {
-            logger.error('getBlob', err);
-            reject(err);
-          } else if (!row) {
-            logger.error('getBlob', 'not found');
-            resolve(null);
-          } else {
-            resolve(row.data);
-          }
-        }
+  getBlob = (key: string) => {
+    try {
+      const statement = this.sqliteDB.prepare(
+        'SELECT data FROM blobs WHERE key = ?'
       );
-    });
+      const row = statement.get(key) as BlobRow;
+      if (!row) {
+        return null;
+      }
+      return row.data;
+    } catch (error) {
+      logger.error('getBlob', error);
+      return null;
+    }
   };
 
-  deleteBlob = async (key: string) => {
-    const db = await this.sqliteDB$;
-    return new Promise<void>((resolve, reject) => {
-      db.run('DELETE FROM blobs WHERE key = ?', [key], err => {
-        if (err) {
-          logger.error('deleteBlob', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+  deleteBlob = (key: string) => {
+    try {
+      const statement = this.sqliteDB.prepare(
+        'DELETE FROM blobs WHERE key = ?'
+      );
+      statement.run(key);
+    } catch (error) {
+      logger.error('deleteBlob', error);
+    }
   };
 
-  getPersistentBlobKeys = async () => {
-    const db = await this.sqliteDB$;
-    return new Promise<string[]>((resolve, reject) => {
-      db.all<BlobRow>('SELECT key FROM blobs', (err, rows) => {
-        if (err) {
-          logger.error('getPersistentBlobKeys', err);
-          reject(err);
-        } else {
-          resolve(rows.map(row => row.key));
-        }
-      });
-    });
+  getPersistentBlobKeys = () => {
+    try {
+      const statement = this.sqliteDB.prepare('SELECT key FROM blobs');
+      const rows = statement.all() as BlobRow[];
+      return rows.map(row => row.key);
+    } catch (error) {
+      logger.error('getPersistentBlobKeys', error);
+      return [];
+    }
   };
 
-  private getUpdates = async () => {
-    const db = await this.sqliteDB$;
-    return new Promise<{ id: number; data: any }[]>((resolve, reject) => {
-      // do we need to order by id?
-      db.all<UpdateRow>('SELECT * FROM updates', (err, rows) => {
-        if (err) {
-          logger.error('getUpdates', err);
-          reject(err);
-        } else {
-          resolve(rows);
-        }
-      });
-    });
+  private getUpdates = () => {
+    try {
+      const statement = this.sqliteDB.prepare('SELECT * FROM updates');
+      const rows = statement.all() as UpdateRow[];
+      return rows;
+    } catch (error) {
+      logger.error('getUpdates', error);
+      return [];
+    }
   };
 
-  private addUpdateToSQLite = async (data: Uint8Array) => {
-    const db = await this.sqliteDB$;
-    return new Promise<void>((resolve, reject) => {
-      db.run('INSERT INTO updates (data) VALUES (?)', [data], err => {
-        if (err) {
-          logger.error('addUpdateToSQLite', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+  private addUpdateToSQLite = (data: Uint8Array) => {
+    try {
+      const statement = this.sqliteDB.prepare(
+        'INSERT INTO updates (data) VALUES (?)'
+      );
+      statement.run(data);
+    } catch (error) {
+      logger.error('addUpdateToSQLite', error);
+    }
   };
 }
 
