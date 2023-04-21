@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react';
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import type { PinboardNode } from '../../../../hooks/use-pinboard-data';
 import { StyledCollapsedButton, StyledPinboard } from '../styles';
+import { AddButton } from './AddButton';
 import EmptyItem from './EmptyItem';
 import { OperationButton } from './OperationButton';
 
@@ -84,10 +85,8 @@ export const PinboardRender: PinboardNode['render'] = (
             <ArrowDownSmallIcon />
           </StyledCollapsedButton>
         )}
-
         {asPath && !isRoot ? <LevelIcon className="path-icon" /> : null}
         {getIcon(isRoot ? 'root' : record[node.id])}
-
         {showRename ? (
           <Input
             data-testid={`pinboard-input-${node.id}`}
@@ -106,6 +105,7 @@ export const PinboardRender: PinboardNode['render'] = (
         ) : (
           <span>{isRoot ? 'Pinboard' : currentMeta.title || 'Untitled'}</span>
         )}
+        {showOperationButton && <AddButton onAdd={onAdd} visible={isHover} />}
 
         {showOperationButton && (
           <OperationButton
@@ -115,7 +115,7 @@ export const PinboardRender: PinboardNode['render'] = (
             metas={metas}
             currentMeta={currentMeta!}
             blockSuiteWorkspace={blockSuiteWorkspace!}
-            isHover={isHover}
+            visible={isHover}
             onMenuClose={() => setIsHover(false)}
             onRename={() => {
               setShowRename(true);

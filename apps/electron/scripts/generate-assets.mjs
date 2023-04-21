@@ -33,39 +33,44 @@ if (process.platform === 'win32') {
   $.shell = 'powershell.exe';
   $.prefix = '';
 }
-// step 1: build web (nextjs) dist
-process.env.ENABLE_LEGACY_PROVIDER = 'false';
+
 cd(repoRootDir);
-await $`yarn add`;
-await $`yarn build`;
-await $`yarn export`;
 
-// step 1.5: amend sourceMappingURL to allow debugging in devtools
-await glob('**/*.{js,css}', { cwd: affineWebOutDir }).then(files => {
-  return files.map(async file => {
-    const dir = path.dirname(file);
-    const fullpath = path.join(affineWebOutDir, file);
-    let content = await fs.readFile(fullpath, 'utf-8');
-    // replace # sourceMappingURL=76-6370cd185962bc89.js.map
-    // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
-    content = content.replace(/# sourceMappingURL=(.*)\.map/g, (_, p1) => {
-      return `# sourceMappingURL=assets://./${dir}/${p1}.map`;
-    });
-    await fs.writeFile(fullpath, content);
-  });
-});
-
-await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
-
-// step 2: build electron resources
+// step 1: build electron resources
 await buildLayers();
 echo('Build layers done');
+
+// step 2: build web (nextjs) dist
+if (!process.env.SKIP_WEB_BUILD) {
+  process.env.ENABLE_LEGACY_PROVIDER = 'false';
+  await $`yarn build`;
+  await $`yarn export`;
+
+  // step 1.5: amend sourceMappingURL to allow debugging in devtools
+  await glob('**/*.{js,css}', { cwd: affineWebOutDir }).then(files => {
+    return files.map(async file => {
+      const dir = path.dirname(file);
+      const fullpath = path.join(affineWebOutDir, file);
+      let content = await fs.readFile(fullpath, 'utf-8');
+      // replace # sourceMappingURL=76-6370cd185962bc89.js.map
+      // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
+      content = content.replace(/# sourceMappingURL=(.*)\.map/g, (_, p1) => {
+        return `# sourceMappingURL=assets://./${dir}/${p1}.map`;
+      });
+      await fs.writeFile(fullpath, content);
+    });
+  });
+
+  await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
+}
 
 /// --------
 /// --------
 /// --------
 async function cleanup() {
-  await fs.emptyDir(publicAffineOutDir);
+  if (!process.env.SKIP_WEB_BUILD) {
+    await fs.emptyDir(publicAffineOutDir);
+  }
   await fs.emptyDir(path.join(electronRootDir, 'layers', 'main', 'dist'));
   await fs.emptyDir(path.join(electronRootDir, 'layers', 'preload', 'dist'));
   await fs.remove(path.join(electronRootDir, 'out'));

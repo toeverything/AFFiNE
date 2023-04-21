@@ -1,9 +1,10 @@
 import type { createWorkspaceApis } from '@affine/workspace/affine/api';
 import { createAffineBlobStorage } from '@affine/workspace/blob';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import type { Generator } from '@blocksuite/store';
+import type { Generator, StoreOptions } from '@blocksuite/store';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 
+import { createSQLiteStorage } from './blob/sqlite-blob-storage';
 import { WorkspaceFlavour } from './type';
 
 const hashMap = new Map<string, Workspace>();
@@ -48,15 +49,26 @@ export function createEmptyBlockSuiteWorkspace(
     return hashMap.get(cacheKey) as Workspace;
   }
   const idGenerator = config?.idGenerator;
+
+  const blobStorages: StoreOptions['blobStorages'] = [];
+
+  if (flavour === WorkspaceFlavour.AFFINE) {
+    blobStorages.push(id =>
+      createAffineBlobStorage(id, config!.workspaceApis!)
+    );
+  } else {
+    if (typeof window !== 'undefined') {
+      blobStorages.push(createIndexeddbStorage);
+      if (environment.isDesktop) {
+        blobStorages.push(createSQLiteStorage);
+      }
+    }
+  }
+
   const workspace = new Workspace({
     id,
     isSSR: typeof window === 'undefined',
-    blobStorages:
-      flavour === WorkspaceFlavour.AFFINE
-        ? [id => createAffineBlobStorage(id, config!.workspaceApis!)]
-        : typeof window === 'undefined'
-        ? []
-        : [createIndexeddbStorage],
+    blobStorages: blobStorages,
     idGenerator,
   })
     .register(AffineSchemas)

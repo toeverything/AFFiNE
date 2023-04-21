@@ -3,9 +3,9 @@ import { Input, PureMenu, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import { useReferenceLinkHelper } from '../../../../hooks/affine/use-reference-link-helper';
 import { usePinboardData } from '../../../../hooks/use-pinboard-data';
 import { usePinboardHandler } from '../../../../hooks/use-pinboard-handler';
 import type { BlockSuiteWorkspace } from '../../../../shared';
@@ -41,13 +41,13 @@ export const PinboardMenu = ({
     [currentMeta.id, propsMetas]
   );
   const { t } = useTranslation();
-  const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [query, setQuery] = useState('');
   const isSearching = query.length > 0;
 
   const searchResult = metas.filter(
     meta => !meta.trash && meta.title.includes(query)
   );
+  const { removeReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
 
   const { dropPin } = usePinboardHandler({
     blockSuiteWorkspace,
@@ -117,16 +117,7 @@ export const PinboardMenu = ({
           <StyledPinboard
             data-testid={'remove-from-pinboard-button'}
             onClick={() => {
-              const parentMeta = metas.find(m =>
-                m.subpageIds.includes(currentMeta.id)
-              );
-              if (!parentMeta) return;
-              const newSubpageIds = [...parentMeta.subpageIds];
-              const deleteIndex = newSubpageIds.findIndex(
-                id => id === currentMeta.id
-              );
-              newSubpageIds.splice(deleteIndex, 1);
-              setPageMeta(parentMeta.id, { subpageIds: newSubpageIds });
+              removeReferenceLink(currentMeta.id);
             }}
           >
             <RemoveIcon />

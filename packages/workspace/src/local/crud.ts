@@ -85,18 +85,32 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     }
     data.splice(idx, 1);
     storage.setItem(kStoreKey, [...data]);
+    // flywire
+    if (window.apis && environment.isDesktop) {
+      await window.apis.workspace.delete(workspace.id);
+    }
   },
   list: async () => {
     logger.debug('list');
     const storage = getStorage();
-    !Array.isArray(storage.getItem(kStoreKey)) &&
-      storage.setItem(kStoreKey, []);
-    return (
-      await Promise.all(
-        (storage.getItem(kStoreKey) as z.infer<typeof schema>).map(id =>
-          CRUD.get(id)
-        )
-      )
+    let allWorkspaceIDs: string[] = Array.isArray(storage.getItem(kStoreKey))
+      ? (storage.getItem(kStoreKey) as z.infer<typeof schema>)
+      : [];
+
+    // workspaces in desktop
+    if (window.apis && environment.isDesktop) {
+      const desktopIds = await window.apis.workspace.list();
+      // the ids maybe a subset of the local storage
+      const moreWorkspaces = desktopIds.filter(
+        id => !allWorkspaceIDs.includes(id)
+      );
+      allWorkspaceIDs = [...allWorkspaceIDs, ...moreWorkspaces];
+      storage.setItem(kStoreKey, allWorkspaceIDs);
+    }
+    const workspaces = (
+      await Promise.all(allWorkspaceIDs.map(id => CRUD.get(id)))
     ).filter(item => item !== null) as LocalWorkspace[];
+
+    return workspaces;
   },
 };

@@ -37,22 +37,19 @@
     "@toeverything/hooks": "workspace:*",
     "clsx": "^1.2.1",
     "jotai": "^2.0.4",
-    "kebab-case": "^1.0.2",
     "lit": "^2.7.2",
     "lottie-web": "^5.11.0",
     "react": "^18.2.0",
-    "react-dnd": "^16.0.1",
-    "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.2.0",
     "react-error-boundary": "^4.0.3",
     "react-is": "^18.2.0"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230420160324-857b396c-nightly",
-    "@blocksuite/editor": "0.0.0-20230420160324-857b396c-nightly",
-    "@blocksuite/global": "0.0.0-20230420160324-857b396c-nightly",
+    "@blocksuite/blocks": "0.0.0-20230420210727-85b7de79-nightly",
+    "@blocksuite/editor": "0.0.0-20230420210727-85b7de79-nightly",
+    "@blocksuite/global": "0.0.0-20230420210727-85b7de79-nightly",
     "@blocksuite/icons": "^2.1.10",
-    "@blocksuite/store": "0.0.0-20230420160324-857b396c-nightly",
+    "@blocksuite/store": "0.0.0-20230420210727-85b7de79-nightly",
     "@storybook/addon-actions": "^7.0.5",
     "@storybook/addon-coverage": "^0.0.8",
     "@storybook/addon-essentials": "^7.0.5",
@@ -81,5 +78,5 @@
     "wait-on": "^7.0.1",
     "yjs": "^13.5.52"
   },
-  "version": "0.5.4-canary.7"
+  "version": "0.5.4-beta.0"
 }

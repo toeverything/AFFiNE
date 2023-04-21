@@ -6,7 +6,14 @@ export const ExportPanel = () => {
   return (
     <>
       <Wrapper marginBottom="42px"> {t('Export Description')}</Wrapper>
-      <Button type="light" shape="circle" disabled>
+      <Button
+        type="light"
+        shape="circle"
+        disabled={!environment.isDesktop}
+        onClick={() => {
+          window.apis.openSaveDBFileDialog();
+        }}
+      >
         {t('Export AFFiNE backup file')}
       </Button>
     </>

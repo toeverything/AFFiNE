@@ -28,7 +28,7 @@ export type OperationButtonProps = {
   metas: PageMeta[];
   currentMeta: PageMeta;
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  isHover: boolean;
+  visible: boolean;
   onRename?: () => void;
   onMenuClose?: () => void;
 };
@@ -39,7 +39,7 @@ export const OperationButton = ({
   metas,
   currentMeta,
   blockSuiteWorkspace,
-  isHover,
+  visible,
   onMenuClose,
   onRename,
 }: OperationButtonProps) => {
@@ -61,6 +61,7 @@ export const OperationButton = ({
       }}
     >
       <div
+        style={{ display: 'flex' }}
         onClick={e => {
           e.stopPropagation();
         }}
@@ -81,7 +82,7 @@ export const OperationButton = ({
           onClick={() => {
             setOperationMenuOpen(!operationMenuOpen);
           }}
-          visible={isHover}
+          visible={visible}
         >
           <MoreVerticalIcon />
         </StyledOperationButton>
