@@ -64,7 +64,7 @@ export function usePinboardHandler({
   const addPin = useCallback(
     (parentId: string) => {
       const id = nanoid();
-      createPage(id, parentId);
+      createPage(id);
       onAdd?.(id, parentId);
       addReferenceLink(parentId, id);
     },
@@ -127,24 +127,28 @@ export function usePinboardHandler({
           return onDrop?.(dragId, dropId, position);
         }
         // Old parent will delete drag node, new parent will be added
-        const newDragParentSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
-        const deleteIndex = newDragParentSubpageIds.findIndex(
-          id => id === dragId
-        );
-        newDragParentSubpageIds.splice(deleteIndex, 1);
+        // const newDragParentSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
+        // const deleteIndex = newDragParentSubpageIds.findIndex(
+        //   id => id === dragId
+        // );
+        // newDragParentSubpageIds.splice(deleteIndex, 1);
 
-        const newDropParentSubpageIds = [...(dropParentMeta?.subpageIds ?? [])];
-        const insertIndex =
-          newDropParentSubpageIds.findIndex(id => id === dropId) + insertOffset;
-        newDropParentSubpageIds.splice(insertIndex, 0, dragId);
-        dragParentMeta &&
-          setPageMeta(dragParentMeta.id, {
-            subpageIds: newDragParentSubpageIds,
-          });
-        dropParentMeta &&
-          setPageMeta(dropParentMeta.id, {
-            subpageIds: newDropParentSubpageIds,
-          });
+        // const newDropParentSubpageIds = [...(dropParentMeta?.subpageIds ?? [])];
+        // const insertIndex =
+        // newDropParentSubpageIds.findIndex(id => id === dropId) + insertOffset;
+        // newDropParentSubpageIds.splice(insertIndex, 0, dragId);
+        // dragParentMeta &&
+        //   setPageMeta(dragParentMeta.id, {
+        //     subpageIds: newDragParentSubpageIds,
+        //   });
+        blockSuiteWorkspace.indexer.backlink.removeSubpageNode(
+          blockSuiteWorkspace,
+          dragId
+        );
+        // dropParentMeta &&
+        //   setPageMeta(dropParentMeta.id, {
+        //     subpageIds: newDropParentSubpageIds,
+        //   });
         dropParentMeta && addReferenceLink(dropParentMeta.id, dragId);
         return onDrop?.(dragId, dropId, position);
       }
@@ -154,23 +158,27 @@ export function usePinboardHandler({
         return;
       }
       if (dragParentMeta) {
-        const metaIndex = dragParentMeta.subpageIds.findIndex(
-          id => id === dragId
+        // const metaIndex = dragParentMeta.subpageIds.findIndex(
+        //   id => id === dragId
+        // );
+        // const newSubpageIds = [...dragParentMeta.subpageIds];
+        // newSubpageIds.splice(metaIndex, 1);
+        blockSuiteWorkspace.indexer.backlink.removeSubpageNode(
+          blockSuiteWorkspace,
+          dragId
         );
-        const newSubpageIds = [...dragParentMeta.subpageIds];
-        newSubpageIds.splice(metaIndex, 1);
-        setPageMeta(dragParentMeta.id, {
-          subpageIds: newSubpageIds,
-        });
+        // setPageMeta(dragParentMeta.id, {
+        //   subpageIds: newSubpageIds,
+        // });
       }
       const dropMeta = metas.find(meta => meta.id === dropId)!;
-      const newSubpageIds = [dragId, ...(dropMeta.subpageIds ?? [])];
-      setPageMeta(dropMeta.id, {
-        subpageIds: newSubpageIds,
-      });
+      // const newSubpageIds = [dragId, ...(dropMeta.subpageIds ?? [])];
+      // setPageMeta(dropMeta.id, {
+      //   subpageIds: newSubpageIds,
+      // });
       addReferenceLink(dropMeta.id, dragId);
     },
-    [addReferenceLink, metas, onDrop, setPageMeta]
+    [addReferenceLink, blockSuiteWorkspace, metas, onDrop, setPageMeta]
   );
 
   return {
