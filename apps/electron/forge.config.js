@@ -5,14 +5,14 @@ const {
 
 const path = require('node:path');
 
-const isCanary = process.env.BUILD_TYPE === 'canary';
-const buildType = isCanary ? 'canary' : 'stable';
-const productName = isCanary ? 'AFFiNE-Canary' : 'AFFiNE';
-const icoPath = isCanary
-  ? './resources/icons/icon_canary.ico'
+const buildType = (process.env.BUILD_TYPE || 'stable').trim().toLowerCase();
+const stableBuild = buildType === 'stable';
+const productName = !stableBuild ? `AFFiNE-${buildType}` : 'AFFiNE';
+const icoPath = !stableBuild
+  ? `./resources/icons/icon_${buildType}.ico`
   : './resources/icons/icon.ico';
-const icnsPath = isCanary
-  ? './resources/icons/icon_canary.icns'
+const icnsPath = !stableBuild
+  ? `./resources/icons/icon_${buildType}.icns`
   : './resources/icons/icon.icns';
 
 const arch =
@@ -24,11 +24,12 @@ const arch =
  * @type {import('@electron-forge/shared-types').ForgeConfig}
  */
 module.exports = {
-  buildIdentifier: isCanary ? 'canary' : 'stable',
+  buildIdentifier: buildType,
   packagerConfig: {
     name: productName,
     appBundleId: fromBuildIdentifier({
       canary: 'pro.affine.canary',
+      beta: 'pro.affine.beta',
       stable: 'pro.affine.app',
     }),
     icon: icnsPath,
