@@ -80,8 +80,6 @@ __metadata:
     lit: ^2.7.2
     lottie-web: ^5.11.0
     react: ^18.2.0
-    react-dnd: ^16.0.1
-    react-dnd-html5-backend: ^16.0.1
     react-dom: ^18.2.0
     react-error-boundary: ^4.0.3
     react-is: ^18.2.0
@@ -19643,16 +19641,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dnd-html5-backend@npm:^16.0.1":
-  version: 16.0.1
-  resolution: "react-dnd-html5-backend@npm:16.0.1"
-  dependencies:
-    dnd-core: ^16.0.1
-  checksum: e2368bf85d5632a5cd867b743feb54c9052d909ea5331608860fa455edf3c633ac791f5b338e3db29b19ea8670c0ba5fb43c9c1c2510760bea030811d726cdfa
-  languageName: node
-  linkType: hard
-
-"react-dnd@npm:*, react-dnd@npm:^16.0.1":
+"react-dnd@npm:*":
   version: 16.0.1
   resolution: "react-dnd@npm:16.0.1"
   dependencies:
