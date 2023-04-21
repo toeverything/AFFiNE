@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
@@ -26,7 +27,10 @@ const IndexPageInner = () => {
     const targetWorkspace =
       (lastWorkspaceId &&
         workspaces.find(({ id }) => id === lastWorkspaceId)) ||
-      workspaces.at(0);
+      // fixme(himself65):
+      //  when affine workspace is expired and the first workspace is affine,
+      //  the page will crash
+      workspaces.find(({ flavour }) => flavour === WorkspaceFlavour.LOCAL);
 
     if (targetWorkspace) {
       const pageId =
