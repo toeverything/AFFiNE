@@ -23,15 +23,15 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
-    "firebase": "^9.19.1",
+    "firebase": "^9.20.0",
     "jotai": "^2.0.4",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
-    "lib0": "^0.2.73",
+    "lib0": "^0.2.74",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.5.52",
+    "yjs": "^13.6.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
