@@ -1,6 +1,7 @@
+// eslint-disable-next-line simple-import-sort/imports
 import { Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 import {
   useGuideHidden,
@@ -10,6 +11,7 @@ import {
 import { useSidebarStatus } from '../../../hooks/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
+import { getEnvironment } from '@affine/env';
 type SidebarSwitchProps = {
   visible?: boolean;
   tooltipContent?: string;
@@ -29,12 +31,23 @@ export const SidebarSwitch = ({
   const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
     useGuideHiddenUntilNextUpdate();
   const { t } = useTranslation();
+  const checkIsMac = () => {
+    const env = getEnvironment();
+    return env.isBrowser && env.isMacOs;
+  };
+  const [isMac, setIsMac] = useState(false);
+  const collapseKeyboardShortcuts = isMac ? ' ⌘+/' : ' Ctrl+/';
+
+  useEffect(() => {
+    setIsMac(checkIsMac());
+  }, []);
+
   tooltipContent =
     tooltipContent || (open ? t('Collapse sidebar') : t('Expand sidebar'));
 
   return (
     <Tooltip
-      content={tooltipContent}
+      content={tooltipContent + ' ' + collapseKeyboardShortcuts}
       placement="right"
       zIndex={1000}
       visible={tooltipVisible}
