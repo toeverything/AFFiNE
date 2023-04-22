@@ -33,7 +33,6 @@ export const writeOperation = async (op: Promise<unknown>) => {
   window.addEventListener('beforeunload', saveAlert, {
     capture: true,
   });
-  console.log('write operation started');
   await op;
   window.removeEventListener('beforeunload', saveAlert, {
     capture: true,
