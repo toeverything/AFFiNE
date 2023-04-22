@@ -1,7 +1,7 @@
-// eslint-disable-next-line simple-import-sort/imports
 import { Tooltip } from '@affine/component';
+import { getEnvironment } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   useGuideHidden,
@@ -11,7 +11,6 @@ import {
 import { useSidebarStatus } from '../../../hooks/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
-import { getEnvironment } from '@affine/env';
 type SidebarSwitchProps = {
   visible?: boolean;
   tooltipContent?: string;
