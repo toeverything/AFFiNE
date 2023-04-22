@@ -46,6 +46,7 @@
     "zx": "^7.2.1"
   },
   "dependencies": {
+    "async-call-rpc": "=6.1.5",
     "better-sqlite3": "^8.3.0",
     "yjs": "^13.5.53"
   },

@@ -22,23 +22,6 @@ import { isMacOS } from '../../utils';
  * @see https://github.com/cawa-93/dts-for-context-bridge
  */
 contextBridge.exposeInMainWorld('apis', {
-  db: {
-    // TODO: do we need to store the workspace list locally?
-    // workspace providers
-    getDoc: (id: string): Promise<Uint8Array | null> =>
-      ipcRenderer.invoke('db:get-doc', id),
-    applyDocUpdate: (id: string, update: Uint8Array) =>
-      ipcRenderer.invoke('db:apply-doc-update', id, update),
-    addBlob: (workspaceId: string, key: string, data: Uint8Array) =>
-      ipcRenderer.invoke('db:add-blob', workspaceId, key, data),
-    getBlob: (workspaceId: string, key: string): Promise<Uint8Array | null> =>
-      ipcRenderer.invoke('db:get-blob', workspaceId, key),
-    deleteBlob: (workspaceId: string, key: string) =>
-      ipcRenderer.invoke('db:delete-blob', workspaceId, key),
-    getPersistedBlobs: (workspaceId: string): Promise<string[]> =>
-      ipcRenderer.invoke('db:get-persisted-blobs', workspaceId),
-  },
-
   workspace: {
     list: (): Promise<string[]> => ipcRenderer.invoke('workspace:list'),
     delete: (id: string): Promise<void> =>
@@ -79,4 +62,13 @@ contextBridge.exposeInMainWorld('apis', {
 contextBridge.exposeInMainWorld('appInfo', {
   electron: true,
   isMacOS: isMacOS(),
+});
+
+const windowLoaded = new Promise(resolve => {
+  window.addEventListener('load', resolve, { once: true });
+});
+
+ipcRenderer.on('main-world-port', async event => {
+  await windowLoaded;
+  window.postMessage('main-world-port', '*', event.ports);
 });

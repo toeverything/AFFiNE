@@ -154,13 +154,11 @@ const createSQLiteProvider = (
     if (origin === sqliteOrigin) {
       return;
     }
-    window.apis.db.applyDocUpdate(blockSuiteWorkspace.id, update);
+    rpc.applyDocUpdate(blockSuiteWorkspace.id, update);
   }
 
   async function syncBlobIntoSQLite(bs: BlobManager) {
-    const persistedKeys = await window.apis.db.getPersistedBlobs(
-      blockSuiteWorkspace.id
-    );
+    const persistedKeys = await rpc.getPersistedBlobs(blockSuiteWorkspace.id);
 
     const allKeys = await bs.list();
     const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
@@ -172,7 +170,7 @@ const createSQLiteProvider = (
         logger.warn('blob url not found', k);
         return;
       }
-      window.apis.db.addBlob(
+      rpc.addBlob(
         blockSuiteWorkspace.id,
         k,
         new Uint8Array(await blob.arrayBuffer())
@@ -188,7 +186,7 @@ const createSQLiteProvider = (
     },
     connect: async () => {
       logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
-      const updates = await window.apis.db.getDoc(blockSuiteWorkspace.id);
+      const updates = await rpc.getDoc(blockSuiteWorkspace.id);
 
       if (updates) {
         Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
@@ -197,7 +195,7 @@ const createSQLiteProvider = (
       const mergeUpdates = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc);
 
       // also apply updates to sqlite
-      window.apis.db.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
+      rpc.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
 
       blockSuiteWorkspace.doc.on('update', handleUpdate);
 

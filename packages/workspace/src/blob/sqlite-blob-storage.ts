@@ -4,21 +4,21 @@ export const createSQLiteStorage = (workspaceId: string): BlobStorage => {
   return {
     crud: {
       get: async (key: string) => {
-        const buffer = await window.apis.db.getBlob(workspaceId, key);
+        const buffer = await rpc.getBlob(workspaceId, key);
         return buffer ? new Blob([buffer]) : null;
       },
       set: async (key: string, value: Blob) => {
-        return window.apis.db.addBlob(
+        return rpc.addBlob(
           workspaceId,
           key,
           new Uint8Array(await value.arrayBuffer())
         );
       },
       delete: async (key: string) => {
-        return window.apis.db.deleteBlob(workspaceId, key);
+        return rpc.deleteBlob(workspaceId, key);
       },
       list: async () => {
-        return window.apis.db.getPersistedBlobs(workspaceId);
+        return rpc.getPersistedBlobs(workspaceId);
       },
     },
   };

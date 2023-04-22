@@ -33,6 +33,7 @@
     "@react-hookz/web": "^23.0.0",
     "@sentry/nextjs": "^7.48.0",
     "@toeverything/hooks": "workspace:*",
+    "async-call-rpc": "=6.1.5",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",

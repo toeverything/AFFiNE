@@ -1,9 +1,13 @@
-import { BrowserWindow, nativeTheme } from 'electron';
+import type { EventBasedChannel } from 'async-call-rpc';
+import { AsyncCall } from 'async-call-rpc';
+import { BrowserWindow, MessageChannelMain, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { logger } from '../../logger';
+import { MessagePortElectronChannel } from '../../rpc';
 import { isMacOS } from '../../utils';
+import { registerHandlers } from './handlers';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 
@@ -69,6 +73,14 @@ async function createWindow() {
 
   await browserWindow.loadURL(pageUrl);
 
+  const { port1, port2 } = new MessageChannelMain();
+
+  AsyncCall(registerHandlers(), {
+    channel: new MessagePortElectronChannel(port2),
+  });
+
+  browserWindow.webContents.postMessage('main-world-port', null, [port1]);
+
   return browserWindow;
 }
 
@@ -86,6 +98,23 @@ export async function restoreOrCreateWindow() {
 
   if (browserWindow.isMinimized()) {
     browserWindow.restore();
+  }
+
+  class MessagePortChannel implements EventBasedChannel {
+    constructor(private port: MessagePort) {}
+    on(listener: (data: unknown) => void) {
+      const handle = (event: MessageEvent) => {
+        listener(event.data);
+      };
+      this.port.addEventListener('message', handle);
+      return () => {
+        this.port.removeEventListener('message', handle);
+      };
+    }
+
+    send(data: unknown): void {
+      this.port.postMessage(data);
+    }
   }
 
   logger.info('Create main window');

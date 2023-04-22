@@ -4,7 +4,6 @@ import { app } from 'electron';
 import path from 'path';
 
 import { logger } from '../../logger';
-import { registerHandlers } from './handlers';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 
@@ -61,7 +60,6 @@ app.on('activate', restoreOrCreateWindow);
 app
   .whenReady()
   .then(registerProtocol)
-  .then(registerHandlers)
   .then(restoreOrCreateWindow)
   .catch(e => console.error('Failed create window:', e));
 /**

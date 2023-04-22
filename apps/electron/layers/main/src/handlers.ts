@@ -110,41 +110,35 @@ function registerDBHandlers() {
     }
   });
 
-  ipcMain.handle('db:get-doc', async (_, id) => {
-    logger.log('main: get doc', id);
+  async function getDoc(id: string): Promise<Uint8Array | null> {
     const workspaceDB = await ensureWorkspaceDB(id);
     return workspaceDB.getEncodedDocUpdates();
-  });
+  }
 
-  ipcMain.handle('db:apply-doc-update', async (_, id, update) => {
-    logger.log('main: apply doc update', id);
+  async function applyDocUpdate(id: string, update: Uint8Array) {
     const workspaceDB = await ensureWorkspaceDB(id);
     return workspaceDB.applyUpdate(update);
-  });
+  }
 
-  ipcMain.handle('db:add-blob', async (_, workspaceId, key, data) => {
-    logger.log('main: add blob', workspaceId, key);
+  async function addBlob(workspaceId: string, key: string, data: Uint8Array) {
     const workspaceDB = await ensureWorkspaceDB(workspaceId);
     return workspaceDB.addBlob(key, data);
-  });
+  }
 
-  ipcMain.handle('db:get-blob', async (_, workspaceId, key) => {
-    logger.log('main: get blob', workspaceId, key);
+  async function getBlob(workspaceId: string, key: string) {
     const workspaceDB = await ensureWorkspaceDB(workspaceId);
     return workspaceDB.getBlob(key);
-  });
+  }
 
-  ipcMain.handle('db:get-persisted-blobs', async (_, workspaceId) => {
-    logger.log('main: get persisted blob keys', workspaceId);
-    const workspaceDB = await ensureWorkspaceDB(workspaceId);
-    return workspaceDB.getPersistentBlobKeys();
-  });
-
-  ipcMain.handle('db:delete-blob', async (_, workspaceId, key) => {
-    logger.log('main: delete blob', workspaceId, key);
+  async function deleteBlob(workspaceId: string, key: string) {
     const workspaceDB = await ensureWorkspaceDB(workspaceId);
     return workspaceDB.deleteBlob(key);
-  });
+  }
+
+  async function getPersistedBlobs(workspaceId: string) {
+    const workspaceDB = await ensureWorkspaceDB(workspaceId);
+    return workspaceDB.getPersistentBlobKeys();
+  }
 
   ipcMain.handle('ui:open-db-folder', async _ => {
     const workspaceDB = await ensureWorkspaceDB(currentWorkspaceId);
@@ -175,10 +169,19 @@ function registerDBHandlers() {
     shell.showItemInFolder(filePath);
     return filePath;
   });
+
+  return {
+    getDoc,
+    applyDocUpdate,
+    addBlob,
+    getBlob,
+    deleteBlob,
+    getPersistedBlobs,
+  };
 }
 
 export const registerHandlers = () => {
   registerWorkspaceHandlers();
   registerUIHandlers();
-  registerDBHandlers();
+  return registerDBHandlers();
 };

@@ -124,6 +124,7 @@ __metadata:
     "@electron/remote": 2.0.9
     "@types/better-sqlite3": ^7.6.4
     "@types/fs-extra": ^11.0.1
+    async-call-rpc: =6.1.5
     better-sqlite3: ^8.3.0
     cross-env: 7.0.3
     dts-for-context-bridge: ^0.7.1
@@ -278,6 +279,7 @@ __metadata:
     "@types/webpack-env": ^1.18.0
     "@vanilla-extract/css": ^1.11.0
     "@vanilla-extract/next-plugin": ^2.1.2
+    async-call-rpc: =6.1.5
     cmdk: ^0.2.0
     css-spring: ^4.1.0
     dayjs: ^1.11.7
@@ -9537,6 +9539,13 @@ __metadata:
   version: 2.0.0
   resolution: "astral-regex@npm:2.0.0"
   checksum: 876231688c66400473ba505731df37ea436e574dd524520294cc3bbc54ea40334865e01fa0d074d74d036ee874ee7e62f486ea38bc421ee8e6a871c06f011766
+  languageName: node
+  linkType: hard
+
+"async-call-rpc@npm:=6.1.5":
+  version: 6.1.5
+  resolution: "async-call-rpc@npm:6.1.5"
+  checksum: a3d027c7016b45cc9925cf6a7eee1fde410a0dae789619ba2627361a9faa8441945c28a077052b6120fb17961044843024bef9d4ae8567adac16292c30271090
   languageName: node
   linkType: hard
 
