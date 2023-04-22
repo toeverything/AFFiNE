@@ -207,7 +207,6 @@ export const StyledButton = styled('button', {
         color: 'var(--affine-icon-color)',
       },
       '>span': {
-        marginLeft: '5px',
         width: 'max-content',
       },
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
