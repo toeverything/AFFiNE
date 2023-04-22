@@ -154,10 +154,12 @@ const createSQLiteProvider = (
     if (origin === sqliteOrigin) {
       return;
     }
+    // @ts-expect-error
     rpc.applyDocUpdate(blockSuiteWorkspace.id, update);
   }
 
   async function syncBlobIntoSQLite(bs: BlobManager) {
+    // @ts-expect-error
     const persistedKeys = await rpc.getPersistedBlobs(blockSuiteWorkspace.id);
 
     const allKeys = await bs.list();
@@ -170,6 +172,7 @@ const createSQLiteProvider = (
         logger.warn('blob url not found', k);
         return;
       }
+      // @ts-expect-error
       rpc.addBlob(
         blockSuiteWorkspace.id,
         k,
@@ -186,6 +189,7 @@ const createSQLiteProvider = (
     },
     connect: async () => {
       logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
+      // @ts-expect-error
       const updates = await rpc.getDoc(blockSuiteWorkspace.id);
 
       if (updates) {
@@ -195,6 +199,7 @@ const createSQLiteProvider = (
       const mergeUpdates = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc);
 
       // also apply updates to sqlite
+      // @ts-expect-error
       rpc.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
 
       blockSuiteWorkspace.doc.on('update', handleUpdate);
