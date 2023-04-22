@@ -148,7 +148,7 @@ const createSQLiteProvider = (
 ): SQLiteProvider => {
   const sqliteOrigin = Symbol('sqlite-provider-origin');
   // make sure it is being used in Electron with APIs
-  assertExists(environment.isDesktop && window.apis);
+  assertExists(environment.isDesktop);
 
   function handleUpdate(update: Uint8Array, origin: unknown) {
     if (origin === sqliteOrigin) {

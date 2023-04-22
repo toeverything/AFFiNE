@@ -14,21 +14,18 @@ let provider: SQLiteProvider;
 
 let offlineYdoc: YType.Doc;
 
-vi.stubGlobal('window', {
-  apis: {
-    db: {
-      getDoc: async (id: string) => {
-        return Y.encodeStateAsUpdate(offlineYdoc);
-      },
-      applyDocUpdate: async (id: string, update: Uint8Array) => {
-        Y.applyUpdate(offlineYdoc, update, 'sqlite');
-      },
-      getPersistedBlobs: async (id: string) => {
-        return [];
-      },
-    } satisfies Partial<typeof window.apis.db>,
+// @ts-expect-error
+globalThis.rpc = {
+  getDoc: async (id: string) => {
+    return Y.encodeStateAsUpdate(offlineYdoc);
   },
-});
+  applyDocUpdate: async (id: string, update: Uint8Array) => {
+    Y.applyUpdate(offlineYdoc, update, 'sqlite');
+  },
+  getPersistedBlobs: async (id: string) => {
+    return [];
+  },
+};
 
 vi.stubGlobal('environment', {
   isDesktop: true,
