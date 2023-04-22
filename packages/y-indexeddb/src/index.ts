@@ -23,6 +23,23 @@ const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
 
+const saveAlert = (event: BeforeUnloadEvent) => {
+  event.preventDefault();
+  return (event.returnValue =
+    'Data is not saved. Are you sure you want to leave?');
+};
+
+export const writeOperation = async (op: Promise<unknown>) => {
+  window.addEventListener('beforeunload', saveAlert, {
+    capture: true,
+  });
+  console.log('write operation started');
+  await op;
+  window.removeEventListener('beforeunload', saveAlert, {
+    capture: true,
+  });
+};
+
 export function setMergeCount(count: number) {
   mergeCount = count;
 }
@@ -190,9 +207,9 @@ export const createIndexedDBProvider = (
           },
         ],
       };
-      await store.put(data);
+      await writeOperation(store.put(data));
     } else {
-      await store.put(data);
+      await writeOperation(store.put(data));
     }
   }
 
@@ -315,15 +332,17 @@ export const createIndexedDBProvider = (
         return;
       }
       if (!data) {
-        await db.put('workspace', {
-          id,
-          updates: [
-            {
-              timestamp: Date.now(),
-              update: encodeStateAsUpdate(doc),
-            },
-          ],
-        });
+        await writeOperation(
+          db.put('workspace', {
+            id,
+            updates: [
+              {
+                timestamp: Date.now(),
+                update: encodeStateAsUpdate(doc),
+              },
+            ],
+          })
+        );
       } else {
         const updates = data.updates.map(({ update }) => update);
         const fakeDoc = new Doc();
@@ -336,16 +355,18 @@ export const createIndexedDBProvider = (
           encodeStateAsUpdate(doc),
           encodeStateAsUpdate(fakeDoc)
         );
-        await store.put({
-          ...data,
-          updates: [
-            ...data.updates,
-            {
-              timestamp: Date.now(),
-              update: newUpdate,
-            },
-          ],
-        });
+        await writeOperation(
+          store.put({
+            ...data,
+            updates: [
+              ...data.updates,
+              {
+                timestamp: Date.now(),
+                update: newUpdate,
+              },
+            ],
+          })
+        );
         doc.transact(() => {
           updates.forEach(update => {
             applyUpdate(doc, update);
