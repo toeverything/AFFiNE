@@ -18,7 +18,7 @@ import {
   createEmptyBlockSuiteWorkspace,
 } from '@affine/workspace/utils';
 import { createJSONStorage } from 'jotai/utils';
-import type React, { ReactElement } from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
 import { Suspense, useEffect } from 'react';
 import { mutate } from 'swr';
 import { z } from 'zod';
@@ -75,11 +75,7 @@ const getPersistenceAllWorkspace = () => {
 
 export const affineAuth = createAffineAuth(prefixUrl);
 
-function AuthContext({
-  children,
-}: {
-  children: React.ReactNode;
-}): ReactElement {
+function AuthContext({ children }: PropsWithChildren): ReactElement {
   const login = useAffineRefreshAuthToken();
 
   useEffect(() => {
