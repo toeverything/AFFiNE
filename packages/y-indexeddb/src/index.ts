@@ -23,6 +23,9 @@ const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
 
+/**
+ * @internal
+ */
 const saveAlert = (event: BeforeUnloadEvent) => {
   event.preventDefault();
   return (event.returnValue =

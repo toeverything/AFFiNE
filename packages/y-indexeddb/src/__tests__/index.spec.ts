@@ -240,6 +240,31 @@ describe('indexeddb provider', () => {
       expect(yDoc.getMap().get('foo')).toBe('bar');
     }
   });
+
+  test('beforeunload', async () => {
+    const oldAddEventListener = window.addEventListener;
+    window.addEventListener = vi.fn((event: string, fn, options) => {
+      expect(event).toBe('beforeunload');
+      return oldAddEventListener(event, fn, options);
+    });
+    const oldRemoveEventListener = window.removeEventListener;
+    window.removeEventListener = vi.fn((event: string, fn, options) => {
+      expect(event).toBe('beforeunload');
+      return oldRemoveEventListener(event, fn, options);
+    });
+    const doc = new Doc();
+    const provider = createIndexedDBProvider('1', doc);
+    const map = doc.getMap('map');
+    map.set('1', 1);
+    provider.connect();
+    await provider.whenSynced;
+
+    expect(window.addEventListener).toBeCalledTimes(1);
+    expect(window.removeEventListener).toBeCalledTimes(1);
+
+    window.addEventListener = oldAddEventListener;
+    window.removeEventListener = oldRemoveEventListener;
+  });
 });
 
 describe('milestone', () => {
