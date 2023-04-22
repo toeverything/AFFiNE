@@ -1,22 +1,20 @@
 import { openDB } from 'idb';
-import type { IDBPDatabase } from 'idb/build/entry';
 import {
   applyUpdate,
   diffUpdate,
   Doc,
   encodeStateAsUpdate,
   encodeStateVector,
-  mergeUpdates,
   UndoManager,
 } from 'yjs';
 
 import type {
   BlockSuiteBinaryDB,
   IndexedDBProvider,
-  OldYjsDB,
   WorkspaceMilestone,
 } from './shared';
 import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
+import { tryMigrate } from './utils';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
@@ -25,23 +23,6 @@ let mergeCount = 500;
 
 export function setMergeCount(count: number) {
   mergeCount = count;
-}
-
-async function databaseExists(name: string): Promise<boolean> {
-  return new Promise(resolve => {
-    const req = indexedDB.open(name);
-    let existed = true;
-    req.onsuccess = function () {
-      req.result.close();
-      if (!existed) {
-        indexedDB.deleteDatabase(name);
-      }
-      resolve(existed);
-    };
-    req.onupgradeneeded = function () {
-      existed = false;
-    };
-  });
 }
 
 export function revertUpdate(
@@ -120,7 +101,7 @@ export const markMilestone = async (
 
 export const getMilestones = async (
   id: string,
-  dbName = DEFAULT_DB_NAME
+  dbName: string = DEFAULT_DB_NAME
 ): Promise<null | WorkspaceMilestone['milestone']> => {
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
@@ -136,12 +117,10 @@ export const getMilestones = async (
   return milestone.milestone;
 };
 
-let allDb: IDBDatabaseInfo[];
-
 export const createIndexedDBProvider = (
   id: string,
   doc: Doc,
-  dbName = DEFAULT_DB_NAME
+  dbName: string = DEFAULT_DB_NAME
 ): IndexedDBProvider => {
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
@@ -217,96 +196,7 @@ export const createIndexedDBProvider = (
       doc.on('destroy', handleDestroy);
       // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
-      do {
-        if (!allDb || localStorage.getItem(`${dbName}-migration`) !== 'true') {
-          try {
-            allDb = await indexedDB.databases();
-          } catch {
-            // in firefox, `indexedDB.databases` is not exist
-            if (await databaseExists(id)) {
-              await openDB<IDBPDatabase<OldYjsDB>>(id, 1).then(async oldDB => {
-                if (!oldDB.objectStoreNames.contains('updates')) {
-                  return;
-                }
-                const t = oldDB
-                  .transaction('updates', 'readonly')
-                  .objectStore('updates');
-                const updates = await t.getAll();
-                if (
-                  !Array.isArray(updates) ||
-                  !updates.every(update => update instanceof Uint8Array)
-                ) {
-                  return;
-                }
-                const update = mergeUpdates(updates);
-                const workspaceTransaction = db
-                  .transaction('workspace', 'readwrite')
-                  .objectStore('workspace');
-                const data = await workspaceTransaction.get(id);
-                if (!data) {
-                  console.log('upgrading the database');
-                  await workspaceTransaction.put({
-                    id,
-                    updates: [
-                      {
-                        timestamp: Date.now(),
-                        update,
-                      },
-                    ],
-                  });
-                }
-              });
-              break;
-            }
-          }
-          // run the migration
-          await Promise.all(
-            allDb.map(meta => {
-              if (meta.name && meta.version === 1) {
-                const name = meta.name;
-                const version = meta.version;
-                return openDB<IDBPDatabase<OldYjsDB>>(name, version).then(
-                  async oldDB => {
-                    if (!oldDB.objectStoreNames.contains('updates')) {
-                      return;
-                    }
-                    const t = oldDB
-                      .transaction('updates', 'readonly')
-                      .objectStore('updates');
-                    const updates = await t.getAll();
-                    if (
-                      !Array.isArray(updates) ||
-                      !updates.every(update => update instanceof Uint8Array)
-                    ) {
-                      return;
-                    }
-                    const update = mergeUpdates(updates);
-                    const workspaceTransaction = db
-                      .transaction('workspace', 'readwrite')
-                      .objectStore('workspace');
-                    const data = await workspaceTransaction.get(name);
-                    if (!data) {
-                      console.log('upgrading the database');
-                      await workspaceTransaction.put({
-                        id: name,
-                        updates: [
-                          {
-                            timestamp: Date.now(),
-                            update,
-                          },
-                        ],
-                      });
-                    }
-                  }
-                );
-              }
-            })
-          );
-          localStorage.setItem(`${dbName}-migration`, 'true');
-          break;
-        }
-        // eslint-disable-next-line no-constant-condition
-      } while (false);
+      await tryMigrate(db, id, dbName);
       const store = db
         .transaction('workspace', 'readwrite')
         .objectStore('workspace');
