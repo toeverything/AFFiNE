@@ -403,7 +403,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
           },
         })
           .then(r =>
-            r.status === 403
+            !r.ok
               ? Promise.reject(new RequestError(MessageCode.noPermission))
               : r
           )

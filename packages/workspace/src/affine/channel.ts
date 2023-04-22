@@ -4,6 +4,8 @@ import {
   isExpired,
   parseIdToken,
 } from '@affine/workspace/affine/login';
+import { WorkspaceFlavour } from '@affine/workspace/type';
+import { cleanupWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/global/utils';
 import * as url from 'lib0/url';
 import * as websocket from 'lib0/websocket';
@@ -28,6 +30,10 @@ export class WebsocketClient {
 
   public connect(callback: (message: any) => void) {
     const loginResponse = getLoginStorage();
+    if (!loginResponse || isExpired(parseIdToken(loginResponse.token))) {
+      cleanupWorkspace(WorkspaceFlavour.AFFINE);
+      return;
+    }
     assertExists(loginResponse, 'loginResponse is null');
     const encodedParams = url.encodeQueryParams({
       token: loginResponse.token,

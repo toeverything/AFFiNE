@@ -25,14 +25,19 @@ export const createAffineDownloadProvider = (
         );
         return;
       }
-      affineApis.downloadWorkspace(id, false).then(binary => {
-        hashMap.set(id, binary);
-        providerLogger.debug('applyUpdate');
-        BlockSuiteWorkspace.Y.applyUpdate(
-          blockSuiteWorkspace.doc,
-          new Uint8Array(binary)
-        );
-      });
+      affineApis
+        .downloadWorkspace(id, false)
+        .then(binary => {
+          hashMap.set(id, binary);
+          providerLogger.debug('applyUpdate');
+          BlockSuiteWorkspace.Y.applyUpdate(
+            blockSuiteWorkspace.doc,
+            new Uint8Array(binary)
+          );
+        })
+        .catch(e => {
+          providerLogger.error('downloadWorkspace', e);
+        });
     },
     disconnect: () => {
       providerLogger.info('disconnect download provider', id);
