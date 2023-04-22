@@ -1,4 +1,4 @@
-import { config, prefixUrl } from '@affine/env';
+import { AFFINE_STORAGE_KEY, config, prefixUrl } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
@@ -13,10 +13,12 @@ import {
 import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { AffineWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import {
+  cleanupWorkspace,
+  createEmptyBlockSuiteWorkspace,
+} from '@affine/workspace/utils';
 import { createJSONStorage } from 'jotai/utils';
-import type { ReactElement } from 'react';
-import type React from 'react';
+import type React, { ReactElement } from 'react';
 import { Suspense, useEffect } from 'react';
 import { mutate } from 'swr';
 import { z } from 'zod';
@@ -35,7 +37,6 @@ import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
 
 const storage = createJSONStorage(() => localStorage);
-const kAffineLocal = 'affine-local-storage-v2';
 const schema = z.object({
   id: z.string(),
   type: z.number(),
@@ -44,7 +45,7 @@ const schema = z.object({
 });
 
 const getPersistenceAllWorkspace = () => {
-  const items = storage.getItem(kAffineLocal);
+  const items = storage.getItem(AFFINE_STORAGE_KEY);
   const allWorkspaces: AffineWorkspace[] = [];
   if (
     Array.isArray(items) &&
@@ -122,7 +123,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
         )
       );
-      storage.removeItem(kAffineLocal);
+      storage.removeItem(AFFINE_STORAGE_KEY);
       clearLoginStorage();
       rootStore.set(currentAffineUserAtom, null);
     },
@@ -155,13 +156,13 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       return id;
     },
     delete: async workspace => {
-      const items = storage.getItem(kAffineLocal);
+      const items = storage.getItem(AFFINE_STORAGE_KEY);
       if (
         Array.isArray(items) &&
         items.every(item => schema.safeParse(item).success)
       ) {
         storage.setItem(
-          kAffineLocal,
+          AFFINE_STORAGE_KEY,
           items.filter(item => item.id !== workspace.id)
         );
       }
@@ -179,7 +180,8 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           isExpired(parseIdToken(loginStorage.token))
         ) {
           rootStore.set(currentAffineUserAtom, null);
-          storage.removeItem(kAffineLocal);
+          storage.removeItem(AFFINE_STORAGE_KEY);
+          cleanupWorkspace(WorkspaceFlavour.AFFINE);
           return null;
         }
         const workspaces: AffineWorkspace[] = await AffinePlugin.CRUD.list();
@@ -203,11 +205,11 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           isExpired(parseIdToken(loginStorage.token))
         ) {
           rootStore.set(currentAffineUserAtom, null);
-          storage.removeItem(kAffineLocal);
+          storage.removeItem(AFFINE_STORAGE_KEY);
           return [];
         }
       } catch (e) {
-        storage.removeItem(kAffineLocal);
+        storage.removeItem(AFFINE_STORAGE_KEY);
         return [];
       }
       try {
@@ -228,7 +230,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
                 permission: workspace.permission,
               } satisfies z.infer<typeof schema>;
             });
-            const old = storage.getItem(kAffineLocal);
+            const old = storage.getItem(AFFINE_STORAGE_KEY);
             if (
               Array.isArray(old) &&
               old.every(item => schema.safeParse(item).success)
@@ -240,7 +242,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
                   data.push(item);
                 }
               });
-              storage.setItem(kAffineLocal, [...data]);
+              storage.setItem(AFFINE_STORAGE_KEY, [...data]);
             }
 
             const affineWorkspace: AffineWorkspace = {
@@ -270,7 +272,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
             permission: workspace.permission,
           } satisfies z.infer<typeof schema>;
         });
-        storage.setItem(kAffineLocal, [...dump]);
+        storage.setItem(AFFINE_STORAGE_KEY, [...dump]);
       } catch (e) {
         console.error('fetch affine workspaces failed', e);
       }
