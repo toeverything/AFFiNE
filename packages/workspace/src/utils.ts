@@ -1,4 +1,5 @@
 import type { createWorkspaceApis } from '@affine/workspace/affine/api';
+import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { createAffineBlobStorage } from '@affine/workspace/blob';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Generator, StoreOptions } from '@blocksuite/store';
@@ -6,6 +7,12 @@ import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
 import { WorkspaceFlavour } from './type';
+
+export function cleanupWorkspace(flavour: WorkspaceFlavour) {
+  rootStore.set(rootWorkspacesMetadataAtom, metas =>
+    metas.filter(meta => meta.flavour !== flavour)
+  );
+}
 
 const hashMap = new Map<string, Workspace>();
 
