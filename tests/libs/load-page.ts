@@ -2,8 +2,10 @@ import type { Page } from '@playwright/test';
 
 import { getMetas } from './utils';
 
+export const webUrl = 'http://localhost:8080';
+
 export async function openHomePage(page: Page) {
-  await page.goto('http://localhost:8080');
+  await page.goto(webUrl);
 }
 
 export async function initHomePageWithPinboard(page: Page) {

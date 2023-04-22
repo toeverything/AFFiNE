@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 
+import { openHomePage } from '../../libs/load-page';
 import { waitMarkdownImported } from '../../libs/page-logic';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -11,7 +12,7 @@ import {
   clickNewPageButton,
   clickSideBarCurrentWorkspaceBanner,
 } from '../../libs/sidebar';
-import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
+import { createFakeUser, loginUser } from '../../libs/utils';
 import {
   assertCurrentWorkspaceFlavour,
   createWorkspace,

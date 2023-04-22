@@ -131,10 +131,6 @@ export async function loginUser(
   }, token);
 }
 
-export async function openHomePage(page: Page) {
-  return page.goto('http://localhost:8080');
-}
-
 export async function getMetas(page: Page): Promise<PageMeta[]> {
   return page.evaluate(
     () => globalThis.currentWorkspace.blockSuiteWorkspace.meta.pageMetas ?? []

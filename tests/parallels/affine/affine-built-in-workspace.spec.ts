@@ -1,12 +1,13 @@
 import { expect } from '@playwright/test';
 
+import { openHomePage } from '../../libs/load-page';
 import { waitMarkdownImported } from '../../libs/page-logic';
 import { test } from '../../libs/playwright';
 import {
   clickNewPageButton,
   clickSideBarCurrentWorkspaceBanner,
 } from '../../libs/sidebar';
-import { getBuiltInUser, loginUser, openHomePage } from '../../libs/utils';
+import { getBuiltInUser, loginUser } from '../../libs/utils';
 
 test('collaborative', async ({ page, browser }) => {
   await openHomePage(page);

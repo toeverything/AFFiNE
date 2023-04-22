@@ -20,6 +20,16 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
       return;
     }
     if (currentWorkspaceId) {
+      if (currentWorkspaceId !== workspaceId) {
+        // workspaceId is invalid, redirect to currentWorkspaceId
+        void router.push({
+          pathname: router.pathname,
+          query: {
+            ...router.query,
+            workspaceId: currentWorkspaceId,
+          },
+        });
+      }
       return;
     }
     const targetWorkspace = metadata.find(
