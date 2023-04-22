@@ -59,15 +59,14 @@ async function createWindow() {
     // TODO: gracefully close the app, for example, ask user to save unsaved changes
   });
 
-  /**
-   * URL for main window.
-   */
-  const pageUrl =
-    IS_DEV && process.env.DEV_SERVER_URL !== undefined
-      ? process.env.DEV_SERVER_URL
-      : 'file://./index.html'; // see protocol.ts
-
-  await browserWindow.loadURL(pageUrl);
+  if (process.env.VITE_DEV_SERVER_URL) {
+    // electron-vite-vue#298
+    browserWindow.loadURL('http://localhost:8080');
+    // Open devTool if the app is not packaged
+    browserWindow.webContents.openDevTools();
+  } else {
+    browserWindow.loadFile('file://./index.html'); // see protocol.ts
+  }
 
   return browserWindow;
 }

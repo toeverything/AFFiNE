@@ -6,8 +6,7 @@
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node scripts/dev.mjs",
-    "prod": "cross-env NODE_ENV=production node scripts/dev.mjs",
+    "dev": "vite",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -43,6 +42,9 @@
     "esbuild": "^0.17.17",
     "fs-extra": "^11.1.1",
     "undici": "^5.21.2",
+    "vite": "^4.3.1",
+    "vite-plugin-electron": "^0.11.2",
+    "vite-plugin-electron-renderer": "^0.14.1",
     "zx": "^7.2.1"
   },
   "dependencies": {

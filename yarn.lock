@@ -134,6 +134,9 @@ __metadata:
     esbuild: ^0.17.17
     fs-extra: ^11.1.1
     undici: ^5.21.2
+    vite: ^4.3.1
+    vite-plugin-electron: ^0.11.2
+    vite-plugin-electron-renderer: ^0.14.1
     yjs: ^13.5.53
     zx: ^7.2.1
   languageName: unknown
@@ -16818,6 +16821,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lib-esm@npm:~0.3.0":
+  version: 0.3.0
+  resolution: "lib-esm@npm:0.3.0"
+  checksum: 9abd931570c3984b34b5965ce55181312ff35533834390cef65c24b3a1f0170d2e14c9c50f3b3e28914d85db199baf7e00a1408f2730061035a7ac949da5c1fa
+  languageName: node
+  linkType: hard
+
 "lib0@npm:^0.2.35, lib0@npm:^0.2.42, lib0@npm:^0.2.68, lib0@npm:^0.2.72, lib0@npm:^0.2.73":
   version: 0.2.73
   resolution: "lib0@npm:0.2.73"
@@ -20644,6 +20654,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rollup@npm:^3.20.2":
+  version: 3.20.7
+  resolution: "rollup@npm:3.20.7"
+  dependencies:
+    fsevents: ~2.3.2
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  bin:
+    rollup: dist/bin/rollup
+  checksum: 443f26aa6e42b94b4b137fbc3a07c78254cafc4ae53e0547bf5a94337b0658ca100d4e1c7e24870e399e5c7068a419cc0d367bfd35f4b1552d0b5e6d3482c517
+  languageName: node
+  linkType: hard
+
 "run-async@npm:^2.4.0":
   version: 2.4.1
   resolution: "run-async@npm:2.4.1"
@@ -23129,6 +23153,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"vite-plugin-electron-renderer@npm:^0.14.1":
+  version: 0.14.1
+  resolution: "vite-plugin-electron-renderer@npm:0.14.1"
+  dependencies:
+    lib-esm: ~0.3.0
+  checksum: 45c4cdcb8179bac824fc2116f110880904a5f8be850ed7f1e88af530296197512860b4a6cee0c49854ade73616f287fc205ec812c0aa4eba5f5ac931c05da890
+  languageName: node
+  linkType: hard
+
+"vite-plugin-electron@npm:^0.11.2":
+  version: 0.11.2
+  resolution: "vite-plugin-electron@npm:0.11.2"
+  checksum: 541b818023bd7ba851e3bafb1cf55008758f73ec46df90355be80111749e800c7992a366b8298369c39f9b8f0f5466ea5b536f7e80f3b6564c56b8ffcb99e0fd
+  languageName: node
+  linkType: hard
+
 "vite-plugin-istanbul@npm:^3.0.1":
   version: 3.0.4
   resolution: "vite-plugin-istanbul@npm:3.0.4"
@@ -23206,6 +23246,43 @@ __metadata:
   bin:
     vite: bin/vite.js
   checksum: 70eb162ffc299017a3c310e3adc95e9661def6b17aafd1f8e5e02e516766060435590dbe3df1e4e95acc3583c728a76e91f07c546221d1e701f1b2b021293f45
+  languageName: node
+  linkType: hard
+
+"vite@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "vite@npm:4.3.1"
+  dependencies:
+    esbuild: ^0.17.5
+    fsevents: ~2.3.2
+    postcss: ^8.4.21
+    rollup: ^3.20.2
+  peerDependencies:
+    "@types/node": ">= 14"
+    less: "*"
+    sass: "*"
+    stylus: "*"
+    sugarss: "*"
+    terser: ^5.4.0
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+    less:
+      optional: true
+    sass:
+      optional: true
+    stylus:
+      optional: true
+    sugarss:
+      optional: true
+    terser:
+      optional: true
+  bin:
+    vite: bin/vite.js
+  checksum: e58ba33ec10af6167686c1c43c61f31fcbc6b3b6a1f16ed03fb6cc8278700c6edaf4ff394ef454291ee35924054c7772feac159f1acf3af1a33d289fe8494d9c
   languageName: node
   linkType: hard
 
