@@ -34,6 +34,7 @@ export const StyledModal = styled(ModalUnstyled, {
     left: '0',
     top: '0',
     zIndex: 'var(--affine-z-index-modal)',
+    WebkitAppRegion: 'no-drag',
     '*': {
       WebkitTapHighlightColor: 'transparent',
       outline: 'none',
