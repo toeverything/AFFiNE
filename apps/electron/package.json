@@ -6,8 +6,8 @@
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node scripts/dev.mjs",
-    "prod": "cross-env NODE_ENV=production node scripts/dev.mjs",
+    "dev": "cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
+    "prod": "node scripts/dev.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
