@@ -13,6 +13,22 @@ import { isMacOS } from '../../utils';
  * @see https://www.electronjs.org/docs/api/context-bridge
  */
 
+function onMainEvent(
+  eventName: 'main:on-db-update',
+  callback: (workspaceId: string) => void
+): () => void;
+
+// main -> renderer
+function onMainEvent(
+  eventName: string,
+  callback: (...args: any[]) => void
+): () => void {
+  // @ts-expect-error fix me later
+  const fn = (_, ...args) => callback(...args);
+  ipcRenderer.on(eventName, fn);
+  return () => ipcRenderer.off(eventName, fn);
+}
+
 /**
  * After analyzing the `exposeInMainWorld` calls,
  * `packages/preload/exposedInMainWorld.d.ts` file will be generated.
@@ -72,6 +88,11 @@ contextBridge.exposeInMainWorld('apis', {
    */
   updateEnv: (env: string, value: string) => {
     ipcRenderer.invoke('main:env-update', env, value);
+  },
+
+  // main -> renderer callbacks
+  onDBUpdate: (callback: (workspaceId: string) => void) => {
+    return onMainEvent('main:on-db-update', callback);
   },
 });
 

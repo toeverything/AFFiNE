@@ -15,7 +15,7 @@
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
     "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
-    "electron-rebuild": "electron-rebuild"
+    "postinstall": "electron-rebuild"
   },
   "config": {
     "forge": "./forge.config.js"
