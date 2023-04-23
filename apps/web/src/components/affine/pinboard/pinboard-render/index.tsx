@@ -4,7 +4,7 @@ import {
   EdgelessIcon,
   LevelIcon,
   PageIcon,
-  PivotsIcon,
+  PinboardIcon,
 } from '@blocksuite/icons';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
@@ -21,7 +21,7 @@ import { OperationButton } from './OperationButton';
 const getIcon = (type: 'root' | 'edgeless' | 'page') => {
   switch (type) {
     case 'root':
-      return <PivotsIcon className="mode-icon" />;
+      return <PinboardIcon className="mode-icon" />;
     case 'edgeless':
       return <EdgelessIcon className="mode-icon" />;
     default:
