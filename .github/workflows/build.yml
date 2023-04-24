@@ -241,7 +241,7 @@ jobs:
     name: Unit Test
     runs-on: macos-latest
     environment: development
-    needs: [build, electron-build]
+    needs: [build, build-electron]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
