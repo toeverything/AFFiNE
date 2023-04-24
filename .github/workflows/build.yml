@@ -57,12 +57,6 @@ jobs:
           AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
           API_SERVER_PROFILE: local
 
-      - name: make
-        run: yarn make-linux-x64
-        working-directory: apps/electron
-        env:
-          SKIP_GENERATE_ASSETS: 1
-
       - name: Upload Ubuntu desktop artifact
         uses: actions/upload-artifact@v3
         with:
