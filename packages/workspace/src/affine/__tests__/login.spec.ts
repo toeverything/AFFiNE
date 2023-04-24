@@ -1,5 +1,5 @@
 /**
- * @vitest-environment happy-dom
+ * @vitest-environment jsdom
  */
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import {

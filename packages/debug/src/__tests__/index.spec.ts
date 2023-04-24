@@ -1,5 +1,5 @@
 /**
- * @vitest-environment happy-dom
+ * @vitest-environment jsdom
  */
 import { DebugLogger } from '@affine/debug';
 import { describe, expect, test, vi } from 'vitest';
