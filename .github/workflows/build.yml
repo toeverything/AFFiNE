@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: affine-ubuntu
-          path: ./apps/electron/out
+          path: ./apps/electron/dist
 
   build:
     name: Build @affine/web
@@ -277,7 +277,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: affine-ubuntu
-          path: ./apps/electron/out
+          path: ./apps/electron/dist
 
       - name: Unit Test
         run: yarn run test:unit:coverage
