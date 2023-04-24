@@ -13,7 +13,7 @@ const StyledIconButtonWithAnimate = styled(IconButton)(({ theme }) => {
         transform: 'translateY(3px)',
       },
       '::after': {
-        background: theme.colors.pageBackground,
+        background: 'var(--affine-background-primary-color)',
       },
     },
   };

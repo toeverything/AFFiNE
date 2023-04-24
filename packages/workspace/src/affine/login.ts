@@ -1,4 +1,7 @@
 import { DebugLogger } from '@affine/debug';
+import { getEnvironment } from '@affine/env';
+import { assertExists } from '@blocksuite/global/utils';
+import { Slot } from '@blocksuite/store';
 import { initializeApp } from 'firebase/app';
 import type { AuthProvider } from 'firebase/auth';
 import {
@@ -7,6 +10,7 @@ import {
   getAuth as getFirebaseAuth,
   GithubAuthProvider,
   GoogleAuthProvider,
+  signInWithCredential,
   signInWithPopup,
 } from 'firebase/auth';
 import { decode } from 'js-base64';
@@ -53,6 +57,7 @@ export const isExpired = (
 };
 
 export const setLoginStorage = (login: LoginResponse) => {
+  loginResponseSchema.parse(login);
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
@@ -60,6 +65,16 @@ export const setLoginStorage = (login: LoginResponse) => {
       refresh: login.refresh,
     })
   );
+};
+
+const signInWithElectron = async (firebaseAuth: FirebaseAuth) => {
+  if (window.apis) {
+    const { url, requestInit } = await window.apis.getGoogleOauthCode();
+    const { id_token } = await fetch(url, requestInit).then(res => res.json());
+    const credential = GoogleAuthProvider.credential(id_token);
+    const user = await signInWithCredential(firebaseAuth, credential);
+    return await user.user.getIdToken();
+  }
 };
 
 export const clearLoginStorage = () => {
@@ -76,6 +91,32 @@ export const getLoginStorage = (): LoginResponse | null => {
     }
   }
   return null;
+};
+
+export const storageChangeSlot = new Slot();
+
+export const checkLoginStorage = async (
+  prefixUrl = '/'
+): Promise<LoginResponse> => {
+  const storage = getLoginStorage();
+  assertExists(storage, 'Login token is not set');
+  if (isExpired(parseIdToken(storage.token), 0)) {
+    logger.debug('refresh token needed');
+    const response: LoginResponse = await fetch(prefixUrl + 'api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'Refresh',
+        token: storage.refresh,
+      }),
+    }).then(r => r.json());
+    setLoginStorage(response);
+    logger.debug('refresh token emit');
+    storageChangeSlot.emit();
+  }
+  return getLoginStorage() as LoginResponse;
 };
 
 export const enum SignMethod {
@@ -124,14 +165,22 @@ export function createAffineAuth(prefix = '/') {
       method: SignMethod
     ): Promise<LoginResponse | null> => {
       const auth = getAuth();
+      const environment = getEnvironment();
       if (!auth) {
         throw new Error('Failed to initialize firebase');
       }
       let provider: AuthProvider;
       switch (method) {
-        case SignMethod.Google:
-          provider = new GoogleAuthProvider();
+        case SignMethod.Google: {
+          const googleProvider = new GoogleAuthProvider();
+          // make sure the user has a chance to select an account
+          // https://developers.google.com/identity/openid-connect/openid-connect#prompt
+          googleProvider.setCustomParameters({
+            prompt: 'select_account',
+          });
+          provider = googleProvider;
           break;
+        }
         case SignMethod.GitHub:
           provider = new GithubAuthProvider();
           break;
@@ -139,9 +188,14 @@ export function createAffineAuth(prefix = '/') {
           throw new Error('Unsupported sign method');
       }
       try {
-        const response = await signInWithPopup(auth, provider);
-        const idToken = await response.user.getIdToken();
-        logger.debug(idToken);
+        let idToken: string | undefined;
+        if (environment.isDesktop) {
+          idToken = await signInWithElectron(auth);
+        } else {
+          const response = await signInWithPopup(auth, provider);
+          idToken = await response.user.getIdToken();
+        }
+        logger.debug('idToken', idToken);
         return fetch(prefix + 'api/user/token', {
           method: 'POST',
           headers: {

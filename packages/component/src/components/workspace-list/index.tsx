@@ -12,6 +12,7 @@ import type { FC } from 'react';
 import { WorkspaceCard } from '../workspace-card';
 
 export type WorkspaceListProps = {
+  disabled?: boolean;
   currentWorkspaceId: string | null;
   items: (AffineWorkspace | LocalWorkspace)[];
   onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
@@ -27,11 +28,13 @@ const SortableWorkspaceItem: FC<
   const { setNodeRef, attributes, listeners, transform } = useSortable({
     id: props.item.id,
   });
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const style: React.CSSProperties = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
+    pointerEvents: props.disabled ? 'none' : undefined,
+    opacity: props.disabled ? 0.6 : undefined,
+  };
   return (
     <div
       data-testid="draggable-item"

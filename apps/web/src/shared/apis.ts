@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
+import { prefixUrl } from '@affine/env';
 import {
   createUserApis,
   createWorkspaceApis,
@@ -7,26 +7,7 @@ import {
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { parseIdToken, setLoginStorage } from '@affine/workspace/affine/login';
-import { jotaiStore } from '@affine/workspace/atom';
-
-import { isValidIPAddress } from '../utils';
-
-let prefixUrl = '/';
-if (typeof window === 'undefined') {
-  // SSR
-  const serverAPI = config.serverAPI;
-  if (isValidIPAddress(serverAPI.split(':')[0])) {
-    // This is for Server side rendering support
-    prefixUrl = new URL('http://' + config.serverAPI + '/').origin;
-  } else {
-    prefixUrl = serverAPI;
-  }
-} else {
-  const params = new URLSearchParams(window.location.search);
-  params.get('prefixUrl') && (prefixUrl = params.get('prefixUrl') as string);
-}
-
-export { prefixUrl };
+import { rootStore } from '@affine/workspace/atom';
 
 const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;
@@ -38,7 +19,7 @@ const debugLogger = new DebugLogger('affine-debug-apis');
 if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_APIS = affineApis;
   globalThis.setLogin = (response: LoginResponse) => {
-    jotaiStore.set(currentAffineUserAtom, parseIdToken(response.token));
+    rootStore.set(currentAffineUserAtom, parseIdToken(response.token));
     setLoginStorage(response);
   };
   const loginMockUser1 = async () => {

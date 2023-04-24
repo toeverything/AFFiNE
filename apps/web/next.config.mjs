@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { PerfseePlugin } from '@perfsee/webpack';
 import { withSentryConfig } from '@sentry/nextjs';
+import SentryWebpackPlugin from '@sentry/webpack-plugin';
 import debugLocal from 'next-debug-local';
 
 import preset from './preset.config.mjs';
@@ -21,12 +22,16 @@ if (enableDebugLocal) {
   console.info('Debugging local blocksuite');
 }
 
+if (process.env.COVERAGE === 'true') {
+  console.info('Enable coverage report');
+}
+
 const profileTarget = {
   ac: '100.85.73.88:12001',
   dev: '100.84.105.99:11001',
   test: '100.84.105.99:11001',
   stage: '',
-  pro: 'http://pathfinder.affine.pro',
+  prod: 'https://app.affine.pro',
   local: '127.0.0.1:3000',
 };
 
@@ -73,6 +78,7 @@ const nextConfig = {
   },
   reactStrictMode: true,
   transpilePackages: [
+    'jotai-devtools',
     '@affine/component',
     '@affine/i18n',
     '@affine/debug',
@@ -89,7 +95,8 @@ const nextConfig = {
     gitVersion: getGitVersion(),
     hash: getCommitHash(),
     serverAPI:
-      profileTarget[process.env.NODE_API_SERVER || 'dev'] ?? profileTarget.dev,
+      profileTarget[process.env.API_SERVER_PROFILE || 'dev'] ??
+      profileTarget.dev,
     editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
     ...preset,
   },
@@ -112,17 +119,31 @@ const nextConfig = {
         config.plugins = [perfsee];
       }
     }
+    if (
+      process.env.SENTRY_AUTH_TOKEN &&
+      process.env.SENTRY_ORG &&
+      process.env.SENTRY_PROJECT
+    ) {
+      config.plugins.push(
+        new SentryWebpackPlugin({
+          include: '.next',
+          ignore: ['node_modules', 'cypress', 'test'],
+          urlPrefix: '~/_next',
+        })
+      );
+    }
 
     return config;
   },
   rewrites: async () => {
     const [profile, target, desc] = getRedirectConfig(
-      process.env.NODE_API_SERVER
+      process.env.API_SERVER_PROFILE
     );
     console.info(`API request proxy to [${desc} Server]: ` + target);
     return profile;
   },
   basePath: process.env.NEXT_BASE_PATH,
+  assetPrefix: process.env.NEXT_ASSET_PREFIX,
   pageExtensions: [...(preset.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx'])],
 };
 

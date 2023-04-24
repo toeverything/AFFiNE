@@ -2,6 +2,7 @@ import { Button } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { createBroadCastChannelProvider } from '@affine/workspace/providers';
 import type { BroadCastChannelProvider } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { Typography } from '@mui/material';
@@ -22,10 +23,7 @@ declare global {
 const BroadcastPage: React.FC = () => {
   const blockSuiteWorkspace = useMemo(
     () =>
-      createEmptyBlockSuiteWorkspace(
-        'broadcast-test',
-        (_: string) => undefined
-      ),
+      createEmptyBlockSuiteWorkspace('broadcast-test', WorkspaceFlavour.LOCAL),
     []
   );
   const [provider, setProvider] = useState<BroadCastChannelProvider | null>(

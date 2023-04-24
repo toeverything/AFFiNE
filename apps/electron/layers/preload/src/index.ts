@@ -2,9 +2,9 @@
  * @module preload
  */
 
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge } from 'electron';
 
-import { isMacOS } from '../../utils';
+import * as affineApis from './affine-apis';
 
 /**
  * The "Main World" is the JavaScript context that your main renderer code runs in.
@@ -13,26 +13,5 @@ import { isMacOS } from '../../utils';
  * @see https://www.electronjs.org/docs/api/context-bridge
  */
 
-/**
- * After analyzing the `exposeInMainWorld` calls,
- * `packages/preload/exposedInMainWorld.d.ts` file will be generated.
- * It contains all interfaces.
- * `packages/preload/exposedInMainWorld.d.ts` file is required for TS is `renderer`
- *
- * @see https://github.com/cawa-93/dts-for-context-bridge
- */
-
-contextBridge.exposeInMainWorld('apis', {
-  workspaceSync: (id: string) => ipcRenderer.invoke('octo:workspace-sync', id),
-  // ui
-  onThemeChange: (theme: string) =>
-    ipcRenderer.invoke('ui:theme-change', theme),
-
-  onSidebarVisibilityChange: (visible: boolean) =>
-    ipcRenderer.invoke('ui:sidebar-visibility-change', visible),
-});
-
-contextBridge.exposeInMainWorld('appInfo', {
-  electron: true,
-  isMacOS: isMacOS(),
-});
+contextBridge.exposeInMainWorld('apis', affineApis.apis);
+contextBridge.exposeInMainWorld('appInfo', affineApis.appInfo);

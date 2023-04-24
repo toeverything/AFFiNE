@@ -11,7 +11,7 @@ export const ModalWrapper = styled('div')<{
     width,
     height,
     minHeight,
-    backgroundColor: theme.colors.popoverBackground,
+    backgroundColor: 'var(--affine-white)',
     borderRadius: '16px',
     position: 'relative',
     maxHeight: 'calc(100vh - 32px)',

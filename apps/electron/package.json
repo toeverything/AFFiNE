@@ -1,25 +1,22 @@
 {
   "name": "@affine/electron",
-  "productName": "AFFiNE",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.5.4-canary.8",
   "author": "affine",
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
-  "workspaces": [
-    "../../packages/*",
-    "../../tests/fixtures"
-  ],
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node scripts/dev.mjs",
-    "prod": "cross-env NODE_ENV=production node scripts/dev.mjs",
+    "dev": "yarn electron-rebuild && yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
+    "prod": "yarn electron-rebuild && yarn node scripts/dev.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
+    "package": "electron-forge package",
     "make": "electron-forge make",
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
-    "build:octobase-node": "yarn workspace @affine/octobase-node build",
-    "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs",
+    "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
+    "rebuild:for-test": "yarn rebuild better-sqlite3",
+    "rebuild:for-electron": "yarn electron-rebuild",
     "test": "playwright test"
   },
   "config": {
@@ -27,26 +24,44 @@
   },
   "main": "./dist/layers/main/index.js",
   "devDependencies": {
-    "@affine/octobase-node": "workspace:*",
-    "@electron-forge/cli": "^6.1.0",
-    "@electron-forge/core": "^6.1.0",
-    "@electron-forge/core-utils": "^6.1.0",
-    "@electron-forge/maker-deb": "^6.1.0",
-    "@electron-forge/maker-dmg": "^6.1.0",
-    "@electron-forge/maker-squirrel": "^6.1.0",
-    "@electron-forge/maker-zip": "^6.1.0",
-    "@electron-forge/shared-types": "^6.1.0",
-    "@electron/rebuild": "^3.2.10",
-    "@playwright/test": "^1.32.2",
-    "dts-for-context-bridge": "^0.7.1",
-    "electron": "24.0.0",
-    "esbuild": "^0.17.15",
+    "@electron-forge/cli": "^6.1.1",
+    "@electron-forge/core": "^6.1.1",
+    "@electron-forge/core-utils": "^6.1.1",
+    "@electron-forge/maker-deb": "^6.1.1",
+    "@electron-forge/maker-dmg": "^6.1.1",
+    "@electron-forge/maker-squirrel": "^6.1.1",
+    "@electron-forge/maker-zip": "^6.1.1",
+    "@electron-forge/shared-types": "^6.1.1",
+    "@electron/rebuild": "^3.2.12",
+    "@electron/remote": "2.0.9",
+    "@types/better-sqlite3": "^7.6.4",
+    "@types/fs-extra": "^11.0.1",
+    "cross-env": "7.0.3",
+    "electron": "24.1.2",
+    "electron-log": "^5.0.0-beta.23",
+    "electron-squirrel-startup": "1.0.0",
+    "electron-window-state": "^5.0.3",
+    "esbuild": "^0.17.18",
+    "fs-extra": "^11.1.1",
+    "undici": "^5.22.0",
     "zx": "^7.2.1"
   },
   "dependencies": {
-    "cross-env": "7.0.3",
-    "electron-window-state": "^5.0.3",
-    "fs-extra": "^11.1.1"
+    "better-sqlite3": "^8.3.0",
+    "yjs": "^13.6.0"
   },
-  "packageManager": "yarn@3.5.0"
+  "build": {
+    "protocols": [
+      {
+        "name": "affine",
+        "schemes": [
+          "affine"
+        ]
+      }
+    ]
+  },
+  "stableVersion": "0.5.3",
+  "installConfig": {
+    "hoistingLimits": "workspaces"
+  }
 }

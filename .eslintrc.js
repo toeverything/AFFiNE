@@ -1,8 +1,11 @@
-module.exports = {
+/**
+ * @type {import('eslint').Linter.Config}
+ */
+const config = {
   root: true,
   settings: {
     react: {
-      version: '18',
+      version: 'detect',
     },
     next: {
       rootDir: 'apps/web',
@@ -10,6 +13,7 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
+    'plugin:react-hooks/recommended',
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
     'plugin:@typescript-eslint/recommended',
@@ -64,4 +68,14 @@ module.exports = {
       },
     ],
   },
+  overrides: [
+    {
+      files: 'apps/server/**/*.ts',
+      rules: {
+        '@typescript-eslint/consistent-type-imports': 0,
+      },
+    },
+  ],
 };
+
+module.exports = config;

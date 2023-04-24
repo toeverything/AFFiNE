@@ -3,7 +3,7 @@ import { PermissionType } from '@affine/workspace/affine/api';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type { FC, MouseEvent } from 'react';
 import { useCallback } from 'react';
 
@@ -21,7 +21,7 @@ export type WorkspaceTypeProps = {
 
 import {
   CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
-  JoinedWorkspaceIcon as DefaultJoinedWorkspaceIcon,
+  CollaborationIcon as DefaultJoinedWorkspaceIcon,
   LocalDataIcon as DefaultLocalDataIcon,
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
   PublishIcon as DefaultPublishIcon,

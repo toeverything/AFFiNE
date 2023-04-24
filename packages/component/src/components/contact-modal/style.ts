@@ -7,7 +7,7 @@ export const StyledBigLink = styled('a')(({ theme }) => {
     paddingLeft: '96px',
     fontSize: '24px',
     lineHeight: '36px',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     borderRadius: '10px',
     flexDirection: 'column',
     ...displayFlex('center'),
@@ -16,7 +16,7 @@ export const StyledBigLink = styled('a')(({ theme }) => {
     letterSpacing: '1px',
 
     ':visited': {
-      color: theme.colors.textColor,
+      color: 'var(--affine-text-primary-color)',
     },
     ':hover': {
       background: 'rgba(68, 97, 242, 0.1)',
@@ -28,7 +28,7 @@ export const StyledBigLink = styled('a')(({ theme }) => {
       width: '48px',
       height: '48px',
       marginRight: '24px',
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-primary-color)',
       ...absoluteCenter({ vertical: true, position: { left: '26px' } }),
     },
     p: {
@@ -44,7 +44,7 @@ export const StyledBigLink = styled('a')(({ theme }) => {
       },
       ':last-of-type': {
         fontSize: '16px',
-        color: theme.colors.primaryColor,
+        color: 'var(--affine-primary-color)',
         fontWeight: '500',
       },
       svg: {
@@ -64,21 +64,21 @@ export const StyledSmallLink = styled('a')(({ theme }) => {
     fontSize: '16px',
     fontWeight: '500',
     borderRadius: '5px',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     transition: 'background .15s, color .15s',
 
     ...displayFlex('center', 'center'),
     flexWrap: 'wrap',
     ':visited': {
-      color: theme.colors.textColor,
+      color: 'var(--affine-text-primary-color)',
     },
     ':hover': {
-      color: theme.colors.primaryColor,
-      background: theme.colors.hoverBackground,
+      color: 'var(--affine-primary-color)',
+      background: 'var(--affine-hover-color)',
     },
     svg: {
       width: '22px',
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-primary-color)',
     },
     p: {
       width: '100%',
@@ -90,7 +90,7 @@ export const StyledSubTitle = styled('div')(({ theme }) => {
   return {
     fontSize: '18px',
     fontWeight: '600',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     marginTop: '52px',
     marginBottom: '8px',
     textAlign: 'center',
@@ -116,7 +116,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     fontSize: '14px',
     lineHeight: '20px',
     textAlign: 'center',
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     marginTop: '40px',
   };
 });
@@ -128,16 +128,16 @@ export const StyledPrivacyContainer = styled('div')(({ theme }) => {
     a: {
       height: '16px',
       lineHeight: '16px',
-      color: theme.colors.iconColor,
+      color: 'var(--affine-icon-color)',
       padding: '0 8px',
       ':visited': {
-        color: theme.colors.iconColor,
+        color: 'var(--affine-icon-color)',
       },
       ':first-of-type': {
-        borderRight: `1px solid ${theme.colors.borderColor}`,
+        borderRight: '1px solid var(--affine-border-color)',
       },
       ':hover': {
-        color: theme.colors.primaryColor,
+        color: 'var(--affine-primary-color)',
       },
     },
   };

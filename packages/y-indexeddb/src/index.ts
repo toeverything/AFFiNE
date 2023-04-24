@@ -1,19 +1,48 @@
 import { openDB } from 'idb';
-import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
 import {
   applyUpdate,
   diffUpdate,
   Doc,
   encodeStateAsUpdate,
   encodeStateVector,
-  mergeUpdates,
   UndoManager,
 } from 'yjs';
+
+import type {
+  BlockSuiteBinaryDB,
+  IndexedDBProvider,
+  WorkspaceMilestone,
+} from './shared';
+import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
+import { tryMigrate } from './utils';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
+
+/**
+ * @internal
+ */
+const saveAlert = (event: BeforeUnloadEvent) => {
+  event.preventDefault();
+  return (event.returnValue =
+    'Data is not saved. Are you sure you want to leave?');
+};
+
+export const writeOperation = async (op: Promise<unknown>) => {
+  window.addEventListener('beforeunload', saveAlert, {
+    capture: true,
+  });
+  await op;
+  window.removeEventListener('beforeunload', saveAlert, {
+    capture: true,
+  });
+};
+
+export function setMergeCount(count: number) {
+  mergeCount = count;
+}
 
 export function revertUpdate(
   doc: Doc,
@@ -61,62 +90,11 @@ export class EarlyDisconnectError extends Error {
   }
 }
 
-export function setMergeCount(count: number) {
-  mergeCount = count;
-}
-
-export const dbVersion = 1;
-
-export function upgradeDB(db: IDBPDatabase<BlockSuiteBinaryDB>) {
-  db.createObjectStore('workspace', { keyPath: 'id' });
-  db.createObjectStore('milestone', { keyPath: 'id' });
-}
-
-export interface IndexedDBProvider {
-  connect: () => void;
-  disconnect: () => void;
-  cleanup: () => void;
-  whenSynced: Promise<void>;
-}
-
-export type UpdateMessage = {
-  timestamp: number;
-  update: Uint8Array;
-};
-
-export type WorkspacePersist = {
-  id: string;
-  updates: UpdateMessage[];
-};
-
-export type WorkspaceMilestone = {
-  id: string;
-  milestone: Record<string, Uint8Array>;
-};
-
-export interface BlockSuiteBinaryDB extends DBSchema {
-  workspace: {
-    key: string;
-    value: WorkspacePersist;
-  };
-  milestone: {
-    key: string;
-    value: WorkspaceMilestone;
-  };
-}
-
-export interface OldYjsDB extends DBSchema {
-  updates: {
-    key: number;
-    value: Uint8Array;
-  };
-}
-
 export const markMilestone = async (
   id: string,
   doc: Doc,
   name: string,
-  dbName = 'affine-local'
+  dbName = DEFAULT_DB_NAME
 ): Promise<void> => {
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
@@ -142,7 +120,7 @@ export const markMilestone = async (
 
 export const getMilestones = async (
   id: string,
-  dbName = 'affine-local'
+  dbName: string = DEFAULT_DB_NAME
 ): Promise<null | WorkspaceMilestone['milestone']> => {
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
@@ -161,9 +139,8 @@ export const getMilestones = async (
 export const createIndexedDBProvider = (
   id: string,
   doc: Doc,
-  dbName = 'affine-local'
+  dbName: string = DEFAULT_DB_NAME
 ): IndexedDBProvider => {
-  let allDb: IDBDatabaseInfo[];
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
   let early = true;
@@ -211,9 +188,9 @@ export const createIndexedDBProvider = (
           },
         ],
       };
-      await store.put(data);
+      await writeOperation(store.put(data));
     } else {
-      await store.put(data);
+      await writeOperation(store.put(data));
     }
   }
 
@@ -238,52 +215,7 @@ export const createIndexedDBProvider = (
       doc.on('destroy', handleDestroy);
       // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
-      if (!allDb) {
-        allDb = await indexedDB.databases();
-        // run the migration
-        await Promise.all(
-          allDb.map(meta => {
-            if (meta.name && meta.version === 1) {
-              const name = meta.name;
-              const version = meta.version;
-              return openDB<IDBPDatabase<OldYjsDB>>(name, version).then(
-                async oldDB => {
-                  if (!oldDB.objectStoreNames.contains('updates')) {
-                    return;
-                  }
-                  const t = oldDB
-                    .transaction('updates', 'readonly')
-                    .objectStore('updates');
-                  const updates = await t.getAll();
-                  if (
-                    !Array.isArray(updates) ||
-                    !updates.every(update => update instanceof Uint8Array)
-                  ) {
-                    return;
-                  }
-                  const update = mergeUpdates(updates);
-                  const workspaceTransaction = db
-                    .transaction('workspace', 'readwrite')
-                    .objectStore('workspace');
-                  const data = await workspaceTransaction.get(name);
-                  if (!data) {
-                    console.log('upgrading the database');
-                    await workspaceTransaction.put({
-                      id: name,
-                      updates: [
-                        {
-                          timestamp: Date.now(),
-                          update,
-                        },
-                      ],
-                    });
-                  }
-                }
-              );
-            }
-          })
-        );
-      }
+      await tryMigrate(db, id, dbName);
       const store = db
         .transaction('workspace', 'readwrite')
         .objectStore('workspace');
@@ -292,24 +224,41 @@ export const createIndexedDBProvider = (
         return;
       }
       if (!data) {
-        await db.put('workspace', {
-          id,
-          updates: [],
-        });
+        await writeOperation(
+          db.put('workspace', {
+            id,
+            updates: [
+              {
+                timestamp: Date.now(),
+                update: encodeStateAsUpdate(doc),
+              },
+            ],
+          })
+        );
       } else {
         const updates = data.updates.map(({ update }) => update);
-        const update = mergeUpdates(updates);
-        const newUpdate = diffUpdate(encodeStateAsUpdate(doc), update);
-        await store.put({
-          ...data,
-          updates: [
-            ...data.updates,
-            {
-              timestamp: Date.now(),
-              update: newUpdate,
-            },
-          ],
-        });
+        const fakeDoc = new Doc();
+        fakeDoc.transact(() => {
+          updates.forEach(update => {
+            applyUpdate(fakeDoc, update);
+          });
+        }, indexeddbOrigin);
+        const newUpdate = diffUpdate(
+          encodeStateAsUpdate(doc),
+          encodeStateAsUpdate(fakeDoc)
+        );
+        await writeOperation(
+          store.put({
+            ...data,
+            updates: [
+              ...data.updates,
+              {
+                timestamp: Date.now(),
+                update: newUpdate,
+              },
+            ],
+          })
+        );
         doc.transact(() => {
           updates.forEach(update => {
             applyUpdate(doc, update);
@@ -336,3 +285,6 @@ export const createIndexedDBProvider = (
 
   return apis;
 };
+
+export * from './shared';
+export * from './utils';

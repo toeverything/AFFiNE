@@ -1,4 +1,5 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { PermissionType } from '@affine/workspace/affine/api';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
@@ -14,6 +15,7 @@ import { useCallback, useState } from 'react';
 import { useMembers } from '../../../../../hooks/affine/use-members';
 import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
+import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';
 import type { PanelProps } from '../../index';
 import { InviteMemberModal } from './invite-member-modal';
@@ -171,6 +173,7 @@ const LocalCollaborationPanel: React.FC<
   return (
     <>
       <Wrapper marginBottom="42px">{t('Collaboration Description')}</Wrapper>
+
       <Button
         data-testid="local-workspace-enable-cloud-button"
         type="light"
@@ -181,20 +184,29 @@ const LocalCollaborationPanel: React.FC<
       >
         {t('Enable AFFiNE Cloud')}
       </Button>
-      <TransformWorkspaceToAffineModal
-        open={open}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onConform={() => {
-          onTransferWorkspace(
-            WorkspaceFlavour.LOCAL,
-            WorkspaceFlavour.AFFINE,
-            workspace
-          );
-          setOpen(false);
-        }}
-      />
+      {config.enableLegacyCloud ? (
+        <TransformWorkspaceToAffineModal
+          open={open}
+          onClose={() => {
+            setOpen(false);
+          }}
+          onConform={() => {
+            onTransferWorkspace(
+              WorkspaceFlavour.LOCAL,
+              WorkspaceFlavour.AFFINE,
+              workspace
+            );
+            setOpen(false);
+          }}
+        />
+      ) : (
+        <TmpDisableAffineCloudModal
+          open={open}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
     </>
   );
 };

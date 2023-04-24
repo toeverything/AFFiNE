@@ -7,13 +7,9 @@ export default function getConfig() {
       hash: 'UNKNOWN',
       editorVersion: 'UNKNOWN',
       serverAPI: 'http://127.0.0.1:3000/',
+      enableLegacyCloud: true,
       enableBroadCastChannelProvider: true,
-      enableIndexedDBProvider: true,
       enableDebugPage: true,
-      prefetchWorkspace: false,
-      exposeInternal: true,
-      enableSubpage: true,
-      enableChangeLog: true,
     },
   };
 }

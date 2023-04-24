@@ -54,7 +54,7 @@ export const FavoriteList = ({
               ) : (
                 <PageIcon />
               )}
-              {pageMeta.title || 'Untitled'}
+              <span>{pageMeta.title || 'Untitled'}</span>
             </StyledCollapseItem>
           </div>
         );

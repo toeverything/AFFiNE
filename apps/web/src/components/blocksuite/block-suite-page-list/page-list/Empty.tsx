@@ -15,6 +15,9 @@ export const PageListEmpty = (props: { listType?: string }) => {
     if (listType === 'trash') {
       return t('emptyTrash');
     }
+    if (listType === 'shared') {
+      return t('emptySharedPages');
+    }
   };
 
   return (

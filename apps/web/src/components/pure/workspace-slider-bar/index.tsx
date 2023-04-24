@@ -1,40 +1,48 @@
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  ShareIcon,
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import type { UIEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
 import {
   useSidebarFloating,
   useSidebarResizing,
   useSidebarStatus,
   useSidebarWidth,
-} from '../../../hooks/affine/use-sidebar-status';
-import { usePageMeta } from '../../../hooks/use-page-meta';
+} from '../../../hooks/use-sidebar-status';
 import type { AllWorkspace } from '../../../shared';
-import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
-import { Pivots } from './Pivots';
+import { Pinboard } from './Pinboard';
+import { RouteNavigation } from './RouteNavigation';
 import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
   StyledNewPageButton,
   StyledScrollWrapper,
-  StyledSidebarSwitchWrapper,
+  StyledSidebarHeader,
   StyledSliderBar,
   StyledSliderBarInnerWrapper,
   StyledSliderBarWrapper,
   StyledSliderModalBackground,
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector';
+
+const SidebarSwitch = lazy(() =>
+  import('../../affine/sidebar-switch').then(module => ({
+    default: module.SidebarSwitch,
+  }))
+);
 
 export type FavoriteListProps = {
   currentPageId: string | null;
@@ -57,6 +65,7 @@ export type WorkSpaceSliderBarProps = {
     favorite: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
     setting: (workspaceId: string) => string;
+    shared: (workspaceId: string) => string;
   };
 };
 
@@ -75,7 +84,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
-  const pageMeta = usePageMeta(blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
     const page = await createPage();
     openPage(page.id);
@@ -86,8 +94,11 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const show = isPublicWorkspace ? false : sidebarOpen;
   const actualWidth = floatingSlider ? 'calc(10vw + 400px)' : sliderWidth;
+
   useEffect(() => {
-    window.apis?.onSidebarVisibilityChange(sidebarOpen);
+    if (environment.isDesktop) {
+      window.apis?.onSidebarVisibilityChange(sidebarOpen);
+    }
   }, [sidebarOpen]);
 
   useEffect(() => {
@@ -111,20 +122,23 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         data-testid="sliderBar-root"
       >
         <StyledSliderBar>
-          <StyledSidebarSwitchWrapper>
-            <SidebarSwitch
-              visible={sidebarOpen}
-              tooltipContent={t('Collapse sidebar')}
-              testid="sliderBar-arrowButton-collapse"
-            />
-          </StyledSidebarSwitchWrapper>
+          <StyledSidebarHeader>
+            <RouteNavigation />
+            <Suspense>
+              <SidebarSwitch
+                visible={sidebarOpen}
+                tooltipContent={t('Collapse sidebar')}
+                data-testid="sliderBar-arrowButton-collapse"
+              />
+            </Suspense>
+          </StyledSidebarHeader>
 
           <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
             <WorkspaceSelector
               currentWorkspace={currentWorkspace}
               onClick={onOpenWorkspaceListModal}
             />
-            {config.enableChangeLog && <ChangeLog />}
+            <ChangeLog />
             <StyledListItem
               data-testid="slider-bar-quick-search-button"
               onClick={useCallback(() => {
@@ -134,7 +148,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <SearchIcon />
               {t('Quick search')}
             </StyledListItem>
-
             <StyledListItem
               active={
                 currentPath ===
@@ -155,7 +168,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 {t('Workspace Settings')}
               </StyledLink>
             </StyledListItem>
-
             <StyledListItem
               active={
                 currentPath ===
@@ -171,39 +183,68 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 <span data-testid="all-pages">{t('All pages')}</span>
               </StyledLink>
             </StyledListItem>
-
             <StyledScrollWrapper
               showTopBorder={!isScrollAtTop}
-              onScroll={e => {
+              onScroll={(e: UIEvent<HTMLDivElement>) => {
                 (e.target as HTMLDivElement).scrollTop === 0
                   ? setIsScrollAtTop(true)
                   : setIsScrollAtTop(false);
               }}
             >
-              <Favorite
-                currentPath={currentPath}
-                paths={paths}
-                currentPageId={currentPageId}
-                openPage={openPage}
-                currentWorkspace={currentWorkspace}
-              />
-              {!!blockSuiteWorkspace && (
-                <Pivots
+              {blockSuiteWorkspace && (
+                <Favorite
+                  currentPath={currentPath}
+                  paths={paths}
+                  currentPageId={currentPageId}
+                  openPage={openPage}
+                  currentWorkspace={currentWorkspace}
+                />
+              )}
+              {blockSuiteWorkspace && (
+                <Pinboard
                   blockSuiteWorkspace={blockSuiteWorkspace}
                   openPage={openPage}
-                  allMetas={pageMeta}
                 />
               )}
             </StyledScrollWrapper>
-
+            <div style={{ height: 16 }}></div>
+            {config.enableLegacyCloud &&
+              (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
+              currentWorkspace.public ? (
+                <StyledListItem>
+                  <StyledLink
+                    href={{
+                      pathname:
+                        currentWorkspaceId && paths.setting(currentWorkspaceId),
+                    }}
+                  >
+                    <ShareIcon />
+                    <span data-testid="Published-to-web">Published to web</span>
+                  </StyledLink>
+                </StyledListItem>
+              ) : (
+                <StyledListItem
+                  active={
+                    currentPath ===
+                    (currentWorkspaceId && paths.shared(currentWorkspaceId))
+                  }
+                >
+                  <StyledLink
+                    href={{
+                      pathname:
+                        currentWorkspaceId && paths.shared(currentWorkspaceId),
+                    }}
+                  >
+                    <ShareIcon />
+                    <span data-testid="shared-pages">{t('Shared Pages')}</span>
+                  </StyledLink>
+                </StyledListItem>
+              ))}
             <StyledListItem
               active={
                 currentPath ===
                 (currentWorkspaceId && paths.trash(currentWorkspaceId))
               }
-              style={{
-                marginTop: '16px',
-              }}
             >
               <StyledLink
                 href={{

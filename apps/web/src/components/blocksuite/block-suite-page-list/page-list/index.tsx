@@ -17,15 +17,16 @@ import {
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme } from '@mui/material';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import {
-  usePageMeta,
-  usePageMetaHelper,
-} from '../../../../hooks/use-page-meta';
+import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import DateCell from './DateCell';
@@ -46,7 +47,6 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
   pageMeta: { favorite },
   onClick,
 }) => {
-  const theme = useTheme();
   const { t } = useTranslation();
   return (
     <Tooltip
@@ -63,7 +63,9 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
           );
         }}
         style={{
-          color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
+          color: favorite
+            ? 'var(--affine-primary-color)'
+            : 'var(--affine-icon-color)',
         }}
         className={favorite ? '' : 'favorite-button'}
       >
@@ -80,7 +82,7 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
 type PageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   isPublic?: boolean;
-  listType?: 'all' | 'trash' | 'favorite';
+  listType?: 'all' | 'trash' | 'favorite' | 'shared';
   onClickPage: (pageId: string, newTab?: boolean) => void;
 };
 
@@ -91,6 +93,7 @@ const filter = {
     return !parentMeta?.trash && pageMeta.trash;
   },
   favorite: (pageMeta: PageMeta) => pageMeta.favorite && !pageMeta.trash,
+  shared: (pageMeta: PageMeta) => pageMeta.isPublic && !pageMeta.trash,
 };
 
 export const PageList: React.FC<PageListProps> = ({
@@ -99,12 +102,15 @@ export const PageList: React.FC<PageListProps> = ({
   listType,
   onClickPage,
 }) => {
-  const pageList = usePageMeta(blockSuiteWorkspace);
+  const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   const helper = usePageMetaHelper(blockSuiteWorkspace);
+  const { removeToTrash, restoreFromTrash } =
+    useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
   const isTrash = listType === 'trash';
+  const isShared = listType === 'shared';
   const record = useAtomValue(workspacePreferredModeAtom);
   const list = useMemo(
     () =>
@@ -112,20 +118,6 @@ export const PageList: React.FC<PageListProps> = ({
         filter[listType ?? 'all'](pageMeta, pageList)
       ),
     [pageList, listType]
-  );
-  const restorePage = useCallback(
-    (pageMeta: PageMeta, allMetas: PageMeta[]) => {
-      helper.setPageMeta(pageMeta.id, {
-        trash: false,
-      });
-
-      allMetas
-        .filter(m => pageMeta?.subpageIds.includes(m.id))
-        .forEach(m => {
-          restorePage(m, allMetas);
-        });
-    },
-    [helper]
   );
   if (list.length === 0) {
     return <Empty listType={listType} />;
@@ -141,7 +133,11 @@ export const PageList: React.FC<PageListProps> = ({
                 <TableCell proportion={0.5}>{t('Title')}</TableCell>
                 <TableCell proportion={0.2}>{t('Created')}</TableCell>
                 <TableCell proportion={0.2}>
-                  {isTrash ? t('Moved to Trash') : t('Updated')}
+                  {isTrash
+                    ? t('Moved to Trash')
+                    : isShared
+                    ? 'Shared'
+                    : t('Updated')}
                 </TableCell>
                 <TableCell proportion={0.1}></TableCell>
               </>
@@ -212,7 +208,7 @@ export const PageList: React.FC<PageListProps> = ({
                               blockSuiteWorkspace.removePage(pageId);
                             }}
                             onRestorePage={() => {
-                              restorePage(pageMeta, pageList);
+                              restoreFromTrash(pageMeta.id);
                             }}
                             onOpenPage={pageId => {
                               onClickPage(pageId, false);
@@ -231,11 +227,12 @@ export const PageList: React.FC<PageListProps> = ({
                                 favorite: !pageMeta.favorite,
                               });
                             }}
-                            onToggleTrashPage={() => {
-                              helper.setPageMeta(pageMeta.id, {
-                                trash: !pageMeta.trash,
-                                trashDate: +new Date(),
-                              });
+                            onToggleTrashPage={(pageId, isTrash) => {
+                              if (isTrash) {
+                                removeToTrash(pageId);
+                              } else {
+                                restoreFromTrash(pageId);
+                              }
                             }}
                           />
                         )}

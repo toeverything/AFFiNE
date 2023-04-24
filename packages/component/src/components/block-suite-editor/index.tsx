@@ -1,9 +1,11 @@
+import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
-import { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
+import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -27,12 +29,16 @@ declare global {
 }
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
+  const JotaiEditorContainer = useAtomValue(
+    editorContainerModuleAtom
+  ) as typeof EditorContainer;
   const page = props.page;
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
-    editorRef.current = new EditorContainer();
+    editorRef.current = new JotaiEditorContainer();
+    editorRef.current.autofocus = true;
     globalThis.currentEditor = editorRef.current;
   }
   const editor = editorRef.current;
@@ -40,13 +46,17 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   if (editor.mode !== props.mode) {
     editor.mode = props.mode;
   }
-  if (editor.page !== props.page) {
-    editor.page = props.page;
-    if (page.root === null) {
-      props.onInit(page, editor);
+
+  useEffect(() => {
+    if (editor.page !== props.page) {
+      editor.page = props.page;
+      if (page.root === null) {
+        props.onInit(page, editor);
+      }
+      props.onLoad?.(page, editor);
     }
-    props.onLoad?.(page, editor);
-  }
+  }, [props.page, props.onInit, props.onLoad, editor, props, page]);
+
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,11 +88,14 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       blockHubRef.current?.remove();
       container.removeChild(editor);
     };
-  }, [page]);
+  }, [editor, page]);
+
+  // issue: https://github.com/toeverything/AFFiNE/issues/2004
+  const className = `editor-wrapper ${editor.mode}-mode`;
   return (
     <div
       data-testid={`editor-${props.page.id}`}
-      className="editor-wrapper"
+      className={className}
       style={props.style}
       ref={ref}
     />
@@ -121,7 +134,9 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
         [props.onReset]
       )}
     >
-      <BlockSuiteEditorImpl {...props} />
+      <Suspense fallback={null}>
+        <BlockSuiteEditorImpl {...props} />
+      </Suspense>
     </ErrorBoundary>
   );
 });

@@ -1,6 +1,6 @@
 {
   "name": "@affine/octobase-node",
-  "version": "0.0.0",
+  "private": true,
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
@@ -14,7 +14,7 @@
   "license": "MIT",
   "devDependencies": {
     "@napi-rs/cli": "^2.15.2",
-    "@types/node": "^18.15.11"
+    "@types/node": "^18.15.13"
   },
   "engines": {
     "node": ">= 10"
@@ -25,5 +25,6 @@
     "build:debug": "napi build --platform",
     "universal": "napi universal",
     "version": "napi version"
-  }
+  },
+  "version": "0.5.4-canary.8"
 }

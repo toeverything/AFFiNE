@@ -5,7 +5,7 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
     position: 'relative',
     padding: '0px',
     width: '560px',
-    background: theme.colors.popoverBackground,
+    background: 'var(--affine-white)',
     borderRadius: '12px',
     // height: '312px',
   };
@@ -42,7 +42,7 @@ export const StyledInputContent = styled('div')(({ theme }) => {
     flexDirection: 'row',
     justifyContent: 'center',
     margin: '24px 0',
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
   };
 });
 

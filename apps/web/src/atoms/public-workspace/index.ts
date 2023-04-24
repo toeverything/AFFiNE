@@ -1,16 +1,23 @@
-import { getLoginStorage } from '@affine/workspace/affine/login';
+import type { AffinePublicWorkspace } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { atom } from 'jotai';
 
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
 
-function createPublicWorkspace(workspaceId: string, binary: ArrayBuffer) {
+function createPublicWorkspace(
+  workspaceId: string,
+  binary: ArrayBuffer,
+  singlePage = false
+): AffinePublicWorkspace {
   const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
     workspaceId,
-    (k: string) =>
-      // fixme: token could be expired
-      ({ api: `api/workspace`, token: getLoginStorage()?.token }[k])
+    WorkspaceFlavour.AFFINE,
+    {
+      workspaceApis: affineApis,
+      cachePrefix: WorkspaceFlavour.PUBLIC + (singlePage ? '-single-page' : ''),
+    }
   );
   BlockSuiteWorkspace.Y.applyUpdate(
     blockSuiteWorkspace.doc,
@@ -22,12 +29,18 @@ function createPublicWorkspace(workspaceId: string, binary: ArrayBuffer) {
   blockSuiteWorkspace.awarenessStore.setFlag('enable_edgeless_toolbar', false);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', false);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', false);
-  return blockSuiteWorkspace;
+  return {
+    flavour: WorkspaceFlavour.PUBLIC,
+    id: workspaceId,
+    blockSuiteWorkspace,
+    // maybe we can add some sync providers here
+    providers: [],
+  };
 }
 
 export const publicWorkspaceIdAtom = atom<string | null>(null);
 export const publicWorkspacePageIdAtom = atom<string | null>(null);
-export const publicPageBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
+export const publicPageBlockSuiteAtom = atom<Promise<AffinePublicWorkspace>>(
   async get => {
     const workspaceId = get(publicWorkspaceIdAtom);
     const pageId = get(publicWorkspacePageIdAtom);
@@ -38,16 +51,16 @@ export const publicPageBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
       workspaceId,
       pageId
     );
-    return createPublicWorkspace(workspaceId, binary);
+    return createPublicWorkspace(workspaceId, binary, true);
   }
 );
-export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
+export const publicWorkspaceAtom = atom<Promise<AffinePublicWorkspace>>(
   async get => {
     const workspaceId = get(publicWorkspaceIdAtom);
     if (!workspaceId) {
       throw new Error('No workspace id');
     }
     const binary = await affineApis.downloadWorkspace(workspaceId, true);
-    return createPublicWorkspace(workspaceId, binary);
+    return createPublicWorkspace(workspaceId, binary, false);
   }
 );

@@ -1,12 +1,7 @@
 import type { Page } from '@playwright/test';
 
 export async function waitMarkdownImported(page: Page) {
-  return page.evaluate(
-    () =>
-      new Promise(resolve => {
-        document.addEventListener('markdown:imported', resolve);
-      })
-  );
+  await page.waitForSelector('v-line');
 }
 
 export async function newPage(page: Page) {
@@ -25,5 +20,23 @@ export async function clickPageMoreActions(page: Page) {
   return page
     .getByTestId('editor-header-items')
     .getByTestId('editor-option-menu')
+    .click();
+}
+
+export async function createPinboardPage(
+  page: Page,
+  parentId: string,
+  title: string
+) {
+  await newPage(page);
+  await page.focus('.affine-default-page-block-title');
+  await page.type('.affine-default-page-block-title', title, {
+    delay: 100,
+  });
+  await clickPageMoreActions(page);
+  await page.getByTestId('move-to-menu-item').click();
+  await page
+    .getByTestId('pinboard-menu')
+    .getByTestId(`pinboard-${parentId}`)
     .click();
 }

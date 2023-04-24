@@ -1,13 +1,19 @@
+import { DebugLogger } from '@affine/debug';
+import { websocketPrefixUrl } from '@affine/env/api';
 import {
   workspaceDetailSchema,
   workspaceSchema,
 } from '@affine/workspace/affine/api';
 import { WebsocketClient } from '@affine/workspace/affine/channel';
-import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { storageChangeSlot } from '@affine/workspace/affine/login';
+import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { WorkspaceCRUD } from '@affine/workspace/type';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/global/utils';
+import type { Disposable } from '@blocksuite/store';
 import { z } from 'zod';
+
+const logger = new DebugLogger('affine-sync');
 
 const channelMessageSchema = z.object({
   ws_list: z.array(workspaceSchema),
@@ -28,7 +34,7 @@ export function createAffineGlobalChannel(
   let client: WebsocketClient | null;
 
   async function handleMessage(channelMessage: ChannelMessage) {
-    console.log('channelMessage', channelMessage);
+    logger.debug('channelMessage', channelMessage);
     const parseResult = channelMessageSchema.safeParse(channelMessage);
     if (!parseResult.success) {
       console.error(
@@ -45,7 +51,7 @@ export function createAffineGlobalChannel(
 
       // If the workspace is not in the current workspace list, remove it
       if (workspaceIndex === -1) {
-        jotaiStore.set(jotaiWorkspacesAtom, workspaces => {
+        rootStore.set(rootWorkspacesMetadataAtom, workspaces => {
           const idx = workspaces.findIndex(workspace => workspace.id === id);
           workspaces.splice(idx, 1);
           return [...workspaces];
@@ -53,20 +59,23 @@ export function createAffineGlobalChannel(
       }
     }
   }
-
-  return {
+  let dispose: Disposable | undefined = undefined;
+  const apis = {
     connect: () => {
-      client = new WebsocketClient(
-        `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${
-          window.location.host
-        }/api/global/sync`
-      );
+      client = new WebsocketClient(websocketPrefixUrl + '/api/global/sync/');
       client.connect(handleMessage);
+      dispose = storageChangeSlot.on(() => {
+        apis.disconnect();
+        apis.connect();
+      });
     },
     disconnect: () => {
       assertExists(client, 'client is null');
       client.disconnect();
+      dispose?.dispose();
       client = null;
     },
   };
+
+  return apis;
 }

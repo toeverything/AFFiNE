@@ -1,24 +1,27 @@
 import { Tooltip } from '@affine/component';
+import { getEnvironment } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
   useUpdateTipsOnVersionChange,
-} from '../../../hooks/affine/use-is-first-load';
-import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
+} from '../../../hooks/use-is-first-load';
+import { useSidebarStatus } from '../../../hooks/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
 type SidebarSwitchProps = {
   visible?: boolean;
   tooltipContent?: string;
-  testid?: string;
 };
+
+// fixme: the following code is not correct, SSR will fail because hydrate will not match the client side render
+//  in `StyledSidebarSwitch` component
 export const SidebarSwitch = ({
   visible = true,
   tooltipContent,
-  testid = '',
+  ...props
 }: SidebarSwitchProps) => {
   useUpdateTipsOnVersionChange();
   const [open, setOpen] = useSidebarStatus();
@@ -27,20 +30,31 @@ export const SidebarSwitch = ({
   const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
     useGuideHiddenUntilNextUpdate();
   const { t } = useTranslation();
+  const checkIsMac = () => {
+    const env = getEnvironment();
+    return env.isBrowser && env.isMacOs;
+  };
+  const [isMac, setIsMac] = useState(false);
+  const collapseKeyboardShortcuts = isMac ? ' ⌘+/' : ' Ctrl+/';
+
+  useEffect(() => {
+    setIsMac(checkIsMac());
+  }, []);
+
   tooltipContent =
     tooltipContent || (open ? t('Collapse sidebar') : t('Expand sidebar'));
 
   return (
     <Tooltip
-      content={tooltipContent}
+      content={tooltipContent + ' ' + collapseKeyboardShortcuts}
       placement="right"
       zIndex={1000}
       visible={tooltipVisible}
     >
       <StyledSidebarSwitch
+        {...props}
         visible={visible}
         disabled={!visible}
-        data-testid={testid}
         onClick={useCallback(() => {
           setOpen(!open);
           setTooltipVisible(false);

@@ -1,12 +1,12 @@
 import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { Command } from 'cmdk';
 import Image from 'next/legacy/image';
 import { useRouter } from 'next/router';
 import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { usePageMeta } from '../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { StyledListItem, StyledNotFound } from './style';
 
@@ -26,7 +26,7 @@ export const PublishedResults: FC<PublishedResultsProps> = ({
 }) => {
   const [results, setResults] = useState(new Map<string, string | undefined>());
   const router = useRouter();
-  const pageList = usePageMeta(blockSuiteWorkspace);
+  const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   // useEffect(() => {
   //   dataCenter
   //     .loadPublicWorkspace(router.query.workspaceId as string)

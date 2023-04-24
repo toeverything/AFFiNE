@@ -1,9 +1,7 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
-import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import { ShortcutsModal } from '../shortcuts-modal';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
@@ -13,21 +11,16 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-const ContactModal = dynamic(
-  () =>
-    import('@affine/component/contact-modal').then(({ ContactModal }) => ({
-      default: ContactModal,
-    })),
-  {
-    ssr: true,
-  }
+
+const ContactModal = lazy(() =>
+  import('@affine/component/contact-modal').then(({ ContactModal }) => ({
+    default: ContactModal,
+  }))
 );
 
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 export const HelpIsland = ({
-  showList = config.enableChangeLog
-    ? ['whatNew', 'contact', 'shortcuts']
-    : ['contact', 'shortcuts'],
+  showList = ['whatNew', 'contact', 'shortcuts'],
 }: {
   showList?: IslandItemNames[];
 }) => {
@@ -65,11 +58,14 @@ export const HelpIsland = ({
           style={{ height: spread ? `${showList.length * 44}px` : 0 }}
         >
           {showList.includes('whatNew') && (
-            <Tooltip content={t("Discover what's new")} placement="left-end">
+            <Tooltip content={t("Discover what's new!")} placement="left-end">
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
-                  window.open('https://affine.pro', '_blank');
+                  window.open(
+                    'https://github.com/toeverything/AFFiNE/releases',
+                    '_blank'
+                  );
                 }}
               >
                 <NewIcon />
@@ -117,11 +113,13 @@ export const HelpIsland = ({
           </StyledTriggerWrapper>
         </MuiFade>
       </StyledIsland>
-      <ContactModal
-        open={open}
-        onClose={() => setOpen(false)}
-        logoSrc="/imgs/affine-text-logo.png"
-      />
+      <Suspense>
+        <ContactModal
+          open={open}
+          onClose={() => setOpen(false)}
+          logoSrc="/imgs/affine-text-logo.png"
+        />
+      </Suspense>
       <ShortcutsModal
         open={openShortCut}
         onClose={() => setOpenShortCut(false)}

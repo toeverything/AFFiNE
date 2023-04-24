@@ -3,7 +3,7 @@ docs:
   - '**/README.md'
   - 'packages/templates/**/*'
 
-tests:
+test:
   - 'tests/**/*'
   - '**/tests/**/*'
   - '**/__tests__/**/*'
@@ -40,3 +40,5 @@ package:y-indexeddb: 'packages/y-indexeddb/**/*'
 app:web: 'apps/web/**/*'
 
 app:electron: 'apps/electron/**/*'
+
+app:server: 'apps/server/**/*'

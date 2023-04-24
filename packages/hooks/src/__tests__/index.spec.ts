@@ -8,11 +8,12 @@ import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
-import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-blocksuite-workspace-page-title';
+import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
+import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
 import { describe, expect, test } from 'vitest';
 import { beforeEach } from 'vitest';
 
-import { useBlockSuiteWorkspaceName } from '../use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceName } from '../use-block-suite-workspace-name';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 
@@ -58,5 +59,18 @@ describe('useBlockSuiteWorkspacePageTitle', () => {
     blockSuiteWorkspace.setPageMeta('page0', { title: '1' });
     pageTitleHook.rerender();
     expect(pageTitleHook.result.current).toBe('1');
+  });
+});
+
+describe('useBlockSuiteWorkspacePageIsPublic', () => {
+  test('basic', async () => {
+    const page = blockSuiteWorkspace.getPage('page0') as Page;
+    expect(page).not.toBeNull();
+    const hook = renderHook(() => useBlockSuiteWorkspacePageIsPublic(page));
+    expect(hook.result.current[0]).toBe(false);
+    hook.result.current[1](true);
+    expect(page.meta.isPublic).toBe(true);
+    hook.rerender();
+    expect(hook.result.current[0]).toBe(true);
   });
 });

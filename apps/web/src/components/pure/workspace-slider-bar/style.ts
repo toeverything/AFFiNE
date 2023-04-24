@@ -1,4 +1,4 @@
-import { displayFlex, styled } from '@affine/component';
+import { baseTheme, displayFlex, styled } from '@affine/component';
 import Link from 'next/link';
 
 const macosElectron = environment.isDesktop && environment.isMacOs;
@@ -14,18 +14,20 @@ export const StyledSliderBarWrapper = styled('div')<{
     'button, a': {
       userSelect: 'none',
     },
-    zIndex: theme.zIndex.modal,
+    zIndex: 'var(--affine-z-index-modal)',
     transition: resizing ? '' : 'transform .3s, width .3s, max-width .3s',
     transform: show ? 'translateX(0)' : 'translateX(-100%)',
     maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
     background:
-      !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
+      !floating && macosElectron
+        ? 'transparent'
+        : 'var(--affine-background-secondary-color)',
     borderRight: macosElectron ? '' : '1px solid',
-    borderColor: theme.colors.borderColor,
+    borderColor: 'var(--affine-border-color)',
   };
 });
 
-export const StyledSliderBar = styled('div')(({ theme }) => {
+export const StyledSliderBar = styled('div')(() => {
   return {
     whiteSpace: 'nowrap',
     width: '100%',
@@ -34,19 +36,18 @@ export const StyledSliderBar = styled('div')(({ theme }) => {
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
-    // overflow: 'hidden',
   };
 });
-export const StyledSidebarSwitchWrapper = styled('div')(() => {
+export const StyledSidebarHeader = styled('div')(() => {
   return {
     height: '52px',
     flexShrink: 0,
-    padding: '0 16px',
+    padding: '0 16px 0 10px',
     WebkitAppRegion: 'drag',
     button: {
       WebkitAppRegion: 'no-drag',
     },
-    ...displayFlex(macosElectron ? 'flex-end' : 'flex-start', 'center'),
+    ...displayFlex(macosElectron ? 'flex-end' : 'space-between', 'center'),
   };
 });
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
@@ -55,6 +56,9 @@ export const StyledSliderBarInnerWrapper = styled('div')(() => {
     // overflowX: 'hidden',
     // overflowY: 'auto',
     position: 'relative',
+    height: 'calc(100% - 52px * 2)',
+    display: 'flex',
+    flexDirection: 'column',
   };
 });
 
@@ -67,6 +71,12 @@ export const StyledLink = styled(Link)(() => {
     ':visited': {
       color: 'inherit',
     },
+    userDrag: 'none',
+    userSelect: 'none',
+    appRegion: 'no-drag',
+    '-webkit-user-select': 'none',
+    '-webkit-user-drag': 'none',
+    '-webkit-app-region': 'no-drag',
   };
 });
 export const StyledNewPageButton = styled('button')(({ theme }) => {
@@ -74,17 +84,17 @@ export const StyledNewPageButton = styled('button')(({ theme }) => {
     height: '52px',
     ...displayFlex('flex-start', 'center'),
     borderTop: '1px solid',
-    borderColor: theme.colors.borderColor,
-    padding: '0 8px',
+    borderColor: 'var(--affine-border-color)',
+    padding: '0 8px 0 16px',
     svg: {
       fontSize: '20px',
-      color: theme.colors.iconColor,
+      color: 'var(--affine-icon-color)',
       marginRight: '8px',
     },
     ':hover': {
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-primary-color)',
       svg: {
-        color: theme.colors.primaryColor,
+        color: 'var(--affine-primary-color)',
       },
     },
   };
@@ -100,40 +110,8 @@ export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
       left: 0,
       right: active ? 0 : '100%',
       bottom: 0,
-      zIndex: theme.zIndex.modal - 1,
-      background: theme.colors.modalBackground,
-    };
-  }
-);
-export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
-  () => {
-    return {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      width: '12px',
-      transform: 'translateX(50%)',
-      cursor: 'col-resize',
-      zIndex: 1,
-      userSelect: 'none',
-      ':hover > *': {
-        background: 'rgba(0, 0, 0, 0.1)',
-      },
-    };
-  }
-);
-export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
-  ({ isResizing }) => {
-    return {
-      transition: 'background .15s .1s',
-      position: 'absolute',
-      top: 0,
-      right: '50%',
-      bottom: 0,
-      transform: 'translateX(0.5px)',
-      width: '2px',
-      background: isResizing ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
+      zIndex: parseInt(baseTheme.zIndexModal) - 1,
+      background: 'var(--affine-background-modal-color)',
     };
   }
 );
@@ -142,9 +120,9 @@ export const StyledScrollWrapper = styled('div')<{
   showTopBorder: boolean;
 }>(({ showTopBorder, theme }) => {
   return {
-    maxHeight: '360px',
+    maxHeight: '50%',
     overflowY: 'auto',
     borderTop: '1px solid',
-    borderColor: showTopBorder ? theme.colors.borderColor : 'transparent',
+    borderColor: showTopBorder ? 'var(--affine-border-color)' : 'transparent',
   };
 });

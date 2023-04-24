@@ -19,7 +19,11 @@ export const TransformWorkspaceToAffineModal: React.FC<
   const user = useCurrentUser();
 
   return (
-    <Modal open={open} onClose={onClose} data-testid="logout-modal">
+    <Modal
+      open={open}
+      onClose={onClose}
+      data-testid="enable-affine-cloud-modal"
+    >
       <ModalWrapper width={560} height={292}>
         <Header>
           <IconButton

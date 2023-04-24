@@ -1,3 +1,8 @@
+/**
+ * @vitest-environment happy-dom
+ */
+import 'fake-indexeddb/auto';
+
 import type { Workspace } from '@affine/workspace/affine/api';
 import {
   createWorkspaceApis,
@@ -6,6 +11,7 @@ import {
 import { KeckProvider } from '@affine/workspace/affine/keck';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { loginResponseSchema } from '@affine/workspace/affine/login';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
@@ -80,11 +86,17 @@ describe('ydoc sync', () => {
       const binary = await workspaceApis.downloadWorkspace(root.id);
       const workspace1 = createEmptyBlockSuiteWorkspace(
         root.id,
-        (k: string) => ({ api: '/api/workspace', token: user1Token.token }[k])
+        WorkspaceFlavour.AFFINE,
+        {
+          workspaceApis,
+        }
       );
       const workspace2 = createEmptyBlockSuiteWorkspace(
         root.id,
-        (k: string) => ({ api: '/api/workspace', token: user2Token.token }[k])
+        WorkspaceFlavour.AFFINE,
+        {
+          workspaceApis,
+        }
       );
       BlockSuiteWorkspace.Y.applyUpdate(workspace1.doc, new Uint8Array(binary));
       BlockSuiteWorkspace.Y.applyUpdate(workspace2.doc, new Uint8Array(binary));
@@ -141,7 +153,13 @@ describe('ydoc sync', () => {
           text: new page1.Text('hello world'),
         }
       );
+      workspace1.meta.setPageMeta(pageId, {
+        foo: 'bar',
+      });
       await new Promise(resolve => setTimeout(resolve, 1000));
+      const pageMeta = workspace2.meta.getPageMeta(pageId);
+      expect(pageMeta).toBeDefined();
+      expect(pageMeta?.foo).toBe('bar');
       const paragraph2 = page2.getBlockById(paragraphId) as ParagraphBlockModel;
       const text = paragraph2.text as Text;
       expect(text.toString()).toEqual(

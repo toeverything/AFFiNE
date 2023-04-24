@@ -2,8 +2,8 @@ import { Button, FlexWrapper, MuiFade } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type React from 'react';
 import { useState } from 'react';
 
@@ -98,7 +98,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   height={38}
                   value={input}
                   placeholder={t('Workspace Name')}
-                  maxLength={15}
+                  maxLength={50}
                   minLength={0}
                   onChange={newName => {
                     setInput(newName);
@@ -158,7 +158,13 @@ export const GeneralPanel: React.FC<PanelProps> = ({
       {/*  </StyledRow>*/}
       {/*)}*/}
 
-      <StyledRow>
+      <StyledRow
+        onClick={() => {
+          if (environment.isDesktop) {
+            window.apis.openDBFolder();
+          }
+        }}
+      >
         <StyledSettingKey>{t('Workspace Type')}</StyledSettingKey>
         {isOwner ? (
           workspace.flavour === WorkspaceFlavour.LOCAL ? (
