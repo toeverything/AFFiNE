@@ -16,14 +16,20 @@ yarn dev # or yarn prod for production build
 
 ## Troubleshooting
 
-### Tests
+### better-sqlite3 error
 
-Due to Electron's embedded Node.js may not be compatible with the version of Node.js used to run the tests, you need to rebuild some packages for tests to work.
+When running tests or starting electron, you may encounter the following error:
 
-For example:
+> Error: The module 'apps/electron/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+
+This is due to the fact that the `better-sqlite3` package is built for the Node.js version in Electron & in your machine. To fix this, run the following command based on different cases:
 
 ```sh
+# for running unit tests, we are not using Electron's node:
 yarn rebuild better-sqlite3
+
+# for running Electron, we are using Electron's node:
+yarn postinstall
 ```
 
 ## Credits
