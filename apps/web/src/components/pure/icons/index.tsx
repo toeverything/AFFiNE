@@ -1,6 +1,6 @@
 import {
   CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
-  JoinedWorkspaceIcon as DefaultJoinedWorkspaceIcon,
+  CollaborationIcon as DefaultJoinedWorkspaceIcon,
   LocalDataIcon as DefaultLocalDataIcon,
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
   PublishIcon as DefaultPublishIcon,

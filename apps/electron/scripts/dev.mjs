@@ -35,8 +35,8 @@ try {
 }
 
 // hard-coded for now:
-// fixme(xp): report error if app is not running on port 8080
-process.env.DEV_SERVER_URL = `http://localhost:8080`;
+// fixme(xp): report error if app is not running on DEV_SERVER_URL
+const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
 
 /** @type {ChildProcessWithoutNullStreams | null} */
 let spawnProcess = null;
@@ -50,10 +50,12 @@ function spawnOrReloadElectron() {
 
   spawnProcess = spawn(String(electronPath), ['.']);
 
-  spawnProcess.stdout.on(
-    'data',
-    d => d.toString().trim() && console.warn(d.toString())
-  );
+  spawnProcess.stdout.on('data', d => {
+    let str = d.toString().trim();
+    if (str) {
+      console.log(str);
+    }
+  });
   spawnProcess.stderr.on('data', d => {
     const data = d.toString().trim();
     if (!data) return;
@@ -99,13 +101,18 @@ async function main() {
   }
 
   async function watchMain() {
+    const define = {
+      ...common.main.define,
+      'process.env.NODE_ENV': `"${mode}"`,
+    };
+
+    if (DEV_SERVER_URL) {
+      define['process.env.DEV_SERVER_URL'] = `"${DEV_SERVER_URL}"`;
+    }
+
     const mainBuild = await esbuild.context({
       ...common.main,
-      define: {
-        ...common.main.define,
-        'process.env.NODE_ENV': `"${mode}"`,
-        'process.env.DEV_SERVER_URL': `"${process.env.DEV_SERVER_URL}"`,
-      },
+      define: define,
       plugins: [
         ...(common.main.plugins ?? []),
         {

@@ -23,7 +23,6 @@ import { isMacOS } from '../../utils';
  */
 contextBridge.exposeInMainWorld('apis', {
   db: {
-    // TODO: do we need to store the workspace list locally?
     // workspace providers
     getDoc: (id: string): Promise<Uint8Array | null> =>
       ipcRenderer.invoke('db:get-doc', id),
