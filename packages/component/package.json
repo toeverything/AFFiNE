@@ -78,5 +78,5 @@
     "wait-on": "^7.0.1",
     "yjs": "^13.6.0"
   },
-  "version": "0.5.4-beta.0"
+  "version": "0.5.4-canary.8"
 }
