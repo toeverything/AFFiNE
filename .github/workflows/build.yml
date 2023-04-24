@@ -239,7 +239,7 @@ jobs:
 
   unit-test:
     name: Unit Test
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     environment: development
     needs: [build, build-electron]
     services:
