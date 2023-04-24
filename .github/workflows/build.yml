@@ -34,7 +34,7 @@ jobs:
           path: ./packages/component/storybook-static
           if-no-files-found: error
 
-  before-desktop-build:
+  desktop-build:
     runs-on: ubuntu-latest
     environment: development
     steps:
@@ -63,7 +63,7 @@ jobs:
       - name: Upload Ubuntu desktop artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-ubuntu-builds
+          name: affine-ubuntu
           path: ./apps/electron/out
 
   build:
@@ -256,6 +256,7 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
+    needs: [desktop-build]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -270,6 +271,12 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+
+      - name: Download Ubuntu desktop artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-ubuntu
+          path: ./apps/electron/out
 
       - name: Unit Test
         run: yarn run test:unit:coverage
