@@ -271,6 +271,14 @@ jobs:
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
         working-directory: apps/electron
 
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results-e2e-${{ matrix.shard }}
+          path: ./test-results
+          if-no-files-found: ignore
+
   unit-test:
     name: Unit Test
     runs-on: ubuntu-latest
