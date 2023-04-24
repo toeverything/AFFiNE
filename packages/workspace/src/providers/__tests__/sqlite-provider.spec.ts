@@ -1,4 +1,3 @@
-import { sleep } from '@affine/component';
 import type { SQLiteProvider } from '@affine/workspace/type';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
@@ -94,7 +93,7 @@ describe('SQLite provider', () => {
     });
 
     await provider.connect();
-    await sleep(100);
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     expect(mockedAddBlob).toBeCalledWith(id, 'blob1', bin);
   });
