@@ -36,6 +36,7 @@ interface BlobRow {
 export class WorkspaceDatabase {
   sqliteDB: Database;
   ydoc = new Y.Doc();
+  firstConnect = false;
 
   constructor(public path: string) {
     this.sqliteDB = this.reconnectDB();
@@ -53,22 +54,20 @@ export class WorkspaceDatabase {
       this.sqliteDB.close();
     }
 
-    if (this.ydoc) {
-      this.ydoc.destroy();
-    }
-
     // use cached version?
     const db = (this.sqliteDB = sqlite(this.path));
     db.exec(schemas.join(';'));
 
-    this.ydoc.on('update', update => {
-      this.addUpdateToSQLite(update);
-    });
+    if (!this.firstConnect) {
+      this.ydoc.on('update', this.addUpdateToSQLite);
+    }
 
     const updates = this.getUpdates();
     updates.forEach(update => {
       Y.applyUpdate(this.ydoc, update.data);
     });
+
+    this.firstConnect = true;
 
     return db;
   };
