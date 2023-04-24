@@ -275,6 +275,9 @@ jobs:
         run: yarn export
         working-directory: ./apps/web
 
+      - name: Move static files to electron
+        run: mv ./apps/web/out ./apps/electron/resources/web-static
+
       - name: Unit Test
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn run test:unit:coverage
         env:
