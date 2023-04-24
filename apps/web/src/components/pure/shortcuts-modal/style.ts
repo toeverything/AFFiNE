@@ -5,7 +5,7 @@ export const StyledShortcutsModal = styled('div')(({ theme }) => ({
   height: '74vh',
   paddingBottom: '28px',
   backgroundColor: 'var(--affine-white)',
-  boxShadow: 'var(--affine-text-popover-shadow)',
+  boxShadow: 'var(--affine-popover-shadow)',
   borderRadius: `var(--affine-popover-radius) 0 var(--affine-popover-radius) var(--affine-popover-radius)`,
   overflow: 'auto',
   boxRadius: '10px',
