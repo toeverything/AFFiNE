@@ -239,7 +239,7 @@ jobs:
 
   unit-test:
     name: Unit Test
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     environment: development
     needs: [build, electron-build]
     services:
@@ -274,7 +274,7 @@ jobs:
         working-directory: ./apps/web
 
       - name: Unit Test
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn run test:unit:coverage
+        run: yarn run test:unit:coverage
         env:
           COVERAGE: true
 
