@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 
-test('open page', async () => {
+test('new page', async () => {
   const electronApp = await electron.launch({
     args: ['.'],
     executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
@@ -15,17 +15,13 @@ test('open page', async () => {
 
   expect(isPackaged).toBe(false);
 
-  const window = await electronApp.firstWindow();
-  await window.evaluate(() => localStorage.clear());
-  await window.reload();
-  await window.evaluate(
-    () =>
-      new Promise(resolve => {
-        document.addEventListener('markdown:imported', resolve);
-      })
-  );
-  // @ts-expect-error
-  const flavour = await window.evaluate(
+  const page = await electronApp.firstWindow();
+  await page.getByTestId('new-page-button').click({
+    delay: 100,
+  });
+  await page.waitForSelector('v-line');
+  const flavour = await page.evaluate(
+    // @ts-expect-error
     () => globalThis.currentWorkspace.flavour
   );
   expect(flavour).toBe('local');
