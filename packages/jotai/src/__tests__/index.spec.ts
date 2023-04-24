@@ -1,5 +1,5 @@
 /**
- * @vitest-environment jsdom
+ * @vitest-environment happy-dom
  */
 import { atomWithSyncStorage } from '@affine/jotai';
 import { createStore } from 'jotai';

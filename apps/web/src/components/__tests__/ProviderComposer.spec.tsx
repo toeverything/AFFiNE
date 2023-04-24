@@ -1,5 +1,5 @@
 /**
- * @vitest-environment jsdom
+ * @vitest-environment happy-dom
  */
 import { render } from '@testing-library/react';
 import type React from 'react';
