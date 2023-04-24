@@ -36,7 +36,7 @@ export const StyleButton = styled(Button)(({ theme }) => {
     textAlign: 'center',
     margin: '20px 0',
     borderRadius: '8px',
-    backgroundColor: 'var(--affine-background-primary-color)',
+    backgroundColor: 'var(--affine-primary-color)',
     span: {
       margin: '0',
     },
