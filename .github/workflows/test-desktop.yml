@@ -43,7 +43,7 @@ jobs:
           name: before-make-electron-dist
           path: apps/electron/dist
 
-  make:
+  e2e-desktop:
     environment: development
     # we only need to run this job on Ubuntu because it's the fastest.
     runs-on: ubuntu-latest
