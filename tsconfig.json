@@ -38,6 +38,9 @@
       "path": "./tests"
     },
     {
+      "path": "./apps/electron/tests"
+    },
+    {
       "path": "./apps/web"
     },
     {
@@ -66,6 +69,9 @@
     },
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./apps/electron"
     }
   ],
   "files": [],

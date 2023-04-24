@@ -134,7 +134,6 @@ We would like to express our gratitude to all the individuals who have already c
   <img src="https://user-images.githubusercontent.com/5910926/233382206-312428ca-094a-4579-ae06-213961ed7eab.svg" />
 </a>
 
-
 ## Self-Host
 
 Get started with Docker and deploy your own feature-rich, restriction-free deployment of AFFiNE - check the [latest packages].

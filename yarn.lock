@@ -132,9 +132,14 @@ __metadata:
     electron-window-state: ^5.0.3
     esbuild: ^0.17.18
     fs-extra: ^11.1.1
+    playwright: ^1.32.3
+    ts-node: ^10.9.1
     undici: ^5.22.0
     yjs: ^13.6.0
     zx: ^7.2.1
+  peerDependencies:
+    playwright: "*"
+    ts-node: "*"
   languageName: unknown
   linkType: soft
 
@@ -18914,7 +18919,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright@npm:^1.14.0":
+"playwright@npm:^1.14.0, playwright@npm:^1.32.3":
   version: 1.32.3
   resolution: "playwright@npm:1.32.3"
   dependencies:

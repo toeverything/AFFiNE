@@ -17,16 +17,6 @@ jobs:
         uses: ./.github/actions/setup-node
       - run: yarn lint --max-warnings=0
 
-  install-all:
-    name: Install All Dependencies
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install All Dependencies
-        uses: ./.github/actions/setup-node
-
   build-storybook:
     name: Build Storybook
     runs-on: ubuntu-latest
@@ -43,6 +33,23 @@ jobs:
           name: storybook
           path: ./packages/component/storybook-static
           if-no-files-found: error
+
+  build-electron:
+    name: Build @affine/electron
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build Electron
+        working-directory: apps/electron
+        run: yarn exec ts-node-esm ./scripts/build-ci.mts
+      - name: Upload Ubuntu desktop artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-ubuntu
+          path: ./apps/electron/dist
 
   build:
     name: Build @affine/web
@@ -221,6 +228,48 @@ jobs:
           flags: e2etest
           name: affine
           fail_ci_if_error: true
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results-e2e-${{ matrix.shard }}
+          path: ./test-results
+          if-no-files-found: ignore
+
+  dekstop-test:
+    name: Desktop Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: [build, build-electron]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+      - name: Download Ubuntu desktop artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-ubuntu
+          path: ./apps/electron/dist
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: next-js
+          path: ./apps/web/.next
+
+      - name: Generate static files
+        run: yarn export
+        working-directory: ./apps/web
+
+      - name: Move static files to electron
+        run: mv ./apps/web/out ./apps/electron/resources/web-static
+
+      - name: Run desktop tests
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
+        working-directory: apps/electron
 
       - name: Upload test results
         if: ${{ failure() }}
