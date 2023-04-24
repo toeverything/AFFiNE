@@ -6,6 +6,9 @@ import { _electron as electron } from 'playwright';
 test('new page', async () => {
   const electronApp = await electron.launch({
     args: ['.'],
+    env: {
+      ...(process.env as Record<string, string>),
+    },
     executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
     colorScheme: 'light',
   });
