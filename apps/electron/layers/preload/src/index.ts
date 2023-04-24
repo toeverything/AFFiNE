@@ -52,6 +52,11 @@ contextBridge.exposeInMainWorld('apis', {
       ipcRenderer.invoke('db:delete-blob', workspaceId, key),
     getPersistedBlobs: (workspaceId: string): Promise<string[]> =>
       ipcRenderer.invoke('db:get-persisted-blobs', workspaceId),
+
+    // listeners
+    onDBUpdate: (callback: (workspaceId: string) => void) => {
+      return onMainEvent('main:on-db-update', callback);
+    },
   },
 
   workspace: {
@@ -88,11 +93,6 @@ contextBridge.exposeInMainWorld('apis', {
    */
   updateEnv: (env: string, value: string) => {
     ipcRenderer.invoke('main:env-update', env, value);
-  },
-
-  // main -> renderer callbacks
-  onDBUpdate: (callback: (workspaceId: string) => void) => {
-    return onMainEvent('main:on-db-update', callback);
   },
 });
 

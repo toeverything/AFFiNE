@@ -19,6 +19,7 @@ interface Window {
       getBlob: (workspaceId: string, key: string) => Promise<Uint8Array>;
       deleteBlob: (workspaceId: string, key: string) => Promise<any>;
       getPersistedBlobs: (workspaceId: string) => Promise<string[]>;
+      onDBUpdate: (callback: (workspaceId: string) => void) => () => void;
     };
     workspace: {
       list: () => Promise<string[]>;
@@ -35,7 +36,6 @@ interface Window {
       url: string;
     }>;
     updateEnv: (env: string, value: string) => void;
-    onDBUpdate: (callback: (workspaceId: string) => void) => () => void;
   };
   readonly appInfo: { electron: boolean; isMacOS: boolean };
 }

@@ -169,7 +169,7 @@ const createSQLiteProvider = (
     keysToPersist.forEach(async k => {
       const blob = await bs.get(k);
       if (!blob) {
-        logger.warn('blob url not found', k);
+        logger.warn('blob not found for', k);
         return;
       }
       window.apis.db.addBlob(
@@ -193,8 +193,6 @@ const createSQLiteProvider = (
     // also apply updates to sqlite
     window.apis.db.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
 
-    blockSuiteWorkspace.doc.on('update', handleUpdate);
-
     const bs = blockSuiteWorkspace.blobs;
 
     if (bs) {
@@ -213,13 +211,15 @@ const createSQLiteProvider = (
     },
     connect: async () => {
       logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
-      syncUpdates();
+      await syncUpdates();
+
+      blockSuiteWorkspace.doc.on('update', handleUpdate);
 
       let timer = 0;
-      unsubscribe = window.apis.onDBUpdate(workspaceId => {
+      unsubscribe = window.apis.db.onDBUpdate(workspaceId => {
         if (workspaceId === blockSuiteWorkspace.id) {
           // throttle
-          console.log('on db update', workspaceId);
+          logger.debug('on db update', workspaceId);
           if (timer) {
             clearTimeout(timer);
           }
@@ -236,6 +236,7 @@ const createSQLiteProvider = (
     },
     disconnect: () => {
       unsubscribe();
+      blockSuiteWorkspace.doc.off('update', handleUpdate);
     },
   } satisfies SQLiteProvider;
 
