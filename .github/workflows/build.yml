@@ -276,7 +276,6 @@ jobs:
           path: ./apps/electron/dist
 
       - name: Unit Test
-        if: matrix.os == 'ubuntu-latest'
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn run test:unit:coverage
 
       - name: Upload unit test coverage results
