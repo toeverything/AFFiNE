@@ -71,7 +71,7 @@
       "path": "./tsconfig.node.json"
     },
     {
-      "path": "./apps/electron/tsconfig.json"
+      "path": "./apps/electron"
     }
   ],
   "files": [],
