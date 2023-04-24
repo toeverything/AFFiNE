@@ -253,7 +253,7 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [electron-build]
+    needs: [build, electron-build]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -274,6 +274,12 @@ jobs:
         with:
           name: affine-ubuntu
           path: ./apps/electron/dist
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: next-js
+          path: ./apps/web/.next
 
       - name: Unit Test
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn run test:unit:coverage

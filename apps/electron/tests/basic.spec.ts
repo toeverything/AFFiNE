@@ -78,4 +78,4 @@ test('new page', async () => {
     () => globalThis.currentWorkspace.flavour
   );
   expect(flavour).toBe('local');
-}, 50_000);
+}, 30_000);
