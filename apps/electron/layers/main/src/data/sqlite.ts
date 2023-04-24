@@ -36,7 +36,6 @@ interface BlobRow {
 export class WorkspaceDatabase {
   sqliteDB: Database;
   ydoc = new Y.Doc();
-  _db: Database | null = null;
 
   ready: Promise<Uint8Array>;
 
@@ -59,14 +58,14 @@ export class WorkspaceDatabase {
 
   // release resources
   destroy = () => {
-    this._db?.close();
+    this.sqliteDB?.close();
     this.ydoc.destroy();
   };
 
   reconnectDB = () => {
     logger.log('open db', this.path);
-    if (this._db) {
-      this._db.close();
+    if (this.sqliteDB) {
+      this.sqliteDB.close();
     }
     // use cached version?
     const db = sqlite(this.path);
@@ -75,7 +74,7 @@ export class WorkspaceDatabase {
     //     logger.error('open db error', error);
     //   }
     // });
-    this._db = db;
+    this.sqliteDB = db;
     db.exec(schemas.join(';'));
     return db;
   };
