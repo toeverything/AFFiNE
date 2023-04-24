@@ -65,7 +65,7 @@ jobs:
           name: before-make-electron-dist
           path: apps/electron/dist
       - name: make
-        run: yarn make-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+        run: yarn make-linux-x64
         working-directory: apps/electron
       - name: test
         run: yarn test
