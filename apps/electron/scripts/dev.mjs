@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { generateAsync } from 'dts-for-context-bridge';
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
 
@@ -81,10 +80,6 @@ async function main() {
           setup(build) {
             let initialBuild = false;
             build.onEnd(() => {
-              generateAsync({
-                input: 'layers/preload/src/**/*.ts',
-                output: 'layers/preload/preload.d.ts',
-              });
               if (initialBuild) {
                 console.log(`[preload] has changed`);
                 spawnOrReloadElectron();

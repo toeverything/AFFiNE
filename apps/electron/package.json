@@ -6,8 +6,8 @@
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
-    "dev": "cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
-    "prod": "node scripts/dev.mjs",
+    "dev": "yarn electron-rebuild && yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
+    "prod": "yarn electron-rebuild && yarn node scripts/dev.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -15,7 +15,8 @@
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
     "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
-    "electron-rebuild": "electron-rebuild"
+    "rebuild:for-test": "yarn rebuild better-sqlite3",
+    "rebuild:for-electron": "yarn electron-rebuild"
   },
   "config": {
     "forge": "./forge.config.js"
@@ -35,7 +36,6 @@
     "@types/better-sqlite3": "^7.6.4",
     "@types/fs-extra": "^11.0.1",
     "cross-env": "7.0.3",
-    "dts-for-context-bridge": "^0.7.1",
     "electron": "24.1.2",
     "electron-log": "^5.0.0-beta.23",
     "electron-squirrel-startup": "1.0.0",

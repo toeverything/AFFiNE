@@ -26,6 +26,7 @@ export default defineConfig({
       'packages/**/*.spec.tsx',
       'apps/web/**/*.spec.ts',
       'apps/web/**/*.spec.tsx',
+      'apps/electron/**/*.spec.ts',
       'tests/unit/**/*.spec.ts',
       'tests/unit/**/*.spec.tsx',
     ],
