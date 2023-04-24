@@ -132,9 +132,12 @@ __metadata:
     electron-window-state: ^5.0.3
     esbuild: ^0.17.18
     fs-extra: ^11.1.1
+    ts-node: ^10.9.1
     undici: ^5.22.0
     yjs: ^13.6.0
     zx: ^7.2.1
+  peerDependencies:
+    ts-node: "*"
   languageName: unknown
   linkType: soft
 
