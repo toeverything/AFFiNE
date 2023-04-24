@@ -37,23 +37,8 @@ export class WorkspaceDatabase {
   sqliteDB: Database;
   ydoc = new Y.Doc();
 
-  ready: Promise<Uint8Array>;
-
   constructor(public path: string) {
     this.sqliteDB = this.reconnectDB();
-    logger.log('open db', path);
-
-    this.ydoc.on('update', update => {
-      this.addUpdateToSQLite(update);
-    });
-
-    this.ready = (async () => {
-      const updates = await this.getUpdates();
-      updates.forEach(update => {
-        Y.applyUpdate(this.ydoc, update.data);
-      });
-      return this.getEncodedDocUpdates();
-    })();
   }
 
   // release resources
@@ -67,15 +52,24 @@ export class WorkspaceDatabase {
     if (this.sqliteDB) {
       this.sqliteDB.close();
     }
+
+    if (this.ydoc) {
+      this.ydoc.destroy();
+    }
+
     // use cached version?
-    const db = sqlite(this.path);
-    // const db = new sqlite.Database(this.path, error => {
-    //   if (error) {
-    //     logger.error('open db error', error);
-    //   }
-    // });
-    this.sqliteDB = db;
+    const db = (this.sqliteDB = sqlite(this.path));
     db.exec(schemas.join(';'));
+
+    this.ydoc.on('update', update => {
+      this.addUpdateToSQLite(update);
+    });
+
+    const updates = this.getUpdates();
+    updates.forEach(update => {
+      Y.applyUpdate(this.ydoc, update.data);
+    });
+
     return db;
   };
 
@@ -153,12 +147,15 @@ export class WorkspaceDatabase {
     }
   };
 
+  // batch write instead write per key stroke?
   private addUpdateToSQLite = (data: Uint8Array) => {
     try {
+      const start = performance.now();
       const statement = this.sqliteDB.prepare(
         'INSERT INTO updates (data) VALUES (?)'
       );
       statement.run(data);
+      logger.debug('addUpdateToSQLite', performance.now() - start, 'ms');
     } catch (error) {
       logger.error('addUpdateToSQLite', error);
     }

@@ -25,7 +25,7 @@ const dbMapping = new Map<string, WorkspaceDatabase>();
 const dbWatchers = new Map<string, () => void>();
 const dBLastUse = new Map<string, number>();
 
-async function ensureWorkspaceDB(id: string) {
+export async function ensureWorkspaceDB(id: string) {
   let workspaceDB = dbMapping.get(id);
   if (!workspaceDB) {
     // hmm... potential race condition?
@@ -45,7 +45,7 @@ async function ensureWorkspaceDB(id: string) {
           Date.now() - dBLastUse.get(id)!
         );
 
-        if (Date.now() - dBLastUse.get(id)! < minTime) {
+        if (Date.now() - dBLastUse.get(id)! < minTime || !filename) {
           logger.debug('skip db update');
           return;
         }
@@ -61,8 +61,18 @@ async function ensureWorkspaceDB(id: string) {
     );
   }
   dBLastUse.set(id, Date.now());
-  await workspaceDB.ready;
   return workspaceDB;
+}
+
+export async function cleanupWorkspaceDBs() {
+  for (const [id, db] of dbMapping) {
+    logger.info('close db connection', id);
+    db.destroy();
+    dbWatchers.get(id)?.();
+  }
+  dbMapping.clear();
+  dbWatchers.clear();
+  dBLastUse.clear();
 }
 
 function registerWorkspaceHandlers() {

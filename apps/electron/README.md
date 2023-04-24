@@ -14,6 +14,18 @@ yarn generate-assets
 yarn dev # or yarn prod for production build
 ```
 
+## Troubleshooting
+
+### Tests
+
+Due to Electron's embedded Node.js may not be compatible with the version of Node.js used to run the tests, you need to rebuild some packages for tests to work.
+
+For example:
+
+```sh
+yarn rebuild better-sqlite3
+```
+
 ## Credits
 
 Most of the boilerplate code is generously borrowed from the following

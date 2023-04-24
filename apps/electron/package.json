@@ -15,7 +15,8 @@
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
     "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
-    "postinstall": "electron-rebuild"
+    "postinstall": "electron-rebuild",
+    "rebuild-better-sqlite3-for-test": "yarn rebuild better-sqlite3"
   },
   "config": {
     "forge": "./forge.config.js"
