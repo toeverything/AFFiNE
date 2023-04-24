@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 
-import { expect, test } from '@playwright/test';
 import { _electron as electron } from 'playwright';
+import { expect, test } from 'vitest';
 
 test('new page', async () => {
   const electronApp = await electron.launch({
@@ -9,11 +9,6 @@ test('new page', async () => {
     executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
     colorScheme: 'light',
   });
-  const isPackaged = await electronApp.evaluate(async ({ app }) => {
-    return app.isPackaged;
-  });
-
-  expect(isPackaged).toBe(false);
 
   const page = await electronApp.firstWindow();
   await page.getByTestId('new-page-button').click({

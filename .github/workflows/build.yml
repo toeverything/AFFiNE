@@ -17,16 +17,6 @@ jobs:
         uses: ./.github/actions/setup-node
       - run: yarn lint --max-warnings=0
 
-  install-all:
-    name: Install All Dependencies
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install All Dependencies
-        uses: ./.github/actions/setup-node
-
   build-storybook:
     name: Build Storybook
     runs-on: ubuntu-latest
@@ -43,6 +33,38 @@ jobs:
           name: storybook
           path: ./packages/component/storybook-static
           if-no-files-found: error
+
+  before-desktop-build:
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: generate-assets
+        working-directory: apps/electron
+        run: yarn generate-assets
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
+          AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
+          API_SERVER_PROFILE: local
+
+      - name: make
+        run: yarn make-linux-x64
+        working-directory: apps/electron
+
+      - name: Upload Ubuntu desktop artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-ubuntu-builds
+          path: ./apps/electron/out
 
   build:
     name: Build @affine/web

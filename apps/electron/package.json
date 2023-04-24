@@ -16,8 +16,7 @@
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
     "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
     "rebuild:for-test": "yarn rebuild better-sqlite3",
-    "rebuild:for-electron": "yarn electron-rebuild",
-    "test": "playwright test"
+    "rebuild:for-electron": "yarn electron-rebuild"
   },
   "config": {
     "forge": "./forge.config.js"
@@ -34,7 +33,6 @@
     "@electron-forge/shared-types": "^6.1.1",
     "@electron/rebuild": "^3.2.12",
     "@electron/remote": "2.0.9",
-    "@playwright/test": "^1.32.3",
     "@types/better-sqlite3": "^7.6.4",
     "@types/fs-extra": "^11.0.1",
     "cross-env": "7.0.3",
@@ -64,8 +62,5 @@
   "stableVersion": "0.5.3",
   "installConfig": {
     "hoistingLimits": "workspaces"
-  },
-  "peerDependencies": {
-    "@playwright/test": "*"
   }
 }
