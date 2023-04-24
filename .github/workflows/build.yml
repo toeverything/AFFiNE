@@ -34,7 +34,8 @@ jobs:
           path: ./packages/component/storybook-static
           if-no-files-found: error
 
-  desktop-build:
+  electron-build:
+    name: Build @affine/electron
     runs-on: ubuntu-latest
     environment: development
     steps:
@@ -256,7 +257,7 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [desktop-build]
+    needs: [electron-build]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
