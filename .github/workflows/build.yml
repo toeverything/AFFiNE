@@ -237,28 +237,17 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
-  unit-test:
-    name: Unit Test
+  dekstop-test:
+    name: Desktop Test
     runs-on: ubuntu-latest
     environment: development
     needs: [build, build-electron]
-    services:
-      octobase:
-        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-        ports:
-          - 3000:3000
-        env:
-          SIGN_KEY: 'test123'
-          RUST_LOG: 'debug'
-          JWST_DEV: '1'
-
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
-
       - name: Download Ubuntu desktop artifact
         uses: actions/download-artifact@v3
         with:
@@ -278,22 +267,31 @@ jobs:
       - name: Move static files to electron
         run: mv ./apps/web/out ./apps/electron/resources/web-static
 
-      - name: Unit Test
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn run test:unit:coverage
+      - name: Run desktop tests
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
+        working-directory: apps/electron
+
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    environment: development
+    services:
+      octobase:
+        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+        ports:
+          - 3000:3000
         env:
-          COVERAGE: true
+          SIGN_KEY: 'test123'
+          RUST_LOG: 'debug'
+          JWST_DEV: '1'
 
-      - name: Collect code coverage report
-        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
-      - name: Upload e2e test coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./.coverage/lcov.info
-          flags: desktop-test
-          name: affine
-          fail_ci_if_error: true
+      - name: Unit Test
+        run: yarn run test:unit:coverage
 
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
