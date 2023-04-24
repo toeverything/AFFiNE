@@ -7,6 +7,9 @@ test('new page', async () => {
   const electronApp = await electron.launch({
     args: [resolve(__dirname, '../dist/layers/main/index.js')],
     executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
+    env: {
+      ...(process.env as Record<string, string>),
+    },
     colorScheme: 'light',
   });
 
