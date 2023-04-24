@@ -13,7 +13,7 @@
     "outDir": "dist",
     "noEmit": false
   },
-  "include": ["global.d.ts", "src", "package.json"],
+  "include": ["src", "package.json", "src/global.d.ts"],
   "exclude": ["dist", "node_modules"],
   "references": [
     {

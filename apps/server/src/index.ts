@@ -1,3 +1,4 @@
+/// <reference types="./global.d.ts" />
 import './prelude';
 
 import { NestFactory } from '@nestjs/core';
