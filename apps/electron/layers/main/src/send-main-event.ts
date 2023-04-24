@@ -1,10 +1,14 @@
 import { BrowserWindow } from 'electron';
 
+import type { MainEventMap } from '../../main-events';
+
 function getActiveWindows() {
   return BrowserWindow.getAllWindows().filter(win => !win.isDestroyed());
 }
 
-// TODO: infer type from onMainEvent (ask one of the TS experts)
-export function sendMainEvent(type: string, ...args: any[]) {
+export function sendMainEvent<T extends keyof MainEventMap>(
+  type: T,
+  ...args: Parameters<MainEventMap[T]>
+) {
   getActiveWindows().forEach(win => win.webContents.send(type, ...args));
 }
