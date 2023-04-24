@@ -18,6 +18,7 @@ export default defineConfig({
   },
   test: {
     setupFiles: [
+      resolve(rootDir, './scripts/setup/lit.ts'),
       resolve(rootDir, './scripts/setup/search.ts'),
       resolve(rootDir, './scripts/setup/lottie-web.ts'),
     ],
