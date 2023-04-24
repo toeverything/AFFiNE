@@ -31,7 +31,4 @@ test('new page', async () => {
     () => globalThis.currentWorkspace.flavour
   );
   expect(flavour).toBe('local');
-
-  // close app
-  await electronApp.close();
 }, 30_000);
