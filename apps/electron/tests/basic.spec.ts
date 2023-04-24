@@ -20,9 +20,7 @@ function generateUUID() {
 
 beforeAll(async () => {
   electronApp = await electron.launch({
-    args: [
-      fileURLToPath(new URL('../dist/layers/main/index.js', import.meta.url)),
-    ],
+    args: [fileURLToPath(new URL('..', import.meta.url))],
     executablePath: fileURLToPath(
       new URL('../node_modules/.bin/electron', import.meta.url)
     ),
