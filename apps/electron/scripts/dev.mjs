@@ -1,15 +1,11 @@
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
 
-import commonFn from './common.mjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { config, root } from './common.mjs';
 
 /** @type 'production' | 'development'' */
 const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
@@ -22,9 +18,9 @@ const stderrFilterPatterns = [
   /ExtensionLoadWarning/,
 ];
 
-// these are set before calling commonFn so we have a chance to override them
+// these are set before calling `config`, so we have a chance to override them
 try {
-  const devJson = readFileSync(path.resolve(__dirname, '../dev.json'), 'utf-8');
+  const devJson = readFileSync(path.resolve(root, './dev.json'), 'utf-8');
   const devEnv = JSON.parse(devJson);
   Object.assign(process.env, devEnv);
 } catch (err) {
@@ -67,7 +63,7 @@ function spawnOrReloadElectron() {
   spawnProcess.on('exit', process.exit);
 }
 
-const common = commonFn();
+const common = config();
 
 async function main() {
   async function watchPreload(onInitialBuild) {

@@ -135,6 +135,8 @@ __metadata:
     undici: ^5.22.0
     yjs: ^13.6.0
     zx: ^7.2.1
+  bin:
+    build-electron-ci: ./scripts/build-ci.ts
   languageName: unknown
   linkType: soft
 

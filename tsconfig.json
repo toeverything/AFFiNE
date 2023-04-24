@@ -69,6 +69,9 @@
     },
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./apps/electron/tsconfig.json"
     }
   ],
   "files": [],
