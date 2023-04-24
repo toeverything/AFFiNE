@@ -34,4 +34,4 @@ test('new page', async () => {
 
   // close app
   await electronApp.close();
-});
+}, 30_000);
