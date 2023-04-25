@@ -91,7 +91,7 @@ export const changeLogSlideOutStyle = style({
 export const linkStyle = style({
   flexGrow: 1,
   textAlign: 'left',
-  color: 'inherit',
+  color: 'var(--affine-text-emphasis-color)',
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'flex-start',
