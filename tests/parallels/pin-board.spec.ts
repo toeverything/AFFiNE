@@ -1,9 +1,9 @@
+import { test } from '@affine-test/kit/playwright';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import { initHomePageWithPinboard } from '../libs/load-page';
 import { createPinboardPage } from '../libs/page-logic';
-import { test } from '../libs/playwright';
 import { getMetas } from '../libs/utils';
 
 async function openPinboardPageOperationMenu(page: Page, id: string) {

@@ -1,8 +1,8 @@
+import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../../libs/load-page';
 import { waitMarkdownImported } from '../../libs/page-logic';
-import { test } from '../../libs/playwright';
 import { clickNewPageButton } from '../../libs/sidebar';
 import { createFakeUser, loginUser } from '../../libs/utils';
 import { createWorkspace } from '../../libs/workspace';

@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { test } from '@affine-test/kit/playwright';
 import { _electron as electron } from 'playwright';
 
 test('new page', async () => {

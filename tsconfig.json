@@ -28,6 +28,7 @@
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
+      "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"]
