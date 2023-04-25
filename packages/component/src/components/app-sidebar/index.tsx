@@ -32,7 +32,7 @@ export const AppSidebar = (props: AppSidebarProps): ReactElement => {
 
       setOpen(initialOpen);
     }
-  }, [open]);
+  }, [open, setOpen]);
 
   const handleSidebarOpen = useCallback(() => {
     setOpen(open => !open);
