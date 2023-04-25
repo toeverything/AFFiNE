@@ -17,7 +17,6 @@ export const blockSuiteFeatureFlags = z.object({
   enable_surface: z.boolean(),
   enable_block_hub: z.boolean(),
   enable_slash_menu: z.boolean(),
-  enable_toggle_block: z.boolean(),
   enable_edgeless_toolbar: z.boolean(),
   enable_linked_page: z.boolean(),
 });
