@@ -1,8 +1,8 @@
+import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
 import { clickPageMoreActions, waitMarkdownImported } from '../libs/page-logic';
-import { test } from '../libs/playwright';
 
 test('Switch to edgeless by switch edgeless item', async ({ page }) => {
   await openHomePage(page);

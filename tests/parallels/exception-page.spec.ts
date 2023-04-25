@@ -1,6 +1,5 @@
+import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
-
-import { test } from '../libs/playwright';
 
 test('visit 404 page', async ({ page }) => {
   await page.goto('http://localhost:8080/404');

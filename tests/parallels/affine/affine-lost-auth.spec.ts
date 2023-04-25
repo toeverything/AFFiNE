@@ -1,6 +1,7 @@
+import { test } from '@affine-test/kit/playwright';
+
 import { openHomePage } from '../../libs/load-page';
 import { waitMarkdownImported } from '../../libs/page-logic';
-import { test } from '../../libs/playwright';
 import { clickSideBarAllPageButton } from '../../libs/sidebar';
 import { createFakeUser, loginUser } from '../../libs/utils';
 import { enableAffineCloudWorkspace } from '../../libs/workspace';

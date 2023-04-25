@@ -1,6 +1,5 @@
+import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
-
-import { test } from '../libs/playwright';
 
 test('the link has expired', async ({ page }) => {
   await page.goto('http://localhost:8080//invite/abc');

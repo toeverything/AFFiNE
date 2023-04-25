@@ -7,7 +7,8 @@ import { waitMarkdownImported } from '../../libs/page-logic';
 const userA = require('../../fixtures/userA.json');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const userB = require('../../fixtures/userB.json');
-import { test } from '../../libs/playwright';
+import { test } from '@affine-test/kit/playwright';
+
 import {
   clickNewPageButton,
   clickSideBarCurrentWorkspaceBanner,
