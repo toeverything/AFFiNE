@@ -73,6 +73,9 @@
       "path": "./tests/fixtures"
     },
     {
+      "path": "./tests/kit"
+    },
+    {
       "path": "./tsconfig.node.json"
     },
     {
