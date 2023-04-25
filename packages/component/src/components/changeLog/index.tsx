@@ -1,5 +1,6 @@
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
+import clsx from 'clsx';
 import { useState } from 'react';
 
 import { IconButton } from '../..';
@@ -26,13 +27,15 @@ export const ChangeLog = (props: ChangeLogProps) => {
   };
   return (
     <div
-      className={
-        isClose ? changeLogWrapperSlideOutStyle : changeLogWrapperSlideInStyle
-      }
+      className={clsx(changeLogWrapperSlideInStyle, {
+        [changeLogWrapperSlideOutStyle]: isClose,
+      })}
     >
       <div
         data-testid="change-log"
-        className={isClose ? changeLogSlideOutStyle : changeLogSlideInStyle}
+        className={clsx(changeLogSlideInStyle, {
+          [changeLogSlideOutStyle]: isClose,
+        })}
       >
         <div
           className={linkStyle}

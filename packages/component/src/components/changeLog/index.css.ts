@@ -63,17 +63,7 @@ export const changeLogWrapperSlideInStyle = style({
   overflow: 'hidden',
 });
 export const changeLogWrapperSlideOutStyle = style({
-  width: 'calc(100% + 4px)',
-  height: '0px',
   animation: `${slideOut} .3s ease-in-out forwards`,
-  display: 'flex',
-  justifyContent: 'flex-start',
-  alignItems: 'center',
-  marginBottom: '4px',
-  position: 'relative',
-  userSelect: 'none',
-  transition: 'all 0.3s',
-  overflow: 'hidden',
 });
 export const changeLogSlideInStyle = style({
   width: '110%',
@@ -96,23 +86,6 @@ export const changeLogSlideInStyle = style({
   animation: `${slideIn2} 1s ease-in-out forwards`,
 });
 export const changeLogSlideOutStyle = style({
-  width: '110%',
-  height: '32px',
-  display: 'flex',
-  justifyContent: 'flex-start',
-  alignItems: 'center',
-  color: 'var(--affine-primary-color)',
-  backgroundColor: 'var(--affine-hover-color)',
-  border: '1px solid var(--affine-primary-color)',
-  borderRight: 'none',
-  marginLeft: '8px',
-  paddingLeft: '8px',
-  borderRadius: '16px 0 0 16px',
-  cursor: 'pointer',
-  zIndex: 1001,
-  position: 'absolute',
-  userSelect: 'none',
-  transition: 'all 0.3s',
   animation: `${slideOut2} .3s ease-in-out forwards`,
 });
 export const linkStyle = style({
