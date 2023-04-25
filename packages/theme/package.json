@@ -9,8 +9,15 @@
     ".": "./src/index.ts"
   },
   "publishConfig": {
+    "access": "public",
+    "main": "dist/index.umd.cjs",
+    "module": "dist/index.js",
     "exports": {
-      ".": "./dist/index.js"
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "require": "./dist/index.umd.cjs"
+      }
     }
   },
   "devDependencies": {
