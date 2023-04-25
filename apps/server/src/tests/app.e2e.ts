@@ -34,12 +34,13 @@ describe('AppModule', () => {
       .post(gql)
       .send({
         query: `
-    query {
-      error
-    }
-    `,
+          query {
+            error
+          }
+        `,
       })
       .expect(400);
+
     await request(app.getHttpServer())
       .post(gql)
       .send({
@@ -47,9 +48,8 @@ describe('AppModule', () => {
       mutation {
         createWorkspace {
           id
-          type
           public
-          created_at
+          createdAt
         }
       }
     `,
@@ -63,10 +63,6 @@ describe('AppModule', () => {
         ok(
           typeof res.body.data.createWorkspace.id === 'string',
           'res.body.data.createWorkspace.id is not a string'
-        );
-        ok(
-          typeof res.body.data.createWorkspace.type === 'string',
-          'res.body.data.createWorkspace.type is not a string'
         );
         ok(
           typeof res.body.data.createWorkspace.public === 'boolean',
@@ -87,7 +83,7 @@ describe('AppModule', () => {
       query {
         user(email: "alex.yang@example.org") {
           email
-          avatar_url
+          avatarUrl
         }
       }
     `,

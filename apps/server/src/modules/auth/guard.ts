@@ -5,10 +5,10 @@ import {
   Injectable,
   UseGuards,
 } from '@nestjs/common';
-import { User } from '@prisma/client';
-import { Observable } from 'rxjs';
 
+import { PrismaService } from '../../prisma';
 import { getRequestResponseFromContext } from '../../utils/nestjs';
+import { AuthService } from './service';
 
 export function getUserFromContext(context: ExecutionContext) {
   const req = getRequestResponseFromContext(context).req;
@@ -40,28 +40,24 @@ export function getUserFromContext(context: ExecutionContext) {
  */
 export const CurrentUser = createParamDecorator(
   (_: unknown, context: ExecutionContext) => {
-    // FIXME: remove this mock user when authorization logic is implemented
-    return {
-      id: '1',
-      name: 'John Doe',
-      email: '',
-      password: '',
-      tokenNonce: 1,
-      avatarUrl: '',
-      createdAt: new Date(),
-    } as User;
-
-    // return getUserFromContext(context);
+    return getUserFromContext(context);
   }
 );
 
 @Injectable()
 class AuthGuard implements CanActivate {
-  canActivate(
-    context: ExecutionContext
-  ): boolean | Promise<boolean> | Observable<boolean> {
-    const user = getUserFromContext(context);
-    return Boolean(user);
+  constructor(private auth: AuthService, private prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext) {
+    const { req } = getRequestResponseFromContext(context);
+    const token = req.headers.authorization;
+    if (!token) {
+      return false;
+    }
+
+    const claims = this.auth.verify(token);
+    req.user = await this.prisma.user.findUnique({ where: { id: claims.id } });
+    return !!req.user;
   }
 }
 

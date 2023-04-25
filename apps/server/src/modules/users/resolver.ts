@@ -14,8 +14,11 @@ export class UserType implements Partial<User> {
   @Field({ description: 'User email' })
   email!: string;
 
+  @Field({ description: 'User avatar url', nullable: true })
+  avatarUrl!: string;
+
   @Field({ description: 'User created date', nullable: true })
-  created_at!: Date;
+  createdAt!: Date;
 }
 
 @Resolver(() => UserType)

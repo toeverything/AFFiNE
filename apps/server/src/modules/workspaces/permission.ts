@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma';
@@ -21,6 +21,16 @@ export class PermissionService {
   }
 
   async check(
+    ws: string,
+    user: string,
+    permission: Permission = Permission.Read
+  ) {
+    if (!(await this.tryCheck(ws, user, permission))) {
+      throw new ForbiddenException('Permission denied');
+    }
+  }
+
+  async tryCheck(
     ws: string,
     user: string,
     permission: Permission = Permission.Read

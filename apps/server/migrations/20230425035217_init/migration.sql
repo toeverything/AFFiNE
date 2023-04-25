@@ -32,7 +32,7 @@ CREATE TABLE "connected_accounts" (
 );
 
 -- CreateTable
-CREATE TABLE "permissions" (
+CREATE TABLE "user_workspace_permissions" (
     "id" VARCHAR NOT NULL,
     "workspace_id" VARCHAR NOT NULL,
     "entity_id" VARCHAR NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE "permissions" (
     "accepted" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "permissions_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "user_workspace_permissions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -53,7 +53,7 @@ CREATE UNIQUE INDEX "connected_accounts_provider_user_id_key" ON "connected_acco
 ALTER TABLE "connected_accounts" ADD CONSTRAINT "connected_accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "permissions" ADD CONSTRAINT "permissions_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_workspace_permissions" ADD CONSTRAINT "user_workspace_permissions_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "permissions" ADD CONSTRAINT "permissions_entity_id_fkey" FOREIGN KEY ("entity_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_workspace_permissions" ADD CONSTRAINT "user_workspace_permissions_entity_id_fkey" FOREIGN KEY ("entity_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

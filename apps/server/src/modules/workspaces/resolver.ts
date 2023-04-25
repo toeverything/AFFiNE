@@ -18,7 +18,7 @@ import {
 import type { User, Workspace } from '@prisma/client';
 
 import { PrismaService } from '../../prisma';
-import { Auth, CurrentUser } from '../users';
+import { Auth, CurrentUser } from '../auth';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
 import { Permission } from './types';
@@ -138,12 +138,7 @@ export class WorkspaceResolver {
     description: 'Get workspace by id',
   })
   async workspace(@CurrentUser() user: UserType, @Args('id') id: string) {
-    const accessible = await this.permissionProvider.check(id, user.id);
-
-    if (!accessible) {
-      throw new ForbiddenException();
-    }
-
+    await this.permissionProvider.check(id, user.id);
     const workspace = await this.prisma.workspace.findUnique({ where: { id } });
 
     if (!workspace) {
@@ -153,7 +148,6 @@ export class WorkspaceResolver {
     return workspace;
   }
 
-  // create workspace
   @Mutation(() => WorkspaceType, {
     description: 'Create a new workspace',
   })
@@ -169,6 +163,7 @@ export class WorkspaceResolver {
                 id: user.id,
               },
             },
+            accepted: true,
           },
         },
       },
@@ -183,15 +178,7 @@ export class WorkspaceResolver {
     @Args({ name: 'input', type: () => UpdateWorkspaceInput })
     { id, ...updates }: UpdateWorkspaceInput
   ) {
-    const accessible = await this.permissionProvider.check(
-      'id',
-      user.id,
-      Permission.Admin
-    );
-
-    if (!accessible) {
-      throw new ForbiddenException();
-    }
+    await this.permissionProvider.check('id', user.id, Permission.Admin);
 
     return this.prisma.workspace.update({
       where: {
@@ -199,5 +186,21 @@ export class WorkspaceResolver {
       },
       data: updates,
     });
+  }
+
+  @Mutation(() => Boolean)
+  async deleteWorkspace(@CurrentUser() user: User, @Args('id') id: string) {
+    await this.permissionProvider.check(id, user.id, Permission.Owner);
+
+    await this.prisma.workspace.delete({
+      where: {
+        id,
+      },
+    });
+
+    // TODO:
+    // delete all related data, like websocket connections, blobs, etc.
+
+    return true;
   }
 }
