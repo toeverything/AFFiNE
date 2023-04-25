@@ -33,12 +33,15 @@ interface BlobRow {
   timestamp: string;
 }
 
+const SQLITE_ORIGIN = Symbol('sqlite-origin');
+
 export class WorkspaceDatabase {
   sqliteDB: Database;
   ydoc = new Y.Doc();
   firstConnect = false;
+  lastUpdateTime = new Date().getTime();
 
-  constructor(public path: string) {
+  constructor(public path: string, public workspaceId: string) {
     this.sqliteDB = this.reconnectDB();
   }
 
@@ -59,12 +62,16 @@ export class WorkspaceDatabase {
     db.exec(schemas.join(';'));
 
     if (!this.firstConnect) {
-      this.ydoc.on('update', this.addUpdateToSQLite);
+      this.ydoc.on('update', (update: Uint8Array, origin) => {
+        if (origin !== SQLITE_ORIGIN) {
+          this.addUpdateToSQLite(update);
+        }
+      });
     }
 
     const updates = this.getUpdates();
     updates.forEach(update => {
-      Y.applyUpdate(this.ydoc, update.data);
+      Y.applyUpdate(this.ydoc, update.data, SQLITE_ORIGIN);
     });
 
     this.firstConnect = true;
@@ -84,6 +91,8 @@ export class WorkspaceDatabase {
     // 1. store the current ydoc state in the db
     // 2. then delete the old updates
     // yjs-idb will always trim the db for the first time after DB is loaded
+    this.lastUpdateTime = new Date().getTime();
+    logger.debug('applyUpdate', this.workspaceId);
   };
 
   addBlob = (key: string, data: Uint8Array) => {
@@ -154,7 +163,12 @@ export class WorkspaceDatabase {
         'INSERT INTO updates (data) VALUES (?)'
       );
       statement.run(data);
-      logger.debug('addUpdateToSQLite', performance.now() - start, 'ms');
+      logger.debug(
+        'addUpdateToSQLite',
+        this.workspaceId,
+        performance.now() - start,
+        'ms'
+      );
     } catch (error) {
       logger.error('addUpdateToSQLite', error);
     }
@@ -170,5 +184,5 @@ export async function openWorkspaceDatabase(
   await fs.ensureDir(basePath);
   const dbPath = path.join(basePath, 'storage.db');
 
-  return new WorkspaceDatabase(dbPath);
+  return new WorkspaceDatabase(dbPath, workspaceId);
 }
