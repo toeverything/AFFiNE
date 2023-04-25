@@ -44,8 +44,10 @@ const apis = {
     // create will be implicitly called by db functions
   },
 
-  openLoadDBFileDialog: () => ipcRenderer.invoke('ui:open-load-db-file-dialog'),
-  openSaveDBFileDialog: () => ipcRenderer.invoke('ui:open-save-db-file-dialog'),
+  openLoadDBFileDialog: (): Promise<{ workspaceId: string }> =>
+    ipcRenderer.invoke('ui:open-load-db-file-dialog'),
+  openSaveDBFileDialog: (workspaceId: string) =>
+    ipcRenderer.invoke('ui:open-save-db-file-dialog', workspaceId),
 
   // ui
   onThemeChange: (theme: string) =>
@@ -57,7 +59,8 @@ const apis = {
   onWorkspaceChange: (workspaceId: string) =>
     ipcRenderer.invoke('ui:workspace-change', workspaceId),
 
-  openDBFolder: () => ipcRenderer.invoke('ui:open-db-folder'),
+  openDBFolder: (workspaceId: string) =>
+    ipcRenderer.invoke('ui:open-db-folder', workspaceId),
 
   /**
    * Try sign in using Google and return a request object to exchange the code for a token

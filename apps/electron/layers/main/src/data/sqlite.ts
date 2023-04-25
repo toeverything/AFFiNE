@@ -35,30 +35,34 @@ interface BlobRow {
 
 const SQLITE_ORIGIN = Symbol('sqlite-origin');
 
-export class WorkspaceDatabase {
-  sqliteDB: Database;
+export class WorkspaceSQLiteDB {
+  db: Database;
   ydoc = new Y.Doc();
   firstConnect = false;
   lastUpdateTime = new Date().getTime();
 
   constructor(public path: string, public workspaceId: string) {
-    this.sqliteDB = this.reconnectDB();
+    this.db = this.reconnectDB();
   }
 
   // release resources
   destroy = () => {
-    this.sqliteDB?.close();
+    this.db?.close();
     this.ydoc.destroy();
+  };
+
+  getWorkspaceName = () => {
+    return this.ydoc.getMap('space:meta').get('name') as string;
   };
 
   reconnectDB = () => {
     logger.log('open db', this.path);
-    if (this.sqliteDB) {
-      this.sqliteDB.close();
+    if (this.db) {
+      this.db.close();
     }
 
     // use cached version?
-    const db = (this.sqliteDB = sqlite(this.path));
+    const db = (this.db = sqlite(this.path));
     db.exec(schemas.join(';'));
 
     if (!this.firstConnect) {
@@ -97,7 +101,7 @@ export class WorkspaceDatabase {
 
   addBlob = (key: string, data: Uint8Array) => {
     try {
-      const statement = this.sqliteDB.prepare(
+      const statement = this.db.prepare(
         'INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?'
       );
       statement.run(key, data, data);
@@ -108,9 +112,7 @@ export class WorkspaceDatabase {
 
   getBlob = (key: string) => {
     try {
-      const statement = this.sqliteDB.prepare(
-        'SELECT data FROM blobs WHERE key = ?'
-      );
+      const statement = this.db.prepare('SELECT data FROM blobs WHERE key = ?');
       const row = statement.get(key) as BlobRow;
       if (!row) {
         return null;
@@ -124,9 +126,7 @@ export class WorkspaceDatabase {
 
   deleteBlob = (key: string) => {
     try {
-      const statement = this.sqliteDB.prepare(
-        'DELETE FROM blobs WHERE key = ?'
-      );
+      const statement = this.db.prepare('DELETE FROM blobs WHERE key = ?');
       statement.run(key);
     } catch (error) {
       logger.error('deleteBlob', error);
@@ -135,7 +135,7 @@ export class WorkspaceDatabase {
 
   getPersistentBlobKeys = () => {
     try {
-      const statement = this.sqliteDB.prepare('SELECT key FROM blobs');
+      const statement = this.db.prepare('SELECT key FROM blobs');
       const rows = statement.all() as BlobRow[];
       return rows.map(row => row.key);
     } catch (error) {
@@ -146,7 +146,7 @@ export class WorkspaceDatabase {
 
   private getUpdates = () => {
     try {
-      const statement = this.sqliteDB.prepare('SELECT * FROM updates');
+      const statement = this.db.prepare('SELECT * FROM updates');
       const rows = statement.all() as UpdateRow[];
       return rows;
     } catch (error) {
@@ -159,7 +159,7 @@ export class WorkspaceDatabase {
   private addUpdateToSQLite = (data: Uint8Array) => {
     try {
       const start = performance.now();
-      const statement = this.sqliteDB.prepare(
+      const statement = this.db.prepare(
         'INSERT INTO updates (data) VALUES (?)'
       );
       statement.run(data);
@@ -175,14 +175,39 @@ export class WorkspaceDatabase {
   };
 }
 
-export async function openWorkspaceDatabase(
+export async function getWorkspaceDBPath(
   context: AppContext,
   workspaceId: string
 ) {
   const basePath = path.join(context.appDataPath, 'workspaces', workspaceId);
-  // hmmm.... blocking api but it should be fine, right?
   await fs.ensureDir(basePath);
-  const dbPath = path.join(basePath, 'storage.db');
+  return path.join(basePath, 'storage.db');
+}
 
-  return new WorkspaceDatabase(dbPath, workspaceId);
+export async function openWorkspaceDatabase(
+  context: AppContext,
+  workspaceId: string
+) {
+  const dbPath = await getWorkspaceDBPath(context, workspaceId);
+  return new WorkspaceSQLiteDB(dbPath, workspaceId);
+}
+
+export function isValidDBFile(path: string) {
+  try {
+    const db = sqlite(path);
+    // check if db has two tables, one for updates and onefor blobs
+    const statement = db.prepare(
+      `SELECT name FROM sqlite_schema WHERE type='table'`
+    );
+    const rows = statement.all() as { name: string }[];
+    const tableNames = rows.map(row => row.name);
+    if (!tableNames.includes('updates') || !tableNames.includes('blobs')) {
+      return false;
+    }
+    db.close();
+    return true;
+  } catch (error) {
+    logger.error('isValidDBFile', error);
+    return false;
+  }
 }

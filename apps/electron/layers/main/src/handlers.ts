@@ -1,22 +1,13 @@
-import {
-  app,
-  BrowserWindow,
-  dialog,
-  ipcMain,
-  nativeTheme,
-  shell,
-} from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme, shell } from 'electron';
 import { parse } from 'url';
 
 import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
 import { appContext } from './context';
-import { exportDatabase } from './data/export';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
-import { ensureWorkspaceDB } from './ensure-db';
+import { openLoadDBFileDialog, openSaveDBFileDialog } from './dialog';
+import { ensureSQLiteDB } from './ensure-db';
 import { getExchangeTokenParams, oauthEndpoint } from './google-auth';
-
-let currentWorkspaceId = '';
 
 function registerWorkspaceHandlers() {
   ipcMain.handle('workspace:list', async _ => {
@@ -51,7 +42,6 @@ function registerUIHandlers() {
 
   ipcMain.handle('ui:workspace-change', async (_, workspaceId) => {
     logger.info('workspace change', workspaceId);
-    currentWorkspaceId = workspaceId;
   });
 
   // @deprecated
@@ -92,69 +82,58 @@ function registerUIHandlers() {
 function registerDBHandlers() {
   ipcMain.handle('db:get-doc', async (_, id) => {
     logger.log('main: get doc', id);
-    const workspaceDB = await ensureWorkspaceDB(id);
+    const workspaceDB = await ensureSQLiteDB(id);
     return workspaceDB.getEncodedDocUpdates();
   });
 
   ipcMain.handle('db:apply-doc-update', async (_, id, update) => {
     logger.log('main: apply doc update', id);
-    const workspaceDB = await ensureWorkspaceDB(id);
+    const workspaceDB = await ensureSQLiteDB(id);
     return workspaceDB.applyUpdate(update);
   });
 
   ipcMain.handle('db:add-blob', async (_, workspaceId, key, data) => {
     logger.log('main: add blob', workspaceId, key);
-    const workspaceDB = await ensureWorkspaceDB(workspaceId);
+    const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.addBlob(key, data);
   });
 
   ipcMain.handle('db:get-blob', async (_, workspaceId, key) => {
     logger.log('main: get blob', workspaceId, key);
-    const workspaceDB = await ensureWorkspaceDB(workspaceId);
+    const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.getBlob(key);
   });
 
   ipcMain.handle('db:get-persisted-blobs', async (_, workspaceId) => {
     logger.log('main: get persisted blob keys', workspaceId);
-    const workspaceDB = await ensureWorkspaceDB(workspaceId);
+    const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.getPersistentBlobKeys();
   });
 
   ipcMain.handle('db:delete-blob', async (_, workspaceId, key) => {
     logger.log('main: delete blob', workspaceId, key);
-    const workspaceDB = await ensureWorkspaceDB(workspaceId);
+    const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.deleteBlob(key);
   });
 
-  ipcMain.handle('ui:open-db-folder', async _ => {
-    const workspaceDB = await ensureWorkspaceDB(currentWorkspaceId);
+  ipcMain.handle('ui:open-db-folder', async (_, workspaceId) => {
+    const workspaceDB = await ensureSQLiteDB(workspaceId);
     logger.log('main: open db folder', workspaceDB.path);
     shell.showItemInFolder(workspaceDB.path);
   });
 
   ipcMain.handle('ui:open-load-db-file-dialog', async () => {
-    // todo
+    logger.log('main: load db file dialog');
+    return openLoadDBFileDialog();
   });
 
-  ipcMain.handle('ui:open-save-db-file-dialog', async () => {
-    logger.log('main: open save db file dialog', currentWorkspaceId);
-    const workspaceDB = await ensureWorkspaceDB(currentWorkspaceId);
-    const ret = await dialog.showSaveDialog({
-      properties: ['showOverwriteConfirmation'],
-      title: 'Save Workspace',
-      buttonLabel: 'Save',
-      defaultPath: currentWorkspaceId + '.db',
-      message: 'Save Workspace as SQLite Database',
-    });
-    const filePath = ret.filePath;
-    if (ret.canceled || !filePath) {
-      return null;
+  ipcMain.handle(
+    'ui:open-save-db-file-dialog',
+    async (_, workspaceId: string) => {
+      logger.log('main: open save db file dialog', workspaceId);
+      return openSaveDBFileDialog(workspaceId);
     }
-
-    await exportDatabase(workspaceDB, filePath);
-    shell.showItemInFolder(filePath);
-    return filePath;
-  });
+  );
 }
 
 export const registerHandlers = () => {

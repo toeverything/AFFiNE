@@ -44,7 +44,7 @@ export function Modals() {
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
-  const { createLocalWorkspace } = useAppHelper();
+  const { createLocalWorkspace, importLocalWorkspace } = useAppHelper();
   const [transitioning, transition] = useTransition();
 
   return (
@@ -92,6 +92,15 @@ export function Modals() {
           onCreateWorkspace={useCallback(() => {
             setOpenCreateWorkspaceModal(true);
           }, [setOpenCreateWorkspaceModal])}
+          onImportWorkspace={async () => {
+            const { workspaceId } = await window.apis.openLoadDBFileDialog();
+            if (workspaceId) {
+              await importLocalWorkspace(workspaceId);
+              setOpenWorkspacesModal(false);
+              setCurrentWorkspace(workspaceId);
+              return jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
+            }
+          }}
         />
       </Suspense>
       <Suspense>

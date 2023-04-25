@@ -2,15 +2,15 @@ import { app } from 'electron';
 
 import { logger } from '../../logger';
 import { appContext } from './context';
-import { watchFile } from './data/fs-watch';
-import type { WorkspaceDatabase } from './data/sqlite';
+import { watchFile } from './data/file';
+import type { WorkspaceSQLiteDB } from './data/sqlite';
 import { openWorkspaceDatabase } from './data/sqlite';
 import { sendMainEvent } from './send-main-event';
 
-const dbMapping = new Map<string, WorkspaceDatabase>();
+const dbMapping = new Map<string, WorkspaceSQLiteDB>();
 const dbWatchers = new Map<string, () => void>();
 
-export async function ensureWorkspaceDB(id: string) {
+export async function ensureSQLiteDB(id: string) {
   let workspaceDB = dbMapping.get(id);
   if (!workspaceDB) {
     // hmm... potential race condition?
@@ -37,7 +37,7 @@ export async function ensureWorkspaceDB(id: string) {
         dbWatchers.get(id)?.();
         dbMapping.delete(id);
         dbWatchers.delete(id);
-        ensureWorkspaceDB(id);
+        ensureSQLiteDB(id);
       })
     );
   }

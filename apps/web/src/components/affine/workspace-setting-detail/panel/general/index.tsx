@@ -161,7 +161,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
       <StyledRow
         onClick={() => {
           if (environment.isDesktop) {
-            window.apis.openDBFolder();
+            window.apis.openDBFolder(workspace.id);
           }
         }}
       >
