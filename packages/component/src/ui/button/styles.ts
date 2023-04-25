@@ -30,7 +30,6 @@ export const StyledIconButton = styled('button', {
   fontSize?: CSSProperties['fontSize'];
 }>(
   ({
-    theme,
     width,
     height,
     borderRadius,
