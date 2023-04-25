@@ -1,4 +1,9 @@
-import { baseTheme, displayFlex, styled } from '@affine/component';
+import {
+  baseTheme,
+  displayFlex,
+  styled,
+  textEllipsis,
+} from '@affine/component';
 import Link from 'next/link';
 
 const macosElectron = environment.isDesktop && environment.isMacOs;
@@ -70,6 +75,13 @@ export const StyledLink = styled(Link)(() => {
     ...displayFlex('flex-start', 'center'),
     ':visited': {
       color: 'inherit',
+    },
+    overflow: 'hidden',
+    div: {
+      wordBreak: 'break-all',
+      wordWrap: 'break-word',
+      whiteSpace: 'nowrap',
+      ...textEllipsis(1),
     },
     userDrag: 'none',
     userSelect: 'none',
