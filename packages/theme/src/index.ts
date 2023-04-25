@@ -1,7 +1,3 @@
-import type { EditorContainer } from '@blocksuite/editor';
-
-import type { Theme } from './types';
-
 type Kebab<
   T extends string,
   A extends string = ''
@@ -10,7 +6,7 @@ type Kebab<
   : A;
 
 export type AffineTheme = typeof lightTheme & {
-  editorMode: NonNullable<EditorContainer['mode']>;
+  editorMode: 'page' | 'edgeless';
 };
 
 export type AffineCssVariables = {
@@ -229,8 +225,8 @@ export const darkTheme = {
 } satisfies Omit<AffineTheme, 'editorMode'>;
 
 export const getTheme: (
-  themeMode: Theme,
-  editorMode: NonNullable<EditorContainer['mode']>
+  themeMode: 'light' | 'dark',
+  editorMode: 'page' | 'edgeless'
 ) => AffineTheme = (themeMode, editorMode) => {
   return {
     editorMode,

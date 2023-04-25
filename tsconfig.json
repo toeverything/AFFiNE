@@ -32,7 +32,8 @@
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
-      "@toeverything/hooks/*": ["./packages/hooks/src/*"]
+      "@toeverything/hooks/*": ["./packages/hooks/src/*"],
+      "@toeverything/theme": ["./packages/theme/src"]
     }
   },
   "references": [
@@ -80,6 +81,9 @@
     },
     {
       "path": "./apps/electron"
+    },
+    {
+      "path": "./packages/theme"
     }
   ],
   "files": [],

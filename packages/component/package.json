@@ -35,6 +35,7 @@
     "@mui/material": "^5.12.1",
     "@radix-ui/react-avatar": "^1.0.2",
     "@toeverything/hooks": "workspace:*",
+    "@toeverything/theme": "workspace:*",
     "clsx": "^1.2.1",
     "jotai": "^2.0.4",
     "lit": "^2.7.2",
@@ -78,5 +79,5 @@
     "wait-on": "^7.0.1",
     "yjs": "^13.6.0"
   },
-  "version": "0.5.4-canary.9"
+  "version": "0.5.4-canary.10"
 }

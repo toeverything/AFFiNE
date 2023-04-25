@@ -1,7 +1,6 @@
-import type { AffineCssVariables } from '@affine/component';
+import type { AffineCssVariables } from '@toeverything/theme';
+import { darkTheme, lightTheme } from '@toeverything/theme';
 import { globalStyle } from '@vanilla-extract/css';
-
-import { darkTheme, lightTheme } from '../styles/theme';
 
 const camelToKebab = (s: string) => {
   if (typeof s !== 'string') return '';

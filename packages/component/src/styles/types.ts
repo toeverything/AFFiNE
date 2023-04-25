@@ -1,4 +1,4 @@
-import type { AffineTheme } from './theme';
+import type { AffineTheme } from '@toeverything/theme';
 
 export type ThemeProviderProps = {
   defaultTheme?: Theme;
