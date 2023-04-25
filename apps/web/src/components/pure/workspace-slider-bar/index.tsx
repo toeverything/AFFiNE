@@ -165,7 +165,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 }}
               >
                 <SettingsIcon />
-                {t('Workspace Settings')}
+                <div>{t('Workspace Settings')}</div>
               </StyledLink>
             </StyledListItem>
             <StyledListItem

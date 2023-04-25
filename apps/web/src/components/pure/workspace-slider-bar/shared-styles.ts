@@ -9,7 +9,8 @@ export const StyledListItem = styled('div')<{
     color: active
       ? 'var(--affine-primary-color)'
       : 'var(--affine-text-primary-color)',
-    padding: '0 16px',
+    paddingLeft: '16px',
+    paddingRight: '2px',
     borderRadius: '8px',
     cursor: 'pointer',
     marginBottom: '4px',
