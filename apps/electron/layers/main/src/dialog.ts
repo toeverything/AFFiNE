@@ -42,11 +42,11 @@ export async function openLoadDBFileDialog() {
   });
   const filePath = ret.filePaths[0];
   if (ret.canceled || !filePath) {
-    return null;
+    return { canceled: true };
   }
   if (!isValidDBFile(filePath)) {
     // TODO: report invalid db file error?
-    return false; // invalid db file
+    return { error: 'invalid db file' }; // invalid db file
   }
   // symlink the db file to a new workspace id
   const workspaceId = nanoid(10);

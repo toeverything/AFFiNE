@@ -1,5 +1,3 @@
-import { app } from 'electron';
-
 import { logger } from '../../logger';
 import { appContext } from './context';
 import { watchFile } from './data/file';
@@ -53,9 +51,3 @@ export async function cleanupWorkspaceDBs() {
   dbMapping.clear();
   dbWatchers.clear();
 }
-
-app.on('activate', () => {
-  for (const [_, workspaceDB] of dbMapping) {
-    workspaceDB.reconnectDB();
-  }
-});

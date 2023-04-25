@@ -44,8 +44,11 @@ const apis = {
     // create will be implicitly called by db functions
   },
 
-  openLoadDBFileDialog: (): Promise<{ workspaceId: string }> =>
-    ipcRenderer.invoke('ui:open-load-db-file-dialog'),
+  openLoadDBFileDialog: (): Promise<{
+    workspaceId?: string;
+    canceled?: boolean;
+    error?: string;
+  }> => ipcRenderer.invoke('ui:open-load-db-file-dialog'),
   openSaveDBFileDialog: (workspaceId: string) =>
     ipcRenderer.invoke('ui:open-save-db-file-dialog', workspaceId),
 
