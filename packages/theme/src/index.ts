@@ -235,17 +235,6 @@ export const darkTheme = {
   tooltip: '#EAEAEA',
 } satisfies Omit<AffineTheme, 'editorMode'>;
 
-export const getTheme: (
-  themeMode: 'light' | 'dark',
-  editorMode: 'page' | 'edgeless'
-) => AffineTheme = (themeMode, editorMode) => {
-  return {
-    editorMode,
-
-    ...(themeMode === 'light' ? lightTheme : darkTheme),
-  };
-};
-
 export const lightCssVariables = Object.entries(lightTheme).reduce(
   (variables, [key, value]) => {
     variables[`--affine-${camelToKebab(key)}` as keyof AffineCssVariables] =
