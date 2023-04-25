@@ -1,7 +1,7 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
+import { initPage } from '@affine/env/blocksuite';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { EditorContainer } from '@blocksuite/editor';
-import type { Page } from '@blocksuite/store';
 import { createMemoryStorage, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
@@ -9,23 +9,6 @@ import { useState } from 'react';
 
 import type { EditorProps } from '.';
 import { BlockSuiteEditor } from '.';
-
-function initPage(page: Page): void {
-  // Add page block and surface block at root level
-  const pageBlockId = page.addBlock('affine:page', {
-    title: new page.Text('Hello, world!'),
-  });
-  page.addBlock('affine:surface', {}, null);
-  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
-  page.addBlock(
-    'affine:paragraph',
-    {
-      text: new page.Text('This is a paragraph.'),
-    },
-    frameId
-  );
-  page.resetHistory();
-}
 
 const blockSuiteWorkspace = new Workspace({
   id: 'test',
@@ -42,10 +25,15 @@ export default {
   component: BlockSuiteEditor,
 } satisfies BlockSuiteMeta;
 
-const Template: StoryFn<EditorProps> = (props: EditorProps) => {
+const Template: StoryFn<EditorProps> = (props: Partial<EditorProps>) => {
   return (
-    <>
-      <BlockSuiteEditor {...props} page={page} mode="page" />
+    <div
+      style={{
+        height: '100vh',
+        width: '100vw',
+      }}
+    >
+      <BlockSuiteEditor onInit={initPage} page={page} mode="page" {...props} />
       <div
         style={{
           position: 'absolute',
@@ -54,7 +42,7 @@ const Template: StoryFn<EditorProps> = (props: EditorProps) => {
         }}
         id="toolWrapper"
       />
-    </>
+    </div>
   );
 };
 
