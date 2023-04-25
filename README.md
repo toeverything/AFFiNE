@@ -25,10 +25,10 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 [![AFFiNE Web](<https://img.shields.io/badge/-Try%20It%20Online%20%E2%86%92-rgb(84,56,255)?style=flat-square&logoColor=white&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAADAAAAAwAEwd99eAAABjElEQVRYhe1W0U3DMBB9RfyTDeoNyAYNG2QDOgJsECYgGxA26AZ4hIxgJqCZ4PjIGV+tUxK7raqiPsmKdXe5e3fOs7IiIlwSdxetfiNw7QRKAD0Ax/ssrI5QgQOw5v03AJOTJHcCL1x84LVmWzJyJlBg7P4BwCvb3pmIAbBPykZEqaulEU7YHNva1HypxUsKqIS9EvbynASs0n3ss+ciUIsuO8VvhL9emjdFBa3YO8XvALwpsZNYSqBB0PwUWgRZNksSL5GhlN0ngGd+dkpsD6AG8IGlslxwTh2fa09EBc3Dir32rRysuQlUAL54/wTAcpePPAXHPsOTGXhSEv69rAlYpZOt6DSO29J4D/TRRLJk6AvtaZSY9PkCFYVLqI9i/NF5YkkECgrXa6P4fVEn4iolrhNxRQqBZu7FqMNdZiMqAUPj2KdGZyicu1dHzlGqBHxn2sdTR53bmeJ+ebJd7LtXhGH4uQEwd0ttAPzMxGi5/6BdxTuMej41Bs59gGP+CU+Cq/4tvxH4HwR+Ab3Uqr/VGbqEAAAAAElFTkSuQmCC>)](https://app.affine.pro)
-[![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
-[![AFFiNE macOS x64](https://img.shields.io/badge/-macOS_x86%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
-[![AFFiNE Window x64](https://img.shields.io/badge/-Windows%20%E2%86%92-blue?style=flat-square&logo=windows&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
-[![AFFiNE Linux](https://img.shields.io/badge/-Linux%20%E2%86%92-yellow?style=flat-square&logo=linux&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
+[![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
+[![AFFiNE macOS x64](https://img.shields.io/badge/-macOS_x86%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
+[![AFFiNE Window x64](https://img.shields.io/badge/-Windows%20%E2%86%92-blue?style=flat-square&logo=windows&logoColor=white)](https://affine.pro/download)
+[![AFFiNE Linux](https://img.shields.io/badge/-Linux%20%E2%86%92-yellow?style=flat-square&logo=linux&logoColor=white)](https://affine.pro/download)
 
 [![stars-icon]](https://github.com/toeverything/AFFiNE)
 [![All Contributors][all-contributors-badge]](#contributors)
