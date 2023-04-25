@@ -20,6 +20,7 @@ export default {
   },
   async viteFinal(config, { configType }) {
     return mergeConfig(config, {
+      assetsInclude: ['**/*.md'],
       plugins: [
         vanillaExtractPlugin(),
         tsconfigPaths({
