@@ -14,6 +14,8 @@ import {
 } from './index.css';
 import { appSidebarOpenAtom } from './index.jotai';
 
+export { appSidebarOpenAtom };
+
 export type AppSidebarProps = PropsWithChildren<{
   footer?: ReactNode | undefined;
 }>;
