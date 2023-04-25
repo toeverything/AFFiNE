@@ -79,6 +79,7 @@ __metadata:
     "@storybook/test-runner": ^0.10.0
     "@storybook/testing-library": ^0.1.0
     "@toeverything/hooks": "workspace:*"
+    "@toeverything/theme": "workspace:*"
     "@types/react": ^18.0.38
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.0.11
@@ -8225,6 +8226,15 @@ __metadata:
 "@toeverything/hooks@workspace:*, @toeverything/hooks@workspace:packages/hooks":
   version: 0.0.0-use.local
   resolution: "@toeverything/hooks@workspace:packages/hooks"
+  languageName: unknown
+  linkType: soft
+
+"@toeverything/theme@workspace:*, @toeverything/theme@workspace:packages/theme":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/theme@workspace:packages/theme"
+  dependencies:
+    vite: ^4.3.1
+    vite-plugin-dts: ^2.3.0
   languageName: unknown
   linkType: soft
 

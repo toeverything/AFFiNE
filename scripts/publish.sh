@@ -2,6 +2,7 @@
 
 packages=(
   "y-indexeddb"
+  "theme"
 )
 
 for package in "${packages[@]}"; do
