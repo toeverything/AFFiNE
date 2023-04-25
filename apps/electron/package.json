@@ -32,7 +32,7 @@
     "@electron-forge/maker-squirrel": "^6.1.1",
     "@electron-forge/maker-zip": "^6.1.1",
     "@electron-forge/shared-types": "^6.1.1",
-    "@electron/rebuild": "^3.2.12",
+    "@electron/rebuild": "^3.2.13",
     "@electron/remote": "2.0.9",
     "@types/better-sqlite3": "^7.6.4",
     "@types/fs-extra": "^11.0.1",
