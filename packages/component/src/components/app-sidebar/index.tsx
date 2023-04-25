@@ -1,6 +1,5 @@
 import { SidebarIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
-import { atom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
@@ -13,12 +12,11 @@ import {
   navStyle,
   sidebarButtonStyle,
 } from './index.css';
+import { appSidebarOpenAtom } from './index.jotai';
 
 export type AppSidebarProps = PropsWithChildren<{
   footer?: ReactNode | undefined;
 }>;
-
-export const appSidebarOpenAtom = atom(undefined! as boolean);
 
 export const AppSidebar = (props: AppSidebarProps): ReactElement => {
   const ref = useRef<HTMLElement>(null);
