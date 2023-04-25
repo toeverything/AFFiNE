@@ -8232,6 +8232,9 @@ __metadata:
 "@toeverything/theme@workspace:*, @toeverything/theme@workspace:packages/theme":
   version: 0.0.0-use.local
   resolution: "@toeverything/theme@workspace:packages/theme"
+  dependencies:
+    vite: ^4.3.1
+    vite-plugin-dts: ^2.3.0
   languageName: unknown
   linkType: soft
 
