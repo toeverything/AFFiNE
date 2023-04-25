@@ -83,6 +83,7 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: local
           ENABLE_DEBUG_PAGE: true
+          ENABLE_LEGACY_PROVIDER: true
           COVERAGE: true
 
       - name: Upload artifact
@@ -90,6 +91,32 @@ jobs:
         with:
           name: next-js
           path: ./apps/web/.next
+          if-no-files-found: error
+
+      - name: Build @affine/web for desktop
+        run: yarn build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          API_SERVER_PROFILE: affine
+          ENABLE_DEBUG_PAGE: true
+          ENABLE_LEGACY_PROVIDER: false
+          COVERAGE: true
+
+      - name: Export static resources
+        run: yarn export
+        working-directory: apps/web
+
+      - name: Upload static resources artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: next-js-static
+          path: ./apps/web/out
           if-no-files-found: error
 
   server-test:
@@ -257,18 +284,11 @@ jobs:
           name: affine-ubuntu
           path: ./apps/electron/dist
 
-      - name: Download artifact
+      - name: Download static resource artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js
-          path: ./apps/web/.next
-
-      - name: Generate static files
-        run: yarn export
-        working-directory: ./apps/web
-
-      - name: Move static files to electron
-        run: mv ./apps/web/out ./apps/electron/resources/web-static
+          name: next-js-static
+          path: ./apps/electron/resources/web-static
 
       - name: Run desktop tests
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
