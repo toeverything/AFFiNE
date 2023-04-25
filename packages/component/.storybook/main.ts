@@ -31,6 +31,9 @@ export default {
       },
       resolve: {
         alias: {
+          'dotenv/config': fileURLToPath(
+            new URL('../../../scripts/vitest/dotenv-config.ts', import.meta.url)
+          ),
           'next/config': fileURLToPath(
             new URL(
               '../../../scripts/vitest/next-config-mock.ts',

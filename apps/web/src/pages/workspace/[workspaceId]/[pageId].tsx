@@ -1,3 +1,5 @@
+import type { BlockSuiteFeatureFlags } from '@affine/env';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -25,15 +27,13 @@ import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspacePlugins } from '../../../plugins';
 import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 
-function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_database', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_edgeless_toolbar', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_surface', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_linked_page', true);
+function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
+    blockSuiteWorkspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
 }
 
 const WorkspaceDetail: React.FC = () => {
@@ -82,7 +82,7 @@ const WorkspaceDetail: React.FC = () => {
 
   useEffect(() => {
     if (currentWorkspace) {
-      enableFullFlags(currentWorkspace.blockSuiteWorkspace);
+      setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     }
   }, [currentWorkspace]);
   if (!currentPageId) {

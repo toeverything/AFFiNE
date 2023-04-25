@@ -1,30 +1,45 @@
+/// <reference types="@blocksuite/global" />
 import { assertEquals } from '@blocksuite/global/utils';
 import getConfig from 'next/config';
 import { z } from 'zod';
 
 import { getUaHelper } from './ua-helper';
 
-export const publicRuntimeConfigSchema = z.object({
+export const buildFlagsSchema = z.object({
+  enableBroadCastChannelProvider: z.boolean(),
+  enableDebugPage: z.boolean(),
+  enableLegacyCloud: z.boolean(),
+});
+
+export const blockSuiteFeatureFlags = z.object({
+  enable_database: z.boolean(),
+  enable_drag_handle: z.boolean(),
+  enable_surface: z.boolean(),
+  enable_block_hub: z.boolean(),
+  enable_slash_menu: z.boolean(),
+  enable_edgeless_toolbar: z.boolean(),
+  enable_linked_page: z.boolean(),
+});
+
+export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;
+
+export type BuildFlags = z.infer<typeof buildFlagsSchema>;
+
+export const publicRuntimeConfigSchema = buildFlagsSchema.extend({
   PROJECT_NAME: z.string(),
   BUILD_DATE: z.string(),
   gitVersion: z.string(),
   hash: z.string(),
   serverAPI: z.string(),
   editorVersion: z.string(),
-  enableBroadCastChannelProvider: z.boolean(),
-  enableDebugPage: z.boolean(),
-  enableLegacyCloud: z.boolean(),
+  editorFlags: blockSuiteFeatureFlags,
 });
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
 
-const { publicRuntimeConfig: config } =
-  getConfig() ??
-  ({
-    publicRuntimeConfig: {},
-  } as {
-    publicRuntimeConfig: PublicRuntimeConfig;
-  });
+const { publicRuntimeConfig: config } = getConfig() as {
+  publicRuntimeConfig: PublicRuntimeConfig;
+};
 
 publicRuntimeConfigSchema.parse(config);
 
