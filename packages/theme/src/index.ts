@@ -1,3 +1,14 @@
+export const camelToKebab = (s: string) => {
+  if (typeof s !== 'string') return '';
+  return s
+    .replace(/-/g, '_')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z])([A-Z])(?=[a-z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/(\D+)(\d+)$/g, '$1-$2')
+    .replace(/\s|_/g, '-');
+};
+
 type Kebab<
   T extends string,
   A extends string = ''
@@ -234,3 +245,21 @@ export const getTheme: (
     ...(themeMode === 'light' ? lightTheme : darkTheme),
   };
 };
+
+export const lightCssVariables = Object.entries(lightTheme).reduce(
+  (variables, [key, value]) => {
+    variables[`--affine-${camelToKebab(key)}` as keyof AffineCssVariables] =
+      value;
+    return variables;
+  },
+  {} as AffineCssVariables
+);
+
+export const darkCssVariables = Object.entries(darkTheme).reduce(
+  (variables, [key, value]) => {
+    variables[`--affine-${camelToKebab(key)}` as keyof AffineCssVariables] =
+      value;
+    return variables;
+  },
+  {} as AffineCssVariables
+);
