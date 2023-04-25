@@ -44,11 +44,11 @@ export const StyledTableRow = styled(TableRow)(() => {
   return {
     cursor: 'pointer',
     '.favorite-button': {
-      display: 'none',
+      visibility: 'hidden',
     },
     '&:hover': {
       '.favorite-button': {
-        display: 'flex',
+        visibility: 'visible',
       },
     },
   };
