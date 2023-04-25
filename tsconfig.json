@@ -29,6 +29,7 @@
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
       "@affine/graphql": ["./packages/graphql/src"],
+      "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"]
@@ -70,6 +71,9 @@
     },
     {
       "path": "./tests/fixtures"
+    },
+    {
+      "path": "./tests/kit"
     },
     {
       "path": "./tsconfig.node.json"

@@ -24,6 +24,7 @@
   },
   "main": "./dist/layers/main/index.js",
   "devDependencies": {
+    "@affine-test/kit": "workspace:*",
     "@electron-forge/cli": "^6.1.1",
     "@electron-forge/core": "^6.1.1",
     "@electron-forge/core-utils": "^6.1.1",

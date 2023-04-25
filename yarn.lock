@@ -18,6 +18,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine-test/kit@workspace:*, @affine-test/kit@workspace:tests/kit":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/kit@workspace:tests/kit"
+  dependencies:
+    "@playwright/test": ^1.32.3
+    playwright: ^1.32.3
+  peerDependencies:
+    "@playwright/test": "*"
+    playwright: "*"
+  languageName: unknown
+  linkType: soft
+
 "@affine/cli@workspace:*, @affine/cli@workspace:packages/cli":
   version: 0.0.0-use.local
   resolution: "@affine/cli@workspace:packages/cli"
@@ -112,6 +124,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/electron@workspace:apps/electron"
   dependencies:
+    "@affine-test/kit": "workspace:*"
     "@electron-forge/cli": ^6.1.1
     "@electron-forge/core": ^6.1.1
     "@electron-forge/core-utils": ^6.1.1
@@ -9652,6 +9665,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "AFFiNE@workspace:."
   dependencies:
+    "@affine-test/kit": "workspace:*"
     "@affine/cli": "workspace:*"
     "@commitlint/cli": ^17.6.1
     "@commitlint/config-conventional": ^17.6.1

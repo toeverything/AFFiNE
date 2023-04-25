@@ -7,7 +7,8 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "tests/fixtures"
+    "tests/fixtures",
+    "tests/kit"
   ],
   "scripts": {
     "dev": "dev-web",
@@ -37,6 +38,7 @@
     "*.{ts,tsx,mjs,js,jsx}": "eslint --cache --fix"
   },
   "devDependencies": {
+    "@affine-test/kit": "workspace:*",
     "@affine/cli": "workspace:*",
     "@commitlint/cli": "^17.6.1",
     "@commitlint/config-conventional": "^17.6.1",

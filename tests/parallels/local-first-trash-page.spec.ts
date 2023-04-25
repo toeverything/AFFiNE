@@ -1,3 +1,4 @@
+import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
@@ -6,7 +7,6 @@ import {
   newPage,
   waitMarkdownImported,
 } from '../libs/page-logic';
-import { test } from '../libs/playwright';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('New a page , then delete it in all pages, finally find it in trash', async ({
