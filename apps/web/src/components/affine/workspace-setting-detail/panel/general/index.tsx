@@ -191,7 +191,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
         {isOwner ? (
           <>
             <Button
-              type="danger"
+              type="warning"
               shape="circle"
               style={{ borderRadius: '40px' }}
               data-testid="delete-workspace-button"
@@ -213,7 +213,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
         ) : (
           <>
             <Button
-              type="danger"
+              type="warning"
               shape="circle"
               onClick={() => {
                 setShowLeave(true);
