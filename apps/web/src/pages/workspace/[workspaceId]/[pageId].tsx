@@ -28,7 +28,7 @@ import { WorkspacePlugins } from '../../../plugins';
 import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 
 function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
-  Object.entries(config.editorFlags).map(([key, value]) => {
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
     blockSuiteWorkspace.awarenessStore.setFlag(
       key as keyof BlockSuiteFeatureFlags,
       value

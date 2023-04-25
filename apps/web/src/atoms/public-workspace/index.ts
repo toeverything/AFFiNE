@@ -25,7 +25,7 @@ function createPublicWorkspace(
     blockSuiteWorkspace.doc,
     new Uint8Array(binary)
   );
-  Object.entries(config.editorFlags).map(([key, value]) => {
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
     blockSuiteWorkspace.awarenessStore.setFlag(
       key as keyof BlockSuiteFeatureFlags,
       value
