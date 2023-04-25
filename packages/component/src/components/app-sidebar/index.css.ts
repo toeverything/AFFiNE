@@ -7,7 +7,6 @@ export const navStyle = style({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-  padding: '0 4px',
   '@media': {
     '(max-width: 600px)': {
       position: 'absolute',

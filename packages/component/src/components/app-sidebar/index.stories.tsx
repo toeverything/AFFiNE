@@ -4,7 +4,7 @@ import type { Meta } from '@storybook/react';
 import { useAtom } from 'jotai';
 
 import { AppSidebar, appSidebarOpenAtom } from '.';
-import { sidebarButtonStyle } from './index.css';
+import { navHeaderStyle, sidebarButtonStyle } from './index.css';
 
 export default {
   title: 'Components/AppSidebar',
@@ -23,14 +23,16 @@ export const Default = () => {
       >
         <AppSidebar footer={<>Footer</>}>Test</AppSidebar>
         {!open && (
-          <IconButton
-            className={sidebarButtonStyle}
-            onClick={() => {
-              setOpen(true);
-            }}
-          >
-            <SidebarIcon width={24} height={24} />
-          </IconButton>
+          <div className={navHeaderStyle}>
+            <IconButton
+              className={sidebarButtonStyle}
+              onClick={() => {
+                setOpen(true);
+              }}
+            >
+              <SidebarIcon width={24} height={24} />
+            </IconButton>
+          </div>
         )}
       </main>
     </>
