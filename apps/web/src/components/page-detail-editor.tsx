@@ -1,3 +1,4 @@
+import { TourModal } from '@affine/component/tour-modal';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -59,6 +60,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
       >
         {header}
       </WorkspaceHeader>
+      <TourModal />
       <Editor
         style={{
           height: 'calc(100% - 52px)',
