@@ -1,7 +1,7 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
-import { initPage } from '@affine/env/blocksuite';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { EditorContainer } from '@blocksuite/editor';
+import type { Page } from '@blocksuite/store';
 import { createMemoryStorage, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
@@ -14,6 +14,23 @@ const blockSuiteWorkspace = new Workspace({
   id: 'test',
   blobStorages: [createMemoryStorage],
 });
+
+function initPage(page: Page): void {
+  // Add page block and surface block at root level
+  const pageBlockId = page.addBlock('affine:page', {
+    title: new page.Text('Hello, world!'),
+  });
+  page.addBlock('affine:surface', {}, null);
+  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  page.addBlock(
+    'affine:paragraph',
+    {
+      text: new page.Text('This is a paragraph.'),
+    },
+    frameId
+  );
+  page.resetHistory();
+}
 
 blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
 const page = blockSuiteWorkspace.createPage('page0');
