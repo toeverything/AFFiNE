@@ -1,9 +1,11 @@
 import { SidebarIcon } from '@blocksuite/icons';
+import { useAtom } from 'jotai';
+import { atom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
-import IconButton from '../../ui/button/IconButton';
+import { IconButton } from '../../ui/button/IconButton';
 import {
   navBodyStyle,
   navFooterStyle,
@@ -16,9 +18,11 @@ export type AppSidebarProps = PropsWithChildren<{
   footer?: ReactNode | undefined;
 }>;
 
+export const appSidebarOpenAtom = atom(undefined! as boolean);
+
 export const AppSidebar = (props: AppSidebarProps): ReactElement => {
   const ref = useRef<HTMLElement>(null);
-  const [open, setOpen] = useState<boolean>(undefined!);
+  const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const initialRender = open === undefined;
 
   useEffect(() => {
@@ -30,15 +34,21 @@ export const AppSidebar = (props: AppSidebarProps): ReactElement => {
     }
   }, [open]);
 
-  return (
+  const handleSidebarOpen = useCallback(() => {
+    setOpen(open => !open);
+  }, [setOpen]);
+
+  return initialRender || open === true ? (
     <nav className={navStyle} ref={ref}>
       <div className={navHeaderStyle}>
-        <IconButton className={sidebarButtonStyle}>
+        <IconButton className={sidebarButtonStyle} onClick={handleSidebarOpen}>
           <SidebarIcon width={24} height={24} />
         </IconButton>
       </div>
       <div className={navBodyStyle}>{props.children}</div>
       <div className={navFooterStyle}>{props.footer}</div>
     </nav>
+  ) : (
+    <></>
   );
 };
