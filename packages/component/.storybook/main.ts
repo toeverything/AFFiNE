@@ -20,6 +20,7 @@ export default {
   },
   async viteFinal(config, { configType }) {
     return mergeConfig(config, {
+      assetsInclude: ['**/*.md'],
       plugins: [
         vanillaExtractPlugin(),
         tsconfigPaths({
@@ -31,6 +32,9 @@ export default {
       },
       resolve: {
         alias: {
+          'dotenv/config': fileURLToPath(
+            new URL('../../../scripts/vitest/dotenv-config.ts', import.meta.url)
+          ),
           'next/config': fileURLToPath(
             new URL(
               '../../../scripts/vitest/next-config-mock.ts',

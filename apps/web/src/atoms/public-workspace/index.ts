@@ -1,3 +1,5 @@
+import type { BlockSuiteFeatureFlags } from '@affine/env';
+import { config } from '@affine/env';
 import type { AffinePublicWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -23,11 +25,14 @@ function createPublicWorkspace(
     blockSuiteWorkspace.doc,
     new Uint8Array(binary)
   );
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
+    blockSuiteWorkspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
+  // force disable some features
   blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_database', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_edgeless_toolbar', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', false);
   blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', false);
   return {
     flavour: WorkspaceFlavour.PUBLIC,

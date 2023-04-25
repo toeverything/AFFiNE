@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import * as esbuild from 'esbuild';
 
-import commonFn from './common.mjs';
+import { config } from './common.mjs';
 
 const repoRootDir = path.join(__dirname, '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
@@ -77,7 +77,7 @@ async function cleanup() {
 }
 
 async function buildLayers() {
-  const common = commonFn();
+  const common = config();
   await esbuild.build(common.preload);
 
   await esbuild.build({

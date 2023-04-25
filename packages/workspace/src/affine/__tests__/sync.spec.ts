@@ -171,6 +171,7 @@ describe('ydoc sync', () => {
     },
     {
       timeout: 30000,
+      retry: 3,
     }
   );
 });

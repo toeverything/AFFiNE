@@ -10,6 +10,11 @@ import { useState } from 'react';
 import type { EditorProps } from '.';
 import { BlockSuiteEditor } from '.';
 
+const blockSuiteWorkspace = new Workspace({
+  id: 'test',
+  blobStorages: [createMemoryStorage],
+});
+
 function initPage(page: Page): void {
   // Add page block and surface block at root level
   const pageBlockId = page.addBlock('affine:page', {
@@ -27,11 +32,6 @@ function initPage(page: Page): void {
   page.resetHistory();
 }
 
-const blockSuiteWorkspace = new Workspace({
-  id: 'test',
-  blobStorages: [createMemoryStorage],
-});
-
 blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
 const page = blockSuiteWorkspace.createPage('page0');
 initPage(page);
@@ -42,10 +42,15 @@ export default {
   component: BlockSuiteEditor,
 } satisfies BlockSuiteMeta;
 
-const Template: StoryFn<EditorProps> = (props: EditorProps) => {
+const Template: StoryFn<EditorProps> = (props: Partial<EditorProps>) => {
   return (
-    <>
-      <BlockSuiteEditor {...props} page={page} mode="page" />
+    <div
+      style={{
+        height: '100vh',
+        width: '100vw',
+      }}
+    >
+      <BlockSuiteEditor onInit={initPage} page={page} mode="page" {...props} />
       <div
         style={{
           position: 'absolute',
@@ -54,7 +59,7 @@ const Template: StoryFn<EditorProps> = (props: EditorProps) => {
         }}
         id="toolWrapper"
       />
-    </>
+    </div>
   );
 };
 

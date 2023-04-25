@@ -5,7 +5,8 @@ import { join } from 'path';
 import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
 
-const IS_DEV = process.env.NODE_ENV === 'development';
+const IS_DEV: boolean =
+  process.env.NODE_ENV === 'development' && !process.env.CI;
 
 async function createWindow() {
   logger.info('create window');

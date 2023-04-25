@@ -28,6 +28,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
 [![AFFiNE macOS x64](https://img.shields.io/badge/-macOS_x86%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
 [![AFFiNE Window x64](https://img.shields.io/badge/-Windows%20%E2%86%92-blue?style=flat-square&logo=windows&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
+[![AFFiNE Linux](https://img.shields.io/badge/-Linux%20%E2%86%92-yellow?style=flat-square&logo=linux&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
 
 [![stars-icon]](https://github.com/toeverything/AFFiNE)
 [![All Contributors][all-contributors-badge]](#contributors)
@@ -133,7 +134,6 @@ We would like to express our gratitude to all the individuals who have already c
 <a href="https://github.com/toeverything/affine/graphs/contributors">
   <img src="https://user-images.githubusercontent.com/5910926/233382206-312428ca-094a-4579-ae06-213961ed7eab.svg" />
 </a>
-
 
 ## Self-Host
 

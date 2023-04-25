@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.5.4-canary.8",
+  "version": "0.5.4-canary.9",
   "author": "affine",
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
@@ -16,13 +16,15 @@
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
     "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
     "rebuild:for-test": "yarn rebuild better-sqlite3",
-    "rebuild:for-electron": "yarn electron-rebuild"
+    "rebuild:for-electron": "yarn electron-rebuild",
+    "test": "playwright test"
   },
   "config": {
     "forge": "./forge.config.js"
   },
   "main": "./dist/layers/main/index.js",
   "devDependencies": {
+    "@affine-test/kit": "workspace:*",
     "@electron-forge/cli": "^6.1.1",
     "@electron-forge/core": "^6.1.1",
     "@electron-forge/core-utils": "^6.1.1",
@@ -31,7 +33,7 @@
     "@electron-forge/maker-squirrel": "^6.1.1",
     "@electron-forge/maker-zip": "^6.1.1",
     "@electron-forge/shared-types": "^6.1.1",
-    "@electron/rebuild": "^3.2.12",
+    "@electron/rebuild": "^3.2.13",
     "@electron/remote": "2.0.9",
     "@types/better-sqlite3": "^7.6.4",
     "@types/fs-extra": "^11.0.1",
@@ -42,6 +44,8 @@
     "electron-window-state": "^5.0.3",
     "esbuild": "^0.17.18",
     "fs-extra": "^11.1.1",
+    "playwright": "^1.32.3",
+    "ts-node": "^10.9.1",
     "undici": "^5.22.0",
     "zx": "^7.2.1"
   },
@@ -62,5 +66,9 @@
   "stableVersion": "0.5.3",
   "installConfig": {
     "hoistingLimits": "workspaces"
+  },
+  "peerDependencies": {
+    "playwright": "*",
+    "ts-node": "*"
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.5.4-canary.8",
+  "version": "0.5.4-canary.9",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -33,7 +33,7 @@
   "devDependencies": {
     "@nestjs/testing": "^9.4.0",
     "@types/lodash-es": "^4.17.7",
-    "@types/node": "^18.15.13",
+    "@types/node": "^18.16.0",
     "@types/supertest": "^2.0.12",
     "c8": "^7.13.0",
     "nodemon": "^2.0.22",

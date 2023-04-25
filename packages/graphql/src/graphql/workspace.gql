@@ -1,0 +1,8 @@
+query workspaceById($id: String!) {
+  workspace(id: $id) {
+    id
+    type
+    public
+    created_at
+  }
+}
