@@ -18,6 +18,7 @@ export default defineConfig({
   },
   test: {
     setupFiles: [
+      resolve(rootDir, './scripts/setup/lit.ts'),
       resolve(rootDir, './scripts/setup/search.ts'),
       resolve(rootDir, './scripts/setup/lottie-web.ts'),
     ],
@@ -29,6 +30,7 @@ export default defineConfig({
       'tests/unit/**/*.spec.ts',
       'tests/unit/**/*.spec.tsx',
     ],
+    exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
     testTimeout: 5000,
     coverage: {
       provider: 'istanbul', // or 'c8'

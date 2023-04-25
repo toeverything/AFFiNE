@@ -12,24 +12,67 @@ import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
 import { appContext } from './context';
 import { exportDatabase } from './data/export';
+import { watchFile } from './data/fs-watch';
 import type { WorkspaceDatabase } from './data/sqlite';
 import { openWorkspaceDatabase } from './data/sqlite';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
 import { getExchangeTokenParams, oauthEndpoint } from './google-auth';
+import { sendMainEvent } from './send-main-event';
 
 let currentWorkspaceId = '';
 
 const dbMapping = new Map<string, WorkspaceDatabase>();
+const dbWatchers = new Map<string, () => void>();
+const dBLastUse = new Map<string, number>();
 
-async function ensureWorkspaceDB(id: string) {
+export async function ensureWorkspaceDB(id: string) {
   let workspaceDB = dbMapping.get(id);
   if (!workspaceDB) {
     // hmm... potential race condition?
     workspaceDB = await openWorkspaceDatabase(appContext, id);
     dbMapping.set(id, workspaceDB);
+
+    logger.info('watch db file', workspaceDB.path);
+
+    dbWatchers.set(
+      id,
+      watchFile(workspaceDB.path, (event, filename) => {
+        const minTime = 1000;
+        logger.debug(
+          'db file changed',
+          event,
+          filename,
+          Date.now() - dBLastUse.get(id)!
+        );
+
+        if (Date.now() - dBLastUse.get(id)! < minTime || !filename) {
+          logger.debug('skip db update');
+          return;
+        }
+
+        sendMainEvent('main:on-db-update', id);
+
+        // handle DB file update by other process
+        dbWatchers.get(id)?.();
+        dbMapping.delete(id);
+        dbWatchers.delete(id);
+        ensureWorkspaceDB(id);
+      })
+    );
   }
-  await workspaceDB.ready;
+  dBLastUse.set(id, Date.now());
   return workspaceDB;
+}
+
+export async function cleanupWorkspaceDBs() {
+  for (const [id, db] of dbMapping) {
+    logger.info('close db connection', id);
+    db.destroy();
+    dbWatchers.get(id)?.();
+  }
+  dbMapping.clear();
+  dbWatchers.clear();
+  dBLastUse.clear();
 }
 
 function registerWorkspaceHandlers() {

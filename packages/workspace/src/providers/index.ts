@@ -169,7 +169,7 @@ const createSQLiteProvider = (
     keysToPersist.forEach(async k => {
       const blob = await bs.get(k);
       if (!blob) {
-        logger.warn('blob url not found', k);
+        logger.warn('blob not found for', k);
         return;
       }
       window.apis.db.addBlob(
@@ -180,6 +180,29 @@ const createSQLiteProvider = (
     });
   }
 
+  async function syncUpdates() {
+    logger.info('syncing updates from sqlite', blockSuiteWorkspace.id);
+    const updates = await window.apis.db.getDoc(blockSuiteWorkspace.id);
+
+    if (updates) {
+      Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
+    }
+
+    const mergeUpdates = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc);
+
+    // also apply updates to sqlite
+    window.apis.db.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
+
+    const bs = blockSuiteWorkspace.blobs;
+
+    if (bs) {
+      // this can be non-blocking
+      syncBlobIntoSQLite(bs);
+    }
+  }
+
+  let unsubscribe = () => {};
+
   const provider = {
     flavour: 'sqlite',
     background: true,
@@ -188,31 +211,32 @@ const createSQLiteProvider = (
     },
     connect: async () => {
       logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
-      const updates = await window.apis.db.getDoc(blockSuiteWorkspace.id);
-
-      if (updates) {
-        Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
-      }
-
-      const mergeUpdates = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc);
-
-      // also apply updates to sqlite
-      window.apis.db.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
+      await syncUpdates();
 
       blockSuiteWorkspace.doc.on('update', handleUpdate);
 
-      const bs = blockSuiteWorkspace.blobs;
-
-      if (bs) {
-        // this can be non-blocking
-        syncBlobIntoSQLite(bs);
-      }
+      let timer = 0;
+      unsubscribe = window.apis.db.onDBUpdate(workspaceId => {
+        if (workspaceId === blockSuiteWorkspace.id) {
+          // throttle
+          logger.debug('on db update', workspaceId);
+          if (timer) {
+            clearTimeout(timer);
+          }
+          // @ts-expect-error ignore the type
+          timer = setTimeout(() => {
+            syncUpdates();
+            timer = 0;
+          }, 1000);
+        }
+      });
 
       // blockSuiteWorkspace.doc.on('destroy', ...);
       logger.info('connecting sqlite done', blockSuiteWorkspace.id);
     },
     disconnect: () => {
-      // todo: not implemented
+      unsubscribe();
+      blockSuiteWorkspace.doc.off('update', handleUpdate);
     },
   } satisfies SQLiteProvider;
 

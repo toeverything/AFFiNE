@@ -1,4 +1,3 @@
- 
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
