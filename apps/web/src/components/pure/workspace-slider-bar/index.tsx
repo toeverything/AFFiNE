@@ -97,7 +97,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
 
   useEffect(() => {
     if (environment.isDesktop) {
-      window.apis?.onSidebarVisibilityChange(sidebarOpen);
+      window.apis?.handleSidebarVisibilityChange(sidebarOpen);
     }
   }, [sidebarOpen]);
 

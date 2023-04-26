@@ -45,10 +45,9 @@ const apis = {
   openSaveDBFileDialog: ipcFn('ui:open-save-db-file-dialog'),
 
   // ui
-  onThemeChange: ipcFn('ui:theme-change'),
-  onSidebarVisibilityChange: ipcFn('ui:sidebar-visibility-change'),
-  onWorkspaceChange: ipcFn('ui:workspace-change'),
-
+  handleThemeChange: ipcFn('ui:theme-change'),
+  handleSidebarVisibilityChange: ipcFn('ui:sidebar-visibility-change'),
+  handleWorkspaceChange: ipcFn('ui:workspace-change'),
   openDBFolder: ipcFn('ui:open-db-folder'),
 
   /**
