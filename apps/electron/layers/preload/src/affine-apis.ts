@@ -4,35 +4,21 @@ import { ipcRenderer } from 'electron';
 
 import type { MainEventMap, MainIPCHandlerMap } from '../../constraints';
 
-// main -> renderer
-function onMainEvent<T extends keyof MainEventMap>(
-  eventName: T,
-  callback: MainEventMap[T]
-): () => void {
-  // @ts-expect-error fix me later
-  const fn = (_, ...args) => callback(...args);
-  ipcRenderer.on(eventName, fn);
-  return () => ipcRenderer.off(eventName, fn);
-}
-
+// renderer -> main
 function ipcFn<T extends keyof MainIPCHandlerMap>(eventName: T) {
   return async (...args: Parameters<MainIPCHandlerMap[T]>) =>
     await ipcRenderer.invoke(eventName, ...args);
 }
 
+// main -> renderer
 function ipcCallbackFn<T extends keyof MainEventMap>(eventName: T) {
-  return async (
-    callback: (event: Electron.IpcRendererEvent, ...args: any[]) => void,
-    ...args: Parameters<MainEventMap[T]>
-  ) => {
-    ipcRenderer.on(eventName, callback);
-    return () => ipcRenderer.off(eventName, callback);
+  return (callback: MainEventMap[T]) => {
+    // @ts-expect-error fix me later
+    const fn = (_, ...args) => callback(...args);
+    ipcRenderer.on(eventName, fn);
+    return () => ipcRenderer.off(eventName, fn);
   };
 }
-
-export const listeners = {
-  'main:on-db-file-update': (callback: (workspaceId: string) => void) => {},
-};
 
 const apis = {
   db: {
@@ -45,9 +31,7 @@ const apis = {
     getPersistedBlobs: ipcFn('db:get-persisted-blobs'),
 
     // listeners
-    onDBUpdate: (callback: (workspaceId: string) => void) => {
-      return onMainEvent('main:on-db-file-update', callback);
-    },
+    onDBUpdate: ipcCallbackFn('main:on-db-file-update'),
   },
 
   workspace: {

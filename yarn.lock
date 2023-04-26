@@ -139,6 +139,7 @@ __metadata:
     "@types/better-sqlite3": ^7.6.4
     "@types/fs-extra": ^11.0.1
     better-sqlite3: ^8.3.0
+    chokidar: ^3.5.3
     cross-env: 7.0.3
     electron: 24.1.2
     electron-log: ^5.0.0-beta.23

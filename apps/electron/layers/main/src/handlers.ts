@@ -3,9 +3,9 @@ import { BrowserWindow, ipcMain, nativeTheme, shell } from 'electron';
 import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
 import { appContext } from './context';
+import { ensureSQLiteDB } from './data/ensure-db';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
 import { openLoadDBFileDialog, openSaveDBFileDialog } from './dialog';
-import { ensureSQLiteDB } from './ensure-db';
 import { getGoogleOauthCode } from './google-auth';
 
 export const workspaceHandlers = {
@@ -71,6 +71,7 @@ export const dbHandlers = {
   },
 };
 
+// Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
 export const allHandlers = {
   ...workspaceHandlers,
   ...uiHandlers,

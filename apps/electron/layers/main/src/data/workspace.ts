@@ -23,7 +23,9 @@ export async function deleteWorkspace(context: AppContext, id: string) {
     `${id}`
   );
   try {
-    return fs.move(basePath, movedPath);
+    return fs.move(basePath, movedPath, {
+      overwrite: true,
+    });
   } catch (error) {
     logger.error('deleteWorkspace', error);
   }

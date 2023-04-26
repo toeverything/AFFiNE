@@ -3,9 +3,9 @@ import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
 import { appContext } from './context';
+import { ensureSQLiteDB } from './data/ensure-db';
 import { exportDatabase } from './data/export';
 import { getWorkspaceDBPath, isValidDBFile } from './data/sqlite';
-import { ensureSQLiteDB } from './ensure-db';
 
 export async function openSaveDBFileDialog(workspaceId: string) {
   const db = await ensureSQLiteDB(workspaceId);

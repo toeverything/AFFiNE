@@ -78,6 +78,7 @@ export class WorkspaceSQLiteDB {
       Y.applyUpdate(this.ydoc, update.data, SQLITE_ORIGIN);
     });
 
+    this.lastUpdateTime = new Date().getTime();
     this.firstConnect = true;
 
     return db;
@@ -100,6 +101,7 @@ export class WorkspaceSQLiteDB {
   };
 
   addBlob = (key: string, data: Uint8Array) => {
+    this.lastUpdateTime = new Date().getTime();
     try {
       const statement = this.db.prepare(
         'INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?'
@@ -125,6 +127,7 @@ export class WorkspaceSQLiteDB {
   };
 
   deleteBlob = (key: string) => {
+    this.lastUpdateTime = new Date().getTime();
     try {
       const statement = this.db.prepare('DELETE FROM blobs WHERE key = ?');
       statement.run(key);
