@@ -2,10 +2,10 @@ import { IconButton } from '@affine/component';
 import { SidebarIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
+import { useRef } from 'react';
 
-import { AppSidebar, appSidebarOpenAtom } from '.';
+import { AppSidebar, appSidebarOpenAtom, ResizeIndicator } from '.';
 import { navHeaderStyle, sidebarButtonStyle } from './index.css';
-import { appSidebarWidthAtom } from './index.jotai';
 
 export default {
   title: 'Components/AppSidebar',
@@ -14,10 +14,7 @@ export default {
 
 export const Default: StoryFn = props => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
-  const [width, setWidth] = useAtom(appSidebarWidthAtom);
-  if (props.width !== width) {
-    setWidth(props.width ?? 256);
-  }
+  const ref = useRef<HTMLElement>(null);
   return (
     <>
       <main
@@ -29,7 +26,10 @@ export const Default: StoryFn = props => {
           flexDirection: 'row',
         }}
       >
-        <AppSidebar footer={<>Footer</>}>Test</AppSidebar>
+        <AppSidebar footer={<>Footer</>} ref={ref}>
+          Test
+        </AppSidebar>
+        <ResizeIndicator targetElement={ref} />
         <div>
           <div className={navHeaderStyle}>
             {!open && (
@@ -47,14 +47,4 @@ export const Default: StoryFn = props => {
       </main>
     </>
   );
-};
-
-Default.argTypes = {
-  width: {
-    control: {
-      type: 'range',
-      min: 256,
-      max: 512,
-    },
-  },
 };
