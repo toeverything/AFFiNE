@@ -1,6 +1,6 @@
 {
   "name": "@toeverything/theme",
-  "version": "0.5.4-canary.11",
+  "version": "0.5.4-canary.12",
   "type": "module",
   "scripts": {
     "build": "vite build"
