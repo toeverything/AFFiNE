@@ -1,18 +1,23 @@
 import { IconButton } from '@affine/component';
 import { SidebarIcon } from '@blocksuite/icons';
-import type { Meta } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
 
 import { AppSidebar, appSidebarOpenAtom } from '.';
 import { navHeaderStyle, sidebarButtonStyle } from './index.css';
+import { appSidebarWidthAtom } from './index.jotai';
 
 export default {
   title: 'Components/AppSidebar',
   component: AppSidebar,
 } satisfies Meta;
 
-export const Default = () => {
+export const Default: StoryFn = props => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
+  const [width, setWidth] = useAtom(appSidebarWidthAtom);
+  if (props.width !== width) {
+    setWidth(props.width);
+  }
   return (
     <>
       <main
@@ -38,9 +43,18 @@ export const Default = () => {
               </IconButton>
             )}
           </div>
-          Container
         </div>
       </main>
     </>
   );
+};
+
+Default.argTypes = {
+  width: {
+    control: {
+      type: 'range',
+      min: 256,
+      max: 512,
+    },
+  },
 };

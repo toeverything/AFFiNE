@@ -1,5 +1,5 @@
 import { SidebarIcon } from '@blocksuite/icons';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
@@ -12,7 +12,7 @@ import {
   navStyle,
   sidebarButtonStyle,
 } from './index.css';
-import { appSidebarOpenAtom } from './index.jotai';
+import { appSidebarOpenAtom, appSidebarWidthAtom } from './index.jotai';
 
 export { appSidebarOpenAtom };
 
@@ -32,6 +32,14 @@ export const AppSidebar = (props: AppSidebarProps): ReactElement => {
       setOpen(initialOpen);
     }
   }, [open, setOpen]);
+
+  const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
+
+  useEffect(() => {
+    if (ref.current && open) {
+      ref.current.style.width = `${appSidebarWidth}px`;
+    }
+  }, [appSidebarWidth, open]);
 
   const handleSidebarOpen = useCallback(() => {
     setOpen(open => !open);
