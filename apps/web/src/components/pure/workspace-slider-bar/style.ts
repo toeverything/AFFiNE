@@ -1,9 +1,5 @@
-import {
-  baseTheme,
-  displayFlex,
-  styled,
-  textEllipsis,
-} from '@affine/component';
+import { displayFlex, styled, textEllipsis } from '@affine/component';
+import { baseTheme } from '@toeverything/theme';
 import Link from 'next/link';
 
 const macosElectron = environment.isDesktop && environment.isMacOs;

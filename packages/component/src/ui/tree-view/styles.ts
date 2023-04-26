@@ -1,7 +1,8 @@
 import MuiCollapse from '@mui/material/Collapse';
+import { lightTheme } from '@toeverything/theme';
 import type { CSSProperties } from 'react';
 
-import { alpha, lightTheme, styled } from '../../styles';
+import { alpha, styled } from '../../styles';
 
 export const StyledCollapse = styled(MuiCollapse)<{
   indent?: CSSProperties['paddingLeft'];
