@@ -1,3 +1,4 @@
+import type { IconButtonProps } from '@affine/component';
 import {
   Content,
   IconButton,
@@ -23,7 +24,7 @@ import {
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
-import { useMemo } from 'react';
+import { forwardRef, useMemo } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
@@ -40,36 +41,31 @@ import {
 } from './styles';
 
 export type FavoriteTagProps = {
-  pageMeta: PageMeta;
-  onClick: () => void;
+  active: boolean;
 };
-const FavoriteTag: React.FC<FavoriteTagProps> = ({
-  pageMeta: { favorite },
-  onClick,
-}) => {
-  const t = useAFFiNEI18N();
+
+// eslint-disable-next-line react/display-name
+const FavoriteTag = forwardRef<
+  HTMLButtonElement,
+  FavoriteTagProps & Omit<IconButtonProps, 'children'>
+>(({ active, ...props }, ref) => {
+  const { t } = useTranslation();
   return (
     <Tooltip
-      content={favorite ? t['Favorited']() : t['Favorite']()}
+      content={active ? t('Favorited') : t('Favorite')}
       placement="top-start"
     >
       <IconButton
+        ref={ref}
         iconSize={[20, 20]}
-        onClick={e => {
-          e.stopPropagation();
-          onClick();
-          toast(
-            favorite ? t['Removed from Favorites']() : t['Added to Favorites']()
-          );
-        }}
         style={{
-          color: favorite
+          color: active
             ? 'var(--affine-primary-color)'
             : 'var(--affine-icon-color)',
         }}
-        className={favorite ? '' : 'favorite-button'}
+        {...props}
       >
-        {favorite ? (
+        {active ? (
           <FavoritedIcon data-testid="favorited-icon" />
         ) : (
           <FavoriteIcon />
@@ -77,7 +73,7 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
       </IconButton>
     </Tooltip>
   );
-};
+});
 
 type PageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -146,6 +142,18 @@ export const PageList: React.FC<PageListProps> = ({
         </TableHead>
         <TableBody>
           {list.map((pageMeta, index) => {
+            const bookmarkPage = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              helper.setPageMeta(pageMeta.id, {
+                favorite: !pageMeta.favorite,
+              });
+              toast(
+                pageMeta.favorite
+                  ? t('Removed from Favorites')
+                  : t('Added to Favorites')
+              );
+            };
+
             return (
               <StyledTableRow
                 data-testid={`page-list-item-${pageMeta.id}`}
@@ -169,12 +177,9 @@ export const PageList: React.FC<PageListProps> = ({
                     </StyledTitleLink>
                     {listType && !isTrash && (
                       <FavoriteTag
-                        onClick={() => {
-                          helper.setPageMeta(pageMeta.id, {
-                            favorite: !pageMeta.favorite,
-                          });
-                        }}
-                        pageMeta={pageMeta}
+                        className={pageMeta.favorite ? '' : 'favorite-button'}
+                        onClick={bookmarkPage}
+                        active={!!pageMeta.favorite}
                       />
                     )}
                   </StyledTitleWrapper>
