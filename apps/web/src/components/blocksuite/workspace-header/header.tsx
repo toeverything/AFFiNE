@@ -1,6 +1,6 @@
+import { BrowserWarning } from '@affine/component/affine-banner';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { CloseIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
 import {
@@ -25,8 +25,6 @@ import ThemeModeSwitch from './header-right-items/theme-mode-switch';
 import TrashButtonGroup from './header-right-items/TrashButtonGroup';
 import UserAvatar from './header-right-items/UserAvatar';
 import {
-  StyledBrowserWarning,
-  StyledCloseButton,
   StyledHeader,
   StyledHeaderContainer,
   StyledHeaderRightSide,
@@ -38,23 +36,6 @@ const SidebarSwitch = lazy(() =>
     default: module.SidebarSwitch,
   }))
 );
-
-const BrowserWarning = ({
-  show,
-  onClose,
-}: {
-  show: boolean;
-  onClose: () => void;
-}) => {
-  return (
-    <StyledBrowserWarning show={show}>
-      <OSWarningMessage />
-      <StyledCloseButton onClick={onClose}>
-        <CloseIcon />
-      </StyledCloseButton>
-    </StyledBrowserWarning>
-  );
-};
 
 export type BaseHeaderProps<
   Workspace extends AffineOfficialWorkspace = AffineOfficialWorkspace
@@ -155,6 +136,7 @@ export const Header = forwardRef<
     >
       <BrowserWarning
         show={showWarning}
+        message={<OSWarningMessage />}
         onClose={() => {
           setShowWarning(false);
         }}
