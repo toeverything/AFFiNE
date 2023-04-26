@@ -49,19 +49,13 @@ const apis = {
   handleSidebarVisibilityChange: ipcFn('ui:sidebar-visibility-change'),
   handleWorkspaceChange: ipcFn('ui:workspace-change'),
   openDBFolder: ipcFn('ui:open-db-folder'),
+  moveDBFile: ipcFn('ui:move-db-file'),
 
   /**
    * Try sign in using Google and return a request object to exchange the code for a token
    * Not exchange in Node side because it is easier to do it in the renderer with VPN
    */
   getGoogleOauthCode: ipcFn('ui:get-google-oauth-code'),
-
-  /**
-   * Secret backdoor to update environment variables in main process
-   */
-  updateEnv: (env: string, value: string) => {
-    ipcRenderer.invoke('main:env-update', env, value);
-  },
 };
 
 const appInfo = {

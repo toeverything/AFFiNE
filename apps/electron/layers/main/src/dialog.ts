@@ -2,6 +2,7 @@ import { dialog, shell } from 'electron';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
+import { logger } from '../../logger';
 import { appContext } from './context';
 import { ensureSQLiteDB } from './data/ensure-db';
 import { exportDatabase } from './data/export';
@@ -52,6 +53,7 @@ export async function openLoadDBFileDialog() {
   });
   const filePath = ret.filePaths[0];
   if (ret.canceled || !filePath) {
+    logger.info('openLoadDBFileDialog canceled');
     return { canceled: true };
   }
   if (!isValidDBFile(filePath)) {
@@ -63,6 +65,48 @@ export async function openLoadDBFileDialog() {
   const linkedFilePath = await getWorkspaceDBPath(appContext, workspaceId);
 
   await fs.symlink(filePath, linkedFilePath);
+  logger.info(`openLoadDBFileDialog: ${filePath} -> ${linkedFilePath}`);
 
   return { workspaceId };
+}
+
+export async function openMoveDBFileDialog(workspaceId: string) {
+  const db = await ensureSQLiteDB(workspaceId);
+
+  // get the real file path of db
+  const realpath = await fs.realpath(db.path);
+  const isLink = realpath !== db.path;
+
+  const ret = await dialog.showSaveDialog({
+    properties: ['showOverwriteConfirmation'],
+    title: 'Move Workspace Storage',
+    showsTagField: false,
+    buttonLabel: 'Save',
+    defaultPath: realpath,
+    message: 'Move Workspace storage file',
+  });
+
+  const newFilePath = ret.filePath;
+  if (
+    ret.canceled ||
+    !newFilePath ||
+    newFilePath === realpath ||
+    db.path === newFilePath
+  ) {
+    return null;
+  }
+
+  if (isLink) {
+    // remove the old link to unblock new link
+    await fs.unlink(db.path);
+  }
+
+  await fs.move(realpath, newFilePath, {
+    overwrite: true,
+  });
+
+  await fs.symlink(newFilePath, db.path);
+  logger.info(`openMoveDBFileDialog: ${realpath} -> ${newFilePath}`);
+  db.reconnectDB();
+  return newFilePath;
 }

@@ -81,6 +81,8 @@ export class WorkspaceSQLiteDB {
     this.lastUpdateTime = new Date().getTime();
     this.firstConnect = true;
 
+    logger.info('db connected', this.path);
+
     return db;
   };
 

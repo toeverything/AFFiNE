@@ -31,15 +31,20 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
     }
   });
 
+  dbWatchers.set(db.workspaceId, () => {
+    watcher.close();
+  });
+
   watcher.on('unlink', () => {
     logger.info('db file missing', db.workspaceId);
     sendMainEvent('main:on-db-file-missing', db.workspaceId);
 
     // cleanup
-    watcher.close();
-    db.destroy();
-    dbWatchers.delete(db.workspaceId);
-    dbMapping.delete(db.workspaceId);
+    watcher.close().then(() => {
+      db.destroy();
+      dbWatchers.delete(db.workspaceId);
+      dbMapping.delete(db.workspaceId);
+    });
   });
 }
 
@@ -52,6 +57,16 @@ export async function ensureSQLiteDB(id: string) {
     startWatchingDBFile(workspaceDB);
   }
   return workspaceDB;
+}
+
+export function disconnectSQLiteDB(id: string) {
+  const db = dbMapping.get(id);
+  if (db) {
+    db.destroy();
+    dbWatchers.get(id)?.();
+    dbWatchers.delete(id);
+    dbMapping.delete(id);
+  }
 }
 
 export async function cleanupSQLiteDBs() {

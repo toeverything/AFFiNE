@@ -5,7 +5,11 @@ import { isMacOS } from '../../utils';
 import { appContext } from './context';
 import { ensureSQLiteDB } from './data/ensure-db';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
-import { openLoadDBFileDialog, openSaveDBFileDialog } from './dialog';
+import {
+  openLoadDBFileDialog,
+  openMoveDBFileDialog,
+  openSaveDBFileDialog,
+} from './dialog';
 import { getGoogleOauthCode } from './google-auth';
 
 export const workspaceHandlers = {
@@ -69,6 +73,9 @@ export const dbHandlers = {
   },
   'ui:open-save-db-file-dialog': async (workspaceId: string) => {
     return openSaveDBFileDialog(workspaceId);
+  },
+  'ui:move-db-file': async (workspaceId: string, newPath: string) => {
+    return openMoveDBFileDialog(workspaceId);
   },
 };
 
