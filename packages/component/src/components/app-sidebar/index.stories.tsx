@@ -19,21 +19,27 @@ export const Default = () => {
         style={{
           width: '100vw',
           height: '600px',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'row',
         }}
       >
         <AppSidebar footer={<>Footer</>}>Test</AppSidebar>
-        {!open && (
+        <div>
           <div className={navHeaderStyle}>
-            <IconButton
-              className={sidebarButtonStyle}
-              onClick={() => {
-                setOpen(true);
-              }}
-            >
-              <SidebarIcon width={24} height={24} />
-            </IconButton>
+            {!open && (
+              <IconButton
+                className={sidebarButtonStyle}
+                onClick={() => {
+                  setOpen(true);
+                }}
+              >
+                <SidebarIcon width={24} height={24} />
+              </IconButton>
+            )}
           </div>
-        )}
+          Container
+        </div>
       </main>
     </>
   );

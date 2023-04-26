@@ -38,8 +38,8 @@ export const AppSidebar = (props: AppSidebarProps): ReactElement => {
     setOpen(open => !open);
   }, [setOpen]);
 
-  return initialRender || open === true ? (
-    <nav className={navStyle} ref={ref}>
+  return (
+    <nav className={navStyle} ref={ref} data-open={open}>
       <div className={navHeaderStyle}>
         <IconButton className={sidebarButtonStyle} onClick={handleSidebarOpen}>
           <SidebarIcon width={24} height={24} />
@@ -48,7 +48,5 @@ export const AppSidebar = (props: AppSidebarProps): ReactElement => {
       <div className={navBodyStyle}>{props.children}</div>
       <div className={navFooterStyle}>{props.footer}</div>
     </nav>
-  ) : (
-    <></>
   );
 };

@@ -7,10 +7,16 @@ export const navStyle = style({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
+  transition: 'margin-left .3s',
   '@media': {
     '(max-width: 600px)': {
       position: 'absolute',
       width: 'calc(10vw + 256px)',
+    },
+  },
+  selectors: {
+    '&[data-open="false"]': {
+      marginLeft: '-256px',
     },
   },
 });
