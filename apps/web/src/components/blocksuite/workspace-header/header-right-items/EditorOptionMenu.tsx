@@ -35,7 +35,6 @@ export const EditorOptionMenu = () => {
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const allMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const [record, set] = useAtom(workspacePreferredModeAtom);
   const mode = record[pageId] ?? 'page';
   assertExists(pageMeta);
