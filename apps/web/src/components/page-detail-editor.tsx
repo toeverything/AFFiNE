@@ -60,7 +60,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
       >
         {header}
       </WorkspaceHeader>
-      <TourModal />
+      <TourModal open={true} onClose={() => {}} />
       <Editor
         style={{
           height: 'calc(100% - 52px)',
