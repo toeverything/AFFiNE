@@ -1,6 +1,5 @@
 import { useEffect, ComponentType } from 'react';
 import { ThemeProvider, useTheme } from 'next-themes';
-import '@blocksuite/editor/themes/affine.css';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import { useDarkMode } from 'storybook-dark-mode';
