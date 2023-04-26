@@ -23,7 +23,6 @@ export type AppSidebarProps = PropsWithChildren<{
 export const AppSidebar = (props: AppSidebarProps): ReactElement => {
   const ref = useRef<HTMLElement>(null);
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
-  const initialRender = open === undefined;
 
   useEffect(() => {
     if (open === undefined && ref.current) {
