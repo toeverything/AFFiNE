@@ -422,7 +422,6 @@ describe('api', () => {
         const wsUrl = `ws://127.0.0.1:3000/api/sync/`;
         const provider = new KeckProvider(wsUrl, workspace.id, workspace.doc, {
           params: { token: getLoginStorage()?.token },
-          // @ts-expect-error ignore the type
           awareness: workspace.awarenessStore.awareness,
           connect: false,
         });
@@ -432,7 +431,6 @@ describe('api', () => {
           workspace2.doc,
           {
             params: { token: getLoginStorage()?.token },
-            // @ts-expect-error ignore the type
             awareness: workspace2.awarenessStore.awareness,
             connect: false,
           }
