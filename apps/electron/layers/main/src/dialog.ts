@@ -7,6 +7,9 @@ import { ensureSQLiteDB } from './data/ensure-db';
 import { exportDatabase } from './data/export';
 import { getWorkspaceDBPath, isValidDBFile } from './data/sqlite';
 
+/**
+ * This function is called when the user clicks the "Save" button in the "Save Workspace" dialog.
+ */
 export async function openSaveDBFileDialog(workspaceId: string) {
   const db = await ensureSQLiteDB(workspaceId);
   const ret = await dialog.showSaveDialog({
@@ -27,6 +30,13 @@ export async function openSaveDBFileDialog(workspaceId: string) {
   return filePath;
 }
 
+/**
+ * This function is called when the user clicks the "Load" button in the "Load Workspace" dialog.
+ *
+ * It will
+ * - symlink the db file to a new workspace id
+ * - return the new workspace id
+ */
 export async function openLoadDBFileDialog() {
   const ret = await dialog.showOpenDialog({
     properties: ['openFile'],

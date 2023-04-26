@@ -107,6 +107,7 @@ export class WorkspaceSQLiteDB {
         'INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?'
       );
       statement.run(key, data, data);
+      return key;
     } catch (error) {
       logger.error('addBlob', error);
     }

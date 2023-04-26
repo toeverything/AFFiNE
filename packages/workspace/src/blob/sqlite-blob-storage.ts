@@ -8,11 +8,12 @@ export const createSQLiteStorage = (workspaceId: string): BlobStorage => {
         return buffer ? new Blob([buffer]) : null;
       },
       set: async (key: string, value: Blob) => {
-        return window.apis.db.addBlob(
+        await window.apis.db.addBlob(
           workspaceId,
           key,
           new Uint8Array(await value.arrayBuffer())
         );
+        return key;
       },
       delete: async (key: string) => {
         return window.apis.db.deleteBlob(workspaceId, key);

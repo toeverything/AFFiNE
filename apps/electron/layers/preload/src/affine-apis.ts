@@ -6,8 +6,10 @@ import type { MainEventMap, MainIPCHandlerMap } from '../../constraints';
 
 // renderer -> main
 function ipcFn<T extends keyof MainIPCHandlerMap>(eventName: T) {
-  return async (...args: Parameters<MainIPCHandlerMap[T]>) =>
-    await ipcRenderer.invoke(eventName, ...args);
+  return (
+    ...args: Parameters<MainIPCHandlerMap[T]>
+  ): ReturnType<MainIPCHandlerMap[T]> =>
+    ipcRenderer.invoke(eventName, ...args) as ReturnType<MainIPCHandlerMap[T]>;
 }
 
 // main -> renderer

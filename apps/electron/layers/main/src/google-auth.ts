@@ -30,27 +30,29 @@ export const getExchangeTokenParams = (code: string) => {
 export function getGoogleOauthCode() {
   shell.openExternal(oauthEndpoint);
 
-  return new Promise((resolve, reject) => {
-    const handleOpenUrl = async (_: any, url: string) => {
-      const mainWindow = BrowserWindow.getAllWindows().find(
-        w => !w.isDestroyed()
-      );
-      const urlObj = parse(url.replace('??', '?'), true);
-      if (!mainWindow || !url.startsWith('affine://auth-callback')) return;
-      const code = urlObj.query['code'] as string;
-      if (!code) return;
+  return new Promise<ReturnType<typeof getExchangeTokenParams>>(
+    (resolve, reject) => {
+      const handleOpenUrl = async (_: any, url: string) => {
+        const mainWindow = BrowserWindow.getAllWindows().find(
+          w => !w.isDestroyed()
+        );
+        const urlObj = parse(url.replace('??', '?'), true);
+        if (!mainWindow || !url.startsWith('affine://auth-callback')) return;
+        const code = urlObj.query['code'] as string;
+        if (!code) return;
 
-      logger.info('google sign in code received from callback', code);
+        logger.info('google sign in code received from callback', code);
 
-      app.removeListener('open-url', handleOpenUrl);
-      resolve(getExchangeTokenParams(code));
-    };
+        app.removeListener('open-url', handleOpenUrl);
+        resolve(getExchangeTokenParams(code));
+      };
 
-    app.on('open-url', handleOpenUrl);
+      app.on('open-url', handleOpenUrl);
 
-    setTimeout(() => {
-      reject(new Error('Timed out'));
-      app.removeListener('open-url', handleOpenUrl);
-    }, 30000);
-  });
+      setTimeout(() => {
+        reject(new Error('Timed out'));
+        app.removeListener('open-url', handleOpenUrl);
+      }, 30000);
+    }
+  );
 }

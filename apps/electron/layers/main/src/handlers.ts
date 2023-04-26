@@ -9,9 +9,10 @@ import { openLoadDBFileDialog, openSaveDBFileDialog } from './dialog';
 import { getGoogleOauthCode } from './google-auth';
 
 export const workspaceHandlers = {
-  'workspace:list': async () => listWorkspaces(appContext),
-  'workspace:delete': async (id: string) => deleteWorkspace(appContext, id),
-} as const;
+  'workspace:list': async (): Promise<string[]> => listWorkspaces(appContext),
+  'workspace:delete': async (id: string): Promise<void> =>
+    deleteWorkspace(appContext, id),
+};
 
 export const uiHandlers = {
   'ui:theme-change': async (theme: (typeof nativeTheme)['themeSource']) => {
