@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 
-import type { MainEventMap } from '../../main-events';
+import type { MainEventMap } from '../../constraints';
 
 function getActiveWindows() {
   return BrowserWindow.getAllWindows().filter(win => !win.isDestroyed());

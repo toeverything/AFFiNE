@@ -20,16 +20,19 @@ export async function ensureSQLiteDB(id: string) {
     dbWatchers.set(
       id,
       watchFile(workspaceDB.path, (event, filename) => {
+        if (!filename) {
+          // the file is deleted
+        }
         const minTime = 1000;
         const db = workspaceDB;
         const lastUpdateTime = db?.lastUpdateTime ?? 0;
         const elapsed = Date.now() - lastUpdateTime;
-        if (elapsed < minTime || !filename) {
+        if (elapsed < minTime) {
           logger.debug('skip db file update', elapsed, filename);
           return;
         }
         logger.debug('db file changed', event, filename, elapsed);
-        sendMainEvent('main:on-db-update', id);
+        sendMainEvent('main:on-db-file-update', id);
 
         // handle DB file update by other process so we may need to reconnect to it
         dbWatchers.get(id)?.();
@@ -42,7 +45,7 @@ export async function ensureSQLiteDB(id: string) {
   return workspaceDB;
 }
 
-export async function cleanupWorkspaceDBs() {
+export async function cleanupSQLiteDBs() {
   for (const [id, db] of dbMapping) {
     logger.info('close db connection', id);
     db.destroy();

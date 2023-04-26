@@ -2,7 +2,7 @@
 
 import { ipcRenderer } from 'electron';
 
-import type { MainEventMap } from '../../main-events';
+import type { MainEventMap, MainIPCHandlerMap } from '../../constraints';
 
 // main -> renderer
 function onMainEvent<T extends keyof MainEventMap>(
@@ -15,62 +15,61 @@ function onMainEvent<T extends keyof MainEventMap>(
   return () => ipcRenderer.off(eventName, fn);
 }
 
+function ipcFn<T extends keyof MainIPCHandlerMap>(eventName: T) {
+  return async (...args: Parameters<MainIPCHandlerMap[T]>) =>
+    await ipcRenderer.invoke(eventName, ...args);
+}
+
+function ipcCallbackFn<T extends keyof MainEventMap>(eventName: T) {
+  return async (
+    callback: (event: Electron.IpcRendererEvent, ...args: any[]) => void,
+    ...args: Parameters<MainEventMap[T]>
+  ) => {
+    ipcRenderer.on(eventName, callback);
+    return () => ipcRenderer.off(eventName, callback);
+  };
+}
+
+export const listeners = {
+  'main:on-db-file-update': (callback: (workspaceId: string) => void) => {},
+};
+
 const apis = {
   db: {
     // workspace providers
-    getDoc: (id: string): Promise<Uint8Array | null> =>
-      ipcRenderer.invoke('db:get-doc', id),
-    applyDocUpdate: (id: string, update: Uint8Array) =>
-      ipcRenderer.invoke('db:apply-doc-update', id, update),
-    addBlob: (workspaceId: string, key: string, data: Uint8Array) =>
-      ipcRenderer.invoke('db:add-blob', workspaceId, key, data),
-    getBlob: (workspaceId: string, key: string): Promise<Uint8Array | null> =>
-      ipcRenderer.invoke('db:get-blob', workspaceId, key),
-    deleteBlob: (workspaceId: string, key: string) =>
-      ipcRenderer.invoke('db:delete-blob', workspaceId, key),
-    getPersistedBlobs: (workspaceId: string): Promise<string[]> =>
-      ipcRenderer.invoke('db:get-persisted-blobs', workspaceId),
+    getDoc: ipcFn('db:get-doc'),
+    applyDocUpdate: ipcFn('db:apply-doc-update'),
+    addBlob: ipcFn('db:add-blob'),
+    getBlob: ipcFn('db:get-blob'),
+    deleteBlob: ipcFn('db:delete-blob'),
+    getPersistedBlobs: ipcFn('db:get-persisted-blobs'),
 
     // listeners
     onDBUpdate: (callback: (workspaceId: string) => void) => {
-      return onMainEvent('main:on-db-update', callback);
+      return onMainEvent('main:on-db-file-update', callback);
     },
   },
 
   workspace: {
-    list: (): Promise<string[]> => ipcRenderer.invoke('workspace:list'),
-    delete: (id: string): Promise<void> =>
-      ipcRenderer.invoke('workspace:delete', id),
-    // create will be implicitly called by db functions
+    list: ipcFn('workspace:list'),
+    delete: ipcFn('workspace:delete'),
   },
 
-  openLoadDBFileDialog: (): Promise<{
-    workspaceId?: string;
-    canceled?: boolean;
-    error?: string;
-  }> => ipcRenderer.invoke('ui:open-load-db-file-dialog'),
-  openSaveDBFileDialog: (workspaceId: string) =>
-    ipcRenderer.invoke('ui:open-save-db-file-dialog', workspaceId),
+  openLoadDBFileDialog: ipcFn('ui:open-load-db-file-dialog'),
+  openSaveDBFileDialog: ipcFn('ui:open-save-db-file-dialog'),
 
   // ui
-  onThemeChange: (theme: string) =>
-    ipcRenderer.invoke('ui:theme-change', theme),
+  onThemeChange: ipcFn('ui:theme-change'),
+  onSidebarVisibilityChange: ipcFn('ui:sidebar-visibility-change'),
+  onWorkspaceChange: ipcFn('ui:workspace-change'),
 
-  onSidebarVisibilityChange: (visible: boolean) =>
-    ipcRenderer.invoke('ui:sidebar-visibility-change', visible),
-
-  onWorkspaceChange: (workspaceId: string) =>
-    ipcRenderer.invoke('ui:workspace-change', workspaceId),
-
-  openDBFolder: (workspaceId: string) =>
-    ipcRenderer.invoke('ui:open-db-folder', workspaceId),
+  openDBFolder: ipcFn('ui:open-db-folder'),
 
   /**
    * Try sign in using Google and return a request object to exchange the code for a token
    * Not exchange in Node side because it is easier to do it in the renderer with VPN
    */
-  getGoogleOauthCode: (): Promise<{ requestInit: RequestInit; url: string }> =>
-    ipcRenderer.invoke('ui:get-google-oauth-code'),
+  getGoogleOauthCode: ipcFn('ui:get-google-oauth-code'),
 
   /**
    * Secret backdoor to update environment variables in main process

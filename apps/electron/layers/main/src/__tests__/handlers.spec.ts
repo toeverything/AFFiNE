@@ -82,16 +82,16 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  const { cleanupWorkspaceDBs } = await import('../handlers');
-  cleanupWorkspaceDBs();
+  const { cleanupSQLiteDBs } = await import('../ensure-db');
+  cleanupSQLiteDBs();
   await fs.remove(APP_PATH);
 });
 
 describe('ensureWorkspaceDB', () => {
   test('should create db file on connection if it does not exist', async () => {
     const id = 'test-workspace-id';
-    const { ensureWorkspaceDB } = await import('../handlers');
-    const workspaceDB = await ensureWorkspaceDB(id);
+    const { ensureSQLiteDB } = await import('../ensure-db');
+    const workspaceDB = await ensureSQLiteDB(id);
     const file = workspaceDB.path;
     const fileExists = await fs.pathExists(file);
     expect(fileExists).toBe(true);
@@ -101,16 +101,16 @@ describe('ensureWorkspaceDB', () => {
 describe('workspace handlers', () => {
   test('list all workspace ids', async () => {
     const ids = ['test-workspace-id', 'test-workspace-id-2'];
-    const { ensureWorkspaceDB } = await import('../handlers');
-    await Promise.all(ids.map(id => ensureWorkspaceDB(id)));
+    const { ensureSQLiteDB } = await import('../ensure-db');
+    await Promise.all(ids.map(id => ensureSQLiteDB(id)));
     const list = await dispatch('workspace:list');
     expect(list).toEqual(ids);
   });
 
   test('delete workspace', async () => {
     const ids = ['test-workspace-id', 'test-workspace-id-2'];
-    const { ensureWorkspaceDB } = await import('../handlers');
-    await Promise.all(ids.map(id => ensureWorkspaceDB(id)));
+    const { ensureSQLiteDB } = await import('../ensure-db');
+    await Promise.all(ids.map(id => ensureSQLiteDB(id)));
     await dispatch('workspace:delete', 'test-workspace-id-2');
     const list = await dispatch('workspace:list');
     expect(list).toEqual(['test-workspace-id']);
@@ -148,8 +148,8 @@ describe('UI handlers', () => {
 
 describe('db handlers', () => {
   test('will reconnect on activate', async () => {
-    const { ensureWorkspaceDB } = await import('../handlers');
-    const workspaceDB = await ensureWorkspaceDB('test-workspace-id');
+    const { ensureSQLiteDB } = await import('../ensure-db');
+    const workspaceDB = await ensureSQLiteDB('test-workspace-id');
     const instance = vi.spyOn(workspaceDB, 'reconnectDB');
     await dispatch('activate');
     expect(instance).toBeCalled();
