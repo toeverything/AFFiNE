@@ -1,4 +1,5 @@
 import { SidebarIcon } from '@blocksuite/icons';
+import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import type { ReactNode } from 'react';
@@ -10,6 +11,7 @@ import {
   navFooterStyle,
   navHeaderStyle,
   navStyle,
+  navWidthVar,
   sidebarButtonStyle,
 } from './index.css';
 import { appSidebarOpenAtom, appSidebarWidthAtom } from './index.jotai';
@@ -35,18 +37,19 @@ export const AppSidebar = (props: AppSidebarProps): ReactElement => {
 
   const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
 
-  useEffect(() => {
-    if (ref.current && open) {
-      ref.current.style.width = `${appSidebarWidth}px`;
-    }
-  }, [appSidebarWidth, open]);
-
   const handleSidebarOpen = useCallback(() => {
     setOpen(open => !open);
   }, [setOpen]);
 
   return (
-    <nav className={navStyle} ref={ref} data-open={open}>
+    <nav
+      className={navStyle}
+      ref={ref}
+      style={assignInlineVars({
+        [navWidthVar]: `${appSidebarWidth}px`,
+      })}
+      data-open={open}
+    >
       <div className={navHeaderStyle}>
         <IconButton className={sidebarButtonStyle} onClick={handleSidebarOpen}>
           <SidebarIcon width={24} height={24} />

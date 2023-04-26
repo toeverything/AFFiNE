@@ -36,6 +36,7 @@
     "@radix-ui/react-avatar": "^1.0.2",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/theme": "workspace:*",
+    "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^1.2.1",
     "jotai": "^2.0.4",
     "lit": "^2.7.2",

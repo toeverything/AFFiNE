@@ -16,7 +16,7 @@ export const Default: StoryFn = props => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [width, setWidth] = useAtom(appSidebarWidthAtom);
   if (props.width !== width) {
-    setWidth(props.width);
+    setWidth(props.width ?? 256);
   }
   return (
     <>

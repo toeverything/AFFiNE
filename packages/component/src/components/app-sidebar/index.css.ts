@@ -1,9 +1,11 @@
-import { style } from '@vanilla-extract/css';
+import { createVar, style } from '@vanilla-extract/css';
+
+export const navWidthVar = createVar('nav-width');
 
 export const navStyle = style({
   position: 'relative',
   backgroundColor: 'var(--affine-background-secondary-color)',
-  width: '256px',
+  width: navWidthVar,
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
@@ -11,13 +13,21 @@ export const navStyle = style({
   '@media': {
     '(max-width: 600px)': {
       position: 'absolute',
-      width: 'calc(10vw + 256px)',
+      width: `calc(10vw + ${navWidthVar})`,
+      selectors: {
+        '&[data-open="false"]': {
+          marginLeft: `calc((10vw + ${navWidthVar}) * -1)`,
+        },
+      },
     },
   },
   selectors: {
     '&[data-open="false"]': {
-      marginLeft: '-256px',
+      marginLeft: `calc(${navWidthVar} * -1)`,
     },
+  },
+  vars: {
+    [navWidthVar]: '256px',
   },
 });
 
