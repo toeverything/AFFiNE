@@ -15,6 +15,8 @@ mod:dev:
 
 mod:workspace: 'packages/workspace/**/*'
 
+mod:theme: 'packages/theme/**/*'
+
 mod:i18n: 'packages/i18n/**/*'
 
 mod:env: 'packages/env/**/*'

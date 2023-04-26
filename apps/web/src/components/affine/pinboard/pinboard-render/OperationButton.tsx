@@ -1,9 +1,4 @@
-import {
-  baseTheme,
-  MenuItem,
-  MuiClickAwayListener,
-  PureMenu,
-} from '@affine/component';
+import { MenuItem, MuiClickAwayListener, PureMenu } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
   MoreVerticalIcon,
@@ -12,6 +7,7 @@ import {
   PlusIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
+import { baseTheme } from '@toeverything/theme';
 import { useMemo, useRef, useState } from 'react';
 
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';

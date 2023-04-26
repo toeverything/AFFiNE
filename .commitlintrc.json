@@ -20,7 +20,8 @@
         "octobase-node",
         "templates",
         "y-indexeddb",
-        "debug"
+        "debug",
+        "theme"
       ]
     ]
   }

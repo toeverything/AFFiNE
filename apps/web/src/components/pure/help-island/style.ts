@@ -12,7 +12,9 @@ export const StyledIsland = styled('div')<{
       : 'unset',
     padding: '0 4px 44px',
     borderRadius: '10px',
-    backgroundColor: 'var(--affine-background-primary-color)',
+    background: spread
+      ? 'var(--affine-background-overlay-panel-color)'
+      : 'transparent',
     ':hover': {
       boxShadow:
         '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)',
@@ -38,7 +40,6 @@ export const StyledIconWrapper = styled('div')(({ theme }) => {
     ...displayFlex('center', 'center'),
     cursor: 'pointer',
     fontSize: '24px',
-    backgroundColor: 'var(--affine-background-primary-color)',
     borderRadius: '5px',
     width: '36px',
     height: '36px',
@@ -62,7 +63,6 @@ export const StyledTriggerWrapper = styled('div')(({ theme }) => {
     width: '36px',
     height: '36px',
     cursor: 'pointer',
-    backgroundColor: 'var(--affine-background-primary-color)',
     color: 'var(--affine-icon-color)',
     borderRadius: '5px',
     fontSize: '24px',
