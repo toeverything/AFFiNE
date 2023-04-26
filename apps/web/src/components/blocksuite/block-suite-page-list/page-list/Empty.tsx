@@ -1,6 +1,6 @@
 import { Empty } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import React from 'react';
+import { useTranslation } from '@affine/i18n';
+
 export const PageListEmpty = (props: { listType?: string }) => {
   const { listType } = props;
   const t = useAFFiNEI18N();

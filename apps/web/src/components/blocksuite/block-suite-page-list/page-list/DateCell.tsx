@@ -3,7 +3,6 @@ import { TableCell } from '@affine/component';
 import type { PageMeta } from '@blocksuite/store';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import React from 'react';
 
 dayjs.extend(localizedFormat);
 
