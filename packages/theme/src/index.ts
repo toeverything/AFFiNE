@@ -1,6 +1,13 @@
-import type { EditorContainer } from '@blocksuite/editor';
-
-import type { Theme } from './types';
+export const camelToKebab = (s: string) => {
+  if (typeof s !== 'string') return '';
+  return s
+    .replace(/-/g, '_')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z])([A-Z])(?=[a-z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/(\D+)(\d+)$/g, '$1-$2')
+    .replace(/\s|_/g, '-');
+};
 
 type Kebab<
   T extends string,
@@ -10,7 +17,7 @@ type Kebab<
   : A;
 
 export type AffineTheme = typeof lightTheme & {
-  editorMode: NonNullable<EditorContainer['mode']>;
+  editorMode: 'page' | 'edgeless';
 };
 
 export type AffineCssVariables = {
@@ -228,13 +235,20 @@ export const darkTheme = {
   tooltip: '#EAEAEA',
 } satisfies Omit<AffineTheme, 'editorMode'>;
 
-export const getTheme: (
-  themeMode: Theme,
-  editorMode: NonNullable<EditorContainer['mode']>
-) => AffineTheme = (themeMode, editorMode) => {
-  return {
-    editorMode,
+export const lightCssVariables = Object.entries(lightTheme).reduce(
+  (variables, [key, value]) => {
+    variables[`--affine-${camelToKebab(key)}` as keyof AffineCssVariables] =
+      value;
+    return variables;
+  },
+  {} as AffineCssVariables
+);
 
-    ...(themeMode === 'light' ? lightTheme : darkTheme),
-  };
-};
+export const darkCssVariables = Object.entries(darkTheme).reduce(
+  (variables, [key, value]) => {
+    variables[`--affine-${camelToKebab(key)}` as keyof AffineCssVariables] =
+      value;
+    return variables;
+  },
+  {} as AffineCssVariables
+);

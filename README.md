@@ -25,10 +25,10 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 [![AFFiNE Web](<https://img.shields.io/badge/-Try%20It%20Online%20%E2%86%92-rgb(84,56,255)?style=flat-square&logoColor=white&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAADAAAAAwAEwd99eAAABjElEQVRYhe1W0U3DMBB9RfyTDeoNyAYNG2QDOgJsECYgGxA26AZ4hIxgJqCZ4PjIGV+tUxK7raqiPsmKdXe5e3fOs7IiIlwSdxetfiNw7QRKAD0Ax/ssrI5QgQOw5v03AJOTJHcCL1x84LVmWzJyJlBg7P4BwCvb3pmIAbBPykZEqaulEU7YHNva1HypxUsKqIS9EvbynASs0n3ss+ciUIsuO8VvhL9emjdFBa3YO8XvALwpsZNYSqBB0PwUWgRZNksSL5GhlN0ngGd+dkpsD6AG8IGlslxwTh2fa09EBc3Dir32rRysuQlUAL54/wTAcpePPAXHPsOTGXhSEv69rAlYpZOt6DSO29J4D/TRRLJk6AvtaZSY9PkCFYVLqI9i/NF5YkkECgrXa6P4fVEn4iolrhNxRQqBZu7FqMNdZiMqAUPj2KdGZyicu1dHzlGqBHxn2sdTR53bmeJ+ebJd7LtXhGH4uQEwd0ttAPzMxGi5/6BdxTuMej41Bs59gGP+CU+Cq/4tvxH4HwR+Ab3Uqr/VGbqEAAAAAElFTkSuQmCC>)](https://app.affine.pro)
-[![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
-[![AFFiNE macOS x64](https://img.shields.io/badge/-macOS_x86%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
-[![AFFiNE Window x64](https://img.shields.io/badge/-Windows%20%E2%86%92-blue?style=flat-square&logo=windows&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
-[![AFFiNE Linux](https://img.shields.io/badge/-Linux%20%E2%86%92-yellow?style=flat-square&logo=linux&logoColor=white)](https://github.com/toeverything/AFFiNE/releases/latest)
+[![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
+[![AFFiNE macOS x64](https://img.shields.io/badge/-macOS_x86%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
+[![AFFiNE Window x64](https://img.shields.io/badge/-Windows%20%E2%86%92-blue?style=flat-square&logo=windows&logoColor=white)](https://affine.pro/download)
+[![AFFiNE Linux](https://img.shields.io/badge/-Linux%20%E2%86%92-yellow?style=flat-square&logo=linux&logoColor=white)](https://affine.pro/download)
 
 [![stars-icon]](https://github.com/toeverything/AFFiNE)
 [![All Contributors][all-contributors-badge]](#contributors)
@@ -110,6 +110,14 @@ For **translation** and **language support** you can visit our [i18n General Spa
 Looking for **others ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador), we work closely with passionate community members and provide them with a wide-range of support and resources.
 
 If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [AFFiNE Community](https://community.affine.pro) where you can engage with other like-minded individuals.
+
+## Ecosystem
+
+| Name                                                      |                                    |                                                                                                                                                     |
+| --------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [@affine/component](https://affine-storybook.vercel.app/) | AFFiNE Component Resources         | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
+| [@toeverything/y-indexeddb](packages/y-indexeddb)         | IndexedDB database adapter for Yjs | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
+| [@toeverything/theme](packages/theme)                     | AFFiNE theme                       | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
 
 ## Thanks
 
