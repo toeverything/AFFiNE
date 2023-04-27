@@ -1,4 +1,8 @@
-import { AppSidebar, ResizeIndicator } from '@affine/component/app-sidebar';
+import {
+  AppSidebar,
+  appSidebarOpenAtom,
+  ResizeIndicator,
+} from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -11,8 +15,9 @@ import {
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { useAtomValue } from 'jotai';
 import type { ReactElement, UIEvent } from 'react';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { AllWorkspace } from '../../../shared';
 import ChangeLog from '../workspace-slider-bar/changeLog';
@@ -66,6 +71,12 @@ export const RootAppSidebar = ({
     const page = await createPage();
     openPage(page.id);
   }, [createPage, openPage]);
+  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
+  useEffect(() => {
+    if (environment.isDesktop) {
+      window.apis?.onSidebarVisibilityChange(sidebarOpen);
+    }
+  }, [sidebarOpen]);
   const ref = useRef<HTMLElement>(null);
   return (
     <>
