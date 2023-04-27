@@ -203,7 +203,7 @@ test('After appearing once, it will not appear a second time', async ({
   await page.locator('[data-testid=quick-search-got-it]').click();
   await expect(quickSearchTips).not.toBeVisible();
   await page.reload();
-  await page.locator('[data-testid=sliderBar-arrowButton-expand]').click();
+  await page.waitForSelector('v-line');
   await page.getByTestId('app-sidebar-arrow-button-collapse').click();
   await expect(quickSearchTips).not.toBeVisible();
 });
