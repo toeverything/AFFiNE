@@ -46,11 +46,9 @@ export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
 
   const onResizeStart = useCallback(() => {
     let resized = false;
-    const originalCursor = document.body.style.cursor;
 
     function onMouseMove(e: MouseEvent) {
       e.preventDefault();
-      document.body.style.cursor = 'col-resize';
       const newWidth = Math.min(480, Math.max(e.clientX, 256));
       setWidth(newWidth);
       setIsResizing(true);
@@ -68,7 +66,6 @@ export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
         if (popperRef.current) {
           popperRef.current.update();
         }
-        document.body.style.cursor = originalCursor;
         setIsResizing(false);
         document.removeEventListener('mousemove', onMouseMove);
       },
