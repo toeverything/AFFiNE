@@ -22,6 +22,9 @@ export const navStyle = style({
         '&[data-open="false"]': {
           marginLeft: `calc((10vw + ${navWidthVar}) * -1)`,
         },
+        '&[data-is-macos-electron="true"]': {
+          backgroundColor: 'var(--affine-background-secondary-color)',
+        },
       },
     },
   },
@@ -45,6 +48,11 @@ export const navHeaderStyle = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  selectors: {
+    '&[data-is-macos-electron="true"]': {
+      justifyContent: 'flex-end',
+    },
+  },
 });
 
 export const navBodyStyle = style({

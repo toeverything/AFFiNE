@@ -53,7 +53,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
     useImperativeHandle(forwardedRef, () => ref.current as HTMLElement);
 
     const environment = getEnvironment();
-
+    const isMacosDesktop = environment.isDesktop && environment.isMacOs;
     return (
       <>
         <nav
@@ -64,9 +64,12 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
           })}
           data-testid="app-sidebar"
           data-open={open}
-          data-is-macos-electron={environment.isDesktop && environment.isMacOs}
+          data-is-macos-electron={isMacosDesktop}
         >
-          <div className={navHeaderStyle}>
+          <div
+            className={navHeaderStyle}
+            data-is-macos-electron={isMacosDesktop}
+          >
             <IconButton
               data-testid="app-sidebar-arrow-button-collapse"
               className={sidebarButtonStyle}
