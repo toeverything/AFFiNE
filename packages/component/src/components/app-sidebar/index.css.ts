@@ -1,3 +1,4 @@
+import { baseTheme } from '@toeverything/theme';
 import { createVar, style } from '@vanilla-extract/css';
 
 export const navWidthVar = createVar('nav-width');
@@ -11,6 +12,7 @@ export const navStyle = style({
   display: 'flex',
   flexDirection: 'column',
   transition: 'margin-left .3s',
+  zIndex: parseInt(baseTheme.zIndexModal) + 1,
   '@media': {
     '(max-width: 600px)': {
       position: 'absolute',
@@ -54,4 +56,30 @@ export const sidebarButtonStyle = style({
   width: '32px',
   height: '32px',
   color: 'var(--affine-icon-color)',
+});
+
+export const sidebarFloatMaskStyle = style({
+  transition: 'opacity .15s',
+  opacity: 0,
+  pointerEvents: 'none',
+  display: 'none',
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: '100%',
+  bottom: 0,
+  zIndex: parseInt(baseTheme.zIndexModal) - 1,
+  background: 'var(--affine-background-modal-color)',
+  '@media': {
+    '(max-width: 600px)': {
+      selectors: {
+        '&[data-open="true"]': {
+          opacity: 1,
+          pointerEvents: 'auto',
+          display: 'block',
+          right: '0',
+        },
+      },
+    },
+  },
 });

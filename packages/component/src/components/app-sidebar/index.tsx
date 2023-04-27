@@ -19,6 +19,7 @@ import {
   navStyle,
   navWidthVar,
   sidebarButtonStyle,
+  sidebarFloatMaskStyle,
 } from './index.css';
 import { appSidebarOpenAtom, appSidebarWidthAtom } from './index.jotai';
 
@@ -51,27 +52,37 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
     useImperativeHandle(forwardedRef, () => ref.current as HTMLElement);
 
     return (
-      <nav
-        className={navStyle}
-        ref={ref}
-        style={assignInlineVars({
-          [navWidthVar]: `${appSidebarWidth}px`,
-        })}
-        data-testid="app-sidebar"
-        data-open={open}
-      >
-        <div className={navHeaderStyle}>
-          <IconButton
-            data-testid="app-sidebar-arrow-button-collapse"
-            className={sidebarButtonStyle}
-            onClick={handleSidebarOpen}
-          >
-            <SidebarIcon width={24} height={24} />
-          </IconButton>
-        </div>
-        <div className={navBodyStyle}>{props.children}</div>
-        <div className={navFooterStyle}>{props.footer}</div>
-      </nav>
+      <>
+        <nav
+          className={navStyle}
+          ref={ref}
+          style={assignInlineVars({
+            [navWidthVar]: `${appSidebarWidth}px`,
+          })}
+          data-testid="app-sidebar"
+          data-open={open}
+        >
+          <div className={navHeaderStyle}>
+            <IconButton
+              data-testid="app-sidebar-arrow-button-collapse"
+              className={sidebarButtonStyle}
+              onClick={handleSidebarOpen}
+            >
+              <SidebarIcon width={24} height={24} />
+            </IconButton>
+          </div>
+          <div className={navBodyStyle}>{props.children}</div>
+          <div className={navFooterStyle}>{props.footer}</div>
+        </nav>
+        <div
+          data-testid="app-sidebar-float-mask"
+          data-open={open}
+          className={sidebarFloatMaskStyle}
+          onClick={useCallback(() => {
+            setOpen(false);
+          }, [setOpen])}
+        />
+      </>
     );
   }
 );
