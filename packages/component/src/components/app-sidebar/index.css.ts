@@ -13,7 +13,7 @@ export const navStyle = style({
   display: 'flex',
   flexDirection: 'column',
   transition: 'margin-left .3s',
-  zIndex: parseInt(baseTheme.zIndexModal) + 1,
+  zIndex: parseInt(baseTheme.zIndexModal),
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
