@@ -195,6 +195,8 @@ test('After appearing once, it will not appear a second time', async ({
   const quickSearchTips = page.locator('[data-testid=quick-search-tips]');
   await expect(quickSearchTips).not.toBeVisible();
   await page.getByTestId('app-sidebar-arrow-button-collapse').click();
+  await page.waitForTimeout(200);
+  await page.getByTestId('sliderBar-arrowButton-expand').click();
   const sliderBarArea = page.getByTestId('sliderBar');
   await expect(sliderBarArea).not.toBeVisible();
   await expect(quickSearchTips).toBeVisible();
