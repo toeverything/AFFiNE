@@ -54,7 +54,7 @@ export const baseTheme = {
   zIndexPopover: '100',
 
   paragraphSpace: '8px',
-  popoverRadius: '10px',
+  popoverRadius: '12px',
 
   zoom: '1',
   scale: 'calc(1 / var(--affine-zoom))',
