@@ -23,9 +23,9 @@ import {
 import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
-const BlockSuitePublicPageList = lazy(() =>
+const BlockSuitePageList = lazy(() =>
   import('../../components/blocksuite/block-suite-page-list').then(module => ({
-    default: module.BlockSuitePublicPageList,
+    default: module.BlockSuitePageList,
   }))
 );
 
@@ -79,7 +79,9 @@ const ListPageInner: React.FC<{
           </StyledTableContainer>
         }
       >
-        <BlockSuitePublicPageList
+        <BlockSuitePageList
+          listType="public"
+          isPublic={true}
           onOpenPage={handleClickPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
         />
