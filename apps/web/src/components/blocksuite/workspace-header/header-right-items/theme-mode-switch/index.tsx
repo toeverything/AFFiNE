@@ -21,23 +21,16 @@ export const MenuThemeModeSwitch = () => {
   return (
     <StyledThemeModeContainer>
       <StyledThemeModeSwitch data-testid="change-theme-container" inMenu={true}>
-        <StyledSwitchItem
-          data-testid="change-theme-light"
-          active={resolvedTheme === 'light'}
-          inMenu={true}
-        >
+        <StyledSwitchItem active={resolvedTheme === 'light'} inMenu={true}>
           <LightModeIcon />
         </StyledSwitchItem>
-        <StyledSwitchItem
-          data-testid="change-theme-dark"
-          active={resolvedTheme === 'dark'}
-          inMenu={true}
-        >
+        <StyledSwitchItem active={resolvedTheme === 'dark'} inMenu={true}>
           <DarkModeIcon />
         </StyledSwitchItem>
       </StyledThemeModeSwitch>
       <StyledThemeButtonContainer>
         <StyledThemeButton
+          data-testid="change-theme-light"
           active={theme === 'light'}
           onClick={() => {
             setTheme('light');
@@ -47,6 +40,7 @@ export const MenuThemeModeSwitch = () => {
         </StyledThemeButton>
         <StyledVerticalDivider />
         <StyledThemeButton
+          data-testid="change-theme-dark"
           active={theme === 'dark'}
           onClick={() => {
             setTheme('dark');
