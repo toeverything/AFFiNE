@@ -8,14 +8,14 @@ export const SIZE_CONFIG = {
   [SIZE_SMALL]: {
     iconSize: 16,
     fontSize: 16,
-    borderRadius: 6,
+    borderRadius: 4,
     height: 26,
     padding: 24,
   },
   [SIZE_MIDDLE]: {
     iconSize: 20,
     fontSize: 16,
-    borderRadius: 6,
+    borderRadius: 4,
     height: 32,
     padding: 24,
   },
@@ -24,7 +24,7 @@ export const SIZE_CONFIG = {
     fontSize: 16,
     height: 38,
     padding: 24,
-    borderRadius: 6,
+    borderRadius: 4,
   },
 } as const;
 

@@ -93,7 +93,7 @@ export const EditorOptionMenu = () => {
         <Menu
           width={276}
           content={EditMenu}
-          placement="bottom-end"
+          // placement="bottom-end"
           disablePortal={true}
           trigger="click"
         >
