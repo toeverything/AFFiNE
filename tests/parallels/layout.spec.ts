@@ -54,9 +54,7 @@ test('Sidebar in between sm & md breakpoint', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   const sliderBarArea = page.getByTestId('sliderBar-inner');
-  const sliderBarModalBackground = page.getByTestId(
-    'app-sidebar-arrow-button-collapse'
-  );
+  const sliderBarModalBackground = page.getByTestId('app-sidebar-float-mask');
   await expect(sliderBarArea).toBeInViewport();
   await expect(sliderBarModalBackground).not.toBeVisible();
 

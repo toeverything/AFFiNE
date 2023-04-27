@@ -1,6 +1,7 @@
 import { baseTheme } from '@toeverything/theme';
 import { createVar, style } from '@vanilla-extract/css';
 
+export const floatingMaxWidth = 768;
 export const navWidthVar = createVar('nav-width');
 
 export const navStyle = style({
@@ -14,7 +15,7 @@ export const navStyle = style({
   transition: 'margin-left .3s',
   zIndex: parseInt(baseTheme.zIndexModal) + 1,
   '@media': {
-    '(max-width: 600px)': {
+    [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
       width: `calc(10vw + ${navWidthVar})`,
       selectors: {
@@ -62,7 +63,6 @@ export const sidebarFloatMaskStyle = style({
   transition: 'opacity .15s',
   opacity: 0,
   pointerEvents: 'none',
-  display: 'none',
   position: 'fixed',
   top: 0,
   left: 0,
@@ -71,12 +71,11 @@ export const sidebarFloatMaskStyle = style({
   zIndex: parseInt(baseTheme.zIndexModal) - 1,
   background: 'var(--affine-background-modal-color)',
   '@media': {
-    '(max-width: 600px)': {
+    [`(max-width: ${floatingMaxWidth}px)`]: {
       selectors: {
         '&[data-open="true"]': {
           opacity: 1,
           pointerEvents: 'auto',
-          display: 'block',
           right: '0',
         },
       },
