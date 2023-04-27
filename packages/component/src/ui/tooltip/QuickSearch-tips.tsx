@@ -3,13 +3,12 @@ import type { TooltipProps } from '@mui/material';
 import { css, displayFlex, styled } from '../../styles';
 import { Popper, type PopperProps } from '../popper';
 import StyledPopperContainer from '../shared/Container';
-const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
+const StyledTooltip = styled(StyledPopperContainer)(() => {
   return {
     width: '390px',
     minHeight: '92px',
-    boxShadow: 'var(--affine-tooltip-shadow)',
     padding: '12px',
-    backgroundColor: 'var(--affine-background-tertiary-color)',
+    backgroundColor: 'var(--affine-tertiary-color)',
     transform: 'all 0.15s',
     color: 'var(--affine-text-emphasis-color)',
     ...displayFlex('center', 'center'),
@@ -20,7 +19,7 @@ const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   };
 });
 
-const StyledCircleContainer = styled('div')(({ theme }) => {
+const StyledCircleContainer = styled('div')(() => {
   return css`
     position: relative;
     content: '';

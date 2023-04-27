@@ -28,12 +28,6 @@ const basicFontFamily =
   'apple-system, BlinkMacSystemFont,Helvetica Neue, Tahoma, PingFang SC, Microsoft Yahei, Arial,Hiragino Sans GB, sans-serif, Apple Color Emoji, Segoe UI Emoji,Segoe UI Symbol, Noto Color Emoji';
 
 export const baseTheme = {
-  // shadow
-  popoverShadow:
-    '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
-  modalShadow: '0px 4px 24px #161616',
-  tooltipShadow: '0px 0px 4px rgba(0, 0, 0, 0.14)',
-
   // font
   fontFamily: `Avenir Next, Poppins, ${basicFontFamily}`,
   fontNumberFamily: `Roboto Mono, ${basicFontFamily}`,
@@ -146,6 +140,13 @@ export const lightTheme = {
   paletteShapeBlack: 'rgb(0, 0, 0)',
   paletteShapeGrey: 'rgb(194, 194, 194)',
   tooltip: '#424149',
+  menuShadow:
+    '0px 0px 12px rgba(66, 65, 73, 0.1), inset 0px 0px 0px 0.5px rgba(227, 227, 228, 1)',
+  shadow: '0px 0px 4px rgba(66, 65, 73, 0.1)',
+  popoverShadow:
+    '0px 0px 24px rgba(0, 0, 0, 0.2), 0px 0px 4px rgba(0, 0, 0, 0.6), inset 0px 0px 0px 1px rgba(227, 226, 228, 1)',
+  floatButtonShadow:
+    '0px 1px 16px rgba(0, 0, 0, 0.1), 0px 2px 3px rgba(0, 0, 0, 0.1)',
 };
 
 export const darkTheme = {
@@ -153,8 +154,8 @@ export const darkTheme = {
 
   themeMode: 'dark',
 
-  brandColor: 'rgb(84, 56, 255)',
-  primaryColor: 'rgba(106, 86, 229, 1)',
+  brandColor: 'rgba(156, 140, 255, 1)',
+  primaryColor: 'rgba(156, 140, 255, 1)',
   secondaryColor: 'rgb(144, 150, 245)',
   tertiaryColor: 'rgb(30, 30, 30)',
   hoverColor: 'rgba(255, 255, 255, 0.1)',
@@ -170,7 +171,7 @@ export const darkTheme = {
   warningColor: 'rgb(255, 123, 77)',
   errorColor: 'rgb(212, 140, 130)',
   processingColor: 'rgb(195, 215, 255)',
-  textEmphasisColor: 'rgb(208, 205, 220)',
+  textEmphasisColor: 'rgba(156, 140, 255, 1)',
   textPrimaryColor: 'rgb(234, 234, 234)',
   textSecondaryColor: 'rgb(156, 156, 160)',
   textDisableColor: 'rgb(119, 117, 125)',
@@ -233,6 +234,13 @@ export const darkTheme = {
   paletteShapeBlack: 'rgb(0, 0, 0)',
   paletteShapeGrey: 'rgb(194, 194, 194)',
   tooltip: '#EAEAEA',
+  menuShadow:
+    '0px 0px 12px rgba(0, 0, 0, 1), inset 0px 0px 0px 0.5px rgba(46, 46, 46, 1)',
+  shadow: '0px 0px 4px rgba(20, 20, 20, 1)',
+  popoverShadow:
+    '0px 0px 26px rgba(0, 0, 0, 0.8), 0px 0px 10px rgba(0, 0, 0, 1), inset 0px 0px 0px 1px rgba(46, 46, 46, 1)',
+  floatButtonShadow:
+    '0px 1px 16px rgba(0, 0, 0, 1), 0px 2px 3px rgba(0, 0, 0, 1)',
 } satisfies Omit<AffineTheme, 'editorMode'>;
 
 export const lightCssVariables = Object.entries(lightTheme).reduce(

@@ -9,7 +9,7 @@ export const StyledEditorModeSwitch = styled('div')<{
     height: '32px',
     background: showAlone
       ? 'transparent'
-      : 'var(--affine-background-primary-color)',
+      : 'var(--affine-background-secondary-color)',
     borderRadius: '12px',
     ...displayFlex('space-between', 'center'),
     padding: '0 8px',
@@ -21,7 +21,7 @@ export const StyledEditorModeSwitch = styled('div')<{
       width: '24px',
       height: '24px',
       background: 'var(--affine-background-primary-color)',
-      boxShadow: 'var(--affine-tooltip-shadow)',
+      boxShadow: 'var(--affine-shadow)',
       borderRadius: '8px',
       zIndex: 1,
       position: 'absolute',
@@ -34,11 +34,12 @@ export const StyledEditorModeSwitch = styled('div')<{
 export const StyledSwitchItem = styled('button')<{
   active?: boolean;
   hide?: boolean;
-}>(({ theme, active = false, hide = false }) => {
+}>(({ active = false, hide = false }) => {
   return {
     width: '24px',
     height: '24px',
     borderRadius: '8px',
+    boxShadow: active ? 'var(--affine-shadow)' : 'none',
     color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
     display: hide ? 'none' : 'inline-flex',
     alignItems: 'center',
