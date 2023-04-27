@@ -7,18 +7,14 @@ export const StyledIsland = styled('div')<{
     transition: 'box-shadow 0.2s',
     width: '44px',
     position: 'relative',
-    boxShadow: spread
-      ? '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)'
-      : 'unset',
+    boxShadow: spread ? 'var(--affine-menu-shadow)' : 'unset',
     padding: '0 4px 44px',
     borderRadius: '10px',
     background: spread
       ? 'var(--affine-background-overlay-panel-color)'
-      : 'transparent',
+      : 'var(--affine-background-primary-color)',
     ':hover': {
       background: spread ? null : 'var(--affine-white)',
-      boxShadow:
-        '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)',
     },
     '::after': {
       content: '""',
