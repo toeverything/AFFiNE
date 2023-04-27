@@ -61,9 +61,9 @@ __metadata:
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
     "@emotion/styled": ^11.10.6
-    "@mui/base": 5.0.0-alpha.126
+    "@mui/base": 5.0.0-alpha.127
     "@mui/icons-material": ^5.11.16
-    "@mui/material": ^5.12.1
+    "@mui/material": ^5.12.2
     "@radix-ui/react-avatar": ^1.0.2
     "@storybook/addon-actions": ^7.0.7
     "@storybook/addon-coverage": ^0.0.8
@@ -297,7 +297,7 @@ __metadata:
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
     "@emotion/styled": ^11.10.6
-    "@mui/material": ^5.12.1
+    "@mui/material": ^5.12.2
     "@perfsee/webpack": ^1.6.0
     "@react-hookz/web": ^23.0.0
     "@redux-devtools/extension": ^3.2.5
@@ -5282,9 +5282,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/base@npm:5.0.0-alpha.126":
-  version: 5.0.0-alpha.126
-  resolution: "@mui/base@npm:5.0.0-alpha.126"
+"@mui/base@npm:5.0.0-alpha.127":
+  version: 5.0.0-alpha.127
+  resolution: "@mui/base@npm:5.0.0-alpha.127"
   dependencies:
     "@babel/runtime": ^7.21.0
     "@emotion/is-prop-valid": ^1.2.0
@@ -5301,14 +5301,14 @@ __metadata:
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 3321d8ef06c332f7419d4e9a270f118a2d500e1585ea0c1cbc95a7ee5de69497dac3f85b6ee4a19a34423806316328051b4f2074d52c5fb14a35855eba94658e
+  checksum: 330baeef1fdaa513707f295e07a3436af24d0831a18109ed877f76b86cf1f392309833d33a2c7ca250db79fdf53f5e88c2618f876f50dbbbf9323bbf08e367e7
   languageName: node
   linkType: hard
 
-"@mui/core-downloads-tracker@npm:^5.12.1":
-  version: 5.12.1
-  resolution: "@mui/core-downloads-tracker@npm:5.12.1"
-  checksum: a118f4403f2c48eca298193ae0043603c65674a073cac997cbd5b7b3080b99f3a3b992d4cd2ed5659b5d67263f711199a71d9f13e7f58290ca319b14150e7835
+"@mui/core-downloads-tracker@npm:^5.12.2":
+  version: 5.12.2
+  resolution: "@mui/core-downloads-tracker@npm:5.12.2"
+  checksum: d748bdc56df6fdfe6712550a94263cf094c53ddcb70f6a8f633caf23927edf5ac88b1f888429d895fe2a5045b27eb7aa9826ccee5b917e31973667d604ed87fe
   languageName: node
   linkType: hard
 
@@ -5328,13 +5328,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/material@npm:^5.12.1":
-  version: 5.12.1
-  resolution: "@mui/material@npm:5.12.1"
+"@mui/material@npm:^5.12.2":
+  version: 5.12.2
+  resolution: "@mui/material@npm:5.12.2"
   dependencies:
     "@babel/runtime": ^7.21.0
-    "@mui/base": 5.0.0-alpha.126
-    "@mui/core-downloads-tracker": ^5.12.1
+    "@mui/base": 5.0.0-alpha.127
+    "@mui/core-downloads-tracker": ^5.12.2
     "@mui/system": ^5.12.1
     "@mui/types": ^7.2.4
     "@mui/utils": ^5.12.0
@@ -5357,7 +5357,7 @@ __metadata:
       optional: true
     "@types/react":
       optional: true
-  checksum: 13fdb43e5d9a40b6d79ee53407ff67814f1a5274187d6b8993685dcac96b0090170276180e0e213ac729310c439528022ca497a23b1624485df45b1363563ca7
+  checksum: a3464dfbcc496164967e134d6f1d40e060ee02fc2ddb5fcf648ca85580efdbd5eff5aab6a73486d0a7f329f7299127b52501a13993bb131cbd4e310c7f2e633f
   languageName: node
   linkType: hard
 
