@@ -8,7 +8,7 @@ test('Collapse Sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   await page.getByTestId('sliderBar-arrowButton-collapse').click();
-  const sliderBarArea = page.getByTestId('sliderBar-root');
+  const sliderBarArea = page.getByTestId('app-sidebar');
   await expect(sliderBarArea).not.toBeInViewport();
 });
 
@@ -46,7 +46,7 @@ test('Drag resizer can resize sidebar', async ({ page }) => {
     steps: 10,
   });
   await page.mouse.up();
-  const boundingBox = await page.getByTestId('sliderBar-root').boundingBox();
+  const boundingBox = await page.getByTestId('app-sidebar').boundingBox();
   expect(boundingBox?.width).toBe(400);
 });
 

@@ -57,6 +57,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
         style={assignInlineVars({
           [navWidthVar]: `${appSidebarWidth}px`,
         })}
+        data-testid="app-sidebar"
         data-open={open}
       >
         <div className={navHeaderStyle}>
