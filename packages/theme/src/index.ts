@@ -192,7 +192,7 @@ export const darkTheme = {
   backgroundTertiaryColor: 'rgb(30, 30, 30)',
   backgroundProcessingColor: 'rgba(20, 22, 26, 1)',
   backgroundErrorColor: 'rgba(21, 14, 13, 1)',
-  backgroundWarningColor: 'rgba(26, 10, 3, 1))',
+  backgroundWarningColor: 'rgba(26, 10, 3, 1)',
   backgroundSuccessColor: 'rgba(8, 21, 18, 1)',
   backgroundPrimaryColor: 'rgb(20, 20, 20)',
   backgroundSecondaryColor: 'rgb(32, 32, 32)',
