@@ -102,16 +102,16 @@ describe('ydoc sync', () => {
       BlockSuiteWorkspace.Y.applyUpdate(workspace2.doc, new Uint8Array(binary));
       const provider1 = new KeckProvider(wsUrl, workspace1.id, workspace1.doc, {
         params: { token: user1Token.token },
-        // @ts-expect-error ignore the type
         awareness: workspace1.awarenessStore.awareness,
+        // @ts-expect-error
         disableBc: true,
         connect: false,
       });
 
       const provider2 = new KeckProvider(wsUrl, workspace2.id, workspace2.doc, {
         params: { token: user2Token.token },
-        // @ts-expect-error ignore the type
         awareness: workspace2.awarenessStore.awareness,
+        // @ts-expect-error
         disableBc: true,
         connect: false,
       });
