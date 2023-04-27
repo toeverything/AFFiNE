@@ -1,3 +1,4 @@
+import { getEnvironment } from '@affine/env';
 import { SidebarIcon } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
@@ -51,6 +52,8 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
 
     useImperativeHandle(forwardedRef, () => ref.current as HTMLElement);
 
+    const environment = getEnvironment();
+
     return (
       <>
         <nav
@@ -61,6 +64,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
           })}
           data-testid="app-sidebar"
           data-open={open}
+          data-is-macos-electron={environment.isDesktop && environment.isMacOs}
         >
           <div className={navHeaderStyle}>
             <IconButton

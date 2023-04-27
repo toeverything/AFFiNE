@@ -29,6 +29,9 @@ export const navStyle = style({
     '&[data-open="false"]': {
       marginLeft: `calc(${navWidthVar} * -1)`,
     },
+    '&[data-is-macos-electron="true"]': {
+      backgroundColor: 'transparent',
+    },
   },
   vars: {
     [navWidthVar]: '256px',
