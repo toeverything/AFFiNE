@@ -108,7 +108,7 @@ export const HelpIsland = ({
           </MuiFade>
         </Tooltip>
         <MuiFade in={spread}>
-          <StyledTriggerWrapper>
+          <StyledTriggerWrapper spread>
             <CloseIcon />
           </StyledTriggerWrapper>
         </MuiFade>

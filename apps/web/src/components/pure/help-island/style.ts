@@ -16,6 +16,7 @@ export const StyledIsland = styled('div')<{
       ? 'var(--affine-background-overlay-panel-color)'
       : 'transparent',
     ':hover': {
+      background: spread ? null : 'var(--affine-white)',
       boxShadow:
         '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)',
     },
@@ -58,7 +59,9 @@ export const StyledAnimateWrapper = styled('div')(() => ({
   overflow: 'hidden',
 }));
 
-export const StyledTriggerWrapper = styled('div')(({ theme }) => {
+export const StyledTriggerWrapper = styled('div')<{
+  spread?: boolean;
+}>(({ theme, spread }) => {
   return {
     width: '36px',
     height: '36px',
@@ -70,6 +73,7 @@ export const StyledTriggerWrapper = styled('div')(({ theme }) => {
     ...positionAbsolute({ left: '4px', bottom: '4px' }),
     ':hover': {
       color: 'var(--affine-primary-color)',
+      backgroundColor: spread ? 'var(--affine-hover-color)' : null,
     },
   };
 });
