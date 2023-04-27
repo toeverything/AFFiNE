@@ -64,6 +64,7 @@ __metadata:
     "@mui/base": 5.0.0-alpha.127
     "@mui/icons-material": ^5.11.16
     "@mui/material": ^5.12.2
+    "@popperjs/core": ^2.11.7
     "@radix-ui/react-avatar": ^1.0.2
     "@storybook/addon-actions": ^7.0.7
     "@storybook/addon-coverage": ^0.0.8
@@ -84,6 +85,7 @@ __metadata:
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.0.11
     "@vanilla-extract/css": ^1.11.0
+    "@vanilla-extract/dynamic": ^2.0.3
     "@vitejs/plugin-react": ^4.0.0
     clsx: ^1.2.1
     concurrently: ^8.0.1
@@ -9256,6 +9258,15 @@ __metadata:
     media-query-parser: ^2.0.2
     outdent: ^0.8.0
   checksum: da382c7b80e88890931dbf927d38769aed432cb4c5cd434f35ffd5dcec18584c95864c2ad8f5cd0456ae32f9b3ee6aa3af8eb2d95a7f7c709e41a52d731996b5
+  languageName: node
+  linkType: hard
+
+"@vanilla-extract/dynamic@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "@vanilla-extract/dynamic@npm:2.0.3"
+  dependencies:
+    "@vanilla-extract/private": ^1.0.3
+  checksum: 9ad4068d7e28361a7aca46b5f14094e74613428fb600e54227d8ba7a35926c0d7339de1876eb2b3563f6d97c0f08fa09d5ff597f76776f8edca37510165682b0
   languageName: node
   linkType: hard
 
