@@ -172,7 +172,7 @@ export const StyledQuickSearchTipContent = styled('div')(() => {
 export const StyledHorizontalDivider = styled('div')(({ theme }) => {
   return {
     width: '100%',
-    borderTop: `1px solid ${theme.colors.borderColor}`,
+    borderTop: `1px solid var(--affine-border-color)`,
   };
 });
 export const StyledHorizontalDividerContainer = styled('div')(({ theme }) => {

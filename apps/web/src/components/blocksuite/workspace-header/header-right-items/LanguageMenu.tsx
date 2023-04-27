@@ -68,10 +68,10 @@ export const LanguageMenu: React.FC = () => {
   );
 };
 
-const StyledListItem = styled(MenuItem)(({ theme }) => ({
+const StyledListItem = styled(MenuItem)(() => ({
   width: '132px',
   height: '38px',
-  fontSize: theme.font.base,
+  fontSize: 'var(--affine-font-base)',
   textTransform: 'capitalize',
 }));
 
@@ -84,27 +84,27 @@ const StyledContainer = styled('div')(() => {
     padding: '0 14px',
   };
 });
-const StyledIconContainer = styled('div')(({ theme }) => {
+const StyledIconContainer = styled('div')(() => {
   return {
     width: '20px',
     height: '20px',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     fontSize: '20px',
     ...displayFlex('flex-start', 'center'),
   };
 });
-const StyledButtonContainer = styled('div')(({ theme }) => {
+const StyledButtonContainer = styled('div')(() => {
   return {
     width: '100%',
     height: '32px',
     borderRadius: '4px',
-    border: `1px solid ${theme.colors.borderColor}`,
+    border: `1px solid var(--affine-border-color)`,
     backgroundColor: 'transparent',
     ...displayFlex('flex-start', 'center'),
     marginLeft: '12px',
   };
 });
-const StyledButton = styled(Button)(({ theme }) => {
+const StyledButton = styled(Button)(() => {
   return {
     width: '100%',
     height: '32px',
@@ -115,18 +115,18 @@ const StyledButton = styled(Button)(({ theme }) => {
     padding: '0',
   };
 });
-const StyledArrowDownContainer = styled('div')(({ theme }) => {
+const StyledArrowDownContainer = styled('div')(() => {
   return {
     height: '32px',
-    borderLeft: `1px solid ${theme.colors.borderColor}`,
+    borderLeft: `1px solid var(--affine-border-color)`,
     backgroundColor: 'transparent',
     ...displayFlex('flex-start', 'center'),
     padding: '4px 6px',
     fontSize: '24px',
   };
 });
-const StyledCurrentLanguage = styled('div')(({ theme }) => {
+const StyledCurrentLanguage = styled('div')(() => {
   return {
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-emphasis-color)',
   };
 });
