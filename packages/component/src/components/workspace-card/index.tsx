@@ -123,7 +123,6 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
       </StyleWorkspaceInfo>
       <StyledSettingLink
         className="setting-entry"
-        hoverBackground="#fff"
         onClick={e => {
           e.stopPropagation();
           onSettingClick(workspace);

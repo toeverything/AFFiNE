@@ -47,9 +47,10 @@ export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
     height: '124px',
     cursor: 'pointer',
     padding: '16px',
-    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
+    boxShadow: 'var(--affine-shadow)',
     borderRadius: '12px',
     transition: 'all .1s',
+    background: 'var(--affine-white-80)',
     ...displayFlex('flex-start', 'flex-start'),
     color: 'var(--affine-text-secondary-color)',
 
@@ -57,7 +58,7 @@ export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
       background: 'var(--affine-hover-color)',
       color: 'var(--affine-text-primary-color)',
       '.add-icon': {
-        borderColor: 'var(--affine-primary-color)',
+        borderColor: 'var(--affine-white-color)',
         color: 'var(--affine-primary-color)',
       },
     },
@@ -103,11 +104,13 @@ export const StyleWorkspaceAdd = styled('div')(() => {
     width: '58px',
     height: '58px',
     borderRadius: '100%',
-    background: '#f4f5fa',
+    background: 'var(--affine-white-80)',
     border: '1.5px dashed #f4f5fa',
     transition: 'background .2s',
     fontSize: '24px',
     ...displayFlex('center', 'center'),
+    borderColor: 'var(--affine-white-color)',
+    color: 'var(--affine-primary-color)',
   };
 });
 export const StyledModalHeader = styled('div')(() => {
