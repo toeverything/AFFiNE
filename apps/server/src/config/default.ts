@@ -2,6 +2,7 @@ import pkg from '../../package.json' assert { type: 'json' };
 import type { AFFiNEConfig } from './def';
 
 export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
+  secret: 'secret',
   version: pkg.version,
   ENV_MAP: {},
   env: process.env.NODE_ENV ?? 'development',

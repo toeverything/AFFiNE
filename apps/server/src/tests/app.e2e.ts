@@ -34,22 +34,46 @@ describe('AppModule', () => {
       .post(gql)
       .send({
         query: `
-    query {
-      error
-    }
-    `,
+          query {
+            error
+          }
+        `,
       })
       .expect(400);
+
+    let token;
     await request(app.getHttpServer())
       .post(gql)
+      .send({
+        query: `
+          mutation {
+            signIn(email: "alex.yang@example.org", password: "123456") {
+              token {
+                token
+              }
+            }
+          }
+        `,
+      })
+      .expect(200)
+      .expect(res => {
+        ok(
+          typeof res.body.data.signIn.token.token === 'string',
+          'res.body.data.signIn.token.token is not a string'
+        );
+        token = res.body.data.signIn.token.token;
+      });
+
+    await request(app.getHttpServer())
+      .post(gql)
+      .set({ Authorization: token })
       .send({
         query: `
       mutation {
         createWorkspace {
           id
-          type
           public
-          created_at
+          createdAt
         }
       }
     `,
@@ -65,15 +89,11 @@ describe('AppModule', () => {
           'res.body.data.createWorkspace.id is not a string'
         );
         ok(
-          typeof res.body.data.createWorkspace.type === 'string',
-          'res.body.data.createWorkspace.type is not a string'
-        );
-        ok(
           typeof res.body.data.createWorkspace.public === 'boolean',
           'res.body.data.createWorkspace.public is not a boolean'
         );
         ok(
-          typeof res.body.data.createWorkspace.created_at === 'string',
+          typeof res.body.data.createWorkspace.createdAt === 'string',
           'res.body.data.createWorkspace.created_at is not a string'
         );
       });
@@ -87,7 +107,7 @@ describe('AppModule', () => {
       query {
         user(email: "alex.yang@example.org") {
           email
-          avatar_url
+          avatarUrl
         }
       }
     `,
