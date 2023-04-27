@@ -17,21 +17,14 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { useMediaQuery, useTheme } from '@mui/material';
-import {
-  useBlockSuitePageMeta,
-  usePageMetaHelper,
-} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
-import type React from 'react';
-import { forwardRef, useMemo } from 'react';
+import { forwardRef } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import DateCell from './DateCell';
-import Empty from './Empty';
 import { OperationCell, TrashOperationCell } from './OperationCell';
 import {
   StyledTableContainer,
@@ -78,75 +71,48 @@ const FavoriteTag = forwardRef<
 type PageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   isPublic?: boolean;
-  listType?: 'all' | 'trash' | 'favorite' | 'shared';
+  list: PageMeta[];
+  listType: 'all' | 'trash' | 'favorite' | 'shared' | 'public';
   onClickPage: (pageId: string, newTab?: boolean) => void;
-};
-
-const filter = {
-  all: (pageMeta: PageMeta) => !pageMeta.trash,
-  trash: (pageMeta: PageMeta, allMetas: PageMeta[]) => {
-    const parentMeta = allMetas.find(m => m.subpageIds?.includes(pageMeta.id));
-    return !parentMeta?.trash && pageMeta.trash;
-  },
-  favorite: (pageMeta: PageMeta) => pageMeta.favorite && !pageMeta.trash,
-  shared: (pageMeta: PageMeta) => pageMeta.isPublic && !pageMeta.trash,
 };
 
 export const PageList: React.FC<PageListProps> = ({
   blockSuiteWorkspace,
   isPublic = false,
+  list,
   listType,
   onClickPage,
 }) => {
-  const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
-  const helper = usePageMetaHelper(blockSuiteWorkspace);
-  const { removeToTrash, restoreFromTrash } =
+  const { toggleFavorite, removeToTrash, restoreFromTrash } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const t = useAFFiNEI18N();
-  const theme = useTheme();
-  const matches = useMediaQuery(theme.breakpoints.up('sm'));
+  const { t } = useTranslation();
+  const record = useAtomValue(workspacePreferredModeAtom);
+
   const isTrash = listType === 'trash';
   const isShared = listType === 'shared';
-  const record = useAtomValue(workspacePreferredModeAtom);
-  const list = useMemo(
-    () =>
-      pageList.filter(pageMeta =>
-        filter[listType ?? 'all'](pageMeta, pageList)
-      ),
-    [pageList, listType]
+
+  const ListHead = () => (
+    <TableHead>
+      <TableRow>
+        <TableCell proportion={0.5}>{t('Title')}</TableCell>
+        <TableCell proportion={0.2}>{t('Created')}</TableCell>
+        <TableCell proportion={0.2}>
+          {isTrash ? t('Moved to Trash') : isShared ? 'Shared' : t('Updated')}
+        </TableCell>
+        <TableCell proportion={0.1}></TableCell>
+      </TableRow>
+    </TableHead>
   );
-  if (list.length === 0) {
-    return <Empty listType={listType} />;
-  }
 
   return (
     <StyledTableContainer>
       <Table>
-        <TableHead>
-          <TableRow>
-            {matches && (
-              <>
-                <TableCell proportion={0.5}>{t['Title']()}</TableCell>
-                <TableCell proportion={0.2}>{t['Created']()}</TableCell>
-                <TableCell proportion={0.2}>
-                  {isTrash
-                    ? t['Moved to Trash']()
-                    : isShared
-                    ? 'Shared'
-                    : t['Updated']()}
-                </TableCell>
-                <TableCell proportion={0.1}></TableCell>
-              </>
-            )}
-          </TableRow>
-        </TableHead>
+        <ListHead />
         <TableBody>
           {list.map((pageMeta, index) => {
             const bookmarkPage = (e: React.MouseEvent) => {
               e.stopPropagation();
-              helper.setPageMeta(pageMeta.id, {
-                favorite: !pageMeta.favorite,
-              });
+              toggleFavorite(pageMeta.id);
               toast(
                 pageMeta.favorite
                   ? t('Removed from Favorites')
@@ -175,7 +141,7 @@ export const PageList: React.FC<PageListProps> = ({
                         {pageMeta.title || t['Untitled']()}
                       </Content>
                     </StyledTitleLink>
-                    {listType && !isTrash && (
+                    {!isTrash && (
                       <FavoriteTag
                         className={pageMeta.favorite ? '' : 'favorite-button'}
                         onClick={bookmarkPage}
@@ -184,71 +150,115 @@ export const PageList: React.FC<PageListProps> = ({
                     )}
                   </StyledTitleWrapper>
                 </TableCell>
-                {matches && (
-                  <>
-                    <DateCell
-                      pageMeta={pageMeta}
-                      dateKey="createDate"
-                      onClick={() => {
-                        onClickPage(pageMeta.id);
-                      }}
-                    />
-                    <DateCell
-                      pageMeta={pageMeta}
-                      dateKey={isTrash ? 'trashDate' : 'updatedDate'}
-                      backupKey={isTrash ? 'trashDate' : 'createDate'}
-                      onClick={() => {
-                        onClickPage(pageMeta.id);
-                      }}
-                    />
-                    {!isPublic && (
-                      <TableCell
-                        style={{ padding: 0 }}
-                        data-testid={`more-actions-${pageMeta.id}`}
-                      >
-                        {isTrash ? (
-                          <TrashOperationCell
-                            pageMeta={pageMeta}
-                            onPermanentlyDeletePage={pageId => {
-                              blockSuiteWorkspace.removePage(pageId);
-                            }}
-                            onRestorePage={() => {
-                              restoreFromTrash(pageMeta.id);
-                            }}
-                            onOpenPage={pageId => {
-                              onClickPage(pageId, false);
-                            }}
-                          />
-                        ) : (
-                          <OperationCell
-                            pageMeta={pageMeta}
-                            metas={pageList}
-                            blockSuiteWorkspace={blockSuiteWorkspace}
-                            onOpenPageInNewTab={pageId => {
-                              onClickPage(pageId, true);
-                            }}
-                            onToggleFavoritePage={(pageId: string) => {
-                              helper.setPageMeta(pageId, {
-                                favorite: !pageMeta.favorite,
-                              });
-                            }}
-                            onToggleTrashPage={(pageId, isTrash) => {
-                              if (isTrash) {
-                                removeToTrash(pageId);
-                              } else {
-                                restoreFromTrash(pageId);
-                              }
-                            }}
-                          />
-                        )}
-                      </TableCell>
+                <DateCell
+                  date={pageMeta['createDate']}
+                  onClick={() => {
+                    onClickPage(pageMeta.id);
+                  }}
+                />
+                <DateCell
+                  date={
+                    isTrash
+                      ? pageMeta['trashDate']
+                      : pageMeta['updatedDate'] ?? pageMeta['createDate']
+                  }
+                  onClick={() => {
+                    onClickPage(pageMeta.id);
+                  }}
+                />
+                {!isPublic && (
+                  <TableCell
+                    style={{ padding: 0 }}
+                    data-testid={`more-actions-${pageMeta.id}`}
+                  >
+                    {isTrash ? (
+                      <TrashOperationCell
+                        pageMeta={pageMeta}
+                        onPermanentlyDeletePage={pageId => {
+                          blockSuiteWorkspace.removePage(pageId);
+                        }}
+                        onRestorePage={() => {
+                          restoreFromTrash(pageMeta.id);
+                        }}
+                        onOpenPage={pageId => {
+                          onClickPage(pageId, false);
+                        }}
+                      />
+                    ) : (
+                      <OperationCell
+                        pageMeta={pageMeta}
+                        blockSuiteWorkspace={blockSuiteWorkspace}
+                        onOpenPageInNewTab={pageId => {
+                          onClickPage(pageId, true);
+                        }}
+                        onToggleFavoritePage={(pageId: string) => {
+                          toggleFavorite(pageId);
+                        }}
+                        onToggleTrashPage={(pageId, isTrash) => {
+                          if (isTrash) {
+                            removeToTrash(pageId);
+                          } else {
+                            restoreFromTrash(pageId);
+                          }
+                        }}
+                      />
                     )}
-                  </>
+                  </TableCell>
                 )}
               </StyledTableRow>
             );
           })}
         </TableBody>
+      </Table>
+    </StyledTableContainer>
+  );
+};
+
+export const PageListMobileView: React.FC<
+  Pick<PageListProps, 'list' | 'onClickPage'>
+> = ({ list, onClickPage }) => {
+  const { t } = useTranslation();
+  const record = useAtomValue(workspacePreferredModeAtom);
+
+  const ListItems = list.map((pageMeta, index) => {
+    return (
+      <StyledTableRow
+        data-testid={`page-list-item-${pageMeta.id}`}
+        key={`${pageMeta.id}-${index}`}
+      >
+        <TableCell
+          onClick={() => {
+            onClickPage(pageMeta.id);
+          }}
+        >
+          <StyledTitleWrapper>
+            <StyledTitleLink>
+              {record[pageMeta.id] === 'edgeless' ? (
+                <EdgelessIcon />
+              ) : (
+                <PageIcon />
+              )}
+              <Content ellipsis={true} color="inherit">
+                {pageMeta.title || t('Untitled')}
+              </Content>
+            </StyledTitleLink>
+            {/* {!isTrash && (
+              <FavoriteTag
+                className={pageMeta.favorite ? '' : 'favorite-button'}
+                onClick={bookmarkPage}
+                active={!!pageMeta.favorite}
+              />
+            )} */}
+          </StyledTitleWrapper>
+        </TableCell>
+      </StyledTableRow>
+    );
+  });
+
+  return (
+    <StyledTableContainer>
+      <Table>
+        <TableBody>{ListItems}</TableBody>
       </Table>
     </StyledTableContainer>
   );
