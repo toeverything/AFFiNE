@@ -1,5 +1,9 @@
 import { getEnvironment } from '@affine/env';
-import { SidebarIcon } from '@blocksuite/icons';
+import {
+  ArrowLeftSmallIcon,
+  ArrowRightSmallIcon,
+  SidebarIcon,
+} from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
@@ -55,6 +59,27 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
             className={navHeaderStyle}
             data-is-macos-electron={isMacosDesktop}
           >
+            {isMacosDesktop && (
+              <>
+                <IconButton
+                  size="middle"
+                  onClick={() => {
+                    window.history.back();
+                  }}
+                >
+                  <ArrowLeftSmallIcon />
+                </IconButton>
+                <IconButton
+                  size="middle"
+                  onClick={() => {
+                    window.history.forward();
+                  }}
+                  style={{ marginLeft: '32px' }}
+                >
+                  <ArrowRightSmallIcon />
+                </IconButton>
+              </>
+            )}
             <IconButton
               data-testid="app-sidebar-arrow-button-collapse"
               className={sidebarButtonStyle}
