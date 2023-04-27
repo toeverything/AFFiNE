@@ -14,6 +14,7 @@ import {
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtom } from 'jotai';
+import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
@@ -31,7 +32,7 @@ import { LanguageMenu } from './LanguageMenu';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
-
+  const router = useRouter();
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
   const [pageId] = useCurrentPageId();
@@ -48,51 +49,59 @@ export const EditorOptionMenu = () => {
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const isPage = pageId === router.query.pageId;
+
   const EditMenu = (
     <>
-      <MenuItem
-        data-testid="editor-option-menu-favorite"
-        onClick={() => {
-          setPageMeta(pageId, { favorite: !favorite });
-          toast(
-            favorite ? t('Removed from Favorites') : t('Added to Favorites')
-          );
-        }}
-        icon={
-          favorite ? (
-            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
-          ) : (
-            <FavoriteIcon />
-          )
-        }
-      >
-        {favorite ? t('Remove from favorites') : t('Add to Favorites')}
-      </MenuItem>
-      <MenuItem
-        icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
-        data-testid="editor-option-menu-edgeless"
-        onClick={() => {
-          set(record => ({
-            ...record,
-            [pageId]: mode === 'page' ? 'edgeless' : 'page',
-          }));
-        }}
-      >
-        {t('Convert to ')}
-        {mode === 'page' ? t('Edgeless') : t('Page')}
-      </MenuItem>
-      <Export />
-      {!pageMeta.isRootPinboard && (
-        <MoveToTrash
-          testId="editor-option-menu-delete"
-          onItemClick={() => {
-            setOpenConfirm(true);
-          }}
-        />
+      {isPage && (
+        <>
+          <MenuItem
+            data-testid="editor-option-menu-favorite"
+            onClick={() => {
+              setPageMeta(pageId, { favorite: !favorite });
+              toast(
+                favorite ? t('Removed from Favorites') : t('Added to Favorites')
+              );
+            }}
+            icon={
+              favorite ? (
+                <FavoritedIcon
+                  style={{ color: 'var(--affine-primary-color)' }}
+                />
+              ) : (
+                <FavoriteIcon />
+              )
+            }
+          >
+            {favorite ? t('Remove from favorites') : t('Add to Favorites')}
+          </MenuItem>
+          <MenuItem
+            icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
+            data-testid="editor-option-menu-edgeless"
+            onClick={() => {
+              set(record => ({
+                ...record,
+                [pageId]: mode === 'page' ? 'edgeless' : 'page',
+              }));
+            }}
+          >
+            {t('Convert to ')}
+            {mode === 'page' ? t('Edgeless') : t('Page')}
+          </MenuItem>
+          <Export />
+          {!pageMeta.isRootPinboard && (
+            <MoveToTrash
+              testId="editor-option-menu-delete"
+              onItemClick={() => {
+                setOpenConfirm(true);
+              }}
+            />
+          )}
+          <StyledHorizontalDividerContainer>
+            <StyledHorizontalDivider />
+          </StyledHorizontalDividerContainer>
+        </>
       )}
-      <StyledHorizontalDividerContainer>
-        <StyledHorizontalDivider />
-      </StyledHorizontalDividerContainer>
 
       <div
         onClick={e => {

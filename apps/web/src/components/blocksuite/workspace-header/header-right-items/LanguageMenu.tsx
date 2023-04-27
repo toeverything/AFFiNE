@@ -127,6 +127,7 @@ const StyledArrowDownContainer = styled('div')(() => {
 });
 const StyledCurrentLanguage = styled('div')(() => {
   return {
-    color: 'var(--affine-text-emphasis-color)',
+    marginLeft: '12px',
+    color: 'var(--affine-text-color)',
   };
 });
