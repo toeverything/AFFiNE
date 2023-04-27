@@ -15,6 +15,32 @@ export function useBlockSuiteMetaHelper(
     useReferenceLinkHelper(blockSuiteWorkspace);
   const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
 
+  const addToFavorite = useCallback(
+    (pageId: string) => {
+      setPageMeta(pageId, {
+        favorite: true,
+      });
+    },
+    [setPageMeta]
+  );
+  const removeFromFavorite = useCallback(
+    (pageId: string) => {
+      setPageMeta(pageId, {
+        favorite: false,
+      });
+    },
+    [setPageMeta]
+  );
+  const toggleFavorite = useCallback(
+    (pageId: string) => {
+      const { favorite } = getPageMeta(pageId) ?? {};
+      setPageMeta(pageId, {
+        favorite: !favorite,
+      });
+    },
+    [getPageMeta, setPageMeta]
+  );
+
   const removeToTrash = useCallback(
     (pageId: string, isRoot = true) => {
       const parentMeta = metas.find(m => m.subpageIds?.includes(pageId));
@@ -59,6 +85,10 @@ export function useBlockSuiteMetaHelper(
   );
 
   return {
+    addToFavorite,
+    removeFromFavorite,
+    toggleFavorite,
+
     removeToTrash,
     restoreFromTrash,
   };
