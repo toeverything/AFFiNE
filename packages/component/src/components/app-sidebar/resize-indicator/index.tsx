@@ -80,6 +80,7 @@ export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
     <div
       ref={ref}
       className={spacerStyle}
+      data-testid="app-sidebar-resizer"
       data-resizing={isResizing}
       data-open={sidebarOpen}
       onMouseDown={onResizeStart}
