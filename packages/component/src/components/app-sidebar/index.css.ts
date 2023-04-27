@@ -14,6 +14,7 @@ export const navStyle = style({
   flexDirection: 'column',
   transition: 'margin-left .3s',
   zIndex: parseInt(baseTheme.zIndexModal),
+  borderRight: '1px solid var(--affine-border-color)',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',

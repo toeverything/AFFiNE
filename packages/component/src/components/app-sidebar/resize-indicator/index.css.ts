@@ -4,12 +4,14 @@ import { navWidthVar } from '../index.css';
 
 export const spacerStyle = style({
   position: 'absolute',
-  width: '2px',
+  width: '1px',
   left: navWidthVar,
   top: 0,
   bottom: 0,
   height: '100%',
   zIndex: 'calc(var(--affine-z-index-modal) - 1)',
+  backgroundColor: 'var(--affine-border-color)',
+  opacity: 0,
   cursor: 'col-resize',
   '@media': {
     '(max-width: 600px)': {
@@ -17,7 +19,11 @@ export const spacerStyle = style({
       display: 'none',
     },
   },
+  transition: 'opacity 0.15s ease 0.1s',
   selectors: {
+    '&:hover': {
+      opacity: 1,
+    },
     '&[data-resizing="true"]': {
       transition: 'width .3s, min-width .3s, max-width .3s',
     },
