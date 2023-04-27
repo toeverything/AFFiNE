@@ -1,7 +1,9 @@
 import { Empty } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 
-export const PageListEmpty = (props: { listType?: string }) => {
+export const PageListEmpty = (props: {
+  listType: 'all' | 'trash' | 'favorite' | 'shared' | 'public';
+}) => {
   const { listType } = props;
   const t = useAFFiNEI18N();
 
@@ -26,5 +28,3 @@ export const PageListEmpty = (props: { listType?: string }) => {
     </div>
   );
 };
-
-export default PageListEmpty;

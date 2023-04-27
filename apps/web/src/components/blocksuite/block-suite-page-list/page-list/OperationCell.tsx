@@ -29,7 +29,6 @@ import {
 
 export type OperationCellProps = {
   pageMeta: PageMeta;
-  metas: PageMeta[];
   blockSuiteWorkspace: BlockSuiteWorkspace;
   onOpenPageInNewTab: (pageId: string) => void;
   onToggleFavoritePage: (pageId: string) => void;

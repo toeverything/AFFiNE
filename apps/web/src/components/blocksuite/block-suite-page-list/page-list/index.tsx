@@ -1,4 +1,4 @@
-import type { IconButtonProps } from '@affine/component';
+import type { IconButtonProps, TableCellProps } from '@affine/component';
 import {
   Content,
   IconButton,
@@ -76,6 +76,31 @@ type PageListProps = {
   onClickPage: (pageId: string, newTab?: boolean) => void;
 };
 
+const TitleCell = ({
+  icon,
+  text,
+  suffix,
+  ...props
+}: {
+  icon: JSX.Element;
+  text: string;
+  suffix?: JSX.Element;
+} & TableCellProps) => {
+  return (
+    <TableCell {...props}>
+      <StyledTitleWrapper>
+        <StyledTitleLink>
+          {icon}
+          <Content ellipsis={true} color="inherit">
+            {text}
+          </Content>
+        </StyledTitleLink>
+        {suffix}
+      </StyledTitleWrapper>
+    </TableCell>
+  );
+};
+
 export const PageList: React.FC<PageListProps> = ({
   blockSuiteWorkspace,
   isPublic = false,
@@ -91,131 +116,206 @@ export const PageList: React.FC<PageListProps> = ({
   const isTrash = listType === 'trash';
   const isShared = listType === 'shared';
 
-  const ListHead = () => (
-    <TableHead>
-      <TableRow>
-        <TableCell proportion={0.5}>{t('Title')}</TableCell>
-        <TableCell proportion={0.2}>{t('Created')}</TableCell>
-        <TableCell proportion={0.2}>
-          {isTrash ? t('Moved to Trash') : isShared ? 'Shared' : t('Updated')}
-        </TableCell>
-        <TableCell proportion={0.1}></TableCell>
-      </TableRow>
-    </TableHead>
-  );
+  const ListHead = () => {
+    const { t } = useTranslation();
+    return (
+      <TableHead>
+        <TableRow>
+          <TableCell proportion={0.5}>{t('Title')}</TableCell>
+          <TableCell proportion={0.2}>{t('Created')}</TableCell>
+          <TableCell proportion={0.2}>
+            {isTrash ? t('Moved to Trash') : isShared ? 'Shared' : t('Updated')}
+          </TableCell>
+          <TableCell proportion={0.1}></TableCell>
+        </TableRow>
+      </TableHead>
+    );
+  };
+
+  const ListItems = list.map((pageMeta, index) => {
+    const bookmarkPage = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      toggleFavorite(pageMeta.id);
+      toast(
+        pageMeta.favorite
+          ? t('Removed from Favorites')
+          : t('Added to Favorites')
+      );
+    };
+
+    return (
+      <StyledTableRow
+        data-testid={`page-list-item-${pageMeta.id}`}
+        key={`${pageMeta.id}-${index}`}
+      >
+        <TitleCell
+          icon={
+            record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />
+          }
+          text={pageMeta.title || t('Untitled')}
+          suffix={
+            <FavoriteTag
+              className={pageMeta.favorite ? '' : 'favorite-button'}
+              onClick={bookmarkPage}
+              active={!!pageMeta.favorite}
+            />
+          }
+          onClick={() => {
+            onClickPage(pageMeta.id);
+          }}
+        />
+        <DateCell
+          date={pageMeta['createDate']}
+          onClick={() => {
+            onClickPage(pageMeta.id);
+          }}
+        />
+        <DateCell
+          date={
+            isTrash
+              ? pageMeta['trashDate']
+              : pageMeta['updatedDate'] ?? pageMeta['createDate']
+          }
+          onClick={() => {
+            onClickPage(pageMeta.id);
+          }}
+        />
+        {!isPublic && (
+          <TableCell
+            style={{ padding: 0 }}
+            data-testid={`more-actions-${pageMeta.id}`}
+          >
+            {isTrash ? (
+              <TrashOperationCell
+                pageMeta={pageMeta}
+                onPermanentlyDeletePage={pageId => {
+                  blockSuiteWorkspace.removePage(pageId);
+                }}
+                onRestorePage={() => {
+                  restoreFromTrash(pageMeta.id);
+                }}
+                onOpenPage={pageId => {
+                  onClickPage(pageId, false);
+                }}
+              />
+            ) : (
+              <OperationCell
+                pageMeta={pageMeta}
+                blockSuiteWorkspace={blockSuiteWorkspace}
+                onOpenPageInNewTab={pageId => {
+                  onClickPage(pageId, true);
+                }}
+                onToggleFavoritePage={(pageId: string) => {
+                  toggleFavorite(pageId);
+                }}
+                onToggleTrashPage={(pageId, isTrash) => {
+                  if (isTrash) {
+                    removeToTrash(pageId);
+                  } else {
+                    restoreFromTrash(pageId);
+                  }
+                }}
+              />
+            )}
+          </TableCell>
+        )}
+      </StyledTableRow>
+    );
+  });
 
   return (
     <StyledTableContainer>
       <Table>
         <ListHead />
-        <TableBody>
-          {list.map((pageMeta, index) => {
-            const bookmarkPage = (e: React.MouseEvent) => {
-              e.stopPropagation();
-              toggleFavorite(pageMeta.id);
-              toast(
-                pageMeta.favorite
-                  ? t('Removed from Favorites')
-                  : t('Added to Favorites')
-              );
-            };
+        <TableBody>{ListItems}</TableBody>
+      </Table>
+    </StyledTableContainer>
+  );
+};
 
-            return (
-              <StyledTableRow
-                data-testid={`page-list-item-${pageMeta.id}`}
-                key={`${pageMeta.id}-${index}`}
-              >
-                <TableCell
-                  onClick={() => {
-                    onClickPage(pageMeta.id);
-                  }}
-                >
-                  <StyledTitleWrapper>
-                    <StyledTitleLink>
-                      {record[pageMeta.id] === 'edgeless' ? (
-                        <EdgelessIcon />
-                      ) : (
-                        <PageIcon />
-                      )}
-                      <Content ellipsis={true} color="inherit">
-                        {pageMeta.title || t['Untitled']()}
-                      </Content>
-                    </StyledTitleLink>
-                    {!isTrash && (
-                      <FavoriteTag
-                        className={pageMeta.favorite ? '' : 'favorite-button'}
-                        onClick={bookmarkPage}
-                        active={!!pageMeta.favorite}
-                      />
-                    )}
-                  </StyledTitleWrapper>
-                </TableCell>
-                <DateCell
-                  date={pageMeta['createDate']}
-                  onClick={() => {
-                    onClickPage(pageMeta.id);
-                  }}
-                />
-                <DateCell
-                  date={
-                    isTrash
-                      ? pageMeta['trashDate']
-                      : pageMeta['updatedDate'] ?? pageMeta['createDate']
-                  }
-                  onClick={() => {
-                    onClickPage(pageMeta.id);
-                  }}
-                />
-                {!isPublic && (
-                  <TableCell
-                    style={{ padding: 0 }}
-                    data-testid={`more-actions-${pageMeta.id}`}
-                  >
-                    {isTrash ? (
-                      <TrashOperationCell
-                        pageMeta={pageMeta}
-                        onPermanentlyDeletePage={pageId => {
-                          blockSuiteWorkspace.removePage(pageId);
-                        }}
-                        onRestorePage={() => {
-                          restoreFromTrash(pageMeta.id);
-                        }}
-                        onOpenPage={pageId => {
-                          onClickPage(pageId, false);
-                        }}
-                      />
-                    ) : (
-                      <OperationCell
-                        pageMeta={pageMeta}
-                        blockSuiteWorkspace={blockSuiteWorkspace}
-                        onOpenPageInNewTab={pageId => {
-                          onClickPage(pageId, true);
-                        }}
-                        onToggleFavoritePage={(pageId: string) => {
-                          toggleFavorite(pageId);
-                        }}
-                        onToggleTrashPage={(pageId, isTrash) => {
-                          if (isTrash) {
-                            removeToTrash(pageId);
-                          } else {
-                            restoreFromTrash(pageId);
-                          }
-                        }}
-                      />
-                    )}
-                  </TableCell>
-                )}
-              </StyledTableRow>
-            );
-          })}
-        </TableBody>
+const TrashListHead = () => {
+  const { t } = useTranslation();
+  return (
+    <TableHead>
+      <TableRow>
+        <TableCell proportion={0.5}>{t('Title')}</TableCell>
+        <TableCell proportion={0.2}>{t('Created')}</TableCell>
+        <TableCell proportion={0.2}>{t('Moved to Trash')}</TableCell>
+        <TableCell proportion={0.1}></TableCell>
+      </TableRow>
+    </TableHead>
+  );
+};
+
+export const PageListTrashView: React.FC<{
+  list: PageMeta[];
+  onClickPage: (pageId: string) => void;
+  onRestorePage: (pageId: string) => void;
+  onPermanentlyDeletePage: (pageId: string) => void;
+}> = ({ list, onClickPage, onRestorePage, onPermanentlyDeletePage }) => {
+  const { t } = useTranslation();
+  const record = useAtomValue(workspacePreferredModeAtom);
+
+  const ListItems = list.map((pageMeta, index) => {
+    return (
+      <StyledTableRow
+        data-testid={`page-list-item-${pageMeta.id}`}
+        key={`${pageMeta.id}-${index}`}
+      >
+        <TitleCell
+          icon={
+            record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />
+          }
+          text={pageMeta.title || t('Untitled')}
+          onClick={() => {
+            onClickPage(pageMeta.id);
+          }}
+        />
+        <DateCell
+          date={pageMeta['createDate']}
+          onClick={() => {
+            onClickPage(pageMeta.id);
+          }}
+        />
+        <DateCell
+          date={pageMeta['trashDate']}
+          onClick={() => {
+            onClickPage(pageMeta.id);
+          }}
+        />
+        <TableCell
+          style={{ padding: 0 }}
+          data-testid={`more-actions-${pageMeta.id}`}
+        >
+          <TrashOperationCell
+            pageMeta={pageMeta}
+            onPermanentlyDeletePage={pageId => {
+              onPermanentlyDeletePage(pageId);
+            }}
+            onRestorePage={() => {
+              onRestorePage(pageMeta.id);
+            }}
+            onOpenPage={pageId => {
+              onClickPage(pageId);
+            }}
+          />
+        </TableCell>
+      </StyledTableRow>
+    );
+  });
+
+  return (
+    <StyledTableContainer>
+      <Table>
+        <TrashListHead />
+        <TableBody>{ListItems}</TableBody>
       </Table>
     </StyledTableContainer>
   );
 };
 
 export const PageListMobileView: React.FC<
-  Pick<PageListProps, 'list' | 'onClickPage'>
+  Pick<PageListProps, 'list' | 'onClickPage' | 'isPublic'>
 > = ({ list, onClickPage }) => {
   const { t } = useTranslation();
   const record = useAtomValue(workspacePreferredModeAtom);
@@ -242,13 +342,6 @@ export const PageListMobileView: React.FC<
                 {pageMeta.title || t('Untitled')}
               </Content>
             </StyledTitleLink>
-            {/* {!isTrash && (
-              <FavoriteTag
-                className={pageMeta.favorite ? '' : 'favorite-button'}
-                onClick={bookmarkPage}
-                active={!!pageMeta.favorite}
-              />
-            )} */}
           </StyledTitleWrapper>
         </TableCell>
       </StyledTableRow>

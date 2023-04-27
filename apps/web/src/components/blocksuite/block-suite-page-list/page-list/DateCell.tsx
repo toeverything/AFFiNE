@@ -1,27 +1,21 @@
 import type { TableCellProps } from '@affine/component';
 import { TableCell } from '@affine/component';
-import type { PageMeta } from '@blocksuite/store';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 
 dayjs.extend(localizedFormat);
 
 export const DateCell = ({
-  pageMeta,
-  dateKey,
-  backupKey = '',
+  date,
   ...props
 }: {
-  pageMeta: PageMeta;
-  dateKey: keyof PageMeta;
-  backupKey?: keyof PageMeta;
+  date?: number | unknown;
 } & Omit<TableCellProps, 'children'>) => {
-  const value = pageMeta[dateKey] ?? pageMeta[backupKey];
+  const dateStr =
+    typeof date === 'number' ? dayjs(date).format('YYYY-MM-DD HH:mm') : '--';
   return (
     <TableCell ellipsis={true} {...props}>
-      {typeof value === 'number'
-        ? dayjs(value).format('YYYY-MM-DD HH:mm')
-        : '--'}
+      {dateStr}
     </TableCell>
   );
 };
