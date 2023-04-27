@@ -179,6 +179,8 @@ test('When opening the website for the first time, the first folding sidebar wil
   const quickSearchTips = page.locator('[data-testid=quick-search-tips]');
   await expect(quickSearchTips).not.toBeVisible();
   await page.getByTestId('app-sidebar-arrow-button-collapse').click();
+  await page.waitForTimeout(200);
+  await page.getByTestId('sliderBar-arrowButton-expand').click();
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).not.toBeInViewport();
   await expect(quickSearchTips).toBeVisible();
