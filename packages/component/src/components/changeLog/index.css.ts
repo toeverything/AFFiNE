@@ -73,7 +73,7 @@ export const changeLogSlideInStyle = style({
   alignItems: 'center',
   color: 'var(--affine-primary-color)',
   backgroundColor: 'var(--affine-tertiary-color)',
-  border: '1px solid var(--affine-primary-color)',
+  borderTop: '1px solid var(--affine-primary-color)',
   borderRight: 'none',
   marginLeft: '8px',
   paddingLeft: '8px',
