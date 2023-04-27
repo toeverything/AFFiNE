@@ -73,13 +73,13 @@ export const getButtonColors = (
     case 'warning':
       return {
         background: 'var(--affine-background-warning-color)',
-        color: 'var(--affine-background-warning-color)',
+        color: 'var(--affine-warning-color)',
         borderColor: 'var(--affine-background-warning-color)',
         '.affine-button-icon': {
-          color: 'var(--affine-background-warning-color)',
+          color: 'var(--affine-warning-color)',
         },
         ':hover': {
-          borderColor: 'var(--affine-background-warning-color)',
+          borderColor: 'var(--affine-warning-color)',
           color: extend?.hoverColor,
           background: extend?.hoverBackground,
           ...extend?.hoverStyle,

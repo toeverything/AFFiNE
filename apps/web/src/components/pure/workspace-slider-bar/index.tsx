@@ -23,7 +23,6 @@ import {
 import type { AllWorkspace } from '../../../shared';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
-import { Pinboard } from './Pinboard';
 import { RouteNavigation } from './RouteNavigation';
 import { StyledListItem } from './shared-styles';
 import {
@@ -165,7 +164,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 }}
               >
                 <SettingsIcon />
-                {t('Workspace Settings')}
+                <div>{t('Workspace Settings')}</div>
               </StyledLink>
             </StyledListItem>
             <StyledListItem
@@ -198,12 +197,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                   currentPageId={currentPageId}
                   openPage={openPage}
                   currentWorkspace={currentWorkspace}
-                />
-              )}
-              {blockSuiteWorkspace && (
-                <Pinboard
-                  blockSuiteWorkspace={blockSuiteWorkspace}
-                  openPage={openPage}
                 />
               )}
             </StyledScrollWrapper>

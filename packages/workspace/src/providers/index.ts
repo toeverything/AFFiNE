@@ -47,9 +47,9 @@ const createAffineWebSocketProvider = (
         blockSuiteWorkspace.doc,
         {
           params: { token: getLoginStorage()?.token ?? '' },
-          // @ts-expect-error ignore the type
           awareness: blockSuiteWorkspace.awarenessStore.awareness,
           // we maintain broadcast channel by ourselves
+          // @ts-expect-error
           disableBc: true,
           connect: false,
         }

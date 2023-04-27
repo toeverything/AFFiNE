@@ -21,11 +21,7 @@ import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suit
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
-import {
-  Export,
-  MoveTo,
-  MoveToTrash,
-} from '../../../affine/operation-menu-items';
+import { Export, MoveToTrash } from '../../../affine/operation-menu-items';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
@@ -39,7 +35,6 @@ export const EditorOptionMenu = () => {
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const allMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const [record, set] = useAtom(workspacePreferredModeAtom);
   const mode = record[pageId] ?? 'page';
   assertExists(pageMeta);
@@ -81,13 +76,6 @@ export const EditorOptionMenu = () => {
         {mode === 'page' ? t('Edgeless') : t('Page')}
       </MenuItem>
       <Export />
-      {!pageMeta.isRootPinboard && (
-        <MoveTo
-          metas={allMetas}
-          currentMeta={pageMeta}
-          blockSuiteWorkspace={blockSuiteWorkspace}
-        />
-      )}
       {!pageMeta.isRootPinboard && (
         <MoveToTrash
           testId="editor-option-menu-delete"

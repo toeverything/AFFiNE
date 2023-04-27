@@ -1,7 +1,7 @@
 import {
   type PopperPlacementType,
-  type PopperUnstyledProps,
-} from '@mui/base/PopperUnstyled';
+  type PopperProps as PopperUnstyledProps,
+} from '@mui/base/Popper';
 import type { CSSProperties, ReactElement, ReactNode, Ref } from 'react';
 export type VirtualElement = {
   getBoundingClientRect: () => ClientRect | DOMRect;
