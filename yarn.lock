@@ -64,6 +64,7 @@ __metadata:
     "@mui/base": 5.0.0-alpha.126
     "@mui/icons-material": ^5.11.16
     "@mui/material": ^5.12.1
+    "@popperjs/core": ^2.11.7
     "@radix-ui/react-avatar": ^1.0.2
     "@storybook/addon-actions": ^7.0.7
     "@storybook/addon-coverage": ^0.0.8

@@ -8,6 +8,7 @@ export const spacerStyle = style({
   left: navWidthVar,
   top: 0,
   bottom: 0,
+  height: '100%',
   cursor: 'col-resize',
   '@media': {
     '(max-width: 600px)': {
