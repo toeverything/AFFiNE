@@ -48,26 +48,26 @@ export const getButtonColors = (
     case 'primary':
       return {
         background: 'var(--affine-primary-color)',
-        color: '#fff',
+        color: 'var(--affine-white)',
         borderColor: 'var(--affine-primary-color)',
         '.affine-button-icon': {
-          color: '#fff',
+          color: 'var(--affine-white)',
         },
       };
     case 'light':
       return {
-        background: 'var(--affine-hover-color)',
+        background: 'var(--affine-tertiary-color)',
         color: disabled
           ? 'var(--affine-text-disable-color)'
-          : 'var(--affine-primary-color)',
-        borderColor: 'var(--affine-hover-color)',
+          : 'var(--affine-text-emphasis-color)',
+        borderColor: 'var(--affine-tertiary-color)',
         '.affine-button-icon': {
-          borderColor: 'var(--affine-primary-color)',
+          borderColor: 'var(--affine-text-emphasis-color)',
         },
         ':hover': {
           borderColor: disabled
-            ? 'var(--affine-hover-color)'
-            : 'var(--affine-primary-color)',
+            ? 'var(--affine-disable-color)'
+            : 'var(--affine-text-emphasis-color)',
         },
       };
     case 'warning':

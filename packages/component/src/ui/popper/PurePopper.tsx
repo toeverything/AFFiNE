@@ -1,4 +1,4 @@
-import type { PopperUnstyledProps } from '@mui/base/PopperUnstyled';
+import type { PopperProps as PopperUnstyledProps } from '@mui/base/Popper';
 import Grow from '@mui/material/Grow';
 import type { CSSProperties, PropsWithChildren } from 'react';
 import { useState } from 'react';
