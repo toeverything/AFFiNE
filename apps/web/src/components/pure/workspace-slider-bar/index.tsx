@@ -1,13 +1,6 @@
 import type { Page, PageMeta } from '@blocksuite/store';
-import { lazy } from 'react';
 
 import type { AllWorkspace } from '../../../shared';
-
-const SidebarSwitch = lazy(() =>
-  import('../../affine/sidebar-switch').then(module => ({
-    default: module.SidebarSwitch,
-  }))
-);
 
 export type FavoriteListProps = {
   currentPageId: string | null;
