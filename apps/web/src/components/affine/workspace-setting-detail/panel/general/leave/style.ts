@@ -5,7 +5,7 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
     position: 'relative',
     padding: '0px',
     width: '460px',
-    background: theme.colors.popoverBackground,
+    background: 'var(--affine-white)',
     borderRadius: '12px',
   };
 });

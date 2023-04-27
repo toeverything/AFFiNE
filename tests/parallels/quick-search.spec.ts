@@ -1,3 +1,4 @@
+import { test } from '@affine-test/kit/playwright';
 import { expect, type Page } from '@playwright/test';
 
 import { withCtrlOrMeta } from '../libs/keyboard';
@@ -7,7 +8,6 @@ import {
   newPage,
   waitMarkdownImported,
 } from '../libs/page-logic';
-import { test } from '../libs/playwright';
 
 const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
@@ -204,7 +204,7 @@ test('After appearing once, it will not appear a second time', async ({
   await expect(quickSearchTips).not.toBeVisible();
 });
 
-test('Show navigation path if page is a subpage', async ({ page }) => {
+test.skip('Show navigation path if page is a subpage', async ({ page }) => {
   const rootPinboardMeta = await initHomePageWithPinboard(page);
   await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
   await openQuickSearchByShortcut(page);
@@ -218,7 +218,7 @@ test('Not show navigation path if page is not a subpage or current page is not i
   await openQuickSearchByShortcut(page);
   expect(await page.getByTestId('navigation-path').count()).toBe(0);
 });
-test('Navigation path item click will jump to page, but not current active item', async ({
+test.skip('Navigation path item click will jump to page, but not current active item', async ({
   page,
 }) => {
   const rootPinboardMeta = await initHomePageWithPinboard(page);
@@ -233,7 +233,7 @@ test('Navigation path item click will jump to page, but not current active item'
   await page.locator('[data-testid="navigation-path-link"]').nth(0).click();
   expect(page.url()).not.toBe(oldUrl);
 });
-test('Navigation path expand', async ({ page }) => {
+test.skip('Navigation path expand', async ({ page }) => {
   //
   const rootPinboardMeta = await initHomePageWithPinboard(page);
   await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');

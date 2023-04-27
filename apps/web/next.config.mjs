@@ -7,14 +7,15 @@ import { withSentryConfig } from '@sentry/nextjs';
 import SentryWebpackPlugin from '@sentry/webpack-plugin';
 import debugLocal from 'next-debug-local';
 
-import preset from './preset.config.mjs';
+import { blockSuiteFeatureFlags, buildFlags } from './preset.config.mjs';
 import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
 
 const require = createRequire(import.meta.url);
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin');
 const withVanillaExtract = createVanillaExtractPlugin();
 
-console.info('Runtime Preset', preset);
+console.info('Build Flags', buildFlags);
+console.info('Editor Flags', blockSuiteFeatureFlags);
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
 
@@ -84,10 +85,11 @@ const nextConfig = {
     '@affine/debug',
     '@affine/env',
     '@affine/templates',
-    '@toeverything/hooks',
     '@affine/workspace',
     '@affine/jotai',
+    '@toeverything/hooks',
     '@toeverything/y-indexeddb',
+    '@toeverything/theme',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
@@ -98,7 +100,8 @@ const nextConfig = {
       profileTarget[process.env.API_SERVER_PROFILE || 'dev'] ??
       profileTarget.dev,
     editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
-    ...preset,
+    editorFlags: blockSuiteFeatureFlags,
+    ...buildFlags,
   },
   webpack: (config, { dev, isServer }) => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
@@ -144,7 +147,9 @@ const nextConfig = {
   },
   basePath: process.env.NEXT_BASE_PATH,
   assetPrefix: process.env.NEXT_ASSET_PREFIX,
-  pageExtensions: [...(preset.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx'])],
+  pageExtensions: [
+    ...(buildFlags.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx']),
+  ],
 };
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';

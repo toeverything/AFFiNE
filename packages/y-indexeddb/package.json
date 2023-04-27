@@ -1,7 +1,7 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.5.2",
+  "version": "0.5.4-canary.13",
   "scripts": {
     "build": "vite build"
   },
@@ -12,6 +12,7 @@
     ".": "./src/index.ts"
   },
   "publishConfig": {
+    "access": "public",
     "main": "dist/index.umd.cjs",
     "module": "dist/index.js",
     "exports": {
@@ -26,13 +27,14 @@
     "idb": "^7.1.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230416194015-c6ae6f0f-nightly",
-    "@blocksuite/store": "0.0.0-20230416194015-c6ae6f0f-nightly",
-    "vite": "^4.2.1",
-    "vite-plugin-dts": "^2.2.0",
+    "@blocksuite/blocks": "0.0.0-20230426054154-cbe3dbce-nightly",
+    "@blocksuite/store": "0.0.0-20230426054154-cbe3dbce-nightly",
+    "vite": "^4.3.1",
+    "vite-plugin-dts": "^2.3.0",
     "y-indexeddb": "^9.0.10"
   },
   "peerDependencies": {
     "yjs": "^13.5.51"
-  }
+  },
+  "stableVersion": "0.5.2"
 }

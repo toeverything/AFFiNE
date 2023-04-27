@@ -1,6 +1,6 @@
 import { DarkModeIcon, LightModeIcon } from '@blocksuite/icons';
 import { useTheme } from 'next-themes';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   StyledSwitchItem,
@@ -12,6 +12,12 @@ import {
 } from './style';
 export const ThemeModeSwitch = () => {
   const { setTheme, resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    if (environment.isDesktop) {
+      window.apis?.onThemeChange(resolvedTheme === 'dark' ? 'dark' : 'light');
+    }
+  }, [resolvedTheme]);
 
   const [isHover, setIsHover] = useState(false);
   return (

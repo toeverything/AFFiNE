@@ -7,7 +7,7 @@ import {
   PlusIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { useTheme } from '@mui/material';
+import { baseTheme } from '@toeverything/theme';
 import { useMemo, useRef, useState } from 'react';
 
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
@@ -24,7 +24,7 @@ export type OperationButtonProps = {
   metas: PageMeta[];
   currentMeta: PageMeta;
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  isHover: boolean;
+  visible: boolean;
   onRename?: () => void;
   onMenuClose?: () => void;
 };
@@ -35,13 +35,10 @@ export const OperationButton = ({
   metas,
   currentMeta,
   blockSuiteWorkspace,
-  isHover,
+  visible,
   onMenuClose,
   onRename,
 }: OperationButtonProps) => {
-  const {
-    zIndex: { modal: modalIndex },
-  } = useTheme();
   const { t } = useTranslation();
 
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -49,7 +46,7 @@ export const OperationButton = ({
   const [operationMenuOpen, setOperationMenuOpen] = useState(false);
   const [pinboardMenuOpen, setPinboardMenuOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const menuIndex = useMemo(() => modalIndex + 1, [modalIndex]);
+  const menuIndex = useMemo(() => parseInt(baseTheme.zIndexModal) + 1, []);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
 
   return (
@@ -60,6 +57,7 @@ export const OperationButton = ({
       }}
     >
       <div
+        style={{ display: 'flex' }}
         onClick={e => {
           e.stopPropagation();
         }}
@@ -80,7 +78,7 @@ export const OperationButton = ({
           onClick={() => {
             setOperationMenuOpen(!operationMenuOpen);
           }}
-          visible={isHover}
+          visible={visible}
         >
           <MoreVerticalIcon />
         </StyledOperationButton>

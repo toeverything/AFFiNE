@@ -1,5 +1,4 @@
 import {
-  alpha,
   displayFlex,
   IconButton,
   styled,
@@ -9,7 +8,7 @@ import {
 export const StyledCollapsedButton = styled('button')<{
   collapse: boolean;
   show?: boolean;
-}>(({ collapse, show = true, theme }) => {
+}>(({ collapse, show = true }) => {
   return {
     width: '16px',
     height: '100%',
@@ -20,7 +19,7 @@ export const StyledCollapsedButton = styled('button')<{
     top: '0',
     bottom: '0',
     margin: 'auto',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     opacity: '.6',
     transition: 'opacity .15s ease-in-out',
     display: show ? 'flex' : 'none',
@@ -44,7 +43,6 @@ export const StyledPinboard = styled('div')<{
     disableCollapse,
     disable = false,
     active = false,
-    theme,
     isOver,
     textWrap = false,
   }) => {
@@ -57,17 +55,17 @@ export const StyledPinboard = styled('div')<{
       padding: disableCollapse ? '0 5px' : '0 2px 0 16px',
       position: 'relative',
       color: disable
-        ? theme.colors.disableColor
+        ? 'var(--affine-text-disable-color)'
         : active
-        ? theme.colors.primaryColor
-        : theme.colors.textColor,
+        ? 'var(--affine-primary-color)'
+        : 'var(--affine-text-primary-color)',
       cursor: disable ? 'not-allowed' : 'pointer',
-      background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
-      fontSize: theme.font.base,
+      background: isOver ? 'rgba(118, 95, 254, 0.06)' : '',
+      fontSize: 'var(--affine-font-base)',
       userSelect: 'none',
       ...(textWrap
         ? {
-            wordBreak: 'break-all',
+            wordBreak: 'break-word',
             whiteSpace: 'pre-wrap',
           }
         : {}),
@@ -85,11 +83,13 @@ export const StyledPinboard = styled('div')<{
         fontSize: '20px',
         marginRight: '8px',
         flexShrink: '0',
-        color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+        color: active
+          ? 'var(--affine-primary-color)'
+          : 'var(--affine-icon-color)',
       },
 
       ':hover': {
-        backgroundColor: disable ? '' : theme.colors.hoverBackground,
+        backgroundColor: disable ? '' : 'var(--affine-hover-color)',
       },
     };
   }
@@ -105,14 +105,14 @@ export const StyledOperationButton = styled(IconButton, {
   };
 });
 
-export const StyledSearchContainer = styled('div')(({ theme }) => {
+export const StyledSearchContainer = styled('div')(() => {
   return {
     width: 'calc(100% - 24px)',
     margin: '0 auto',
     ...displayFlex('flex-start', 'center'),
-    borderBottom: `1px solid ${theme.colors.borderColor}`,
+    borderBottom: '1px solid var(--affine-border-color)',
     label: {
-      color: theme.colors.iconColor,
+      color: 'var(--affine-icon-color)',
       fontSize: '20px',
       height: '20px',
     },
@@ -124,24 +124,24 @@ export const StyledMenuContent = styled('div')(() => {
     overflow: 'auto',
   };
 });
-export const StyledMenuSubTitle = styled('div')(({ theme }) => {
+export const StyledMenuSubTitle = styled('div')(() => {
   return {
-    color: theme.colors.secondaryTextColor,
+    color: 'var(--affine-text-secondary-color)',
     lineHeight: '36px',
     padding: '0 12px',
   };
 });
 
-export const StyledMenuFooter = styled('div')(({ theme }) => {
+export const StyledMenuFooter = styled('div')(() => {
   return {
     width: 'calc(100% - 24px)',
     margin: '0 auto',
-    borderTop: `1px solid ${theme.colors.borderColor}`,
+    borderTop: '1px solid var(--affine-border-color)',
     padding: '6px 0',
 
     p: {
       paddingLeft: '44px',
-      color: theme.colors.secondaryTextColor,
+      color: 'var(--affine-text-secondary-color)',
       fontSize: '14px',
     },
   };

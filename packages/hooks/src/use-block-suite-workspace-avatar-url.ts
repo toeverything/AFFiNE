@@ -14,8 +14,9 @@ export function useBlockSuiteWorkspaceAvatarUrl(
     fetcher: async avatar => {
       assertExists(blockSuiteWorkspace);
       const blobs = await blockSuiteWorkspace.blobs;
-      if (blobs) {
-        return blobs.get(avatar);
+      const blob = await blobs.get(avatar);
+      if (blob) {
+        return URL.createObjectURL(blob);
       }
       return null;
     },
@@ -27,7 +28,6 @@ export function useBlockSuiteWorkspaceAvatarUrl(
       assertExists(blockSuiteWorkspace);
       const blob = new Blob([file], { type: file.type });
       const blobs = await blockSuiteWorkspace.blobs;
-      assertExists(blobs);
       const blobId = await blobs.set(blob);
       blockSuiteWorkspace.meta.setAvatar(blobId);
       await mutate(blobId);

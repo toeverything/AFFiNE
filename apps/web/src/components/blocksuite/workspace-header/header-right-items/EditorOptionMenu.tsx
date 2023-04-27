@@ -9,7 +9,6 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useTheme } from '@mui/material';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -22,11 +21,7 @@ import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suit
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
-import {
-  Export,
-  MoveTo,
-  MoveToTrash,
-} from '../../../affine/operation-menu-items';
+import { Export, MoveToTrash } from '../../../affine/operation-menu-items';
 import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
 import {
   StyledHorizontalDivider,
@@ -36,7 +31,6 @@ import { LanguageMenu } from './LanguageMenu';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
 
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
@@ -47,7 +41,6 @@ export const EditorOptionMenu = () => {
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const allMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const [record, set] = useAtom(workspacePreferredModeAtom);
   const mode = record[pageId] ?? 'page';
   assertExists(pageMeta);
@@ -67,7 +60,7 @@ export const EditorOptionMenu = () => {
         }}
         icon={
           favorite ? (
-            <FavoritedIcon style={{ color: theme.colors.primaryColor }} />
+            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
           ) : (
             <FavoriteIcon />
           )
@@ -89,13 +82,6 @@ export const EditorOptionMenu = () => {
         {mode === 'page' ? t('Edgeless') : t('Page')}
       </MenuItem>
       <Export />
-      {!pageMeta.isRootPinboard && (
-        <MoveTo
-          metas={allMetas}
-          currentMeta={pageMeta}
-          blockSuiteWorkspace={blockSuiteWorkspace}
-        />
-      )}
       {!pageMeta.isRootPinboard && (
         <MoveToTrash
           testId="editor-option-menu-delete"

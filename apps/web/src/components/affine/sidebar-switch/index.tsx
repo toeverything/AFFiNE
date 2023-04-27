@@ -1,6 +1,7 @@
 import { Tooltip } from '@affine/component';
+import { getEnvironment } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   useGuideHidden,
@@ -29,12 +30,23 @@ export const SidebarSwitch = ({
   const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
     useGuideHiddenUntilNextUpdate();
   const { t } = useTranslation();
+  const checkIsMac = () => {
+    const env = getEnvironment();
+    return env.isBrowser && env.isMacOs;
+  };
+  const [isMac, setIsMac] = useState(false);
+  const collapseKeyboardShortcuts = isMac ? ' ⌘+/' : ' Ctrl+/';
+
+  useEffect(() => {
+    setIsMac(checkIsMac());
+  }, []);
+
   tooltipContent =
     tooltipContent || (open ? t('Collapse sidebar') : t('Expand sidebar'));
 
   return (
     <Tooltip
-      content={tooltipContent}
+      content={tooltipContent + ' ' + collapseKeyboardShortcuts}
       placement="right"
       zIndex={1000}
       visible={tooltipVisible}

@@ -10,9 +10,9 @@ import { useMemo } from 'react';
 export function useBlockSuiteWorkspaceHelper(blockSuiteWorkspace: Workspace) {
   return useMemo(
     () => ({
-      createPage: (pageId: string, parentId?: string): Page => {
+      createPage: (pageId: string): Page => {
         assertExists(blockSuiteWorkspace);
-        return blockSuiteWorkspace.createPage(pageId, parentId);
+        return blockSuiteWorkspace.createPage(pageId);
       },
       markMilestone: async (name: string) => {
         assertExists(blockSuiteWorkspace);

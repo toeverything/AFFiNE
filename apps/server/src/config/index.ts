@@ -66,4 +66,4 @@ export class ConfigModule {
   };
 }
 
-export { AFFiNEConfig } from './def';
+export type { AFFiNEConfig } from './def';

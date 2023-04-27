@@ -89,10 +89,13 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       container.removeChild(editor);
     };
   }, [editor, page]);
+
+  // issue: https://github.com/toeverything/AFFiNE/issues/2004
+  const className = `editor-wrapper ${editor.mode}-mode`;
   return (
     <div
       data-testid={`editor-${props.page.id}`}
-      className="editor-wrapper"
+      className={className}
       style={props.style}
       ref={ref}
     />

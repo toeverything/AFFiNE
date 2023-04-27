@@ -4,10 +4,11 @@ import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
 import { useBlockSuiteMetaHelper } from './affine/use-block-suite-meta-helper';
+import { useReferenceLinkHelper } from './affine/use-reference-link-helper';
 import type { NodeRenderProps } from './use-pinboard-data';
 
 const logger = new DebugLogger('pinboard');
@@ -21,50 +22,32 @@ function findRootIds(metas: PageMeta[], id: string): string[] {
 }
 export function usePinboardHandler({
   blockSuiteWorkspace,
-  metas,
+  metas: propsMetas,
   onAdd,
   onDelete,
   onDrop,
 }: {
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  metas: PageMeta[];
+  metas?: PageMeta[];
   onAdd?: (addedId: string, parentId: string) => void;
   onDelete?: TreeViewProps<NodeRenderProps>['onDelete'];
   onDrop?: TreeViewProps<NodeRenderProps>['onDrop'];
 }) {
+  const metas = useMemo(
+    () => propsMetas || blockSuiteWorkspace.meta.pageMetas || [],
+    [blockSuiteWorkspace.meta.pageMetas, propsMetas]
+  );
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { removeToTrash: removeToTrashHelper } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  // Just need handle add operation, delete check is handled in blockSuite's reference link
-  const addReferenceLink = useCallback(
-    (pageId: string, referenceId: string) => {
-      const page = blockSuiteWorkspace?.getPage(pageId);
-      if (!page) {
-        return;
-      }
-      const text = page.Text.fromDelta([
-        {
-          insert: ' ',
-          attributes: {
-            reference: {
-              type: 'Subpage',
-              pageId: referenceId,
-            },
-          },
-        },
-      ]);
-      const [frame] = page.getBlockByFlavour('affine:frame');
-
-      frame && page.addBlock('affine:paragraph', { text }, frame.id);
-    },
-    [blockSuiteWorkspace]
-  );
+  const { addReferenceLink, removeReferenceLink } =
+    useReferenceLinkHelper(blockSuiteWorkspace);
 
   const addPin = useCallback(
     (parentId: string) => {
       const id = nanoid();
-      createPage(id, parentId);
+      createPage(id);
       onAdd?.(id, parentId);
       addReferenceLink(parentId, id);
     },
@@ -127,24 +110,7 @@ export function usePinboardHandler({
           return onDrop?.(dragId, dropId, position);
         }
         // Old parent will delete drag node, new parent will be added
-        const newDragParentSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
-        const deleteIndex = newDragParentSubpageIds.findIndex(
-          id => id === dragId
-        );
-        newDragParentSubpageIds.splice(deleteIndex, 1);
-
-        const newDropParentSubpageIds = [...(dropParentMeta?.subpageIds ?? [])];
-        const insertIndex =
-          newDropParentSubpageIds.findIndex(id => id === dropId) + insertOffset;
-        newDropParentSubpageIds.splice(insertIndex, 0, dragId);
-        dragParentMeta &&
-          setPageMeta(dragParentMeta.id, {
-            subpageIds: newDragParentSubpageIds,
-          });
-        dropParentMeta &&
-          setPageMeta(dropParentMeta.id, {
-            subpageIds: newDropParentSubpageIds,
-          });
+        removeReferenceLink(dragId);
         dropParentMeta && addReferenceLink(dropParentMeta.id, dragId);
         return onDrop?.(dragId, dropId, position);
       }
@@ -154,23 +120,12 @@ export function usePinboardHandler({
         return;
       }
       if (dragParentMeta) {
-        const metaIndex = dragParentMeta.subpageIds.findIndex(
-          id => id === dragId
-        );
-        const newSubpageIds = [...dragParentMeta.subpageIds];
-        newSubpageIds.splice(metaIndex, 1);
-        setPageMeta(dragParentMeta.id, {
-          subpageIds: newSubpageIds,
-        });
+        removeReferenceLink(dragId);
       }
       const dropMeta = metas.find(meta => meta.id === dropId)!;
-      const newSubpageIds = [dragId, ...(dropMeta.subpageIds ?? [])];
-      setPageMeta(dropMeta.id, {
-        subpageIds: newSubpageIds,
-      });
       addReferenceLink(dropMeta.id, dragId);
     },
-    [addReferenceLink, metas, onDrop, setPageMeta]
+    [addReferenceLink, metas, onDrop, removeReferenceLink, setPageMeta]
   );
 
   return {

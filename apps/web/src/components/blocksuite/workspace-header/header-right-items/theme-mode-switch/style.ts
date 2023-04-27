@@ -9,7 +9,7 @@ export const StyledThemeModeContainer = styled('div')(({ theme }) => {
     height: '48px',
     borderRadius: '6px',
     backgroundColor: 'transparent',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     fontSize: '16px',
     ...displayFlex('flex-start', 'center'),
     padding: '0 14px',
@@ -17,7 +17,7 @@ export const StyledThemeModeContainer = styled('div')(({ theme }) => {
 });
 export const StyledThemeButtonContainer = styled('div')(({ theme }) => {
   return {
-    border: `1px solid ${theme.colors.borderColor}`,
+    border: `1px solid var(--affine-border-color)`,
     borderRadius: '4px',
     cursor: 'pointer',
     ...displayFlex('space-evenly', 'center'),
@@ -27,22 +27,22 @@ export const StyledThemeButtonContainer = styled('div')(({ theme }) => {
 });
 export const StyledThemeButton = styled('button')<{
   active: boolean;
-}>(({ active, theme }) => {
+}>(({ active }) => {
   return {
     cursor: 'pointer',
-    color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+    color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
   };
 });
 export const StyledVerticalDivider = styled('div')(({ theme }) => {
   return {
     width: '1px',
     height: '32px',
-    borderLeft: `1px solid ${theme.colors.borderColor}`,
+    borderLeft: `1px solid var(--affine-border-color)`,
   };
 });
 export const StyledThemeModeSwitch = styled('button')<{
   inMenu?: boolean;
-}>(({ inMenu, theme }) => {
+}>(({ inMenu }) => {
   return {
     width: inMenu ? '20px' : '32px',
     height: inMenu ? '20px' : '32px',
@@ -50,7 +50,7 @@ export const StyledThemeModeSwitch = styled('button')<{
     overflow: 'hidden',
     backgroundColor: 'transparent',
     position: 'relative',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     fontSize: inMenu ? '20px' : '24px',
   };
 });
@@ -58,7 +58,7 @@ export const StyledSwitchItem = styled('div')<{
   active: boolean;
   isHover?: boolean;
   inMenu?: boolean;
-}>(({ active, isHover, inMenu, theme }) => {
+}>(({ active, isHover, inMenu }) => {
   const activeRaiseAnimate = toString(
     spring({ top: '0' }, { top: '-100%' }, { preset: 'gentle' })
   );
@@ -74,7 +74,7 @@ export const StyledSwitchItem = styled('div')<{
 
   const activeStyle = active
     ? {
-        color: theme.colors.iconColor,
+        color: 'var(--affine-icon-color)',
         top: '0',
         animation: css`
           ${keyframes`${
@@ -85,8 +85,8 @@ export const StyledSwitchItem = styled('div')<{
       }
     : {
         top: '100%',
-        color: theme.colors.primaryColor,
-        backgroundColor: theme.colors.hoverBackground,
+        color: 'var(--affine-primary-color)',
+        backgroundColor: 'var(--affine-hover-color)',
         animation: css`
           ${keyframes`${
             isHover ? raiseAnimate : declineAnimate

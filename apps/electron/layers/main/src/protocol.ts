@@ -30,23 +30,21 @@ function toAbsolutePath(url: string) {
 }
 
 export function registerProtocol() {
-  if (process.env.NODE_ENV === 'production') {
-    protocol.interceptFileProtocol('file', (request, callback) => {
-      const url = request.url.replace(/^file:\/\//, '');
-      const realpath = toAbsolutePath(url);
-      // console.log('realpath', realpath, 'for', url);
-      callback(realpath);
-      return true;
-    });
+  protocol.interceptFileProtocol('file', (request, callback) => {
+    const url = request.url.replace(/^file:\/\//, '');
+    const realpath = toAbsolutePath(url);
+    // console.log('realpath', realpath, 'for', url);
+    callback(realpath);
+    return true;
+  });
 
-    protocol.registerFileProtocol('assets', (request, callback) => {
-      const url = request.url.replace(/^assets:\/\//, '');
-      const realpath = toAbsolutePath(url);
-      // console.log('realpath', realpath, 'for', url);
-      callback(realpath);
-      return true;
-    });
-  }
+  protocol.registerFileProtocol('assets', (request, callback) => {
+    const url = request.url.replace(/^assets:\/\//, '');
+    const realpath = toAbsolutePath(url);
+    // console.log('realpath', realpath, 'for', url);
+    callback(realpath);
+    return true;
+  });
 
   session.defaultSession.webRequest.onHeadersReceived(
     (responseDetails, callback) => {

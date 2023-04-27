@@ -21,7 +21,6 @@ export default {
 
 const basicBlockSuiteWorkspace = new Workspace({
   id: 'blocksuite-local',
-  blobOptionsGetter: (_: string) => undefined,
 });
 
 basicBlockSuiteWorkspace.meta.setName('Hello World');
@@ -46,19 +45,17 @@ Basic.args = {
 
 const avatarBlockSuiteWorkspace = new Workspace({
   id: 'blocksuite-local',
-  blobOptionsGetter: (_: string) => undefined,
 });
 
 avatarBlockSuiteWorkspace.meta.setName('Hello World');
-avatarBlockSuiteWorkspace.blobs.then(async blobs => {
-  if (blobs) {
-    const buffer = await (
-      await fetch(new URL('@affine-test/fixtures/smile.png', import.meta.url))
-    ).arrayBuffer();
-    const id = await blobs.set(new Blob([buffer], { type: 'image/png' }));
+fetch(new URL('@affine-test/fixtures/smile.png', import.meta.url))
+  .then(res => res.arrayBuffer())
+  .then(async buffer => {
+    const id = await avatarBlockSuiteWorkspace.blobs.set(
+      new Blob([buffer], { type: 'image/png' })
+    );
     avatarBlockSuiteWorkspace.meta.setAvatar(id);
-  }
-});
+  });
 
 export const BlobExample: StoryFn<WorkspaceAvatarProps> = props => {
   return (

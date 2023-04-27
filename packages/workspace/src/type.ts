@@ -35,6 +35,10 @@ export interface LocalIndexedDBProvider extends BackgroundProvider {
   whenSynced: Promise<void>;
 }
 
+export interface SQLiteProvider extends BaseProvider {
+  flavour: 'sqlite';
+}
+
 export interface AffineWebSocketProvider extends BaseProvider {
   flavour: 'affine-websocket';
 }

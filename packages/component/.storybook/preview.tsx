@@ -1,9 +1,9 @@
-import React from 'react';
-import '@blocksuite/editor/themes/affine.css';
-import '../src/theme/global.css';
-
-import { getDarkTheme, getLightTheme, ThemeProvider } from '@affine/component';
+import { useEffect, ComponentType } from 'react';
+import { ThemeProvider, useTheme } from 'next-themes';
+import '@affine/component/theme/global.css';
+import '@affine/component/theme/theme.css';
 import { useDarkMode } from 'storybook-dark-mode';
+
 export const parameters = {
   actions: { argTypesRegex: '^on[A-Z].*' },
   controls: {
@@ -14,14 +14,20 @@ export const parameters = {
   },
 };
 
-const lightTheme = getLightTheme('page');
-const darkTheme = getDarkTheme('page');
+const Component = () => {
+  const isDark = useDarkMode();
+  const theme = useTheme();
+  useEffect(() => {
+    theme.setTheme(isDark ? 'dark' : 'light');
+  }, [isDark]);
+  return null;
+};
 
 export const decorators = [
-  (Story: React.ComponentType) => {
-    const isDark = useDarkMode();
+  (Story: ComponentType) => {
     return (
-      <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
+      <ThemeProvider>
+        <Component />
         <Story />
       </ThemeProvider>
     );

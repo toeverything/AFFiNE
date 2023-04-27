@@ -1,19 +1,16 @@
-import {
-  alpha,
-  displayFlex,
-  keyframes,
-  styled,
-  textEllipsis,
-} from '@affine/component';
+import { alpha, displayFlex, styled, textEllipsis } from '@affine/component';
 
 export const StyledListItem = styled('div')<{
   active?: boolean;
   disabled?: boolean;
-}>(({ theme, active, disabled }) => {
+}>(({ active, disabled }) => {
   return {
     height: '32px',
-    color: active ? theme.colors.primaryColor : theme.colors.textColor,
-    padding: '0 16px',
+    color: active
+      ? 'var(--affine-primary-color)'
+      : 'var(--affine-text-primary-color)',
+    paddingLeft: '16px',
+    paddingRight: '2px',
     borderRadius: '8px',
     cursor: 'pointer',
     marginBottom: '4px',
@@ -24,17 +21,19 @@ export const StyledListItem = styled('div')<{
     ...(disabled
       ? {
           cursor: 'not-allowed',
-          color: theme.colors.borderColor,
+          color: 'var(--affine-border-color)',
         }
       : {}),
 
     '> svg, a > svg': {
       fontSize: '20px',
       marginRight: '12px',
-      color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+      color: active
+        ? 'var(--affine-primary-color)'
+        : 'var(--affine-icon-color)',
     },
     ':hover:not([disabled])': {
-      backgroundColor: theme.colors.hoverBackground,
+      backgroundColor: 'var(--affine-hover-color)',
     },
   };
 });
@@ -42,7 +41,7 @@ export const StyledListItem = styled('div')<{
 export const StyledCollapseButton = styled('button')<{
   collapse: boolean;
   show?: boolean;
-}>(({ collapse, show = true, theme }) => {
+}>(({ collapse, show = true }) => {
   return {
     width: '16px',
     height: '100%',
@@ -53,7 +52,7 @@ export const StyledCollapseButton = styled('button')<{
     top: '0',
     bottom: '0',
     margin: 'auto',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     opacity: '.6',
     transition: 'opacity .15s ease-in-out',
     display: show ? 'flex' : 'none',
@@ -71,7 +70,7 @@ export const StyledCollapseItem = styled('div')<{
   active?: boolean;
   isOver?: boolean;
   textWrap?: boolean;
-}>(({ disable = false, active = false, theme, isOver, textWrap = false }) => {
+}>(({ disable = false, active = false, isOver, textWrap = false }) => {
   return {
     width: '100%',
     lineHeight: '1.5',
@@ -81,16 +80,16 @@ export const StyledCollapseItem = styled('div')<{
     paddingRight: '2px',
     position: 'relative',
     color: disable
-      ? theme.colors.disableColor
+      ? 'var(--affine-text-disable-color)'
       : active
-      ? theme.colors.primaryColor
-      : theme.colors.textColor,
+      ? 'var(--affine-primary-color)'
+      : 'var(--affine-text-primary-color)',
     cursor: disable ? 'not-allowed' : 'pointer',
-    background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
+    background: isOver ? alpha('var(--affine-primary-color)', 0.06) : '',
     userSelect: 'none',
     ...(textWrap
       ? {
-          wordBreak: 'break-all',
+          wordBreak: 'break-word',
           whiteSpace: 'pre-wrap',
         }
       : {}),
@@ -103,116 +102,19 @@ export const StyledCollapseItem = styled('div')<{
       fontSize: '20px',
       marginRight: '8px',
       flexShrink: '0',
-      color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+      color: active
+        ? 'var(--affine-primary-color)'
+        : 'var(--affine-icon-color)',
     },
 
     ':hover': disable
       ? {}
       : {
-          backgroundColor: theme.colors.hoverBackground,
+          backgroundColor: 'var(--affine-hover-color)',
           '.operation-button': {
             visibility: 'visible',
           },
         },
-  };
-});
-
-const slideIn = keyframes({
-  '0%': {
-    height: '0px',
-  },
-  '50%': {
-    height: '36px',
-  },
-  '100%': {
-    height: '32px',
-  },
-});
-const slideIn2 = keyframes({
-  '0%': {
-    transform: 'translateX(100%)',
-  },
-  '50%': {
-    transform: 'translateX(100%)',
-  },
-  '80%': {
-    transform: 'translateX(-10%)',
-  },
-  '100%': {
-    transform: 'translateX(0%)',
-  },
-});
-
-const slideOut = keyframes({
-  '0%': {
-    height: '32px',
-  },
-  '60%': {
-    height: '32px',
-  },
-  '80%': {
-    height: '32px',
-  },
-  '100%': {
-    height: '0px',
-  },
-});
-const slideOut2 = keyframes({
-  '0%': {
-    transform: 'translateX(0%)',
-  },
-  '100%': {
-    transform: 'translateX(100%)',
-  },
-});
-
-export const StyledChangeLog = styled('div')<{
-  isClose?: boolean;
-}>(({ theme, isClose }) => {
-  return {
-    width: '110%',
-    height: '32px',
-    ...displayFlex('flex-start', 'center'),
-    color: theme.colors.primaryColor,
-    backgroundColor: theme.colors.hoverBackground,
-    border: `1px solid ${theme.colors.primaryColor}`,
-    borderRight: 'none',
-    marginLeft: '8px',
-    paddingLeft: '8px',
-    borderRadius: '16px 0 0 16px',
-    cursor: 'pointer',
-    zIndex: 1001,
-    position: 'absolute',
-    userSelect: 'none',
-    transition: 'all 0.3s',
-    animation: isClose
-      ? `${slideOut2} .3s ease-in-out forwards`
-      : `${slideIn2} 1s ease-in-out forwards`,
-    '> svg, a > svg': {
-      fontSize: '20px',
-      marginRight: '12px',
-      color: theme.colors.primaryColor,
-    },
-    button: {
-      marginRight: '12%',
-    },
-  };
-});
-export const StyledChangeLogWrapper = styled('div')<{
-  isClose?: boolean;
-}>(({ isClose }) => {
-  return {
-    width: 'calc(100% + 4px)',
-    height: '0px',
-    animation: isClose
-      ? `${slideOut} .3s ease-in-out forwards`
-      : `${slideIn} 1s ease-in-out forwards`,
-    ...displayFlex('flex-start', 'center'),
-    marginBottom: '4px',
-    position: 'relative',
-    userSelect: 'none',
-    transition: 'all 0.3s',
-    overflow: 'hidden',
   };
 });
 

@@ -1,3 +1,4 @@
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
@@ -22,7 +23,6 @@ import {
 import type { AllWorkspace } from '../../../shared';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
-import { Pinboard } from './Pinboard';
 import { RouteNavigation } from './RouteNavigation';
 import { StyledListItem } from './shared-styles';
 import {
@@ -93,8 +93,11 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const show = isPublicWorkspace ? false : sidebarOpen;
   const actualWidth = floatingSlider ? 'calc(10vw + 400px)' : sliderWidth;
+
   useEffect(() => {
-    window.apis?.onSidebarVisibilityChange(sidebarOpen);
+    if (environment.isDesktop) {
+      window.apis?.onSidebarVisibilityChange(sidebarOpen);
+    }
   }, [sidebarOpen]);
 
   useEffect(() => {
@@ -161,7 +164,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 }}
               >
                 <SettingsIcon />
-                {t('Workspace Settings')}
+                <div>{t('Workspace Settings')}</div>
               </StyledLink>
             </StyledListItem>
             <StyledListItem
@@ -196,45 +199,40 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                   currentWorkspace={currentWorkspace}
                 />
               )}
-              {blockSuiteWorkspace && (
-                <Pinboard
-                  blockSuiteWorkspace={blockSuiteWorkspace}
-                  openPage={openPage}
-                />
-              )}
             </StyledScrollWrapper>
             <div style={{ height: 16 }}></div>
-            {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
-            currentWorkspace.public ? (
-              <StyledListItem>
-                <StyledLink
-                  href={{
-                    pathname:
-                      currentWorkspaceId && paths.setting(currentWorkspaceId),
-                  }}
+            {config.enableLegacyCloud &&
+              (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
+              currentWorkspace.public ? (
+                <StyledListItem>
+                  <StyledLink
+                    href={{
+                      pathname:
+                        currentWorkspaceId && paths.setting(currentWorkspaceId),
+                    }}
+                  >
+                    <ShareIcon />
+                    <span data-testid="Published-to-web">Published to web</span>
+                  </StyledLink>
+                </StyledListItem>
+              ) : (
+                <StyledListItem
+                  active={
+                    currentPath ===
+                    (currentWorkspaceId && paths.shared(currentWorkspaceId))
+                  }
                 >
-                  <ShareIcon />
-                  <span data-testid="Published-to-web">Published to web</span>
-                </StyledLink>
-              </StyledListItem>
-            ) : (
-              <StyledListItem
-                active={
-                  currentPath ===
-                  (currentWorkspaceId && paths.shared(currentWorkspaceId))
-                }
-              >
-                <StyledLink
-                  href={{
-                    pathname:
-                      currentWorkspaceId && paths.shared(currentWorkspaceId),
-                  }}
-                >
-                  <ShareIcon />
-                  <span data-testid="shared-pages">{t('Shared Pages')}</span>
-                </StyledLink>
-              </StyledListItem>
-            )}
+                  <StyledLink
+                    href={{
+                      pathname:
+                        currentWorkspaceId && paths.shared(currentWorkspaceId),
+                    }}
+                  >
+                    <ShareIcon />
+                    <span data-testid="shared-pages">{t('Shared Pages')}</span>
+                  </StyledLink>
+                </StyledListItem>
+              ))}
             <StyledListItem
               active={
                 currentPath ===

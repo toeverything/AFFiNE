@@ -4,17 +4,12 @@ export const StyledEditorModeSwitch = styled('div')<{
   switchLeft: boolean;
   showAlone?: boolean;
 }>(({ theme, switchLeft, showAlone }) => {
-  const {
-    palette: { mode },
-  } = theme;
   return {
     width: showAlone ? '40px' : '78px',
     height: '32px',
     background: showAlone
       ? 'transparent'
-      : mode === 'dark'
-      ? '#242424'
-      : '#F9F9FB',
+      : 'var(--affine-background-primary-color)',
     borderRadius: '12px',
     ...displayFlex('space-between', 'center'),
     padding: '0 8px',
@@ -25,11 +20,8 @@ export const StyledEditorModeSwitch = styled('div')<{
       display: showAlone ? 'none' : 'block',
       width: '24px',
       height: '24px',
-      background: theme.colors.pageBackground,
-      boxShadow:
-        mode === 'dark'
-          ? '0px 0px 6px rgba(22, 22, 22, 0.6)'
-          : '0px 0px 6px #E2E2E2',
+      background: 'var(--affine-background-primary-color)',
+      boxShadow: 'var(--affine-tooltip-shadow)',
       borderRadius: '8px',
       zIndex: 1,
       position: 'absolute',
@@ -47,7 +39,7 @@ export const StyledSwitchItem = styled('button')<{
     width: '24px',
     height: '24px',
     borderRadius: '8px',
-    color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+    color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
     display: hide ? 'none' : 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',

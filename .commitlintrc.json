@@ -12,6 +12,7 @@
         "component",
         "workspace",
         "env",
+        "graphql",
         "cli",
         "hooks",
         "i18n",
@@ -19,7 +20,8 @@
         "octobase-node",
         "templates",
         "y-indexeddb",
-        "debug"
+        "debug",
+        "theme"
       ]
     ]
   }

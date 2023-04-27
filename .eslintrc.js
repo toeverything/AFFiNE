@@ -75,6 +75,12 @@ const config = {
         '@typescript-eslint/consistent-type-imports': 0,
       },
     },
+    {
+      files: '*.cjs',
+      rules: {
+        '@typescript-eslint/no-var-requires': 0,
+      },
+    },
   ],
 };
 

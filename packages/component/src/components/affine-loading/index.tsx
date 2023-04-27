@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material';
+import { useTheme } from 'next-themes';
 import type { FC } from 'react';
 
 import { InternalLottie } from '../internal-lottie';
@@ -16,8 +16,8 @@ export const AffineLoading: FC<AffineLoadingProps> = ({
   autoplay = false,
   autoReverse = false,
 }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   return (
     <InternalLottie
       key={isDark ? 'dark' : 'light'}

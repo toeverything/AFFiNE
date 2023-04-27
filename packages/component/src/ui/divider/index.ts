@@ -4,6 +4,6 @@ import { styled } from '../../styles';
 
 export const Divider = styled(MuiDivider)(({ theme }) => {
   return {
-    borderColor: theme.colors.borderColor,
+    borderColor: 'var(--affine-border-color)',
   };
 });

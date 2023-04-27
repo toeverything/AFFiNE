@@ -1,7 +1,6 @@
+import { test } from '@affine-test/kit/playwright';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-
-import { test } from '../../libs/playwright';
 
 async function openStorybook(page: Page, storyName?: string) {
   return page.goto(`http://localhost:6006`);

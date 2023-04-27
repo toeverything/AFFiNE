@@ -4,7 +4,7 @@ import {
   EdgelessIcon,
   LevelIcon,
   PageIcon,
-  PivotsIcon,
+  PinboardIcon,
 } from '@blocksuite/icons';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
@@ -14,13 +14,14 @@ import { useMemo, useState } from 'react';
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import type { PinboardNode } from '../../../../hooks/use-pinboard-data';
 import { StyledCollapsedButton, StyledPinboard } from '../styles';
+import { AddButton } from './AddButton';
 import EmptyItem from './EmptyItem';
 import { OperationButton } from './OperationButton';
 
 const getIcon = (type: 'root' | 'edgeless' | 'page') => {
   switch (type) {
     case 'root':
-      return <PivotsIcon className="mode-icon" />;
+      return <PinboardIcon className="mode-icon" />;
     case 'edgeless':
       return <EdgelessIcon className="mode-icon" />;
     default:
@@ -84,10 +85,8 @@ export const PinboardRender: PinboardNode['render'] = (
             <ArrowDownSmallIcon />
           </StyledCollapsedButton>
         )}
-
         {asPath && !isRoot ? <LevelIcon className="path-icon" /> : null}
         {getIcon(isRoot ? 'root' : record[node.id])}
-
         {showRename ? (
           <Input
             data-testid={`pinboard-input-${node.id}`}
@@ -106,6 +105,7 @@ export const PinboardRender: PinboardNode['render'] = (
         ) : (
           <span>{isRoot ? 'Pinboard' : currentMeta.title || 'Untitled'}</span>
         )}
+        {showOperationButton && <AddButton onAdd={onAdd} visible={isHover} />}
 
         {showOperationButton && (
           <OperationButton
@@ -115,7 +115,7 @@ export const PinboardRender: PinboardNode['render'] = (
             metas={metas}
             currentMeta={currentMeta!}
             blockSuiteWorkspace={blockSuiteWorkspace!}
-            isHover={isHover}
+            visible={isHover}
             onMenuClose={() => setIsHover(false)}
             onRename={() => {
               setShowRename(true);

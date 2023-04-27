@@ -28,14 +28,20 @@
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
+      "@affine/graphql": ["./packages/graphql/src"],
+      "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
-      "@toeverything/hooks/*": ["./packages/hooks/src/*"]
+      "@toeverything/hooks/*": ["./packages/hooks/src/*"],
+      "@toeverything/theme": ["./packages/theme/src"]
     }
   },
   "references": [
     {
       "path": "./tests"
+    },
+    {
+      "path": "./apps/electron/tests"
     },
     {
       "path": "./apps/web"
@@ -53,6 +59,9 @@
       "path": "./packages/env"
     },
     {
+      "path": "./packages/graphql"
+    },
+    {
       "path": "./packages/debug"
     },
     {
@@ -65,7 +74,16 @@
       "path": "./tests/fixtures"
     },
     {
+      "path": "./tests/kit"
+    },
+    {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./apps/electron"
+    },
+    {
+      "path": "./packages/theme"
     }
   ],
   "files": [],

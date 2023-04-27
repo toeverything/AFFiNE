@@ -1,13 +1,14 @@
+import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
+import { openHomePage } from '../../libs/load-page';
 import { waitMarkdownImported } from '../../libs/page-logic';
-import { test } from '../../libs/playwright';
 import { clickPublishPanel } from '../../libs/setting';
 import {
   clickSideBarAllPageButton,
   clickSideBarSettingButton,
 } from '../../libs/sidebar';
-import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
+import { createFakeUser, loginUser } from '../../libs/utils';
 import { createWorkspace } from '../../libs/workspace';
 
 test('enable public workspace', async ({ page, context }) => {

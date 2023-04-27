@@ -3,25 +3,33 @@ const {
   utils: { fromBuildIdentifier },
 } = require('@electron-forge/core');
 
-const isCanary = process.env.BUILD_TYPE === 'canary';
+const path = require('node:path');
 
-const productName = isCanary ? 'AFFiNE-Canary' : 'AFFiNE';
-const icoPath = isCanary
-  ? './resources/icons/icon_canary.ico'
+const buildType = (process.env.BUILD_TYPE || 'stable').trim().toLowerCase();
+const stableBuild = buildType === 'stable';
+const productName = !stableBuild ? `AFFiNE-${buildType}` : 'AFFiNE';
+const icoPath = !stableBuild
+  ? `./resources/icons/icon_${buildType}.ico`
   : './resources/icons/icon.ico';
-const icnsPath = isCanary
-  ? './resources/icons/icon_canary.icns'
+const icnsPath = !stableBuild
+  ? `./resources/icons/icon_${buildType}.icns`
   : './resources/icons/icon.icns';
+
+const arch =
+  process.argv.indexOf('--arch') > 0
+    ? process.argv[process.argv.indexOf('--arch') + 1]
+    : process.arch;
 
 /**
  * @type {import('@electron-forge/shared-types').ForgeConfig}
  */
 module.exports = {
-  buildIdentifier: isCanary ? 'canary' : 'stable',
+  buildIdentifier: buildType,
   packagerConfig: {
     name: productName,
     appBundleId: fromBuildIdentifier({
       canary: 'pro.affine.canary',
+      beta: 'pro.affine.beta',
       stable: 'pro.affine.app',
     }),
     icon: icnsPath,
@@ -45,6 +53,23 @@ module.exports = {
         format: 'ULFO',
         icon: icnsPath,
         name: 'AFFiNE',
+        'icon-size': 128,
+        background: './resources/icons/dmg-background.png',
+        contents: [
+          {
+            x: 176,
+            y: 192,
+            type: 'file',
+            path: path.resolve(
+              __dirname,
+              'out',
+              buildType,
+              `${productName}-darwin-${arch}`,
+              `${productName}.app`
+            ),
+          },
+          { x: 432, y: 192, type: 'link', path: '/Applications' },
+        ],
       },
     },
     {

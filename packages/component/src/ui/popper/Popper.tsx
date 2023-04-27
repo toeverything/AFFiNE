@@ -1,5 +1,5 @@
 import ClickAwayListener from '@mui/base/ClickAwayListener';
-import PopperUnstyled from '@mui/base/PopperUnstyled';
+import PopperUnstyled from '@mui/base/Popper';
 import Grow from '@mui/material/Grow';
 import type { CSSProperties, PointerEvent } from 'react';
 import {
@@ -191,6 +191,6 @@ export const BasicStyledPopper = styled(PopperUnstyled, {
   zIndex?: CSSProperties['zIndex'];
 }>(({ zIndex, theme }) => {
   return {
-    zIndex: zIndex ?? theme.zIndex.popover,
+    zIndex: zIndex ?? 'var(--affine-z-index-popover)',
   };
 });

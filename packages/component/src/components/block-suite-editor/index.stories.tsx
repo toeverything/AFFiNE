@@ -2,13 +2,18 @@
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
-import { Workspace } from '@blocksuite/store';
+import { createMemoryStorage, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
 import type { EditorProps } from '.';
 import { BlockSuiteEditor } from '.';
+
+const blockSuiteWorkspace = new Workspace({
+  id: 'test',
+  blobStorages: [createMemoryStorage],
+});
 
 function initPage(page: Page): void {
   // Add page block and surface block at root level
@@ -27,10 +32,6 @@ function initPage(page: Page): void {
   page.resetHistory();
 }
 
-const blockSuiteWorkspace = new Workspace({
-  id: 'test',
-  blobOptionsGetter: () => void 0,
-});
 blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
 const page = blockSuiteWorkspace.createPage('page0');
 initPage(page);
@@ -41,10 +42,15 @@ export default {
   component: BlockSuiteEditor,
 } satisfies BlockSuiteMeta;
 
-const Template: StoryFn<EditorProps> = (props: EditorProps) => {
+const Template: StoryFn<EditorProps> = (props: Partial<EditorProps>) => {
   return (
-    <>
-      <BlockSuiteEditor {...props} page={page} mode="page" />
+    <div
+      style={{
+        height: '100vh',
+        width: '100vw',
+      }}
+    >
+      <BlockSuiteEditor onInit={initPage} page={page} mode="page" {...props} />
       <div
         style={{
           position: 'absolute',
@@ -53,7 +59,7 @@ const Template: StoryFn<EditorProps> = (props: EditorProps) => {
         }}
         id="toolWrapper"
       />
-    </>
+    </div>
   );
 };
 
