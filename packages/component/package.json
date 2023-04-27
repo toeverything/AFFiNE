@@ -10,7 +10,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./theme/*": "./src/theme/*",
-    "./*": "./src/components/*/index.tsx"
+    "./*": "./src/components/*/index.tsx",
+    "./*/*": "./src/components/*/*/index.tsx"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
