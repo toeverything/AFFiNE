@@ -74,11 +74,7 @@ export const StyledMenuItem = styled('button')<{
     ':hover': disabled
       ? {}
       : {
-          color: 'var(--affine-primary-color)',
           backgroundColor: 'var(--affine-hover-color)',
-          svg: {
-            color: 'var(--affine-primary-color)',
-          },
         },
   };
 });

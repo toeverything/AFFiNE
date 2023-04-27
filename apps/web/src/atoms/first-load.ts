@@ -1,19 +1,14 @@
-import { atomWithSyncStorage } from '@affine/jotai';
+import { atomWithStorage } from 'jotai/utils';
 
 export type Visibility = Record<string, boolean>;
 
 const DEFAULT_VALUE = '0.0.0';
 
-export const lastVersionAtom = atomWithSyncStorage(
-  'lastVersion',
-  DEFAULT_VALUE
-);
-export const guideHiddenAtom = atomWithSyncStorage<Visibility>(
-  'guideHidden',
-  {}
-);
+export const lastVersionAtom = atomWithStorage('lastVersion', DEFAULT_VALUE);
 
-export const guideHiddenUntilNextUpdateAtom = atomWithSyncStorage<Visibility>(
+export const guideHiddenAtom = atomWithStorage<Visibility>('guideHidden', {});
+
+export const guideHiddenUntilNextUpdateAtom = atomWithStorage<Visibility>(
   'guideHiddenUntilNextUpdate',
   {}
 );

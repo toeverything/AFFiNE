@@ -48,7 +48,7 @@ export const baseTheme = {
   zIndexPopover: '100',
 
   paragraphSpace: '8px',
-  popoverRadius: '10px',
+  popoverRadius: '12px',
 
   zoom: '1',
   scale: 'calc(1 / var(--affine-zoom))',
@@ -73,7 +73,7 @@ export const lightTheme = {
   backgroundSecondaryColor: 'rgb(251, 250, 252)',
   backgroundTertiaryColor: 'rgb(233, 233, 236)',
   backgroundCodeBlock: 'rgb(250, 251, 253)',
-  backgroundModalColor: 'rgba(0, 0, 0, 0.6)',
+  backgroundModalColor: 'rgba(0, 0, 0, 0.4)',
   textPrimaryColor: 'rgb(66, 65, 73)',
   textSecondaryColor: 'rgb(142, 141, 145)',
   textDisableColor: 'rgb(169, 169, 173)',
@@ -197,7 +197,7 @@ export const darkTheme = {
   backgroundSuccessColor: 'rgba(8, 21, 18, 1)',
   backgroundPrimaryColor: 'rgb(20, 20, 20)',
   backgroundSecondaryColor: 'rgb(32, 32, 32)',
-  backgroundModalColor: 'rgba(0, 0, 0, 0.8)',
+  backgroundModalColor: 'rgba(0, 0, 0, 0.5)',
   backgroundOverlayPanelColor: 'rgb(30, 30, 30)',
   tagBlue: 'rgba(8, 67, 136, 1)',
   tagGreen: 'rgba(44, 108, 63, 1)',

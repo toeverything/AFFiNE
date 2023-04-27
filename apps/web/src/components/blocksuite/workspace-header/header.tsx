@@ -1,7 +1,9 @@
+import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { useAtom } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
 import {
   forwardRef,
@@ -12,10 +14,6 @@ import {
   useState,
 } from 'react';
 
-import {
-  useSidebarFloating,
-  useSidebarStatus,
-} from '../../../hooks/use-sidebar-status';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import EditPage from './header-right-items/EditPage';
@@ -142,17 +140,11 @@ export const Header = forwardRef<
   useEffect(() => {
     setShowWarning(shouldShowWarning());
   }, []);
-  const [open] = useSidebarStatus();
-  const sidebarFloating = useSidebarFloating();
+  const [open] = useAtom(appSidebarOpenAtom);
   const { t } = useTranslation();
 
   return (
-    <StyledHeaderContainer
-      sidebarFloating={sidebarFloating && open}
-      ref={ref}
-      hasWarning={showWarning}
-      {...props}
-    >
+    <StyledHeaderContainer ref={ref} hasWarning={showWarning} {...props}>
       <BrowserWarning
         show={showWarning}
         onClose={() => {
