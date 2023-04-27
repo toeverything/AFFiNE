@@ -9,7 +9,7 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
   await waitMarkdownImported(page);
   const btn = await page.getByTestId('switch-edgeless-mode-button');
   await btn.click();
-
+  await page.waitForTimeout(100);
   const edgeless = page.locator('affine-edgeless-page');
   expect(await edgeless.isVisible()).toBe(true);
 
