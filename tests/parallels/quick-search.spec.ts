@@ -178,7 +178,7 @@ test('When opening the website for the first time, the first folding sidebar wil
   await waitMarkdownImported(page);
   const quickSearchTips = page.locator('[data-testid=quick-search-tips]');
   await expect(quickSearchTips).not.toBeVisible();
-  await page.getByTestId('sliderBar-arrowButton-collapse').click();
+  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).not.toBeInViewport();
   await expect(quickSearchTips).toBeVisible();
@@ -192,7 +192,7 @@ test('After appearing once, it will not appear a second time', async ({
   await waitMarkdownImported(page);
   const quickSearchTips = page.locator('[data-testid=quick-search-tips]');
   await expect(quickSearchTips).not.toBeVisible();
-  await page.getByTestId('sliderBar-arrowButton-collapse').click();
+  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
   const sliderBarArea = page.getByTestId('sliderBar');
   await expect(sliderBarArea).not.toBeVisible();
   await expect(quickSearchTips).toBeVisible();
@@ -200,7 +200,7 @@ test('After appearing once, it will not appear a second time', async ({
   await expect(quickSearchTips).not.toBeVisible();
   await page.reload();
   await page.locator('[data-testid=sliderBar-arrowButton-expand]').click();
-  await page.getByTestId('sliderBar-arrowButton-collapse').click();
+  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
   await expect(quickSearchTips).not.toBeVisible();
 });
 

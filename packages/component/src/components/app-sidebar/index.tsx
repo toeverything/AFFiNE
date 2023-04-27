@@ -62,6 +62,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
       >
         <div className={navHeaderStyle}>
           <IconButton
+            data-testid="app-sidebar-arrow-button-collapse"
             className={sidebarButtonStyle}
             onClick={handleSidebarOpen}
           >
