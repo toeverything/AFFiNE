@@ -12,6 +12,8 @@ export default {
   component: AppSidebar,
 } satisfies Meta;
 
+const Footer = () => <div>Add Page</div>;
+
 export const Default: StoryFn = props => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const ref = useRef<HTMLElement>(null);
@@ -19,6 +21,7 @@ export const Default: StoryFn = props => {
     <>
       <main
         style={{
+          position: 'relative',
           width: '100vw',
           height: '600px',
           overflow: 'hidden',
@@ -26,7 +29,7 @@ export const Default: StoryFn = props => {
           flexDirection: 'row',
         }}
       >
-        <AppSidebar footer={<>Footer</>} ref={ref}>
+        <AppSidebar footer={<Footer />} ref={ref}>
           Test
         </AppSidebar>
         <ResizeIndicator targetElement={ref} />
