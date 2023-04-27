@@ -37,23 +37,21 @@ export const EditorOptionMenu = () => {
   const [workspace] = useCurrentWorkspace();
   const [pageId] = useCurrentPageId();
   assertExists(workspace);
-  assertExists(pageId);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   const [record, set] = useAtom(workspacePreferredModeAtom);
-  const mode = record[pageId] ?? 'page';
-  assertExists(pageMeta);
-  const { favorite } = pageMeta;
+  const mode = pageId ? record[pageId] : 'page';
+
+  const favorite = pageMeta?.favorite ?? false;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const isPage = pageId === router.query.pageId;
-
   const EditMenu = (
     <>
-      {isPage && (
+      {isPage && pageId && pageMeta && (
         <>
           <MenuItem
             data-testid="editor-option-menu-favorite"
@@ -128,17 +126,19 @@ export const EditorOptionMenu = () => {
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
-        <MoveToTrash.ConfirmModal
-          open={openConfirm}
-          meta={pageMeta}
-          onConfirm={() => {
-            removeToTrash(pageMeta.id);
-            toast(t('Moved to Trash'));
-          }}
-          onCancel={() => {
-            setOpenConfirm(false);
-          }}
-        />
+        {pageMeta && (
+          <MoveToTrash.ConfirmModal
+            open={openConfirm}
+            meta={pageMeta}
+            onConfirm={() => {
+              removeToTrash(pageMeta.id);
+              toast(t('Moved to Trash'));
+            }}
+            onCancel={() => {
+              setOpenConfirm(false);
+            }}
+          />
+        )}
       </FlexWrapper>
     </>
   );
