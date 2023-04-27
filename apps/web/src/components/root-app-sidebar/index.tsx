@@ -19,17 +19,17 @@ import { useAtomValue } from 'jotai';
 import type { ReactElement, UIEvent } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { AllWorkspace } from '../../../shared';
-import ChangeLog from '../workspace-slider-bar/changeLog';
-import Favorite from '../workspace-slider-bar/favorite';
-import { StyledListItem } from '../workspace-slider-bar/shared-styles';
+import type { AllWorkspace } from '../../shared';
+import ChangeLog from '../pure/workspace-slider-bar/changeLog';
+import Favorite from '../pure/workspace-slider-bar/favorite';
+import { StyledListItem } from '../pure/workspace-slider-bar/shared-styles';
 import {
   StyledLink,
   StyledNewPageButton,
   StyledScrollWrapper,
   StyledSliderBarInnerWrapper,
-} from '../workspace-slider-bar/style';
-import { WorkspaceSelector } from '../workspace-slider-bar/WorkspaceSelector';
+} from '../pure/workspace-slider-bar/style';
+import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
@@ -52,6 +52,8 @@ export type RootAppSidebarProps = {
 /**
  * This is for the whole affine app sidebar.
  * This component wraps the app sidebar in `@affine/component` with logic and data.
+ *
+ * @todo(himself65): rewrite all styled component into @vanilla-extract/css
  */
 export const RootAppSidebar = ({
   currentWorkspace,

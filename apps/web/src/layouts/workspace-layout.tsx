@@ -33,7 +33,7 @@ import {
 } from '../atoms/public-workspace';
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
-import { RootAppSidebar } from '../components/pure/root-app-sidebar';
+import { RootAppSidebar } from '../components/root-app-sidebar';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
