@@ -24,7 +24,6 @@ import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import {
   DisablePublicSharing,
-  MoveTo,
   MoveToTrash,
 } from '../../../affine/operation-menu-items';
 
@@ -83,13 +82,6 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         >
           {t('Open in new tab')}
         </MenuItem>
-      )}
-      {!pageMeta.isRootPinboard && (
-        <MoveTo
-          metas={metas}
-          currentMeta={pageMeta}
-          blockSuiteWorkspace={blockSuiteWorkspace}
-        />
       )}
       {!pageMeta.isRootPinboard && (
         <MoveToTrash
