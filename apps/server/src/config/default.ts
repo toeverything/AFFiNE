@@ -3,6 +3,8 @@ import type { AFFiNEConfig } from './def';
 
 export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
   secret: 'secret',
+  accessTokenExpiresIn: '1h',
+  refreshTokenExpiresIn: '7d',
   version: pkg.version,
   ENV_MAP: {},
   env: process.env.NODE_ENV ?? 'development',

@@ -16,7 +16,15 @@ export class AuthService {
   constructor(private config: Config, private prisma: PrismaService) {}
 
   sign(user: UserClaim) {
-    return jwt.sign(user, this.config.secret);
+    return jwt.sign(user, this.config.secret, {
+      expiresIn: this.config.accessTokenExpiresIn,
+    });
+  }
+
+  refresh(user: UserClaim) {
+    return jwt.sign(user, this.config.secret, {
+      expiresIn: this.config.refreshTokenExpiresIn,
+    });
   }
 
   verify(token: string) {

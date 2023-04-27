@@ -74,6 +74,14 @@ export interface AFFiNEConfig {
    */
   readonly secret: string;
   /**
+   * Application access token expiration time
+   */
+  readonly accessTokenExpiresIn: string;
+  /**
+   * Application refresh token expiration time
+   */
+  readonly refreshTokenExpiresIn: string;
+  /**
    * System version
    */
   readonly version: string;
