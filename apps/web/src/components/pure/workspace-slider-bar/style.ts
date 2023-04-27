@@ -54,8 +54,7 @@ export const StyledSidebarHeader = styled('div')(() => {
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
   return {
     flexGrow: 1,
-    // overflowX: 'hidden',
-    // overflowY: 'auto',
+    margin: '0 2px',
     position: 'relative',
     height: 'calc(100% - 52px * 2)',
     display: 'flex',
@@ -91,8 +90,6 @@ export const StyledNewPageButton = styled('button')(({ theme }) => {
   return {
     height: '52px',
     ...displayFlex('flex-start', 'center'),
-    borderTop: '1px solid',
-    borderColor: 'var(--affine-border-color)',
     padding: '0 8px 0 16px',
     svg: {
       fontSize: '20px',

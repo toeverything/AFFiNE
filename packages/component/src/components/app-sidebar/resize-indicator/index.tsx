@@ -1,8 +1,14 @@
 import type { Instance } from '@popperjs/core';
 import { createPopper } from '@popperjs/core';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement, RefObject } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { appSidebarOpenAtom, appSidebarWidthAtom } from '../index.jotai';
 import { spacerStyle } from './index.css';
@@ -31,10 +37,18 @@ export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
     }
   }, [props.targetElement]);
 
+  const sidebarWidth = useDeferredValue(useAtomValue(appSidebarWidthAtom));
+  useEffect(() => {
+    if (popperRef.current) {
+      popperRef.current.update();
+    }
+  }, [sidebarWidth]);
+
   const onResizeStart = useCallback(() => {
     let resized = false;
 
     function onMouseMove(e: MouseEvent) {
+      e.preventDefault();
       const newWidth = Math.min(480, Math.max(e.clientX, 256));
       setWidth(newWidth);
       setIsResizing(true);

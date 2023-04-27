@@ -6,6 +6,7 @@ export const navStyle = style({
   position: 'relative',
   backgroundColor: 'var(--affine-background-secondary-color)',
   width: navWidthVar,
+  minWidth: navWidthVar,
   height: '100%',
   display: 'flex',
   flexDirection: 'column',

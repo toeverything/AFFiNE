@@ -1,4 +1,10 @@
-import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
-export const appSidebarOpenAtom = atom(undefined! as boolean);
-export const appSidebarWidthAtom = atom(256 /* px */);
+export const appSidebarOpenAtom = atomWithStorage(
+  'app-sidebar-open',
+  undefined! as boolean
+);
+export const appSidebarWidthAtom = atomWithStorage(
+  'app-sidebar-width',
+  256 /* px */
+);

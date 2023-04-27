@@ -9,6 +9,7 @@ export const spacerStyle = style({
   top: 0,
   bottom: 0,
   height: '100%',
+  zIndex: 'calc(var(--affine-z-index-modal) - 1)',
   cursor: 'col-resize',
   '@media': {
     '(max-width: 600px)': {
