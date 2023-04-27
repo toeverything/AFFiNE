@@ -59,7 +59,7 @@ export const SidebarSwitch = ({
         onClick={useCallback(() => {
           setOpen(!open);
           setTooltipVisible(false);
-          if (guideHiddenUntilNextUpdate['quickSearchTips'] === false) {
+          if (!guideHiddenUntilNextUpdate['quickSearchTips']) {
             setGuideHiddenUntilNextUpdate({
               ...guideHiddenUntilNextUpdate,
               quickSearchTips: true,
