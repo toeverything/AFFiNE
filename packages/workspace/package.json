@@ -23,7 +23,7 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
-    "firebase": "^9.20.0",
+    "firebase": "^9.21.0",
     "jotai": "^2.0.4",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
