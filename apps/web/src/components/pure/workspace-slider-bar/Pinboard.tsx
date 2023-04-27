@@ -14,6 +14,9 @@ export type PinboardProps = {
   openPage: (pageId: string) => void;
 };
 
+/**
+ * @deprecated
+ */
 export const Pinboard = ({ blockSuiteWorkspace, openPage }: PinboardProps) => {
   const allMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const handlePinboardClick = useCallback(
