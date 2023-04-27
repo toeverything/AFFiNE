@@ -33,17 +33,11 @@ import {
 } from '../atoms/public-workspace';
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
-import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
+import { RootAppSidebar } from '../components/root-app-sidebar';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useRouterWithWorkspaceIdDefense } from '../hooks/use-router-with-workspace-id-defense';
-import {
-  useSidebarFloating,
-  useSidebarResizing,
-  useSidebarStatus,
-  useSidebarWidth,
-} from '../hooks/use-sidebar-status';
 import { useSyncRouterWithCurrentPageId } from '../hooks/use-sync-router-with-current-page-id';
 import { useSyncRouterWithCurrentWorkspaceId } from '../hooks/use-sync-router-with-current-workspace-id';
 import { useWorkspaces } from '../hooks/use-workspaces';
@@ -55,9 +49,6 @@ import {
   MainContainer,
   MainContainerWrapper,
   StyledPage,
-  StyledSliderResizer,
-  StyledSliderResizerInner,
-  StyledSpacer,
   StyledToolWrapper,
 } from './styles';
 
@@ -377,49 +368,14 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const handleOpenQuickSearchModal = useCallback(() => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
-  const [resizingSidebar, setIsResizing] = useSidebarResizing();
-  const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
-  const sidebarFloating = useSidebarFloating();
-  const [sidebarWidth, setSliderWidth] = useSidebarWidth();
-  const actualSidebarWidth = !sidebarOpen
-    ? 0
-    : sidebarFloating
-    ? 'calc(10vw + 400px)'
-    : sidebarWidth;
-  const mainWidth =
-    sidebarOpen && !sidebarFloating ? `calc(100% - ${sidebarWidth}px)` : '100%';
-  const [resizing] = useSidebarResizing();
-
-  const onResizeStart = useCallback(() => {
-    let resized = false;
-    function onMouseMove(e: MouseEvent) {
-      const newWidth = Math.min(480, Math.max(e.clientX, 256));
-      setSliderWidth(newWidth);
-      setIsResizing(true);
-      resized = true;
-    }
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener(
-      'mouseup',
-      () => {
-        // if not resized, toggle sidebar
-        if (!resized) {
-          setSidebarOpen(o => !o);
-        }
-        setIsResizing(false);
-        document.removeEventListener('mousemove', onMouseMove);
-      },
-      { once: true }
-    );
-  }, [setIsResizing, setSidebarOpen, setSliderWidth]);
 
   return (
     <>
       <Head>
         <title>{title}</title>
       </Head>
-      <StyledPage resizing={resizingSidebar}>
-        <WorkSpaceSliderBar
+      <StyledPage>
+        <RootAppSidebar
           isPublicWorkspace={isPublicWorkspace}
           onOpenQuickSearchModal={handleOpenQuickSearchModal}
           currentWorkspace={currentWorkspace}
@@ -436,23 +392,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <StyledSpacer
-          floating={sidebarFloating}
-          resizing={resizing}
-          sidebarOpen={sidebarOpen}
-          style={{ width: actualSidebarWidth }}
-        >
-          {!sidebarFloating && sidebarOpen && (
-            <StyledSliderResizer
-              data-testid="sliderBar-resizer"
-              isResizing={resizing}
-              onMouseDown={onResizeStart}
-            >
-              <StyledSliderResizerInner isResizing={resizing} />
-            </StyledSliderResizer>
-          )}
-        </StyledSpacer>
-        <MainContainerWrapper resizing={resizing} style={{ width: mainWidth }}>
+        <MainContainerWrapper>
           <MainContainer className="main-container">
             <Suspense fallback={<PageLoading text={t('Page is Loading')} />}>
               {isLoading ? (
