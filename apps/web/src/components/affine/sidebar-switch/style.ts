@@ -7,6 +7,7 @@ export const StyledSidebarSwitch = styled(IconButton, {
 })<{ visible: boolean }>(({ visible }) => {
   return {
     opacity: visible ? 1 : 0,
+    WebkitAppRegion: 'no-drag',
     transition: 'all 0.2s ease-in-out',
   };
 });

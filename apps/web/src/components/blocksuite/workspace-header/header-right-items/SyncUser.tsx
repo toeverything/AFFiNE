@@ -30,6 +30,7 @@ const IconWrapper = styled('div')(({ theme }) => {
     marginRight: '12px',
     fontSize: '24px',
     color: 'var(--affine-icon-color)',
+    WebkitAppRegion: 'no-drag',
     ...displayFlex('center', 'center'),
   };
 });

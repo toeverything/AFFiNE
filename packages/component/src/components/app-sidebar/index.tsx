@@ -58,6 +58,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
           <div
             className={navHeaderStyle}
             data-is-macos-electron={isMacosDesktop}
+            data-open={open}
           >
             {isMacosDesktop && (
               <>

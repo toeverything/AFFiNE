@@ -1,4 +1,5 @@
 import { baseTheme } from '@toeverything/theme';
+import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { createVar, style } from '@vanilla-extract/css';
 
 export const floatingMaxWidth = 768;
@@ -49,12 +50,21 @@ export const navHeaderStyle = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  '@media': {
+    [`(max-width: ${floatingMaxWidth}px)`]: {
+      selectors: {
+        '&[data-open="true"]': {
+          WebkitAppRegion: 'no-drag',
+        },
+      },
+    } as ComplexStyleRule,
+  },
   selectors: {
     '&[data-is-macos-electron="true"]': {
       justifyContent: 'flex-end',
     },
   },
-});
+} as ComplexStyleRule);
 
 export const navBodyStyle = style({
   flex: '1 1 auto',

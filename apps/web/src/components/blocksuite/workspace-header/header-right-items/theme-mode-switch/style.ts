@@ -48,6 +48,7 @@ export const StyledThemeModeSwitch = styled('button')<{
     height: inMenu ? '20px' : '32px',
     borderRadius: '6px',
     overflow: 'hidden',
+    WebkitAppRegion: 'no-drag',
     backgroundColor: 'transparent',
     position: 'relative',
     color: 'var(--affine-icon-color)',

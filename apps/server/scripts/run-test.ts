@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const testDir = resolve(root, 'src', 'tests');
 const files = await readdir(testDir);
 
-const args = [...pkg.nodemonConfig.nodeArgs, '--test'];
+const sharedArgs = [...pkg.nodemonConfig.nodeArgs, '--test'];
 
 const env = {
   PATH: process.env.PATH,
@@ -21,7 +21,7 @@ const env = {
 };
 
 if (process.argv[2] === 'all') {
-  const cp = spawn('node', [...args, resolve(testDir, '*')], {
+  const cp = spawn('node', [...sharedArgs, resolve(testDir, '*')], {
     cwd: root,
     env,
     stdio: 'inherit',
@@ -44,12 +44,21 @@ if (process.argv[2] === 'all') {
 
   const target = resolve(testDir, result.file);
 
-  const cp = spawn('node', [...args, target], {
-    cwd: root,
-    env,
-    stdio: 'inherit',
-    shell: true,
-  });
+  const cp = spawn(
+    'node',
+    [
+      ...sharedArgs,
+      '--test-reporter=spec',
+      '--test-reporter-destination=stdout',
+      target,
+    ],
+    {
+      cwd: root,
+      env,
+      stdio: 'inherit',
+      shell: true,
+    }
+  );
   cp.on('exit', code => {
     process.exit(code ?? 0);
   });
