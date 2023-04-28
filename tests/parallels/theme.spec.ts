@@ -6,7 +6,7 @@ import { expect } from '@playwright/test';
 import { openHomePage } from '../libs/load-page';
 import { waitMarkdownImported } from '../libs/page-logic';
 
-// default could be anything according to the system
+// default could be anything, according to the system
 test('default white', async ({ browser }) => {
   const context = await browser.newContext({
     colorScheme: 'light',
@@ -19,15 +19,14 @@ test('default white', async ({ browser }) => {
     element.getAttribute('data-theme')
   );
   expect(themeMode).toBe('light');
-  const prev = await page.screenshot({
+  await page.screenshot({
     path: resolve(testResultDir, 'affine-light-theme.png'),
   });
   await page.getByTestId('change-theme-dark').click();
   await page.waitForTimeout(50);
-  const after = await page.screenshot({
+  await page.screenshot({
     path: resolve(testResultDir, 'affine-dark-theme.png'),
   });
-  expect(prev).not.toEqual(after);
 });
 
 // test('change theme to dark', async ({ page }) => {

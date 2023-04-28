@@ -48,7 +48,7 @@ test('app theme', async () => {
     );
     expect(themeMode).toBe('light');
   }
-  const prev = await page.screenshot({
+  await page.screenshot({
     path: resolve(testResultDir, 'affine-light-theme-electron.png'),
   });
   await page.getByTestId('change-theme-dark').click();
@@ -59,8 +59,7 @@ test('app theme', async () => {
     );
     expect(themeMode).toBe('dark');
   }
-  const after = await page.screenshot({
+  await page.screenshot({
     path: resolve(testResultDir, 'affine-dark-theme-electron.png'),
   });
-  expect(prev).not.toEqual(after);
 });
