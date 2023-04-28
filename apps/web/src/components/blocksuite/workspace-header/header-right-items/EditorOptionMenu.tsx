@@ -152,7 +152,7 @@ const PageMenu = () => {
         </Menu>
         <MoveToTrash.ConfirmModal
           open={openConfirm}
-          meta={pageMeta}
+          title={pageMeta.title}
           onConfirm={() => {
             removeToTrash(pageMeta.id);
             toast(t['Moved to Trash']());

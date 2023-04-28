@@ -91,7 +91,34 @@ export function useBlockSuiteMetaHelper(
     [blockSuiteWorkspace]
   );
 
+  /**
+   * see {@link useBlockSuiteWorkspacePageIsPublic}
+   */
+  const publicPage = useCallback(
+    (pageId: string) => {
+      setPageMeta(pageId, {
+        isPublic: true,
+      });
+    },
+    [setPageMeta]
+  );
+
+  /**
+   * see {@link useBlockSuiteWorkspacePageIsPublic}
+   */
+  const cancelPublicPage = useCallback(
+    (pageId: string) => {
+      setPageMeta(pageId, {
+        isPublic: false,
+      });
+    },
+    [setPageMeta]
+  );
+
   return {
+    publicPage,
+    cancelPublicPage,
+
     addToFavorite,
     removeFromFavorite,
     toggleFavorite,

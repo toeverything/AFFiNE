@@ -1,7 +1,6 @@
 import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { useMediaQuery, useTheme } from '@mui/material';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
@@ -11,8 +10,8 @@ import { workspacePreferredModeAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
-import type { TrashListData } from './page-list';
-import PageList, { PageListMobileView, PageListTrashView } from './page-list';
+import type { ListData, TrashListData } from './page-list';
+import PageList, { PageListTrashView } from './page-list';
 import { PageListEmpty } from './page-list/Empty';
 
 export type BlockSuitePageListProps = {
@@ -40,11 +39,14 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   isPublic = false,
 }) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
-  const { restoreFromTrash, permanentlyDeletePage } =
-    useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const theme = useTheme();
+  const {
+    toggleFavorite,
+    removeToTrash,
+    restoreFromTrash,
+    permanentlyDeletePage,
+    cancelPublicPage,
+  } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
-  const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
   const list = useMemo(
     () => pageMetas.filter(pageMeta => filter[listType](pageMeta, pageMetas)),
     [pageMetas, listType]
@@ -54,27 +56,16 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     return <PageListEmpty listType={listType} />;
   }
 
-  if (isSmallDevices) {
-    return (
-      <PageListMobileView
-        isPublic={isPublic}
-        list={list}
-        onClickPage={onOpenPage}
-      />
-    );
-  }
-
   if (listType === 'trash') {
     const pageList: TrashListData[] = list.map(pageMeta => {
       return {
         icon:
           record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
-        id: pageMeta.id,
+        pageId: pageMeta.id,
         title: pageMeta.title,
         favorite: !!pageMeta.favorite,
         createDate: pageMeta.createDate,
         updatedDate: pageMeta.updatedDate as number | undefined,
-        // isPublic: pageMeta.isPublic,
         onClickPage: () => onOpenPage(pageMeta.id),
         onClickRestore: () => {
           restoreFromTrash(pageMeta.id);
@@ -92,12 +83,51 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     return <PageListTrashView list={pageList} />;
   }
 
+  const pageList: ListData[] = list.map(pageMeta => {
+    return {
+      icon:
+        record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
+      pageId: pageMeta.id,
+      title: pageMeta.title,
+      favorite: !!pageMeta.favorite,
+      createDate: pageMeta.createDate,
+      updatedDate: pageMeta.updatedDate as number | undefined,
+      onClickPage: () => onOpenPage(pageMeta.id),
+      onOpenPageInNewTab: () => onOpenPage(pageMeta.id, true),
+      onClickRestore: () => {
+        restoreFromTrash(pageMeta.id);
+      },
+      removeToTrash: () => {
+        removeToTrash(pageMeta.id);
+        toast(t('Deleted'));
+      },
+      onRestorePage: () => {
+        restoreFromTrash(pageMeta.id);
+        toast(t('restored', { title: pageMeta.title || 'Untitled' }));
+      },
+      bookmarkPage: () => {
+        toggleFavorite(pageMeta.id);
+        toast(
+          pageMeta.favorite
+            ? t('Removed from Favorites')
+            : t('Added to Favorites')
+        );
+      },
+      onDisablePublicSharing: () => {
+        cancelPublicPage(pageMeta.id);
+        toast('Successfully disabled', {
+          portal: document.body,
+        });
+      },
+    };
+  });
+
   return (
     <PageList
       blockSuiteWorkspace={blockSuiteWorkspace}
       onClickPage={onOpenPage}
       isPublic={isPublic}
-      list={list}
+      list={pageList}
       listType={listType}
     />
   );

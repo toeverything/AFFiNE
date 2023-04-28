@@ -15,35 +15,40 @@ import {
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import type React from 'react';
 import { useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../../../shared';
-import { toast } from '../../../../utils';
 import {
   DisablePublicSharing,
   MoveToTrash,
 } from '../../../affine/operation-menu-items';
 
 export type OperationCellProps = {
-  pageMeta: PageMeta;
+  id: string;
+  title: string;
+  favorite: boolean;
+  isPublic: boolean;
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  onOpenPageInNewTab: (pageId: string) => void;
-  onToggleFavoritePage: (pageId: string) => void;
-  onToggleTrashPage: (pageId: string, isTrash: boolean) => void;
+  onOpenPageInNewTab: () => void;
+  onToggleFavoritePage: () => void;
+  onRemoveToTrash: () => void;
+  onDisablePublicSharing: () => void;
 };
 
 export const OperationCell: React.FC<OperationCellProps> = ({
-  pageMeta,
+  id,
+  title,
+  favorite,
+  isPublic,
   blockSuiteWorkspace,
   onOpenPageInNewTab,
   onToggleFavoritePage,
-  onToggleTrashPage,
+  onRemoveToTrash,
+  onDisablePublicSharing,
 }) => {
-  const { id, favorite, isPublic } = pageMeta;
-  const t = useAFFiNEI18N();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [openDisableShared, setOpenDisableShared] = useState(false);
 
@@ -61,12 +66,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         />
       )}
       <MenuItem
-        onClick={() => {
-          onToggleFavoritePage(id);
-          toast(
-            favorite ? t['Removed from Favorites']() : t['Added to Favorites']()
-          );
-        }}
+        onClick={onToggleFavoritePage}
         icon={
           favorite ? (
             <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
@@ -78,23 +78,16 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
       </MenuItem>
       {!environment.isDesktop && (
-        <MenuItem
-          onClick={() => {
-            onOpenPageInNewTab(id);
-          }}
-          icon={<OpenInNewIcon />}
-        >
-          {t['Open in new tab']()}
+        <MenuItem onClick={onOpenPageInNewTab} icon={<OpenInNewIcon />}>
+          {t('Open in new tab')}
         </MenuItem>
       )}
-      {!pageMeta.isRootPinboard && (
-        <MoveToTrash
-          testId="move-to-trash"
-          onItemClick={() => {
-            setOpen(true);
-          }}
-        />
-      )}
+      <MoveToTrash
+        testId="move-to-trash"
+        onItemClick={() => {
+          setOpen(true);
+        }}
+      />
     </>
   );
   return (
@@ -113,10 +106,9 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       </FlexWrapper>
       <MoveToTrash.ConfirmModal
         open={open}
-        meta={pageMeta}
+        title={title}
         onConfirm={() => {
-          onToggleTrashPage(id, true);
-          toast(t['Moved to Trash']());
+          onRemoveToTrash();
           setOpen(false);
         }}
         onClose={() => {
@@ -127,7 +119,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         }}
       />
       <DisablePublicSharing.DisablePublicSharingModal
-        page={page}
+        onConfirmDisable={onDisablePublicSharing}
         open={openDisableShared}
         onClose={() => {
           setOpenDisableShared(false);

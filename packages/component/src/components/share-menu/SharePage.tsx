@@ -56,6 +56,12 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
     navigator.clipboard.writeText(sharingUrl);
     toast(t['Copied link to clipboard']());
   }, [sharingUrl, t]);
+  const onDisablePublic = useCallback(() => {
+    setIsPublic(false);
+    toast('Successfully disabled', {
+      portal: document.body,
+    });
+  }, [setIsPublic]);
 
   return (
     <div className={menuItemStyle}>
@@ -104,8 +110,8 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
             {t['Disable Public Link']()}
           </StyledDisableButton>
           <PublicLinkDisableModal
-            page={props.currentPage}
             open={showDisable}
+            onConfirmDisable={onDisablePublic}
             onClose={() => {
               setShowDisable(false);
             }}

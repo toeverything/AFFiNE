@@ -48,11 +48,17 @@ export const DisablePublicSharing = ({
 };
 
 const DisablePublicSharingModal = ({
-  page,
+  onConfirmDisable,
   open,
   onClose,
 }: PublicLinkDisableProps) => {
-  return <PublicLinkDisableModal page={page} open={open} onClose={onClose} />;
+  return (
+    <PublicLinkDisableModal
+      onConfirmDisable={onConfirmDisable}
+      open={open}
+      onClose={onClose}
+    />
+  );
 };
 
 DisablePublicSharing.DisablePublicSharingModal = DisablePublicSharingModal;

@@ -152,7 +152,7 @@ export const OperationButton = ({
         />
         <MoveToTrash.ConfirmModal
           open={confirmModalOpen}
-          meta={currentMeta}
+          title={currentMeta.title}
           onConfirm={() => {
             toast(t['Moved to Trash']());
             removeToTrash(currentMeta.id);
