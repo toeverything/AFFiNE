@@ -49,7 +49,7 @@ export const MoveTo = ({
       <PinboardMenu
         anchorEl={anchorEl}
         open={open}
-        // placement="left-start"
+        placement="left"
         metas={metas}
         currentMeta={currentMeta}
         blockSuiteWorkspace={blockSuiteWorkspace}
