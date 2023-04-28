@@ -22,32 +22,10 @@ test('default white', async ({ browser }) => {
   await page.screenshot({
     path: resolve(testResultDir, 'affine-light-theme.png'),
   });
+  await page.getByTestId('editor-option-menu').click();
   await page.getByTestId('change-theme-dark').click();
   await page.waitForTimeout(50);
   await page.screenshot({
     path: resolve(testResultDir, 'affine-dark-theme.png'),
   });
 });
-
-// test('change theme to dark', async ({ page }) => {
-//   const changeThemeContainer = page.locator(
-//     '[data-testid=change-theme-container]'
-//   );
-//   const box = await changeThemeContainer.boundingBox();
-//   expect(box?.x).not.toBeUndefined();
-//
-//   await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
-//   await page.waitForTimeout(1000);
-//   const darkButton = page.locator('[data-testid=change-theme-dark]');
-//   const darkButtonPositionTop = await darkButton.evaluate(
-//     element => element.getBoundingClientRect().y
-//   );
-//   expect(darkButtonPositionTop).toBe(box?.y);
-//
-//   await page.mouse.click((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
-//   const root = page.locator('html');
-//   const themeMode = await root.evaluate(element =>
-//     element.getAttribute('data-theme')
-//   );
-//   expect(themeMode).toBe('dark');
-// });

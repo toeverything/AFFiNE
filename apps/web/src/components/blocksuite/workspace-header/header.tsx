@@ -19,7 +19,6 @@ import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import EditPage from './header-right-items/EditPage';
 import { HeaderShareMenu } from './header-right-items/ShareMenu';
 import SyncUser from './header-right-items/SyncUser';
-import ThemeModeSwitch from './header-right-items/theme-mode-switch';
 import TrashButtonGroup from './header-right-items/TrashButtonGroup';
 import UserAvatar from './header-right-items/UserAvatar';
 import {
@@ -66,7 +65,6 @@ export type BaseHeaderProps<
 export const enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
   TrashButtonGroup = 'trashButtonGroup',
-  ThemeModeSwitch = 'themeModeSwitch',
   SyncUser = 'syncUser',
   ShareMenu = 'shareMenu',
   EditPage = 'editPage',
@@ -98,12 +96,6 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       return !isPublic && !isPreview;
     },
   },
-  [HeaderRightItemName.ThemeModeSwitch]: {
-    Component: ThemeModeSwitch,
-    availableWhen: (_, currentPage) => {
-      return currentPage?.meta.trash !== true;
-    },
-  },
   [HeaderRightItemName.ShareMenu]: {
     Component: HeaderShareMenu,
     availableWhen: (workspace, currentPage) => {
@@ -125,7 +117,7 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
     availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !!currentPage && !isPublic && !isPreview;
+      return !isPublic && !isPreview;
     },
   },
 };

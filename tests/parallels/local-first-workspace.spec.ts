@@ -3,7 +3,6 @@ import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
 import { waitMarkdownImported } from '../libs/page-logic';
-import { clickSideBarCurrentWorkspaceBanner } from '../libs/sidebar';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('preset workspace name', async ({ page }) => {
@@ -24,7 +23,9 @@ test('preset workspace name', async ({ page }) => {
 test('Open language switch menu', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
-  await clickSideBarCurrentWorkspaceBanner(page);
+  const editorOptionMenuButton = page.getByTestId('editor-option-menu');
+  await expect(editorOptionMenuButton).toBeVisible();
+  await editorOptionMenuButton.click();
   const languageMenuButton = page.getByTestId('language-menu-button');
   await expect(languageMenuButton).toBeVisible();
   const actual = await languageMenuButton.innerText();
