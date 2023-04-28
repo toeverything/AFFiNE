@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 
 export async function waitMarkdownImported(page: Page) {
   await page.waitForSelector('v-line');
+  await page.getByTestId('quick-search-got-it').click();
 }
 
 export async function newPage(page: Page) {
