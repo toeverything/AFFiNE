@@ -1,6 +1,6 @@
 import { displayFlex, styled, textEllipsis } from '@affine/component';
 
-export const StyledContent = styled('div')(({ theme }) => {
+export const StyledContent = styled('div')(() => {
   return {
     minHeight: '290px',
     maxHeight: '70vh',
@@ -35,7 +35,7 @@ export const StyledContent = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledJumpTo = styled('div')(({ theme }) => {
+export const StyledJumpTo = styled('div')(() => {
   return {
     ...displayFlex('center', 'start'),
     flexDirection: 'column',
@@ -47,7 +47,7 @@ export const StyledJumpTo = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledNotFound = styled('div')(({ theme }) => {
+export const StyledNotFound = styled('div')(() => {
   return {
     width: '612px',
     ...displayFlex('center', 'center'),
@@ -68,7 +68,7 @@ export const StyledNotFound = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledInputContent = styled('div')(({ theme }) => {
+export const StyledInputContent = styled('div')(() => {
   return {
     ...displayFlex('space-between', 'center'),
     input: {
@@ -85,7 +85,7 @@ export const StyledInputContent = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledShortcut = styled('div')(({ theme }) => {
+export const StyledShortcut = styled('div')(() => {
   return {
     color: 'var(--affine-placeholder-color)',
     fontSize: 'var(--affine-font-sm)',
@@ -93,7 +93,7 @@ export const StyledShortcut = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledLabel = styled('label')(({ theme }) => {
+export const StyledLabel = styled('label')(() => {
   return {
     width: '20px',
     height: '20px',
@@ -109,7 +109,7 @@ export const StyledModalHeader = styled('div')(() => {
     ...displayFlex('space-between', 'center'),
   };
 });
-export const StyledModalDivider = styled('div')(({ theme }) => {
+export const StyledModalDivider = styled('div')(() => {
   return {
     width: 'auto',
     height: '0',
@@ -118,7 +118,7 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledModalFooter = styled('div')(({ theme }) => {
+export const StyledModalFooter = styled('div')(() => {
   return {
     fontSize: 'inherit',
     lineHeight: '22px',
@@ -142,7 +142,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledModalFooterContent = styled('button')(({ theme }) => {
+export const StyledModalFooterContent = styled('button')(() => {
   return {
     width: '600px',
     height: '32px',

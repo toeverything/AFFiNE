@@ -1,6 +1,6 @@
 import { displayFlex, styled, textEllipsis } from '@affine/component';
 
-export const StyledSplitLine = styled('div')(({ theme }) => {
+export const StyledSplitLine = styled('div')(() => {
   return {
     width: '1px',
     height: '20px',
@@ -9,7 +9,7 @@ export const StyledSplitLine = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
@@ -30,7 +30,7 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
+export const StyleWorkspaceTitle = styled('div')(() => {
   return {
     fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
@@ -41,7 +41,7 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
+export const StyledCreateWorkspaceCard = styled('div')(() => {
   return {
     width: '310px',
     height: '124px',
@@ -68,14 +68,14 @@ export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
 export const StyledModalHeaderLeft = styled('div')(() => {
   return { ...displayFlex('flex-start', 'center') };
 });
-export const StyledModalTitle = styled('div')(({ theme }) => {
+export const StyledModalTitle = styled('div')(() => {
   return {
     fontWeight: 600,
     fontSize: 'var(--affine-font-h6)',
   };
 });
 
-export const StyledHelperContainer = styled('div')(({ theme }) => {
+export const StyledHelperContainer = styled('div')(() => {
   return {
     color: 'var(--affine-icon-color)',
     marginLeft: '15px',

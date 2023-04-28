@@ -26,7 +26,7 @@ export const StyledSettingContent = styled('div')(() => {
 });
 
 export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
-  ({ theme, isActive }) => {
+  ({ isActive }) => {
     {
       return {
         display: 'flex',
@@ -45,7 +45,7 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
   }
 );
 
-export const StyledSettingKey = styled('div')(({ theme }) => {
+export const StyledSettingKey = styled('div')(() => {
   return {
     width: '140px',
     fontSize: 'var(--affine-font-base)',
@@ -60,14 +60,14 @@ export const StyledRow = styled(FlexWrapper)(() => {
   };
 });
 
-export const StyledWorkspaceName = styled('span')(({ theme }) => {
+export const StyledWorkspaceName = styled('span')(() => {
   return {
     fontWeight: '400',
     fontSize: 'var(--affine-font-h6)',
   };
 });
 
-export const StyledIndicator = styled('div')(({ theme }) => {
+export const StyledIndicator = styled('div')(() => {
   return {
     height: '2px',
     background: 'var(--affine-primary-color)',

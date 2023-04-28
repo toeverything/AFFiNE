@@ -3,7 +3,7 @@ import { displayFlex, styled } from '@affine/component';
 export const StyledEditorModeSwitch = styled('div')<{
   switchLeft: boolean;
   showAlone?: boolean;
-}>(({ theme, switchLeft, showAlone }) => {
+}>(({ switchLeft, showAlone }) => {
   return {
     width: showAlone ? '40px' : '78px',
     height: '32px',

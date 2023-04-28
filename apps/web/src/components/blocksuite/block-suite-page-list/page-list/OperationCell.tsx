@@ -38,7 +38,6 @@ export type OperationCellProps = {
 
 export const OperationCell: React.FC<OperationCellProps> = ({
   pageMeta,
-  metas,
   blockSuiteWorkspace,
   onOpenPageInNewTab,
   onToggleFavoritePage,

@@ -106,19 +106,19 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.ShareMenu]: {
     Component: HeaderShareMenu,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage) => {
       return workspace.flavour !== WorkspaceFlavour.PUBLIC && !!currentPage;
     },
   },
   [HeaderRightItemName.EditPage]: {
     Component: EditPage,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage, { isPublic }) => {
       return isPublic;
     },
   },
   [HeaderRightItemName.UserAvatar]: {
     Component: UserAvatar,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage, { isPublic }) => {
       return isPublic;
     },
   },
