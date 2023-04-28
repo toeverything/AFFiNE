@@ -5,7 +5,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 
-import { Config, ConfigModule } from '../config';
+import { ConfigModule } from '../config';
 import { getDefaultAFFiNEConfig } from '../config/default';
 import { GqlModule } from '../graphql.module';
 import { AuthModule } from '../modules/auth';
@@ -15,7 +15,6 @@ import { PrismaModule } from '../prisma';
 globalThis.AFFiNE = getDefaultAFFiNEConfig();
 
 let auth: AuthService;
-let config: Config;
 
 // cleanup database before each test
 beforeEach(async () => {
@@ -38,7 +37,6 @@ beforeEach(async () => {
       AuthModule,
     ],
   }).compile();
-  config = module.get(Config);
   auth = module.get(AuthService);
 });
 

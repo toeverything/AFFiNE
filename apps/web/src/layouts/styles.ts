@@ -77,7 +77,7 @@ export const StyledToolWrapper = styled('div')(({ theme }) => {
 });
 
 export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
-  ({ theme }) => {
+  () => {
     return {
       position: 'absolute',
       top: 0,

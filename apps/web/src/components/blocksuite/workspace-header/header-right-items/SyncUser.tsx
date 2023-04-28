@@ -23,7 +23,7 @@ import { affineAuth } from '../../../../plugins/affine';
 import type { AffineOfficialWorkspace } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
-const IconWrapper = styled('div')(({ theme }) => {
+const IconWrapper = styled('div')(() => {
   return {
     width: '32px',
     height: '32px',

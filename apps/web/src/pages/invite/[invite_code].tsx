@@ -89,7 +89,7 @@ InvitePage.getLayout = page => {
   );
 };
 
-const StyledContainer = styled('div')(({ theme }) => {
+const StyledContainer = styled('div')(() => {
   return {
     height: '100vh',
     ...displayFlex('center', 'center'),

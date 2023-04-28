@@ -61,7 +61,7 @@ export const StyledMemberInfo = styled('div')(() => {
   };
 });
 
-export const StyledMemberName = styled('div')(({ theme }) => {
+export const StyledMemberName = styled('div')(() => {
   return {
     fontWeight: '400',
     fontSize: '18px',
@@ -70,7 +70,7 @@ export const StyledMemberName = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledMemberEmail = styled('div')(({ theme }) => {
+export const StyledMemberEmail = styled('div')(() => {
   return {
     fontWeight: '400',
     fontSize: '16px',

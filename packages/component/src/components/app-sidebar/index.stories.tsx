@@ -14,7 +14,7 @@ export default {
 
 const Footer = () => <div>Add Page</div>;
 
-export const Default: StoryFn = props => {
+export const Default: StoryFn = () => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const ref = useRef<HTMLElement>(null);
   return (

@@ -37,7 +37,7 @@ export const StyledLink = styled(Link)(() => {
     '-webkit-app-region': 'no-drag',
   };
 });
-export const StyledNewPageButton = styled('button')(({ theme }) => {
+export const StyledNewPageButton = styled('button')(() => {
   return {
     height: '52px',
     ...displayFlex('flex-start', 'center'),
@@ -56,7 +56,7 @@ export const StyledNewPageButton = styled('button')(({ theme }) => {
   };
 });
 export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
-  ({ theme, active }) => {
+  ({ active }) => {
     return {
       transition: 'opacity .15s',
       pointerEvents: active ? 'auto' : 'none',
@@ -74,7 +74,7 @@ export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
 
 export const StyledScrollWrapper = styled('div')<{
   showTopBorder: boolean;
-}>(({ showTopBorder, theme }) => {
+}>(({ showTopBorder }) => {
   return {
     maxHeight: '50%',
     overflowY: 'auto',

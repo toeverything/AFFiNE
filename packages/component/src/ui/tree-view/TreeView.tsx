@@ -19,7 +19,6 @@ export const TreeView = <RenderProps,>({
   enableKeyboardSelection,
   onSelect,
   enableDnd = true,
-  initialCollapsedIds = [],
   disableCollapse,
   onDrop,
   ...otherProps

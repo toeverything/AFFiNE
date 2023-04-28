@@ -20,11 +20,11 @@ const browserWindow = {
   isDestroyed: () => {
     return false;
   },
-  setWindowButtonVisibility: (v: boolean) => {
+  setWindowButtonVisibility: (_v: boolean) => {
     // will be stubbed later
   },
   webContents: {
-    send: (type: string, ...args: any[]) => {
+    send: (_type: string, ..._args: any[]) => {
       // ...
     },
   },
