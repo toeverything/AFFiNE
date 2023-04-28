@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-import { genSalt } from '@node-rs/bcrypt';
+import { genSalt } from 'bcrypt';
 
 const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', {
   namedCurve: 'prime256v1',
@@ -14,6 +14,6 @@ const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', {
   },
 });
 
-console.log('Salt:\n', await genSalt(10, '2b'));
+console.log('Salt:\n', await genSalt(10));
 console.log('ECDSA Public Key:\n', publicKey);
 console.log('ECDSA Private Key:\n', privateKey);
