@@ -4,7 +4,7 @@ import spring, { toString } from 'css-spring';
 
 const ANIMATE_DURATION = 400;
 
-export const StyledThemeModeSwitch = styled('button')(({ theme }) => {
+export const StyledThemeModeSwitch = styled('button')(() => {
   return {
     width: '32px',
     height: '32px',
@@ -20,7 +20,7 @@ export const StyledThemeModeSwitch = styled('button')(({ theme }) => {
 export const StyledSwitchItem = styled('div')<{
   active: boolean;
   isHover: boolean;
-}>(({ active, isHover, theme }) => {
+}>(({ active, isHover }) => {
   const activeRaiseAnimate = toString(
     spring({ top: '0' }, { top: '-100%' }, { preset: 'gentle' })
   );

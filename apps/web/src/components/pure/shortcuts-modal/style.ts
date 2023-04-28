@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '@affine/component';
 
-export const StyledShortcutsModal = styled('div')(({ theme }) => ({
+export const StyledShortcutsModal = styled('div')(() => ({
   width: '288px',
   height: '74vh',
   paddingBottom: '28px',
@@ -16,7 +16,7 @@ export const StyledShortcutsModal = styled('div')(({ theme }) => ({
   margin: 'auto',
   zIndex: 'var(--affine-z-index-modal)',
 }));
-export const StyledTitle = styled('div')(({ theme }) => ({
+export const StyledTitle = styled('div')(() => ({
   color: 'var(--affine-text-primary-color)',
   fontWeight: '500',
   fontSize: 'var(--affine-font-sm)',
@@ -28,7 +28,7 @@ export const StyledTitle = styled('div')(({ theme }) => ({
     color: 'var(--affine-primary-color)',
   },
 }));
-export const StyledSubTitle = styled('div')(({ theme }) => ({
+export const StyledSubTitle = styled('div')(() => ({
   fontWeight: '500',
   fontSize: 'var(--affine-font-sm)',
   height: '34px',
@@ -49,7 +49,7 @@ export const StyledModalHeader = styled('div')(() => ({
   transition: 'background-color 0.5s',
 }));
 
-export const StyledListItem = styled('div')(({ theme }) => ({
+export const StyledListItem = styled('div')(() => ({
   height: '34px',
   ...displayFlex('space-between', 'center'),
   fontSize: 'var(--affine-font-sm)',

@@ -38,7 +38,6 @@ export type OperationCellProps = {
 
 export const OperationCell: React.FC<OperationCellProps> = ({
   pageMeta,
-  metas,
   blockSuiteWorkspace,
   onOpenPageInNewTab,
   onToggleFavoritePage,
@@ -104,7 +103,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       <FlexWrapper alignItems="center" justifyContent="center">
         <Menu
           content={OperationMenu}
-          // placement="bottom-end"
+          placement="bottom"
           disablePortal={true}
           trigger="click"
         >

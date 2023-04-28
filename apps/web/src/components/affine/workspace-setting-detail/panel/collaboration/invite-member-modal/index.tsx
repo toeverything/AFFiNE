@@ -150,7 +150,7 @@ const InviteBox = styled('div')({
   position: 'relative',
 });
 
-const Members = styled('div')(({ theme }) => {
+const Members = styled('div')(() => {
   return {
     position: 'absolute',
     width: '100%',
@@ -178,7 +178,7 @@ const Members = styled('div')(({ theme }) => {
 //   };
 // });
 
-const Member = styled('div')(({ theme }) => {
+const Member = styled('div')(() => {
   return {
     color: 'var(--affine-icon-color)',
     fontSize: 'var(--affine-font-sm)',
@@ -188,7 +188,7 @@ const Member = styled('div')(({ theme }) => {
   };
 });
 
-const MemberIcon = styled('div')(({ theme }) => {
+const MemberIcon = styled('div')(() => {
   return {
     width: '40px',
     height: '40px',

@@ -123,7 +123,7 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
     <Menu
       content={Share}
       visible={open}
-      // placement="bottom-end"
+      placement="bottom"
       trigger={['click']}
       width={439}
       disablePortal={true}

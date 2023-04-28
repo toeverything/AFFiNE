@@ -27,7 +27,7 @@ import {
 } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
 
-export const NavContainer = styled('div')(({ theme }) => {
+export const NavContainer = styled('div')(() => {
   return {
     width: '100vw',
     height: '52px',
@@ -36,7 +36,7 @@ export const NavContainer = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
+export const StyledBreadcrumbs = styled(Link)(() => {
   return {
     flex: 1,
     ...displayFlex('center', 'center'),

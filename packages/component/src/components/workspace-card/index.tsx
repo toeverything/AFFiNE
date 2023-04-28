@@ -4,7 +4,7 @@ import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import type { FC, MouseEvent } from 'react';
+import type { FC } from 'react';
 import { useCallback } from 'react';
 
 import { WorkspaceAvatar } from '../workspace-avatar';
@@ -95,12 +95,9 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
   return (
     <StyledCard
       data-testid="workspace-card"
-      onClick={useCallback(
-        (event: MouseEvent) => {
-          onClick(workspace);
-        },
-        [onClick, workspace]
-      )}
+      onClick={useCallback(() => {
+        onClick(workspace);
+      }, [onClick, workspace])}
       active={workspace.id === currentWorkspaceId}
     >
       <WorkspaceAvatar size={58} workspace={workspace} />

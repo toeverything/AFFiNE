@@ -45,7 +45,6 @@ export function useTipsDisplayStatus() {
 
 export function useUpdateTipsOnVersionChange() {
   const [lastVersion, setLastVersion] = useLastVersion();
-  const currentVersion = config.gitVersion;
   const tipsDisplayStatus = useTipsDisplayStatus();
   const setPermanentlyHiddenTips = useSetAtom(guideHiddenAtom);
   const setHiddenUntilNextUpdateTips = useSetAtom(
@@ -53,6 +52,7 @@ export function useUpdateTipsOnVersionChange() {
   );
 
   useEffect(() => {
+    const currentVersion = config.gitVersion;
     if (lastVersion !== currentVersion) {
       setLastVersion(currentVersion);
       const newHiddenUntilNextUpdateTips = { ...TIPS };
@@ -64,7 +64,6 @@ export function useUpdateTipsOnVersionChange() {
       setPermanentlyHiddenTips(newPermanentlyHiddenTips);
     }
   }, [
-    currentVersion,
     lastVersion,
     setLastVersion,
     setPermanentlyHiddenTips,

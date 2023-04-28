@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import type { TreeNodeProps } from '../types';
-export const useCollapsed = <RenderProps>({
+export const useCollapsed = ({
   initialCollapsedIds = [],
   disableCollapse = false,
 }: {

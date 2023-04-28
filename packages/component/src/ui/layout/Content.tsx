@@ -31,7 +31,6 @@ export const Content = styled('div', {
   },
 })<ContentProps>(
   ({
-    theme,
     color,
     fontSize,
     weight,

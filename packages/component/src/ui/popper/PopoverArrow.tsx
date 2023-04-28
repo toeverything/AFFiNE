@@ -73,7 +73,7 @@ const getArrowStyle = (
 
 const StyledArrow = styled('span')<{
   placement?: PopperArrowProps['placement'];
-}>(({ placement, theme }) => {
+}>(({ placement }) => {
   return {
     position: 'absolute',
     fontSize: '7px',
