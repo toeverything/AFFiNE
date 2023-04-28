@@ -1,28 +1,7 @@
 // these atoms cannot be moved to @affine/jotai since they use atoms from @affine/component
 import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
-import { config } from '@affine/env';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-
-export const currentGitVersionAtom = atom(config.gitVersion);
-
-currentGitVersionAtom.onMount = set => {
-  const version = localStorage.getItem('current-git-version');
-  if (version === null) {
-    setTimeout(() => {
-      localStorage.setItem('current-git-version', config.gitVersion);
-      // after a user has used the app for 30 seconds, we treat it as an old user
-    }, 1000 * 30);
-    set('0.0.0');
-  } else {
-    set(version);
-  }
-};
-
-const isFirstTimeUserAtom = atom(get => {
-  const version = get(currentGitVersionAtom);
-  return version === '0.0.0';
-});
 
 export type Guide = {
   // should show quick search tips
@@ -73,11 +52,3 @@ export const guideChangeLogAtom = atom<
     }));
   }
 );
-
-export const guideOnBoardingAtom = atom<Guide['onBoarding']>(get => {
-  return (
-    get(isFirstTimeUserAtom) &&
-    get(guidePrimitiveAtom).onBoarding &&
-    environment.isDesktop
-  );
-});
