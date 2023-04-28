@@ -17,7 +17,7 @@ import {
 import type { Page } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import type { ReactElement, UIEvent } from 'react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { AllWorkspace } from '../../shared';
 import ChangeLog from '../pure/workspace-slider-bar/changeLog';
@@ -79,11 +79,11 @@ export const RootAppSidebar = ({
       window.apis?.onSidebarVisibilityChange(sidebarOpen);
     }
   }, [sidebarOpen]);
-  const [ref, setRef] = useState<HTMLElement | null>(null);
+  const ref = useRef<HTMLElement>(null);
   return (
     <>
       <AppSidebar
-        ref={setRef}
+        ref={ref}
         footer={
           <StyledNewPageButton
             data-testid="new-page-button"
