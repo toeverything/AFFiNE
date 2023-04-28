@@ -9,7 +9,7 @@ import { Typography } from '@mui/material';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
-import PageList from '../../components/blocksuite/block-suite-page-list/page-list';
+import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import { toast } from '../../utils';
 
@@ -57,9 +57,10 @@ const BroadcastPage: React.FC = () => {
         >
           Create Page
         </Button>
-        <PageList
+        <BlockSuitePageList
           blockSuiteWorkspace={blockSuiteWorkspace}
-          onClickPage={() => {
+          listType="all"
+          onOpenPage={() => {
             toast('do nothing');
           }}
         />
