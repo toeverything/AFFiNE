@@ -37,14 +37,23 @@ test('should be able to register and signIn', async () => {
 test('should be able to verify', async () => {
   await auth.register('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
-
-  const token = auth.sign({
+  const user = {
     id: '1',
     name: 'Alex Yang',
     email: 'alexyang@example.org',
-  });
-  const clain = auth.verify(token);
-  ok(clain.id === '1');
-  ok(clain.name === 'Alex Yang');
-  ok(clain.email === 'alexyang@example.org');
+  };
+  {
+    const token = auth.sign(user);
+    const clain = auth.verify(token);
+    ok(clain.id === '1');
+    ok(clain.name === 'Alex Yang');
+    ok(clain.email === 'alexyang@example.org');
+  }
+  {
+    const token = auth.refresh(user);
+    const clain = auth.verify(token);
+    ok(clain.id === '1');
+    ok(clain.name === 'Alex Yang');
+    ok(clain.email === 'alexyang@example.org');
+  }
 });
