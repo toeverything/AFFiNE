@@ -70,17 +70,9 @@ export function parseEnvValue(value: string | undefined, type?: EnvConfigType) {
 export interface AFFiNEConfig {
   ENV_MAP: Record<string, ConfigPaths | [ConfigPaths, EnvConfigType?]>;
   /**
-   * Application sign key secret
+   * Server Identity
    */
-  readonly secret: string;
-  /**
-   * Application access token expiration time
-   */
-  readonly accessTokenExpiresIn: string;
-  /**
-   * Application refresh token expiration time
-   */
-  readonly refreshTokenExpiresIn: string;
+  readonly serverId: string;
   /**
    * System version
    */
@@ -177,6 +169,30 @@ export interface AFFiNEConfig {
    * authentication config
    */
   auth: {
+    /**
+     * Application sign key secret
+     */
+    readonly salt: string;
+    /**
+     * Application access token expiration time
+     */
+    readonly accessTokenExpiresIn: string;
+    /**
+     * Application refresh token expiration time
+     */
+    readonly refreshTokenExpiresIn: string;
+    /**
+     * Application public key
+     *
+     * ECDSA key pair in pkcs8 format
+     */
+    readonly publicKey: Buffer;
+    /**
+     * Application private key
+     *
+     * ECDSA key pair in pkcs8 format
+     */
+    readonly privateKey: Buffer;
     /**
      * whether allow user to signup with email directly
      */
