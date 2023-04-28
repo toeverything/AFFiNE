@@ -65,11 +65,6 @@ test('app theme', async () => {
 });
 
 test('affine cloud disabled', async () => {
-  const electronApp = await electron.launch({
-    args: [resolve(__dirname, '..')],
-    executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
-  });
-  const page = await electronApp.firstWindow();
   await page.getByTestId('new-page-button').click({
     delay: 100,
   });
@@ -79,5 +74,4 @@ test('affine cloud disabled', async () => {
   await page.getByTestId('disable-affine-cloud-modal').waitFor({
     state: 'visible',
   });
-  await electronApp.close();
 });
