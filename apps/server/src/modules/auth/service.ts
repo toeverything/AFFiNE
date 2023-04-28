@@ -69,7 +69,11 @@ export class AuthService {
   }
 
   async register(name: string, email: string, password: string): Promise<User> {
-    const hashedPassword = await hash(password, this.config.auth.salt as any);
+    const hashedPassword = await hash(
+      password,
+      12,
+      Buffer.from(this.config.auth.salt)
+    );
 
     const user = await this.prisma.user.findFirst({
       where: {
