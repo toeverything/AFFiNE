@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
+import { hash } from 'bcrypt';
 import request from 'supertest';
 
 import { AppModule } from '../app';
@@ -26,6 +27,7 @@ describe('AppModule', () => {
         id: '1',
         name: 'Alex Yang',
         email: 'alex.yang@example.org',
+        password: await hash('123456', globalThis.AFFiNE.auth.salt),
       },
     });
   });
