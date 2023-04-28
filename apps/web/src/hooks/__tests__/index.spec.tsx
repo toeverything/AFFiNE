@@ -311,13 +311,17 @@ describe('useIsFirstLoad', () => {
   test('useTipsDisplayStatus', async () => {
     const tipsDisplayStatus = renderHook(() => useTipsDisplayStatus());
     expect(tipsDisplayStatus.result.current).toEqual({
-      quickSearchTips: {
-        permanentlyHidden: true,
-        hiddenUntilNextUpdate: true,
-      },
       changeLog: {
-        permanentlyHidden: true,
         hiddenUntilNextUpdate: true,
+        permanentlyHidden: true,
+      },
+      quickSearchTips: {
+        hiddenUntilNextUpdate: true,
+        permanentlyHidden: true,
+      },
+      tourModal: {
+        hiddenUntilNextUpdate: true,
+        permanentlyHidden: false,
       },
     });
   });
