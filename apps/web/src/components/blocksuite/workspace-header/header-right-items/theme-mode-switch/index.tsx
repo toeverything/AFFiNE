@@ -8,7 +8,7 @@ export const ThemeModeSwitch = () => {
 
   useEffect(() => {
     if (environment.isDesktop) {
-      window.apis?.handleThemeChange(
+      window.apis?.ui.handleThemeChange(
         resolvedTheme === 'dark' ? 'dark' : 'light'
       );
     }

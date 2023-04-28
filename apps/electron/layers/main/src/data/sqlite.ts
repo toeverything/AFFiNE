@@ -5,8 +5,8 @@ import sqlite from 'better-sqlite3';
 import fs from 'fs-extra';
 import * as Y from 'yjs';
 
-import { logger } from '../../../logger';
 import type { AppContext } from '../context';
+import { logger } from '../logger';
 
 const schemas = [
   `CREATE TABLE IF NOT EXISTS "updates" (

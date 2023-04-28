@@ -76,7 +76,7 @@ export const RootAppSidebar = ({
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   useEffect(() => {
     if (environment.isDesktop) {
-      window.apis?.onSidebarVisibilityChange(sidebarOpen);
+      window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen);
     }
   }, [sidebarOpen]);
   const ref = useRef<HTMLElement>(null);

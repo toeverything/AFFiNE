@@ -3,8 +3,8 @@ import './security-restrictions';
 import { app } from 'electron';
 import path from 'path';
 
-import { logger } from '../../logger';
 import { registerHandlers } from './handlers';
+import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 

@@ -5,10 +5,18 @@ import fs from 'fs-extra';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import * as Y from 'yjs';
 
+import type { MainIPCHandlerMap } from '../../../constraints';
+
 const registeredHandlers = new Map<string, (...args: any[]) => any>();
 
+const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
 // common mock dispatcher for ipcMain.handle and app.on
-async function dispatch(key: string, ...args: any[]) {
+async function dispatch<T extends keyof MainIPCHandlerMap>(
+  key: T,
+  ...args: Parameters<MainIPCHandlerMap[T]>
+): // @ts-ignore
+ReturnType<MainIPCHandlerMap[T]> {
   const handler = registeredHandlers.get(key);
   assert(handler);
   return await handler(null, ...args);
@@ -25,7 +33,7 @@ const browserWindow = {
   },
   webContents: {
     send: (type: string, ...args: any[]) => {
-      // ...
+      // will be stubbed later
     },
   },
 };
@@ -40,8 +48,13 @@ const nativeTheme = {
   themeSource: 'light',
 };
 
-function compareBuffer(a: Uint8Array, b: Uint8Array) {
-  if (a.length !== b.length) {
+function compareBuffer(a: Uint8Array | null, b: Uint8Array | null) {
+  if (
+    (a === null && b === null) ||
+    a === null ||
+    b === null ||
+    a.length !== b.length
+  ) {
     return false;
   }
   for (let i = 0; i < a.length; i++) {
@@ -87,7 +100,7 @@ afterEach(async () => {
   await fs.remove(APP_PATH);
 });
 
-describe('ensureWorkspaceDB', () => {
+describe('ensureSQLiteDB', () => {
   test('should create db file on connection if it does not exist', async () => {
     const id = 'test-workspace-id';
     const { ensureSQLiteDB } = await import('../data/ensure-db');
@@ -95,6 +108,31 @@ describe('ensureWorkspaceDB', () => {
     const file = workspaceDB.path;
     const fileExists = await fs.pathExists(file);
     expect(fileExists).toBe(true);
+  });
+
+  test('when db file is removed', async () => {
+    const id = 'test-workspace-id';
+    const { ensureSQLiteDB } = await import('../data/ensure-db');
+    let workspaceDB = await ensureSQLiteDB(id);
+    const file = workspaceDB.path;
+    const fileExists = await fs.pathExists(file);
+    expect(fileExists).toBe(true);
+
+    // stub webContents.send
+    const sendStub = vi.fn();
+    browserWindow.webContents.send = sendStub;
+
+    await fs.remove(file);
+
+    // wait for 500ms for file watcher to detect file removal
+    await delay(500);
+
+    expect(sendStub).toBeCalledWith('main:on-db-file-missing', id);
+
+    // ensureSQLiteDB should recreate the db file
+    workspaceDB = await ensureSQLiteDB(id);
+    const fileExists2 = await fs.pathExists(file);
+    expect(fileExists2).toBe(true);
   });
 });
 
@@ -147,14 +185,6 @@ describe('UI handlers', () => {
 });
 
 describe('db handlers', () => {
-  test('will reconnect on activate', async () => {
-    const { ensureSQLiteDB } = await import('../data/ensure-db');
-    const workspaceDB = await ensureSQLiteDB('test-workspace-id');
-    const instance = vi.spyOn(workspaceDB, 'reconnectDB');
-    await dispatch('activate');
-    expect(instance).toBeCalled();
-  });
-
   test('apply doc and get doc updates', async () => {
     const workspaceId = 'test-workspace-id';
     const bin = await dispatch('db:get-doc', workspaceId);

@@ -1,7 +1,7 @@
 import { watch } from 'chokidar';
 
-import { logger } from '../../../logger';
 import { appContext } from '../context';
+import { logger } from '../logger';
 import { sendMainEvent } from '../send-main-event';
 import type { WorkspaceSQLiteDB } from './sqlite';
 import { openWorkspaceDatabase } from './sqlite';
@@ -35,6 +35,9 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
     watcher.close();
   });
 
+  // todo: there is still a possibility that the file is deleted
+  // but we didn't get the event soon enough and another event tries to
+  // access the db
   watcher.on('unlink', () => {
     logger.info('db file missing', db.workspaceId);
     sendMainEvent('main:on-db-file-missing', db.workspaceId);

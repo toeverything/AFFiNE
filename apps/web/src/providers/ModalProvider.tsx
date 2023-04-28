@@ -93,7 +93,10 @@ export function Modals() {
             setOpenCreateWorkspaceModal(true);
           }, [setOpenCreateWorkspaceModal])}
           onImportWorkspace={async () => {
-            const { workspaceId } = await window.apis.openLoadDBFileDialog();
+            if (!window.apis) {
+              return;
+            }
+            const { workspaceId } = await window.apis.dialog.loadDBFile();
             if (workspaceId) {
               await importLocalWorkspace(workspaceId);
               setOpenWorkspacesModal(false);

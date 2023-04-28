@@ -42,7 +42,7 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
       console.log('set workspace id', workspaceId);
       setCurrentWorkspaceId(targetWorkspace.id);
       if (environment.isDesktop) {
-        window.apis?.handleWorkspaceChange(targetWorkspace.id);
+        window.apis?.ui.handleWorkspaceChange(targetWorkspace.id);
       }
       void router.push({
         pathname: '/workspace/[workspaceId]/all',

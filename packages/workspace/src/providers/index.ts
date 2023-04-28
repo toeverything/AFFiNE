@@ -147,18 +147,19 @@ const createSQLiteProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): SQLiteProvider => {
   const sqliteOrigin = Symbol('sqlite-provider-origin');
+  const apis = window.apis!;
   // make sure it is being used in Electron with APIs
-  assertExists(environment.isDesktop && window.apis);
+  assertExists(apis);
 
   function handleUpdate(update: Uint8Array, origin: unknown) {
     if (origin === sqliteOrigin) {
       return;
     }
-    window.apis.db.applyDocUpdate(blockSuiteWorkspace.id, update);
+    apis.db.applyDocUpdate(blockSuiteWorkspace.id, update);
   }
 
   async function syncBlobIntoSQLite(bs: BlobManager) {
-    const persistedKeys = await window.apis.db.getPersistedBlobs(
+    const persistedKeys = await apis.db.getPersistedBlobs(
       blockSuiteWorkspace.id
     );
 
@@ -172,7 +173,7 @@ const createSQLiteProvider = (
         logger.warn('blob not found for', k);
         return;
       }
-      window.apis.db.addBlob(
+      apis.db.addBlob(
         blockSuiteWorkspace.id,
         k,
         new Uint8Array(await blob.arrayBuffer())
@@ -182,7 +183,7 @@ const createSQLiteProvider = (
 
   async function syncUpdates() {
     logger.info('syncing updates from sqlite', blockSuiteWorkspace.id);
-    const updates = await window.apis.db.getDoc(blockSuiteWorkspace.id);
+    const updates = await apis.db.getDoc(blockSuiteWorkspace.id);
 
     if (updates) {
       Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
@@ -191,7 +192,7 @@ const createSQLiteProvider = (
     const mergeUpdates = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc);
 
     // also apply updates to sqlite
-    window.apis.db.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
+    apis.db.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
 
     const bs = blockSuiteWorkspace.blobs;
 
@@ -216,7 +217,7 @@ const createSQLiteProvider = (
       blockSuiteWorkspace.doc.on('update', handleUpdate);
 
       let timer = 0;
-      unsubscribe = window.apis.db.onDBUpdate(workspaceId => {
+      unsubscribe = apis.db.onDBFileUpdate(workspaceId => {
         if (workspaceId === blockSuiteWorkspace.id) {
           // throttle
           logger.debug('on db update', workspaceId);

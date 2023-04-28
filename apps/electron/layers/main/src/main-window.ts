@@ -2,8 +2,8 @@ import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
-import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
+import { logger } from './logger';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;

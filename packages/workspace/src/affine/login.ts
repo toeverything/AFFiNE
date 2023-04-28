@@ -69,7 +69,7 @@ export const setLoginStorage = (login: LoginResponse) => {
 
 const signInWithElectron = async (firebaseAuth: FirebaseAuth) => {
   if (window.apis) {
-    const { url, requestInit } = await window.apis.getGoogleOauthCode();
+    const { url, requestInit } = await window.apis.ui.getGoogleOauthCode();
     const { id_token } = await fetch(url, requestInit).then(res => res.json());
     const credential = GoogleAuthProvider.credential(id_token);
     const user = await signInWithCredential(firebaseAuth, credential);

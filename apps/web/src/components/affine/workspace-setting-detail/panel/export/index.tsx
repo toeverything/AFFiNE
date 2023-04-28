@@ -14,7 +14,7 @@ export const ExportPanel = () => {
         shape="circle"
         disabled={!environment.isDesktop || !id}
         onClick={() => {
-          id && window.apis.openSaveDBFileDialog(id);
+          id && window.apis?.dialog.saveDBFileAs(id);
         }}
       >
         {t('Export AFFiNE backup file')}

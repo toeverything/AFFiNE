@@ -2,8 +2,8 @@ import path from 'node:path';
 
 import fs from 'fs-extra';
 
-import { logger } from '../../../logger';
 import type { AppContext } from '../context';
+import { logger } from '../logger';
 
 export async function listWorkspaces(context: AppContext) {
   const basePath = path.join(context.appDataPath, 'workspaces');

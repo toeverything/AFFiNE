@@ -1,16 +1,17 @@
-import { BrowserWindow, ipcMain, nativeTheme, shell } from 'electron';
+import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
 
-import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
 import { appContext } from './context';
 import { ensureSQLiteDB } from './data/ensure-db';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
 import {
-  openLoadDBFileDialog,
-  openMoveDBFileDialog,
-  openSaveDBFileDialog,
+  exportDBFile as saveDBFileAs,
+  loadDBFile as loadDBFile,
+  moveDBFile,
+  revealDBFile,
 } from './dialog';
 import { getGoogleOauthCode } from './google-auth';
+import { logger, revealLogFile } from './logger';
 
 export const workspaceHandlers = {
   'workspace:list': async (): Promise<string[]> => listWorkspaces(appContext),
@@ -64,18 +65,23 @@ export const dbHandlers = {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.deleteBlob(key);
   },
-  'ui:open-db-folder': async (workspaceId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    shell.showItemInFolder(workspaceDB.path);
+};
+
+export const dialogHandlers = {
+  'dialog:reveal-db-file': async (workspaceId: string) => {
+    return revealDBFile(workspaceId);
   },
-  'ui:open-load-db-file-dialog': async () => {
-    return openLoadDBFileDialog();
+  'dialog:load-db-file': async () => {
+    return loadDBFile();
   },
-  'ui:open-save-db-file-dialog': async (workspaceId: string) => {
-    return openSaveDBFileDialog(workspaceId);
+  'dialog:save-db-file-as': async (workspaceId: string) => {
+    return saveDBFileAs(workspaceId);
   },
-  'ui:move-db-file': async (workspaceId: string, newPath: string) => {
-    return openMoveDBFileDialog(workspaceId);
+  'dialog:move-db-file': async (workspaceId: string) => {
+    return moveDBFile(workspaceId);
+  },
+  'dialog:reveal-log-file': async () => {
+    return revealLogFile();
   },
 };
 
@@ -84,6 +90,7 @@ export const allHandlers = {
   ...workspaceHandlers,
   ...uiHandlers,
   ...dbHandlers,
+  ...dialogHandlers,
 };
 
 export const registerHandlers = () => {
