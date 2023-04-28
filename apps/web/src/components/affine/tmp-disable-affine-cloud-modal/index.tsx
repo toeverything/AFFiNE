@@ -21,7 +21,11 @@ export const TmpDisableAffineCloudModal: React.FC<
   TmpDisableAffineCloudModalProps
 > = ({ open, onClose }) => {
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal
+      data-testid="disable-affine-cloud-modal"
+      open={open}
+      onClose={onClose}
+    >
       <ModalWrapper width={480}>
         <Header>
           <IconButton
@@ -41,6 +45,9 @@ export const TmpDisableAffineCloudModal: React.FC<
             <a
               href="https://github.com/toeverything/AFFiNE/releases"
               target="_blank"
+              style={{
+                color: 'var(--affine-link-color)',
+              }}
             >
               click here
             </a>
