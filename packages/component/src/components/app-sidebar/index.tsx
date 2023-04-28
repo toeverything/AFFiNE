@@ -8,7 +8,13 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import type { ReactNode } from 'react';
-import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
 
 import { IconButton } from '../../ui/button/IconButton';
 import {
@@ -41,6 +47,15 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
     }, [setOpen]);
 
     useImperativeHandle(forwardedRef, () => ref.current as HTMLElement);
+
+    useEffect(() => {
+      if (open === undefined && ref.current) {
+        const initialOpen =
+          window.getComputedStyle(ref.current).position === 'relative';
+
+        setOpen(initialOpen);
+      }
+    }, [open, setOpen]);
 
     const environment = getEnvironment();
     const isMacosDesktop = environment.isDesktop && environment.isMacOs;
