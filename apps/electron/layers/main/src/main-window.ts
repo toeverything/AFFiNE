@@ -8,6 +8,8 @@ import { isMacOS } from '../../utils';
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
 
+const DEV_TOOL = process.env.DEV_TOOL === 'true';
+
 async function createWindow() {
   logger.info('create window');
   const mainWindowState = electronWindowState({
@@ -57,7 +59,7 @@ async function createWindow() {
 
     logger.info('main window is ready to show');
 
-    if (IS_DEV) {
+    if (DEV_TOOL) {
       browserWindow.webContents.openDevTools();
     }
   });
