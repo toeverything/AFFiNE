@@ -28,11 +28,11 @@ const browserWindow = {
   isDestroyed: () => {
     return false;
   },
-  setWindowButtonVisibility: (v: boolean) => {
+  setWindowButtonVisibility: (_v: boolean) => {
     // will be stubbed later
   },
   webContents: {
-    send: (type: string, ...args: any[]) => {
+    send: (_type: string, ..._args: any[]) => {
       // will be stubbed later
     },
   },
@@ -415,7 +415,7 @@ describe('dialog handlers', () => {
 
     const id = 'test-workspace-id';
     const { ensureSQLiteDB } = await import('../data/ensure-db');
-    const db = await ensureSQLiteDB(id);
+    await ensureSQLiteDB(id);
 
     const res = await dispatch('dialog:move-db-file', id);
     expect(mockShowSaveDialog).toBeCalled();
@@ -430,7 +430,7 @@ describe('dialog handlers', () => {
 
     const id = 'test-workspace-id';
     const { ensureSQLiteDB } = await import('../data/ensure-db');
-    const db = await ensureSQLiteDB(id);
+    await ensureSQLiteDB(id);
 
     const res = await dispatch('dialog:move-db-file', id);
     expect(mockShowSaveDialog).toBeCalled();

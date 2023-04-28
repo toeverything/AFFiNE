@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import { styled } from '../../styles';
 import { Wrapper } from '../layout';
 
-export const StyledBackdrop = styled('div')(({ theme }) => {
+export const StyledBackdrop = styled('div')(() => {
   return {
     zIndex: '-1',
     position: 'fixed',
@@ -23,7 +23,7 @@ export const StyledModal = styled(ModalUnstyled, {
 })<{
   alignItems: CSSProperties['alignItems'];
   justifyContent: CSSProperties['justifyContent'];
-}>(({ theme, alignItems, justifyContent }) => {
+}>(({ alignItems, justifyContent }) => {
   return {
     width: '100vw',
     height: '100vh',

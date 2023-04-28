@@ -310,7 +310,6 @@ describe('useIsFirstLoad', () => {
   });
   test('useTipsDisplayStatus', async () => {
     const tipsDisplayStatus = renderHook(() => useTipsDisplayStatus());
-    const setTipsDisplayStatus = tipsDisplayStatus.result.current;
     expect(tipsDisplayStatus.result.current).toEqual({
       quickSearchTips: {
         permanentlyHidden: true,

@@ -21,13 +21,13 @@ const mockedAddBlob = vi.fn();
 vi.stubGlobal('window', {
   apis: {
     db: {
-      getDoc: async (id: string) => {
+      getDoc: async () => {
         return Y.encodeStateAsUpdate(offlineYdoc);
       },
       applyDocUpdate: async (id: string, update: Uint8Array) => {
         Y.applyUpdate(offlineYdoc, update, 'sqlite');
       },
-      getPersistedBlobs: async (id: string) => {
+      getPersistedBlobs: async () => {
         // todo: may need to hack the way to get hash keys of blobs
         return [];
       },
@@ -88,7 +88,7 @@ describe('SQLite provider', () => {
     const bin = new Uint8Array([1, 2, 3]);
     const blob = new Blob([bin]);
     workspace.blobs.list = vi.fn(async () => ['blob1']);
-    workspace.blobs.get = vi.fn(async (key: string) => {
+    workspace.blobs.get = vi.fn(async () => {
       return blob;
     });
 

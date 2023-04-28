@@ -12,7 +12,7 @@ export const StyledTableContainer = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledTitleWrapper = styled('div')(({ theme }) => {
+export const StyledTitleWrapper = styled('div')(() => {
   return {
     ...displayFlex('flex-start', 'center'),
     a: {
@@ -26,7 +26,7 @@ export const StyledTitleWrapper = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledTitleLink = styled('div')(({ theme }) => {
+export const StyledTitleLink = styled('div')(() => {
   return {
     maxWidth: '80%',
     marginRight: '18px',

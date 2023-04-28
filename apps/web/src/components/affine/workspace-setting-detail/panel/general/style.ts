@@ -1,7 +1,7 @@
 import { displayFlex, styled } from '@affine/component';
 import { Input } from '@affine/component';
 
-export const StyledInput = styled(Input)(({ theme }) => {
+export const StyledInput = styled(Input)(() => {
   return {
     border: '1px solid var(--affine-border-color)',
     borderRadius: '10px',
@@ -9,7 +9,7 @@ export const StyledInput = styled(Input)(({ theme }) => {
   };
 });
 
-export const StyledWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyledWorkspaceInfo = styled('div')(() => {
   return {
     ...displayFlex('flex-start', 'center'),
     fontSize: '20px',
@@ -48,7 +48,7 @@ export const StyledAvatar = styled('div')(
   }
 );
 
-export const StyledEditButton = styled('div')(({ theme }) => {
+export const StyledEditButton = styled('div')(() => {
   return {
     color: 'var(--affine-primary-color)',
     cursor: 'pointer',

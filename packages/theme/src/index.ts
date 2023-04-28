@@ -144,7 +144,7 @@ export const lightTheme = {
     '0px 0px 12px rgba(66, 65, 73, 0.1), inset 0px 0px 0px 0.5px rgba(227, 227, 228, 1)',
   shadow: '0px 0px 4px rgba(66, 65, 73, 0.1)',
   popoverShadow:
-    '0px 0px 24px rgba(0, 0, 0, 0.2), 0px 0px 4px rgba(0, 0, 0, 0.6), inset 0px 0px 0px 1px rgba(227, 226, 228, 1)',
+    '0px 0px 30px rgba(75, 75, 75, 0.2), 0px 0px 4px rgba(75, 75, 75, 0.3), inset 0px 0px 0px rgba(227, 226, 228, 1)',
   floatButtonShadow:
     '0px 1px 16px rgba(0, 0, 0, 0.1), 0px 2px 3px rgba(0, 0, 0, 0.1)',
 };
@@ -238,7 +238,7 @@ export const darkTheme = {
     '0px 0px 12px rgba(0, 0, 0, 1), inset 0px 0px 0px 0.5px rgba(46, 46, 46, 1)',
   shadow: '0px 0px 4px rgba(20, 20, 20, 1)',
   popoverShadow:
-    '0px 0px 26px rgba(0, 0, 0, 0.8), 0px 0px 10px rgba(0, 0, 0, 1), inset 0px 0px 0px 1px rgba(46, 46, 46, 1)',
+    '0px 0px 30px rgba(12, 12, 12, 0.8), 0px 0px 8px rgba(12, 12, 12, 1), inset 0px 0px 0px rgba(46, 46, 46, 1)',
   floatButtonShadow:
     '0px 1px 16px rgba(0, 0, 0, 1), 0px 2px 3px rgba(0, 0, 0, 1)',
 } satisfies Omit<AffineTheme, 'editorMode'>;

@@ -23,13 +23,14 @@ import { affineAuth } from '../../../../plugins/affine';
 import type { AffineOfficialWorkspace } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
-const IconWrapper = styled('div')(({ theme }) => {
+const IconWrapper = styled('div')(() => {
   return {
     width: '32px',
     height: '32px',
     marginRight: '12px',
     fontSize: '24px',
     color: 'var(--affine-icon-color)',
+    WebkitAppRegion: 'no-drag',
     ...displayFlex('center', 'center'),
   };
 });

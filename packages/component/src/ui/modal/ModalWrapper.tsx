@@ -6,7 +6,7 @@ export const ModalWrapper = styled('div')<{
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
   minHeight?: CSSProperties['minHeight'];
-}>(({ theme, width, height, minHeight }) => {
+}>(({ width, height, minHeight }) => {
   return {
     width,
     height,

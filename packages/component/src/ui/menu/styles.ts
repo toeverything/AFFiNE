@@ -6,7 +6,7 @@ import StyledPopperContainer from '../shared/Container';
 export const StyledMenuWrapper = styled(StyledPopperContainer)<{
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
-}>(({ theme, width, height }) => {
+}>(({ width, height }) => {
   return {
     width,
     height,
@@ -18,14 +18,14 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)<{
   };
 });
 
-export const StyledStartIconWrapper = styled('div')(({ theme }) => {
+export const StyledStartIconWrapper = styled('div')(() => {
   return {
     marginRight: '12px',
     fontSize: '20px',
     color: 'var(--affine-icon-color)',
   };
 });
-export const StyledEndIconWrapper = styled('div')(({ theme }) => {
+export const StyledEndIconWrapper = styled('div')(() => {
   return {
     marginLeft: '12px',
     fontSize: '20px',
@@ -33,7 +33,7 @@ export const StyledEndIconWrapper = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledContent = styled('div')(({ theme }) => {
+export const StyledContent = styled('div')(() => {
   return {
     textAlign: 'left',
     flexGrow: 1,
@@ -45,7 +45,7 @@ export const StyledContent = styled('div')(({ theme }) => {
 export const StyledMenuItem = styled('button')<{
   isDir?: boolean;
   disabled?: boolean;
-}>(({ theme, isDir = false, disabled = false }) => {
+}>(({ isDir = false, disabled = false }) => {
   return {
     width: '100%',
     borderRadius: '5px',

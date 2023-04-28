@@ -1,7 +1,7 @@
 import { displayFlex, styled, textEllipsis } from '../..';
 import { IconButton } from '../..';
 
-export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
@@ -22,7 +22,7 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
+export const StyleWorkspaceTitle = styled('div')(() => {
   return {
     fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
@@ -35,7 +35,7 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
 
 export const StyledCard = styled('div')<{
   active?: boolean;
-}>(({ theme, active }) => {
+}>(({ active }) => {
   const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
   return {
     width: '310px',

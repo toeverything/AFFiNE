@@ -11,7 +11,7 @@ export const StyledModalWrapper = styled(ModalWrapper)(() => {
   };
 });
 
-export const StyledConfirmTitle = styled('div')(({ theme }) => {
+export const StyledConfirmTitle = styled('div')(() => {
   return {
     fontSize: 'var(--affine-font-h6)',
     fontWeight: 600,
@@ -20,7 +20,7 @@ export const StyledConfirmTitle = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledConfirmContent = styled('div')(({ theme }) => {
+export const StyledConfirmContent = styled('div')(() => {
   return {
     fontSize: 'var(--affine-font-base)',
     textAlign: 'center',

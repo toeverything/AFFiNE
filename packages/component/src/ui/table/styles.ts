@@ -2,7 +2,7 @@ import { styled, textEllipsis } from '../../styles';
 import type { TableCellProps } from './interface';
 
 export const StyledTable = styled('table')<{ tableLayout: 'auto' | 'fixed' }>(
-  ({ theme, tableLayout }) => {
+  ({ tableLayout }) => {
     return {
       fontSize: 'var(--affine-font-base)',
       color: 'var(--affine-text-primary-color)',
@@ -53,7 +53,7 @@ export const StyledTableHead = styled('thead')(() => {
   };
 });
 
-export const StyledTableRow = styled('tr')(({ theme }) => {
+export const StyledTableRow = styled('tr')(() => {
   return {
     td: {
       transition: 'background .15s',

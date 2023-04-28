@@ -8,6 +8,7 @@ import { lazy, Suspense, useCallback, useTransition } from 'react';
 import {
   currentWorkspaceIdAtom,
   openCreateWorkspaceModalAtom,
+  openDisableCloudAlertModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
@@ -29,12 +30,24 @@ const CreateWorkspaceModal = lazy(() =>
   }))
 );
 
+const TmpDisableAffineCloudModal = lazy(() =>
+  import('../components/affine/tmp-disable-affine-cloud-modal').then(
+    module => ({
+      default: module.TmpDisableAffineCloudModal,
+    })
+  )
+);
+
 export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
     openWorkspacesModalAtom
   );
   const [openCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
     openCreateWorkspaceModalAtom
+  );
+
+  const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
+    openDisableCloudAlertModalAtom
   );
 
   const router = useRouter();
@@ -49,6 +62,14 @@ export function Modals() {
 
   return (
     <>
+      <Suspense>
+        <TmpDisableAffineCloudModal
+          open={openDisableCloudAlertModal}
+          onClose={useCallback(() => {
+            setOpenDisableCloudAlertModal(false);
+          }, [setOpenDisableCloudAlertModal])}
+        />
+      </Suspense>
       <Suspense>
         <WorkspaceListModal
           disabled={transitioning}

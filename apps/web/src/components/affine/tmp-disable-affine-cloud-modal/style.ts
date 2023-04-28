@@ -13,7 +13,7 @@ export const Content = styled('div')({
   padding: '0 40px',
 });
 
-export const ContentTitle = styled('h1')(({ theme }) => {
+export const ContentTitle = styled('h1')(() => {
   return {
     fontSize: 'var(--affine-font-h6)',
     lineHeight: '28px',
@@ -21,7 +21,7 @@ export const ContentTitle = styled('h1')(({ theme }) => {
   };
 });
 
-export const StyleTips = styled('div')(({ theme }) => {
+export const StyleTips = styled('div')(() => {
   return {
     userSelect: 'none',
     margin: '20px 0',
@@ -31,7 +31,7 @@ export const StyleTips = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleButton = styled(Button)(({ theme }) => {
+export const StyleButton = styled(Button)(() => {
   return {
     textAlign: 'center',
     margin: '20px 0',

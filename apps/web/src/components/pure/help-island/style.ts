@@ -2,7 +2,7 @@ import { displayFlex, positionAbsolute, styled } from '@affine/component';
 
 export const StyledIsland = styled('div')<{
   spread: boolean;
-}>(({ theme, spread }) => {
+}>(({ spread }) => {
   return {
     transition: 'box-shadow 0.2s',
     width: '44px',
@@ -31,7 +31,7 @@ export const StyledIsland = styled('div')<{
     },
   };
 });
-export const StyledIconWrapper = styled('div')(({ theme }) => {
+export const StyledIconWrapper = styled('div')(() => {
   return {
     color: 'var(--affine-icon-color)',
     ...displayFlex('center', 'center'),
@@ -57,7 +57,7 @@ export const StyledAnimateWrapper = styled('div')(() => ({
 
 export const StyledTriggerWrapper = styled('div')<{
   spread?: boolean;
-}>(({ theme, spread }) => {
+}>(({ spread }) => {
   return {
     width: '36px',
     height: '36px',

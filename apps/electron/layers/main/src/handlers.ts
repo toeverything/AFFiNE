@@ -27,7 +27,7 @@ export const uiHandlers = {
       });
     }
   },
-  'ui:workspace-change': async (workspaceId: string) => {
+  'ui:workspace-change': async (_workspaceId: string) => {
     // ?
   },
   'ui:get-google-oauth-code': async () => {

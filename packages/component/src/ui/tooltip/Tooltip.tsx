@@ -3,7 +3,7 @@ import type { TooltipProps } from '@mui/material';
 import { styled } from '../../styles';
 import { Popper, type PopperProps } from '../popper';
 import StyledPopperContainer from '../shared/Container';
-const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
+const StyledTooltip = styled(StyledPopperContainer)(() => {
   return {
     maxWidth: '320px',
     boxShadow: 'var(--affine-float-button-shadow)',

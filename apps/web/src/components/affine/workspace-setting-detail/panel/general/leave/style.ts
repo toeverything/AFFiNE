@@ -1,6 +1,6 @@
 import { styled } from '@affine/component';
 
-export const StyledModalWrapper = styled('div')(({ theme }) => {
+export const StyledModalWrapper = styled('div')(() => {
   return {
     position: 'relative',
     padding: '0px',

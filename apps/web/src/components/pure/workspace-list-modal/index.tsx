@@ -17,7 +17,6 @@ import { useCallback, useRef } from 'react';
 
 import type { AllWorkspace } from '../../../shared';
 import { Footer } from '../footer';
-import { LanguageMenu } from './language-menu';
 import {
   StyledCreateWorkspaceCard,
   StyledCreateWorkspaceCardPill,
@@ -28,7 +27,6 @@ import {
   StyledModalHeaderLeft,
   StyledModalTitle,
   StyledOperationWrapper,
-  StyledSplitLine,
   StyleWorkspaceAdd,
   StyleWorkspaceInfo,
   StyleWorkspaceTitle,
@@ -92,8 +90,6 @@ export const WorkspaceListModal = ({
           </StyledModalHeaderLeft>
 
           <StyledOperationWrapper>
-            <LanguageMenu />
-            <StyledSplitLine />
             <ModalCloseButton
               data-testid="close-workspace-modal"
               onClick={() => {
