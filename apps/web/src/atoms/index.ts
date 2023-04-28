@@ -78,6 +78,8 @@ export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom(false);
 export const openQuickSearchModalAtom = atom(false);
 
+export const openDisableCloudAlertModalAtom = atom(false);
+
 export { workspacesAtom } from './root';
 
 type View = { id: string; mode: 'page' | 'edgeless' };

@@ -3,24 +3,63 @@ import { css, displayFlex, keyframes, styled } from '@affine/component';
 import spring, { toString } from 'css-spring';
 
 const ANIMATE_DURATION = 400;
-
-export const StyledThemeModeSwitch = styled('button')(() => {
+export const StyledThemeModeContainer = styled('div')(() => {
   return {
-    width: '32px',
+    width: '100%',
+    height: '48px',
+    borderRadius: '6px',
+    backgroundColor: 'transparent',
+    color: 'var(--affine-icon-color)',
+    fontSize: '16px',
+    ...displayFlex('flex-start', 'center'),
+    padding: '0 14px',
+  };
+});
+export const StyledThemeButtonContainer = styled('div')(() => {
+  return {
+    border: `1px solid var(--affine-border-color)`,
+    borderRadius: '4px',
+    cursor: 'pointer',
+    ...displayFlex('space-evenly', 'center'),
+    flexGrow: 1,
+    marginLeft: '12px',
+  };
+});
+export const StyledThemeButton = styled('button')<{
+  active: boolean;
+}>(({ active }) => {
+  return {
+    cursor: 'pointer',
+    color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
+  };
+});
+export const StyledVerticalDivider = styled('div')(() => {
+  return {
+    width: '1px',
     height: '32px',
+    borderLeft: `1px solid var(--affine-border-color)`,
+  };
+});
+export const StyledThemeModeSwitch = styled('button')<{
+  inMenu?: boolean;
+}>(({ inMenu }) => {
+  return {
+    width: inMenu ? '20px' : '32px',
+    height: inMenu ? '20px' : '32px',
     borderRadius: '6px',
     overflow: 'hidden',
     WebkitAppRegion: 'no-drag',
     backgroundColor: 'transparent',
     position: 'relative',
     color: 'var(--affine-icon-color)',
-    fontSize: '24px',
+    fontSize: inMenu ? '20px' : '24px',
   };
 });
 export const StyledSwitchItem = styled('div')<{
   active: boolean;
-  isHover: boolean;
-}>(({ active, isHover }) => {
+  isHover?: boolean;
+  inMenu?: boolean;
+}>(({ active, isHover, inMenu }) => {
   const activeRaiseAnimate = toString(
     spring({ top: '0' }, { top: '-100%' }, { preset: 'gentle' })
   );
@@ -58,8 +97,8 @@ export const StyledSwitchItem = styled('div')<{
       };
   return css`
     ${css(displayFlex('center', 'center'))}
-    width: 32px;
-    height: 32px;
+    width:${inMenu ? '20px' : '32px'} ;
+    height: ${inMenu ? '20px' : '32px'} ;
     position: absolute;
     left: 0;
     cursor: pointer;
