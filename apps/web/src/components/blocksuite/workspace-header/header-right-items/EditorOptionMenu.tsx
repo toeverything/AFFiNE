@@ -29,77 +29,99 @@ import {
   StyledHorizontalDividerContainer,
 } from '../styles';
 import { LanguageMenu } from './LanguageMenu';
-
-export const EditorOptionMenu = () => {
+const CommonMenu = () => {
+  const content = (
+    <div
+      onClick={e => {
+        e.stopPropagation();
+      }}
+    >
+      <MenuThemeModeSwitch />
+      <LanguageMenu />
+    </div>
+  );
+  return (
+    <FlexWrapper alignItems="center" justifyContent="center">
+      <Menu
+        width={276}
+        content={content}
+        // placement="bottom-end"
+        disablePortal={true}
+        trigger="click"
+      >
+        <IconButton data-testid="editor-option-menu" iconSize={[24, 24]}>
+          <MoreVerticalIcon />
+        </IconButton>
+      </Menu>
+    </FlexWrapper>
+  );
+};
+const PageMenu = () => {
   const { t } = useTranslation();
-  const router = useRouter();
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
   const [pageId] = useCurrentPageId();
   assertExists(workspace);
+  assertExists(pageId);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  assertExists(pageMeta);
   const [record, set] = useAtom(workspacePreferredModeAtom);
-  const mode = pageId ? record[pageId] : 'page';
+  const mode = record[pageId] ?? 'page';
 
   const favorite = pageMeta?.favorite ?? false;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const isPage = pageId === router.query.pageId;
   const EditMenu = (
     <>
-      {isPage && pageId && pageMeta && (
-        <>
-          <MenuItem
-            data-testid="editor-option-menu-favorite"
-            onClick={() => {
-              setPageMeta(pageId, { favorite: !favorite });
-              toast(
-                favorite ? t('Removed from Favorites') : t('Added to Favorites')
-              );
+      <>
+        <MenuItem
+          data-testid="editor-option-menu-favorite"
+          onClick={() => {
+            setPageMeta(pageId, { favorite: !favorite });
+            toast(
+              favorite ? t('Removed from Favorites') : t('Added to Favorites')
+            );
+          }}
+          icon={
+            favorite ? (
+              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
+            ) : (
+              <FavoriteIcon />
+            )
+          }
+        >
+          {favorite ? t('Remove from favorites') : t('Add to Favorites')}
+        </MenuItem>
+        <MenuItem
+          icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
+          data-testid="editor-option-menu-edgeless"
+          onClick={() => {
+            set(record => ({
+              ...record,
+              [pageId]: mode === 'page' ? 'edgeless' : 'page',
+            }));
+          }}
+        >
+          {t('Convert to ')}
+          {mode === 'page' ? t('Edgeless') : t('Page')}
+        </MenuItem>
+        <Export />
+        {!pageMeta.isRootPinboard && (
+          <MoveToTrash
+            testId="editor-option-menu-delete"
+            onItemClick={() => {
+              setOpenConfirm(true);
             }}
-            icon={
-              favorite ? (
-                <FavoritedIcon
-                  style={{ color: 'var(--affine-primary-color)' }}
-                />
-              ) : (
-                <FavoriteIcon />
-              )
-            }
-          >
-            {favorite ? t('Remove from favorites') : t('Add to Favorites')}
-          </MenuItem>
-          <MenuItem
-            icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
-            data-testid="editor-option-menu-edgeless"
-            onClick={() => {
-              set(record => ({
-                ...record,
-                [pageId]: mode === 'page' ? 'edgeless' : 'page',
-              }));
-            }}
-          >
-            {t('Convert to ')}
-            {mode === 'page' ? t('Edgeless') : t('Page')}
-          </MenuItem>
-          <Export />
-          {!pageMeta.isRootPinboard && (
-            <MoveToTrash
-              testId="editor-option-menu-delete"
-              onItemClick={() => {
-                setOpenConfirm(true);
-              }}
-            />
-          )}
-          <StyledHorizontalDividerContainer>
-            <StyledHorizontalDivider />
-          </StyledHorizontalDividerContainer>
-        </>
-      )}
+          />
+        )}
+        <StyledHorizontalDividerContainer>
+          <StyledHorizontalDivider />
+        </StyledHorizontalDividerContainer>
+      </>
 
       <div
         onClick={e => {
@@ -126,20 +148,22 @@ export const EditorOptionMenu = () => {
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
-        {pageMeta && (
-          <MoveToTrash.ConfirmModal
-            open={openConfirm}
-            meta={pageMeta}
-            onConfirm={() => {
-              removeToTrash(pageMeta.id);
-              toast(t('Moved to Trash'));
-            }}
-            onCancel={() => {
-              setOpenConfirm(false);
-            }}
-          />
-        )}
+        <MoveToTrash.ConfirmModal
+          open={openConfirm}
+          meta={pageMeta}
+          onConfirm={() => {
+            removeToTrash(pageMeta.id);
+            toast(t('Moved to Trash'));
+          }}
+          onCancel={() => {
+            setOpenConfirm(false);
+          }}
+        />
       </FlexWrapper>
     </>
   );
+};
+export const EditorOptionMenu = () => {
+  const router = useRouter();
+  return router.query.pageId ? <PageMenu /> : <CommonMenu />;
 };
