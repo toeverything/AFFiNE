@@ -39,6 +39,7 @@ export const StyledSwitchItem = styled('button')<{
     width: '24px',
     height: '24px',
     borderRadius: '8px',
+    WebkitAppRegion: 'no-drag',
     boxShadow: active ? 'var(--affine-shadow)' : 'none',
     color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
     display: hide ? 'none' : 'inline-flex',

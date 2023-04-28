@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { PrismaClient } from '@prisma/client';
+import { hash } from 'bcrypt';
 import request from 'supertest';
 
 import { AppModule } from '../app';
@@ -12,9 +14,23 @@ const gql = '/graphql';
 
 globalThis.AFFiNE = getDefaultAFFiNEConfig();
 
-// please run `ts-node-esm ./scripts/init-db.ts` before running this test
 describe('AppModule', () => {
   let app: INestApplication;
+
+  // cleanup database before each test
+  beforeEach(async () => {
+    const client = new PrismaClient();
+    await client.$connect();
+    await client.user.deleteMany({});
+    await client.user.create({
+      data: {
+        id: '1',
+        name: 'Alex Yang',
+        email: 'alex.yang@example.org',
+        password: await hash('123456', globalThis.AFFiNE.auth.salt),
+      },
+    });
+  });
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
