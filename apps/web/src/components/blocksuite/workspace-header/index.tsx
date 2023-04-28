@@ -46,8 +46,6 @@ export const WorkspaceHeader = forwardRef<
   };
 
   const popperRef: PopperProps['popperRef'] = useRef(null);
-  console.log('isTipsHidden', isTipsHidden.quickSearchTips);
-
   useElementResizeEffect(
     useAtomValue(currentEditorAtom),
     useCallback(() => {
@@ -108,11 +106,7 @@ export const WorkspaceHeader = forwardRef<
               content={TipsContent}
               placement="bottom"
               popperRef={popperRef}
-              open={
-                isTipsHidden.quickSearchTips
-                  ? !isTipsHidden.quickSearchTips
-                  : false
-              }
+              open={!isTipsHidden.quickSearchTips}
               offset={[0, -5]}
             >
               <StyledSearchArrowWrapper>

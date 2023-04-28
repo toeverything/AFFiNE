@@ -23,7 +23,7 @@ export function useGuideHiddenUntilNextUpdate() {
 const TIPS = {
   quickSearchTips: true,
   changeLog: true,
-  tourModal: true,
+  tourModal: false,
 };
 
 export function useTipsDisplayStatus() {
@@ -42,7 +42,7 @@ export function useTipsDisplayStatus() {
       hiddenUntilNextUpdate: hiddenUntilNextUpdateTips.changeLog || true,
     },
     tourModal: {
-      permanentlyHidden: permanentlyHiddenTips.tourModal || true,
+      permanentlyHidden: permanentlyHiddenTips.tourModal || false,
       hiddenUntilNextUpdate: hiddenUntilNextUpdateTips.tourModal || true,
     },
   };

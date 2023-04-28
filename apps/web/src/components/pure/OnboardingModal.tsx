@@ -1,7 +1,7 @@
 import { TourModal } from '@affine/component/tour-modal';
 import { getEnvironment } from '@affine/env';
 import { useSetAtom } from 'jotai';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 import { openOnboardingModalAtom } from '../../atoms';
 import {
@@ -36,16 +36,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
     setGuideHidden,
     setGuideHiddenUntilNextUpdate,
   ]);
-  useEffect(() => {
-    if (guideHidden.TourModal === false && !env.isDesktop) {
+  if (window !== undefined) {
+    if (guideHidden.tourModal === false && env.isDesktop) {
       setOpenOnboardingModal(true);
-      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // if (guideHiddenUntilNextUpdate.TourModal) {
-  //   return <></>;
-  // }
+  }
+  if (guideHidden.TourModal || !env.isDesktop) {
+    return <></>;
+  }
   return <TourModal open={open} onClose={onCloseTourModal} />;
 };
 
