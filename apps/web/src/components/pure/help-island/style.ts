@@ -7,17 +7,14 @@ export const StyledIsland = styled('div')<{
     transition: 'box-shadow 0.2s',
     width: '44px',
     position: 'relative',
-    boxShadow: spread
-      ? '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)'
-      : 'unset',
+    boxShadow: spread ? 'var(--affine-menu-shadow)' : 'unset',
     padding: '0 4px 44px',
     borderRadius: '10px',
     background: spread
       ? 'var(--affine-background-overlay-panel-color)'
-      : 'transparent',
+      : 'var(--affine-background-primary-color)',
     ':hover': {
-      boxShadow:
-        '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)',
+      background: spread ? null : 'var(--affine-white)',
     },
     '::after': {
       content: '""',
@@ -58,7 +55,9 @@ export const StyledAnimateWrapper = styled('div')(() => ({
   overflow: 'hidden',
 }));
 
-export const StyledTriggerWrapper = styled('div')(({ theme }) => {
+export const StyledTriggerWrapper = styled('div')<{
+  spread?: boolean;
+}>(({ theme, spread }) => {
   return {
     width: '36px',
     height: '36px',
@@ -70,6 +69,7 @@ export const StyledTriggerWrapper = styled('div')(({ theme }) => {
     ...positionAbsolute({ left: '4px', bottom: '4px' }),
     ':hover': {
       color: 'var(--affine-primary-color)',
+      backgroundColor: spread ? 'var(--affine-hover-color)' : null,
     },
   };
 });

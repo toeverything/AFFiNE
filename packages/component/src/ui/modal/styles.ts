@@ -1,4 +1,4 @@
-import ModalUnstyled from '@mui/base/ModalUnstyled';
+import ModalUnstyled from '@mui/base/Modal';
 import type { CSSProperties } from 'react';
 
 import { styled } from '../../styles';

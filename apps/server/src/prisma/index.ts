@@ -8,3 +8,4 @@ import { PrismaService } from './service';
   exports: [PrismaService],
 })
 export class PrismaModule {}
+export { PrismaService } from './service';

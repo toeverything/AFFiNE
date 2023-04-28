@@ -47,6 +47,9 @@
       "path": "./apps/web"
     },
     {
+      "path": "./apps/server"
+    },
+    {
       "path": "./packages/component"
     },
     {

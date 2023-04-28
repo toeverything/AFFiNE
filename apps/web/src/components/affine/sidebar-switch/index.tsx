@@ -1,6 +1,8 @@
 import { Tooltip } from '@affine/component';
+import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { getEnvironment } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
+import { useAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -8,7 +10,6 @@ import {
   useGuideHiddenUntilNextUpdate,
   useUpdateTipsOnVersionChange,
 } from '../../../hooks/use-is-first-load';
-import { useSidebarStatus } from '../../../hooks/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
 type SidebarSwitchProps = {
@@ -24,7 +25,7 @@ export const SidebarSwitch = ({
   ...props
 }: SidebarSwitchProps) => {
   useUpdateTipsOnVersionChange();
-  const [open, setOpen] = useSidebarStatus();
+  const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [guideHidden, setGuideHidden] = useGuideHidden();
   const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
@@ -56,9 +57,9 @@ export const SidebarSwitch = ({
         visible={visible}
         disabled={!visible}
         onClick={useCallback(() => {
-          setOpen(!open);
+          setOpen(open => !open);
           setTooltipVisible(false);
-          if (guideHiddenUntilNextUpdate['quickSearchTips'] === false) {
+          if (!guideHiddenUntilNextUpdate['quickSearchTips']) {
             setGuideHiddenUntilNextUpdate({
               ...guideHiddenUntilNextUpdate,
               quickSearchTips: true,
@@ -70,7 +71,6 @@ export const SidebarSwitch = ({
         }, [
           guideHidden,
           guideHiddenUntilNextUpdate,
-          open,
           setGuideHidden,
           setGuideHiddenUntilNextUpdate,
           setOpen,

@@ -20,13 +20,13 @@ import {
 } from '../styles';
 import { SearchContent } from './SearchContent';
 
-export type PinboardMenuProps = {
+export interface PinboardMenuProps extends PureMenuProps {
   metas: PageMeta[];
   currentMeta: PageMeta;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   showRemovePinboard?: boolean;
   onPinboardClick?: (p: { dragId: string; dropId: string }) => void;
-} & PureMenuProps;
+}
 
 export const PinboardMenu = ({
   metas: propsMetas,

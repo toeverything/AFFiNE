@@ -1,3 +1,4 @@
+/// <reference types="./global.d.ts" />
 import { Module } from '@nestjs/common';
 
 import { ConfigModule } from './config';

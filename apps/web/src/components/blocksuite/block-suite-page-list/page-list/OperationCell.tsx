@@ -24,7 +24,6 @@ import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import {
   DisablePublicSharing,
-  MoveTo,
   MoveToTrash,
 } from '../../../affine/operation-menu-items';
 
@@ -70,7 +69,13 @@ export const OperationCell: React.FC<OperationCellProps> = ({
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavoritedIcon /> : <FavoriteIcon />}
+        icon={
+          favorite ? (
+            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
+          ) : (
+            <FavoriteIcon />
+          )
+        }
       >
         {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>
@@ -83,13 +88,6 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         >
           {t('Open in new tab')}
         </MenuItem>
-      )}
-      {!pageMeta.isRootPinboard && (
-        <MoveTo
-          metas={metas}
-          currentMeta={pageMeta}
-          blockSuiteWorkspace={blockSuiteWorkspace}
-        />
       )}
       {!pageMeta.isRootPinboard && (
         <MoveToTrash
@@ -106,7 +104,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       <FlexWrapper alignItems="center" justifyContent="center">
         <Menu
           content={OperationMenu}
-          placement="bottom-end"
+          // placement="bottom-end"
           disablePortal={true}
           trigger="click"
         >
