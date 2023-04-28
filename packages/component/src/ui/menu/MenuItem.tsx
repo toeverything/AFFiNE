@@ -17,7 +17,7 @@ export type IconMenuProps = PropsWithChildren<{
   HTMLAttributes<HTMLButtonElement>;
 
 export const MenuItem = forwardRef<HTMLButtonElement, IconMenuProps>(
-  ({ endIcon, icon, iconSize, children, ...props }, ref) => {
+  ({ endIcon, icon, children, ...props }, ref) => {
     return (
       <StyledMenuItem ref={ref} {...props}>
         {icon && <StyledStartIconWrapper>{icon}</StyledStartIconWrapper>}

@@ -1,6 +1,6 @@
 import { styled } from '@affine/component';
 
-export const StyledModalWrapper = styled('div')(({ theme }) => {
+export const StyledModalWrapper = styled('div')(() => {
   return {
     position: 'relative',
     padding: '0px',
@@ -36,7 +36,7 @@ export const StyledTextContent = styled('div')(() => {
   };
 });
 
-export const StyledInputContent = styled('div')(({ theme }) => {
+export const StyledInputContent = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'row',

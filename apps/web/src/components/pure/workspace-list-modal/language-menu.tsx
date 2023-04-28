@@ -56,7 +56,7 @@ export const LanguageMenu: React.FC = () => {
   );
 };
 
-const ListItem = styled(MenuItem)(({ theme }) => ({
+const ListItem = styled(MenuItem)(() => ({
   height: '38px',
   fontSize: 'var(--affine-font-base)',
   textTransform: 'capitalize',

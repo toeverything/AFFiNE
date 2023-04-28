@@ -2,7 +2,7 @@
 import { styled } from '@affine/component';
 import { useState } from 'react';
 
-const StyledLabel = styled('label')(({ theme }) => {
+const StyledLabel = styled('label')(() => {
   return {
     display: 'flex',
     alignItems: 'center',
@@ -10,7 +10,7 @@ const StyledLabel = styled('label')(({ theme }) => {
     cursor: 'pointer',
   };
 });
-const StyledInput = styled('input')(({ theme }) => {
+const StyledInput = styled('input')(() => {
   return {
     opacity: 0,
     position: 'absolute',

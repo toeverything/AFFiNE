@@ -31,7 +31,7 @@ export type Node<RenderProps = unknown> = {
   renderBottomLine?: boolean;
 };
 
-type CommonProps<RenderProps = unknown> = {
+type CommonProps = {
   enableDnd?: boolean;
   enableKeyboardSelection?: boolean;
   indent?: CSSProperties['paddingLeft'];
@@ -51,7 +51,7 @@ export type TreeNodeProps<RenderProps = unknown> = {
   allowDrop?: boolean;
   selectedId?: string;
   draggingId?: string;
-} & CommonProps<RenderProps>;
+} & CommonProps;
 
 export type TreeNodeItemProps<RenderProps = unknown> = {
   collapsed: boolean;
@@ -64,7 +64,7 @@ export type TreeViewProps<RenderProps = unknown> = {
   data: Node<RenderProps>[];
   initialCollapsedIds?: string[];
   disableCollapse?: boolean;
-} & CommonProps<RenderProps>;
+} & CommonProps;
 
 export type NodeLIneProps<RenderProps = unknown> = {
   allowDrop: boolean;

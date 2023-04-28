@@ -1,6 +1,6 @@
 import { displayFlex, textEllipsis } from '@affine/component';
 import { styled } from '@affine/component';
-export const StyledSelectorContainer = styled('div')(({ theme }) => {
+export const StyledSelectorContainer = styled('div')(() => {
   return {
     height: '58px',
     display: 'flex',
@@ -32,7 +32,7 @@ export const StyledWorkspaceName = styled('div')(() => {
   };
 });
 
-export const StyledWorkspaceStatus = styled('div')(({ theme }) => {
+export const StyledWorkspaceStatus = styled('div')(() => {
   return {
     height: '22px',
     ...displayFlex('flex-start', 'center'),

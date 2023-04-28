@@ -6,7 +6,7 @@ import {
 } from '@affine/component';
 import { Button } from '@affine/component';
 
-export const StyledSplitLine = styled('div')(({ theme }) => {
+export const StyledSplitLine = styled('div')(() => {
   return {
     width: '1px',
     height: '20px',
@@ -15,7 +15,7 @@ export const StyledSplitLine = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
@@ -36,7 +36,7 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
+export const StyleWorkspaceTitle = styled('div')(() => {
   return {
     fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
@@ -54,7 +54,7 @@ export const StyledFooter = styled('div')({
   ...displayFlex('space-between', 'center'),
 });
 
-export const StyleUserInfo = styled('div')(({ theme }) => {
+export const StyleUserInfo = styled('div')(() => {
   return {
     textAlign: 'left',
     marginLeft: '16px',
@@ -73,14 +73,14 @@ export const StyleUserInfo = styled('div')(({ theme }) => {
 export const StyledModalHeaderLeft = styled('div')(() => {
   return { ...displayFlex('flex-start', 'center') };
 });
-export const StyledModalTitle = styled('div')(({ theme }) => {
+export const StyledModalTitle = styled('div')(() => {
   return {
     fontWeight: 600,
     fontSize: 'var(--affine-font-h6)',
   };
 });
 
-export const StyledHelperContainer = styled('div')(({ theme }) => {
+export const StyledHelperContainer = styled('div')(() => {
   return {
     color: 'var(--affine-icon-color)',
     marginLeft: '15px',
@@ -128,7 +128,7 @@ export const StyledModalHeader = styled('div')(() => {
   };
 });
 
-export const StyledSignInButton = styled(Button)(({ theme }) => {
+export const StyledSignInButton = styled(Button)(() => {
   return {
     fontWeight: 600,
     paddingLeft: 0,
