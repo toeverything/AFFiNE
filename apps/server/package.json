@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.5.4-canary.14",
+  "version": "0.5.4-canary.15",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
