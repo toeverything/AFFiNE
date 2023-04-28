@@ -1,7 +1,14 @@
+import type { BlockSuiteFeatureFlags } from '@affine/env';
+import { config } from '@affine/env';
+import { useTranslation } from '@affine/i18n';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
-import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-blocksuite-workspace-page';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -12,7 +19,6 @@ import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { usePageMeta, usePageMetaHelper } from '../../../hooks/use-page-meta';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterAndWorkspaceWithPageIdDefense } from '../../../hooks/use-router-and-workspace-with-page-id-defense';
@@ -21,15 +27,13 @@ import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspacePlugins } from '../../../plugins';
 import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 
-function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_database', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_edgeless_toolbar', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_surface', true);
-  blockSuiteWorkspace.awarenessStore.setFlag('enable_linked_page', true);
+function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
+    blockSuiteWorkspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
 }
 
 const WorkspaceDetail: React.FC = () => {
@@ -37,14 +41,16 @@ const WorkspaceDetail: React.FC = () => {
   const { openPage } = useRouterHelper(router);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
-  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace ?? null;
+  const { t } = useTranslation();
+  assertExists(currentWorkspace);
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { deletePin } = usePinboardHandler({
     blockSuiteWorkspace,
-    metas: usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null ?? null),
+    metas: useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace),
   });
 
-  useSyncRecentViewsWithRouter(router);
+  useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
 
   useReferenceLinkEffect({
     pageLinkClicked: useCallback(
@@ -76,14 +82,11 @@ const WorkspaceDetail: React.FC = () => {
 
   useEffect(() => {
     if (currentWorkspace) {
-      enableFullFlags(currentWorkspace.blockSuiteWorkspace);
+      setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     }
   }, [currentWorkspace]);
-  if (currentWorkspace === null) {
-    return <PageLoading />;
-  }
   if (!currentPageId) {
-    return <PageLoading text="Loading page." />;
+    return <PageLoading text={t('Loading Page')} />;
   }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
@@ -109,15 +112,16 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const { t } = useTranslation();
   useRouterAndWorkspaceWithPageIdDefense(router);
   const page = useBlockSuiteWorkspacePage(
     currentWorkspace.blockSuiteWorkspace,
     currentPageId
   );
   if (!router.isReady) {
-    return <PageLoading text="Router is loading" />;
+    return <PageLoading text={t('Router is Loading')} />;
   } else if (!currentPageId || !page) {
-    return <PageLoading text="Page is loading" />;
+    return <PageLoading text={t('Page is Loading')} />;
   }
   return <WorkspaceDetail />;
 };

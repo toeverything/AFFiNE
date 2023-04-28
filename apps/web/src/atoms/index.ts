@@ -7,6 +7,7 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
 
@@ -46,6 +47,21 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
     }
     return metadata;
   });
+
+  if (environment.isDesktop) {
+    window.apis.workspace.list().then(workspaceIDs => {
+      const newMetadata = workspaceIDs.map(w => ({
+        id: w,
+        flavour: WorkspaceFlavour.LOCAL,
+      }));
+      setAtom(metadata => {
+        return [
+          ...metadata,
+          ...newMetadata.filter(m => !metadata.find(m2 => m2.id === m.id)),
+        ];
+      });
+    });
+  }
 };
 
 /**

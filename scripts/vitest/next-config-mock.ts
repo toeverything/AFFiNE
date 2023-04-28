@@ -1,3 +1,8 @@
+import {
+  blockSuiteFeatureFlags,
+  buildFlags,
+} from '../../apps/web/preset.config.mjs';
+
 export default function getConfig() {
   return {
     publicRuntimeConfig: {
@@ -7,13 +12,8 @@ export default function getConfig() {
       hash: 'UNKNOWN',
       editorVersion: 'UNKNOWN',
       serverAPI: 'http://127.0.0.1:3000/',
-      enableBroadCastChannelProvider: true,
-      enableIndexedDBProvider: true,
-      enableDebugPage: true,
-      prefetchWorkspace: false,
-      exposeInternal: true,
-      enableSubpage: true,
-      enableChangeLog: true,
+      editorFlags: blockSuiteFeatureFlags,
+      ...buildFlags,
     },
   };
 }

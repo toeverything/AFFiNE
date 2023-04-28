@@ -58,8 +58,6 @@ Thumbs.db
 out/
 storybook-static
 
-module-resolve.js
-module-resolve.cjs
 /test-results/
 /playwright-report/
 /playwright/.cache/

@@ -1,8 +1,11 @@
-module.exports = {
+/**
+ * @type {import('eslint').Linter.Config}
+ */
+const config = {
   root: true,
   settings: {
     react: {
-      version: '18',
+      version: 'detect',
     },
     next: {
       rootDir: 'apps/web',
@@ -42,7 +45,14 @@ module.exports = {
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',
-    '@typescript-eslint/no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        varsIgnorePattern: '^_',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      },
+    ],
     'unused-imports/no-unused-imports': 'error',
     'simple-import-sort/imports': 'error',
     'simple-import-sort/exports': 'error',
@@ -65,4 +75,20 @@ module.exports = {
       },
     ],
   },
+  overrides: [
+    {
+      files: 'apps/server/**/*.ts',
+      rules: {
+        '@typescript-eslint/consistent-type-imports': 0,
+      },
+    },
+    {
+      files: '*.cjs',
+      rules: {
+        '@typescript-eslint/no-var-requires': 0,
+      },
+    },
+  ],
 };
+
+module.exports = config;

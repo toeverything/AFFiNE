@@ -3,8 +3,8 @@ import { PermissionType } from '@affine/workspace/affine/api';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
-import type { FC, MouseEvent } from 'react';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import type { FC } from 'react';
 import { useCallback } from 'react';
 
 import { WorkspaceAvatar } from '../workspace-avatar';
@@ -21,7 +21,7 @@ export type WorkspaceTypeProps = {
 
 import {
   CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
-  JoinedWorkspaceIcon as DefaultJoinedWorkspaceIcon,
+  CollaborationIcon as DefaultJoinedWorkspaceIcon,
   LocalDataIcon as DefaultLocalDataIcon,
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
   PublishIcon as DefaultPublishIcon,
@@ -95,12 +95,9 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
   return (
     <StyledCard
       data-testid="workspace-card"
-      onClick={useCallback(
-        (event: MouseEvent) => {
-          onClick(workspace);
-        },
-        [onClick, workspace]
-      )}
+      onClick={useCallback(() => {
+        onClick(workspace);
+      }, [onClick, workspace])}
       active={workspace.id === currentWorkspaceId}
     >
       <WorkspaceAvatar size={58} workspace={workspace} />
@@ -123,7 +120,6 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
       </StyleWorkspaceInfo>
       <StyledSettingLink
         className="setting-entry"
-        hoverBackground="#fff"
         onClick={e => {
           e.stopPropagation();
           onSettingClick(workspace);

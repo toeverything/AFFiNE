@@ -3,10 +3,12 @@ import './security-restrictions';
 import { app } from 'electron';
 import path from 'path';
 
-import { registerHandlers } from './app-state';
+import { logger } from '../../logger';
+import { registerHandlers } from './handlers';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 
+if (require('electron-squirrel-startup')) app.exit();
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient('affine', process.execPath, [
@@ -21,15 +23,16 @@ if (process.defaultApp) {
  */
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
+  logger.info('Another instance is running, exiting...');
   app.quit();
   process.exit(0);
 }
 
-app.on('second-instance', (event, argv) => {
+app.on('second-instance', () => {
   restoreOrCreateWindow();
 });
 
-app.on('open-url', async (_, url) => {
+app.on('open-url', async (_, _url) => {
   // todo: handle `affine://...` urls
 });
 

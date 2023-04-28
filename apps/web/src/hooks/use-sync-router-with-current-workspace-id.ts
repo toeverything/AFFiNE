@@ -20,6 +20,19 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
       return;
     }
     if (currentWorkspaceId) {
+      if (currentWorkspaceId !== workspaceId) {
+        const target = metadata.find(workspace => workspace.id === workspaceId);
+        if (!target) {
+          // workspaceId is invalid, redirect to currentWorkspaceId
+          void router.push({
+            pathname: router.pathname,
+            query: {
+              ...router.query,
+              workspaceId: currentWorkspaceId,
+            },
+          });
+        }
+      }
       return;
     }
     const targetWorkspace = metadata.find(
@@ -28,6 +41,9 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
     if (targetWorkspace) {
       console.log('set workspace id', workspaceId);
       setCurrentWorkspaceId(targetWorkspace.id);
+      if (environment.isDesktop) {
+        window.apis?.onWorkspaceChange(targetWorkspace.id);
+      }
       void router.push({
         pathname: '/workspace/[workspaceId]/all',
         query: {

@@ -1,3 +1,8 @@
+/**
+ * @vitest-environment happy-dom
+ */
+import 'fake-indexeddb/auto';
+
 import type { Workspace } from '@affine/workspace/affine/api';
 import {
   createWorkspaceApis,
@@ -6,6 +11,7 @@ import {
 import { KeckProvider } from '@affine/workspace/affine/keck';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { loginResponseSchema } from '@affine/workspace/affine/login';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
@@ -80,26 +86,32 @@ describe('ydoc sync', () => {
       const binary = await workspaceApis.downloadWorkspace(root.id);
       const workspace1 = createEmptyBlockSuiteWorkspace(
         root.id,
-        (k: string) => ({ api: '/api/workspace', token: user1Token.token }[k])
+        WorkspaceFlavour.AFFINE,
+        {
+          workspaceApis,
+        }
       );
       const workspace2 = createEmptyBlockSuiteWorkspace(
         root.id,
-        (k: string) => ({ api: '/api/workspace', token: user2Token.token }[k])
+        WorkspaceFlavour.AFFINE,
+        {
+          workspaceApis,
+        }
       );
       BlockSuiteWorkspace.Y.applyUpdate(workspace1.doc, new Uint8Array(binary));
       BlockSuiteWorkspace.Y.applyUpdate(workspace2.doc, new Uint8Array(binary));
       const provider1 = new KeckProvider(wsUrl, workspace1.id, workspace1.doc, {
         params: { token: user1Token.token },
-        // @ts-expect-error ignore the type
         awareness: workspace1.awarenessStore.awareness,
+        // @ts-expect-error
         disableBc: true,
         connect: false,
       });
 
       const provider2 = new KeckProvider(wsUrl, workspace2.id, workspace2.doc, {
         params: { token: user2Token.token },
-        // @ts-expect-error ignore the type
         awareness: workspace2.awarenessStore.awareness,
+        // @ts-expect-error
         disableBc: true,
         connect: false,
       });
@@ -159,6 +171,7 @@ describe('ydoc sync', () => {
     },
     {
       timeout: 30000,
+      retry: 3,
     }
   );
 });

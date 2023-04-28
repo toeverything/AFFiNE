@@ -178,7 +178,7 @@
   "Owner": "所有者",
   "Published to Web": "公开到互联网",
   "Data sync mode": "数据同步模式",
-  "Export AFFiNE backup file": "导出 AFFiNE 备份文件（即将到来）",
+  "Export AFFiNE backup file": "导出 AFFiNE 备份文件",
   "Export Description": "您可以导出整个工作区数据进行备份，导出的数据可以重新被导入。",
   "It takes up little space on your device": {
     "": "此操作会在你的设备上占用少许空间。"

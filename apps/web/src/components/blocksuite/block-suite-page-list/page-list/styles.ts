@@ -12,7 +12,7 @@ export const StyledTableContainer = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledTitleWrapper = styled('div')(({ theme }) => {
+export const StyledTitleWrapper = styled('div')(() => {
   return {
     ...displayFlex('flex-start', 'center'),
     a: {
@@ -22,20 +22,20 @@ export const StyledTitleWrapper = styled('div')(({ theme }) => {
       color: 'unset',
     },
     'a:hover': {
-      color: theme.colors.primaryColor,
+      color: 'var(--affine-primary-color)',
     },
   };
 });
-export const StyledTitleLink = styled('div')(({ theme }) => {
+export const StyledTitleLink = styled('div')(() => {
   return {
     maxWidth: '80%',
     marginRight: '18px',
     ...displayFlex('flex-start', 'center'),
-    color: theme.colors.textColor,
+    color: 'var(--affine-text-primary-color)',
     '>svg': {
       fontSize: '24px',
       marginRight: '12px',
-      color: theme.colors.iconColor,
+      color: 'var(--affine-icon-color)',
     },
   };
 });

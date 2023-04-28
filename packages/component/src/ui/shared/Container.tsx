@@ -43,9 +43,12 @@ export const placementToContainerDirection: Record<
 
 export const StyledPopperContainer = styled('div')<{
   placement?: PopperPlacementType;
-}>(({ theme, placement = 'top' }) => {
+}>(({ placement = 'top' }) => {
   const direction = placementToContainerDirection[placement];
-  const borderRadius = getBorderRadius(direction, theme.radius.popover);
+  const borderRadius = getBorderRadius(
+    direction,
+    'var(--affine-popover-radius)'
+  );
   return {
     borderRadius,
   };

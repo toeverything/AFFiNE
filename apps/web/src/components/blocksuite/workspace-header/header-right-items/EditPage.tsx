@@ -26,10 +26,10 @@ export default EditPage;
 const StyledEditPageButton = styled(
   TextButton,
   {}
-)(({ theme }) => {
+)(() => {
   return {
-    border: `1px solid ${theme.colors.primaryColor}`,
-    color: theme.colors.primaryColor,
+    border: '1px solid var(--affine-primary-color)',
+    color: 'var(--affine-primary-color)',
     width: '100%',
     borderRadius: '8px',
     whiteSpace: 'nowrap',

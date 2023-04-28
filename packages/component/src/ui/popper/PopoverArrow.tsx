@@ -73,7 +73,7 @@ const getArrowStyle = (
 
 const StyledArrow = styled('span')<{
   placement?: PopperArrowProps['placement'];
-}>(({ placement, theme }) => {
+}>(({ placement }) => {
   return {
     position: 'absolute',
     fontSize: '7px',
@@ -92,6 +92,6 @@ const StyledArrow = styled('span')<{
       bottom: 0,
     },
 
-    ...getArrowStyle(placement, theme.colors.tooltipBackground),
+    ...getArrowStyle(placement, 'var(--affine-tooltip)'),
   };
 });

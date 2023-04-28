@@ -17,16 +17,16 @@ import {
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme } from '@mui/material';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useMemo } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
-import {
-  usePageMeta,
-  usePageMetaHelper,
-} from '../../../../hooks/use-page-meta';
+import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import DateCell from './DateCell';
@@ -47,7 +47,6 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
   pageMeta: { favorite },
   onClick,
 }) => {
-  const theme = useTheme();
   const { t } = useTranslation();
   return (
     <Tooltip
@@ -64,7 +63,9 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
           );
         }}
         style={{
-          color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
+          color: favorite
+            ? 'var(--affine-primary-color)'
+            : 'var(--affine-icon-color)',
         }}
         className={favorite ? '' : 'favorite-button'}
       >
@@ -101,10 +102,10 @@ export const PageList: React.FC<PageListProps> = ({
   listType,
   onClickPage,
 }) => {
-  const pageList = usePageMeta(blockSuiteWorkspace);
+  const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   const helper = usePageMetaHelper(blockSuiteWorkspace);
   const { removeToTrash, restoreFromTrash } =
-    useMetaHelper(blockSuiteWorkspace);
+    useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));

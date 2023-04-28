@@ -4,22 +4,23 @@ import spring, { toString } from 'css-spring';
 
 const ANIMATE_DURATION = 400;
 
-export const StyledThemeModeSwitch = styled('button')(({ theme }) => {
+export const StyledThemeModeSwitch = styled('button')(() => {
   return {
     width: '32px',
     height: '32px',
     borderRadius: '6px',
     overflow: 'hidden',
+    WebkitAppRegion: 'no-drag',
     backgroundColor: 'transparent',
     position: 'relative',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     fontSize: '24px',
   };
 });
 export const StyledSwitchItem = styled('div')<{
   active: boolean;
   isHover: boolean;
-}>(({ active, isHover, theme }) => {
+}>(({ active, isHover }) => {
   const activeRaiseAnimate = toString(
     spring({ top: '0' }, { top: '-100%' }, { preset: 'gentle' })
   );
@@ -35,7 +36,7 @@ export const StyledSwitchItem = styled('div')<{
 
   const activeStyle = active
     ? {
-        color: theme.colors.iconColor,
+        color: 'var(--affine-icon-color)',
         top: '0',
         animation: css`
           ${keyframes`${
@@ -46,8 +47,8 @@ export const StyledSwitchItem = styled('div')<{
       }
     : {
         top: '100%',
-        color: theme.colors.primaryColor,
-        backgroundColor: theme.colors.hoverBackground,
+        color: 'var(--affine-primary-color)',
+        backgroundColor: 'var(--affine-hover-color)',
         animation: css`
           ${keyframes`${
             isHover ? raiseAnimate : declineAnimate

@@ -31,7 +31,6 @@ export const Content = styled('div', {
   },
 })<ContentProps>(
   ({
-    theme,
     color,
     fontSize,
     weight,
@@ -47,8 +46,8 @@ export const Content = styled('div', {
       maxWidth,
       textAlign: align,
       display: 'inline-block',
-      color: color ?? theme.colors.textColor,
-      fontSize: fontSize ?? theme.font.base,
+      color: color ?? 'var(--affine-text-primary-color)',
+      fontSize: fontSize ?? 'var(--affine-font-base)',
       fontWeight: weight ?? 400,
       lineHeight: lineHeight ?? 1.5,
       ...(ellipsis ? textEllipsis(lineNum) : {}),

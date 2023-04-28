@@ -1,12 +1,12 @@
 import { displayFlex, styled } from '@affine/component';
 
-export const StyledShortcutsModal = styled('div')(({ theme }) => ({
+export const StyledShortcutsModal = styled('div')(() => ({
   width: '288px',
   height: '74vh',
   paddingBottom: '28px',
-  backgroundColor: theme.colors.popoverBackground,
-  boxShadow: theme.shadow.popover,
-  borderRadius: `${theme.radius.popover} 0 ${theme.radius.popover} ${theme.radius.popover}`,
+  backgroundColor: 'var(--affine-white)',
+  boxShadow: 'var(--affine-popover-shadow)',
+  borderRadius: `var(--affine-popover-radius)`,
   overflow: 'auto',
   boxRadius: '10px',
   position: 'fixed',
@@ -14,23 +14,23 @@ export const StyledShortcutsModal = styled('div')(({ theme }) => ({
   top: '0',
   bottom: '0',
   margin: 'auto',
-  zIndex: theme.zIndex.modal,
+  zIndex: 'var(--affine-z-index-modal)',
 }));
-export const StyledTitle = styled('div')(({ theme }) => ({
-  color: theme.colors.textColor,
+export const StyledTitle = styled('div')(() => ({
+  color: 'var(--affine-text-primary-color)',
   fontWeight: '500',
-  fontSize: theme.font.sm,
+  fontSize: 'var(--affine-font-sm)',
   height: '44px',
   ...displayFlex('center', 'center'),
   svg: {
     width: '20px',
     marginRight: '14px',
-    color: theme.colors.primaryColor,
+    color: 'var(--affine-primary-color)',
   },
 }));
-export const StyledSubTitle = styled('div')(({ theme }) => ({
+export const StyledSubTitle = styled('div')(() => ({
   fontWeight: '500',
-  fontSize: theme.font.sm,
+  fontSize: 'var(--affine-font-sm)',
   height: '34px',
   lineHeight: '36px',
   marginTop: '28px',
@@ -49,9 +49,9 @@ export const StyledModalHeader = styled('div')(() => ({
   transition: 'background-color 0.5s',
 }));
 
-export const StyledListItem = styled('div')(({ theme }) => ({
+export const StyledListItem = styled('div')(() => ({
   height: '34px',
   ...displayFlex('space-between', 'center'),
-  fontSize: theme.font.sm,
+  fontSize: 'var(--affine-font-sm)',
   padding: '0 16px',
 }));

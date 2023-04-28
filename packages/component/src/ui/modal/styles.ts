@@ -1,10 +1,10 @@
-import ModalUnstyled from '@mui/base/ModalUnstyled';
+import ModalUnstyled from '@mui/base/Modal';
 import type { CSSProperties } from 'react';
 
 import { styled } from '../../styles';
 import { Wrapper } from '../layout';
 
-export const StyledBackdrop = styled('div')(({ theme }) => {
+export const StyledBackdrop = styled('div')(() => {
   return {
     zIndex: '-1',
     position: 'fixed',
@@ -12,7 +12,7 @@ export const StyledBackdrop = styled('div')(({ theme }) => {
     bottom: '0',
     top: '0',
     left: '0',
-    backgroundColor: theme.colors.modalBackground,
+    backgroundColor: 'var(--affine-background-modal-color)',
   };
 });
 
@@ -23,7 +23,7 @@ export const StyledModal = styled(ModalUnstyled, {
 })<{
   alignItems: CSSProperties['alignItems'];
   justifyContent: CSSProperties['justifyContent'];
-}>(({ theme, alignItems, justifyContent }) => {
+}>(({ alignItems, justifyContent }) => {
   return {
     width: '100vw',
     height: '100vh',
@@ -33,7 +33,8 @@ export const StyledModal = styled(ModalUnstyled, {
     position: 'fixed',
     left: '0',
     top: '0',
-    zIndex: theme.zIndex.modal,
+    zIndex: 'var(--affine-z-index-modal)',
+    WebkitAppRegion: 'no-drag',
     '*': {
       WebkitTapHighlightColor: 'transparent',
       outline: 'none',

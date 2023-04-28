@@ -32,6 +32,11 @@ export interface BroadCastChannelProvider extends BaseProvider {
 
 export interface LocalIndexedDBProvider extends BackgroundProvider {
   flavour: 'local-indexeddb';
+  whenSynced: Promise<void>;
+}
+
+export interface SQLiteProvider extends BaseProvider {
+  flavour: 'sqlite';
 }
 
 export interface AffineWebSocketProvider extends BaseProvider {
@@ -126,15 +131,10 @@ type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
     currentPageId: string;
   };
 
-type PageListProps<Flavour extends keyof WorkspaceRegistry> = {
+type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
 };
-
-type SideBarMenuProps<Flavour extends keyof WorkspaceRegistry> =
-  UIBaseProps<Flavour> & {
-    setSideBarOpen: (open: boolean) => void;
-  };
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   PageDetail: FC<PageDetailProps<Flavour>>;

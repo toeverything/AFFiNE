@@ -14,7 +14,7 @@
   "license": "MIT",
   "devDependencies": {
     "@napi-rs/cli": "^2.15.2",
-    "@types/node": "^18.15.11"
+    "@types/node": "^18.16.2"
   },
   "engines": {
     "node": ">= 10"
@@ -25,5 +25,6 @@
     "build:debug": "napi build --platform",
     "universal": "napi universal",
     "version": "napi version"
-  }
+  },
+  "version": "0.5.4-canary.16"
 }

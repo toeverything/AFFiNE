@@ -7,44 +7,43 @@ import {
 
 export const StyledHeaderContainer = styled('div')<{
   hasWarning: boolean;
-  sidebarFloating: boolean;
-}>(({ theme, hasWarning, sidebarFloating }) => {
+}>(({ hasWarning }) => {
   return {
     height: hasWarning ? '96px' : '52px',
     flexShrink: 0,
     position: 'sticky',
     top: 0,
-    background: theme.colors.pageBackground,
+    background: 'var(--affine-background-primary-color)',
+    WebkitAppRegion: 'drag',
     zIndex: 1,
-    WebkitAppRegion: sidebarFloating ? '' : 'drag',
-    button: {
-      WebkitAppRegion: 'no-drag',
+    '@media (max-width: 768px)': {
+      '&[data-open="true"]': {
+        WebkitAppRegion: 'no-drag',
+      },
     },
   };
 });
-export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
-  ({ theme }) => {
-    return {
-      flexShrink: 0,
-      height: '52px',
-      width: '100%',
-      padding: '0 20px',
-      ...displayFlex('space-between', 'center'),
-      background: theme.colors.pageBackground,
-      zIndex: 99,
-      position: 'relative',
-    };
-  }
-);
+export const StyledHeader = styled('div')<{ hasWarning: boolean }>(() => {
+  return {
+    flexShrink: 0,
+    height: '52px',
+    width: '100%',
+    padding: '0 20px',
+    ...displayFlex('space-between', 'center'),
+    background: 'var(--affine-background-primary-color)',
+    zIndex: 99,
+    position: 'relative',
+  };
+});
 
-export const StyledTitleContainer = styled('div')(({ theme }) => ({
+export const StyledTitleContainer = styled('div')(() => ({
   width: '100%',
   height: '100%',
 
   margin: 'auto',
   ...absoluteCenter({ horizontal: true, position: { top: 0 } }),
   ...displayFlex('center', 'center'),
-  fontSize: theme.font.base,
+  fontSize: 'var(--affine-font-base)',
 }));
 
 export const StyledTitle = styled('div')(({ theme }) => {
@@ -81,12 +80,12 @@ export const StyledHeaderRightSide = styled('div')({
 });
 
 export const StyledBrowserWarning = styled('div')<{ show: boolean }>(
-  ({ theme, show }) => {
+  ({ show }) => {
     return {
-      backgroundColor: theme.colors.warningBackground,
-      color: theme.colors.warningColor,
+      backgroundColor: 'var(--affine-background-warning-color)',
+      color: 'var(--affine-background-warning-color)',
       height: '36px',
-      fontSize: theme.font.sm,
+      fontSize: 'var(--affine-font-sm)',
       display: show ? 'flex' : 'none',
       justifyContent: 'center',
       alignItems: 'center',
@@ -94,11 +93,11 @@ export const StyledBrowserWarning = styled('div')<{ show: boolean }>(
   }
 );
 
-export const StyledCloseButton = styled('div')(({ theme }) => {
+export const StyledCloseButton = styled('div')(() => {
   return {
     width: '36px',
     height: '36px',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     cursor: 'pointer',
     ...displayFlex('center', 'center'),
     position: 'absolute',
@@ -136,10 +135,10 @@ export const StyledSearchArrowWrapper = styled('div')(() => {
   };
 });
 
-export const StyledPageListTittleWrapper = styled(StyledTitle)(({ theme }) => {
+export const StyledPageListTittleWrapper = styled(StyledTitle)(() => {
   return {
-    fontSize: theme.font.base,
-    color: theme.colors.textColor,
+    fontSize: 'var(--affine-font-base)',
+    color: 'var(--affine-text-primary-color)',
     ...displayFlex('center', 'center'),
     '>svg': {
       fontSize: '20px',
@@ -147,16 +146,16 @@ export const StyledPageListTittleWrapper = styled(StyledTitle)(({ theme }) => {
     },
   };
 });
-export const StyledQuickSearchTipButton = styled('div')(({ theme }) => {
+export const StyledQuickSearchTipButton = styled('div')(() => {
   return {
     ...displayFlex('center', 'center'),
     marginTop: '12px',
     color: '#FFFFFF',
     width: '48px',
     height: ' 26px',
-    fontSize: theme.font.sm,
+    fontSize: 'var(--affine-font-sm)',
     lineHeight: '22px',
-    background: theme.colors.primaryColor,
+    background: 'var(--affine-primary-color)',
     borderRadius: '8px',
     textAlign: 'center',
     cursor: 'pointer',

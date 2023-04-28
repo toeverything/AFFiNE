@@ -12,7 +12,6 @@ export const PureMenu = ({
   children,
   placement,
   width,
-  height,
   ...otherProps
 }: PureMenuProps) => {
   return (

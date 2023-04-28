@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, Ref } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type DropPosition = {
   topLine: boolean;
@@ -31,7 +31,7 @@ export type Node<RenderProps = unknown> = {
   renderBottomLine?: boolean;
 };
 
-type CommonProps<RenderProps = unknown> = {
+type CommonProps = {
   enableDnd?: boolean;
   enableKeyboardSelection?: boolean;
   indent?: CSSProperties['paddingLeft'];
@@ -50,27 +50,23 @@ export type TreeNodeProps<RenderProps = unknown> = {
   setCollapsed: (id: string, collapsed: boolean) => void;
   allowDrop?: boolean;
   selectedId?: string;
-  isDragging?: boolean;
-  dragRef?: Ref<HTMLDivElement>;
-} & CommonProps<RenderProps>;
+  draggingId?: string;
+} & CommonProps;
 
 export type TreeNodeItemProps<RenderProps = unknown> = {
   collapsed: boolean;
   setCollapsed: (id: string, collapsed: boolean) => void;
 
   isOver?: boolean;
-  canDrop?: boolean;
-
-  dropRef?: Ref<HTMLDivElement>;
 } & TreeNodeProps<RenderProps>;
 
 export type TreeViewProps<RenderProps = unknown> = {
   data: Node<RenderProps>[];
   initialCollapsedIds?: string[];
   disableCollapse?: boolean;
-} & CommonProps<RenderProps>;
+} & CommonProps;
 
 export type NodeLIneProps<RenderProps = unknown> = {
   allowDrop: boolean;
   isTop?: boolean;
-} & Pick<TreeNodeProps<RenderProps>, 'node' | 'onDrop'>;
+} & Pick<TreeNodeProps<RenderProps>, 'node'>;

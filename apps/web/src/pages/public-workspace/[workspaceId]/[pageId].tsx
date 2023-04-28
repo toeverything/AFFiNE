@@ -3,8 +3,8 @@ import { initPage } from '@affine/env/blocksuite';
 import { useTranslation } from '@affine/i18n';
 import { PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useAtom, useAtomValue } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -27,29 +27,29 @@ import {
 } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
 
-export const NavContainer = styled('div')(({ theme }) => {
+export const NavContainer = styled('div')(() => {
   return {
     width: '100vw',
     height: '52px',
     ...displayFlex('space-between', 'center'),
-    backgroundColor: theme.colors.pageBackground,
+    backgroundColor: 'var(--affine-background-primary-color)',
   };
 });
 
-export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
+export const StyledBreadcrumbs = styled(Link)(() => {
   return {
     flex: 1,
     ...displayFlex('center', 'center'),
     paddingLeft: '12px',
     span: {
       padding: '0 12px',
-      fontSize: theme.font.base,
-      lineHeight: theme.font.lineHeight,
+      fontSize: 'var(--affine-font-base)',
+      lineHeight: 'var(--affine-line-height)',
     },
-    ':hover': { color: theme.colors.primaryColor },
+    ':hover': { color: 'var(--affine-primary-color)' },
     transition: 'all .15s',
     ':visited': {
-      ':hover': { color: theme.colors.primaryColor },
+      ':hover': { color: 'var(--affine-primary-color)' },
     },
   };
 });

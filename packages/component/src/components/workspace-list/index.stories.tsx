@@ -18,19 +18,28 @@ export const Default = () => {
       {
         id: '1',
         flavour: WorkspaceFlavour.LOCAL,
-        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace('1'),
+        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+          '1',
+          WorkspaceFlavour.LOCAL
+        ),
         providers: [],
       },
       {
         id: '2',
         flavour: WorkspaceFlavour.LOCAL,
-        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace('2'),
+        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+          '2',
+          WorkspaceFlavour.LOCAL
+        ),
         providers: [],
       },
       {
         id: '3',
         flavour: WorkspaceFlavour.LOCAL,
-        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace('3'),
+        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+          '3',
+          WorkspaceFlavour.LOCAL
+        ),
         providers: [],
       },
     ] satisfies WorkspaceListProps['items'];

@@ -6,22 +6,22 @@ import {
 } from '@affine/component';
 import { Button } from '@affine/component';
 
-export const StyledSplitLine = styled('div')(({ theme }) => {
+export const StyledSplitLine = styled('div')(() => {
   return {
     width: '1px',
     height: '20px',
-    background: theme.colors.borderColor,
+    background: 'var(--affine-border-color)',
     marginRight: '24px',
   };
 });
 
-export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
     p: {
       height: '20px',
-      fontSize: theme.font.sm,
+      fontSize: 'var(--affine-font-sm)',
       ...displayFlex('flex-start', 'center'),
     },
     svg: {
@@ -36,40 +36,14 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
+export const StyleWorkspaceTitle = styled('div')(() => {
   return {
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
     lineHeight: '24px',
     marginBottom: '10px',
     maxWidth: '200px',
     ...textEllipsis(1),
-  };
-});
-
-export const StyledCard = styled('div')<{
-  active?: boolean;
-}>(({ theme, active }) => {
-  const borderColor = active ? theme.colors.primaryColor : 'transparent';
-  return {
-    width: '310px',
-    height: '124px',
-    cursor: 'pointer',
-    padding: '16px',
-    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
-    borderRadius: '12px',
-    border: `1px solid ${borderColor}`,
-    ...displayFlex('flex-start', 'flex-start'),
-    marginBottom: '24px',
-    transition: 'background .2s',
-    background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
-    ':hover': {
-      background: theme.colors.cardHoverBackground,
-      '.add-icon': {
-        borderColor: theme.colors.primaryColor,
-        color: theme.colors.primaryColor,
-      },
-    },
   };
 });
 
@@ -80,17 +54,17 @@ export const StyledFooter = styled('div')({
   ...displayFlex('space-between', 'center'),
 });
 
-export const StyleUserInfo = styled('div')(({ theme }) => {
+export const StyleUserInfo = styled('div')(() => {
   return {
     textAlign: 'left',
     marginLeft: '16px',
     flex: 1,
     p: {
       lineHeight: '24px',
-      color: theme.colors.iconColor,
+      color: 'var(--affine-icon-color)',
     },
     'p:first-of-type': {
-      color: theme.colors.textColor,
+      color: 'var(--affine-text-primary-color)',
       fontWeight: 600,
     },
   };
@@ -99,19 +73,19 @@ export const StyleUserInfo = styled('div')(({ theme }) => {
 export const StyledModalHeaderLeft = styled('div')(() => {
   return { ...displayFlex('flex-start', 'center') };
 });
-export const StyledModalTitle = styled('div')(({ theme }) => {
+export const StyledModalTitle = styled('div')(() => {
   return {
     fontWeight: 600,
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
   };
 });
 
-export const StyledHelperContainer = styled('div')(({ theme }) => {
+export const StyledHelperContainer = styled('div')(() => {
   return {
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     marginLeft: '15px',
     fontWeight: 400,
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
     ...displayFlex('center', 'center'),
   };
 });
@@ -154,7 +128,7 @@ export const StyledModalHeader = styled('div')(() => {
   };
 });
 
-export const StyledSignInButton = styled(Button)(({ theme }) => {
+export const StyledSignInButton = styled(Button)(() => {
   return {
     fontWeight: 600,
     paddingLeft: 0,
@@ -162,8 +136,8 @@ export const StyledSignInButton = styled(Button)(({ theme }) => {
       width: '40px',
       height: '40px',
       borderRadius: '20px',
-      backgroundColor: theme.colors.hoverBackground,
-      color: theme.colors.primaryColor,
+      backgroundColor: 'var(--affine-hover-color)',
+      color: 'var(--affine-primary-color)',
       fontSize: '24px',
       flexShrink: 0,
       marginRight: '16px',

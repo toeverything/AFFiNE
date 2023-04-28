@@ -1,13 +1,15 @@
 import { Tooltip } from '@affine/component';
+import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
+import { getEnvironment } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
-import { useCallback, useState } from 'react';
+import { useAtom } from 'jotai';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
   useUpdateTipsOnVersionChange,
 } from '../../../hooks/use-is-first-load';
-import { useSidebarStatus } from '../../../hooks/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
 type SidebarSwitchProps = {
@@ -23,18 +25,29 @@ export const SidebarSwitch = ({
   ...props
 }: SidebarSwitchProps) => {
   useUpdateTipsOnVersionChange();
-  const [open, setOpen] = useSidebarStatus();
+  const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [guideHidden, setGuideHidden] = useGuideHidden();
   const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
     useGuideHiddenUntilNextUpdate();
   const { t } = useTranslation();
+  const checkIsMac = () => {
+    const env = getEnvironment();
+    return env.isBrowser && env.isMacOs;
+  };
+  const [isMac, setIsMac] = useState(false);
+  const collapseKeyboardShortcuts = isMac ? ' ⌘+/' : ' Ctrl+/';
+
+  useEffect(() => {
+    setIsMac(checkIsMac());
+  }, []);
+
   tooltipContent =
     tooltipContent || (open ? t('Collapse sidebar') : t('Expand sidebar'));
 
   return (
     <Tooltip
-      content={tooltipContent}
+      content={tooltipContent + ' ' + collapseKeyboardShortcuts}
       placement="right"
       zIndex={1000}
       visible={tooltipVisible}
@@ -44,9 +57,9 @@ export const SidebarSwitch = ({
         visible={visible}
         disabled={!visible}
         onClick={useCallback(() => {
-          setOpen(!open);
+          setOpen(open => !open);
           setTooltipVisible(false);
-          if (guideHiddenUntilNextUpdate['quickSearchTips'] === false) {
+          if (!guideHiddenUntilNextUpdate['quickSearchTips']) {
             setGuideHiddenUntilNextUpdate({
               ...guideHiddenUntilNextUpdate,
               quickSearchTips: true,
@@ -58,7 +71,6 @@ export const SidebarSwitch = ({
         }, [
           guideHidden,
           guideHiddenUntilNextUpdate,
-          open,
           setGuideHidden,
           setGuideHiddenUntilNextUpdate,
           setOpen,

@@ -15,10 +15,10 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       fileName: 'index',
-      name: 'BlockSuiteIndexedDBProvider',
+      name: 'ToEverythingIndexedDBProvider',
     },
     rollupOptions: {
-      external: ['idb', '@blocksuite/store'],
+      external: ['idb', 'yjs'],
     },
   },
   plugins: [dts()],

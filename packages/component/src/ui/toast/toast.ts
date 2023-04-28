@@ -75,9 +75,9 @@ export const toast = (
     font-size: var(--affine-font-sm);
     padding: 6px 12px;
     margin: 10px 0 0 0;
-    color: var(--affine-tooltip-color);
-    background: var(--affine-tooltip-background);
-    box-shadow: var(--affine-tooltip-shadow);
+    color: var(--affine-white);
+    background: var(--affine-tooltip);
+    box-shadow: var(--affine-float-button-shadow);
     border-radius: 10px;
     transition: all 230ms cubic-bezier(0.21, 1.02, 0.73, 1);
     opacity: 0;

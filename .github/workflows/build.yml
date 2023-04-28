@@ -1,6 +1,9 @@
 name: Build & Test
 
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
       - master
@@ -16,18 +19,6 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - run: yarn lint --max-warnings=0
-
-  install-all:
-    name: Install All Dependencies
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install All Dependencies
-        uses: ./.github/actions/setup-node
-        with:
-          electron-workspace-install: true
 
   build-storybook:
     name: Build Storybook
@@ -45,6 +36,23 @@ jobs:
           name: storybook
           path: ./packages/component/storybook-static
           if-no-files-found: error
+
+  build-electron:
+    name: Build @affine/electron
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build Electron
+        working-directory: apps/electron
+        run: yarn exec ts-node-esm ./scripts/build-ci.mts
+      - name: Upload Ubuntu desktop artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-ubuntu
+          path: ./apps/electron/dist
 
   build:
     name: Build @affine/web
@@ -75,6 +83,7 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: local
           ENABLE_DEBUG_PAGE: true
+          ENABLE_LEGACY_PROVIDER: true
           COVERAGE: true
 
       - name: Upload artifact
@@ -83,6 +92,85 @@ jobs:
           name: next-js
           path: ./apps/web/.next
           if-no-files-found: error
+
+      - name: Build @affine/web for desktop
+        run: yarn build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          API_SERVER_PROFILE: affine
+          ENABLE_DEBUG_PAGE: true
+          ENABLE_LEGACY_PROVIDER: false
+          COVERAGE: true
+
+      - name: Export static resources
+        run: yarn export
+        working-directory: apps/web
+
+      - name: Upload static resources artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: next-js-static
+          path: ./apps/web/out
+          if-no-files-found: error
+
+  server-test:
+    name: Server Test
+    runs-on: ubuntu-latest
+    environment: development
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Initialize database
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE affine;"
+          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+          psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
+        env:
+          PGPASSWORD: affine
+      - name: Generate prisma client
+        run: |
+          yarn exec prisma generate
+          yarn exec prisma db push
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Run init-db script
+        run: yarn exec ts-node-esm ./scripts/init-db.ts
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Run server tests
+        run: yarn test:coverage
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./apps/server/.coverage/lcov.info
+          flags: server-test
+          name: affine
+          fail_ci_if_error: true
 
   storybook-test:
     name: Storybook Test
@@ -170,6 +258,41 @@ jobs:
           flags: e2etest
           name: affine
           fail_ci_if_error: true
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results-e2e-${{ matrix.shard }}
+          path: ./test-results
+          if-no-files-found: ignore
+
+  dekstop-test:
+    name: Desktop Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: [build, build-electron]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+      - name: Download Ubuntu desktop artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-ubuntu
+          path: ./apps/electron/dist
+
+      - name: Download static resource artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: next-js-static
+          path: ./apps/electron/resources/web-static
+
+      - name: Run desktop tests
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
+        working-directory: apps/electron
 
       - name: Upload test results
         if: ${{ failure() }}

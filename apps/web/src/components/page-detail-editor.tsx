@@ -3,14 +3,14 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-blocksuite-workspace-page-title';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type React from 'react';
 import { startTransition, useCallback, useEffect } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
-import { usePageMeta } from '../hooks/use-page-meta';
 import type { AffineOfficialWorkspace } from '../shared';
 import { toast } from '../utils';
 import { PageNotFoundError } from './affine/affine-error-eoundary';
@@ -42,7 +42,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
     throw new PageNotFoundError(blockSuiteWorkspace, pageId);
   }
   const title = useBlockSuiteWorkspacePageTitle(blockSuiteWorkspace, pageId);
-  const meta = usePageMeta(blockSuiteWorkspace).find(
+  const meta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   const currentMode =

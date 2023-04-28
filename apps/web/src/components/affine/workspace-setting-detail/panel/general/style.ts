@@ -1,20 +1,20 @@
 import { displayFlex, styled } from '@affine/component';
 import { Input } from '@affine/component';
 
-export const StyledInput = styled(Input)(({ theme }) => {
+export const StyledInput = styled(Input)(() => {
   return {
-    border: `1px solid ${theme.colors.borderColor}`,
+    border: '1px solid var(--affine-border-color)',
     borderRadius: '10px',
-    fontSize: theme.font.sm,
+    fontSize: 'var(--affine-font-sm)',
   };
 });
 
-export const StyledWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyledWorkspaceInfo = styled('div')(() => {
   return {
     ...displayFlex('flex-start', 'center'),
     fontSize: '20px',
     span: {
-      fontSize: theme.font.base,
+      fontSize: 'var(--affine-font-base)',
       marginLeft: '15px',
     },
   };
@@ -42,14 +42,15 @@ export const StyledAvatar = styled('div')(
         backgroundColor: 'rgba(60, 61, 63, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 10,
       },
     };
   }
 );
 
-export const StyledEditButton = styled('div')(({ theme }) => {
+export const StyledEditButton = styled('div')(() => {
   return {
-    color: theme.colors.primaryColor,
+    color: 'var(--affine-primary-color)',
     cursor: 'pointer',
     marginLeft: '36px',
   };

@@ -1,41 +1,50 @@
-import type { BlobStorage } from '@blocksuite/store';
-import { useEffect, useState } from 'react';
+import type { BlobManager } from '@blocksuite/store';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
 
 export function useWorkspaceBlob(
   blockSuiteWorkspace: BlockSuiteWorkspace
-): BlobStorage | null {
-  const [blobStorage, setBlobStorage] = useState<BlobStorage | null>(null);
-  useEffect(() => {
-    blockSuiteWorkspace.blobs.then(blobStorage => {
-      setBlobStorage(blobStorage);
-    });
-  }, [blockSuiteWorkspace]);
-  return blobStorage;
+): BlobManager {
+  return useMemo(() => blockSuiteWorkspace.blobs, [blockSuiteWorkspace.blobs]);
 }
 
 export function useWorkspaceBlobImage(
   key: string | null,
   blockSuiteWorkspace: BlockSuiteWorkspace
 ) {
-  const blobStorage = useWorkspaceBlob(blockSuiteWorkspace);
-  const [imageURL, setImageURL] = useState<string | null>(null);
+  const blobManager = useWorkspaceBlob(blockSuiteWorkspace);
+  const [blob, setBlob] = useState<Blob | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     if (key === null) {
-      setImageURL(null);
+      setBlob(null);
       return;
     }
-    blobStorage?.get(key).then(blob => {
+    blobManager?.get(key).then(blob => {
       if (controller.signal.aborted) {
         return;
       }
-      setImageURL(blob);
+      if (blob) {
+        setBlob(blob);
+      }
     });
     return () => {
       controller.abort();
     };
-  }, [blobStorage, key]);
-  return imageURL;
+  }, [blobManager, key]);
+  const [url, setUrl] = useState<string | null>(null);
+  const ref = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      URL.revokeObjectURL(ref.current);
+    }
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      setUrl(url);
+      ref.current = url;
+    }
+  }, [blob]);
+  return url;
 }

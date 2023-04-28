@@ -1,4 +1,5 @@
 import MuiCollapse from '@mui/material/Collapse';
+import { lightTheme } from '@toeverything/theme';
 import type { CSSProperties } from 'react';
 
 import { alpha, styled } from '../../styles';
@@ -16,28 +17,28 @@ export const StyledTreeNodeWrapper = styled('div')(() => {
   };
 });
 export const StyledTreeNodeContainer = styled('div')<{ isDragging?: boolean }>(
-  ({ isDragging = false, theme }) => {
+  ({ isDragging = false }) => {
     return {
-      background: isDragging ? theme.colors.hoverBackground : '',
-      // opacity: isDragging ? 0.4 : 1,
+      background: isDragging ? 'var(--affine-hover-color)' : '',
     };
   }
 );
 
-export const StyledNodeLine = styled('div')<{ show: boolean; isTop?: boolean }>(
-  ({ show, isTop = false, theme }) => {
-    return {
-      position: 'absolute',
-      left: '0',
-      ...(isTop ? { top: '-1px' } : { bottom: '-1px' }),
-      width: '100%',
-      paddingTop: '2x',
-      borderTop: '2px solid',
-      borderColor: show ? theme.colors.primaryColor : 'transparent',
-      boxShadow: show
-        ? `0px 0px 8px ${alpha(theme.colors.primaryColor, 0.35)}`
-        : 'none',
-      zIndex: 1,
-    };
-  }
-);
+export const StyledNodeLine = styled('div')<{
+  isOver: boolean;
+  isTop?: boolean;
+}>(({ isOver, isTop = false }) => {
+  return {
+    position: 'absolute',
+    left: '0',
+    ...(isTop ? { top: '-1px' } : { bottom: '-1px' }),
+    width: '100%',
+    paddingTop: '2x',
+    borderTop: '2px solid',
+    borderColor: isOver ? 'var(--affine-primary-color)' : 'transparent',
+    boxShadow: isOver
+      ? `0px 0px 8px ${alpha(lightTheme.primaryColor, 0.35)}`
+      : 'none',
+    zIndex: 1,
+  };
+});

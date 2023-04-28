@@ -8,7 +8,7 @@
   "It takes up more space on your device": {
     "": "It takes up more space on your device."
   },
-  "Export AFFiNE backup file": "Export AFFiNE backup file (coming soon)",
+  "Export AFFiNE backup file": "Export AFFiNE backup file",
   "Saved then enable AFFiNE Cloud": "All changes are saved locally, click to enable AFFiNE Cloud.",
   "Not now": "Not now",
   "Export Description": "You can export the entire Workspace data for backup, and the exported data can be re-imported.",
@@ -114,6 +114,7 @@
   "Got it": "Got it",
   "emptyAllPages": "This workspace is empty. Create a new page to begin editing.",
   "emptyTrash": "Deleted pages will appear here.",
+  "emptySharedPages": "Shared pages will appear here.",
   "still designed": "(This page is still being designed.)",
   "My Workspaces": "My Workspaces",
   "Tips": "Tips: ",
@@ -213,10 +214,19 @@
   "Disable Public Link ?": "Disable Public Link ?",
   "Disable Public Link Description": "Disabling this public link will prevent anyone with the link from accessing this page.",
   "Export Shared Pages Description": "Download a static copy of your page to share with others.",
+  "Organize pages to build knowledge": "Organize pages to build knowledge",
+  "Favorite pages for easy access": "Favorite pages for easy access",
   "Shared Pages Description": "Sharing page publicly requires AFFiNE Cloud service.",
   "Create Shared Link Description": "Create a link you can easily share with anyone.",
   "Shared Pages In Public Workspace Description": "The entire Workspace is published on the web and can be edited via <1>Workspace Settings</1>.",
   "Open Workspace Settings": "Open Workspace Settings",
   "Share Menu Public Workspace Description1": "Invite others to join the Workspace or publish it to web.",
-  "Share Menu Public Workspace Description2": "Current workspace has been published to the web as a public workspace."
+  "Share Menu Public Workspace Description2": "Current workspace has been published to the web as a public workspace.",
+  "Router is Loading": "Router is Loading",
+  "Finding Workspace ID": "Finding Workspace ID",
+  "Workspace Not Found": "Workspace Not Found",
+  "Finding Current Workspace": "Finding Current Workspace",
+  "Page is Loading": "Page is Loading",
+  "Loading All Workspaces": "Loading All Workspaces",
+  "Loading Page": "Loading Page"
 }

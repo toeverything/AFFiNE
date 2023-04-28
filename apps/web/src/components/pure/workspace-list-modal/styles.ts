@@ -1,21 +1,21 @@
 import { displayFlex, styled, textEllipsis } from '@affine/component';
 
-export const StyledSplitLine = styled('div')(({ theme }) => {
+export const StyledSplitLine = styled('div')(() => {
   return {
     width: '1px',
     height: '20px',
-    background: theme.colors.borderColor,
+    background: 'var(--affine-border-color)',
     marginRight: '12px',
   };
 });
 
-export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
     p: {
       height: '20px',
-      fontSize: theme.font.sm,
+      fontSize: 'var(--affine-font-sm)',
       ...displayFlex('flex-start', 'center'),
     },
     svg: {
@@ -30,9 +30,9 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
+export const StyleWorkspaceTitle = styled('div')(() => {
   return {
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
     lineHeight: '24px',
     marginBottom: '10px',
@@ -41,46 +41,25 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledCard = styled('div')<{
-  active?: boolean;
-}>(({ theme, active }) => {
-  const borderColor = active ? theme.colors.primaryColor : 'transparent';
+export const StyledCreateWorkspaceCard = styled('div')(() => {
   return {
     width: '310px',
     height: '124px',
     cursor: 'pointer',
     padding: '16px',
-    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
-    borderRadius: '12px',
-    border: `1px solid ${borderColor}`,
-    ...displayFlex('flex-start', 'flex-start'),
-    marginBottom: '24px',
-    transition: 'background .2s',
-    background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
-    ':hover': {
-      background: theme.colors.cardHoverBackground,
-    },
-  };
-});
-
-export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
-  return {
-    width: '310px',
-    height: '124px',
-    cursor: 'pointer',
-    padding: '16px',
-    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
+    boxShadow: 'var(--affine-shadow)',
     borderRadius: '12px',
     transition: 'all .1s',
+    background: 'var(--affine-white-80)',
     ...displayFlex('flex-start', 'flex-start'),
-    color: theme.colors.secondaryTextColor,
+    color: 'var(--affine-text-secondary-color)',
 
     ':hover': {
-      background: theme.colors.cardHoverBackground,
-      color: theme.colors.textColor,
+      background: 'var(--affine-hover-color)',
+      color: 'var(--affine-text-primary-color)',
       '.add-icon': {
-        borderColor: theme.colors.primaryColor,
-        color: theme.colors.primaryColor,
+        borderColor: 'var(--affine-white-color)',
+        color: 'var(--affine-primary-color)',
       },
     },
   };
@@ -89,19 +68,19 @@ export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
 export const StyledModalHeaderLeft = styled('div')(() => {
   return { ...displayFlex('flex-start', 'center') };
 });
-export const StyledModalTitle = styled('div')(({ theme }) => {
+export const StyledModalTitle = styled('div')(() => {
   return {
     fontWeight: 600,
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
   };
 });
 
-export const StyledHelperContainer = styled('div')(({ theme }) => {
+export const StyledHelperContainer = styled('div')(() => {
   return {
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
     marginLeft: '15px',
     fontWeight: 400,
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
     ...displayFlex('center', 'center'),
   };
 });
@@ -125,11 +104,13 @@ export const StyleWorkspaceAdd = styled('div')(() => {
     width: '58px',
     height: '58px',
     borderRadius: '100%',
-    background: '#f4f5fa',
+    background: 'var(--affine-white-80)',
     border: '1.5px dashed #f4f5fa',
     transition: 'background .2s',
     fontSize: '24px',
     ...displayFlex('center', 'center'),
+    borderColor: 'var(--affine-white-color)',
+    color: 'var(--affine-primary-color)',
   };
 });
 export const StyledModalHeader = styled('div')(() => {

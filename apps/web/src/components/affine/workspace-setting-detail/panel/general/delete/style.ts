@@ -1,11 +1,11 @@
 import { styled } from '@affine/component';
 
-export const StyledModalWrapper = styled('div')(({ theme }) => {
+export const StyledModalWrapper = styled('div')(() => {
   return {
     position: 'relative',
     padding: '0px',
     width: '560px',
-    background: theme.colors.popoverBackground,
+    background: 'var(--affine-white)',
     borderRadius: '12px',
     // height: '312px',
   };
@@ -36,13 +36,13 @@ export const StyledTextContent = styled('div')(() => {
   };
 });
 
-export const StyledInputContent = styled('div')(({ theme }) => {
+export const StyledInputContent = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
     margin: '24px 0',
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
   };
 });
 

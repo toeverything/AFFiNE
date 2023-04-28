@@ -5,8 +5,8 @@ import { StyledPinboard } from '../styles';
 export const EmptyItem = () => {
   const { t } = useTranslation();
   return (
-    <StyledPinboard disable={true} style={{ paddingLeft: '32px' }}>
-      {t('No item')}
+    <StyledPinboard disable={true} textWrap={true}>
+      {t('Organize pages to build knowledge')}
     </StyledPinboard>
   );
 };

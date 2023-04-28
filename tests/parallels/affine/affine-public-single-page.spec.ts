@@ -1,16 +1,16 @@
+import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
+import { openHomePage } from '../../libs/load-page';
 import { waitMarkdownImported } from '../../libs/page-logic';
-import { test } from '../../libs/playwright';
 import { clickNewPageButton } from '../../libs/sidebar';
-import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
+import { createFakeUser, loginUser } from '../../libs/utils';
 import { createWorkspace } from '../../libs/workspace';
 
 test('public single page', async ({ page, browser }) => {
   await openHomePage(page);
   const [a] = await createFakeUser();
   await loginUser(page, a);
-  await waitMarkdownImported(page);
   const name = `test-${Date.now()}`;
   await createWorkspace({ name }, page);
   await waitMarkdownImported(page);

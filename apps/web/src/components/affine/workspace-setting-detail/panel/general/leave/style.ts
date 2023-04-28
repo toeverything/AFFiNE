@@ -1,11 +1,11 @@
 import { styled } from '@affine/component';
 
-export const StyledModalWrapper = styled('div')(({ theme }) => {
+export const StyledModalWrapper = styled('div')(() => {
   return {
     position: 'relative',
     padding: '0px',
     width: '460px',
-    background: theme.colors.popoverBackground,
+    background: 'var(--affine-white)',
     borderRadius: '12px',
   };
 });

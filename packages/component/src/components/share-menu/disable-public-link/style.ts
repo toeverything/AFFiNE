@@ -1,33 +1,33 @@
 import { styled, TextButton } from '@affine/component';
 
-export const StyledModalWrapper = styled('div')(({ theme }) => {
+export const StyledModalWrapper = styled('div')(() => {
   return {
     position: 'relative',
     padding: '0px',
     width: '560px',
-    background: theme.colors.popoverBackground,
+    background: 'var(--affine-white)',
     borderRadius: '12px',
     // height: '312px',
   };
 });
 
-export const StyledModalHeader = styled('div')(({ theme }) => {
+export const StyledModalHeader = styled('div')(() => {
   return {
     margin: '44px 0px 12px 0px',
     width: '560px',
     fontWeight: '600',
-    fontSize: theme.font.h6,
+    fontSize: 'var(--affine-font-h6)',
     textAlign: 'center',
   };
 });
 
-export const StyledTextContent = styled('div')(({ theme }) => {
+export const StyledTextContent = styled('div')(() => {
   return {
     margin: 'auto',
     width: '560px',
     padding: '0px 84px',
     fontWeight: '400',
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     textAlign: 'center',
   };
 });
@@ -40,9 +40,9 @@ export const StyledButtonContent = styled('div')(() => {
     justifyContent: 'center',
   };
 });
-export const StyledButton = styled(TextButton)(({ theme }) => {
+export const StyledButton = styled(TextButton)(() => {
   return {
-    color: theme.colors.primaryColor,
+    color: 'var(--affine-primary-color)',
     height: '32px',
     background: '#F3F0FF',
     border: 'none',
@@ -50,7 +50,7 @@ export const StyledButton = styled(TextButton)(({ theme }) => {
     padding: '4px 20px',
   };
 });
-export const StyledDangerButton = styled(TextButton)(({ theme }) => {
+export const StyledDangerButton = styled(TextButton)(() => {
   return {
     color: '#FF631F',
     height: '32px',

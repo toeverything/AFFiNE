@@ -1,7 +1,7 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
 import { SearchIcon } from '@blocksuite/icons';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -47,9 +47,6 @@ const ListPageInner: React.FC<{
     },
     [router, workspaceId]
   );
-  useEffect(() => {
-    blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
-  }, [blockSuiteWorkspace]);
   const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(blockSuiteWorkspace);
   const setSearchModalOpen = useSetAtom(openQuickSearchModalAtom);

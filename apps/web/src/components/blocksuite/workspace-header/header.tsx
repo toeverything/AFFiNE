@@ -1,7 +1,9 @@
+import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { useAtom } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
 import {
   forwardRef,
@@ -12,10 +14,6 @@ import {
   useState,
 } from 'react';
 
-import {
-  useSidebarFloating,
-  useSidebarStatus,
-} from '../../../hooks/use-sidebar-status';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import EditPage from './header-right-items/EditPage';
@@ -108,19 +106,19 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.ShareMenu]: {
     Component: HeaderShareMenu,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage) => {
       return workspace.flavour !== WorkspaceFlavour.PUBLIC && !!currentPage;
     },
   },
   [HeaderRightItemName.EditPage]: {
     Component: EditPage,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage, { isPublic }) => {
       return isPublic;
     },
   },
   [HeaderRightItemName.UserAvatar]: {
     Component: UserAvatar,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage, { isPublic }) => {
       return isPublic;
     },
   },
@@ -142,15 +140,14 @@ export const Header = forwardRef<
   useEffect(() => {
     setShowWarning(shouldShowWarning());
   }, []);
-  const [open] = useSidebarStatus();
-  const sidebarFloating = useSidebarFloating();
+  const [open] = useAtom(appSidebarOpenAtom);
   const { t } = useTranslation();
 
   return (
     <StyledHeaderContainer
-      sidebarFloating={sidebarFloating && open}
       ref={ref}
       hasWarning={showWarning}
+      data-open={open}
       {...props}
     >
       <BrowserWarning

@@ -42,9 +42,6 @@ const AllPage: NextPageWithLayout = () => {
   if (typeof router.query.workspaceId !== 'string') {
     throw new QueryParamError('workspaceId', router.query.workspaceId);
   }
-  if (currentWorkspace === null) {
-    return <PageLoading />;
-  }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (

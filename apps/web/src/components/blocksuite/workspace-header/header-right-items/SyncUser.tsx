@@ -1,4 +1,5 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import {
   getLoginStorage,
@@ -22,13 +23,14 @@ import { affineAuth } from '../../../../plugins/affine';
 import type { AffineOfficialWorkspace } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
-const IconWrapper = styled('div')(({ theme }) => {
+const IconWrapper = styled('div')(() => {
   return {
     width: '32px',
     height: '32px',
     marginRight: '12px',
     fontSize: '24px',
-    color: theme.colors.iconColor,
+    color: 'var(--affine-icon-color)',
+    WebkitAppRegion: 'no-drag',
     ...displayFlex('center', 'center'),
   };
 });
@@ -79,6 +81,10 @@ export const SyncUser = () => {
 
   const { t } = useTranslation();
   const transformWorkspace = useTransformWorkspace();
+
+  if (!config.enableLegacyCloud) {
+    return null;
+  }
 
   if (status === 'offline') {
     return (

@@ -2,10 +2,10 @@ import { styled, textEllipsis } from '../../styles';
 import type { TableCellProps } from './interface';
 
 export const StyledTable = styled('table')<{ tableLayout: 'auto' | 'fixed' }>(
-  ({ theme, tableLayout }) => {
+  ({ tableLayout }) => {
     return {
-      fontSize: theme.font.base,
-      color: theme.colors.textColor,
+      fontSize: 'var(--affine-font-base)',
+      color: 'var(--affine-text-primary-color)',
       tableLayout,
       width: '100%',
       borderCollapse: 'separate',
@@ -53,7 +53,7 @@ export const StyledTableHead = styled('thead')(() => {
   };
 });
 
-export const StyledTableRow = styled('tr')(({ theme }) => {
+export const StyledTableRow = styled('tr')(() => {
   return {
     td: {
       transition: 'background .15s',
@@ -69,7 +69,7 @@ export const StyledTableRow = styled('tr')(({ theme }) => {
 
     ':hover': {
       td: {
-        background: theme.colors.hoverBackground,
+        background: 'var(--affine-hover-color)',
       },
     },
   };

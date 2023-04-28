@@ -8,6 +8,7 @@ import { readFile } from 'node:fs/promises';
 import { MessageCode } from '@affine/env/constant';
 import { createStatusApis } from '@affine/workspace/affine/api/status';
 import { KeckProvider } from '@affine/workspace/affine/keck';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
@@ -119,7 +120,7 @@ async function createWorkspace(
 ): Promise<string> {
   const workspace = createEmptyBlockSuiteWorkspace(
     faker.datatype.uuid(),
-    _ => undefined
+    WorkspaceFlavour.LOCAL
   );
   if (callback) {
     callback(workspace);
@@ -408,14 +409,19 @@ describe('api', () => {
         );
       });
       const binary = await workspaceApis.downloadWorkspace(id, false);
-      const workspace = createEmptyBlockSuiteWorkspace(id, () => undefined);
+      const workspace = createEmptyBlockSuiteWorkspace(
+        id,
+        WorkspaceFlavour.LOCAL
+      );
       Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(binary));
-      const workspace2 = createEmptyBlockSuiteWorkspace(id, () => undefined);
+      const workspace2 = createEmptyBlockSuiteWorkspace(
+        id,
+        WorkspaceFlavour.LOCAL
+      );
       {
         const wsUrl = `ws://127.0.0.1:3000/api/sync/`;
         const provider = new KeckProvider(wsUrl, workspace.id, workspace.doc, {
           params: { token: getLoginStorage()?.token },
-          // @ts-expect-error ignore the type
           awareness: workspace.awarenessStore.awareness,
           connect: false,
         });
@@ -425,7 +431,6 @@ describe('api', () => {
           workspace2.doc,
           {
             params: { token: getLoginStorage()?.token },
-            // @ts-expect-error ignore the type
             awareness: workspace2.awarenessStore.awareness,
             connect: false,
           }
@@ -459,7 +464,7 @@ describe('api', () => {
         );
         const publicWorkspace = createEmptyBlockSuiteWorkspace(
           id,
-          () => undefined
+          WorkspaceFlavour.LOCAL
         );
         Workspace.Y.applyUpdate(publicWorkspace.doc, new Uint8Array(binary));
         const publicPage = publicWorkspace.getPage(pageId) as Page;

@@ -3,7 +3,7 @@ import { IconButton } from '@affine/component';
 import { styled } from '@affine/component';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 
-const StyledIconButtonWithAnimate = styled(IconButton)(({ theme }) => {
+const StyledIconButtonWithAnimate = styled(IconButton)(() => {
   return {
     svg: {
       transition: 'transform 0.15s ease-in-out',
@@ -13,7 +13,7 @@ const StyledIconButtonWithAnimate = styled(IconButton)(({ theme }) => {
         transform: 'translateY(3px)',
       },
       '::after': {
-        background: theme.colors.pageBackground,
+        background: 'var(--affine-background-primary-color)',
       },
     },
   };

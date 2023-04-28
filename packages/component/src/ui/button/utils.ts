@@ -8,14 +8,14 @@ export const SIZE_CONFIG = {
   [SIZE_SMALL]: {
     iconSize: 16,
     fontSize: 16,
-    borderRadius: 6,
+    borderRadius: 4,
     height: 26,
     padding: 24,
   },
   [SIZE_MIDDLE]: {
     iconSize: 20,
     fontSize: 16,
-    borderRadius: 6,
+    borderRadius: 4,
     height: 32,
     padding: 24,
   },
@@ -24,7 +24,7 @@ export const SIZE_CONFIG = {
     fontSize: 16,
     height: 38,
     padding: 24,
-    borderRadius: 6,
+    borderRadius: 4,
   },
 } as const;
 
@@ -47,37 +47,39 @@ export const getButtonColors = (
   switch (type) {
     case 'primary':
       return {
-        background: theme.colors.primaryColor,
-        color: '#fff',
-        borderColor: theme.colors.primaryColor,
+        background: 'var(--affine-primary-color)',
+        color: 'var(--affine-white)',
+        borderColor: 'var(--affine-primary-color)',
         '.affine-button-icon': {
-          color: '#fff',
+          color: 'var(--affine-white)',
         },
       };
     case 'light':
       return {
-        background: theme.colors.hoverBackground,
-        color: disabled ? theme.colors.disableColor : theme.colors.primaryColor,
-        borderColor: theme.colors.hoverBackground,
+        background: 'var(--affine-tertiary-color)',
+        color: disabled
+          ? 'var(--affine-text-disable-color)'
+          : 'var(--affine-text-emphasis-color)',
+        borderColor: 'var(--affine-tertiary-color)',
         '.affine-button-icon': {
-          borderColor: theme.colors.primaryColor,
+          borderColor: 'var(--affine-text-emphasis-color)',
         },
         ':hover': {
           borderColor: disabled
-            ? theme.colors.hoverBackground
-            : theme.colors.primaryColor,
+            ? 'var(--affine-disable-color)'
+            : 'var(--affine-text-emphasis-color)',
         },
       };
     case 'warning':
       return {
-        background: theme.colors.warningBackground,
-        color: theme.colors.warningColor,
-        borderColor: theme.colors.warningBackground,
+        background: 'var(--affine-background-warning-color)',
+        color: 'var(--affine-warning-color)',
+        borderColor: 'var(--affine-background-warning-color)',
         '.affine-button-icon': {
-          color: theme.colors.warningColor,
+          color: 'var(--affine-warning-color)',
         },
         ':hover': {
-          borderColor: theme.colors.warningColor,
+          borderColor: 'var(--affine-warning-color)',
           color: extend?.hoverColor,
           background: extend?.hoverBackground,
           ...extend?.hoverStyle,
@@ -85,14 +87,14 @@ export const getButtonColors = (
       };
     case 'danger':
       return {
-        background: theme.colors.errorBackground,
-        color: theme.colors.errorColor,
-        borderColor: theme.colors.errorBackground,
+        background: 'var(--affine-background-error-color)',
+        color: 'var(--affine-error-color)',
+        borderColor: 'var(--affine-background-error-color)',
         '.affine-button-icon': {
-          color: theme.colors.errorColor,
+          color: 'var(--affine-error-color)',
         },
         ':hover': {
-          borderColor: theme.colors.errorColor,
+          borderColor: 'var(--affine-error-color)',
           color: extend?.hoverColor,
           background: extend?.hoverBackground,
           ...extend?.hoverStyle,
@@ -100,13 +102,13 @@ export const getButtonColors = (
       };
     default:
       return {
-        color: theme.colors.textColor,
-        borderColor: theme.colors.borderColor,
+        color: 'var(--affine-text-primary-color)',
+        borderColor: 'var(--affine-border-color)',
         ':hover': {
-          borderColor: theme.colors.primaryColor,
-          color: extend?.hoverColor ?? theme.colors.primaryColor,
+          borderColor: 'var(--affine-primary-color)',
+          color: extend?.hoverColor ?? 'var(--affine-primary-color)',
           '.affine-button-icon': {
-            color: extend?.hoverColor ?? theme.colors.primaryColor,
+            color: extend?.hoverColor ?? 'var(--affine-primary-color)',
             background: extend?.hoverBackground,
             ...extend?.hoverStyle,
           },

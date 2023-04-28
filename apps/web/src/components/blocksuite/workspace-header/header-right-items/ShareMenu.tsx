@@ -1,4 +1,5 @@
 import { ShareMenu } from '@affine/component/share-menu';
+import { config } from '@affine/env';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
@@ -75,12 +76,12 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
           },
           [helper]
         )}
-        togglePagePublic={useCallback(async (page, isPublic) => {
+        togglePagePublic={useCallback(async () => {
           // local workspace should not have public page
           throw new Error('unreachable');
         }, [])}
         toggleWorkspacePublish={useCallback(
-          async (workspace, publish) => {
+          async workspace => {
             assertEquals(workspace.flavour, WorkspaceFlavour.LOCAL);
             assertEquals(workspace.id, props.workspace.id);
             await helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
@@ -107,6 +108,9 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
 };
 
 export const HeaderShareMenu: React.FC<BaseHeaderProps> = props => {
+  if (!config.enableLegacyCloud) {
+    return null;
+  }
   if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
     return <AffineHeaderShareMenu {...props} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {

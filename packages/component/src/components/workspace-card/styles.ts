@@ -1,13 +1,13 @@
 import { displayFlex, styled, textEllipsis } from '../..';
 import { IconButton } from '../..';
 
-export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
     p: {
       height: '20px',
-      fontSize: theme.font.sm,
+      fontSize: 'var(--affine-font-sm)',
       ...displayFlex('flex-start', 'center'),
     },
     svg: {
@@ -22,9 +22,9 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
+export const StyleWorkspaceTitle = styled('div')(() => {
   return {
-    fontSize: theme.font.base,
+    fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
     lineHeight: '24px',
     marginBottom: '10px',
@@ -35,26 +35,26 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
 
 export const StyledCard = styled('div')<{
   active?: boolean;
-}>(({ theme, active }) => {
-  const borderColor = active ? theme.colors.primaryColor : 'transparent';
+}>(({ active }) => {
+  const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
   return {
     width: '310px',
     height: '124px',
     cursor: 'pointer',
     padding: '16px',
-    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
+    boxShadow: 'var(--affine-shadow)',
     borderRadius: '12px',
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),
     marginBottom: '24px',
     transition: 'background .2s',
-    background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
+    background: 'var(--affine-white-80)',
     position: 'relative',
     ':hover': {
-      background: theme.colors.cardHoverBackground,
+      background: 'var(--affine-hover-color)',
       '.add-icon': {
-        borderColor: theme.colors.primaryColor,
-        color: theme.colors.primaryColor,
+        borderColor: 'var(--affine-primary-color)',
+        color: 'var(--affine-primary-color)',
       },
       '.setting-entry': {
         opacity: 1,
@@ -77,16 +77,18 @@ export const StyledModalHeader = styled('div')(() => {
   };
 });
 
-export const StyledSettingLink = styled(IconButton)(({ theme }) => {
+export const StyledSettingLink = styled(IconButton)(() => {
   return {
     position: 'absolute',
     right: '6px',
     bottom: '6px',
     opacity: 0,
+    borderRadius: '4px',
+    color: 'var(--affine-primary-color)',
     pointerEvents: 'none',
     transition: 'all .15s',
     ':hover': {
-      background: theme.colors.pageBackground,
+      background: 'var(--affine-hover-color)',
     },
   };
 });

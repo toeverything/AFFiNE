@@ -9,28 +9,22 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useTheme } from '@mui/material';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtom } from 'jotai';
 import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
-import { useMetaHelper } from '../../../../hooks/affine/use-meta-helper';
+import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import {
-  usePageMeta,
-  usePageMetaHelper,
-} from '../../../../hooks/use-page-meta';
 import { toast } from '../../../../utils';
-import {
-  Export,
-  MoveTo,
-  MoveToTrash,
-} from '../../../affine/operation-menu-items';
+import { Export, MoveToTrash } from '../../../affine/operation-menu-items';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
 
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
@@ -38,17 +32,16 @@ export const EditorOptionMenu = () => {
   assertExists(workspace);
   assertExists(pageId);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMeta = usePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const allMetas = usePageMeta(blockSuiteWorkspace);
   const [record, set] = useAtom(workspacePreferredModeAtom);
   const mode = record[pageId] ?? 'page';
   assertExists(pageMeta);
   const { favorite } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
-  const { removeToTrash } = useMetaHelper(blockSuiteWorkspace);
+  const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const EditMenu = (
     <>
       <MenuItem
@@ -61,7 +54,7 @@ export const EditorOptionMenu = () => {
         }}
         icon={
           favorite ? (
-            <FavoritedIcon style={{ color: theme.colors.primaryColor }} />
+            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
           ) : (
             <FavoriteIcon />
           )
@@ -84,13 +77,6 @@ export const EditorOptionMenu = () => {
       </MenuItem>
       <Export />
       {!pageMeta.isRootPinboard && (
-        <MoveTo
-          metas={allMetas}
-          currentMeta={pageMeta}
-          blockSuiteWorkspace={blockSuiteWorkspace}
-        />
-      )}
-      {!pageMeta.isRootPinboard && (
         <MoveToTrash
           testId="editor-option-menu-delete"
           onItemClick={() => {
@@ -107,7 +93,7 @@ export const EditorOptionMenu = () => {
         <Menu
           width={276}
           content={EditMenu}
-          placement="bottom-end"
+          placement="bottom"
           disablePortal={true}
           trigger="click"
         >
