@@ -17,4 +17,9 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   bodyParser: true,
 });
 
-await app.listen(process.env.PORT ?? 3010);
+const host = process.env.HOST ?? 'localhost';
+const port = process.env.PORT ?? 3010;
+
+await app.listen(port, host);
+
+console.log(`Listening on http://${host}:${port}`);

@@ -36,8 +36,7 @@ export class AuthResolver {
 
     return {
       token: this.auth.sign(user),
-      // TODO: impl
-      refresh: '',
+      refresh: this.auth.refresh(user),
     };
   }
 
