@@ -17,7 +17,7 @@ import {
 import type { Page } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import type { ReactElement, UIEvent } from 'react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import type { AllWorkspace } from '../../shared';
 import ChangeLog from '../pure/workspace-slider-bar/changeLog';
@@ -75,15 +75,15 @@ export const RootAppSidebar = ({
   }, [createPage, openPage]);
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   useEffect(() => {
-    if (environment.isDesktop) {
+    if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
       window.apis?.onSidebarVisibilityChange(sidebarOpen);
     }
   }, [sidebarOpen]);
-  const ref = useRef<HTMLElement>(null);
+  const [ref, setRef] = useState<HTMLElement | null>(null);
   return (
     <>
       <AppSidebar
-        ref={ref}
+        ref={setRef}
         footer={
           <StyledNewPageButton
             data-testid="new-page-button"

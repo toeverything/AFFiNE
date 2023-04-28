@@ -8,10 +8,11 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import type { ReactNode } from 'react';
-import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useCallback, useEffect } from 'react';
 
 import { IconButton } from '../../ui/button/IconButton';
 import {
+  floatingMaxWidth,
   navBodyStyle,
   navFooterStyle,
   navHeaderStyle,
@@ -30,24 +31,38 @@ export type AppSidebarProps = PropsWithChildren<{
 
 export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   function AppSidebar(props, forwardedRef): ReactElement {
-    const ref = useRef<HTMLElement>(null);
     const [open, setOpen] = useAtom(appSidebarOpenAtom);
 
     const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
+    const initialRender = open === undefined;
 
     const handleSidebarOpen = useCallback(() => {
       setOpen(open => !open);
     }, [setOpen]);
 
-    useImperativeHandle(forwardedRef, () => ref.current as HTMLElement);
+    useEffect(() => {
+      if (open === undefined) {
+        // give the initial value,
+        // so that the sidebar can be closed on mobile by default
+        const { matches } = window.matchMedia(
+          `(min-width: ${floatingMaxWidth}px)`
+        );
+
+        setOpen(matches);
+      }
+    }, [open, setOpen]);
 
     const environment = getEnvironment();
     const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+    if (initialRender) {
+      // avoid the UI flash
+      return <div />;
+    }
     return (
       <>
         <nav
           className={navStyle}
-          ref={ref}
+          ref={forwardedRef}
           style={assignInlineVars({
             [navWidthVar]: `${appSidebarWidth}px`,
           })}
@@ -96,9 +111,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
           data-testid="app-sidebar-float-mask"
           data-open={open}
           className={sidebarFloatMaskStyle}
-          onClick={useCallback(() => {
-            setOpen(false);
-          }, [setOpen])}
+          onClick={() => setOpen(false)}
         />
       </>
     );
