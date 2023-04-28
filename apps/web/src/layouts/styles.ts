@@ -51,18 +51,12 @@ export const MainContainerWrapper = styled('div')(() => {
   };
 });
 
-export const MainContainer = styled('div')(({ theme }) => {
+export const MainContainer = styled('div')(() => {
   return {
     position: 'relative',
     flexGrow: 1,
     maxWidth: '100%',
     backgroundColor: 'var(--affine-background-primary-color)',
-    [theme.breakpoints.up('md')]: {
-      minWidth: '686px',
-    },
-    [theme.breakpoints.down('sm')]: {
-      minWidth: '550px',
-    },
   };
 });
 
