@@ -27,7 +27,7 @@ describe('AppModule', () => {
         id: '1',
         name: 'Alex Yang',
         email: 'alex.yang@example.org',
-        password: await hash('123456', globalThis.AFFiNE.auth.salt),
+        password: await hash('123456', globalThis.AFFiNE.auth.salt as any),
       },
     });
   });
