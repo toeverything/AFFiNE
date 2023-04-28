@@ -2,7 +2,7 @@ import { IconButton } from '@affine/component';
 import { SidebarIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
-import { useRef } from 'react';
+import { useState } from 'react';
 
 import { AppSidebar, appSidebarOpenAtom, ResizeIndicator } from '.';
 import { navHeaderStyle, sidebarButtonStyle } from './index.css';
@@ -16,7 +16,7 @@ const Footer = () => <div>Add Page</div>;
 
 export const Default: StoryFn = () => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
-  const ref = useRef<HTMLElement>(null);
+  const [ref, setRef] = useState<HTMLElement | null>(null);
   return (
     <>
       <main
@@ -29,7 +29,7 @@ export const Default: StoryFn = () => {
           flexDirection: 'row',
         }}
       >
-        <AppSidebar footer={<Footer />} ref={ref}>
+        <AppSidebar footer={<Footer />} ref={setRef}>
           Test
         </AppSidebar>
         <ResizeIndicator targetElement={ref} />
