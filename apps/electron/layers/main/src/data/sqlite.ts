@@ -56,7 +56,7 @@ export class WorkspaceSQLiteDB {
   };
 
   reconnectDB = () => {
-    logger.log('open db', this.path);
+    logger.log('open db', this.workspaceId);
     if (this.db) {
       this.db.close();
     }
@@ -79,9 +79,14 @@ export class WorkspaceSQLiteDB {
     });
 
     this.lastUpdateTime = new Date().getTime();
-    this.firstConnect = true;
 
-    logger.info('db connected', this.path);
+    if (this.firstConnect) {
+      logger.info('db reconnected', this.workspaceId);
+    } else {
+      logger.info('db connected', this.workspaceId);
+    }
+
+    this.firstConnect = true;
 
     return db;
   };

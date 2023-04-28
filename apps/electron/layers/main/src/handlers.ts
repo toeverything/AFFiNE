@@ -4,12 +4,7 @@ import { isMacOS } from '../../utils';
 import { appContext } from './context';
 import { ensureSQLiteDB } from './data/ensure-db';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
-import {
-  exportDBFile as saveDBFileAs,
-  loadDBFile as loadDBFile,
-  moveDBFile,
-  revealDBFile,
-} from './dialog';
+import { loadDBFile, moveDBFile, revealDBFile, saveDBFileAs } from './dialog';
 import { getGoogleOauthCode } from './google-auth';
 import { logger, revealLogFile } from './logger';
 

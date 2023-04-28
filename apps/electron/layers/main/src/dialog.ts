@@ -6,7 +6,6 @@ import { nanoid } from 'nanoid';
 
 import { appContext } from './context';
 import { ensureSQLiteDB } from './data/ensure-db';
-import { exportDatabase } from './data/export';
 import { getWorkspaceDBPath, isValidDBFile } from './data/sqlite';
 import { logger } from './logger';
 
@@ -23,7 +22,7 @@ export async function revealDBFile(workspaceId: string) {
  *
  * It will just copy the file to the given path
  */
-export async function exportDBFile(workspaceId: string) {
+export async function saveDBFileAs(workspaceId: string) {
   const db = await ensureSQLiteDB(workspaceId);
   const ret = await dialog.showSaveDialog({
     properties: ['showOverwriteConfirmation'],
@@ -34,11 +33,12 @@ export async function exportDBFile(workspaceId: string) {
     message: 'Save Workspace as a SQLite Database file',
   });
   const filePath = ret.filePath;
-  if (ret.canceled || !filePath) {
+  if (ret.canceled || !filePath || filePath === db.path) {
     return null;
   }
 
-  await exportDatabase(db, filePath);
+  await fs.copyFile(db.path, filePath);
+  logger.log('saved', filePath);
   shell.showItemInFolder(filePath);
   return filePath;
 }
@@ -71,7 +71,7 @@ export async function loadDBFile() {
     ],
     message: 'Load Workspace from a SQLite Database file',
   });
-  const filePath = ret.filePaths[0];
+  const filePath = ret.filePaths?.[0];
   if (ret.canceled || !filePath) {
     logger.info('loadDBFile canceled');
     return { canceled: true };
@@ -95,7 +95,7 @@ export async function loadDBFile() {
   await fs.ensureDir(path.join(appContext.appDataPath, 'workspaces'));
 
   await fs.symlink(filePath, linkedFilePath);
-  logger.info(`loadDBFile: ${filePath} -> ${linkedFilePath}`);
+  logger.info(`loadDBFile, symlink: ${filePath} -> ${linkedFilePath}`);
 
   return { workspaceId };
 }
@@ -147,8 +147,8 @@ export async function moveDBFile(workspaceId: string) {
     overwrite: true,
   });
 
-  await fs.symlink(newFilePath, db.path);
-  logger.info(`openMoveDBFileDialog: ${realpath} -> ${newFilePath}`);
+  await fs.ensureSymlink(newFilePath, db.path);
+  logger.info(`openMoveDBFileDialog symlink: ${realpath} -> ${newFilePath}`);
   db.reconnectDB();
   return newFilePath;
 }

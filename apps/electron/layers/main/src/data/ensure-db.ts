@@ -3,6 +3,7 @@ import { watch } from 'chokidar';
 import { appContext } from '../context';
 import { logger } from '../logger';
 import { sendMainEvent } from '../send-main-event';
+import { debounce } from '../utils';
 import type { WorkspaceSQLiteDB } from './sqlite';
 import { openWorkspaceDatabase } from './sqlite';
 
@@ -17,17 +18,21 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
   logger.info('watch db file', db.path);
   const watcher = watch(db.path);
 
+  const debounceOnChange = debounce(() => {
+    logger.info(
+      'handle db file changed',
+      db.workspaceId,
+      new Date().getTime() - db.lastUpdateTime
+    );
+    // reconnect db
+    db.reconnectDB();
+    sendMainEvent('main:on-db-file-update', db.workspaceId);
+  }, 1000);
+
   watcher.on('change', () => {
     const currentTime = new Date().getTime();
-    if (currentTime - db.lastUpdateTime > 1000) {
-      logger.info(
-        'db file changed',
-        db.workspaceId,
-        currentTime - db.lastUpdateTime
-      );
-      // reconnect db
-      db.reconnectDB();
-      sendMainEvent('main:on-db-file-update', db.workspaceId);
+    if (currentTime - db.lastUpdateTime > 100) {
+      debounceOnChange();
     }
   });
 
