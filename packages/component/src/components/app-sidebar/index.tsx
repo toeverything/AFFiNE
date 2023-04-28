@@ -34,6 +34,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
     const [open, setOpen] = useAtom(appSidebarOpenAtom);
 
     const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
+    const initialRender = open === undefined;
 
     const handleSidebarOpen = useCallback(() => {
       setOpen(open => !open);
@@ -43,6 +44,9 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
 
     const environment = getEnvironment();
     const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+    if (initialRender) {
+      return <div />;
+    }
     return (
       <>
         <nav
@@ -96,9 +100,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
           data-testid="app-sidebar-float-mask"
           data-open={open}
           className={sidebarFloatMaskStyle}
-          onClick={useCallback(() => {
-            setOpen(false);
-          }, [setOpen])}
+          onClick={() => setOpen(false)}
         />
       </>
     );
