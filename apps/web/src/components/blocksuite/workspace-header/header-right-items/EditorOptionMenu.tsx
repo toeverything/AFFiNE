@@ -76,14 +76,6 @@ export const EditorOptionMenu = () => {
         {mode === 'page' ? t('Edgeless') : t('Page')}
       </MenuItem>
       <Export />
-      {!pageMeta.isRootPinboard && (
-        <MoveToTrash
-          testId="editor-option-menu-delete"
-          onItemClick={() => {
-            setOpenConfirm(true);
-          }}
-        />
-      )}
     </>
   );
 

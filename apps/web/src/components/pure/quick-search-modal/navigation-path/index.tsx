@@ -9,14 +9,10 @@ import {
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useRouter } from 'next/router';
-import type { MouseEvent } from 'react';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 
-import type { PinboardNode } from '../../../../hooks/use-pinboard-data';
-import { usePinboardData } from '../../../../hooks/use-pinboard-data';
 import { useRouterHelper } from '../../../../hooks/use-router-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
-import { PinboardRender } from '../../../affine/pinboard';
 import {
   StyledNavigationPathContainer,
   StyledNavPathExtendContainer,
@@ -123,42 +119,21 @@ export const NavigationPath = ({
   );
 };
 
+// fixme(himself65): what is this
 const NavigationPathExtendPanel = ({
   open,
-  metas,
-  blockSuiteWorkspace,
-  onJumpToPage,
 }: {
   open: boolean;
   metas: PageMeta[];
   blockSuiteWorkspace: BlockSuiteWorkspace;
   onJumpToPage?: (pageId: string) => void;
 }) => {
-  const router = useRouter();
-  const { jumpToPage } = useRouterHelper(router);
-
-  const handlePinboardClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>, node: PinboardNode) => {
-      jumpToPage(blockSuiteWorkspace.id, node.id);
-      onJumpToPage?.(node.id);
-    },
-    [blockSuiteWorkspace.id, jumpToPage, onJumpToPage]
-  );
-
-  const { data } = usePinboardData({
-    metas,
-    pinboardRender: PinboardRender,
-    blockSuiteWorkspace: blockSuiteWorkspace,
-    onClick: handlePinboardClick,
-    asPath: true,
-  });
-
   return (
     <StyledNavPathExtendContainer
       show={open}
       data-testid="navigation-path-expand-panel"
     >
-      <TreeView data={data} indent={10} disableCollapse={true} />
+      <TreeView data={[]} indent={10} disableCollapse={true} />
     </StyledNavPathExtendContainer>
   );
 };
