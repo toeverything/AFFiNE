@@ -1,12 +1,10 @@
-import { config } from '@affine/env';
 import { atomWithStorage } from 'jotai/utils';
 
 export type Visibility = Record<string, boolean>;
 
-export const lastVersionAtom = atomWithStorage(
-  'lastVersion',
-  config.gitVersion
-);
+const DEFAULT_VALUE = '0.0.0';
+
+export const lastVersionAtom = atomWithStorage('lastVersion', DEFAULT_VALUE);
 
 export const guideHiddenAtom = atomWithStorage<Visibility>('guideHidden', {});
 
