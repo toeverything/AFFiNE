@@ -13,7 +13,7 @@ export const navStyle = style({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-  transition: 'margin-left .3s',
+  transition: 'margin-left .3s, width .3s',
   zIndex: parseInt(baseTheme.zIndexModal),
   borderRight: '1px solid var(--affine-border-color)',
   '@media': {
