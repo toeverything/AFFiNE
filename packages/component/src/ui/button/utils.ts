@@ -8,14 +8,14 @@ export const SIZE_CONFIG = {
   [SIZE_SMALL]: {
     iconSize: 16,
     fontSize: 16,
-    borderRadius: 6,
+    borderRadius: 4,
     height: 26,
     padding: 24,
   },
   [SIZE_MIDDLE]: {
     iconSize: 20,
     fontSize: 16,
-    borderRadius: 6,
+    borderRadius: 4,
     height: 32,
     padding: 24,
   },
@@ -24,7 +24,7 @@ export const SIZE_CONFIG = {
     fontSize: 16,
     height: 38,
     padding: 24,
-    borderRadius: 6,
+    borderRadius: 4,
   },
 } as const;
 
@@ -48,26 +48,26 @@ export const getButtonColors = (
     case 'primary':
       return {
         background: 'var(--affine-primary-color)',
-        color: '#fff',
+        color: 'var(--affine-white)',
         borderColor: 'var(--affine-primary-color)',
         '.affine-button-icon': {
-          color: '#fff',
+          color: 'var(--affine-white)',
         },
       };
     case 'light':
       return {
-        background: 'var(--affine-hover-color)',
+        background: 'var(--affine-tertiary-color)',
         color: disabled
           ? 'var(--affine-text-disable-color)'
-          : 'var(--affine-primary-color)',
-        borderColor: 'var(--affine-hover-color)',
+          : 'var(--affine-text-emphasis-color)',
+        borderColor: 'var(--affine-tertiary-color)',
         '.affine-button-icon': {
-          borderColor: 'var(--affine-primary-color)',
+          borderColor: 'var(--affine-text-emphasis-color)',
         },
         ':hover': {
           borderColor: disabled
-            ? 'var(--affine-hover-color)'
-            : 'var(--affine-primary-color)',
+            ? 'var(--affine-disable-color)'
+            : 'var(--affine-text-emphasis-color)',
         },
       };
     case 'warning':

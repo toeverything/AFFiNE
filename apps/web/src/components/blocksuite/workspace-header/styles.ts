@@ -7,18 +7,19 @@ import {
 
 export const StyledHeaderContainer = styled('div')<{
   hasWarning: boolean;
-  sidebarFloating: boolean;
-}>(({ theme, hasWarning, sidebarFloating }) => {
+}>(({ hasWarning }) => {
   return {
     height: hasWarning ? '96px' : '52px',
     flexShrink: 0,
     position: 'sticky',
     top: 0,
     background: 'var(--affine-background-primary-color)',
+    WebkitAppRegion: 'drag',
     zIndex: 1,
-    WebkitAppRegion: sidebarFloating ? '' : 'drag',
-    button: {
-      WebkitAppRegion: 'no-drag',
+    '@media (max-width: 768px)': {
+      '&[data-open="true"]': {
+        WebkitAppRegion: 'no-drag',
+      },
     },
   };
 });

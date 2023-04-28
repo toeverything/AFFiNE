@@ -66,16 +66,18 @@ export const changeLogWrapperSlideOutStyle = style({
   animation: `${slideOut} .3s ease-in-out forwards`,
 });
 export const changeLogSlideInStyle = style({
-  width: '110%',
+  // fixme: if width is 100% and marginLeft is 0,
+  //  the UI will overflow on app sidebar
+  width: '99%',
+  marginLeft: '2px',
   height: '32px',
   display: 'flex',
-  justifyContent: 'flex-start',
+  justifyContent: 'space-between',
   alignItems: 'center',
   color: 'var(--affine-primary-color)',
   backgroundColor: 'var(--affine-tertiary-color)',
   border: '1px solid var(--affine-primary-color)',
   borderRight: 'none',
-  marginLeft: '8px',
   paddingLeft: '8px',
   borderRadius: '16px 0 0 16px',
   cursor: 'pointer',
@@ -89,7 +91,6 @@ export const changeLogSlideOutStyle = style({
   animation: `${slideOut2} .3s ease-in-out forwards`,
 });
 export const linkStyle = style({
-  flexGrow: 1,
   textAlign: 'left',
   color: 'var(--affine-text-emphasis-color)',
   display: 'flex',
@@ -103,6 +104,6 @@ export const iconStyle = style({
 });
 export const iconButtonStyle = style({
   fontSize: '20px',
-  marginRight: '12%',
+  marginRight: '0',
   color: 'var(--affine-icon-color)',
 });

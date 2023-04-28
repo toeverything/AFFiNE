@@ -88,7 +88,7 @@ export const OperationButton = ({
           width={256}
           anchorEl={anchorEl}
           open={operationMenuOpen}
-          placement="bottom-start"
+          // placement="bottom-start"
           zIndex={menuIndex}
         >
           <MenuItem
@@ -143,7 +143,7 @@ export const OperationButton = ({
         <PinboardMenu
           anchorEl={anchorEl}
           open={pinboardMenuOpen}
-          placement="bottom-start"
+          // placement="bottom-start"
           zIndex={menuIndex}
           metas={metas}
           currentMeta={currentMeta}

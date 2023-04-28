@@ -47,32 +47,6 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledCard = styled('div')<{
-  active?: boolean;
-}>(({ theme, active }) => {
-  const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
-  return {
-    width: '310px',
-    height: '124px',
-    cursor: 'pointer',
-    padding: '16px',
-    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
-    borderRadius: '12px',
-    border: `1px solid ${borderColor}`,
-    ...displayFlex('flex-start', 'flex-start'),
-    marginBottom: '24px',
-    transition: 'background .2s',
-    background: 'var(--affine-background-primary-color)',
-    ':hover': {
-      background: 'var(--affine-hover-color)',
-      '.add-icon': {
-        borderColor: 'var(--affine-primary-color)',
-        color: 'var(--affine-primary-color)',
-      },
-    },
-  };
-});
-
 export const StyledFooter = styled('div')({
   height: '84px',
   padding: '0 40px',

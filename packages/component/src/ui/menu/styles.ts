@@ -14,7 +14,7 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)<{
     padding: '8px 4px',
     fontSize: '14px',
     backgroundColor: 'var(--affine-white)',
-    boxShadow: 'var(--affine-popover-shadow)',
+    boxShadow: 'var(--affine-menu-shadow)',
   };
 });
 
@@ -74,11 +74,7 @@ export const StyledMenuItem = styled('button')<{
     ':hover': disabled
       ? {}
       : {
-          color: 'var(--affine-primary-color)',
           backgroundColor: 'var(--affine-hover-color)',
-          svg: {
-            color: 'var(--affine-primary-color)',
-          },
         },
   };
 });
