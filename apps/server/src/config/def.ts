@@ -184,15 +184,13 @@ export interface AFFiNEConfig {
     /**
      * Application public key
      *
-     * ECDSA key pair in pkcs8 format
      */
-    readonly publicKey: Buffer;
+    readonly publicKey: string;
     /**
      * Application private key
      *
-     * ECDSA key pair in pkcs8 format
      */
-    readonly privateKey: Buffer;
+    readonly privateKey: string;
     /**
      * whether allow user to signup with email directly
      */

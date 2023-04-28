@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { genSalt } from 'bcrypt';
 
 const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', {
-  namedCurve: 'secp256k1',
+  namedCurve: 'prime256v1',
   publicKeyEncoding: {
     type: 'spki',
     format: 'pem',

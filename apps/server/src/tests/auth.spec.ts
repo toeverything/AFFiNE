@@ -1,3 +1,4 @@
+import { ok } from 'node:assert';
 import { beforeEach, test } from 'node:test';
 
 import { Test } from '@nestjs/testing';
@@ -14,18 +15,36 @@ globalThis.AFFiNE = getDefaultAFFiNEConfig();
 
 let auth: AuthService;
 
+// cleanup database before each test
 beforeEach(async () => {
   const client = new PrismaClient();
   await client.$connect();
   await client.user.deleteMany({});
+});
 
+beforeEach(async () => {
   const module = await Test.createTestingModule({
     imports: [ConfigModule.forRoot(), PrismaModule, GqlModule, AuthModule],
   }).compile();
   auth = module.get(AuthService);
 });
 
-test('should be able to sign and verify token', async () => {
+test('should be able to register and signIn', async () => {
   await auth.register('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
+});
+
+test('should be able to verify', async () => {
+  await auth.register('Alex Yang', 'alexyang@example.org', '123456');
+  await auth.signIn('alexyang@example.org', '123456');
+
+  const token = auth.sign({
+    id: '1',
+    name: 'Alex Yang',
+    email: 'alexyang@example.org',
+  });
+  const clain = auth.verify(token);
+  ok(clain.id === '1');
+  ok(clain.name === 'Alex Yang');
+  ok(clain.email === 'alexyang@example.org');
 });

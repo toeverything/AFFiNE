@@ -1,20 +1,19 @@
 /// <reference types="../global.d.ts" />
-import { createPrivateKey, createPublicKey } from 'node:crypto';
 
 import pkg from '../../package.json' assert { type: 'json' };
 import type { AFFiNEConfig } from './def';
 
 // Don't use this in production
 export const examplePublicKey = `-----BEGIN PUBLIC KEY-----
-MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEMsg7HCCBzQrO3sZ1biWY0Yjd4/vDK9J6
-wVMCkSxN4eXJiQzKcmk+YlFfeCNgB90VJ8nVtEbAnr/PYOPjxnTvcw==
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnxM+GhB6eNKPmTP6uH5Gpr+bmQ87
+hHGeOiCsay0w/aPwMqzAOKkZGqX+HZ9BNGy/yiXmnscey5b2vOTzxtRvxA==
 -----END PUBLIC KEY-----`;
 
 // Don't use this in production
 export const examplePrivateKey = `-----BEGIN PRIVATE KEY-----
-MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgpkap3kxxxfd4xxBBEaYU
-fsEVQIvnj4hcLH68U7+0NeqhRANCAAQyyDscIIHNCs7exnVuJZjRiN3j+8Mr0nrB
-UwKRLE3h5cmJDMpyaT5iUV94I2AH3RUnydW0RsCev89g4+PGdO9z
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgWOog5SFXs1Vjh/WP
+QCYPQKgf/jsNmWsvD+jYSn6mi3yhRANCAASfEz4aEHp40o+ZM/q4fkamv5uZDzuE
+cZ46IKxrLTD9o/AyrMA4qRkapf4dn0E0bL/KJeaexx7Llva85PPG1G/E
 -----END PRIVATE KEY-----`;
 
 export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
@@ -60,22 +59,8 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
     salt: '$2b$10$x4VDo2nmlo74yB5jflNhlu',
     accessTokenExpiresIn: '1h',
     refreshTokenExpiresIn: '7d',
-    publicKey: createPublicKey({
-      key: examplePublicKey,
-      format: 'pem',
-      encoding: 'utf8',
-    }).export({
-      type: 'spki',
-      format: 'der',
-    }),
-    privateKey: createPrivateKey({
-      key: examplePrivateKey,
-      format: 'pem',
-      encoding: 'utf8',
-    }).export({
-      type: 'sec1',
-      format: 'der',
-    }),
+    publicKey: examplePublicKey,
+    privateKey: examplePrivateKey,
     enableSignup: true,
     enableOauth: false,
     oauthProviders: {},
