@@ -1,11 +1,10 @@
 import { resolve } from 'node:path';
 
-import { test } from '@affine-test/kit/playwright';
+import { test, testResultDir } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
 import { waitMarkdownImported } from '../libs/page-logic';
-import { testResultDir } from '../libs/utils';
 
 // default could be anything according to the system
 test('default white', async ({ browser }) => {
