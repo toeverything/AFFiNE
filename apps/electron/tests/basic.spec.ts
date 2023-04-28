@@ -51,6 +51,7 @@ test('app theme', async () => {
   await page.screenshot({
     path: resolve(testResultDir, 'affine-light-theme-electron.png'),
   });
+  await page.getByTestId('editor-option-menu').click();
   await page.getByTestId('change-theme-dark').click();
   await page.waitForTimeout(50);
   {
