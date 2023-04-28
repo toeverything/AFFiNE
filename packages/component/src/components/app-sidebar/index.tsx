@@ -21,7 +21,11 @@ import {
   sidebarButtonStyle,
   sidebarFloatMaskStyle,
 } from './index.css';
-import { appSidebarOpenAtom, appSidebarWidthAtom } from './index.jotai';
+import {
+  APP_SIDEBAR_OPEN,
+  appSidebarOpenAtom,
+  appSidebarWidthAtom,
+} from './index.jotai';
 
 export { appSidebarOpenAtom };
 
@@ -41,7 +45,10 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
     }, [setOpen]);
 
     useEffect(() => {
-      if (open === undefined) {
+      if (
+        open === undefined &&
+        localStorage.getItem(APP_SIDEBAR_OPEN) === null
+      ) {
         // give the initial value,
         // so that the sidebar can be closed on mobile by default
         const { matches } = window.matchMedia(
