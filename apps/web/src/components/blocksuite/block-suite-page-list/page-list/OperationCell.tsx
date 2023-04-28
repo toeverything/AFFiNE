@@ -138,19 +138,16 @@ export const OperationCell: React.FC<OperationCellProps> = ({
 };
 
 export type TrashOperationCellProps = {
-  pageMeta: PageMeta;
-  onPermanentlyDeletePage: (pageId: string) => void;
-  onRestorePage: (pageId: string) => void;
-  onOpenPage: (pageId: string) => void;
+  onPermanentlyDeletePage: () => void;
+  onRestorePage: () => void;
+  onOpenPage: () => void;
 };
 
 export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
-  pageMeta,
   onPermanentlyDeletePage,
   onRestorePage,
 }) => {
-  const { id, title } = pageMeta;
-  const t = useAFFiNEI18N();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
     <FlexWrapper>
@@ -158,8 +155,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
         <IconButton
           style={{ marginRight: '12px' }}
           onClick={() => {
-            onRestorePage(id);
-            toast(t['restored']({ title: title || 'Untitled' }));
+            onRestorePage();
           }}
         >
           <ResetIcon />
@@ -181,8 +177,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
         confirmType="danger"
         open={open}
         onConfirm={() => {
-          onPermanentlyDeletePage(id);
-          toast(t['Permanently deleted']());
+          onPermanentlyDeletePage();
           setOpen(false);
         }}
         onClose={() => {

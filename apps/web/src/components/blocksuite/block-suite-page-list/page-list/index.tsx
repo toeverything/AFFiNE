@@ -113,7 +113,6 @@ export const PageList: React.FC<PageListProps> = ({
   const { t } = useTranslation();
   const record = useAtomValue(workspacePreferredModeAtom);
 
-  const isTrash = listType === 'trash';
   const isShared = listType === 'shared';
 
   const ListHead = () => {
@@ -124,7 +123,10 @@ export const PageList: React.FC<PageListProps> = ({
           <TableCell proportion={0.5}>{t('Title')}</TableCell>
           <TableCell proportion={0.2}>{t('Created')}</TableCell>
           <TableCell proportion={0.2}>
-            {isTrash ? t('Moved to Trash') : isShared ? 'Shared' : t('Updated')}
+            {isShared
+              ? // TODO add i18n
+                'Shared'
+              : t('Updated')}
           </TableCell>
           <TableCell proportion={0.1}></TableCell>
         </TableRow>
@@ -171,11 +173,7 @@ export const PageList: React.FC<PageListProps> = ({
           }}
         />
         <DateCell
-          date={
-            isTrash
-              ? pageMeta['trashDate']
-              : pageMeta['updatedDate'] ?? pageMeta['createDate']
-          }
+          date={pageMeta['updatedDate'] ?? pageMeta['createDate']}
           onClick={() => {
             onClickPage(pageMeta.id);
           }}
@@ -185,38 +183,24 @@ export const PageList: React.FC<PageListProps> = ({
             style={{ padding: 0 }}
             data-testid={`more-actions-${pageMeta.id}`}
           >
-            {isTrash ? (
-              <TrashOperationCell
-                pageMeta={pageMeta}
-                onPermanentlyDeletePage={pageId => {
-                  blockSuiteWorkspace.removePage(pageId);
-                }}
-                onRestorePage={() => {
-                  restoreFromTrash(pageMeta.id);
-                }}
-                onOpenPage={pageId => {
-                  onClickPage(pageId, false);
-                }}
-              />
-            ) : (
-              <OperationCell
-                pageMeta={pageMeta}
-                blockSuiteWorkspace={blockSuiteWorkspace}
-                onOpenPageInNewTab={pageId => {
-                  onClickPage(pageId, true);
-                }}
-                onToggleFavoritePage={(pageId: string) => {
-                  toggleFavorite(pageId);
-                }}
-                onToggleTrashPage={(pageId, isTrash) => {
-                  if (isTrash) {
-                    removeToTrash(pageId);
-                  } else {
-                    restoreFromTrash(pageId);
-                  }
-                }}
-              />
-            )}
+            <OperationCell
+              pageMeta={pageMeta}
+              blockSuiteWorkspace={blockSuiteWorkspace}
+              onOpenPageInNewTab={pageId => {
+                onClickPage(pageId, true);
+              }}
+              onToggleFavoritePage={(pageId: string) => {
+                toggleFavorite(pageId);
+              }}
+              onToggleTrashPage={(pageId, isTrash) => {
+                if (isTrash) {
+                  removeToTrash(pageId);
+                } else {
+                  restoreFromTrash(pageId);
+                  toast(t('restored', { title: pageMeta.title || 'Untitled' }));
+                }
+              }}
+            />
           </TableCell>
         )}
       </StyledTableRow>
@@ -247,62 +231,62 @@ const TrashListHead = () => {
   );
 };
 
-export const PageListTrashView: React.FC<{
-  list: PageMeta[];
-  onClickPage: (pageId: string) => void;
-  onRestorePage: (pageId: string) => void;
-  onPermanentlyDeletePage: (pageId: string) => void;
-}> = ({ list, onClickPage, onRestorePage, onPermanentlyDeletePage }) => {
-  const { t } = useTranslation();
-  const record = useAtomValue(workspacePreferredModeAtom);
+export type TrashListData = {
+  id: string;
+  icon: JSX.Element;
+  title: string;
+  favorite: boolean;
+  createDate: number;
+  updatedDate?: number;
+  trashDate?: number;
+  // isPublic: boolean;
+  onClickPage: () => void;
+  onRestorePage: () => void;
+  onPermanentlyDeletePage: () => void;
+};
 
-  const ListItems = list.map((pageMeta, index) => {
-    return (
-      <StyledTableRow
-        data-testid={`page-list-item-${pageMeta.id}`}
-        key={`${pageMeta.id}-${index}`}
-      >
-        <TitleCell
-          icon={
-            record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />
-          }
-          text={pageMeta.title || t('Untitled')}
-          onClick={() => {
-            onClickPage(pageMeta.id);
-          }}
-        />
-        <DateCell
-          date={pageMeta['createDate']}
-          onClick={() => {
-            onClickPage(pageMeta.id);
-          }}
-        />
-        <DateCell
-          date={pageMeta['trashDate']}
-          onClick={() => {
-            onClickPage(pageMeta.id);
-          }}
-        />
-        <TableCell
-          style={{ padding: 0 }}
-          data-testid={`more-actions-${pageMeta.id}`}
+export const PageListTrashView: React.FC<{
+  list: TrashListData[];
+}> = ({ list }) => {
+  const { t } = useTranslation();
+
+  const ListItems = list.map(
+    (
+      {
+        id,
+        title,
+        icon,
+        createDate,
+        trashDate,
+        onClickPage,
+        onPermanentlyDeletePage,
+        onRestorePage,
+      },
+      index
+    ) => {
+      return (
+        <StyledTableRow
+          data-testid={`page-list-item-${id}`}
+          key={`${id}-${index}`}
         >
-          <TrashOperationCell
-            pageMeta={pageMeta}
-            onPermanentlyDeletePage={pageId => {
-              onPermanentlyDeletePage(pageId);
-            }}
-            onRestorePage={() => {
-              onRestorePage(pageMeta.id);
-            }}
-            onOpenPage={pageId => {
-              onClickPage(pageId);
-            }}
+          <TitleCell
+            icon={icon}
+            text={title || t('Untitled')}
+            onClick={onClickPage}
           />
-        </TableCell>
-      </StyledTableRow>
-    );
-  });
+          <DateCell date={createDate} onClick={onClickPage} />
+          <DateCell date={trashDate} onClick={onClickPage} />
+          <TableCell style={{ padding: 0 }} data-testid={`more-actions-${id}`}>
+            <TrashOperationCell
+              onPermanentlyDeletePage={onPermanentlyDeletePage}
+              onRestorePage={onRestorePage}
+              onOpenPage={onClickPage}
+            />
+          </TableCell>
+        </StyledTableRow>
+      );
+    }
+  );
 
   return (
     <StyledTableContainer>

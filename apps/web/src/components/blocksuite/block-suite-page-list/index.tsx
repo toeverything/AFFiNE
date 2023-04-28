@@ -1,11 +1,17 @@
+import { useTranslation } from '@affine/i18n';
+import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useMemo } from 'react';
 
+import { workspacePreferredModeAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
+import { toast } from '../../../utils';
+import type { TrashListData } from './page-list';
 import PageList, { PageListMobileView, PageListTrashView } from './page-list';
 import { PageListEmpty } from './page-list/Empty';
 
@@ -33,17 +39,21 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   listType,
   isPublic = false,
 }) => {
-  const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
-  const { restoreFromTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
+  const { restoreFromTrash, permanentlyDeletePage } =
+    useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const theme = useTheme();
+  const { t } = useTranslation();
   const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
   const list = useMemo(
-    () => pageList.filter(pageMeta => filter[listType](pageMeta, pageList)),
-    [pageList, listType]
+    () => pageMetas.filter(pageMeta => filter[listType](pageMeta, pageMetas)),
+    [pageMetas, listType]
   );
+  const record = useAtomValue(workspacePreferredModeAtom);
   if (list.length === 0) {
     return <PageListEmpty listType={listType} />;
   }
+
   if (isSmallDevices) {
     return (
       <PageListMobileView
@@ -53,17 +63,33 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       />
     );
   }
+
   if (listType === 'trash') {
-    return (
-      <PageListTrashView
-        list={list}
-        onClickPage={onOpenPage}
-        onRestorePage={restoreFromTrash}
-        onPermanentlyDeletePage={pageId => {
-          blockSuiteWorkspace.removePage(pageId);
-        }}
-      />
-    );
+    const pageList: TrashListData[] = list.map(pageMeta => {
+      return {
+        icon:
+          record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
+        id: pageMeta.id,
+        title: pageMeta.title,
+        favorite: !!pageMeta.favorite,
+        createDate: pageMeta.createDate,
+        updatedDate: pageMeta.updatedDate as number | undefined,
+        // isPublic: pageMeta.isPublic,
+        onClickPage: () => onOpenPage(pageMeta.id),
+        onClickRestore: () => {
+          restoreFromTrash(pageMeta.id);
+        },
+        onRestorePage: () => {
+          restoreFromTrash(pageMeta.id);
+          toast(t('restored', { title: pageMeta.title || 'Untitled' }));
+        },
+        onPermanentlyDeletePage: () => {
+          permanentlyDeletePage(pageMeta.id);
+          toast(t('Permanently deleted'));
+        },
+      };
+    });
+    return <PageListTrashView list={pageList} />;
   }
 
   return (
