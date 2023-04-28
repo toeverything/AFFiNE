@@ -1,7 +1,7 @@
 import type { Instance } from '@popperjs/core';
 import { createPopper } from '@popperjs/core';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { ReactElement, RefObject } from 'react';
+import type { ReactElement } from 'react';
 import {
   useCallback,
   useDeferredValue,
@@ -14,7 +14,7 @@ import { appSidebarOpenAtom, appSidebarWidthAtom } from '../index.jotai';
 import { spacerStyle } from './index.css';
 
 export type ResizeIndicatorProps = {
-  targetElement: RefObject<HTMLElement>;
+  targetElement: HTMLElement | null;
 };
 
 export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
@@ -25,14 +25,15 @@ export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
   const [isResizing, setIsResizing] = useState(false);
   useEffect(() => {
     if (ref.current) {
-      if (props.targetElement.current) {
-        popperRef.current = createPopper(
-          props.targetElement.current,
-          ref.current,
-          {
-            placement: 'right',
-          }
-        );
+      if (props.targetElement) {
+        const popper = createPopper(props.targetElement, ref.current, {
+          placement: 'right',
+        });
+        popperRef.current = popper;
+        return () => {
+          popper.destroy();
+          popperRef.current = null;
+        };
       }
     }
   }, [props.targetElement]);
