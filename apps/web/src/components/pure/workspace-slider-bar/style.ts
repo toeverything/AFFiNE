@@ -2,60 +2,10 @@ import { displayFlex, styled, textEllipsis } from '@affine/component';
 import { baseTheme } from '@toeverything/theme';
 import Link from 'next/link';
 
-const macosElectron = environment.isDesktop && environment.isMacOs;
-
-export const StyledSliderBarWrapper = styled('div')<{
-  show: boolean;
-  floating: boolean;
-  resizing: boolean;
-}>(({ theme, show, floating, resizing }) => {
-  return {
-    height: '100%',
-    position: 'absolute',
-    'button, a': {
-      userSelect: 'none',
-    },
-    zIndex: 'var(--affine-z-index-modal)',
-    transition: resizing ? '' : 'transform .3s, width .3s, max-width .3s',
-    transform: show ? 'translateX(0)' : 'translateX(-100%)',
-    maxWidth: floating ? 'calc(10vw + 400px)' : 'calc(100vw - 698px)',
-    background:
-      !floating && macosElectron
-        ? 'transparent'
-        : 'var(--affine-background-secondary-color)',
-    borderRight: macosElectron ? '' : '1px solid',
-    borderColor: 'var(--affine-border-color)',
-  };
-});
-
-export const StyledSliderBar = styled('div')(() => {
-  return {
-    whiteSpace: 'nowrap',
-    width: '100%',
-    height: '100%',
-    padding: '0 4px',
-    flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
-  };
-});
-export const StyledSidebarHeader = styled('div')(() => {
-  return {
-    height: '52px',
-    flexShrink: 0,
-    padding: '0 16px 0 10px',
-    WebkitAppRegion: 'drag',
-    button: {
-      WebkitAppRegion: 'no-drag',
-    },
-    ...displayFlex(macosElectron ? 'flex-end' : 'space-between', 'center'),
-  };
-});
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
   return {
     flexGrow: 1,
-    // overflowX: 'hidden',
-    // overflowY: 'auto',
+    margin: '0 2px',
     position: 'relative',
     height: 'calc(100% - 52px * 2)',
     display: 'flex',
@@ -91,8 +41,6 @@ export const StyledNewPageButton = styled('button')(({ theme }) => {
   return {
     height: '52px',
     ...displayFlex('flex-start', 'center'),
-    borderTop: '1px solid',
-    borderColor: 'var(--affine-border-color)',
     padding: '0 8px 0 16px',
     svg: {
       fontSize: '20px',

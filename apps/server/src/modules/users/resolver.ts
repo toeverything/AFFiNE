@@ -1,36 +1,36 @@
 import { Args, Field, ID, ObjectType, Query, Resolver } from '@nestjs/graphql';
-import type { users } from '@prisma/client';
+import type { User } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/service';
 
 @ObjectType()
-export class User implements users {
+export class UserType implements Partial<User> {
   @Field(() => ID)
   id!: string;
+
   @Field({ description: 'User name' })
   name!: string;
+
   @Field({ description: 'User email' })
   email!: string;
-  @Field({ description: 'User password', nullable: true })
-  password!: string;
+
   @Field({ description: 'User avatar url', nullable: true })
-  avatar_url!: string;
-  @Field({ description: 'User token nonce', nullable: true })
-  token_nonce!: number;
+  avatarUrl!: string;
+
   @Field({ description: 'User created date', nullable: true })
-  created_at!: Date;
+  createdAt!: Date;
 }
 
-@Resolver(() => User)
+@Resolver(() => UserType)
 export class UserResolver {
   constructor(private readonly prisma: PrismaService) {}
 
-  @Query(() => User, {
+  @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',
   })
   async user(@Args('email') email: string) {
-    return this.prisma.users.findUnique({
+    return this.prisma.user.findUnique({
       where: { email },
     });
   }

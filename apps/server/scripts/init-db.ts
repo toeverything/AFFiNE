@@ -1,15 +1,10 @@
-import { randomUUID } from 'node:crypto';
-
 import userA from '@affine-test/fixtures/userA.json' assert { type: 'json' };
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.users.create({
-    data: {
-      id: randomUUID(),
-      ...userA,
-    },
+  await prisma.user.create({
+    data: userA,
   });
 }
 

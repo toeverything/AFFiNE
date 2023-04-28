@@ -7,46 +7,57 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model google_users {
-  id        String @id @db.VarChar
-  user_id   String @db.VarChar
-  google_id String @unique @db.VarChar
-  users     users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+model User {
+  id                String                    @id @default(uuid()) @db.VarChar
+  name              String                    @db.VarChar
+  email             String                    @unique @db.VarChar
+  tokenNonce        Int                       @default(0) @map("token_nonce") @db.SmallInt
+  avatarUrl         String?                   @map("avatar_url") @db.VarChar
+  /// Available if user signed up through OAuth providers
+  password          String?                   @db.VarChar
+  /// User may created by email collobration invitation before signup.
+  /// We will precreate a user entity in such senarios but leave fulfilled as false until they signed up
+  /// This implementation is convenient for handing unregistered user permissoin
+  fulfilled         Boolean                   @default(true)
+  createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  connectedAccounts ConnectedAccount[]
+  workspaces        UserWorkspacePermission[]
+
+  @@map("users")
 }
 
-model permissions {
-  id           String     @id @db.VarChar
-  workspace_id String     @db.VarChar
-  user_id      String?    @db.VarChar
-  user_email   String?
-  type         Int        @db.SmallInt
-  accepted     Boolean    @default(false)
-  created_at   DateTime?  @default(now()) @db.Timestamptz(6)
-  users        users?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspaces   workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+model Workspace {
+  id        String                    @id @default(uuid()) @db.VarChar
+  public    Boolean
+  createdAt DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  users     UserWorkspacePermission[]
+
+  @@map("workspaces")
 }
 
-model seaql_migrations {
-  version    String @id @db.VarChar
-  applied_at BigInt
+model ConnectedAccount {
+  id             String @id @default(uuid()) @db.VarChar
+  userId         String @map("user_id")
+  /// the general provider name, e.g. google, github, facebook
+  provider       String @db.VarChar
+  /// the user id provided by OAuth providers, or other user identitive credential like `username` provided by GitHub
+  providerUserId String @unique @map("provider_user_id") @db.VarChar
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("connected_accounts")
 }
 
-model users {
-  id           String         @id @db.VarChar
-  name         String         @db.VarChar
-  email        String         @unique @db.VarChar
-  avatar_url   String?        @db.VarChar
-  token_nonce  Int?           @default(0) @db.SmallInt
-  password     String?        @db.VarChar
-  created_at   DateTime?      @default(now()) @db.Timestamptz(6)
-  google_users google_users[]
-  permissions  permissions[]
-}
+model UserWorkspacePermission {
+  id          String    @id @default(uuid()) @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  userId      String    @map("entity_id") @db.VarChar
+  /// Read/Write/Admin/Owner
+  type        Int       @db.SmallInt
+  /// Whether the permission invitation is accepted by the user
+  accepted    Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model workspaces {
-  id          String        @id @db.VarChar
-  public      Boolean
-  type        Int           @db.SmallInt
-  created_at  DateTime?     @default(now()) @db.Timestamptz(6)
-  permissions permissions[]
+  @@map("user_workspace_permissions")
 }

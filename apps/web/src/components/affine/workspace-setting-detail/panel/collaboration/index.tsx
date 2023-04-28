@@ -120,7 +120,7 @@ const AffineRemoteCollaborationPanel: React.FC<
                                 </MenuItem>
                               </>
                             }
-                            placement="bottom-end"
+                            // placement="bottom-end"
                             disablePortal={true}
                             trigger="click"
                           >

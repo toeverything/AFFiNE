@@ -70,6 +70,10 @@ export function parseEnvValue(value: string | undefined, type?: EnvConfigType) {
 export interface AFFiNEConfig {
   ENV_MAP: Record<string, ConfigPaths | [ConfigPaths, EnvConfigType?]>;
   /**
+   * Application sign key secret
+   */
+  readonly secret: string;
+  /**
    * System version
    */
   readonly version: string;
