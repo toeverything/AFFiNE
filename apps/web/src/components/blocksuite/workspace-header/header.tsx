@@ -144,7 +144,12 @@ export const Header = forwardRef<
   const { t } = useTranslation();
 
   return (
-    <StyledHeaderContainer ref={ref} hasWarning={showWarning} {...props}>
+    <StyledHeaderContainer
+      ref={ref}
+      hasWarning={showWarning}
+      data-open={open}
+      {...props}
+    >
       <BrowserWarning
         show={showWarning}
         onClose={() => {

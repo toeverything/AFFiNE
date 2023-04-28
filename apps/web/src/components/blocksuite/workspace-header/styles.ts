@@ -14,7 +14,13 @@ export const StyledHeaderContainer = styled('div')<{
     position: 'sticky',
     top: 0,
     background: 'var(--affine-background-primary-color)',
+    WebkitAppRegion: 'drag',
     zIndex: 1,
+    '@media (max-width: 768px)': {
+      '&[data-open="true"]': {
+        WebkitAppRegion: 'no-drag',
+      },
+    },
   };
 });
 export const StyledHeader = styled('div')<{ hasWarning: boolean }>(

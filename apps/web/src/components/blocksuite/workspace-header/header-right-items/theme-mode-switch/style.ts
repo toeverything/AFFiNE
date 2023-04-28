@@ -10,6 +10,7 @@ export const StyledThemeModeSwitch = styled('button')(({ theme }) => {
     height: '32px',
     borderRadius: '6px',
     overflow: 'hidden',
+    WebkitAppRegion: 'no-drag',
     backgroundColor: 'transparent',
     position: 'relative',
     color: 'var(--affine-icon-color)',
