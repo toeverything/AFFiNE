@@ -5,7 +5,6 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
-import { config } from '@affine/env';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -283,7 +282,7 @@ describe('useIsFirstLoad', () => {
   test('useLastVersion', async () => {
     const lastVersion = renderHook(() => useLastVersion());
     const setLastVersion = lastVersion.result.current[1];
-    expect(lastVersion.result.current[0]).toEqual(config.gitVersion);
+    expect(lastVersion.result.current[0]).toEqual('0.0.0');
     setLastVersion('testVersion');
     lastVersion.rerender();
     expect(lastVersion.result.current[0]).toEqual('testVersion');
