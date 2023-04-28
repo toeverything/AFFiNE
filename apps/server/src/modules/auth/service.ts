@@ -59,9 +59,7 @@ export class AuthService {
       throw new BadRequestException('User has no password');
     }
 
-    const hashedPassword = await hash(password, this.config.auth.salt);
-
-    const equal = await compare(user.password, hashedPassword);
+    const equal = await compare(password, user.password);
 
     if (!equal) {
       throw new UnauthorizedException('Invalid password');
@@ -72,6 +70,16 @@ export class AuthService {
 
   async register(name: string, email: string, password: string): Promise<User> {
     const hashedPassword = await hash(password, this.config.auth.salt);
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+
+    if (user) {
+      throw new BadRequestException('Email already exists');
+    }
 
     return this.prisma.user.create({
       data: {
