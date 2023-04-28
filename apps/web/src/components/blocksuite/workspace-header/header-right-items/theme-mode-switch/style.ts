@@ -3,7 +3,7 @@ import { css, displayFlex, keyframes, styled } from '@affine/component';
 import spring, { toString } from 'css-spring';
 
 const ANIMATE_DURATION = 400;
-export const StyledThemeModeContainer = styled('div')(({ theme }) => {
+export const StyledThemeModeContainer = styled('div')(() => {
   return {
     width: '100%',
     height: '48px',
@@ -15,7 +15,7 @@ export const StyledThemeModeContainer = styled('div')(({ theme }) => {
     padding: '0 14px',
   };
 });
-export const StyledThemeButtonContainer = styled('div')(({ theme }) => {
+export const StyledThemeButtonContainer = styled('div')(() => {
   return {
     border: `1px solid var(--affine-border-color)`,
     borderRadius: '4px',
@@ -33,7 +33,7 @@ export const StyledThemeButton = styled('button')<{
     color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
   };
 });
-export const StyledVerticalDivider = styled('div')(({ theme }) => {
+export const StyledVerticalDivider = styled('div')(() => {
   return {
     width: '1px',
     height: '32px',
