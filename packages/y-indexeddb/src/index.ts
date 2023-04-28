@@ -145,7 +145,6 @@ export const createIndexedDBProvider = (
   let reject: (reason?: unknown) => void;
   let early = true;
   let connect = false;
-  let destroy = false;
 
   async function handleUpdate(update: Uint8Array, origin: unknown) {
     const db = await dbPromise;
@@ -199,7 +198,6 @@ export const createIndexedDBProvider = (
   });
   const handleDestroy = async () => {
     connect = true;
-    destroy = true;
     const db = await dbPromise;
     db.close();
   };
@@ -277,7 +275,6 @@ export const createIndexedDBProvider = (
       doc.off('destroy', handleDestroy);
     },
     cleanup() {
-      destroy = true;
       // todo
     },
     whenSynced: Promise.resolve(),

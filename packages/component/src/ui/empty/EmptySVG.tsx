@@ -1,7 +1,7 @@
 import type { SvgIconProps } from '@mui/material/SvgIcon';
 import SvgIcon from '@mui/material/SvgIcon';
 
-export const EmptySVG = (props: SvgIconProps) => {
+export const EmptySVG = (_props: SvgIconProps) => {
   return (
     <SvgIcon
       width="200"

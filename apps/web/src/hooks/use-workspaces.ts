@@ -86,14 +86,14 @@ export const useElementResizeEffect = (
   element: Element | null,
   fn: () => void | (() => () => void),
   // TODO: add throttle
-  throttle = 0
+  _throttle = 0
 ) => {
   useEffect(() => {
     if (!element) {
       return;
     }
     let dispose: void | (() => void);
-    const resizeObserver = new ResizeObserver(entries => {
+    const resizeObserver = new ResizeObserver(() => {
       dispose = fn();
     });
     resizeObserver.observe(element);

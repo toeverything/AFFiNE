@@ -189,7 +189,7 @@ export const BasicStyledPopper = styled(PopperUnstyled, {
     !['zIndex'].some(name => name === propName),
 })<{
   zIndex?: CSSProperties['zIndex'];
-}>(({ zIndex, theme }) => {
+}>(({ zIndex }) => {
   return {
     zIndex: zIndex ?? 'var(--affine-z-index-popover)',
   };

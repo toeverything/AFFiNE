@@ -20,7 +20,7 @@ export const Export = ({
   return (
     <Menu
       width={248}
-      // placement="left-start"
+      placement="left"
       trigger="click"
       content={
         <>

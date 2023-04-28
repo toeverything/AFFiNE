@@ -8,7 +8,7 @@ export const StyledInput = styled('input')<{
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
   noBorder?: boolean;
-}>(({ theme, width, disabled, height, noBorder }) => {
+}>(({ width, disabled, height, noBorder }) => {
   return {
     width: width || '100%',
     height,

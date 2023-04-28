@@ -104,7 +104,6 @@ export const StyledTextButton = styled('button', {
   >
 >(
   ({
-    theme,
     size = 'default',
     disabled,
     hoverBackground,

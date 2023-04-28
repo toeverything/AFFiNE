@@ -76,12 +76,12 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
           },
           [helper]
         )}
-        togglePagePublic={useCallback(async (page, isPublic) => {
+        togglePagePublic={useCallback(async () => {
           // local workspace should not have public page
           throw new Error('unreachable');
         }, [])}
         toggleWorkspacePublish={useCallback(
-          async (workspace, publish) => {
+          async workspace => {
             assertEquals(workspace.flavour, WorkspaceFlavour.LOCAL);
             assertEquals(workspace.id, props.workspace.id);
             await helper.jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);

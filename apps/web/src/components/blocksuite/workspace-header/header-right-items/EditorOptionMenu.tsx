@@ -140,7 +140,7 @@ const PageMenu = () => {
         <Menu
           width={276}
           content={EditMenu}
-          // placement="bottom-end"
+          placement="bottom"
           disablePortal={true}
           trigger="click"
         >

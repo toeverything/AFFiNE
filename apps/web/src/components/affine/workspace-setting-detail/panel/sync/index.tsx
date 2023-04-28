@@ -9,7 +9,7 @@ import { useCurrentUser } from '../../../../../hooks/current/use-current-user';
 import { WorkspaceAvatar } from '../../../../pure/footer';
 import type { PanelProps } from '../../index';
 
-export const StyledWorkspaceName = styled('span')(({ theme }) => {
+export const StyledWorkspaceName = styled('span')(() => {
   return {
     fontWeight: '400',
     fontSize: 'var(--affine-font-h6)',

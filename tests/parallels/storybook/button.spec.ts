@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-async function openStorybook(page: Page, storyName?: string) {
+async function openStorybook(page: Page) {
   return page.goto(`http://localhost:6006`);
 }
 
