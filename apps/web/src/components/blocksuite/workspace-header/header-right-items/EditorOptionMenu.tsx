@@ -71,7 +71,7 @@ const PageMenu = () => {
   const [record, set] = useAtom(workspacePreferredModeAtom);
   const mode = record[pageId] ?? 'page';
 
-  const favorite = pageMeta?.favorite ?? false;
+  const favorite = pageMeta.favorite ?? false;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
