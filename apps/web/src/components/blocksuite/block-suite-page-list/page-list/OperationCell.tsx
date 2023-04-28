@@ -88,6 +88,14 @@ export const OperationCell: React.FC<OperationCellProps> = ({
           {t('Open in new tab')}
         </MenuItem>
       )}
+      {!pageMeta.isRootPinboard && (
+        <MoveToTrash
+          testId="move-to-trash"
+          onItemClick={() => {
+            setOpen(true);
+          }}
+        />
+      )}
     </>
   );
   return (

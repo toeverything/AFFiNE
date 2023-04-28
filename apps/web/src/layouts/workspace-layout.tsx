@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
@@ -314,6 +314,8 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
             void jumpToPage(currentWorkspace.id, pageId);
           }
         }
+        // no matter the workspace is empty, ensure the root pinboard exists
+        ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
       };
       provider.callbacks.add(callback);
       return () => {

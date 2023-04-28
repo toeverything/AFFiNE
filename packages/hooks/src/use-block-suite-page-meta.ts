@@ -15,6 +15,7 @@ declare module '@blocksuite/store' {
     init?: boolean;
     // todo: support `number` in the future
     isPublic?: boolean;
+    isRootPinboard?: boolean;
   }
 }
 
