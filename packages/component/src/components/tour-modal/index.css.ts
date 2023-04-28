@@ -8,6 +8,9 @@ export const modalStyle = style({
   alignItems: 'center',
   position: 'relative',
   padding: '12px 36px',
+  backgroundColor: 'var(--affine-white)',
+  borderRadius: '12px',
+  boxShadow: 'var(--affine-popover-shadow)',
 });
 export const titleStyle = style({
   fontSize: 'var(--affine-font-h6)',
@@ -31,6 +34,7 @@ export const buttonContainerStyle = style({
 export const buttonStyle = style({
   borderRadius: '8px',
   backgroundColor: 'var(--affine-primary-color)',
+  color: 'var(--affine-white)',
   height: '32px',
   padding: '4 20px',
   ':hover': {

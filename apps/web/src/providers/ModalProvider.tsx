@@ -9,6 +9,7 @@ import {
   currentWorkspaceIdAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
+  openOnboardingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
@@ -37,6 +38,11 @@ const TmpDisableAffineCloudModal = lazy(() =>
     })
   )
 );
+const OnboardingModalAtom = lazy(() =>
+  import('../components/pure/OnboardingModal').then(module => ({
+    default: module.OnboardingModal,
+  }))
+);
 
 export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
@@ -48,6 +54,9 @@ export function Modals() {
 
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
+  );
+  const [openOnboardingModal, setOpenOnboardingModal] = useAtom(
+    openOnboardingModalAtom
   );
 
   const router = useRouter();
@@ -68,6 +77,14 @@ export function Modals() {
           onClose={useCallback(() => {
             setOpenDisableCloudAlertModal(false);
           }, [setOpenDisableCloudAlertModal])}
+        />
+      </Suspense>
+      <Suspense>
+        <OnboardingModalAtom
+          open={openOnboardingModal}
+          onClose={useCallback(() => {
+            setOpenOnboardingModal(false);
+          }, [setOpenOnboardingModal])}
         />
       </Suspense>
       <Suspense>

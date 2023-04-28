@@ -26,7 +26,7 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
       hideBackdrop
     >
       <ModalWrapper width={545} height={442}>
-        <ModalCloseButton top={10} right={10} />
+        <ModalCloseButton top={10} right={10} onClick={onClose} />
         {step === 0 && (
           <div className={modalStyle}>
             <div className={titleStyle}>Hyper merged whiteboard and docs</div>
