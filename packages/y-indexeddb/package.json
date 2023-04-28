@@ -1,7 +1,7 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.5.4-canary.17",
+  "version": "0.5.4-canary.18",
   "scripts": {
     "build": "vite build"
   },
