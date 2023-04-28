@@ -61,6 +61,7 @@ export const navHeaderStyle = style({
   },
   selectors: {
     '&[data-is-macos-electron="true"]': {
+      WebkitAppRegion: 'drag',
       justifyContent: 'flex-end',
     },
   },
