@@ -84,6 +84,13 @@ export function useBlockSuiteMetaHelper(
     [addReferenceLink, getPageMeta, setPageMeta]
   );
 
+  const permanentlyDeletePage = useCallback(
+    (pageId: string) => {
+      blockSuiteWorkspace.removePage(pageId);
+    },
+    [blockSuiteWorkspace]
+  );
+
   return {
     addToFavorite,
     removeFromFavorite,
@@ -91,5 +98,6 @@ export function useBlockSuiteMetaHelper(
 
     removeToTrash,
     restoreFromTrash,
+    permanentlyDeletePage,
   };
 }
