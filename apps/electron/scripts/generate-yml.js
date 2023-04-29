@@ -58,9 +58,6 @@ const generateYml = async () => {
     `sha512: ${yml.sha512}\n` +
     `releaseDate: ${yml.releaseDate}\n`;
 
-  fs.writeFileSync(
-    `./${BUILD_TYPE === 'canary' ? BUILD_TYPE : 'latest'}-mac.yml`,
-    ymlStr
-  );
+  fs.writeFileSync(`./latest-mac.yml`, ymlStr);
 };
 generateYml();
