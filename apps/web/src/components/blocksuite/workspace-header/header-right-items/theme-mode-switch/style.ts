@@ -17,6 +17,7 @@ export const StyledThemeModeContainer = styled('div')(() => {
 });
 export const StyledThemeButtonContainer = styled('div')(() => {
   return {
+    height: '32px',
     border: `1px solid var(--affine-border-color)`,
     borderRadius: '4px',
     cursor: 'pointer',
@@ -29,6 +30,8 @@ export const StyledThemeButton = styled('button')<{
   active: boolean;
 }>(({ active }) => {
   return {
+    height: '100%',
+    flex: 1,
     cursor: 'pointer',
     color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
   };
@@ -36,7 +39,7 @@ export const StyledThemeButton = styled('button')<{
 export const StyledVerticalDivider = styled('div')(() => {
   return {
     width: '1px',
-    height: '32px',
+    height: '100%',
     borderLeft: `1px solid var(--affine-border-color)`,
   };
 });
