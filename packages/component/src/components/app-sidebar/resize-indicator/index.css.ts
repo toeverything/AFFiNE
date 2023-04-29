@@ -4,13 +4,14 @@ import { navWidthVar } from '../index.css';
 
 export const spacerStyle = style({
   position: 'absolute',
-  width: '1px',
   left: navWidthVar,
   top: 0,
   bottom: 0,
+  width: '7px',
   height: '100%',
+  borderLeft: '1px solid var(--affine-border-color)',
   zIndex: 'calc(var(--affine-z-index-modal) - 1)',
-  backgroundColor: 'var(--affine-border-color)',
+  backgroundColor: 'transparent',
   opacity: 0,
   cursor: 'col-resize',
   '@media': {

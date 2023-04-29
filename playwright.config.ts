@@ -1,5 +1,3 @@
-import { resolve } from 'node:path';
-
 import type {
   PlaywrightTestConfig,
   PlaywrightWorkerOptions,
@@ -44,18 +42,6 @@ const config: PlaywrightTestConfig = {
   reporter: process.env.CI ? 'github' : 'list',
 
   webServer: [
-    {
-      command: 'cargo run -p affine-cloud',
-      port: 3000,
-      timeout: 10 * 1000,
-      reuseExistingServer: true,
-      cwd: process.env.OCTOBASE_CWD ?? resolve(process.cwd(), 'apps', 'server'),
-      env: {
-        SIGN_KEY: 'test123',
-        RUST_LOG: 'debug',
-        JWST_DEV: '1',
-      },
-    },
     {
       // Intentionally not building the storybook, reminds you to run it by yourself.
       command: 'yarn run start:storybook',
