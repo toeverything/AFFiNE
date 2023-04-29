@@ -43,7 +43,23 @@ fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
 export const Default = () => {
   return (
     <>
-      <BlockSuiteEditor mode="page" page={page} onInit={initPage} />
+      <div
+        style={{
+          height: '100vh',
+          width: '100vw',
+          overflow: 'auto',
+        }}
+      >
+        <BlockSuiteEditor mode="page" page={page} onInit={initPage} />
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          right: 12,
+          bottom: 12,
+        }}
+        id="toolWrapper"
+      />
       <ImagePreviewModal workspace={workspace} pageId="page0" />
     </>
   );
