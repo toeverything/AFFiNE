@@ -65,7 +65,7 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "fake-indexeddb": "4.0.1",
     "got": "^12.6.0",
-    "happy-dom": "^9.9.2",
+    "happy-dom": "^9.10.1",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.2",
     "msw": "^1.2.1",
