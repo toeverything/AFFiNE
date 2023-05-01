@@ -7,10 +7,10 @@
     "jotai": "^2.0.4"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230428070346-4bed88f0-nightly",
-    "@blocksuite/editor": "0.0.0-20230428070346-4bed88f0-nightly",
-    "@blocksuite/global": "0.0.0-20230428070346-4bed88f0-nightly",
-    "@blocksuite/store": "0.0.0-20230428070346-4bed88f0-nightly",
+    "@blocksuite/blocks": "0.0.0-20230429153208-4ac043ec-nightly",
+    "@blocksuite/editor": "0.0.0-20230429153208-4ac043ec-nightly",
+    "@blocksuite/global": "0.0.0-20230429153208-4ac043ec-nightly",
+    "@blocksuite/store": "0.0.0-20230429153208-4ac043ec-nightly",
     "lottie-web": "^5.11.0"
   },
   "peerDependencies": {
