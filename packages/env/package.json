@@ -4,8 +4,8 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230429153208-4ac043ec-nightly",
-    "next": "=13.2.3",
+    "@blocksuite/global": "0.0.0-20230501021333-90d9a4af-nightly",
+    "next": "^13.3.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zod": "^3.21.4"
