@@ -148,8 +148,10 @@ const createSQLiteProvider = (
 ): SQLiteProvider => {
   const sqliteOrigin = Symbol('sqlite-provider-origin');
   const apis = window.apis!;
+  const events = window.events!;
   // make sure it is being used in Electron with APIs
   assertExists(apis);
+  assertExists(events);
 
   function handleUpdate(update: Uint8Array, origin: unknown) {
     if (origin === sqliteOrigin) {
@@ -217,7 +219,7 @@ const createSQLiteProvider = (
       blockSuiteWorkspace.doc.on('update', handleUpdate);
 
       let timer = 0;
-      unsubscribe = apis.db.onDBFileUpdate(workspaceId => {
+      unsubscribe = events.onDBFileUpdate(workspaceId => {
         if (workspaceId === blockSuiteWorkspace.id) {
           // throttle
           logger.debug('on db update', workspaceId);

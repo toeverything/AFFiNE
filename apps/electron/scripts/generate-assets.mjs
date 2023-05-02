@@ -87,4 +87,6 @@ async function buildLayers() {
       'process.env.NODE_ENV': `"production"`,
     },
   });
+
+  await $`yarn workspace @affine/electron generate-handlers-meta`;
 }

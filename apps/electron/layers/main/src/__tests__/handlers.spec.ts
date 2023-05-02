@@ -11,13 +11,25 @@ const registeredHandlers = new Map<string, (...args: any[]) => any>();
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-// common mock dispatcher for ipcMain.handle and app.on
-async function dispatch<T extends keyof MainIPCHandlerMap>(
-  key: T,
-  ...args: Parameters<MainIPCHandlerMap[T]>
+type WithoutFirstParameter<T> = T extends (_: any, ...args: infer P) => infer R
+  ? (...args: P) => R
+  : T;
+
+// common mock dispatcher for ipcMain.handle AND app.on
+// alternatively, we can use single parameter for T & F, eg, dispatch('workspace:list'),
+// however this is too hard to be typed correctly
+async function dispatch<
+  T extends keyof MainIPCHandlerMap,
+  F extends keyof MainIPCHandlerMap[T]
+>(
+  namespace: T,
+  functionName: F,
+  // @ts-ignore
+  ...args: Parameters<WithoutFirstParameter<MainIPCHandlerMap[T][F]>>
 ): // @ts-ignore
-ReturnType<MainIPCHandlerMap[T]> {
-  const handler = registeredHandlers.get(key);
+ReturnType<MainIPCHandlerMap[T][F]> {
+  // @ts-ignore
+  const handler = registeredHandlers.get(namespace + ':' + functionName);
   assert(handler);
   return await handler(null, ...args);
 }
@@ -172,7 +184,7 @@ describe('workspace handlers', () => {
     const ids = ['test-workspace-id', 'test-workspace-id-2'];
     const { ensureSQLiteDB } = await import('../data/ensure-db');
     await Promise.all(ids.map(id => ensureSQLiteDB(id)));
-    const list = await dispatch('workspace:list');
+    const list = await dispatch('workspace', 'list');
     expect(list).toEqual(ids);
   });
 
@@ -180,17 +192,17 @@ describe('workspace handlers', () => {
     const ids = ['test-workspace-id', 'test-workspace-id-2'];
     const { ensureSQLiteDB } = await import('../data/ensure-db');
     await Promise.all(ids.map(id => ensureSQLiteDB(id)));
-    await dispatch('workspace:delete', 'test-workspace-id-2');
-    const list = await dispatch('workspace:list');
+    await dispatch('workspace', 'delete', 'test-workspace-id-2');
+    const list = await dispatch('workspace', 'list');
     expect(list).toEqual(['test-workspace-id']);
   });
 });
 
 describe('UI handlers', () => {
   test('theme-change', async () => {
-    await dispatch('ui:theme-change', 'dark');
+    await dispatch('ui', 'handleThemeChange', 'dark');
     expect(nativeTheme.themeSource).toBe('dark');
-    await dispatch('ui:theme-change', 'light');
+    await dispatch('ui', 'handleThemeChange', 'light');
     expect(nativeTheme.themeSource).toBe('light');
   });
 
@@ -198,9 +210,9 @@ describe('UI handlers', () => {
     vi.stubGlobal('process', { platform: 'darwin' });
     const setWindowButtonVisibility = vi.fn();
     browserWindow.setWindowButtonVisibility = setWindowButtonVisibility;
-    await dispatch('ui:sidebar-visibility-change', true);
+    await dispatch('ui', 'handleSidebarVisibilityChange', true);
     expect(setWindowButtonVisibility).toBeCalledWith(true);
-    await dispatch('ui:sidebar-visibility-change', false);
+    await dispatch('ui', 'handleSidebarVisibilityChange', false);
     expect(setWindowButtonVisibility).toBeCalledWith(false);
     vi.unstubAllGlobals();
   });
@@ -209,7 +221,7 @@ describe('UI handlers', () => {
     vi.stubGlobal('process', { platform: 'linux' });
     const setWindowButtonVisibility = vi.fn();
     browserWindow.setWindowButtonVisibility = setWindowButtonVisibility;
-    await dispatch('ui:sidebar-visibility-change', true);
+    await dispatch('ui', 'handleSidebarVisibilityChange', true);
     expect(setWindowButtonVisibility).not.toBeCalled();
     vi.unstubAllGlobals();
   });
@@ -218,7 +230,7 @@ describe('UI handlers', () => {
 describe('db handlers', () => {
   test('apply doc and get doc updates', async () => {
     const workspaceId = 'test-workspace-id';
-    const bin = await dispatch('db:get-doc', workspaceId);
+    const bin = await dispatch('db', 'getDoc', workspaceId);
     // ? is this a good test?
     expect(bin.every((byte: number) => byte === 0)).toBe(true);
 
@@ -227,24 +239,24 @@ describe('db handlers', () => {
     ytext.insert(0, 'hello world');
     const bin2 = Y.encodeStateAsUpdate(ydoc);
 
-    await dispatch('db:apply-doc-update', workspaceId, bin2);
+    await dispatch('db', 'applyDocUpdate', workspaceId, bin2);
 
-    const bin3 = await dispatch('db:get-doc', workspaceId);
+    const bin3 = await dispatch('db', 'getDoc', workspaceId);
     const ydoc2 = new Y.Doc();
     Y.applyUpdate(ydoc2, bin3);
     const ytext2 = ydoc2.getText('test');
     expect(ytext2.toString()).toBe('hello world');
   });
 
-  test('get non existent doc', async () => {
+  test('get non existent blob', async () => {
     const workspaceId = 'test-workspace-id';
-    const bin = await dispatch('db:get-blob', workspaceId, 'non-existent-id');
+    const bin = await dispatch('db', 'getBlob', workspaceId, 'non-existent-id');
     expect(bin).toBeNull();
   });
 
   test('list blobs (empty)', async () => {
     const workspaceId = 'test-workspace-id';
-    const list = await dispatch('db:get-persisted-blobs', workspaceId);
+    const list = await dispatch('db', 'getPersistedBlobs', workspaceId);
     expect(list).toEqual([]);
   });
 
@@ -254,34 +266,34 @@ describe('db handlers', () => {
     const workspaceId = 'test-workspace-id';
 
     // add blob
-    await dispatch('db:add-blob', workspaceId, 'testBin', testBin);
+    await dispatch('db', 'addBlob', workspaceId, 'testBin', testBin);
 
     // get blob
     expect(
       compareBuffer(
-        await dispatch('db:get-blob', workspaceId, 'testBin'),
+        await dispatch('db', 'getBlob', workspaceId, 'testBin'),
         testBin
       )
     ).toBe(true);
 
     // add another blob
-    await dispatch('db:add-blob', workspaceId, 'testBin2', testBin2);
+    await dispatch('db', 'addBlob', workspaceId, 'testBin2', testBin2);
     expect(
       compareBuffer(
-        await dispatch('db:get-blob', workspaceId, 'testBin2'),
+        await dispatch('db', 'getBlob', workspaceId, 'testBin2'),
         testBin2
       )
     ).toBe(true);
 
     // list blobs
-    let lists = await dispatch('db:get-persisted-blobs', workspaceId);
+    let lists = await dispatch('db', 'getPersistedBlobs', workspaceId);
     expect(lists).toHaveLength(2);
     expect(lists).toContain('testBin');
     expect(lists).toContain('testBin2');
 
     // delete blob
-    await dispatch('db:delete-blob', workspaceId, 'testBin');
-    lists = await dispatch('db:get-persisted-blobs', workspaceId);
+    await dispatch('db', 'deleteBlob', workspaceId, 'testBin');
+    lists = await dispatch('db', 'getPersistedBlobs', workspaceId);
     expect(lists).toEqual(['testBin2']);
   });
 });
@@ -295,7 +307,7 @@ describe('dialog handlers', () => {
     const { ensureSQLiteDB } = await import('../data/ensure-db');
     const db = await ensureSQLiteDB(id);
 
-    await dispatch('dialog:reveal-db-file', id);
+    await dispatch('dialog', 'revealDBFile', id);
     expect(mockShowItemInFolder).toBeCalledWith(db.path);
   });
 
@@ -311,7 +323,7 @@ describe('dialog handlers', () => {
     const { ensureSQLiteDB } = await import('../data/ensure-db');
     await ensureSQLiteDB(id);
 
-    await dispatch('dialog:save-db-file-as', id);
+    await dispatch('dialog', 'saveDBFileAs', id);
     expect(mockShowSaveDialog).toBeCalled();
     expect(mockShowItemInFolder).not.toBeCalled();
   });
@@ -329,7 +341,7 @@ describe('dialog handlers', () => {
     const { ensureSQLiteDB } = await import('../data/ensure-db');
     await ensureSQLiteDB(id);
 
-    await dispatch('dialog:save-db-file-as', id);
+    await dispatch('dialog', 'saveDBFileAs', id);
     expect(mockShowSaveDialog).toBeCalled();
     expect(mockShowItemInFolder).toBeCalledWith(newSavedPath);
 
@@ -343,7 +355,7 @@ describe('dialog handlers', () => {
     }) as any;
     electronModule.dialog.showOpenDialog = mockShowOpenDialog;
 
-    const res = await dispatch('dialog:load-db-file');
+    const res = await dispatch('dialog', 'loadDBFile');
     expect(mockShowOpenDialog).toBeCalled();
     expect(res.canceled).toBe(true);
   });
@@ -354,7 +366,7 @@ describe('dialog handlers', () => {
     }) as any;
     electronModule.dialog.showOpenDialog = mockShowOpenDialog;
 
-    const res = await dispatch('dialog:load-db-file');
+    const res = await dispatch('dialog', 'loadDBFile');
     expect(mockShowOpenDialog).toBeCalled();
     expect(res.error).toBe('db file path not valid');
   });
@@ -371,7 +383,7 @@ describe('dialog handlers', () => {
     }) as any;
     electronModule.dialog.showOpenDialog = mockShowOpenDialog;
 
-    const res = await dispatch('dialog:load-db-file');
+    const res = await dispatch('dialog', 'loadDBFile');
     expect(mockShowOpenDialog).toBeCalled();
     expect(res.error).toBe('invalid db file');
   });
@@ -397,7 +409,7 @@ describe('dialog handlers', () => {
     }) as any;
     electronModule.dialog.showOpenDialog = mockShowOpenDialog;
 
-    const res = await dispatch('dialog:load-db-file');
+    const res = await dispatch('dialog', 'loadDBFile');
     expect(mockShowOpenDialog).toBeCalled();
     expect(res.workspaceId).not.toBeUndefined();
 
@@ -417,7 +429,7 @@ describe('dialog handlers', () => {
     const { ensureSQLiteDB } = await import('../data/ensure-db');
     await ensureSQLiteDB(id);
 
-    const res = await dispatch('dialog:move-db-file', id);
+    const res = await dispatch('dialog', 'moveDBFile', id);
     expect(mockShowSaveDialog).toBeCalled();
     expect(res).toBe(newPath);
   });
@@ -432,7 +444,7 @@ describe('dialog handlers', () => {
     const { ensureSQLiteDB } = await import('../data/ensure-db');
     await ensureSQLiteDB(id);
 
-    const res = await dispatch('dialog:move-db-file', id);
+    const res = await dispatch('dialog', 'moveDBFile', id);
     expect(mockShowSaveDialog).toBeCalled();
     expect(res).toBe(null);
   });

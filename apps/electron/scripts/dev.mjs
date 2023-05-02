@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process';
+/* eslint-disable no-async-promise-executor */
+import { execSync, spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -59,39 +60,42 @@ function spawnOrReloadElectron() {
     console.error(data);
   });
 
-  // Stops the watch script when the application has been quit
+  // Stops the watch script when the application has quit
   spawnProcess.on('exit', process.exit);
 }
 
 const common = config();
 
-async function main() {
-  async function watchPreload(onInitialBuild) {
+function watchPreload() {
+  return new Promise(async resolve => {
+    let initialBuild = false;
     const preloadBuild = await esbuild.context({
       ...common.preload,
       plugins: [
         ...(common.preload.plugins ?? []),
         {
-          name: 'affine-dev:reload-app-on-preload-change',
+          name: 'electron-dev:reload-app-on-preload-change',
           setup(build) {
-            let initialBuild = false;
             build.onEnd(() => {
               if (initialBuild) {
-                console.log(`[preload] has changed`);
+                console.log(`[preload] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
               } else {
+                resolve();
                 initialBuild = true;
-                onInitialBuild();
               }
             });
           },
         },
       ],
     });
+    // watch will trigger build.onEnd() on first run & on subsequent changes
     await preloadBuild.watch();
-  }
+  });
+}
 
-  async function watchMain() {
+async function watchMain() {
+  return new Promise(async resolve => {
     const define = {
       ...common.main.define,
       'process.env.NODE_ENV': `"${mode}"`,
@@ -101,35 +105,40 @@ async function main() {
       define['process.env.DEV_SERVER_URL'] = `"${DEV_SERVER_URL}"`;
     }
 
+    let initialBuild = false;
+
     const mainBuild = await esbuild.context({
       ...common.main,
       define: define,
       plugins: [
         ...(common.main.plugins ?? []),
         {
-          name: 'affine-dev:reload-app-on-main-change',
+          name: 'electron-dev:reload-app-on-main-change',
           setup(build) {
-            let initialBuild = false;
             build.onEnd(() => {
+              execSync('yarn generate-handlers-meta');
+
               if (initialBuild) {
                 console.log(`[main] has changed, [re]launching electron...`);
+                spawnOrReloadElectron();
               } else {
+                resolve();
                 initialBuild = true;
               }
-              spawnOrReloadElectron();
             });
           },
         },
       ],
     });
     await mainBuild.watch();
-  }
-
-  await watchPreload(async () => {
-    await watchMain();
-    spawnOrReloadElectron();
-    console.log(`Electron is started, watching for changes...`);
   });
+}
+
+async function main() {
+  await watchMain();
+  await watchPreload();
+  spawnOrReloadElectron();
+  console.log(`Electron is started, watching for changes...`);
 }
 
 main();

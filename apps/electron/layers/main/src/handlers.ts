@@ -8,17 +8,25 @@ import { loadDBFile, moveDBFile, revealDBFile, saveDBFileAs } from './dialog';
 import { getGoogleOauthCode } from './google-auth';
 import { logger, revealLogFile } from './logger';
 
-export const workspaceHandlers = {
-  'workspace:list': async (): Promise<string[]> => listWorkspaces(appContext),
-  'workspace:delete': async (id: string): Promise<void> =>
-    deleteWorkspace(appContext, id),
+type IsomorphicHandler = (
+  e: Electron.IpcMainInvokeEvent,
+  ...args: any[]
+) => Promise<any>;
+
+type NamespaceHandlers = {
+  [key: string]: IsomorphicHandler;
 };
 
+export const workspaceHandlers = {
+  list: async () => listWorkspaces(appContext),
+  delete: async (_, id: string) => deleteWorkspace(appContext, id),
+} satisfies NamespaceHandlers;
+
 export const uiHandlers = {
-  'ui:theme-change': async (theme: (typeof nativeTheme)['themeSource']) => {
+  handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
     nativeTheme.themeSource = theme;
   },
-  'ui:sidebar-visibility-change': async (visible: boolean) => {
+  handleSidebarVisibilityChange: async (_, visible: boolean) => {
     if (isMacOS()) {
       const windows = BrowserWindow.getAllWindows();
       windows.forEach(w => {
@@ -27,81 +35,72 @@ export const uiHandlers = {
       });
     }
   },
-  'ui:workspace-change': async (_workspaceId: string) => {
-    // ?
-  },
-  'ui:get-google-oauth-code': async () => {
+  getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
   },
-};
+} satisfies NamespaceHandlers;
 
 export const dbHandlers = {
-  'db:get-doc': async (id: string) => {
+  getDoc: async (_, id: string) => {
     const workspaceDB = await ensureSQLiteDB(id);
     return workspaceDB.getEncodedDocUpdates();
   },
-  'db:apply-doc-update': async (id: string, update: Uint8Array) => {
+  applyDocUpdate: async (_, id: string, update: Uint8Array) => {
     const workspaceDB = await ensureSQLiteDB(id);
     return workspaceDB.applyUpdate(update);
   },
-  'db:add-blob': async (workspaceId: string, key: string, data: Uint8Array) => {
+  addBlob: async (_, workspaceId: string, key: string, data: Uint8Array) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.addBlob(key, data);
   },
-  'db:get-blob': async (workspaceId: string, key: string) => {
+  getBlob: async (_, workspaceId: string, key: string) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.getBlob(key);
   },
-  'db:get-persisted-blobs': async (workspaceId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.getPersistentBlobKeys();
-  },
-  'db:delete-blob': async (workspaceId: string, key: string) => {
+  deleteBlob: async (_, workspaceId: string, key: string) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.deleteBlob(key);
   },
-};
+  getPersistedBlobs: async (_, workspaceId: string) => {
+    const workspaceDB = await ensureSQLiteDB(workspaceId);
+    return workspaceDB.getPersistentBlobKeys();
+  },
+} satisfies NamespaceHandlers;
 
 export const dialogHandlers = {
-  'dialog:reveal-db-file': async (workspaceId: string) => {
+  revealDBFile: async (_, workspaceId: string) => {
     return revealDBFile(workspaceId);
   },
-  'dialog:load-db-file': async () => {
+  loadDBFile: async () => {
     return loadDBFile();
   },
-  'dialog:save-db-file-as': async (workspaceId: string) => {
+  saveDBFileAs: async (_, workspaceId: string) => {
     return saveDBFileAs(workspaceId);
   },
-  'dialog:move-db-file': async (workspaceId: string) => {
+  moveDBFile: async (_, workspaceId: string) => {
     return moveDBFile(workspaceId);
   },
-  'dialog:reveal-log-file': async () => {
+  revealLogFile: async () => {
     return revealLogFile();
   },
-};
+} satisfies NamespaceHandlers;
 
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
 export const allHandlers = {
-  ...workspaceHandlers,
-  ...uiHandlers,
-  ...dbHandlers,
-  ...dialogHandlers,
-};
+  workspace: workspaceHandlers,
+  ui: uiHandlers,
+  db: dbHandlers,
+  dialog: dialogHandlers,
+} satisfies Record<string, NamespaceHandlers>;
 
 export const registerHandlers = () => {
-  Object.entries(allHandlers).forEach(([type, fn]) => {
-    ipcMain.handle(
-      type,
-      // todo: considering the event properties, like frame id, senders etc
-      async (e, ...args) => {
-        logger.info(
-          '[ipc]',
-          type,
-          ...args.filter(arg => typeof arg !== 'object')
-        );
-        // @ts-ignore
-        return await fn(...args);
-      }
-    );
-  });
+  for (const [namespace, namespaceHandlers] of Object.entries(allHandlers)) {
+    for (const [key, handler] of Object.entries(namespaceHandlers)) {
+      const chan = `${namespace}:${key}`;
+      ipcMain.handle(chan, (e, ...args) => {
+        logger.info('[ipc]', chan, ...args);
+        return handler(e, ...args);
+      });
+    }
+  }
 };

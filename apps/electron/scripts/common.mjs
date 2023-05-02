@@ -28,7 +28,10 @@ export const config = () => {
   );
   return {
     main: {
-      entryPoints: [resolve(root, './layers/main/src/index.ts')],
+      entryPoints: [
+        resolve(root, './layers/main/src/index.ts'),
+        resolve(root, './layers/main/src/handlers.ts'),
+      ],
       outdir: resolve(root, './dist/layers/main'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
@@ -36,6 +39,7 @@ export const config = () => {
       external: ['electron', 'yjs', 'better-sqlite3'],
       plugins: [nativeNodeModulesPlugin],
       define: define,
+      format: 'cjs',
     },
     preload: {
       entryPoints: [resolve(root, './layers/preload/src/index.ts')],
@@ -43,7 +47,8 @@ export const config = () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron'],
+      external: ['electron', '../main/handlers-meta'],
+      plugins: [nativeNodeModulesPlugin],
       define: define,
     },
   };
