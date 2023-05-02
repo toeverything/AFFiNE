@@ -39,7 +39,7 @@
     "dayjs": "^1.11.7",
     "graphql": "^16.6.0",
     "jotai": "^2.0.4",
-    "jotai-devtools": "^0.5.1",
+    "jotai-devtools": "^0.5.2",
     "lit": "^2.7.3",
     "lottie-web": "^5.11.0",
     "next-themes": "^0.2.1",
