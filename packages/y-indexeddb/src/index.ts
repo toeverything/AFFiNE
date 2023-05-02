@@ -274,8 +274,8 @@ export const createIndexedDBProvider = (
       doc.off('update', handleUpdate);
       doc.off('destroy', handleDestroy);
     },
-    cleanup() {
-      // todo
+    async cleanup() {
+      (await dbPromise).delete('workspace', id);
     },
     whenSynced: Promise.resolve(),
   };
