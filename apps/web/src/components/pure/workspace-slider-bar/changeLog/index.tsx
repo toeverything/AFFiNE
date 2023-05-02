@@ -1,30 +1,15 @@
 import ChangeLogComponent from '@affine/component/changeLog';
+import { useAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import {
-  useGuideHidden,
-  useGuideHiddenUntilNextUpdate,
-} from '../../../../hooks/use-is-first-load';
+import { guideChangeLogAtom } from '../../../../atoms/guide';
 
 export const ChangeLog = () => {
-  const [guideHidden, setGuideHidden] = useGuideHidden();
-  const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
-    useGuideHiddenUntilNextUpdate();
+  const [showChangeLogTips, setShowChangeLogTips] = useAtom(guideChangeLogAtom);
   const onCloseWhatsNew = useCallback(() => {
-    setTimeout(() => {
-      setGuideHiddenUntilNextUpdate({
-        ...guideHiddenUntilNextUpdate,
-        changeLog: true,
-      });
-      setGuideHidden({ ...guideHidden, changeLog: true });
-    }, 300);
-  }, [
-    guideHidden,
-    guideHiddenUntilNextUpdate,
-    setGuideHidden,
-    setGuideHiddenUntilNextUpdate,
-  ]);
-  if (guideHiddenUntilNextUpdate.changeLog) {
+    setShowChangeLogTips(false);
+  }, [setShowChangeLogTips]);
+  if (!showChangeLogTips) {
     return <></>;
   }
   return <ChangeLogComponent onCloseWhatsNew={onCloseWhatsNew} />;
