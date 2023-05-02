@@ -71,8 +71,10 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
+    // we disable swc plugins for now,
+    // because the @swc/core version is not compatible with plugins
     swcPlugins: [
-      process.env.COVERAGE === 'true' && ['swc-plugin-coverage-instrument', {}],
+      // process.env.COVERAGE === 'true' && ['swc-plugin-coverage-instrument', {}],
       // ['@swc-jotai/debug-label', {}],
       // ['@swc-jotai/react-refresh', {}],
     ].filter(Boolean),

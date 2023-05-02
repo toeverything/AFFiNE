@@ -47,7 +47,7 @@
     "playwright": "^1.33.0",
     "ts-node": "^10.9.1",
     "undici": "^5.22.0",
-    "zx": "^7.2.1"
+    "zx": "^7.2.2"
   },
   "dependencies": {
     "better-sqlite3": "^8.3.0",
