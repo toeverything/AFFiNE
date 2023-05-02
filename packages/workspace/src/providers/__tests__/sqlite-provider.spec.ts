@@ -31,15 +31,17 @@ vi.stubGlobal('window', {
         // todo: may need to hack the way to get hash keys of blobs
         return [];
       },
-      onDBFileUpdate: (fn: (id: string) => void) => {
-        triggerDBUpdate = fn;
-        return () => {
-          triggerDBUpdate = null;
-        };
-      },
       addBlob: mockedAddBlob,
     } satisfies Partial<NonNullable<typeof window.apis>['db']>,
   },
+  events: {
+    onDBFileUpdate: (fn: (id: string) => void) => {
+      triggerDBUpdate = fn;
+      return () => {
+        triggerDBUpdate = null;
+      };
+    },
+  } satisfies Partial<NonNullable<typeof window.events>>,
 });
 
 vi.stubGlobal('environment', {
