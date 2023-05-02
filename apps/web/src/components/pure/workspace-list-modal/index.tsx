@@ -43,8 +43,8 @@ interface WorkspaceModalProps {
   onClickWorkspaceSetting: (workspace: AllWorkspace) => void;
   onClickLogin: () => void;
   onClickLogout: () => void;
-  onCreateWorkspace: () => void;
-  onImportWorkspace: () => void;
+  onNewWorkspace: () => void;
+  onAddWorkspace: () => void;
   onMoveWorkspace: (activeId: string, overId: string) => void;
 }
 
@@ -58,8 +58,8 @@ export const WorkspaceListModal = ({
   onClickLogout,
   onClickWorkspace,
   onClickWorkspaceSetting,
-  onCreateWorkspace,
-  onImportWorkspace,
+  onNewWorkspace,
+  onAddWorkspace,
   currentWorkspaceId,
   onMoveWorkspace,
 }: WorkspaceModalProps) => {
@@ -130,7 +130,7 @@ export const WorkspaceListModal = ({
               <StyledCreateWorkspaceCardPillContainer>
                 <StyledCreateWorkspaceCardPill>
                   <MenuItem
-                    onClick={onCreateWorkspace}
+                    onClick={onNewWorkspace}
                     data-testid="add-workspace"
                   >
                     <p>{t('New Workspace')}</p>
@@ -139,7 +139,7 @@ export const WorkspaceListModal = ({
                 <StyledCreateWorkspaceCardPill>
                   <MenuItem
                     disabled={!environment.isDesktop}
-                    onClick={onImportWorkspace}
+                    onClick={onAddWorkspace}
                     data-testid="add-workspace"
                   >
                     <p>{t('Add Workspace')}</p>

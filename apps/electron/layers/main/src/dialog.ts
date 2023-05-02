@@ -43,6 +43,22 @@ export async function saveDBFileAs(workspaceId: string) {
   return filePath;
 }
 
+export async function selectDBFileLocation() {
+  const ret = await dialog.showSaveDialog({
+    properties: ['showOverwriteConfirmation'],
+    title: 'Set database location',
+    showsTagField: false,
+    buttonLabel: 'Select',
+    defaultPath: `workspace-storage.db`,
+    message: "Select a location to store the workspace's database file",
+  });
+  const filePath = ret.filePath;
+  if (ret.canceled || !filePath) {
+    return null;
+  }
+  return filePath;
+}
+
 /**
  * This function is called when the user clicks the "Load" button in the "Load Workspace" dialog.
  *
@@ -108,33 +124,31 @@ export async function loadDBFile() {
  * - symlink the new location to the old db file
  * - return the new file path
  */
-export async function moveDBFile(workspaceId: string) {
+export async function moveDBFile(workspaceId: string, dbFileLocation?: string) {
   const db = await ensureSQLiteDB(workspaceId);
 
   // get the real file path of db
   const realpath = await fs.realpath(db.path);
   const isLink = realpath !== db.path;
 
-  const ret = await dialog.showSaveDialog({
-    properties: ['showOverwriteConfirmation'],
-    title: 'Move Workspace Storage',
-    showsTagField: false,
-    buttonLabel: 'Save',
-    defaultPath: realpath,
-    message: 'Move Workspace storage file',
-  });
+  const newFilePath =
+    dbFileLocation ||
+    (
+      await dialog.showSaveDialog({
+        properties: ['showOverwriteConfirmation'],
+        title: 'Move Workspace Storage',
+        showsTagField: false,
+        buttonLabel: 'Save',
+        defaultPath: realpath,
+        message: 'Move Workspace storage file',
+      })
+    ).filePath;
 
-  const newFilePath = ret.filePath;
   // skips if
   // - user canceled the dialog
   // - user selected the same file
   // - user selected the same file in the link file in app data dir
-  if (
-    ret.canceled ||
-    !newFilePath ||
-    newFilePath === realpath ||
-    db.path === newFilePath
-  ) {
+  if (!newFilePath || newFilePath === realpath || db.path === newFilePath) {
     return null;
   }
 

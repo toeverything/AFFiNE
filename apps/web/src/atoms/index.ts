@@ -11,6 +11,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
 
+import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 import { WorkspacePlugins } from '../plugins';
 
 const logger = new DebugLogger('web:atoms');
@@ -75,7 +76,7 @@ export const currentEditorAtom = rootCurrentEditorAtom;
 
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
-export const openCreateWorkspaceModalAtom = atom(false);
+export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
 export const openQuickSearchModalAtom = atom(false);
 
 export const openDisableCloudAlertModalAtom = atom(false);

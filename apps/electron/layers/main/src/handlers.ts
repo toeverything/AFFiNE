@@ -4,7 +4,13 @@ import { isMacOS } from '../../utils';
 import { appContext } from './context';
 import { ensureSQLiteDB } from './data/ensure-db';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
-import { loadDBFile, moveDBFile, revealDBFile, saveDBFileAs } from './dialog';
+import {
+  loadDBFile,
+  moveDBFile,
+  revealDBFile,
+  saveDBFileAs,
+  selectDBFileLocation,
+} from './dialog';
 import { getGoogleOauthCode } from './google-auth';
 import { logger, revealLogFile } from './logger';
 
@@ -77,11 +83,14 @@ export const dialogHandlers = {
   saveDBFileAs: async (_, workspaceId: string) => {
     return saveDBFileAs(workspaceId);
   },
-  moveDBFile: async (_, workspaceId: string) => {
-    return moveDBFile(workspaceId);
+  moveDBFile: async (_, workspaceId: string, dbFileLocation?: string) => {
+    return moveDBFile(workspaceId, dbFileLocation);
   },
   revealLogFile: async () => {
     return revealLogFile();
+  },
+  selectDBFileLocation: async () => {
+    return selectDBFileLocation();
   },
 } satisfies NamespaceHandlers;
 

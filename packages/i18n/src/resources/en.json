@@ -92,6 +92,7 @@
   "Delete permanently": "Delete permanently",
   "Link": "Hyperlink (with selected text)",
   "Workspace description": "A workspace is your virtual space to capture, create and plan as just one person or together as a team.",
+  "Workspace database storage description": "Select where you want to create your workspace. The data of workspace is saved locally by default.",
   "Quick search placeholder": "Quick Search...",
   "Quick search placeholder2": "Search in {{workspace}}",
   "Settings": "Settings",
