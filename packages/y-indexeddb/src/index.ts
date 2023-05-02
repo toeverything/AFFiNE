@@ -203,6 +203,8 @@ export const createIndexedDBProvider = (
   };
   const apis = {
     connect: async () => {
+      if (connect) return;
+
       apis.whenSynced = new Promise<void>((_resolve, _reject) => {
         early = true;
         resolve = _resolve;
@@ -278,6 +280,7 @@ export const createIndexedDBProvider = (
       // todo
     },
     whenSynced: Promise.resolve(),
+    connected: () => connect,
   };
 
   return apis;
