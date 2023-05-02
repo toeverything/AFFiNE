@@ -328,7 +328,7 @@ __metadata:
     eslint-config-next: ^13.3.1
     graphql: ^16.6.0
     jotai: ^2.0.4
-    jotai-devtools: ^0.5.1
+    jotai-devtools: ^0.5.2
     lit: ^2.7.3
     lottie-web: ^5.11.0
     next: =13.2.3
@@ -17421,9 +17421,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-devtools@npm:^0.5.1":
-  version: 0.5.1
-  resolution: "jotai-devtools@npm:0.5.1"
+"jotai-devtools@npm:^0.5.2":
+  version: 0.5.2
+  resolution: "jotai-devtools@npm:0.5.2"
   dependencies:
     "@mantine/core": ^6.0.9
     "@mantine/hooks": ^6.0.9
@@ -17439,7 +17439,7 @@ __metadata:
     "@emotion/react": ">=11.0.0"
     jotai: ">=1.11.0"
     react: ">=17.0.0"
-  checksum: 11478428d518d6a16bb2c61be8313bfb50418b33db4d11c176ad04db73a99c0a83c003f0a1e9d0e19446bc4d5efcfe9d182fe64a2e1cd790a2c424bb2bd0d197
+  checksum: 5697c7d103d7f5d51cd3660ad63f3be674b224b176d4e8e6fcab491c8795a5d552df8b9fa5114096c6d7cfaf9187bf799d04310f16349dbb4be6917977cbca8b
   languageName: node
   linkType: hard
 
