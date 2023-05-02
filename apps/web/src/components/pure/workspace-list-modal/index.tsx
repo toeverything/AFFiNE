@@ -11,7 +11,7 @@ import { useTranslation } from '@affine/i18n';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { HelpIcon, PlusIcon } from '@blocksuite/icons';
+import { HelpIcon, ImportIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useCallback, useRef } from 'react';
 
@@ -21,6 +21,9 @@ import {
   StyledCreateWorkspaceCard,
   StyledCreateWorkspaceCardPill,
   StyledCreateWorkspaceCardPillContainer,
+  StyledCreateWorkspaceCardPillContent,
+  StyledCreateWorkspaceCardPillIcon,
+  StyledCreateWorkspaceCardPillTextSecondary,
   StyledHelperContainer,
   StyledModalContent,
   StyledModalHeader,
@@ -122,18 +125,31 @@ export const WorkspaceListModal = ({
             )}
           />
           <Menu
-            width={248}
-            placement="right-start"
+            placement="auto"
             trigger="click"
             zIndex={1000}
             content={
               <StyledCreateWorkspaceCardPillContainer>
                 <StyledCreateWorkspaceCardPill>
                   <MenuItem
+                    style={{
+                      height: 'auto',
+                      padding: '8px 12px',
+                    }}
                     onClick={onNewWorkspace}
-                    data-testid="add-workspace"
+                    data-testid="new-workspace"
                   >
-                    <p>{t('New Workspace')}</p>
+                    <StyledCreateWorkspaceCardPillContent>
+                      <div>
+                        <p>{t('New Workspace')}</p>
+                        <StyledCreateWorkspaceCardPillTextSecondary>
+                          <p>{t('Create your own workspace')}</p>
+                        </StyledCreateWorkspaceCardPillTextSecondary>
+                      </div>
+                      <StyledCreateWorkspaceCardPillIcon>
+                        <PlusIcon />
+                      </StyledCreateWorkspaceCardPillIcon>
+                    </StyledCreateWorkspaceCardPillContent>
                   </MenuItem>
                 </StyledCreateWorkspaceCardPill>
                 <StyledCreateWorkspaceCardPill>
@@ -141,8 +157,22 @@ export const WorkspaceListModal = ({
                     disabled={!environment.isDesktop}
                     onClick={onAddWorkspace}
                     data-testid="add-workspace"
+                    style={{
+                      height: 'auto',
+                      padding: '8px 12px',
+                    }}
                   >
-                    <p>{t('Add Workspace')}</p>
+                    <StyledCreateWorkspaceCardPillContent>
+                      <div>
+                        <p>{t('Add Workspace')}</p>
+                        <StyledCreateWorkspaceCardPillTextSecondary>
+                          <p>{t('Select where you already have')}</p>
+                        </StyledCreateWorkspaceCardPillTextSecondary>
+                      </div>
+                      <StyledCreateWorkspaceCardPillIcon>
+                        <ImportIcon />
+                      </StyledCreateWorkspaceCardPillIcon>
+                    </StyledCreateWorkspaceCardPillContent>
                   </MenuItem>
                 </StyledCreateWorkspaceCardPill>
               </StyledCreateWorkspaceCardPillContainer>

@@ -71,6 +71,9 @@ export const dbHandlers = {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.getPersistentBlobKeys();
   },
+  getDefaultStorageLocation: async () => {
+    return appContext.appDataPath;
+  },
 } satisfies NamespaceHandlers;
 
 export const dialogHandlers = {

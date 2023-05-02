@@ -4,12 +4,15 @@ import {
   Modal,
   ModalCloseButton,
   ModalWrapper,
+  Tooltip,
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
+import { HelpIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
+import { useEffect } from 'react';
 import { useLayoutEffect } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
@@ -118,6 +121,14 @@ const SetDBLocationContent = ({
   onConfirmLocation,
 }: SetDBLocationContentProps) => {
   const { t } = useTranslation();
+  const [defaultDBLocation, setDefaultDBLocation] = useState('');
+
+  useEffect(() => {
+    window.apis?.db.getDefaultStorageLocation().then(dir => {
+      setDefaultDBLocation(dir);
+    });
+  }, []);
+
   return (
     <div className={style.content}>
       <div className={style.contentTitle}>{t('Set database location')}</div>
@@ -135,15 +146,23 @@ const SetDBLocationContent = ({
         >
           {t('Customize')}
         </Button>
-        <Button
-          data-testid="create-workspace-button"
-          type="primary"
-          onClick={() => {
-            onConfirmLocation();
-          }}
+        <Tooltip
+          zIndex={1000}
+          content={t('By default will be saved to ') + defaultDBLocation}
+          placement="top-start"
         >
-          {t('Default Location')}
-        </Button>
+          <Button
+            data-testid="create-workspace-button"
+            type="primary"
+            onClick={() => {
+              onConfirmLocation();
+            }}
+            icon={<HelpIcon />}
+            iconPosition="end"
+          >
+            {t('Default Location')}
+          </Button>
+        </Tooltip>
       </div>
     </div>
   );
@@ -220,6 +239,9 @@ export const CreateWorkspaceModal = ({
     // if mode changed, reset step
     if (mode === 'add') {
       // a hack for now
+      // when adding a workspace, we will immediately let user select a db file
+      // after it is done, it will effectively add a new workspace to app-data folder
+      // so after that, we will be able to load it via importLocalWorkspace
       (async () => {
         if (!window.apis) {
           return;

@@ -115,18 +115,6 @@ export function Modals() {
           onAddWorkspace={useCallback(async () => {
             setOpenCreateWorkspaceModal('add');
           }, [setOpenCreateWorkspaceModal])}
-          // onImportWorkspace={async () => {
-          //   if (!window.apis) {
-          //     return;
-          //   }
-          //   const { workspaceId } = await window.apis.dialog.loadDBFile();
-          //   if (workspaceId) {
-          //     await importLocalWorkspace(workspaceId);
-          //     setOpenWorkspacesModal(false);
-          //     setCurrentWorkspace(workspaceId);
-          //     return jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
-          //   }
-          // }}
         />
       </Suspense>
       <Suspense>
