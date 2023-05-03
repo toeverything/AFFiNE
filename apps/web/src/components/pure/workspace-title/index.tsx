@@ -1,3 +1,5 @@
+import { displayFlex, styled } from '@affine/component';
+import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import type React from 'react';
@@ -6,13 +8,28 @@ import { openQuickSearchModalAtom } from '../../../atoms';
 import type { HeaderProps } from '../../blocksuite/workspace-header/header';
 import { Header } from '../../blocksuite/workspace-header/header';
 import { StyledPageListTittleWrapper } from '../../blocksuite/workspace-header/styles';
-import { QuickSearchButton } from '../quick-search-button';
 
 export type WorkspaceTitleProps = React.PropsWithChildren<
   HeaderProps & {
     icon?: ReactNode;
   }
 >;
+
+const StyledWorkspaceTitleButton = styled('button')(() => {
+  return {
+    ...displayFlex('center', 'center'),
+    gap: 12,
+    lineHeight: '22px',
+    padding: '5px 12px',
+    borderRadius: 6,
+    '> svg': {
+      fontSize: 20,
+    },
+    '&:hover': {
+      backgroundColor: 'var(--affine-hover-color)',
+    },
+  };
+});
 
 export const WorkspaceTitle: React.FC<WorkspaceTitleProps> = ({
   icon,
@@ -23,13 +40,15 @@ export const WorkspaceTitle: React.FC<WorkspaceTitleProps> = ({
   return (
     <Header {...props}>
       <StyledPageListTittleWrapper>
-        {icon}
-        {children}
-        <QuickSearchButton
+        <StyledWorkspaceTitleButton
           onClick={() => {
             setOpenQuickSearch(true);
           }}
-        />
+        >
+          {icon}
+          {children}
+          <ArrowDownSmallIcon />
+        </StyledWorkspaceTitleButton>
       </StyledPageListTittleWrapper>
     </Header>
   );
