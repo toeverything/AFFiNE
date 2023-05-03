@@ -186,7 +186,6 @@ export const PageList: React.FC<PageListProps> = ({
               data-testid={`more-actions-${pageId}`}
             >
               <OperationCell
-                id={pageId}
                 title={title}
                 favorite={favorite}
                 isPublic={isPublic}

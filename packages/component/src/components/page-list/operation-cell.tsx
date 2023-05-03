@@ -21,7 +21,6 @@ import { useState } from 'react';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export type OperationCellProps = {
-  id: string;
   title: string;
   favorite: boolean;
   isPublic: boolean;
