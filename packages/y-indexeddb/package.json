@@ -15,6 +15,7 @@
     "access": "public",
     "main": "dist/index.umd.cjs",
     "module": "dist/index.js",
+    "types": "dist/index.d.ts",
     "exports": {
       ".": {
         "types": "./dist/index.d.ts",
@@ -27,9 +28,9 @@
     "idb": "^7.1.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230428070346-4bed88f0-nightly",
-    "@blocksuite/store": "0.0.0-20230428070346-4bed88f0-nightly",
-    "vite": "^4.3.3",
+    "@blocksuite/blocks": "0.0.0-20230501021333-90d9a4af-nightly",
+    "@blocksuite/store": "0.0.0-20230501021333-90d9a4af-nightly",
+    "vite": "^4.3.4",
     "vite-plugin-dts": "^2.3.0",
     "y-indexeddb": "^9.0.10"
   },
