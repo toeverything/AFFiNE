@@ -9,20 +9,31 @@ export type JotaiStore = ReturnType<typeof createStore>;
 
 export type BaseProvider = {
   flavour: string;
-  // if this is true, we will connect the provider on the background
-  background: boolean;
-  connect: () => void;
-  disconnect: () => void;
+
   // cleanup data when workspace is removed
   cleanup: () => void;
 };
 
 export interface BackgroundProvider extends BaseProvider {
+  // if this is true,
+  //  we will connect the provider on the background
   background: true;
+  get connected(): boolean;
+  connect(): void;
+  disconnect(): void;
   callbacks: Set<() => void>;
 }
 
-export interface AffineDownloadProvider extends BaseProvider {
+// necessary providers should not be disconnected
+export interface NecessaryProvider extends Omit<BaseProvider, 'disconnect'> {
+  // if this is true,
+  //  we will ensure that the provider is connected before you can use it
+  necessary: true;
+  sync(): void;
+  get whenReady(): Promise<void>;
+}
+
+export interface AffineDownloadProvider extends BackgroundProvider {
   flavour: 'affine-download';
 }
 
@@ -30,23 +41,23 @@ export interface BroadCastChannelProvider extends BaseProvider {
   flavour: 'broadcast-channel';
 }
 
-export interface LocalIndexedDBProvider extends BackgroundProvider {
+export interface LocalIndexedDBDownloadProvider extends NecessaryProvider {
   flavour: 'local-indexeddb';
-  whenSynced: Promise<void>;
 }
 
-export interface SQLiteProvider extends BaseProvider {
+export interface LocalIndexedDBBackgroundProvider extends BackgroundProvider {
+  flavour: 'local-indexeddb-background';
+}
+
+export interface SQLiteProvider extends BackgroundProvider {
   flavour: 'sqlite';
 }
 
-export interface AffineWebSocketProvider extends BaseProvider {
+export interface AffineWebSocketProvider extends BackgroundProvider {
   flavour: 'affine-websocket';
 }
 
-export type Provider =
-  | LocalIndexedDBProvider
-  | AffineWebSocketProvider
-  | BroadCastChannelProvider;
+export type Provider = BackgroundProvider | NecessaryProvider;
 
 export interface AffineWorkspace extends RemoteWorkspace {
   flavour: WorkspaceFlavour.AFFINE;
