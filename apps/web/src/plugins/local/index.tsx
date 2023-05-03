@@ -3,12 +3,12 @@ import {
   DEFAULT_HELLO_WORLD_PAGE_ID,
   DEFAULT_WORKSPACE_NAME,
 } from '@affine/env';
-import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
+import { initPage } from '@affine/env/blocksuite';
 import {
   CRUD,
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
-import { createIndexedDBProvider } from '@affine/workspace/providers';
+import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
@@ -40,12 +40,11 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
       blockSuiteWorkspace.setPageMeta(page.id, {
         jumpOnce: true,
       });
-      const provider = createIndexedDBProvider(blockSuiteWorkspace);
+      const provider = createIndexedDBBackgroundProvider(blockSuiteWorkspace);
       provider.connect();
       provider.callbacks.add(() => {
         provider.disconnect();
       });
-      ensureRootPinboard(blockSuiteWorkspace);
       saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);
       logger.debug('create first workspace');
       return [blockSuiteWorkspace.id];
