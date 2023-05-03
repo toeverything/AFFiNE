@@ -5,7 +5,7 @@
   "module": "./src/index.ts",
   "devDependencies": {
     "@blocksuite/global": "0.0.0-20230501021333-90d9a4af-nightly",
-    "next": "^13.3.4",
+    "next": "^13.3.5-canary.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zod": "^3.21.4"
