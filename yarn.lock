@@ -325,7 +325,7 @@ __metadata:
     dayjs: ^1.11.7
     dotenv: ^16.0.3
     eslint: ^8.39.0
-    eslint-config-next: ^13.3.4
+    eslint-config-next: ^13.3.5-canary.3
     graphql: ^16.6.0
     jotai: ^2.0.4
     jotai-devtools: ^0.5.2
@@ -5635,12 +5635,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@next/eslint-plugin-next@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/eslint-plugin-next@npm:13.3.4"
+"@next/eslint-plugin-next@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/eslint-plugin-next@npm:13.3.5-canary.4"
   dependencies:
     glob: 7.1.7
-  checksum: 7e4ed26f4dbbf9ea86a089af628e7a901898a3793775656e23371f347ece2c81dd605e9e7eaa4098762c9a8364237d9a463cc74f7f7b51ac6bdc22bce19bf532
+  checksum: a17e80b2edabe2b716337d43c56c54a618538f624c9d9768715d04f965b4f3af361c23cc758055509b174e006e113ea3c1b6c43762a0f33f01e3fd4714bc6ad6
   languageName: node
   linkType: hard
 
@@ -13321,11 +13321,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-next@npm:^13.3.4":
-  version: 13.3.4
-  resolution: "eslint-config-next@npm:13.3.4"
+"eslint-config-next@npm:^13.3.5-canary.3":
+  version: 13.3.5-canary.4
+  resolution: "eslint-config-next@npm:13.3.5-canary.4"
   dependencies:
-    "@next/eslint-plugin-next": 13.3.4
+    "@next/eslint-plugin-next": 13.3.5-canary.4
     "@rushstack/eslint-patch": ^1.1.3
     "@typescript-eslint/parser": ^5.42.0
     eslint-import-resolver-node: ^0.3.6
@@ -13340,7 +13340,7 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: f87ef8ade3fb94dcdc59810c4d9f39efd2c1e36dacf7ed02ccfd9d31b3b16931a0a5df7803c6426c785090d0382d1d0cd3ffc0ad9fe1c020ca137236f913b4e7
+  checksum: 188eba5c8a29f432c58e2921e116c99f527f52de308528683083bd05f3200bca0f1aa0a9cb751a1eaf7c5bde77d867fde3baeba12437b71d4b9815073ca4a681
   languageName: node
   linkType: hard
 
