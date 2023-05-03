@@ -15,7 +15,6 @@
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
     "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
-    "generate-release-yml": "zx scripts/generate-yml.mjs",
     "rebuild:for-test": "yarn rebuild better-sqlite3",
     "rebuild:for-electron": "yarn electron-rebuild",
     "test": "playwright test"
@@ -45,7 +44,6 @@
     "electron-window-state": "^5.0.3",
     "esbuild": "^0.17.18",
     "fs-extra": "^11.1.1",
-    "js-yaml": "^4.1.0",
     "playwright": "^1.33.0",
     "ts-node": "^10.9.1",
     "undici": "^5.22.0",
