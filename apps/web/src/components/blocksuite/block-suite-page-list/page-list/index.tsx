@@ -14,7 +14,6 @@ import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { forwardRef } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../../../shared';
 import DateCell from './DateCell';
 import { OperationCell, TrashOperationCell } from './OperationCell';
 import {
@@ -64,7 +63,6 @@ const FavoriteTag = forwardRef<
 });
 
 type PageListProps = {
-  blockSuiteWorkspace: BlockSuiteWorkspace;
   isPublic?: boolean;
   list: ListData[];
   listType: 'all' | 'trash' | 'favorite' | 'shared' | 'public';
@@ -113,7 +111,6 @@ export type ListData = {
 };
 
 export const PageList: React.FC<PageListProps> = ({
-  blockSuiteWorkspace,
   isPublic = false,
   list,
   listType,
@@ -193,7 +190,6 @@ export const PageList: React.FC<PageListProps> = ({
                 title={title}
                 favorite={favorite}
                 isPublic={isPublic}
-                blockSuiteWorkspace={blockSuiteWorkspace}
                 onOpenPageInNewTab={onOpenPageInNewTab}
                 onToggleFavoritePage={bookmarkPage}
                 onRemoveToTrash={removeToTrash}

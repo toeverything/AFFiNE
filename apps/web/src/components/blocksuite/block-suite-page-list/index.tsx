@@ -124,7 +124,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
 
   return (
     <PageList
-      blockSuiteWorkspace={blockSuiteWorkspace}
       onClickPage={onOpenPage}
       isPublic={isPublic}
       list={pageList}

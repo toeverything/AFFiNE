@@ -15,11 +15,9 @@ import {
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import { assertExists } from '@blocksuite/store';
 import type React from 'react';
 import { useState } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../../../shared';
 import {
   DisablePublicSharing,
   MoveToTrash,
@@ -30,7 +28,6 @@ export type OperationCellProps = {
   title: string;
   favorite: boolean;
   isPublic: boolean;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
   onOpenPageInNewTab: () => void;
   onToggleFavoritePage: () => void;
   onRemoveToTrash: () => void;
@@ -38,11 +35,9 @@ export type OperationCellProps = {
 };
 
 export const OperationCell: React.FC<OperationCellProps> = ({
-  id,
   title,
   favorite,
   isPublic,
-  blockSuiteWorkspace,
   onOpenPageInNewTab,
   onToggleFavoritePage,
   onRemoveToTrash,
@@ -51,9 +46,6 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [openDisableShared, setOpenDisableShared] = useState(false);
-
-  const page = blockSuiteWorkspace.getPage(id);
-  assertExists(page);
 
   const OperationMenu = (
     <>
