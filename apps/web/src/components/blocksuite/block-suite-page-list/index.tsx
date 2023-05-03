@@ -127,6 +127,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       pageId: pageMeta.id,
       title: pageMeta.title,
       favorite: !!pageMeta.favorite,
+      isPublicPage: !!pageMeta.isPublic,
       createDate: formatDate(pageMeta.createDate),
       updatedDate: formatDate(pageMeta.updatedDate),
       onClickPage: () => onOpenPage(pageMeta.id),
@@ -162,7 +163,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   return (
     <PageList
       onClickPage={onOpenPage}
-      isPublic={isPublic}
+      isPublicWorkspace={isPublic}
       list={pageList}
       listType={listType}
     />
