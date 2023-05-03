@@ -1,4 +1,3 @@
-import { PublicLinkDisableModal } from '@affine/component/share-menu';
 import { PermissionType, WorkspaceType } from '@affine/workspace/affine/api';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -8,6 +7,7 @@ import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
+import { PublicLinkDisableModal } from '../components/share-menu/disable-public-link';
 import { ShareMenu } from '../components/share-menu/ShareMenu';
 import { StyledDisableButton } from '../components/share-menu/styles';
 import toast from '../ui/toast/toast';
