@@ -185,7 +185,7 @@ jobs:
           node-version: 18
       - name: Generate Release yml
         run: |
-          BUILD_TYPE=${{ env.BUILD_TYPE }} RELEASE_VERSION=${{ github.event.inputs.version }} node generate-yml.js
+          RELEASE_VERSION=${{ github.event.inputs.version }} node generate-yml.js
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
         env:
