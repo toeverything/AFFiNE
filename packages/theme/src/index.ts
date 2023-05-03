@@ -45,7 +45,7 @@ export const baseTheme = {
   lineHeight: 'calc(1em + 8px)',
 
   zIndexModal: '1000',
-  zIndexPopover: '100',
+  zIndexPopover: '1000',
 
   paragraphSpace: '8px',
   popoverRadius: '12px',
