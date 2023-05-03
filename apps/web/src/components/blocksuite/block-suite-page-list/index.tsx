@@ -42,7 +42,7 @@ const formatDate = (date?: number | unknown) => {
 };
 
 const PageListEmpty = (props: {
-  listType: 'all' | 'trash' | 'favorite' | 'shared' | 'public';
+  listType: BlockSuitePageListProps['listType'];
 }) => {
   const { listType } = props;
   const { t } = useTranslation();

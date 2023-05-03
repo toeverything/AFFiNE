@@ -1,6 +1,13 @@
+import { PageIcon } from '@blocksuite/icons';
 import type { StoryFn } from '@storybook/react';
 
 import { AffineLoading } from '../components/affine-loading';
+import type {
+  PageListProps,
+  TrashListData,
+} from '../components/page-list/all-page';
+import { PageListTrashView } from '../components/page-list/all-page';
+import PageList from '../components/page-list/all-page';
 import type { OperationCellProps } from '../components/page-list/operation-cell';
 import { OperationCell } from '../components/page-list/operation-cell';
 import { toast } from '../ui/toast';
@@ -26,4 +33,56 @@ AffineOperationCell.args = {
   onDisablePublicSharing: () => toast('Disable public sharing'),
   onOpenPageInNewTab: () => toast('Open page in new tab'),
   onRemoveToTrash: () => toast('Remove to trash'),
+};
+
+export const AffineAllPageList: StoryFn<PageListProps> = ({ ...props }) => (
+  <div>
+    <PageList {...props} />
+  </div>
+);
+
+AffineAllPageList.args = {
+  isPublic: false,
+  listType: 'all',
+  list: [
+    {
+      pageId: '1',
+      favorite: false,
+      icon: <PageIcon />,
+      title: 'Example Page',
+      updatedDate: '2021-01-01',
+      createDate: '2021-01-01',
+      trashDate: '2021-01-01',
+      bookmarkPage: () => toast('Bookmark page'),
+      onClickPage: () => toast('Click page'),
+      onDisablePublicSharing: () => toast('Disable public sharing'),
+      onOpenPageInNewTab: () => toast('Open page in new tab'),
+      removeToTrash: () => toast('Remove to trash'),
+    },
+  ],
+};
+
+export const AffineTrashPageList: StoryFn<{
+  list: TrashListData[];
+}> = ({ ...props }) => (
+  <div>
+    <PageListTrashView {...props} />
+  </div>
+);
+
+AffineTrashPageList.args = {
+  list: [
+    {
+      pageId: '1',
+      favorite: false,
+      icon: <PageIcon />,
+      title: 'Example Page',
+      updatedDate: '2021-01-01',
+      createDate: '2021-01-01',
+      trashDate: '2021-01-01',
+      onClickPage: () => toast('Click page'),
+      onPermanentlyDeletePage: () => toast('Permanently delete page'),
+      onRestorePage: () => toast('Restore page'),
+    },
+  ],
 };

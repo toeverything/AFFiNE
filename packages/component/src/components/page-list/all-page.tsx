@@ -61,10 +61,10 @@ const FavoriteTag = forwardRef<
   );
 });
 
-type PageListProps = {
+export type PageListProps = {
   isPublic?: boolean;
   list: ListData[];
-  listType: 'all' | 'trash' | 'favorite' | 'shared' | 'public';
+  listType: 'all' | 'favorite' | 'shared' | 'public';
   onClickPage: (pageId: string, newTab?: boolean) => void;
 };
 
@@ -313,7 +313,7 @@ export const PageListTrashView: React.FC<{
   );
 };
 
-export const PageListMobileView: React.FC<{
+const PageListMobileView: React.FC<{
   list: {
     pageId: string;
     title: string;
