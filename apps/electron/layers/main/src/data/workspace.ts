@@ -8,7 +8,11 @@ import type { AppContext } from '../context';
 export async function listWorkspaces(context: AppContext) {
   const basePath = path.join(context.appDataPath, 'workspaces');
   try {
-    return fs.readdir(basePath);
+    return fs
+      .readdir(basePath, {
+        withFileTypes: true,
+      })
+      .then(dirs => dirs.filter(dir => dir.isDirectory()).map(dir => dir.name));
   } catch (error) {
     logger.error('listWorkspaces', error);
     return [];
