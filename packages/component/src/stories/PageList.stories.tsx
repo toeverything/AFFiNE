@@ -42,13 +42,14 @@ export const AffineAllPageList: StoryFn<PageListProps> = ({ ...props }) => (
 );
 
 AffineAllPageList.args = {
-  isPublic: false,
+  isPublicWorkspace: false,
   listType: 'all',
   list: [
     {
       pageId: '1',
       favorite: false,
       icon: <PageIcon />,
+      isPublicPage: true,
       title: 'Example Page',
       updatedDate: '2021-01-01',
       createDate: '2021-01-01',

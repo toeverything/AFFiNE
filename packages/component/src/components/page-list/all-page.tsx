@@ -62,7 +62,7 @@ const FavoriteTag = forwardRef<
 });
 
 export type PageListProps = {
-  isPublic?: boolean;
+  isPublicWorkspace?: boolean;
   list: ListData[];
   listType: 'all' | 'favorite' | 'shared' | 'public';
   onClickPage: (pageId: string, newTab?: boolean) => void;
@@ -101,7 +101,7 @@ export type ListData = {
   createDate: string;
   updatedDate?: string;
   trashDate?: string;
-  // isPublicPage: boolean;
+  isPublicPage: boolean;
   onClickPage: () => void;
   onOpenPageInNewTab: () => void;
   bookmarkPage: () => void;
@@ -110,7 +110,7 @@ export type ListData = {
 };
 
 export const PageList: React.FC<PageListProps> = ({
-  isPublic = false,
+  isPublicWorkspace = false,
   list,
   listType,
 }) => {
@@ -149,6 +149,7 @@ export const PageList: React.FC<PageListProps> = ({
         pageId,
         title,
         icon,
+        isPublicPage,
         favorite,
         createDate,
         updatedDate,
@@ -183,7 +184,7 @@ export const PageList: React.FC<PageListProps> = ({
           <TableCell ellipsis={true} onClick={onClickPage}>
             {updatedDate ?? createDate}
           </TableCell>
-          {!isPublic && (
+          {!isPublicWorkspace && (
             <TableCell
               style={{ padding: 0 }}
               data-testid={`more-actions-${pageId}`}
@@ -191,7 +192,7 @@ export const PageList: React.FC<PageListProps> = ({
               <OperationCell
                 title={title}
                 favorite={favorite}
-                isPublic={isPublic}
+                isPublic={isPublicPage}
                 onOpenPageInNewTab={onOpenPageInNewTab}
                 onToggleFavoritePage={bookmarkPage}
                 onRemoveToTrash={removeToTrash}

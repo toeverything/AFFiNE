@@ -36,7 +36,10 @@ export const PublicLinkDisableModal = ({
           <StyledButton onClick={onClose}>{t['Cancel']()}</StyledButton>
           <StyledDangerButton
             data-testid="disable-public-link-confirm-button"
-            onClick={onConfirmDisable}
+            onClick={() => {
+              onConfirmDisable();
+              onClose();
+            }}
             style={{ marginLeft: '24px' }}
           >
             {t['Disable']()}

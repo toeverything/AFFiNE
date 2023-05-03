@@ -1,5 +1,4 @@
 import { MenuItem, styled } from '@affine/component';
-import type { PublicLinkDisableProps } from '@affine/component/share-menu';
 import { PublicLinkDisableModal } from '@affine/component/share-menu';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ShareIcon } from '@blocksuite/icons';
@@ -47,18 +46,4 @@ export const DisablePublicSharing = ({
   );
 };
 
-const DisablePublicSharingModal = ({
-  onConfirmDisable,
-  open,
-  onClose,
-}: PublicLinkDisableProps) => {
-  return (
-    <PublicLinkDisableModal
-      onConfirmDisable={onConfirmDisable}
-      open={open}
-      onClose={onClose}
-    />
-  );
-};
-
-DisablePublicSharing.DisablePublicSharingModal = DisablePublicSharingModal;
+DisablePublicSharing.DisablePublicSharingModal = PublicLinkDisableModal;
