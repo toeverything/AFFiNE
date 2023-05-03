@@ -14,6 +14,13 @@ export type BaseProvider = {
   cleanup: () => void;
 };
 
+/**
+ * @description
+ * If a provider is marked as a background provider,
+ *  we will connect it in the `useEffect` in React.js.
+ *
+ * This means that the data might be stale when you use it.
+ */
 export interface BackgroundProvider extends BaseProvider {
   // if this is true,
   //  we will connect the provider on the background
@@ -24,7 +31,15 @@ export interface BackgroundProvider extends BaseProvider {
   callbacks: Set<() => void>;
 }
 
-// necessary providers should not be disconnected
+/**
+ * @description
+ * If a provider is marked as a necessary provider,
+ *  we will connect it once you read the workspace.
+ *
+ * This means that the data will be fresh when you use it.
+ *
+ * Currently, there is only on necessary provider: `local-indexeddb`.
+ */
 export interface NecessaryProvider extends Omit<BaseProvider, 'disconnect'> {
   // if this is true,
   //  we will ensure that the provider is connected before you can use it
@@ -37,20 +52,26 @@ export interface AffineDownloadProvider extends BackgroundProvider {
   flavour: 'affine-download';
 }
 
+/**
+ * Download the first binary from local indexeddb
+ */
 export interface BroadCastChannelProvider extends BackgroundProvider {
   flavour: 'broadcast-channel';
 }
 
-export interface LocalIndexedDBDownloadProvider extends NecessaryProvider {
-  flavour: 'local-indexeddb';
-}
-
+/**
+ * Long polling provider with local indexeddb
+ */
 export interface LocalIndexedDBBackgroundProvider extends BackgroundProvider {
   flavour: 'local-indexeddb-background';
 }
 
 export interface SQLiteProvider extends BackgroundProvider {
   flavour: 'sqlite';
+}
+
+export interface LocalIndexedDBDownloadProvider extends NecessaryProvider {
+  flavour: 'local-indexeddb';
 }
 
 export interface AffineWebSocketProvider extends BackgroundProvider {
