@@ -122,6 +122,7 @@
   "login success": "Login success",
   "Create Or Import": "Create or Import",
   "Delete Workspace": "Delete Workspace",
+  "Delete Workspace Label Hint": "After deleting this Workspace, you will permanently delete all of its content for everyone. No one will be able to recover the content of this Workspace",
   "Delete Workspace Description2": "Deleting (<1>{{workspace}}</1>) will delete both local and cloud data, this operation cannot be undone, please proceed with caution.",
   "Placeholder of delete workspace": "Please type workspace name to confirm",
   "Leave Workspace": "Leave Workspace",
@@ -229,5 +230,9 @@
   "Page is Loading": "Page is Loading",
   "Loading All Workspaces": "Loading All Workspaces",
   "Loading Page": "Loading Page",
-  "You cannot delete the last workspace": "You cannot delete the last workspace"
+  "You cannot delete the last workspace": "You cannot delete the last workspace",
+  "Open folder": "Open folder",
+  "Open folder hint": "Check the where the storage folder is located.",
+  "Move folder": "Move folder",
+  "Move folder hint": "Select a new storage location."
 }

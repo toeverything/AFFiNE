@@ -281,6 +281,7 @@ export const CreateWorkspaceModal = ({
         </div>
         {step === 'name-workspace' && (
           <NameWorkspaceContent
+            // go to previous step instead?
             onClose={onClose}
             onConfirmName={name => {
               setWorkspaceName(name);
