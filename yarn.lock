@@ -340,7 +340,7 @@ __metadata:
     react-dom: ^18.2.0
     react-is: ^18.2.0
     redux: ^4.2.1
-    swc-plugin-coverage-instrument: ^0.0.17
+    swc-plugin-coverage-instrument: ^0.0.18
     swr: ^2.1.5
     typescript: ^5.0.4
     webpack: ^5.81.0
@@ -23258,10 +23258,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"swc-plugin-coverage-instrument@npm:^0.0.17":
-  version: 0.0.17
-  resolution: "swc-plugin-coverage-instrument@npm:0.0.17"
-  checksum: 9d055d85f8ea5518413e45a5f0b211a40a8a93694ce95c80e5c3b982f431b05e6b28efb2418485055a649650f5f1b733cab6abb292ac849ffefe071904dfafff
+"swc-plugin-coverage-instrument@npm:^0.0.18":
+  version: 0.0.18
+  resolution: "swc-plugin-coverage-instrument@npm:0.0.18"
+  checksum: 27b6172557e156f2acfce5ec5f3b92c3f361a58dd1f79de4d41451dc9023513c286e69ffc5e4b6a00804fa69a395ef53c9da6a625988be33c2c0031f2e80339d
   languageName: node
   linkType: hard
 
