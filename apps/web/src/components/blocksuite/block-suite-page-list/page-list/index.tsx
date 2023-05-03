@@ -15,7 +15,6 @@ import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { forwardRef } from 'react';
 
-import DateCell from './DateCell';
 import {
   StyledTableContainer,
   StyledTableRow,
@@ -99,9 +98,9 @@ export type ListData = {
   icon: JSX.Element;
   title: string;
   favorite: boolean;
-  createDate: number;
-  updatedDate?: number;
-  trashDate?: number;
+  createDate: string;
+  updatedDate?: string;
+  trashDate?: string;
   // isPublicPage: boolean;
   onClickPage: () => void;
   onOpenPageInNewTab: () => void;
@@ -178,8 +177,12 @@ export const PageList: React.FC<PageListProps> = ({
             }
             onClick={onClickPage}
           />
-          <DateCell date={createDate} onClick={onClickPage} />
-          <DateCell date={updatedDate ?? createDate} onClick={onClickPage} />
+          <TableCell ellipsis={true} onClick={onClickPage}>
+            {createDate}
+          </TableCell>
+          <TableCell ellipsis={true} onClick={onClickPage}>
+            {updatedDate ?? createDate}
+          </TableCell>
           {!isPublic && (
             <TableCell
               style={{ padding: 0 }}
@@ -230,9 +233,9 @@ export type TrashListData = {
   icon: JSX.Element;
   title: string;
   favorite: boolean;
-  createDate: number;
-  updatedDate?: number;
-  trashDate?: number;
+  createDate: string;
+  updatedDate?: string;
+  trashDate?: string;
   // isPublic: boolean;
   onClickPage: () => void;
   onRestorePage: () => void;
@@ -279,8 +282,12 @@ export const PageListTrashView: React.FC<{
             text={title || t('Untitled')}
             onClick={onClickPage}
           />
-          <DateCell date={createDate} onClick={onClickPage} />
-          <DateCell date={trashDate} onClick={onClickPage} />
+          <TableCell ellipsis={true} onClick={onClickPage}>
+            {createDate}
+          </TableCell>
+          <TableCell ellipsis={true} onClick={onClickPage}>
+            {trashDate}
+          </TableCell>
           <TableCell
             style={{ padding: 0 }}
             data-testid={`more-actions-${pageId}`}

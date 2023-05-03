@@ -1,7 +1,10 @@
+import { Empty } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import dayjs from 'dayjs';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useMemo } from 'react';
@@ -12,7 +15,6 @@ import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import type { ListData, TrashListData } from './page-list';
 import PageList, { PageListTrashView } from './page-list';
-import { PageListEmpty } from './page-list/Empty';
 
 export type BlockSuitePageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -30,6 +32,41 @@ const filter = {
   },
   favorite: (pageMeta: PageMeta) => pageMeta.favorite && !pageMeta.trash,
   shared: (pageMeta: PageMeta) => pageMeta.isPublic && !pageMeta.trash,
+};
+
+dayjs.extend(localizedFormat);
+const formatDate = (date?: number | unknown) => {
+  const dateStr =
+    typeof date === 'number' ? dayjs(date).format('YYYY-MM-DD HH:mm') : '--';
+  return dateStr;
+};
+
+const PageListEmpty = (props: {
+  listType: 'all' | 'trash' | 'favorite' | 'shared' | 'public';
+}) => {
+  const { listType } = props;
+  const { t } = useTranslation();
+
+  const getEmptyDescription = () => {
+    if (listType === 'all') {
+      return t('emptyAllPages');
+    }
+    if (listType === 'favorite') {
+      return t('emptyFavorite');
+    }
+    if (listType === 'trash') {
+      return t('emptyTrash');
+    }
+    if (listType === 'shared') {
+      return t('emptySharedPages');
+    }
+  };
+
+  return (
+    <div style={{ height: 'calc(100% - 52px)' }}>
+      <Empty description={getEmptyDescription()} />
+    </div>
+  );
 };
 
 export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
@@ -64,8 +101,8 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         pageId: pageMeta.id,
         title: pageMeta.title,
         favorite: !!pageMeta.favorite,
-        createDate: pageMeta.createDate,
-        updatedDate: pageMeta.updatedDate as number | undefined,
+        createDate: formatDate(pageMeta.createDate),
+        updatedDate: formatDate(pageMeta.updatedDate),
         onClickPage: () => onOpenPage(pageMeta.id),
         onClickRestore: () => {
           restoreFromTrash(pageMeta.id);
@@ -90,8 +127,8 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       pageId: pageMeta.id,
       title: pageMeta.title,
       favorite: !!pageMeta.favorite,
-      createDate: pageMeta.createDate,
-      updatedDate: pageMeta.updatedDate as number | undefined,
+      createDate: formatDate(pageMeta.createDate),
+      updatedDate: formatDate(pageMeta.updatedDate),
       onClickPage: () => onOpenPage(pageMeta.id),
       onOpenPageInNewTab: () => onOpenPage(pageMeta.id, true),
       onClickRestore: () => {
