@@ -18,10 +18,7 @@ import {
 import type React from 'react';
 import { useState } from 'react';
 
-import {
-  DisablePublicSharing,
-  MoveToTrash,
-} from '../../../affine/operation-menu-items';
+import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export type OperationCellProps = {
   id: string;

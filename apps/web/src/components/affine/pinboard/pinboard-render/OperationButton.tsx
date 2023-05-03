@@ -1,5 +1,6 @@
 import { MenuItem, MuiClickAwayListener, PureMenu } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { CopyLink, MoveToTrash } from '@affine/component/page-list';
+import { useTranslation } from '@affine/i18n';
 import {
   MoreVerticalIcon,
   MoveToIcon,
@@ -13,7 +14,6 @@ import { useMemo, useRef, useState } from 'react';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
-import { CopyLink, MoveToTrash } from '../../operation-menu-items';
 import { PinboardMenu } from '../pinboard-menu/';
 import { StyledOperationButton } from '../styles';
 

@@ -9,13 +9,13 @@ import {
   TableRow,
   Tooltip,
 } from '@affine/component';
+import { OperationCell, TrashOperationCell } from '@affine/component/page-list';
 import { useTranslation } from '@affine/i18n';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { forwardRef } from 'react';
 
 import DateCell from './DateCell';
-import { OperationCell, TrashOperationCell } from './OperationCell';
 import {
   StyledTableContainer,
   StyledTableRow,

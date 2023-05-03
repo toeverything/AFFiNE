@@ -1,6 +1,7 @@
 // fixme(himself65): refactor this file
 import { FlexWrapper, IconButton, Menu, MenuItem } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Export, MoveToTrash } from '@affine/component/page-list';
+import { useTranslation } from '@affine/i18n';
 import {
   EdgelessIcon,
   FavoritedIcon,
@@ -22,7 +23,6 @@ import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suit
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
-import { Export, MoveToTrash } from '../../../affine/operation-menu-items';
 import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
 import {
   StyledHorizontalDivider,
