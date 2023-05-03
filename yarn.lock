@@ -165,7 +165,7 @@ __metadata:
   dependencies:
     "@blocksuite/global": 0.0.0-20230501021333-90d9a4af-nightly
     lit: ^2.7.3
-    next: ^13.3.4
+    next: ^13.3.5-canary.3
     react: ^18.2.0
     react-dom: ^18.2.0
     zod: ^3.21.4
@@ -197,7 +197,7 @@ __metadata:
     "@types/node": ^18.16.3
     "@types/prettier": ^2.7.2
     i18next: ^22.4.15
-    next: ^13.3.4
+    next: ^13.3.5-canary.3
     prettier: ^2.8.8
     react: ^18.2.0
     react-dom: ^18.2.0
@@ -325,13 +325,13 @@ __metadata:
     dayjs: ^1.11.7
     dotenv: ^16.0.3
     eslint: ^8.39.0
-    eslint-config-next: ^13.3.4
+    eslint-config-next: ^13.3.5-canary.3
     graphql: ^16.6.0
     jotai: ^2.0.4
     jotai-devtools: ^0.5.2
     lit: ^2.7.3
     lottie-web: ^5.11.0
-    next: ^13.3.4
+    next: ^13.3.5-canary.3
     next-debug-local: ^0.1.5
     next-router-mock: ^0.9.3
     next-themes: ^0.2.1
@@ -340,7 +340,7 @@ __metadata:
     react-dom: ^18.2.0
     react-is: ^18.2.0
     redux: ^4.2.1
-    swc-plugin-coverage-instrument: ^0.0.17
+    swc-plugin-coverage-instrument: ^0.0.18
     swr: ^2.1.5
     typescript: ^5.0.4
     webpack: ^5.81.0
@@ -5628,81 +5628,81 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@next/env@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/env@npm:13.3.4"
-  checksum: 442a06b95814ffc483e60892bc105f4e381cbd78ae436b649d41cbb6fee87f30ce431743dedc83178a09ec00fc80dcbf154184b21ae20ffa268d1115212657af
+"@next/env@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/env@npm:13.3.5-canary.4"
+  checksum: 1ca0a8ff1bd6658ba536e2e56bfdb7007b5532504e606af561fd87392ed9e79e8b1d827325e30cd2592d99463883fcda79144086637352111efdb8c9d01ba149
   languageName: node
   linkType: hard
 
-"@next/eslint-plugin-next@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/eslint-plugin-next@npm:13.3.4"
+"@next/eslint-plugin-next@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/eslint-plugin-next@npm:13.3.5-canary.4"
   dependencies:
     glob: 7.1.7
-  checksum: 7e4ed26f4dbbf9ea86a089af628e7a901898a3793775656e23371f347ece2c81dd605e9e7eaa4098762c9a8364237d9a463cc74f7f7b51ac6bdc22bce19bf532
+  checksum: a17e80b2edabe2b716337d43c56c54a618538f624c9d9768715d04f965b4f3af361c23cc758055509b174e006e113ea3c1b6c43762a0f33f01e3fd4714bc6ad6
   languageName: node
   linkType: hard
 
-"@next/swc-darwin-arm64@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-darwin-arm64@npm:13.3.4"
+"@next/swc-darwin-arm64@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-darwin-arm64@npm:13.3.5-canary.4"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@next/swc-darwin-x64@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-darwin-x64@npm:13.3.4"
+"@next/swc-darwin-x64@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-darwin-x64@npm:13.3.5-canary.4"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@next/swc-linux-arm64-gnu@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-linux-arm64-gnu@npm:13.3.4"
+"@next/swc-linux-arm64-gnu@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-linux-arm64-gnu@npm:13.3.5-canary.4"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@next/swc-linux-arm64-musl@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-linux-arm64-musl@npm:13.3.4"
+"@next/swc-linux-arm64-musl@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-linux-arm64-musl@npm:13.3.5-canary.4"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@next/swc-linux-x64-gnu@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-linux-x64-gnu@npm:13.3.4"
+"@next/swc-linux-x64-gnu@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-linux-x64-gnu@npm:13.3.5-canary.4"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@next/swc-linux-x64-musl@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-linux-x64-musl@npm:13.3.4"
+"@next/swc-linux-x64-musl@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-linux-x64-musl@npm:13.3.5-canary.4"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@next/swc-win32-arm64-msvc@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-win32-arm64-msvc@npm:13.3.4"
+"@next/swc-win32-arm64-msvc@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-win32-arm64-msvc@npm:13.3.5-canary.4"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@next/swc-win32-ia32-msvc@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-win32-ia32-msvc@npm:13.3.4"
+"@next/swc-win32-ia32-msvc@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-win32-ia32-msvc@npm:13.3.5-canary.4"
   conditions: os=win32 & cpu=ia32
   languageName: node
   linkType: hard
 
-"@next/swc-win32-x64-msvc@npm:13.3.4":
-  version: 13.3.4
-  resolution: "@next/swc-win32-x64-msvc@npm:13.3.4"
+"@next/swc-win32-x64-msvc@npm:13.3.5-canary.4":
+  version: 13.3.5-canary.4
+  resolution: "@next/swc-win32-x64-msvc@npm:13.3.5-canary.4"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -13321,11 +13321,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-next@npm:^13.3.4":
-  version: 13.3.4
-  resolution: "eslint-config-next@npm:13.3.4"
+"eslint-config-next@npm:^13.3.5-canary.3":
+  version: 13.3.5-canary.4
+  resolution: "eslint-config-next@npm:13.3.5-canary.4"
   dependencies:
-    "@next/eslint-plugin-next": 13.3.4
+    "@next/eslint-plugin-next": 13.3.5-canary.4
     "@rushstack/eslint-patch": ^1.1.3
     "@typescript-eslint/parser": ^5.42.0
     eslint-import-resolver-node: ^0.3.6
@@ -13340,7 +13340,7 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: f87ef8ade3fb94dcdc59810c4d9f39efd2c1e36dacf7ed02ccfd9d31b3b16931a0a5df7803c6426c785090d0382d1d0cd3ffc0ad9fe1c020ca137236f913b4e7
+  checksum: 188eba5c8a29f432c58e2921e116c99f527f52de308528683083bd05f3200bca0f1aa0a9cb751a1eaf7c5bde77d867fde3baeba12437b71d4b9815073ca4a681
   languageName: node
   linkType: hard
 
@@ -19172,20 +19172,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"next@npm:^13.3.4":
-  version: 13.3.4
-  resolution: "next@npm:13.3.4"
+"next@npm:^13.3.5-canary.3":
+  version: 13.3.5-canary.4
+  resolution: "next@npm:13.3.5-canary.4"
   dependencies:
-    "@next/env": 13.3.4
-    "@next/swc-darwin-arm64": 13.3.4
-    "@next/swc-darwin-x64": 13.3.4
-    "@next/swc-linux-arm64-gnu": 13.3.4
-    "@next/swc-linux-arm64-musl": 13.3.4
-    "@next/swc-linux-x64-gnu": 13.3.4
-    "@next/swc-linux-x64-musl": 13.3.4
-    "@next/swc-win32-arm64-msvc": 13.3.4
-    "@next/swc-win32-ia32-msvc": 13.3.4
-    "@next/swc-win32-x64-msvc": 13.3.4
+    "@next/env": 13.3.5-canary.4
+    "@next/swc-darwin-arm64": 13.3.5-canary.4
+    "@next/swc-darwin-x64": 13.3.5-canary.4
+    "@next/swc-linux-arm64-gnu": 13.3.5-canary.4
+    "@next/swc-linux-arm64-musl": 13.3.5-canary.4
+    "@next/swc-linux-x64-gnu": 13.3.5-canary.4
+    "@next/swc-linux-x64-musl": 13.3.5-canary.4
+    "@next/swc-win32-arm64-msvc": 13.3.5-canary.4
+    "@next/swc-win32-ia32-msvc": 13.3.5-canary.4
+    "@next/swc-win32-x64-msvc": 13.3.5-canary.4
     "@swc/helpers": 0.5.1
     busboy: 1.6.0
     caniuse-lite: ^1.0.30001406
@@ -19228,7 +19228,7 @@ __metadata:
       optional: true
   bin:
     next: dist/bin/next
-  checksum: ed3a2e39a23250f370ecf1bfb6765f79fa3b31f1e5103a79752e7a4b07b608e1a30c8121992a38167cffe3b0df16fb7ec684f871f2ca62801233807321ba2e71
+  checksum: 3a57a2e17e8d2572c8aabaa77ff236694c8dee87bfb5b8c2c6b52c38d49ab4d71d3f936bf22ba111b8ae9d0832f06e62cc4f73a6cb42f1cb469c7bc222cd0ef9
   languageName: node
   linkType: hard
 
@@ -23258,10 +23258,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"swc-plugin-coverage-instrument@npm:^0.0.17":
-  version: 0.0.17
-  resolution: "swc-plugin-coverage-instrument@npm:0.0.17"
-  checksum: 9d055d85f8ea5518413e45a5f0b211a40a8a93694ce95c80e5c3b982f431b05e6b28efb2418485055a649650f5f1b733cab6abb292ac849ffefe071904dfafff
+"swc-plugin-coverage-instrument@npm:^0.0.18":
+  version: 0.0.18
+  resolution: "swc-plugin-coverage-instrument@npm:0.0.18"
+  checksum: 27b6172557e156f2acfce5ec5f3b92c3f361a58dd1f79de4d41451dc9023513c286e69ffc5e4b6a00804fa69a395ef53c9da6a625988be33c2c0031f2e80339d
   languageName: node
   linkType: hard
 
