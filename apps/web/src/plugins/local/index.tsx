@@ -8,7 +8,7 @@ import {
   CRUD,
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
-import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
+import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
@@ -40,8 +40,11 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
       blockSuiteWorkspace.setPageMeta(page.id, {
         jumpOnce: true,
       });
-      const provider = createIndexedDBDownloadProvider(blockSuiteWorkspace);
-      provider.sync();
+      const provider = createIndexedDBBackgroundProvider(blockSuiteWorkspace);
+      provider.connect();
+      provider.callbacks.add(() => {
+        provider.disconnect();
+      });
       saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);
       logger.debug('create first workspace');
       return [blockSuiteWorkspace.id];
