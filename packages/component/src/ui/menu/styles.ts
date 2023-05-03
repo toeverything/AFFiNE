@@ -15,6 +15,7 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)<{
     fontSize: '14px',
     backgroundColor: 'var(--affine-white)',
     boxShadow: 'var(--affine-menu-shadow)',
+    userSelect: 'none',
   };
 });
 
