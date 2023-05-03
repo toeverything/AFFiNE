@@ -6,9 +6,7 @@ import { waitMarkdownImported } from '../libs/page-logic';
 import { clickSideBarSettingButton } from '../libs/sidebar';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
-test('New a workspace , then delete it in all workspaces, permanently delete it', async ({
-  page,
-}) => {
+test('Should not delete the last one workspace', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   await clickSideBarSettingButton(page);
