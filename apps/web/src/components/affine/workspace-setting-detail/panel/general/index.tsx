@@ -183,7 +183,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   setShowDelete(true);
                 }}
               >
-                {t('Delete Workspace')}
+                {t('Delete')}
               </Button>
               <WorkspaceDeleteModal
                 onDeleteWorkspace={onDeleteWorkspace}
@@ -203,7 +203,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   setShowLeave(true);
                 }}
               >
-                {t('Leave Workspace')}
+                {t('Leave')}
               </Button>
               <WorkspaceLeave
                 open={showLeave}
