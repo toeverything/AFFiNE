@@ -1,5 +1,6 @@
 import { useTranslation } from '@affine/i18n';
 import { atomWithSyncStorage } from '@affine/jotai';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { SettingPanel } from '@affine/workspace/type';
 import {
   settingPanel,
@@ -8,7 +9,7 @@ import {
 } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
@@ -23,6 +24,7 @@ import { useAppHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspacePlugins } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
+import { toast } from '../../../utils';
 
 const settingPanelAtom = atomWithSyncStorage<SettingPanel>(
   'workspaceId',
@@ -31,6 +33,7 @@ const settingPanelAtom = atomWithSyncStorage<SettingPanel>(
 
 const SettingPage: NextPageWithLayout = () => {
   const router = useRouter();
+  const workspaceIds = useAtomValue(rootWorkspacesMetadataAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useSyncRouterWithCurrentWorkspaceId(router);
@@ -97,8 +100,12 @@ const SettingPage: NextPageWithLayout = () => {
   const onDeleteWorkspace = useCallback(() => {
     assertExists(currentWorkspace);
     const workspaceId = currentWorkspace.id;
+    if (workspaceIds.length === 1 && workspaceId === workspaceIds[0].id) {
+      toast(t('You cannot delete the last workspace'));
+      throw new Error('You cannot delete the last workspace');
+    }
     return helper.deleteWorkspace(workspaceId);
-  }, [currentWorkspace, helper]);
+  }, [currentWorkspace, helper, t, workspaceIds]);
   const onTransformWorkspace = useOnTransformWorkspace();
   if (!router.isReady) {
     return <PageLoading />;
