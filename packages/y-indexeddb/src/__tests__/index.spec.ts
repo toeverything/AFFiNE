@@ -340,7 +340,10 @@ describe('utils', () => {
     provider.connect();
     await provider.whenSynced;
     provider.disconnect();
-    const update = await downloadBinary(workspace.id, rootDBName);
+    const update = (await downloadBinary(
+      workspace.id,
+      rootDBName
+    )) as Uint8Array;
     expect(update).toBeInstanceOf(Uint8Array);
     const newWorkspace = new Workspace({
       id,

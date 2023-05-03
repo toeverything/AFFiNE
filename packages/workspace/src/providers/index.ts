@@ -146,7 +146,9 @@ const createIndexedDBDownloadProvider = (
       logger.info('connect indexeddb provider', blockSuiteWorkspace.id);
       downloadBinary(blockSuiteWorkspace.id)
         .then(binary => {
-          Y.applyUpdate(blockSuiteWorkspace.doc, binary);
+          if (binary !== false) {
+            Y.applyUpdate(blockSuiteWorkspace.doc, binary);
+          }
           _resolve();
         })
         .catch(error => {

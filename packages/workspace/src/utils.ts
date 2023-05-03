@@ -16,6 +16,11 @@ export function cleanupWorkspace(flavour: WorkspaceFlavour) {
 
 const hashMap = new Map<string, Workspace>();
 
+/**
+ * @internal test only
+ */
+export const _cleanupBlockSuiteWorkspaceCache = () => hashMap.clear();
+
 export function createEmptyBlockSuiteWorkspace(
   id: string,
   flavour: WorkspaceFlavour.AFFINE,
