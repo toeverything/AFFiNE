@@ -37,7 +37,7 @@ export interface AffineDownloadProvider extends BackgroundProvider {
   flavour: 'affine-download';
 }
 
-export interface BroadCastChannelProvider extends BaseProvider {
+export interface BroadCastChannelProvider extends BackgroundProvider {
   flavour: 'broadcast-channel';
 }
 

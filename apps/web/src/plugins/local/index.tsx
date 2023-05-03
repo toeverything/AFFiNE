@@ -3,7 +3,7 @@ import {
   DEFAULT_HELLO_WORLD_PAGE_ID,
   DEFAULT_WORKSPACE_NAME,
 } from '@affine/env';
-import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
+import { initPage } from '@affine/env/blocksuite';
 import {
   CRUD,
   saveWorkspaceToLocalStorage,
@@ -41,11 +41,7 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
         jumpOnce: true,
       });
       const provider = createIndexedDBDownloadProvider(blockSuiteWorkspace);
-      provider.connect();
-      provider.callbacks.add(() => {
-        provider.disconnect();
-      });
-      ensureRootPinboard(blockSuiteWorkspace);
+      provider.sync();
       saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);
       logger.debug('create first workspace');
       return [blockSuiteWorkspace.id];
