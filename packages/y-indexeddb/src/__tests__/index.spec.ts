@@ -59,7 +59,7 @@ describe('indexeddb provider', () => {
     await provider.whenSynced;
     const db = await openDB(rootDBName, dbVersion);
     {
-      const store = await db
+      const store = db
         .transaction('workspace', 'readonly')
         .objectStore('workspace');
       const data = await store.get(id);
@@ -159,6 +159,31 @@ describe('indexeddb provider', () => {
     }
     provider.disconnect();
     expect(p1).not.toBe(p2);
+  });
+
+  test('cleanup', async () => {
+    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    provider.connect();
+    await provider.whenSynced;
+    const db = await openDB(rootDBName, dbVersion);
+
+    {
+      const store = db
+        .transaction('workspace', 'readonly')
+        .objectStore('workspace');
+      const keys = await store.getAllKeys();
+      expect(keys).contain(workspace.id);
+    }
+
+    await provider.cleanup();
+
+    {
+      const store = db
+        .transaction('workspace', 'readonly')
+        .objectStore('workspace');
+      const keys = await store.getAllKeys();
+      expect(keys).not.contain(workspace.id);
+    }
   });
 
   test('merge', async () => {
