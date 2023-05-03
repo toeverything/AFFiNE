@@ -31,7 +31,7 @@ describe('currentWorkspace atom', () => {
         'test',
         WorkspaceFlavour.LOCAL
       );
-      const page = workspace.createPage('page0');
+      const page = workspace.createPage({ id: 'page0' });
       initPage(page);
       const frameId = page.getBlockByFlavour('affine:frame').at(0)
         ?.id as string;
