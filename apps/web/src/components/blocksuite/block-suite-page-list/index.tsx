@@ -1,4 +1,6 @@
 import { Empty } from '@affine/component';
+import type { ListData, TrashListData } from '@affine/component/page-list';
+import { PageList, PageListTrashView } from '@affine/component/page-list';
 import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
@@ -13,8 +15,6 @@ import { workspacePreferredModeAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
-import type { ListData, TrashListData } from './page-list';
-import PageList, { PageListTrashView } from './page-list';
 
 export type BlockSuitePageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
