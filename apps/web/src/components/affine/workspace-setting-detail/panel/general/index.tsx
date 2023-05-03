@@ -1,4 +1,4 @@
-import { Button } from '@affine/component';
+import { Button, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useTranslation } from '@affine/i18n';
 import {
@@ -142,9 +142,9 @@ export const GeneralPanel: React.FC<PanelProps> = ({
 
             <div
               className={style.storageTypeWrapper}
-              onClick={() => {
-                if (environment.isDesktop) {
-                  window.apis?.dialog.moveDBFile(workspace.id);
+              onClick={async () => {
+                if (await window.apis?.dialog.moveDBFile(workspace.id)) {
+                  toast(t('Move folder success'));
                 }
               }}
             >

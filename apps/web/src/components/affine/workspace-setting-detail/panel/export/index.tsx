@@ -1,4 +1,4 @@
-import { Button, Wrapper } from '@affine/component';
+import { Button, toast, Wrapper } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
@@ -13,8 +13,10 @@ export const ExportPanel = () => {
         type="light"
         shape="circle"
         disabled={!environment.isDesktop || !id}
-        onClick={() => {
-          id && window.apis?.dialog.saveDBFileAs(id);
+        onClick={async () => {
+          if (id && (await window.apis?.dialog.saveDBFileAs(id))) {
+            toast(t('Export success'));
+          }
         }}
       >
         {t('Export AFFiNE backup file')}
