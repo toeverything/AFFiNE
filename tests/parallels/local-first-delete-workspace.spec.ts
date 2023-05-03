@@ -20,10 +20,15 @@ test('New a workspace , then delete it in all workspaces, permanently delete it'
   await page
     .getByTestId('delete-workspace-input')
     .type(currentWorkspaceName as string);
+  const promise = page
+    .getByTestId('affine-toast')
+    .waitFor({ state: 'attached' });
   await page.getByTestId('delete-workspace-confirm-button').click();
-  await page.getByTestId('affine-toast').waitFor({ state: 'attached' });
-  expect(await page.getByTestId('workspace-card').count()).toBe(0);
-  await page.mouse.click(1, 1);
-  expect(await page.getByTestId('workspace-card').count()).toBe(0);
+  await promise;
+  await page.reload();
+  await page.waitForSelector('[data-testid="workspace-name"]');
+  expect(await page.getByTestId('workspace-name').textContent()).toBe(
+    'Demo Workspace'
+  );
   await assertCurrentWorkspaceFlavour('local', page);
 });
