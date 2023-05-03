@@ -32,7 +32,7 @@ export function useAppHelper() {
           ws => ws.id === workspaceId
         ) as LocalWorkspace;
         if (workspace && 'blockSuiteWorkspace' in workspace) {
-          workspace.blockSuiteWorkspace.createPage(pageId);
+          workspace.blockSuiteWorkspace.createPage({ id: pageId });
         } else {
           throw new Error('cannot create page. blockSuiteWorkspace not found');
         }

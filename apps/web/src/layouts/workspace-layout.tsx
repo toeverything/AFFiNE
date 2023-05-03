@@ -267,7 +267,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
     // this is a new workspace, so we should redirect to the new page
     const pageId = nanoid();
-    const page = currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+    const page = currentWorkspace.blockSuiteWorkspace.createPage({
+      id: pageId,
+    });
     assertEquals(page.id, pageId);
     currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
       init: true,

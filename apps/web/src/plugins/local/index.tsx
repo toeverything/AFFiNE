@@ -32,7 +32,9 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
         WorkspaceFlavour.LOCAL
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-      const page = blockSuiteWorkspace.createPage(DEFAULT_HELLO_WORLD_PAGE_ID);
+      const page = blockSuiteWorkspace.createPage({
+        id: DEFAULT_HELLO_WORLD_PAGE_ID,
+      });
       blockSuiteWorkspace.setPageMeta(page.id, {
         init: true,
       });
