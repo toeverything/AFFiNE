@@ -12,7 +12,7 @@ export function useBlockSuiteWorkspaceHelper(blockSuiteWorkspace: Workspace) {
     () => ({
       createPage: (pageId: string): Page => {
         assertExists(blockSuiteWorkspace);
-        return blockSuiteWorkspace.createPage(pageId);
+        return blockSuiteWorkspace.createPage({ id: pageId });
       },
       markMilestone: async (name: string) => {
         assertExists(blockSuiteWorkspace);

@@ -6,6 +6,9 @@ import * as React from 'react';
 
 import createEmotionCache from '../utils/create-emotion-cache';
 
+const description =
+  'There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.';
+
 export default class AppDocument extends Document<{
   emotionStyleTags: EmotionJSX.Element[];
 }> {
@@ -51,16 +54,14 @@ export default class AppDocument extends Document<{
           />
           <link rel="icon" sizes="192x192" href="/chrome-192x192.png" />
           <meta name="emotion-insertion-point" content="" />
+          <meta property="description" content={description} />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:url" content="https://app.affine.pro/" />
           <meta
             name="twitter:title"
             content="AFFiNE：There can be more than Notion and Miro."
           />
-          <meta
-            name="twitter:description"
-            content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
-          />
+          <meta name="twitter:description" content={description} />
           <meta name="twitter:site" content="@AffineOfficial" />
           <meta name="twitter:image" content="https://affine.pro/og.jpeg" />
           <meta

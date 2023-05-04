@@ -1,3 +1,4 @@
+import { CallbackSet } from '@affine/workspace/utils';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import type { Awareness } from 'y-protocols/awareness';
@@ -23,6 +24,7 @@ export const createBroadCastChannelProvider = (
   const awareness = blockSuiteWorkspace.awarenessStore
     .awareness as unknown as Awareness;
   let broadcastChannel: TypedBroadcastChannel | null = null;
+  const callbacks = new CallbackSet();
   const handleBroadcastChannelMessage = (
     event: BroadcastChannelMessageEvent
   ) => {
@@ -56,6 +58,9 @@ export const createBroadCastChannelProvider = (
         break;
       }
     }
+    if (callbacks.ready) {
+      callbacks.forEach(cb => cb());
+    }
   };
   const handleDocUpdate = (updateV1: Uint8Array, origin: any) => {
     if (origin === broadcastChannel) {
@@ -77,7 +82,11 @@ export const createBroadCastChannelProvider = (
   };
   return {
     flavour: 'broadcast-channel',
-    background: false,
+    background: true,
+    get connected() {
+      return callbacks.ready;
+    },
+    callbacks,
     connect: () => {
       assertExists(blockSuiteWorkspace.id);
       broadcastChannel = Object.assign(
@@ -101,6 +110,7 @@ export const createBroadCastChannelProvider = (
       broadcastChannel.postMessage(['awareness:update', awarenessUpdate]);
       doc.on('update', handleDocUpdate);
       awareness.on('update', handleAwarenessUpdate);
+      callbacks.ready = true;
     },
     disconnect: () => {
       assertExists(broadcastChannel);
@@ -111,6 +121,7 @@ export const createBroadCastChannelProvider = (
       doc.off('update', handleDocUpdate);
       awareness.off('update', handleAwarenessUpdate);
       broadcastChannel.close();
+      callbacks.ready = false;
     },
     cleanup: () => {
       assertExists(broadcastChannel);

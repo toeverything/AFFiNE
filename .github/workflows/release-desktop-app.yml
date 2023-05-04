@@ -76,6 +76,12 @@ jobs:
           name: before-make-electron-dist
           path: apps/electron/dist
 
+      - name: Upload YML Build Script
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-yml-build-script
+          path: apps/electron/scripts/generate-yml.js
+
   make-distribution:
     environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
     strategy:
@@ -122,7 +128,7 @@ jobs:
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
-
+          mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
       - name: Save artifacts (windows)
         if: ${{ matrix.spec.platform == 'windows' }}
         run: |
@@ -169,7 +175,17 @@ jobs:
         with:
           name: affine-linux-x64-builds
           path: ./
-
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: release-yml-build-script
+          path: ./
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Generate Release yml
+        run: |
+          RELEASE_VERSION=${{ github.event.inputs.version }} node generate-yml.js
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
         env:
@@ -188,3 +204,4 @@ jobs:
             ./RELEASES
             ./*.AppImage
             ./*.apk
+            ./*.yml

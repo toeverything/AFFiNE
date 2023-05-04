@@ -5,11 +5,6 @@ import { useTranslation } from '@affine/i18n';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  useGuideHidden,
-  useGuideHiddenUntilNextUpdate,
-  useUpdateTipsOnVersionChange,
-} from '../../../hooks/use-is-first-load';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
 type SidebarSwitchProps = {
@@ -18,18 +13,14 @@ type SidebarSwitchProps = {
 };
 
 // fixme: the following code is not correct, SSR will fail because hydrate will not match the client side render
-//  in `StyledSidebarSwitch` component
+//  in `StyledSidebarSwitch` a component
 export const SidebarSwitch = ({
   visible = true,
   tooltipContent,
   ...props
 }: SidebarSwitchProps) => {
-  useUpdateTipsOnVersionChange();
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [tooltipVisible, setTooltipVisible] = useState(false);
-  const [guideHidden, setGuideHidden] = useGuideHidden();
-  const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
-    useGuideHiddenUntilNextUpdate();
   const { t } = useTranslation();
   const checkIsMac = () => {
     const env = getEnvironment();
@@ -59,22 +50,7 @@ export const SidebarSwitch = ({
         onClick={useCallback(() => {
           setOpen(open => !open);
           setTooltipVisible(false);
-          if (!guideHiddenUntilNextUpdate['quickSearchTips']) {
-            setGuideHiddenUntilNextUpdate({
-              ...guideHiddenUntilNextUpdate,
-              quickSearchTips: true,
-            });
-            setTimeout(() => {
-              setGuideHidden({ ...guideHidden, quickSearchTips: false });
-            }, 200);
-          }
-        }, [
-          guideHidden,
-          guideHiddenUntilNextUpdate,
-          setGuideHidden,
-          setGuideHiddenUntilNextUpdate,
-          setOpen,
-        ])}
+        }, [setOpen])}
         onMouseEnter={useCallback(() => {
           setTooltipVisible(true);
         }, [])}

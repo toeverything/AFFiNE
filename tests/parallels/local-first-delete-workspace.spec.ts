@@ -3,12 +3,50 @@ import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
 import { waitMarkdownImported } from '../libs/page-logic';
-import { clickSideBarSettingButton } from '../libs/sidebar';
+import {
+  clickSideBarCurrentWorkspaceBanner,
+  clickSideBarSettingButton,
+} from '../libs/sidebar';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
-test('New a workspace , then delete it in all workspaces, permanently delete it', async ({
-  page,
-}) => {
+test('Create new workspace, then delete it', async ({ page }) => {
+  await openHomePage(page);
+  await waitMarkdownImported(page);
+  await clickSideBarCurrentWorkspaceBanner(page);
+  await page.getByTestId('new-workspace').click();
+  await page
+    .getByTestId('create-workspace-input')
+    .type('Test Workspace', { delay: 50 });
+  await page.getByTestId('create-workspace-button').click();
+  await page.waitForTimeout(1000);
+  await page.waitForSelector('[data-testid="workspace-name"]');
+  expect(await page.getByTestId('workspace-name').textContent()).toBe(
+    'Test Workspace'
+  );
+  await clickSideBarSettingButton(page);
+  await page.getByTestId('delete-workspace-button').click();
+  const workspaceNameDom = await page.getByTestId('workspace-name');
+  const currentWorkspaceName = await workspaceNameDom.evaluate(
+    node => node.textContent
+  );
+  await page
+    .getByTestId('delete-workspace-input')
+    .type(currentWorkspaceName as string);
+  const promise = page
+    .getByTestId('affine-toast')
+    .waitFor({ state: 'attached' });
+  await page.getByTestId('delete-workspace-confirm-button').click();
+  await promise;
+  await page.reload();
+  await page.waitForSelector('[data-testid="workspace-name"]');
+  await page.waitForTimeout(1000);
+  expect(await page.getByTestId('workspace-name').textContent()).toBe(
+    'Demo Workspace'
+  );
+  await assertCurrentWorkspaceFlavour('local', page);
+});
+
+test('Should not delete the last one workspace', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   await clickSideBarSettingButton(page);
@@ -20,10 +58,15 @@ test('New a workspace , then delete it in all workspaces, permanently delete it'
   await page
     .getByTestId('delete-workspace-input')
     .type(currentWorkspaceName as string);
+  const promise = page
+    .getByTestId('affine-toast')
+    .waitFor({ state: 'attached' });
   await page.getByTestId('delete-workspace-confirm-button').click();
-  await page.getByTestId('affine-toast').waitFor({ state: 'attached' });
-  expect(await page.getByTestId('workspace-card').count()).toBe(0);
-  await page.mouse.click(1, 1);
-  expect(await page.getByTestId('workspace-card').count()).toBe(0);
+  await promise;
+  await page.reload();
+  await page.waitForSelector('[data-testid="workspace-name"]');
+  expect(await page.getByTestId('workspace-name').textContent()).toBe(
+    'Demo Workspace'
+  );
   await assertCurrentWorkspaceFlavour('local', page);
 });

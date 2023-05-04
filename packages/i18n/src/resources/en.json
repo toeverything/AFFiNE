@@ -227,5 +227,6 @@
   "Finding Current Workspace": "Finding Current Workspace",
   "Page is Loading": "Page is Loading",
   "Loading All Workspaces": "Loading All Workspaces",
-  "Loading Page": "Loading Page"
+  "Loading Page": "Loading Page",
+  "You cannot delete the last workspace": "You cannot delete the last workspace"
 }
