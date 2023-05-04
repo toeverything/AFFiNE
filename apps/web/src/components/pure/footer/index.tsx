@@ -2,7 +2,7 @@ import { FlexWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
 import { config } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';
@@ -21,7 +21,7 @@ export type FooterProps = {
 };
 
 export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
@@ -38,7 +38,7 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
               <p>{user.email}</p>
             </StyleUserInfo>
           </FlexWrapper>
-          <Tooltip content={t('Sign out')} disablePortal={true}>
+          <Tooltip content={t['Sign out']()} disablePortal={true}>
             <IconButton
               data-testid="workspace-list-modal-sign-out"
               onClick={() => {
@@ -69,7 +69,7 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
             }
           }}
         >
-          {t('Sign in')}
+          {t['Sign in']()}
         </StyledSignInButton>
       )}
     </StyledFooter>

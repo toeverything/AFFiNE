@@ -1,5 +1,5 @@
 import { Menu, MenuItem } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import {
   ArrowRightSmallIcon,
@@ -15,7 +15,7 @@ export const Export = ({
   onSelect,
   onItemClick,
 }: CommonMenuItemProps<{ type: 'markdown' | 'html' }>) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
   return (
     <Menu
@@ -37,7 +37,7 @@ export const Export = ({
             }}
             icon={<ExportToHtmlIcon />}
           >
-            {t('Export to HTML')}
+            {t['Export to HTML']()}
           </MenuItem>
           <MenuItem
             data-testid="export-to-markdown"
@@ -52,7 +52,7 @@ export const Export = ({
             }}
             icon={<ExportToMarkdownIcon />}
           >
-            {t('Export to Markdown')}
+            {t['Export to Markdown']()}
           </MenuItem>
         </>
       }
@@ -66,7 +66,7 @@ export const Export = ({
           onItemClick?.();
         }}
       >
-        {t('Export')}
+        {t.Export()}
       </MenuItem>
     </Menu>
   );

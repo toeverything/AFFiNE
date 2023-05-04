@@ -1,6 +1,6 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
 import { config } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PermissionType } from '@affine/workspace/affine/api';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -41,7 +41,7 @@ const AffineRemoteCollaborationPanel: React.FC<
   }
 > = ({ workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const { members, removeMember } = useMembers(workspace.id);
   return (
     <>
@@ -49,11 +49,11 @@ const AffineRemoteCollaborationPanel: React.FC<
         <ul>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>
-              {t('Users')} (
+              {t['Users']()} (
               <span data-testid="member-length">{members.length}</span>)
             </StyledMemberNameContainer>
             <StyledMemberRoleContainer>
-              {t('Access level')}
+              {t['Access level']()}
             </StyledMemberRoleContainer>
             <div style={{ width: '24px', paddingRight: '48px' }}></div>
           </StyledMemberTitleContainer>
@@ -91,9 +91,9 @@ const AffineRemoteCollaborationPanel: React.FC<
                       <StyledMemberRoleContainer>
                         {member.accepted
                           ? member.type !== PermissionType.Owner
-                            ? t('Member')
-                            : t('Owner')
-                          : t('Pending')}
+                            ? t['Member']()
+                            : t['Owner']()
+                          : t['Pending']()}
                       </StyledMemberRoleContainer>
                       {member.type === PermissionType.Owner ? (
                         <StyledMoreVerticalDiv />
@@ -109,14 +109,14 @@ const AffineRemoteCollaborationPanel: React.FC<
                                     // @ts-ignore
                                     await removeMember(member.id);
                                     toast(
-                                      t('Member has been removed', {
+                                      t['Member has been removed']({
                                         name: user.name,
                                       })
                                     );
                                   }}
                                   icon={<DeleteTemporarilyIcon />}
                                 >
-                                  {t('Remove from workspace')}
+                                  {t['Remove from workspace']()}
                                 </MenuItem>
                               </>
                             }
@@ -145,7 +145,7 @@ const AffineRemoteCollaborationPanel: React.FC<
             data-testid="invite-members"
             shape="circle"
           >
-            {t('Invite Members')}
+            {t['Invite Members']()}
           </Button>
         </StyledMemberButtonContainer>
       </StyledMemberContainer>
@@ -168,11 +168,11 @@ const LocalCollaborationPanel: React.FC<
     workspace: LocalWorkspace;
   }
 > = ({ workspace, onTransferWorkspace }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Wrapper marginBottom="42px">{t('Collaboration Description')}</Wrapper>
+      <Wrapper marginBottom="42px">{t['Collaboration Description']()}</Wrapper>
 
       <Button
         data-testid="local-workspace-enable-cloud-button"
@@ -182,7 +182,7 @@ const LocalCollaborationPanel: React.FC<
           setOpen(true);
         }}
       >
-        {t('Enable AFFiNE Cloud')}
+        {t['Enable AFFiNE Cloud']()}
       </Button>
       {config.enableLegacyCloud ? (
         <TransformWorkspaceToAffineModal

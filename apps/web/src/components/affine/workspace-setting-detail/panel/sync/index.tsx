@@ -1,5 +1,6 @@
 import { Content, FlexWrapper, styled } from '@affine/component';
-import { Trans, useTranslation } from '@affine/i18n';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -25,7 +26,7 @@ export const SyncPanel: React.FC<PanelProps> = ({ workspace }) => {
     workspace.blockSuiteWorkspace
   );
   const user = useCurrentUser();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <>
       <FlexWrapper alignItems="center" style={{ marginBottom: '12px' }}>
@@ -37,7 +38,7 @@ export const SyncPanel: React.FC<PanelProps> = ({ workspace }) => {
         />
         <StyledWorkspaceName>{name}</StyledWorkspaceName>
         &nbsp;
-        <Content weight={500}>{t('is a Cloud Workspace')}</Content>
+        <Content weight={500}>{t['is a Cloud Workspace']()}</Content>
       </FlexWrapper>
       <Trans i18nKey="Cloud Workspace Description">
         All data will be synchronised and saved to the AFFiNE account

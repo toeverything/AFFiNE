@@ -1,8 +1,22 @@
+import { runCli } from '@magic-works/i18n-codegen';
 import type { StorybookConfig } from '@storybook/react-vite';
 import { fileURLToPath } from 'node:url';
 import { mergeConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
+
+runCli(
+  {
+    config: fileURLToPath(
+      new URL('../../../.i18n-codegen.json', import.meta.url)
+    ),
+    watch: false,
+  },
+  error => {
+    console.error(error);
+    process.exit(1);
+  }
+);
 
 export default {
   stories: ['../src/**/*.stories.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],

@@ -1,5 +1,5 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import { lazy, Suspense, useState } from 'react';
 
@@ -27,7 +27,7 @@ export const HelpIsland = ({
   const [spread, setShowSpread] = useState(false);
   // const { triggerShortcutsModal, triggerContactModal } = useModal();
   // const blockHub = useGlobalState(store => store.blockHub);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   //
   // useEffect(() => {
   //   blockHub?.blockHubStatusUpdated.on(status => {
@@ -58,7 +58,7 @@ export const HelpIsland = ({
           style={{ height: spread ? `${showList.length * 44}px` : 0 }}
         >
           {showList.includes('whatNew') && (
-            <Tooltip content={t("Discover what's new!")} placement="left-end">
+            <Tooltip content={t["Discover what's new!"]()} placement="left-end">
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
@@ -73,7 +73,7 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('contact') && (
-            <Tooltip content={t('Contact Us')} placement="left-end">
+            <Tooltip content={t['Contact Us']()} placement="left-end">
               <StyledIconWrapper
                 data-testid="right-bottom-contact-us-icon"
                 onClick={() => {
@@ -86,7 +86,7 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('shortcuts') && (
-            <Tooltip content={t('Keyboard Shortcuts')} placement="left-end">
+            <Tooltip content={t['Keyboard Shortcuts']()} placement="left-end">
               <StyledIconWrapper
                 data-testid="shortcuts-icon"
                 onClick={() => {
@@ -100,7 +100,7 @@ export const HelpIsland = ({
           )}
         </StyledAnimateWrapper>
 
-        <Tooltip content={t('Help and Feedback')} placement="left-end">
+        <Tooltip content={t['Help and Feedback']()} placement="left-end">
           <MuiFade in={!spread} data-testid="faq-icon">
             <StyledTriggerWrapper>
               <HelpIcon />

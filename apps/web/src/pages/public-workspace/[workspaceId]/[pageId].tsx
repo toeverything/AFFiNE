@@ -1,6 +1,6 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
 import { initPage } from '@affine/env/blocksuite';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
@@ -72,7 +72,7 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
       [blockSuiteWorkspace.id, openPage]
     ),
   });
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(blockSuiteWorkspace);
   const pageTitle = blockSuiteWorkspace.meta.getPageMeta(pageId)?.title;
@@ -101,7 +101,7 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
                 href={`/public-workspace/${blockSuiteWorkspace.id}/${pageId}`}
               >
                 <PageIcon fontSize={24} />
-                <span>{pageTitle ? pageTitle : t('Untitled')}</span>
+                <span>{pageTitle ? pageTitle : t['Untitled']()}</span>
               </StyledBreadcrumbs>
             </Breadcrumbs>
           </NavContainer>
