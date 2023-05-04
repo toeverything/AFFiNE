@@ -15,7 +15,7 @@ export const StyledHeaderContainer = styled('div')<{
     top: 0,
     background: 'var(--affine-background-primary-color)',
     WebkitAppRegion: 'drag',
-    zIndex: 1,
+    zIndex: 'var(--affine-z-index-popover)',
     '@media (max-width: 768px)': {
       '&[data-open="true"]': {
         WebkitAppRegion: 'no-drag',
