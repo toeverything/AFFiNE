@@ -1,4 +1,5 @@
 import { MuiFade, Tooltip } from '@affine/component';
+import { getEnvironment } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
@@ -13,16 +14,21 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-
+const env = getEnvironment();
 const ContactModal = lazy(() =>
   import('@affine/component/contact-modal').then(({ ContactModal }) => ({
     default: ContactModal,
   }))
 );
-
+const DEFAULT_SHOW_LIST: IslandItemNames[] = [
+  'whatNew',
+  'contact',
+  'shortcuts',
+];
+const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST, 'guide'];
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts' | 'guide';
 export const HelpIsland = ({
-  showList = ['whatNew', 'contact', 'shortcuts', 'guide'],
+  showList = env.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST,
 }: {
   showList?: IslandItemNames[];
 }) => {
@@ -31,6 +37,7 @@ export const HelpIsland = ({
   // const { triggerShortcutsModal, triggerContactModal } = useModal();
   // const blockHub = useGlobalState(store => store.blockHub);
   const { t } = useTranslation();
+
   //
   // useEffect(() => {
   //   blockHub?.blockHubStatusUpdated.on(status => {
