@@ -105,8 +105,17 @@ export const RootAppSidebar = ({
               onOpenQuickSearchModal();
             }, [onOpenQuickSearchModal])}
           >
-            <SearchIcon />
-            {t['Quick search']()}
+            <div
+              style={{
+                display: 'flex',
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+              }}
+            >
+              <SearchIcon />
+              {t['Quick search']()}
+            </div>
           </StyledListItem>
           <StyledListItem
             active={
