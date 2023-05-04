@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { SettingPanel, WorkspaceRegistry } from '@affine/workspace/type';
 import { settingPanel, WorkspaceFlavour } from '@affine/workspace/type';
 import type { MouseEvent } from 'react';
@@ -39,6 +39,7 @@ export type WorkspaceSettingDetailProps = {
 
 export type PanelProps = WorkspaceSettingDetailProps;
 
+type Name = 'General' | 'Sync' | 'Collaboration' | 'Publish' | 'Export';
 const panelMap = {
   [settingPanel.General]: {
     name: 'General',
@@ -63,7 +64,7 @@ const panelMap = {
   },
 } satisfies {
   [Key in SettingPanel]: {
-    name: string;
+    name: Name;
     enable?: (flavour: WorkspaceFlavour) => boolean;
     ui: React.FC<PanelProps>;
   };
@@ -96,7 +97,7 @@ export const WorkspaceSettingDetail: React.FC<
   if (!(currentTab in panelMap)) {
     throw new Error('Invalid activeTab: ' + currentTab);
   }
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const workspaceId = workspace.id;
   useEffect(() => {
     if (isAffine && isOwner) {
@@ -148,7 +149,7 @@ export const WorkspaceSettingDetail: React.FC<
               data-tab-key={key}
               onClick={handleTabClick}
             >
-              {t(value.name)}
+              {t[value.name]()}
             </WorkspaceSettingTagItem>
           );
         })}

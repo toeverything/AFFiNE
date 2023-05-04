@@ -1,12 +1,12 @@
 import { Button, displayFlex, Menu, MenuItem, styled } from '@affine/component';
 import { LOCALES } from '@affine/i18n';
-import { useTranslation } from '@affine/i18n';
+import { useI18N } from '@affine/i18n';
 import { ArrowDownSmallIcon, PublishIcon } from '@blocksuite/icons';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
 
 const LanguageMenuContent: FC = () => {
-  const { i18n } = useTranslation();
+  const i18n = useI18N();
   const changeLanguage = useCallback(
     (event: string) => {
       i18n.changeLanguage(event);
@@ -32,7 +32,7 @@ const LanguageMenuContent: FC = () => {
   );
 };
 export const LanguageMenu: React.FC = () => {
-  const { i18n } = useTranslation();
+  const i18n = useI18N();
 
   const currentLanguage = LOCALES.find(item => item.tag === i18n.language);
 

@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@magic-works/i18n-codegen/schema.json",
+  "version": 1,
+  "list": [
+    {
+      "input": "./packages/i18n/src/resources/en.json",
+      "output": "./packages/i18n/src/i18n_generated",
+      "parser": {
+        "type": "i18next",
+        "contextSeparator": "$",
+        "pluralSeparator": "_"
+      },
+      "generator": {
+        "type": "i18next/react-hooks",
+        "hooks": "useAFFiNEI18N",
+        "emitTS": true,
+        "shouldUnescape": true
+      }
+    }
+  ]
+}

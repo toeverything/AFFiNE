@@ -1,5 +1,5 @@
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
@@ -36,7 +36,7 @@ export const Results: FC<ResultsProps> = ({
   const List = useSwitchToConfig(blockSuiteWorkspace.id);
 
   const recentlyViewed = useRecentlyViewed();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const { jumpToPage } = useRouterHelper(router);
   const results = blockSuiteWorkspace.search(query);
 
@@ -61,7 +61,7 @@ export const Results: FC<ResultsProps> = ({
     return (
       <>
         {recentlyViewedItem.length > 0 && (
-          <Command.Group heading={t('Recent')}>
+          <Command.Group heading={t['Recent']()}>
             {recentlyViewedItem.map(recent => {
               const page = pageList.find(page => recent.id === page.id);
               assertExists(page);
@@ -87,7 +87,7 @@ export const Results: FC<ResultsProps> = ({
             })}
           </Command.Group>
         )}
-        <Command.Group heading={t('Jump to')}>
+        <Command.Group heading={t['Jump to']()}>
           {List.map(link => {
             return (
               <Command.Item
@@ -112,7 +112,7 @@ export const Results: FC<ResultsProps> = ({
   if (!resultsPageMeta.length) {
     return (
       <StyledNotFound>
-        <span>{t('Find 0 result')}</span>
+        <span>{t['Find 0 result']()}</span>
         <Image
           src="/imgs/no-result.svg"
           alt="no result"
@@ -124,7 +124,7 @@ export const Results: FC<ResultsProps> = ({
   }
   return (
     <Command.Group
-      heading={t('Find results', { number: resultsPageMeta.length })}
+      heading={t['Find results']({ number: `${resultsPageMeta.length}` })}
     >
       {resultsPageMeta.map(result => {
         return (

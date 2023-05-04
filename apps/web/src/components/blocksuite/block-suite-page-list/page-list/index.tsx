@@ -8,7 +8,7 @@ import {
   TableRow,
   Tooltip,
 } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   EdgelessIcon,
   FavoritedIcon,
@@ -47,10 +47,10 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
   pageMeta: { favorite },
   onClick,
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <Tooltip
-      content={favorite ? t('Favorited') : t('Favorite')}
+      content={favorite ? t['Favorited']() : t['Favorite']()}
       placement="top-start"
     >
       <IconButton
@@ -59,7 +59,7 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
           e.stopPropagation();
           onClick();
           toast(
-            favorite ? t('Removed from Favorites') : t('Added to Favorites')
+            favorite ? t['Removed from Favorites']() : t['Added to Favorites']()
           );
         }}
         style={{
@@ -106,7 +106,7 @@ export const PageList: React.FC<PageListProps> = ({
   const helper = usePageMetaHelper(blockSuiteWorkspace);
   const { removeToTrash, restoreFromTrash } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
   const isTrash = listType === 'trash';
@@ -130,14 +130,14 @@ export const PageList: React.FC<PageListProps> = ({
           <TableRow>
             {matches && (
               <>
-                <TableCell proportion={0.5}>{t('Title')}</TableCell>
-                <TableCell proportion={0.2}>{t('Created')}</TableCell>
+                <TableCell proportion={0.5}>{t['Title']()}</TableCell>
+                <TableCell proportion={0.2}>{t['Created']()}</TableCell>
                 <TableCell proportion={0.2}>
                   {isTrash
-                    ? t('Moved to Trash')
+                    ? t['Moved to Trash']()
                     : isShared
                     ? 'Shared'
-                    : t('Updated')}
+                    : t['Updated']()}
                 </TableCell>
                 <TableCell proportion={0.1}></TableCell>
               </>
@@ -164,7 +164,7 @@ export const PageList: React.FC<PageListProps> = ({
                         <PageIcon />
                       )}
                       <Content ellipsis={true} color="inherit">
-                        {pageMeta.title || t('Untitled')}
+                        {pageMeta.title || t['Untitled']()}
                       </Content>
                     </StyledTitleLink>
                     {listType && !isTrash && (
