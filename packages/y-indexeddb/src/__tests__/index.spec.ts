@@ -13,6 +13,7 @@ import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspacePersist } from '../index';
 import {
+  CleanupWhenConnectingError,
   createIndexedDBProvider,
   dbVersion,
   DEFAULT_DB_NAME,
@@ -184,6 +185,17 @@ describe('indexeddb provider', () => {
       const keys = await store.getAllKeys();
       expect(keys).not.contain(workspace.id);
     }
+  });
+
+  test('cleanup when connecting', async () => {
+    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    provider.connect();
+    expect(() => provider.cleanup()).rejects.toThrowError(
+      CleanupWhenConnectingError
+    );
+    await provider.whenSynced;
+    provider.disconnect();
+    await provider.cleanup();
   });
 
   test('merge', async () => {

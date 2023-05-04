@@ -90,6 +90,12 @@ export class EarlyDisconnectError extends Error {
   }
 }
 
+export class CleanupWhenConnectingError extends Error {
+  constructor() {
+    super('Cleanup when connecting');
+  }
+}
+
 export const markMilestone = async (
   id: string,
   doc: Doc,
@@ -275,6 +281,9 @@ export const createIndexedDBProvider = (
       doc.off('destroy', handleDestroy);
     },
     async cleanup() {
+      if (connect) {
+        throw new CleanupWhenConnectingError();
+      }
       (await dbPromise).delete('workspace', id);
     },
     whenSynced: Promise.resolve(),
