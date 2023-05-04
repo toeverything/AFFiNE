@@ -9,7 +9,10 @@ const weakMap = new WeakMap<
   WritableAtom<string, [string], void> & Atom<string>
 >();
 
-const emptyWorkspaceNameAtom = atom(UNTITLED_WORKSPACE_NAME);
+const emptyWorkspaceNameAtom = atom(UNTITLED_WORKSPACE_NAME, () => {
+  console.warn('you cannot set the name of an null workspace.');
+  console.warn('this is a bug in the code.');
+});
 
 export function useBlockSuiteWorkspaceName(
   blockSuiteWorkspace: Workspace | null
