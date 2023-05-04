@@ -9,8 +9,17 @@ const weakMap = new WeakMap<
   WritableAtom<string, [string], void> & Atom<string>
 >();
 
-export function useBlockSuiteWorkspaceName(blockSuiteWorkspace: Workspace) {
-  if (!weakMap.has(blockSuiteWorkspace)) {
+const emptyWorkspaceNameAtom = atom(UNTITLED_WORKSPACE_NAME);
+
+export function useBlockSuiteWorkspaceName(
+  blockSuiteWorkspace: Workspace | null
+) {
+  let nameAtom:
+    | (WritableAtom<string, [string], void> & Atom<string>)
+    | undefined;
+  if (!blockSuiteWorkspace) {
+    nameAtom = emptyWorkspaceNameAtom;
+  } else if (!weakMap.has(blockSuiteWorkspace)) {
     const baseAtom = atom<string>(
       blockSuiteWorkspace.meta.name ?? UNTITLED_WORKSPACE_NAME
     );
@@ -30,8 +39,10 @@ export function useBlockSuiteWorkspaceName(blockSuiteWorkspace: Workspace) {
       };
     };
     weakMap.set(blockSuiteWorkspace, writableAtom);
+    nameAtom = writableAtom;
+  } else {
+    nameAtom = weakMap.get(blockSuiteWorkspace);
+    assertExists(nameAtom);
   }
-  const nameAtom = weakMap.get(blockSuiteWorkspace);
-  assertExists(nameAtom);
   return useAtom(nameAtom);
 }
