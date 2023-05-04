@@ -20,7 +20,7 @@ console.info('Build Flags', buildFlags);
 console.info('Editor Flags', blockSuiteFeatureFlags);
 
 if (process.env.NODE_ENV !== 'development') {
-  runCli(
+  await runCli(
     {
       config: fileURLToPath(
         new URL('../../.i18n-codegen.json', import.meta.url)
