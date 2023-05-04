@@ -46,14 +46,6 @@ const apis: PreloadHandlers = (() => {
       return [
         name,
         (...args: any[]) => {
-          console.log(
-            'Invoke handler',
-            channel,
-            'with args:',
-            ...args.filter(arg => {
-              return typeof arg !== 'object';
-            })
-          );
           return ipcRenderer.invoke(channel, ...args);
         },
       ];

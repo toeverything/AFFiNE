@@ -75,6 +75,8 @@ async function createWindow() {
    */
   const pageUrl = process.env.DEV_SERVER_URL || 'file://./index.html'; // see protocol.ts
 
+  logger.info('loading page at', pageUrl);
+
   await browserWindow.loadURL(pageUrl);
 
   logger.info('main window is loaded at', pageUrl);

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { parse } from 'url';
 
-import { logger } from './logger';
+import { logger } from '../../logger';
 
 const redirectUri = 'https://affine.pro/client/auth-callback';
 

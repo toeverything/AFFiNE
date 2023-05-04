@@ -30,7 +30,7 @@ export const config = () => {
     main: {
       entryPoints: [
         resolve(root, './layers/main/src/index.ts'),
-        resolve(root, './layers/main/src/handlers.ts'),
+        resolve(root, './layers/main/src/handlers/index.ts'),
       ],
       outdir: resolve(root, './dist/layers/main'),
       bundle: true,

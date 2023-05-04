@@ -1,9 +1,8 @@
 import { watch } from 'chokidar';
 
-import { appContext } from '../context';
-import { logger } from '../logger';
-import { sendMainEvent } from '../send-main-event';
-import { debounce } from '../utils';
+import { appContext } from '../../context';
+import { logger } from '../../logger';
+import { debounce, sendMainEvent } from '../../utils';
 import type { WorkspaceSQLiteDB } from './sqlite';
 import { openWorkspaceDatabase } from './sqlite';
 
