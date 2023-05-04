@@ -45,7 +45,7 @@ const CommonMenu = () => {
       <Menu
         width={276}
         content={content}
-        // placement="bottom-end"
+        placement="bottom"
         disablePortal={true}
         trigger="click"
       >
