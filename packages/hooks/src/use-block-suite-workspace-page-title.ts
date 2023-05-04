@@ -20,7 +20,7 @@ export function useBlockSuiteWorkspacePageTitle(
       const disposable = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
         const page = blockSuiteWorkspace.getPage(pageId);
         assertExists(page);
-        set(page?.meta.title || 'Untitled');
+        set(page.meta.title || 'Untitled');
       });
       return () => {
         disposable.dispose();
