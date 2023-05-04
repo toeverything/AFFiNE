@@ -1,3 +1,4 @@
+import { getEnvironment } from '@affine/env';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -68,7 +69,10 @@ export function Modals() {
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useAppHelper();
   const [transitioning, transition] = useTransition();
-
+  const env = getEnvironment();
+  const onCloseOnboardingModal = useCallback(() => {
+    setOpenOnboardingModal(false);
+  }, [setOpenOnboardingModal]);
   return (
     <>
       <Suspense>
@@ -79,14 +83,15 @@ export function Modals() {
           }, [setOpenDisableCloudAlertModal])}
         />
       </Suspense>
-      <Suspense>
-        <OnboardingModalAtom
-          open={openOnboardingModal}
-          onClose={useCallback(() => {
-            setOpenOnboardingModal(false);
-          }, [setOpenOnboardingModal])}
-        />
-      </Suspense>
+      {env.isDesktop && (
+        <Suspense>
+          <OnboardingModalAtom
+            open={openOnboardingModal}
+            onClose={onCloseOnboardingModal}
+          />
+        </Suspense>
+      )}
+
       <Suspense>
         <WorkspaceListModal
           disabled={transitioning}

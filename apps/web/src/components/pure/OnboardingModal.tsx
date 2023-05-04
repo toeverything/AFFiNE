@@ -1,5 +1,4 @@
 import { TourModal } from '@affine/component/tour-modal';
-import { getEnvironment } from '@affine/env';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useMemo } from 'react';
 
@@ -23,7 +22,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   open,
   onClose,
 }) => {
-  const env = getEnvironment();
   const [, setShowOnboarding] = useAtom(guideOnboardingAtom);
   const [, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
   const onCloseTourModal = useCallback(() => {
@@ -41,9 +39,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       setOpenOnboarding(true);
     }
   }, [shouldShow, setOpenOnboarding]);
-  if (!env.isDesktop) {
-    return <></>;
-  }
   return <TourModal open={open} onClose={onCloseTourModal} />;
 };
 
