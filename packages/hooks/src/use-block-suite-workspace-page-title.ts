@@ -13,7 +13,9 @@ export function useBlockSuiteWorkspacePageTitle(
     !weakMap.has(blockSuiteWorkspace) ||
     weakMap.get(blockSuiteWorkspace)?.[0] !== pageId
   ) {
-    const baseAtom = atom<string>('');
+    const baseAtom = atom<string>(
+      blockSuiteWorkspace.getPage(pageId)?.meta.title || 'Untitled'
+    );
     baseAtom.onMount = set => {
       const disposable = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
         const page = blockSuiteWorkspace.getPage(pageId);
