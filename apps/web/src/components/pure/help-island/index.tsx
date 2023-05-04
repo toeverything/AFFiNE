@@ -108,7 +108,7 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('guide') && (
-            <Tooltip content={t('Easy Guide')} placement="left-end">
+            <Tooltip content={'Easy Guide'} placement="left-end">
               <StyledIconWrapper
                 data-testid="easy-guide"
                 onClick={() => {
