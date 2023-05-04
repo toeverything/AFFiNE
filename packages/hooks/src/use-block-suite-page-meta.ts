@@ -14,6 +14,7 @@ declare module '@blocksuite/store' {
     trash?: boolean;
     trashDate?: number;
     updatedDate?: number;
+    mode?: 'page' | 'edgeless';
     // whether to create the page with the default template
     init?: boolean;
     // todo: support `number` in the future
