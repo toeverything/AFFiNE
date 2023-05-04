@@ -28,11 +28,11 @@
     "idb": "^7.1.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230502232311-bfe52748-nightly",
-    "@blocksuite/store": "0.0.0-20230502232311-bfe52748-nightly",
+    "@blocksuite/blocks": "0.0.0-20230503040956-5c49643f-nightly",
+    "@blocksuite/store": "0.0.0-20230503040956-5c49643f-nightly",
     "vite": "^4.3.4",
     "vite-plugin-dts": "^2.3.0",
-    "y-indexeddb": "^9.0.10"
+    "y-indexeddb": "^9.0.11"
   },
   "peerDependencies": {
     "yjs": "^13.5.51"
