@@ -1,5 +1,5 @@
 import { initPage } from '@affine/env/blocksuite';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons';
 import { assertEquals, nanoid } from '@blocksuite/store';
@@ -27,7 +27,7 @@ export const Footer: React.FC<FooterProps> = ({
   router,
 }) => {
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const { jumpToPage } = useRouterHelper(router);
   const MAX_QUERY_SHOW_LENGTH = 20;
   const normalizedQuery =
@@ -60,9 +60,9 @@ export const Footer: React.FC<FooterProps> = ({
       <StyledModalFooterContent>
         <PlusIcon />
         {query ? (
-          <span>{t('New Keyword Page', { query: normalizedQuery })}</span>
+          <span>{t['New Keyword Page']({ query: normalizedQuery })}</span>
         ) : (
-          <span>{t('New Page')}</span>
+          <span>{t['New Page']()}</span>
         )}
       </StyledModalFooterContent>
     </Command.Item>

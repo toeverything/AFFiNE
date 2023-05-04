@@ -1,14 +1,11 @@
 import { Button, toast, Wrapper } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
-import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
-import { useAtomValue } from 'jotai';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 export const ExportPanel = () => {
-  const { t } = useTranslation();
-  const id = useAtomValue(rootCurrentWorkspaceIdAtom);
+  const t = useAFFiNEI18N();
   return (
     <>
-      <Wrapper marginBottom="42px"> {t('Export Description')}</Wrapper>
+      <Wrapper marginBottom="42px"> {t['Export Description']()}</Wrapper>
       <Button
         type="light"
         shape="circle"
@@ -19,7 +16,7 @@ export const ExportPanel = () => {
           }
         }}
       >
-        {t('Export AFFiNE backup file')}
+        {t['Export AFFiNE backup file']()}
       </Button>
     </>
   );

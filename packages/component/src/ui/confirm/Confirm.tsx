@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import { Button } from '../button';
 import type { ModalProps } from '../modal';
@@ -38,7 +38,7 @@ export const Confirm = ({
   cancelButtonTestId = '',
   confirmButtonTestId = '',
 }: ConfirmProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <Modal open={open} disablePortal={false}>
       <StyledModalWrapper>
@@ -60,7 +60,7 @@ export const Confirm = ({
               style={{ marginRight: '24px' }}
               data-testid={cancelButtonTestId}
             >
-              {cancelText === 'Cancel' ? t('Cancel') : cancelText}
+              {cancelText === 'Cancel' ? t['Cancel']() : cancelText}
             </Button>
             <Button
               type={confirmType}
@@ -102,7 +102,7 @@ export const Confirm = ({
               }}
               data-testid={cancelButtonTestId}
             >
-              {cancelText === 'Cancel' ? t('Cancel') : cancelText}
+              {cancelText === 'Cancel' ? t['Cancel']() : cancelText}
             </Button>
           </StyledColumnButtonWrapper>
         )}

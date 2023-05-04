@@ -1,6 +1,6 @@
 import { Button } from '@affine/component';
 import { styled } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { ChangeEvent } from 'react';
 import type React from 'react';
 import { useRef } from 'react';
@@ -17,7 +17,7 @@ export const Upload: React.FC<UploadProps> = ({
   children,
   ...props
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const input_ref = useRef<HTMLInputElement>(null);
   const _chooseFile = () => {
     if (input_ref.current) {
@@ -37,7 +37,7 @@ export const Upload: React.FC<UploadProps> = ({
   };
   return (
     <UploadStyle onClick={_chooseFile}>
-      {children ?? <Button>{t('Upload')}</Button>}
+      {children ?? <Button>{t['Upload']()}</Button>}
       <input
         ref={input_ref}
         type="file"

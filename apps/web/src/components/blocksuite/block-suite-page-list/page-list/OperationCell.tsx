@@ -6,7 +6,7 @@ import {
   MenuItem,
   Tooltip,
 } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeletePermanentlyIcon,
   FavoritedIcon,
@@ -44,7 +44,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   onToggleTrashPage,
 }) => {
   const { id, favorite, isPublic } = pageMeta;
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   const [openDisableShared, setOpenDisableShared] = useState(false);
 
@@ -65,7 +65,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         onClick={() => {
           onToggleFavoritePage(id);
           toast(
-            favorite ? t('Removed from Favorites') : t('Added to Favorites')
+            favorite ? t['Removed from Favorites']() : t['Added to Favorites']()
           );
         }}
         icon={
@@ -76,7 +76,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
           )
         }
       >
-        {favorite ? t('Remove from favorites') : t('Add to Favorites')}
+        {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
       </MenuItem>
       {!environment.isDesktop && (
         <MenuItem
@@ -85,7 +85,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
           }}
           icon={<OpenInNewIcon />}
         >
-          {t('Open in new tab')}
+          {t['Open in new tab']()}
         </MenuItem>
       )}
       {!pageMeta.isRootPinboard && (
@@ -117,7 +117,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         meta={pageMeta}
         onConfirm={() => {
           onToggleTrashPage(id, true);
-          toast(t('Deleted'));
+          toast(t['Moved to Trash']());
           setOpen(false);
         }}
         onClose={() => {
@@ -151,22 +151,22 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
   onRestorePage,
 }) => {
   const { id, title } = pageMeta;
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   return (
     <FlexWrapper>
-      <Tooltip content={t('Restore it')} placement="top-start">
+      <Tooltip content={t['Restore it']()} placement="top-start">
         <IconButton
           style={{ marginRight: '12px' }}
           onClick={() => {
             onRestorePage(id);
-            toast(t('restored', { title: title || 'Untitled' }));
+            toast(t['restored']({ title: title || 'Untitled' }));
           }}
         >
           <ResetIcon />
         </IconButton>
       </Tooltip>
-      <Tooltip content={t('Delete permanently')} placement="top-start">
+      <Tooltip content={t['Delete permanently']()} placement="top-start">
         <IconButton
           onClick={() => {
             setOpen(true);
@@ -176,14 +176,14 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
         </IconButton>
       </Tooltip>
       <Confirm
-        title={t('Delete permanently?')}
-        content={t("Once deleted, you can't undo this action.")}
-        confirmText={t('Delete')}
+        title={t['Delete permanently?']()}
+        content={t['TrashButtonGroupDescription']()}
+        confirmText={t['Delete']()}
         confirmType="danger"
         open={open}
         onConfirm={() => {
           onPermanentlyDeletePage(id);
-          toast(t('Permanently deleted'));
+          toast(t['Permanently deleted']());
           setOpen(false);
         }}
         onClose={() => {

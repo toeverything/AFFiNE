@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import * as p from '@clack/prompts';
+import { runCli } from '@magic-works/i18n-codegen';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,6 +80,14 @@ if (dev.debugBlockSuite) {
 if (dev.server === 'local') {
   console.log('You might need setup OctoBase dev server first.');
 }
+
+runCli(
+  {
+    watch: true,
+    cwd: root,
+  },
+  console.error
+);
 
 spawn('yarn', ['dev'], {
   env,
