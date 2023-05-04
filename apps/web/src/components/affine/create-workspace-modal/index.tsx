@@ -4,6 +4,7 @@ import {
   Modal,
   ModalCloseButton,
   ModalWrapper,
+  toast,
   Tooltip,
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
@@ -140,7 +141,7 @@ const SetDBLocationContent = ({
           onClick={async () => {
             const result = await window.apis?.dialog.selectDBFileLocation();
             if (result) {
-              onConfirmLocation(result);
+              onConfirmLocation(result.filePath);
             }
           }}
         >
@@ -226,7 +227,7 @@ export const CreateWorkspaceModal = ({
   onClose,
   onCreate,
 }: ModalProps) => {
-  const { createLocalWorkspace, importLocalWorkspace } = useAppHelper();
+  const { createLocalWorkspace, addLocalWorkspace } = useAppHelper();
   const [step, setStep] = useState<CreateWorkspaceStep>();
   const [workspaceId, setWorkspaceId] = useState<string>();
   const [workspaceName, setWorkspaceName] = useState<string>();
@@ -234,6 +235,7 @@ export const CreateWorkspaceModal = ({
   const setOpenDisableCloudAlertModal = useSetAtom(
     openDisableCloudAlertModalAtom
   );
+  const t = useAFFiNEI18N();
 
   // todo: maybe refactor using xstate?
   useLayoutEffect(() => {
@@ -255,7 +257,9 @@ export const CreateWorkspaceModal = ({
           setWorkspaceId(result.workspaceId);
           setStep('set-syncing-mode');
         } else if (result.error || result.canceled) {
-          // TODO: handle error?
+          if (result.error) {
+            toast(t[result.error]());
+          }
           onClose();
         }
       })();
@@ -267,7 +271,7 @@ export const CreateWorkspaceModal = ({
     return () => {
       canceled = true;
     };
-  }, [mode, onClose]);
+  }, [mode, onClose, t]);
 
   return (
     <Modal open={mode !== false && !!step} onClose={onClose}>
@@ -307,9 +311,9 @@ export const CreateWorkspaceModal = ({
                 setOpenDisableCloudAlertModal(true);
               } else {
                 let id = workspaceId;
-                // this is also the last step
+                // syncing mode is also the last step
                 if (workspaceId && mode === 'add') {
-                  await importLocalWorkspace(workspaceId);
+                  await addLocalWorkspace(workspaceId);
                 } else if (mode === 'new' && workspaceName) {
                   id = await createLocalWorkspace(workspaceName);
                   // if dbFileLocation is set, move db file to that location
@@ -317,12 +321,12 @@ export const CreateWorkspaceModal = ({
                     await window.apis?.dialog.moveDBFile(id, dbFileLocation);
                   }
                 }
-                if (id) {
-                  onCreate(id);
-                } else {
-                  // ?? is this possible?
-                  onClose();
-                }
+                onClose();
+                setTimeout(() => {
+                  if (id) {
+                    onCreate(id);
+                  }
+                });
               }
             }}
           />

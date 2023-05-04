@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
@@ -6,6 +7,8 @@ import {
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
+
+const logger = new DebugLogger('useRouterWithWorkspaceIdDefense');
 
 export function useRouterWithWorkspaceIdDefense(router: NextRouter) {
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
@@ -30,6 +33,7 @@ export function useRouterWithWorkspaceIdDefense(router: NextRouter) {
       if (!firstOne) {
         throw new Error('no workspace');
       }
+      logger.debug('redirect to', firstOne.id);
       void router.push({
         pathname: '/workspace/[workspaceId]/all',
         query: {

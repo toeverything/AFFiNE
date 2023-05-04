@@ -40,7 +40,7 @@ export function useAppHelper() {
       },
       [workspaces]
     ),
-    importLocalWorkspace: useCallback(
+    addLocalWorkspace: useCallback(
       async (workspaceId: string): Promise<string> => {
         saveWorkspaceToLocalStorage(workspaceId);
         set(workspaces => [

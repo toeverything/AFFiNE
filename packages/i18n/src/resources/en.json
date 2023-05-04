@@ -257,5 +257,9 @@
   "Change workspace name hint": "Change name for all members.",
   "Storage Folder": "Storage Folder",
   "Storage Folder Hint": "Check or change storage location.",
-  "Move folder success": "Move folder success"
+  "Move folder success": "Move folder success",
+  "DB_FILE_PATH_INVALID": "Database file path invalid",
+  "DB_FILE_ALREADY_LOADED": "Database file already loaded",
+  "UNKNOWN_ERROR": "Unknown error",
+  "DB_FILE_INVALID": "Invalid Database file"
 }
