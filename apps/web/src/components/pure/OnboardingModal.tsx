@@ -1,47 +1,47 @@
 import { TourModal } from '@affine/component/tour-modal';
 import { getEnvironment } from '@affine/env';
-import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useAtom } from 'jotai';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { openOnboardingModalAtom } from '../../atoms';
-import {
-  useGuideHidden,
-  useGuideHiddenUntilNextUpdate,
-} from '../../hooks/use-is-first-load';
+import { guideOnboardingAtom } from '../../atoms/guide';
 
 type OnboardingModalProps = {
   onClose: () => void;
   open: boolean;
 };
+
+const getHelperGuide = (): { onBoarding: boolean } | null => {
+  const helperGuide = localStorage.getItem('helper-guide');
+  if (helperGuide) {
+    return JSON.parse(helperGuide);
+  }
+  return null;
+};
+
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   open,
   onClose,
 }) => {
   const env = getEnvironment();
-  const setOpenOnboardingModal = useSetAtom(openOnboardingModalAtom);
-  const [guideHidden, setGuideHidden] = useGuideHidden();
-  const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
-    useGuideHiddenUntilNextUpdate();
+  const [, setShowOnboarding] = useAtom(guideOnboardingAtom);
+  const [, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
   const onCloseTourModal = useCallback(() => {
+    setShowOnboarding(false);
     onClose();
-    setGuideHiddenUntilNextUpdate({
-      ...guideHiddenUntilNextUpdate,
-      TourModal: true,
-    });
-    setGuideHidden({ ...guideHidden, TourModal: true });
-  }, [
-    guideHidden,
-    guideHiddenUntilNextUpdate,
-    onClose,
-    setGuideHidden,
-    setGuideHiddenUntilNextUpdate,
-  ]);
-  if (window !== undefined) {
-    if (guideHidden.tourModal === false && env.isDesktop) {
-      setOpenOnboardingModal(true);
+  }, [onClose, setShowOnboarding]);
+
+  const shouldShow = useMemo(() => {
+    const helperGuide = getHelperGuide();
+    return helperGuide?.onBoarding ?? true;
+  }, []);
+
+  useEffect(() => {
+    if (shouldShow) {
+      setOpenOnboarding(true);
     }
-  }
-  if (guideHidden.TourModal || !env.isDesktop) {
+  }, [shouldShow, setOpenOnboarding]);
+  if (!env.isDesktop) {
     return <></>;
   }
   return <TourModal open={open} onClose={onCloseTourModal} />;

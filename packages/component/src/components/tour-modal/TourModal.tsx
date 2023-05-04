@@ -18,15 +18,19 @@ type TourModalProps = {
 
 export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
   const [step, setStep] = useState(0);
+  const handleClose = () => {
+    setStep(0);
+    onClose();
+  };
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       wrapperPosition={['center', 'center']}
       hideBackdrop
     >
       <ModalWrapper width={545} height={442}>
-        <ModalCloseButton top={10} right={10} onClick={onClose} />
+        <ModalCloseButton top={10} right={10} onClick={handleClose} />
         {step === 0 && (
           <div className={modalStyle}>
             <div className={titleStyle}>Hyper merged whiteboard and docs</div>
@@ -60,7 +64,7 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
               </video>
             </div>
             <div className={buttonContainerStyle}>
-              <Button className={buttonStyle} onClick={onClose}>
+              <Button className={buttonStyle} onClick={handleClose}>
                 Okay, I Like It !
               </Button>
             </div>

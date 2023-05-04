@@ -1,8 +1,10 @@
 import { MuiFade, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
+import { useAtom } from 'jotai';
 import { lazy, Suspense, useState } from 'react';
 
+import { openOnboardingModalAtom } from '../../../atoms';
 import { ShortcutsModal } from '../shortcuts-modal';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
 import {
@@ -18,12 +20,13 @@ const ContactModal = lazy(() =>
   }))
 );
 
-export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
+export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts' | 'guide';
 export const HelpIsland = ({
-  showList = ['whatNew', 'contact', 'shortcuts'],
+  showList = ['whatNew', 'contact', 'shortcuts', 'guide'],
 }: {
   showList?: IslandItemNames[];
 }) => {
+  const [, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
   const [spread, setShowSpread] = useState(false);
   // const { triggerShortcutsModal, triggerContactModal } = useModal();
   // const blockHub = useGlobalState(store => store.blockHub);
@@ -95,6 +98,19 @@ export const HelpIsland = ({
                 }}
               >
                 <KeyboardIcon />
+              </StyledIconWrapper>
+            </Tooltip>
+          )}
+          {showList.includes('guide') && (
+            <Tooltip content={t('Easy Guide')} placement="left-end">
+              <StyledIconWrapper
+                data-testid="easy-guide"
+                onClick={() => {
+                  setShowSpread(false);
+                  setOpenOnboarding(true);
+                }}
+              >
+                <HelpIcon />
               </StyledIconWrapper>
             </Tooltip>
           )}
