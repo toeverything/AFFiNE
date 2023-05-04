@@ -81,7 +81,7 @@ const nextConfig = {
       exclude: ['error', 'log', 'warn', 'info'],
     },
     reactRemoveProperties: { 
-      properties: ['^data-testid$'] 
+      properties: ['^data-testid$'], 
     },
     emotion: {
       sourceMap: true,
