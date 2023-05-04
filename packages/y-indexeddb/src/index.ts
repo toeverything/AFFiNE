@@ -150,11 +150,11 @@ export const createIndexedDBProvider = (
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
   let early = true;
-  let connect = false;
+  let connected = false;
 
   async function handleUpdate(update: Uint8Array, origin: unknown) {
     const db = await dbPromise;
-    if (!connect) {
+    if (!connected) {
       return;
     }
     if (origin === indexeddbOrigin) {
@@ -203,7 +203,7 @@ export const createIndexedDBProvider = (
     upgrade: upgradeDB,
   });
   const handleDestroy = async () => {
-    connect = true;
+    connected = true;
     const db = await dbPromise;
     db.close();
   };
@@ -214,7 +214,7 @@ export const createIndexedDBProvider = (
         resolve = _resolve;
         reject = _reject;
       });
-      connect = true;
+      connected = true;
       doc.on('update', handleUpdate);
       doc.on('destroy', handleDestroy);
       // only run promise below, otherwise the logic is incorrect
@@ -224,7 +224,7 @@ export const createIndexedDBProvider = (
         .transaction('workspace', 'readwrite')
         .objectStore('workspace');
       const data = await store.get(id);
-      if (!connect) {
+      if (!connected) {
         return;
       }
       if (!data) {
@@ -273,7 +273,7 @@ export const createIndexedDBProvider = (
       resolve();
     },
     disconnect() {
-      connect = false;
+      connected = false;
       if (early) {
         reject(new EarlyDisconnectError());
       }
@@ -281,7 +281,7 @@ export const createIndexedDBProvider = (
       doc.off('destroy', handleDestroy);
     },
     async cleanup() {
-      if (connect) {
+      if (connected) {
         throw new CleanupWhenConnectingError();
       }
       (await dbPromise).delete('workspace', id);

@@ -176,6 +176,7 @@ describe('indexeddb provider', () => {
       expect(keys).contain(workspace.id);
     }
 
+    provider.disconnect();
     await provider.cleanup();
 
     {
