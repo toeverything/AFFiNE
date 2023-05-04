@@ -16,6 +16,9 @@ test.beforeEach(async () => {
     colorScheme: 'light',
   });
   page = await electronApp.firstWindow();
+  await page.getByTestId('onboarding-modal-close-button').click({
+    delay: 100,
+  });
   // cleanup page data
   await page.evaluate(() => localStorage.clear());
 });
@@ -75,4 +78,30 @@ test('affine cloud disabled', async () => {
   await page.getByTestId('disable-affine-cloud-modal').waitFor({
     state: 'visible',
   });
+});
+test('affine onboarding button', async () => {
+  await page.getByTestId('help-island').click({
+    delay: 100,
+  });
+  await page.getByTestId('easy-guide').click({
+    delay: 100,
+  });
+  const onboardingModal = page.locator('[data-testid=onboarding-modal]');
+  expect(await onboardingModal.isVisible()).toEqual(true);
+  const switchVideo = page.locator(
+    '[data-testid=onboarding-modal-switch-video]'
+  );
+  expect(await switchVideo.isVisible()).toEqual(true);
+  await page.getByTestId('onboarding-modal-next-button').click({
+    delay: 100,
+  });
+  const editingVideo = page.locator(
+    '[data-testid=onboarding-modal-editing-video]'
+  );
+  expect(await editingVideo.isVisible()).toEqual(true);
+  await page.getByTestId('onboarding-modal-ok-button').click({
+    delay: 100,
+  });
+
+  expect(await onboardingModal.isVisible()).toEqual(false);
 });
