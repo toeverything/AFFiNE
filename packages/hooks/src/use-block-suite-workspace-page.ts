@@ -1,5 +1,5 @@
 import type { Page, Workspace } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
+import { assertExists, DisposableGroup } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 
@@ -17,21 +17,28 @@ function getAtom(w: Workspace, pageId: string | null): Atom<Page | null> {
   const map = weakMap.get(w);
   assertExists(map);
   if (!map.has(pageId)) {
-    const baseAtom = atom<Page | null>(w.getPage(pageId));
-    if (!weakMap.has(w)) {
-      const baseAtom = atom(w.getPage(pageId));
-      baseAtom.onMount = set => {
-        const disposable = w.slots.pageAdded.on(id => {
+    const baseAtom = atom(w.getPage(pageId));
+    baseAtom.onMount = set => {
+      const group = new DisposableGroup();
+      group.add(
+        w.slots.pageAdded.on(id => {
           if (pageId === id) {
             set(w.getPage(id));
           }
-        });
-        return () => {
-          disposable.dispose();
-        };
+        })
+      );
+      group.add(
+        w.slots.pageRemoved.on(id => {
+          if (pageId === id) {
+            set(null);
+          }
+        })
+      );
+      return () => {
+        group.dispose();
       };
-      map.set(pageId, baseAtom);
-    }
+    };
+    map.set(pageId, baseAtom);
     return baseAtom;
   } else {
     return map.get(pageId) as Atom<Page | null>;
