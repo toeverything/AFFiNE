@@ -1,3 +1,4 @@
+import { getEnvironment } from '@affine/env';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -9,6 +10,7 @@ import {
   currentWorkspaceIdAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
+  openOnboardingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
@@ -37,6 +39,11 @@ const TmpDisableAffineCloudModal = lazy(() =>
     })
   )
 );
+const OnboardingModalAtom = lazy(() =>
+  import('../components/pure/OnboardingModal').then(module => ({
+    default: module.OnboardingModal,
+  }))
+);
 
 export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
@@ -49,6 +56,9 @@ export function Modals() {
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
+  const [openOnboardingModal, setOpenOnboardingModal] = useAtom(
+    openOnboardingModalAtom
+  );
 
   const router = useRouter();
   const { jumpToSubPath } = useRouterHelper(router);
@@ -58,7 +68,10 @@ export function Modals() {
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const [transitioning, transition] = useTransition();
-
+  const env = getEnvironment();
+  const onCloseOnboardingModal = useCallback(() => {
+    setOpenOnboardingModal(false);
+  }, [setOpenOnboardingModal]);
   return (
     <>
       <Suspense>
@@ -69,6 +82,15 @@ export function Modals() {
           }, [setOpenDisableCloudAlertModal])}
         />
       </Suspense>
+      {env.isDesktop && (
+        <Suspense>
+          <OnboardingModalAtom
+            open={openOnboardingModal}
+            onClose={onCloseOnboardingModal}
+          />
+        </Suspense>
+      )}
+
       <Suspense>
         <WorkspaceListModal
           disabled={transitioning}
