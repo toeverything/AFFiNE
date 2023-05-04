@@ -7,7 +7,9 @@ import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 
 runCli(
   {
-    config: fileURLToPath(new URL('../../.i18n-codegen.json', import.meta.url)),
+    config: fileURLToPath(
+      new URL('../../../.i18n-codegen.json', import.meta.url)
+    ),
     watch: false,
   },
   error => {
