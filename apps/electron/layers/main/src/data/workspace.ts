@@ -8,7 +8,8 @@ import { logger } from '../logger';
 export async function listWorkspaces(context: AppContext) {
   const basePath = path.join(context.appDataPath, 'workspaces');
   try {
-    return fs
+    await fs.ensureDir(basePath);
+    return await fs
       .readdir(basePath, {
         withFileTypes: true,
       })
@@ -27,7 +28,7 @@ export async function deleteWorkspace(context: AppContext, id: string) {
     `${id}`
   );
   try {
-    return fs.move(basePath, movedPath, {
+    return await fs.move(basePath, movedPath, {
       overwrite: true,
     });
   } catch (error) {

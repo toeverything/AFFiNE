@@ -77,7 +77,7 @@ async function createWindow() {
 
   await browserWindow.loadURL(pageUrl);
 
-  logger.info('main window is loaded at' + pageUrl);
+  logger.info('main window is loaded at', pageUrl);
 
   return browserWindow;
 }

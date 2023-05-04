@@ -1,5 +1,4 @@
 import type { Workspace } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import { useEffect, useState } from 'react';
 
 export function useBlockSuiteWorkspacePageTitle(
@@ -13,7 +12,6 @@ export function useBlockSuiteWorkspacePageTitle(
     setTitle(page?.meta.title || 'Untitled');
     const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
       const page = blockSuiteWorkspace.getPage(pageId);
-      assertExists(page);
       setTitle(page?.meta.title || 'Untitled');
     });
     return () => {
