@@ -16,7 +16,7 @@ const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
   }
 );
 
-const page = blockSuiteWorkspace.createPage('page0');
+const page = blockSuiteWorkspace.createPage({ id: 'page0' });
 
 const Editor: React.FC<{
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;

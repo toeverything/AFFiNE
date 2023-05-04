@@ -5,6 +5,10 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import type {
+  NecessaryProvider,
+  WorkspaceRegistry,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
@@ -37,18 +41,38 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
         WorkspacePlugins[workspace.flavour as keyof typeof WorkspacePlugins];
       assertExists(plugin);
       const { CRUD } = plugin;
-      return CRUD.get(workspace.id);
+      return CRUD.get(workspace.id).then(workspace => {
+        if (workspace === null) {
+          console.warn(
+            'workspace is null. this should not happen. If you see this error, please report it to the developer.'
+          );
+        }
+        return workspace;
+      });
     })
+  ).then(workspaces =>
+    workspaces.filter(
+      (workspace): workspace is WorkspaceRegistry['affine' | 'local'] =>
+        workspace !== null
+    )
   );
-  logger.info('workspaces', workspaces);
-  workspaces.forEach(workspace => {
-    if (workspace === null) {
-      console.warn(
-        'workspace is null. this should not happen. If you see this error, please report it to the developer.'
-      );
+  const workspaceProviders = workspaces.map(workspace =>
+    workspace.providers.filter(
+      (provider): provider is NecessaryProvider =>
+        'necessary' in provider && provider.necessary
+    )
+  );
+  const promises: Promise<void>[] = [];
+  for (const providers of workspaceProviders) {
+    for (const provider of providers) {
+      provider.sync();
+      promises.push(provider.whenReady);
     }
-  });
-  return workspaces.filter(workspace => workspace !== null) as AllWorkspace[];
+  }
+  // we will wait for all the necessary providers to be ready
+  await Promise.all(promises);
+  logger.info('workspaces', workspaces);
+  return workspaces;
 });
 
 /**
@@ -76,6 +100,15 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
       throw new Error(
         `cannot find the workspace with id ${targetId} in the plugin ${targetWorkspace.flavour}.`
       );
+    }
+    const providers = workspace.providers.filter(
+      (provider): provider is NecessaryProvider =>
+        'necessary' in provider && provider.necessary === true
+    );
+    for (const provider of providers) {
+      provider.sync();
+      // we will wait for the necessary providers to be ready
+      await provider.whenReady;
     }
     return workspace;
   }
