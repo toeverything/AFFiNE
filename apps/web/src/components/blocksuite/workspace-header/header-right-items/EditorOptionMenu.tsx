@@ -1,6 +1,6 @@
 // fixme(himself65): refactor this file
 import { FlexWrapper, IconButton, Menu, MenuItem } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   EdgelessIcon,
   FavoritedIcon,
@@ -57,7 +57,7 @@ const CommonMenu = () => {
   );
 };
 const PageMenu = () => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
   const [pageId] = useCurrentPageId();
@@ -83,7 +83,9 @@ const PageMenu = () => {
           onClick={() => {
             setPageMeta(pageId, { favorite: !favorite });
             toast(
-              favorite ? t('Removed from Favorites') : t('Added to Favorites')
+              favorite
+                ? t['Removed from Favorites']()
+                : t['Added to Favorites']()
             );
           }}
           icon={
@@ -94,7 +96,7 @@ const PageMenu = () => {
             )
           }
         >
-          {favorite ? t('Remove from favorites') : t('Add to Favorites')}
+          {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
         </MenuItem>
         <MenuItem
           icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
@@ -106,8 +108,8 @@ const PageMenu = () => {
             }));
           }}
         >
-          {t('Convert to ')}
-          {mode === 'page' ? t('Edgeless') : t('Page')}
+          {t['Convert to ']()}
+          {mode === 'page' ? t['Edgeless']() : t['Page']()}
         </MenuItem>
         <Export />
         {!pageMeta.isRootPinboard && (
@@ -153,7 +155,7 @@ const PageMenu = () => {
           meta={pageMeta}
           onConfirm={() => {
             removeToTrash(pageMeta.id);
-            toast(t('Moved to Trash'));
+            toast(t['Moved to Trash']());
           }}
           onCancel={() => {
             setOpenConfirm(false);

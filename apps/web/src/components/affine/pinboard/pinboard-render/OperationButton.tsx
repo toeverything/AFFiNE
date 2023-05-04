@@ -1,5 +1,5 @@
 import { MenuItem, MuiClickAwayListener, PureMenu } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   MoreVerticalIcon,
   MoveToIcon,
@@ -39,7 +39,7 @@ export const OperationButton = ({
   onMenuClose,
   onRename,
 }: OperationButtonProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -100,7 +100,7 @@ export const OperationButton = ({
             }}
             icon={<PlusIcon />}
           >
-            {t('Add a subpage inside')}
+            {t['Add a subpage inside']()}
           </MenuItem>
           {!isRoot && (
             <MenuItem
@@ -111,7 +111,7 @@ export const OperationButton = ({
               }}
               icon={<MoveToIcon />}
             >
-              {t('Move to')}
+              {t['Move to']()}
             </MenuItem>
           )}
           {!isRoot && (
@@ -124,7 +124,7 @@ export const OperationButton = ({
               }}
               icon={<PenIcon />}
             >
-              {t('Rename')}
+              {t['Rename']()}
             </MenuItem>
           )}
           {!isRoot && (
@@ -154,7 +154,7 @@ export const OperationButton = ({
           open={confirmModalOpen}
           meta={currentMeta}
           onConfirm={() => {
-            toast(t('Moved to Trash'));
+            toast(t['Moved to Trash']());
             removeToTrash(currentMeta.id);
             onDelete();
           }}

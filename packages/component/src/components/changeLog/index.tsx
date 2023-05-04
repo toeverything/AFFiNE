@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useState } from 'react';
@@ -20,7 +20,7 @@ type ChangeLogProps = {
 export const ChangeLog = (props: ChangeLogProps) => {
   const { onCloseWhatsNew } = props;
   const [isClose, setIsClose] = useState(false);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const handleClose = () => {
     setIsClose(true);
     onCloseWhatsNew();
@@ -47,7 +47,7 @@ export const ChangeLog = (props: ChangeLogProps) => {
           }}
         >
           <NewIcon className={iconStyle} />
-          {t("Discover what's new!")}
+          {t["Discover what's new!"]()}
         </div>
         <IconButton
           className={iconButtonStyle}

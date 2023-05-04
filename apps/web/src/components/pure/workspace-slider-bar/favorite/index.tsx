@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownSmallIcon, FavoriteIcon } from '@blocksuite/icons';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useCallback, useState } from 'react';
@@ -26,7 +26,7 @@ export const Favorite = ({
 
   const [showSubFavorite, setOpenSubFavorite] = useState(true);
 
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   return (
     <>
@@ -50,7 +50,7 @@ export const Favorite = ({
           }}
         >
           <FavoriteIcon />
-          {t('Favorites')}
+          {t['Favorites']()}
         </StyledLink>
       </StyledListItem>
       <FavoriteList

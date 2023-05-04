@@ -1,6 +1,6 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
 import { config } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   getLoginStorage,
   setLoginStorage,
@@ -79,7 +79,7 @@ export const SyncUser = () => {
 
   const [open, setOpen] = useState(false);
 
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const transformWorkspace = useTransformWorkspace();
 
   if (!config.enableLegacyCloud) {
@@ -89,7 +89,7 @@ export const SyncUser = () => {
   if (status === 'offline') {
     return (
       <Tooltip
-        content={t('Please make sure you are online')}
+        content={t['Please make sure you are online']()}
         placement="bottom-end"
       >
         <IconWrapper>
@@ -103,7 +103,7 @@ export const SyncUser = () => {
     return (
       <>
         <Tooltip
-          content={t('Saved then enable AFFiNE Cloud')}
+          content={t['Saved then enable AFFiNE Cloud']()}
           placement="bottom-end"
         >
           <IconButton
@@ -156,7 +156,7 @@ export const SyncUser = () => {
   }
 
   return (
-    <Tooltip content={t('Synced with AFFiNE Cloud')} placement="bottom-end">
+    <Tooltip content={t['Synced with AFFiNE Cloud']()} placement="bottom-end">
       <IconWrapper>
         <CloudWorkspaceIcon />
       </IconWrapper>

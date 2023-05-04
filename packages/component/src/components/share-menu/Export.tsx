@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import { ExportToHtmlIcon, ExportToMarkdownIcon } from '@blocksuite/icons';
 import type { FC } from 'react';
@@ -16,11 +16,11 @@ import type { ShareMenuProps } from './ShareMenu';
 
 export const Export: FC<ShareMenuProps> = props => {
   const contentParserRef = useRef<ContentParser>();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
-        {t('Export Shared Pages Description')}
+        {t['Export Shared Pages Description']()}
       </div>
       <div className={actionsStyle}>
         <Button
@@ -33,7 +33,7 @@ export const Export: FC<ShareMenuProps> = props => {
           }}
         >
           <ExportToHtmlIcon className={svgStyle} />
-          {t('Export to HTML')}
+          {t['Export to HTML']()}
         </Button>
         <Button
           className={exportButtonStyle}
@@ -45,7 +45,7 @@ export const Export: FC<ShareMenuProps> = props => {
           }}
         >
           <ExportToMarkdownIcon className={svgStyle} />
-          {t('Export to Markdown')}
+          {t['Export to Markdown']()}
         </Button>
       </div>
     </div>
