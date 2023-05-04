@@ -1,7 +1,7 @@
 import { Empty } from '@affine/component';
 import type { ListData, TrashListData } from '@affine/component/page-list';
 import { PageList, PageListTrashView } from '@affine/component/page-list';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
@@ -45,20 +45,20 @@ const PageListEmpty = (props: {
   listType: BlockSuitePageListProps['listType'];
 }) => {
   const { listType } = props;
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const getEmptyDescription = () => {
     if (listType === 'all') {
-      return t('emptyAllPages');
+      return t['emptyAllPages']();
     }
     if (listType === 'favorite') {
-      return t('emptyFavorite');
+      return t['emptyFavorite']();
     }
     if (listType === 'trash') {
-      return t('emptyTrash');
+      return t['emptyTrash']();
     }
     if (listType === 'shared') {
-      return t('emptySharedPages');
+      return t['emptySharedPages']();
     }
   };
 
@@ -83,7 +83,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     permanentlyDeletePage,
     cancelPublicPage,
   } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const list = useMemo(
     () => pageMetas.filter(pageMeta => filter[listType](pageMeta, pageMetas)),
     [pageMetas, listType]
@@ -109,11 +109,11 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         },
         onRestorePage: () => {
           restoreFromTrash(pageMeta.id);
-          toast(t('restored', { title: pageMeta.title || 'Untitled' }));
+          toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
         },
         onPermanentlyDeletePage: () => {
           permanentlyDeletePage(pageMeta.id);
-          toast(t('Permanently deleted'));
+          toast(t['Permanently deleted']());
         },
       };
     });
@@ -137,18 +137,18 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       },
       removeToTrash: () => {
         removeToTrash(pageMeta.id);
-        toast(t('Deleted'));
+        toast(t['Successfully deleted']());
       },
       onRestorePage: () => {
         restoreFromTrash(pageMeta.id);
-        toast(t('restored', { title: pageMeta.title || 'Untitled' }));
+        toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
       },
       bookmarkPage: () => {
         toggleFavorite(pageMeta.id);
         toast(
           pageMeta.favorite
-            ? t('Removed from Favorites')
-            : t('Added to Favorites')
+            ? t['Removed from Favorites']()
+            : t['Added to Favorites']()
         );
       },
       onDisablePublicSharing: () => {

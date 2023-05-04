@@ -10,7 +10,7 @@ import {
   Tooltip,
 } from '@affine/component';
 import { OperationCell, TrashOperationCell } from '@affine/component/page-list';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { forwardRef } from 'react';
@@ -31,10 +31,10 @@ const FavoriteTag = forwardRef<
   HTMLButtonElement,
   FavoriteTagProps & Omit<IconButtonProps, 'children'>
 >(({ active, onClick, ...props }, ref) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <Tooltip
-      content={active ? t('Favorited') : t('Favorite')}
+      content={active ? t['Favorited']() : t['Favorite']()}
       placement="top-start"
     >
       <IconButton
@@ -114,7 +114,7 @@ export const PageList: React.FC<PageListProps> = ({
   list,
   listType,
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const isShared = listType === 'shared';
 
@@ -125,17 +125,17 @@ export const PageList: React.FC<PageListProps> = ({
   }
 
   const ListHead = () => {
-    const { t } = useTranslation();
+    const t = useAFFiNEI18N();
     return (
       <TableHead>
         <TableRow>
-          <TableCell proportion={0.5}>{t('Title')}</TableCell>
-          <TableCell proportion={0.2}>{t('Created')}</TableCell>
+          <TableCell proportion={0.5}>{t['Title']()}</TableCell>
+          <TableCell proportion={0.2}>{t['Created']()}</TableCell>
           <TableCell proportion={0.2}>
             {isShared
               ? // TODO add i18n
                 'Shared'
-              : t('Updated')}
+              : t['Updated']()}
           </TableCell>
           <TableCell proportion={0.1}></TableCell>
         </TableRow>
@@ -168,7 +168,7 @@ export const PageList: React.FC<PageListProps> = ({
         >
           <TitleCell
             icon={icon}
-            text={title || t('Untitled')}
+            text={title || t['Untitled']()}
             suffix={
               <FavoriteTag
                 className={favorite ? '' : 'favorite-button'}
@@ -216,13 +216,13 @@ export const PageList: React.FC<PageListProps> = ({
 };
 
 const TrashListHead = () => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <TableHead>
       <TableRow>
-        <TableCell proportion={0.5}>{t('Title')}</TableCell>
-        <TableCell proportion={0.2}>{t('Created')}</TableCell>
-        <TableCell proportion={0.2}>{t('Moved to Trash')}</TableCell>
+        <TableCell proportion={0.5}>{t['Title']()}</TableCell>
+        <TableCell proportion={0.2}>{t['Created']()}</TableCell>
+        <TableCell proportion={0.2}>{t['Moved to Trash']()}</TableCell>
         <TableCell proportion={0.1}></TableCell>
       </TableRow>
     </TableHead>
@@ -246,7 +246,7 @@ export type TrashListData = {
 export const PageListTrashView: React.FC<{
   list: TrashListData[];
 }> = ({ list }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const theme = useTheme();
   const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
@@ -280,7 +280,7 @@ export const PageListTrashView: React.FC<{
         >
           <TitleCell
             icon={icon}
-            text={title || t('Untitled')}
+            text={title || t['Untitled']()}
             onClick={onClickPage}
           />
           <TableCell ellipsis={true} onClick={onClickPage}>
@@ -322,7 +322,7 @@ const PageListMobileView: React.FC<{
     onClickPage: () => void;
   }[];
 }> = ({ list }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const ListItems = list.map(({ pageId, title, icon, onClickPage }, index) => {
     return (
@@ -335,7 +335,7 @@ const PageListMobileView: React.FC<{
             <StyledTitleLink>
               {icon}
               <Content ellipsis={true} color="inherit">
-                {title || t('Untitled')}
+                {title || t['Untitled']()}
               </Content>
             </StyledTitleLink>
           </StyledTitleWrapper>

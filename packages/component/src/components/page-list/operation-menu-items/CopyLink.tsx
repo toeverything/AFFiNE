@@ -1,5 +1,5 @@
 import { MenuItem, toast } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CopyIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 

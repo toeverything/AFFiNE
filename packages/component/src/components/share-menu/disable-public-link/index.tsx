@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import { Modal, ModalCloseButton } from '../../..';
 import {
@@ -21,7 +21,7 @@ export const PublicLinkDisableModal = ({
   onConfirmDisable,
   onClose,
 }: PublicLinkDisableProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>

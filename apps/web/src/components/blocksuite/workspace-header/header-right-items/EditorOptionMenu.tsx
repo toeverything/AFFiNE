@@ -1,7 +1,7 @@
 // fixme(himself65): refactor this file
 import { FlexWrapper, IconButton, Menu, MenuItem } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   EdgelessIcon,
   FavoritedIcon,

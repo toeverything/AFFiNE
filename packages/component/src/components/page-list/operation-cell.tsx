@@ -39,7 +39,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   onRemoveToTrash,
   onDisablePublicSharing,
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   const [openDisableShared, setOpenDisableShared] = useState(false);
 
@@ -67,7 +67,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       </MenuItem>
       {!environment.isDesktop && (
         <MenuItem onClick={onOpenPageInNewTab} icon={<OpenInNewIcon />}>
-          {t('Open in new tab')}
+          {t['Open in new tab']()}
         </MenuItem>
       )}
       <MoveToTrash
@@ -127,7 +127,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
   onPermanentlyDeletePage,
   onRestorePage,
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   return (
     <FlexWrapper>

@@ -38,8 +38,8 @@ const ConfirmModal = ({
 
   return (
     <Confirm
-      title={t('Delete page?')}
-      content={t('will be moved to Trash', {
+      title={t['Delete page?']()}
+      content={t['will be moved to Trash']({
         title: title || 'Untitled',
       })}
       confirmText={t.Delete()}
