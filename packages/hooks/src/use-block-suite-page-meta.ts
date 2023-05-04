@@ -45,7 +45,6 @@ export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
   return useMemo(
     () => ({
       setPageTitle: (pageId: string, newTitle: string) => {
-        assertExists(blockSuiteWorkspace);
         const page = blockSuiteWorkspace.getPage(pageId);
         assertExists(page);
         const pageBlock = page
@@ -56,19 +55,18 @@ export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
           pageBlock.title.delete(0, pageBlock.title.length);
           pageBlock.title.insert(newTitle, 0);
         });
-        assertExists(blockSuiteWorkspace);
         blockSuiteWorkspace.meta.setPageMeta(pageId, { title: newTitle });
       },
       setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
-        assertExists(blockSuiteWorkspace);
         blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);
       },
       getPageMeta: (pageId: string) => {
-        assertExists(blockSuiteWorkspace);
         return blockSuiteWorkspace.meta.getPageMeta(pageId);
       },
+      /**
+       * @deprecated
+       */
       shiftPageMeta: (pageId: string, index: number) => {
-        assertExists(blockSuiteWorkspace);
         return blockSuiteWorkspace.meta.shiftPageMeta(pageId, index);
       },
     }),
