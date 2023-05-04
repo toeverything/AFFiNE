@@ -141,9 +141,9 @@ export const WorkspaceListModal = ({
                   >
                     <StyledCreateWorkspaceCardPillContent>
                       <div>
-                        <p>{t('New Workspace')}</p>
+                        <p>{t['New Workspace']()}</p>
                         <StyledCreateWorkspaceCardPillTextSecondary>
-                          <p>{t('Create your own workspace')}</p>
+                          <p>{t['Create your own workspace']()}</p>
                         </StyledCreateWorkspaceCardPillTextSecondary>
                       </div>
                       <StyledCreateWorkspaceCardPillIcon>
@@ -164,9 +164,9 @@ export const WorkspaceListModal = ({
                   >
                     <StyledCreateWorkspaceCardPillContent>
                       <div>
-                        <p>{t('Add Workspace')}</p>
+                        <p>{t['Add Workspace']()}</p>
                         <StyledCreateWorkspaceCardPillTextSecondary>
-                          <p>{t('Select where you already have')}</p>
+                          <p>{t['Add Workspace Hint']()}</p>
                         </StyledCreateWorkspaceCardPillTextSecondary>
                       </div>
                       <StyledCreateWorkspaceCardPillIcon>

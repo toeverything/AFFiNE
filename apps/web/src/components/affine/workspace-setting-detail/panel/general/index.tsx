@@ -1,6 +1,6 @@
 import { Button, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ArrowRightSmallIcon,
   DeleteIcon,
@@ -34,7 +34,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   );
   const [input, setInput] = useState<string>(name);
   const isOwner = useIsWorkspaceOwner(workspace);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const handleUpdateWorkspaceName = (name: string) => {
     setName(name);
@@ -47,9 +47,11 @@ export const GeneralPanel: React.FC<PanelProps> = ({
     <>
       <div data-testid="avatar-row" className={style.row}>
         <div className={style.col}>
-          <div className={style.settingItemLabel}>{t('Workspace Avatar')}</div>
+          <div className={style.settingItemLabel}>
+            {t['Workspace Avatar']()}
+          </div>
           <div className={style.settingItemLabelHint}>
-            {t('Change avatar for all members.')}
+            {t['Change avatar hint']()}
           </div>
         </div>
         <div className={clsx(style.col)}>
@@ -77,9 +79,9 @@ export const GeneralPanel: React.FC<PanelProps> = ({
 
       <div data-testid="workspace-name-row" className={style.row}>
         <div className={style.col}>
-          <div className={style.settingItemLabel}>{t('Workspace Name')}</div>
+          <div className={style.settingItemLabel}>{t['Workspace Name']()}</div>
           <div className={style.settingItemLabelHint}>
-            {t('Change name for all members.')}
+            {t['Change workspace name hint']()}
           </div>
         </div>
 
@@ -88,7 +90,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
             width={284}
             height={38}
             value={input}
-            placeholder={t('Workspace Name')}
+            placeholder={t['Workspace Name']()}
             maxLength={50}
             minLength={0}
             onChange={newName => {
@@ -107,7 +109,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
               handleUpdateWorkspaceName(input);
             }}
           >
-            {t('Save')}
+            {t['Save']()}
           </Button>
         </div>
       </div>
@@ -115,9 +117,11 @@ export const GeneralPanel: React.FC<PanelProps> = ({
       {environment.isDesktop && (
         <div className={style.row}>
           <div className={style.col}>
-            <div className={style.settingItemLabel}>{t('Storage Folder')}</div>
+            <div className={style.settingItemLabel}>
+              {t['Storage Folder']()}
+            </div>
             <div className={style.settingItemLabelHint}>
-              {t('Check or change storage location.')}
+              {t['Storage Folder Hint']()}
             </div>
           </div>
 
@@ -132,9 +136,11 @@ export const GeneralPanel: React.FC<PanelProps> = ({
             >
               <FolderIcon color="var(--affine-primary-color)" />
               <div className={style.storageTypeLabelWrapper}>
-                <div className={style.storageTypeLabel}>{t('Open folder')}</div>
+                <div className={style.storageTypeLabel}>
+                  {t['Open folder']()}
+                </div>
                 <div className={style.storageTypeLabelHint}>
-                  {t('Open folder hint')}
+                  {t['Open folder hint']()}
                 </div>
               </div>
               <ArrowRightSmallIcon color="var(--affine-primary-color)" />
@@ -144,15 +150,17 @@ export const GeneralPanel: React.FC<PanelProps> = ({
               className={style.storageTypeWrapper}
               onClick={async () => {
                 if (await window.apis?.dialog.moveDBFile(workspace.id)) {
-                  toast(t('Move folder success'));
+                  toast(t['Move folder success']());
                 }
               }}
             >
               <MoveToIcon color="var(--affine-primary-color)" />
               <div className={style.storageTypeLabelWrapper}>
-                <div className={style.storageTypeLabel}>{t('Move folder')}</div>
+                <div className={style.storageTypeLabel}>
+                  {t['Move folder']()}
+                </div>
                 <div className={style.storageTypeLabelHint}>
-                  {t('Move folder hint')}
+                  {t['Move folder hint']()}
                 </div>
               </div>
               <ArrowRightSmallIcon color="var(--affine-primary-color)" />
@@ -164,9 +172,11 @@ export const GeneralPanel: React.FC<PanelProps> = ({
 
       <div className={style.row}>
         <div className={style.col}>
-          <div className={style.settingItemLabel}>{t('Delete Workspace')}</div>
+          <div className={style.settingItemLabel}>
+            {t['Delete Workspace']()}
+          </div>
           <div className={style.settingItemLabelHint}>
-            {t('Delete Workspace Label Hint')}
+            {t['Delete Workspace Label Hint']()}
           </div>
         </div>
 
@@ -183,7 +193,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   setShowDelete(true);
                 }}
               >
-                {t('Delete')}
+                {t['Delete']()}
               </Button>
               <WorkspaceDeleteModal
                 onDeleteWorkspace={onDeleteWorkspace}
@@ -203,7 +213,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   setShowLeave(true);
                 }}
               >
-                {t('Leave')}
+                {t['Leave']()}
               </Button>
               <WorkspaceLeave
                 open={showLeave}

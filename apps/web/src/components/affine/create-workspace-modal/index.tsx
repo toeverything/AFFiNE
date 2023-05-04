@@ -8,7 +8,7 @@ import {
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
@@ -59,11 +59,11 @@ const NameWorkspaceContent = ({
     },
     [handleCreateWorkspace, workspaceName]
   );
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <div className={style.content}>
-      <div className={style.contentTitle}>{t('Name Your Workspace')}</div>
-      <p>{t('Workspace description')}</p>
+      <div className={style.contentTitle}>{t['Name Your Workspace']()}</div>
+      <p>{t['Workspace description']()}</p>
       <Input
         ref={ref => {
           if (ref) {
@@ -72,7 +72,7 @@ const NameWorkspaceContent = ({
         }}
         data-testid="create-workspace-input"
         onKeyDown={handleKeyDown}
-        placeholder={t('Set a Workspace name')}
+        placeholder={t['Set a Workspace name']()}
         maxLength={15} // TODO: the max workspace name length?
         minLength={0}
         onChange={value => {
@@ -93,7 +93,7 @@ const NameWorkspaceContent = ({
             onClose();
           }}
         >
-          {t('Cancel')}
+          {t.Cancel()}
         </Button>
         <Button
           data-testid="create-workspace-button"
@@ -106,7 +106,7 @@ const NameWorkspaceContent = ({
             handleCreateWorkspace();
           }}
         >
-          {t('Create')}
+          {t.Create()}
         </Button>
       </div>
     </div>
@@ -120,7 +120,7 @@ interface SetDBLocationContentProps {
 const SetDBLocationContent = ({
   onConfirmLocation,
 }: SetDBLocationContentProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [defaultDBLocation, setDefaultDBLocation] = useState('');
 
   useEffect(() => {
@@ -131,8 +131,8 @@ const SetDBLocationContent = ({
 
   return (
     <div className={style.content}>
-      <div className={style.contentTitle}>{t('Set database location')}</div>
-      <p>{t('Workspace database storage description')}</p>
+      <div className={style.contentTitle}>{t['Set database location']()}</div>
+      <p>{t['Workspace database storage description']()}</p>
       <div className={style.buttonGroup}>
         <Button
           data-testid="create-workspace-button"
@@ -144,11 +144,13 @@ const SetDBLocationContent = ({
             }
           }}
         >
-          {t('Customize')}
+          {t['Customize']()}
         </Button>
         <Tooltip
           zIndex={1000}
-          content={t('By default will be saved to ') + defaultDBLocation}
+          content={t['Default db location hint']({
+            location: defaultDBLocation,
+          })}
           placement="top-start"
         >
           <Button
@@ -160,7 +162,7 @@ const SetDBLocationContent = ({
             icon={<HelpIcon />}
             iconPosition="end"
           >
-            {t('Default Location')}
+            {t['Default Location']()}
           </Button>
         </Tooltip>
       </div>
@@ -177,12 +179,12 @@ const SetSyncingModeContent = ({
   mode,
   onConfirmMode,
 }: SetSyncingModeContentProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [enableCloudSyncing, setEnableCloudSyncing] = useState(false);
   return (
     <div className={style.content}>
       <div className={style.contentTitle}>
-        {t(mode === 'new' ? 'Created Successfully' : 'Added Successfully')}
+        {t[mode === 'new' ? 'Created Successfully' : 'Added Successfully']()}
       </div>
 
       <div className={style.radioGroup}>
@@ -192,7 +194,7 @@ const SetSyncingModeContent = ({
             type="radio"
             checked={!enableCloudSyncing}
           />
-          {t('Use on current device only')}
+          {t['Use on current device only']()}
         </label>
         <label onClick={() => setEnableCloudSyncing(true)}>
           <input
@@ -200,7 +202,7 @@ const SetSyncingModeContent = ({
             type="radio"
             checked={enableCloudSyncing}
           />
-          {t('Sync across devices with AFFiNE Cloud')}
+          {t['Sync across devices with AFFiNE Cloud']()}
         </label>
       </div>
 
@@ -212,7 +214,7 @@ const SetSyncingModeContent = ({
             onConfirmMode(enableCloudSyncing);
           }}
         >
-          {t('Finish')}
+          {t['Finish']()}
         </Button>
       </div>
     </div>
