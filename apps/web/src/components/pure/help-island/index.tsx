@@ -1,6 +1,5 @@
 import { MuiFade, Tooltip } from '@affine/component';
 import { getEnvironment } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
