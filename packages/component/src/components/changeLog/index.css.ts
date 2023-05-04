@@ -69,7 +69,6 @@ export const changeLogSlideInStyle = style({
   // fixme: if width is 100% and marginLeft is 0,
   //  the UI will overflow on app sidebar
   width: '99%',
-  marginLeft: '2px',
   height: '32px',
   display: 'flex',
   justifyContent: 'space-between',
@@ -78,7 +77,7 @@ export const changeLogSlideInStyle = style({
   backgroundColor: 'var(--affine-tertiary-color)',
   border: '1px solid var(--affine-primary-color)',
   borderRight: 'none',
-  paddingLeft: '8px',
+  paddingLeft: '14px',
   borderRadius: '16px 0 0 16px',
   cursor: 'pointer',
   zIndex: 1001,

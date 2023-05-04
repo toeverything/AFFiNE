@@ -7,7 +7,7 @@ import {
   MuiAvatar,
   styled,
 } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EmailIcon } from '@blocksuite/icons';
 import type React from 'react';
 import { Suspense, useCallback, useState } from 'react';
@@ -60,7 +60,7 @@ export const InviteMemberModal = ({
   const { inviteMember } = useMembers(workspaceId);
   const [email, setEmail] = useState<string>('');
   const [showMemberPreview, setShowMemberPreview] = useState(false);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const inputChange = useCallback((value: string) => {
     setEmail(value);
   }, []);
@@ -77,7 +77,7 @@ export const InviteMemberModal = ({
             />
           </Header>
           <Content>
-            <ContentTitle>{t('Invite Members')}</ContentTitle>
+            <ContentTitle>{t['Invite Members']()}</ContentTitle>
             <InviteBox>
               <Input
                 data-testid="invite-member-input"
@@ -90,7 +90,7 @@ export const InviteMemberModal = ({
                 onBlur={useCallback(() => {
                   setShowMemberPreview(false);
                 }, [])}
-                placeholder={t('Invite placeholder')}
+                placeholder={t['Invite placeholder']()}
               />
               {showMemberPreview && gmailReg.test(email) && (
                 <Suspense fallback="loading...">
@@ -112,7 +112,7 @@ export const InviteMemberModal = ({
                 onInviteSuccess();
               }}
             >
-              {t('Invite')}
+              {t['Invite']()}
             </Button>
           </Footer>
         </ModalWrapper>

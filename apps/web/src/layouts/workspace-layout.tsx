@@ -1,7 +1,8 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
-import { setUpLanguage, useTranslation } from '@affine/i18n';
+import { setUpLanguage, useI18N } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
@@ -147,22 +148,23 @@ export const CurrentWorkspaceContext = ({
   useRouterWithWorkspaceIdDefense(router);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   if (!router.isReady) {
-    return <PageLoading text={t('Router is Loading')} />;
+    return <PageLoading text={t['Router is Loading']()} />;
   }
   if (!workspaceId) {
-    return <PageLoading text={t('Finding Workspace ID')} />;
+    return <PageLoading text={t['Finding Workspace ID']()} />;
   }
   if (!exist) {
-    return <PageLoading text={t('Workspace Not Found')} />;
+    return <PageLoading text={t['Workspace Not Found']()} />;
   }
   return <>{children}</>;
 };
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    const { i18n, t } = useTranslation();
+    const i18n = useI18N();
+    const t = useAFFiNEI18N();
     useEffect(() => {
       document.documentElement.lang = i18n.language;
       // todo(himself65): this is a hack, we should use a better way to set the language
@@ -239,7 +241,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         </AllWorkspaceContext>
         <CurrentWorkspaceContext>
           <Suspense
-            fallback={<PageLoading text={t('Finding Current Workspace')} />}
+            fallback={<PageLoading text={t['Finding Current Workspace']()} />}
           >
             <Provider>
               <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
@@ -256,7 +258,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   useEffect(() => {
     logger.info('currentWorkspace: ', currentWorkspace);
@@ -371,7 +373,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         />
         <MainContainerWrapper>
           <MainContainer className="main-container">
-            <Suspense fallback={<PageLoading text={t('Page is Loading')} />}>
+            <Suspense fallback={<PageLoading text={t['Page is Loading']()} />}>
               {children}
             </Suspense>
             <StyledToolWrapper>

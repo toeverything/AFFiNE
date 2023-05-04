@@ -1,7 +1,7 @@
 import { MenuItem, styled } from '@affine/component';
 import type { PublicLinkDisableProps } from '@affine/component/share-menu';
 import { PublicLinkDisableModal } from '@affine/component/share-menu';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ShareIcon } from '@blocksuite/icons';
 
 import type { CommonMenuItemProps } from './types';
@@ -29,7 +29,7 @@ export const DisablePublicSharing = ({
   onItemClick,
   testId,
 }: CommonMenuItemProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <>
       <StyledMenuItem
@@ -41,7 +41,7 @@ export const DisablePublicSharing = ({
         style={{ color: 'red' }}
         icon={<ShareIcon />}
       >
-        {t('Disable Public Sharing')}
+        {t['Disable Public Sharing']()}
       </StyledMenuItem>
     </>
   );

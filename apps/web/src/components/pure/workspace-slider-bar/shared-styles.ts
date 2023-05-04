@@ -9,7 +9,7 @@ export const StyledListItem = styled('div')<{
     color: active
       ? 'var(--affine-primary-color)'
       : 'var(--affine-text-primary-color)',
-    paddingLeft: '16px',
+    paddingLeft: '2px',
     paddingRight: '2px',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -17,7 +17,7 @@ export const StyledListItem = styled('div')<{
     position: 'relative',
     flexShrink: 0,
     userSelect: 'none',
-    ...displayFlex('flex-start', 'center'),
+    ...displayFlex('flex-start', 'stretch'),
     ...(disabled
       ? {
           cursor: 'not-allowed',
@@ -25,8 +25,9 @@ export const StyledListItem = styled('div')<{
         }
       : {}),
 
-    '> svg, a > svg': {
+    'a > svg, div > svg': {
       fontSize: '20px',
+      marginLeft: '14px',
       marginRight: '12px',
       color: active
         ? 'var(--affine-primary-color)'

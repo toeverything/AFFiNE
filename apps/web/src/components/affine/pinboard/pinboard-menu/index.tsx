@@ -1,6 +1,6 @@
 import type { PureMenuProps } from '@affine/component';
 import { Input, PureMenu, TreeView } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -40,7 +40,7 @@ export const PinboardMenu = ({
     () => propsMetas.filter(m => m.id !== currentMeta.id),
     [currentMeta.id, propsMetas]
   );
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [query, setQuery] = useState('');
   const isSearching = query.length > 0;
 
@@ -92,7 +92,7 @@ export const PinboardMenu = ({
         <Input
           value={query}
           onChange={setQuery}
-          placeholder={t('Move page to...')}
+          placeholder={t['Move page to...']()}
           height={32}
           noBorder={true}
           onClick={e => e.stopPropagation()}
@@ -121,9 +121,9 @@ export const PinboardMenu = ({
             }}
           >
             <RemoveIcon />
-            {t('Remove from Pinboard')}
+            {t['Remove from Pivots']()}
           </StyledPinboard>
-          <p>{t('RFP')}</p>
+          <p>{t['RFP']()}</p>
         </StyledMenuFooter>
       )}
     </PureMenu>

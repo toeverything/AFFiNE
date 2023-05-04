@@ -30,7 +30,7 @@
     "test:unit": "vitest --run",
     "test:unit:ui": "vitest --ui",
     "test:unit:coverage": "vitest run --coverage",
-    "postinstall": "husky install",
+    "postinstall": "i18n-codegen gen && husky install",
     "notify": "node scripts/notify.mjs"
   },
   "lint-staged": {
@@ -44,6 +44,7 @@
     "@commitlint/config-conventional": "^17.6.1",
     "@faker-js/faker": "^7.6.0",
     "@istanbuljs/schema": "^0.1.3",
+    "@magic-works/i18n-codegen": "^0.5.0",
     "@perfsee/sdk": "^1.6.0",
     "@playwright/test": "^1.33.0",
     "@testing-library/react": "^14.0.0",

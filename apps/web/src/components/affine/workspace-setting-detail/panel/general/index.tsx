@@ -1,6 +1,6 @@
 import { Button, FlexWrapper, MuiFade } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -38,7 +38,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   const [input, setInput] = useState<string>(name);
   const isOwner = useIsWorkspaceOwner(workspace);
   const [showEditInput, setShowEditInput] = useState(false);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const handleUpdateWorkspaceName = (name: string) => {
     setName(name);
@@ -50,7 +50,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   return (
     <>
       <StyledRow>
-        <StyledSettingKey>{t('Workspace Avatar')}</StyledSettingKey>
+        <StyledSettingKey>{t['Workspace Avatar']()}</StyledSettingKey>
         <StyledAvatar disabled={!isOwner}>
           {isOwner ? (
             <Upload
@@ -72,7 +72,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
       </StyledRow>
 
       <StyledRow>
-        <StyledSettingKey>{t('Workspace Name')}</StyledSettingKey>
+        <StyledSettingKey>{t['Workspace Name']()}</StyledSettingKey>
 
         <div style={{ position: 'relative' }}>
           <MuiFade in={!showEditInput}>
@@ -84,7 +84,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                     setShowEditInput(true);
                   }}
                 >
-                  {t('Edit')}
+                  {t['Edit']()}
                 </StyledEditButton>
               )}
             </FlexWrapper>
@@ -97,7 +97,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   width={284}
                   height={38}
                   value={input}
-                  placeholder={t('Workspace Name')}
+                  placeholder={t['Workspace Name']()}
                   maxLength={50}
                   minLength={0}
                   onChange={newName => {
@@ -114,7 +114,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                     setShowEditInput(false);
                   }}
                 >
-                  {t('Confirm')}
+                  {t['Confirm']()}
                 </Button>
                 <Button
                   type="default"
@@ -125,7 +125,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                     setShowEditInput(false);
                   }}
                 >
-                  {t('Cancel')}
+                  {t['Cancel']()}
                 </Button>
               </FlexWrapper>
             </MuiFade>
@@ -165,29 +165,29 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           }
         }}
       >
-        <StyledSettingKey>{t('Workspace Type')}</StyledSettingKey>
+        <StyledSettingKey>{t['Workspace Type']()}</StyledSettingKey>
         {isOwner ? (
           workspace.flavour === WorkspaceFlavour.LOCAL ? (
             <StyledWorkspaceInfo>
               <LocalWorkspaceIcon />
-              <span>{t('Local Workspace')}</span>
+              <span>{t['Local Workspace']()}</span>
             </StyledWorkspaceInfo>
           ) : (
             <StyledWorkspaceInfo>
               <CloudWorkspaceIcon />
-              <span>{t('Cloud Workspace')}</span>
+              <span>{t['Cloud Workspace']()}</span>
             </StyledWorkspaceInfo>
           )
         ) : (
           <StyledWorkspaceInfo>
             <JoinedWorkspaceIcon />
-            <span>{t('Joined Workspace')}</span>
+            <span>{t['Joined Workspace']()}</span>
           </StyledWorkspaceInfo>
         )}
       </StyledRow>
 
       <StyledRow>
-        <StyledSettingKey> {t('Delete Workspace')}</StyledSettingKey>
+        <StyledSettingKey> {t['Delete Workspace']()}</StyledSettingKey>
         {isOwner ? (
           <>
             <Button
@@ -199,7 +199,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                 setShowDelete(true);
               }}
             >
-              {t('Delete Workspace')}
+              {t['Delete Workspace']()}
             </Button>
             <WorkspaceDeleteModal
               onDeleteWorkspace={onDeleteWorkspace}
@@ -219,7 +219,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                 setShowLeave(true);
               }}
             >
-              {t('Leave Workspace')}
+              {t['Leave Workspace']()}
             </Button>
             <WorkspaceLeave
               open={showLeave}
