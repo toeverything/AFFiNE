@@ -13,6 +13,7 @@ declare module '@blocksuite/store' {
     trashRelate?: string;
     trash?: boolean;
     trashDate?: number;
+    updatedDate?: number;
     // whether to create the page with the default template
     init?: boolean;
     // todo: support `number` in the future
