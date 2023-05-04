@@ -191,7 +191,7 @@ const createSQLiteProvider = (
           logger.warn('blob not found for', k);
           return;
         }
-        return window.apis.db.addBlob(
+        return window.apis?.db.addBlob(
           blockSuiteWorkspace.id,
           k,
           new Uint8Array(await blob.arrayBuffer())
