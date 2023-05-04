@@ -1,7 +1,7 @@
-import { dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 
 import { isMacOS } from '../../utils';
+import { sendMainEvent } from './send-main-event';
 const buildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
@@ -18,32 +18,21 @@ autoUpdater.setFeedURL({
   releaseType: buildType === 'stable' ? 'release' : 'prerelease',
 });
 
+export const updateClient = async () => {
+  autoUpdater.quitAndInstall();
+};
+
 export const registerUpdater = async () => {
   if (isMacOS()) {
-    autoUpdater.on('update-available', e => {
-      dialog
-        .showMessageBox({
-          type: 'info',
-          title: 'Found Updates',
-          message: `version ${e.version} available, do you want update now?`,
-          buttons: ['Yes', 'No'],
-        })
-        .then(msg => {
-          if (msg.response === 0) {
-            autoUpdater.downloadUpdate();
-          }
-        });
+    autoUpdater.on('update-available', () => {
+      autoUpdater.downloadUpdate();
+    });
+    autoUpdater.on('download-progress', e => {
+      console.log(e.percent);
     });
 
-    autoUpdater.on('update-downloaded', () => {
-      dialog
-        .showMessageBox({
-          title: 'Install Updates',
-          message: 'Updates downloaded, application will be quit for update...',
-        })
-        .then(() => {
-          setImmediate(() => autoUpdater.quitAndInstall());
-        });
+    autoUpdater.on('update-downloaded', e => {
+      sendMainEvent('main:client-update-available', e.version);
     });
     autoUpdater.on('error', e => {
       console.log(e.message);
