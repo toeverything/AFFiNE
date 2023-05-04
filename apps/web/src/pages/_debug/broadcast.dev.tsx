@@ -52,7 +52,7 @@ const BroadcastPage: React.FC = () => {
           data-testid="create-page"
           onClick={() => {
             logger.info('create page');
-            blockSuiteWorkspace.createPage(nanoid());
+            blockSuiteWorkspace.createPage({ id: nanoid() });
           }}
         >
           Create Page

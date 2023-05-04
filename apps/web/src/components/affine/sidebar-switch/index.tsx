@@ -1,7 +1,7 @@
 import { Tooltip } from '@affine/component';
 import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { getEnvironment } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -21,7 +21,7 @@ export const SidebarSwitch = ({
 }: SidebarSwitchProps) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [tooltipVisible, setTooltipVisible] = useState(false);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const checkIsMac = () => {
     const env = getEnvironment();
     return env.isBrowser && env.isMacOs;
@@ -34,7 +34,7 @@ export const SidebarSwitch = ({
   }, []);
 
   tooltipContent =
-    tooltipContent || (open ? t('Collapse sidebar') : t('Expand sidebar'));
+    tooltipContent || (open ? t['Collapse sidebar']() : t['Expand sidebar']());
 
   return (
     <Tooltip

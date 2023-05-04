@@ -6,7 +6,7 @@ import {
   Wrapper,
 } from '@affine/component';
 import { config } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { Box } from '@mui/material';
@@ -41,20 +41,20 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
     );
   }, []);
   const shareUrl = origin + '/public-workspace/' + workspace.id;
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const publishWorkspace = useToggleWorkspacePublish(workspace);
   const copyUrl = useCallback(() => {
     navigator.clipboard.writeText(shareUrl);
-    toast(t('Copied link to clipboard'));
+    toast(t['Copied link to clipboard']());
   }, [shareUrl, t]);
 
   if (workspace.public) {
     return (
       <>
-        <Wrapper marginBottom="42px">{t('Published Description')}</Wrapper>
+        <Wrapper marginBottom="42px">{t['Published Description']()}</Wrapper>
 
         <Wrapper marginBottom="12px">
-          <Content weight="500">{t('Share with link')}</Content>
+          <Content weight="500">{t['Share with link']()}</Content>
         </Wrapper>
         <FlexWrapper>
           <Input
@@ -69,7 +69,7 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
             shape="circle"
             style={{ marginLeft: '24px' }}
           >
-            {t('Copy Link')}
+            {t['Copy Link']()}
           </Button>
         </FlexWrapper>
         <Button
@@ -81,14 +81,14 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
           shape="circle"
           style={{ marginTop: '38px' }}
         >
-          {t('Stop publishing')}
+          {t['Stop publishing']()}
         </Button>
       </>
     );
   }
   return (
     <>
-      <Wrapper marginBottom="42px">{t('Publishing Description')}</Wrapper>
+      <Wrapper marginBottom="42px">{t['Publishing Description']()}</Wrapper>
       <Button
         data-testid="publish-to-web-button"
         onClick={async () => {
@@ -97,7 +97,7 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
         type="light"
         shape="circle"
       >
-        {t('Publish to web')}
+        {t['Publish to web']()}
       </Button>
     </>
   );
@@ -111,7 +111,7 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
   workspace,
   onTransferWorkspace,
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -120,7 +120,7 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
           marginBottom: '42px',
         }}
       >
-        {t('Publishing')}
+        {t['Publishing']()}
       </Box>
       {/* TmpDisableAffineCloudModal */}
 
@@ -132,7 +132,7 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
           setOpen(true);
         }}
       >
-        {t('Enable AFFiNE Cloud')}
+        {t['Enable AFFiNE Cloud']()}
       </Button>
       {config.enableLegacyCloud ? (
         <EnableAffineCloudModal

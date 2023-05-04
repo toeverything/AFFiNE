@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { atomWithSyncStorage } from '@affine/jotai';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { SettingPanel } from '@affine/workspace/type';
@@ -35,7 +35,7 @@ const SettingPage: NextPageWithLayout = () => {
   const router = useRouter();
   const workspaceIds = useAtomValue(rootWorkspacesMetadataAtom);
   const [currentWorkspace] = useCurrentWorkspace();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   useSyncRouterWithCurrentWorkspaceId(router);
   const [currentTab, setCurrentTab] = useAtom(settingPanelAtom);
   useEffect(() => {});
@@ -101,7 +101,7 @@ const SettingPage: NextPageWithLayout = () => {
     assertExists(currentWorkspace);
     const workspaceId = currentWorkspace.id;
     if (workspaceIds.length === 1 && workspaceId === workspaceIds[0].id) {
-      toast(t('You cannot delete the last workspace'));
+      toast(t['You cannot delete the last workspace']());
       throw new Error('You cannot delete the last workspace');
     }
     return helper.deleteWorkspace(workspaceId);
@@ -119,7 +119,7 @@ const SettingPage: NextPageWithLayout = () => {
     return (
       <>
         <Head>
-          <title>{t('Settings')} - AFFiNE</title>
+          <title>{t['Settings']()} - AFFiNE</title>
         </Head>
         <WorkspaceTitle
           workspace={currentWorkspace}
@@ -128,7 +128,7 @@ const SettingPage: NextPageWithLayout = () => {
           isPublic={false}
           icon={<SettingsIcon />}
         >
-          {t('Workspace Settings')}
+          {t['Workspace Settings']()}
         </WorkspaceTitle>
         <Setting
           onTransformWorkspace={onTransformWorkspace}
@@ -145,7 +145,7 @@ const SettingPage: NextPageWithLayout = () => {
     return (
       <>
         <Head>
-          <title>{t('Settings')} - AFFiNE</title>
+          <title>{t['Settings']()} - AFFiNE</title>
         </Head>
         <WorkspaceTitle
           workspace={currentWorkspace}
@@ -154,7 +154,7 @@ const SettingPage: NextPageWithLayout = () => {
           isPublic={false}
           icon={<SettingsIcon />}
         >
-          {t('Workspace Settings')}
+          {t['Workspace Settings']()}
         </WorkspaceTitle>
         <Setting
           onTransformWorkspace={onTransformWorkspace}

@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PermissionType } from '@affine/workspace/affine/api';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -46,7 +46,7 @@ const PublishIcon = () => {
 };
 
 const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   let isOwner = true;
   if (workspace.flavour === WorkspaceFlavour.AFFINE) {
     isOwner = workspace.permission === PermissionType.Owner;
@@ -56,22 +56,22 @@ const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
 
   if (workspace.flavour === WorkspaceFlavour.LOCAL) {
     return (
-      <p title={t('Local Workspace')}>
+      <p title={t['Local Workspace']()}>
         <LocalWorkspaceIcon />
-        <span>{t('Local Workspace')}</span>
+        <span>{t['Local Workspace']()}</span>
       </p>
     );
   }
 
   return isOwner ? (
-    <p title={t('Cloud Workspace')}>
+    <p title={t['Cloud Workspace']()}>
       <CloudWorkspaceIcon />
-      <span>{t('Cloud Workspace')}</span>
+      <span>{t['Cloud Workspace']()}</span>
     </p>
   ) : (
-    <p title={t('Joined Workspace')}>
+    <p title={t['Joined Workspace']()}>
       <JoinedWorkspaceIcon />
-      <span>{t('Joined Workspace')}</span>
+      <span>{t['Joined Workspace']()}</span>
     </p>
   );
 };
@@ -89,7 +89,7 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
   onSettingClick,
   currentWorkspaceId,
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
 
   return (
@@ -106,15 +106,15 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
         <StyleWorkspaceTitle>{name}</StyleWorkspaceTitle>
         <WorkspaceType workspace={workspace} />
         {workspace.flavour === WorkspaceFlavour.LOCAL && (
-          <p title={t('Available Offline')}>
+          <p title={t['Available Offline']()}>
             <LocalDataIcon />
-            <span>{t('Available Offline')}</span>
+            <span>{t['Available Offline']()}</span>
           </p>
         )}
         {workspace.flavour === WorkspaceFlavour.AFFINE && workspace.public && (
-          <p title={t('Published to Web')}>
+          <p title={t['Published to Web']()}>
             <PublishIcon />
-            <span>{t('Published to Web')}</span>
+            <span>{t['Published to Web']()}</span>
           </p>
         )}
       </StyleWorkspaceInfo>

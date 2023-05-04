@@ -19,9 +19,9 @@ beforeEach(() => {
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
-  initPage(blockSuiteWorkspace.createPage('page0'));
-  initPage(blockSuiteWorkspace.createPage('page1'));
-  initPage(blockSuiteWorkspace.createPage('page2'));
+  initPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
+  initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('useBlockSuiteWorkspaceHelper', () => {

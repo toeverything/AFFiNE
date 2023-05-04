@@ -2,10 +2,12 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
+import { runCli } from '@magic-works/i18n-codegen';
 import { PerfseePlugin } from '@perfsee/webpack';
 import { withSentryConfig } from '@sentry/nextjs';
 import SentryWebpackPlugin from '@sentry/webpack-plugin';
 import debugLocal from 'next-debug-local';
+import { fileURLToPath } from 'url';
 
 import { blockSuiteFeatureFlags, buildFlags } from './preset.config.mjs';
 import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
@@ -16,6 +18,21 @@ const withVanillaExtract = createVanillaExtractPlugin();
 
 console.info('Build Flags', buildFlags);
 console.info('Editor Flags', blockSuiteFeatureFlags);
+
+if (process.env.NODE_ENV !== 'development') {
+  await runCli(
+    {
+      config: fileURLToPath(
+        new URL('../../.i18n-codegen.json', import.meta.url)
+      ),
+      watch: false,
+    },
+    error => {
+      console.error(error);
+      process.exit(1);
+    }
+  );
+}
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
 

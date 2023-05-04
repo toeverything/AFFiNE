@@ -16,6 +16,11 @@ export function cleanupWorkspace(flavour: WorkspaceFlavour) {
 
 const hashMap = new Map<string, Workspace>();
 
+/**
+ * @internal test only
+ */
+export const _cleanupBlockSuiteWorkspaceCache = () => hashMap.clear();
+
 export function createEmptyBlockSuiteWorkspace(
   id: string,
   flavour: WorkspaceFlavour.AFFINE,
@@ -82,4 +87,34 @@ export function createEmptyBlockSuiteWorkspace(
     .register(__unstableSchemas);
   hashMap.set(cacheKey, workspace);
   return workspace;
+}
+
+export class CallbackSet extends Set<() => void> {
+  #ready = false;
+
+  get ready(): boolean {
+    return this.#ready;
+  }
+
+  set ready(v: boolean) {
+    this.#ready = v;
+  }
+
+  add(cb: () => void) {
+    if (this.ready) {
+      cb();
+      return this;
+    }
+    if (this.has(cb)) {
+      return this;
+    }
+    return super.add(cb);
+  }
+
+  delete(cb: () => void) {
+    if (this.has(cb)) {
+      return super.delete(cb);
+    }
+    return false;
+  }
 }

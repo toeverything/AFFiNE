@@ -12,9 +12,15 @@ export const createAffineDownloadProvider = (
 ): AffineDownloadProvider => {
   assertExists(blockSuiteWorkspace.id);
   const id = blockSuiteWorkspace.id;
+  let connected = false;
+  const callbacks = new Set<() => void>();
   return {
     flavour: 'affine-download',
     background: true,
+    get connected() {
+      return connected;
+    },
+    callbacks,
     connect: () => {
       providerLogger.info('connect download provider', id);
       if (hashMap.has(id)) {
@@ -23,6 +29,7 @@ export const createAffineDownloadProvider = (
           blockSuiteWorkspace.doc,
           new Uint8Array(hashMap.get(id) as ArrayBuffer)
         );
+        connected = true;
         return;
       }
       affineApis
@@ -41,6 +48,7 @@ export const createAffineDownloadProvider = (
     },
     disconnect: () => {
       providerLogger.info('disconnect download provider', id);
+      connected = false;
     },
     cleanup: () => {
       hashMap.delete(id);

@@ -1,5 +1,6 @@
 import { Button, Input, Modal, ModalCloseButton } from '@affine/component';
-import { Trans, useTranslation } from '@affine/i18n';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useCallback, useState } from 'react';
@@ -33,11 +34,11 @@ export const WorkspaceDeleteModal = ({
   );
   const [deleteStr, setDeleteStr] = useState<string>('');
   const allowDelete = deleteStr === workspaceName;
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const handleDelete = useCallback(() => {
     onDeleteWorkspace().then(() => {
-      toast(t('Successfully deleted'), {
+      toast(t['Successfully deleted'](), {
         portal: document.body,
       });
     });
@@ -47,7 +48,7 @@ export const WorkspaceDeleteModal = ({
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>{t('Delete Workspace')}?</StyledModalHeader>
+        <StyledModalHeader>{t['Delete Workspace']()}?</StyledModalHeader>
         {workspace.flavour === WorkspaceFlavour.LOCAL ? (
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description">
@@ -80,7 +81,7 @@ export const WorkspaceDeleteModal = ({
             }}
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
-            placeholder={t('Placeholder of delete workspace')}
+            placeholder={t['Placeholder of delete workspace']()}
             value={deleteStr}
             width={315}
             height={42}
@@ -88,7 +89,7 @@ export const WorkspaceDeleteModal = ({
         </StyledInputContent>
         <StyledButtonContent>
           <Button shape="circle" onClick={onClose}>
-            {t('Cancel')}
+            {t['Cancel']()}
           </Button>
           <Button
             data-testid="delete-workspace-confirm-button"
@@ -98,7 +99,7 @@ export const WorkspaceDeleteModal = ({
             shape="circle"
             style={{ marginLeft: '24px' }}
           >
-            {t('Delete')}
+            {t['Delete']()}
           </Button>
         </StyledButtonContent>
       </StyledModalWrapper>

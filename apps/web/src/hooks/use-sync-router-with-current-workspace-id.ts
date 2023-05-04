@@ -45,8 +45,9 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
         window.apis?.onWorkspaceChange(targetWorkspace.id);
       }
       void router.push({
-        pathname: '/workspace/[workspaceId]/all',
+        pathname: router.pathname,
         query: {
+          ...router.query,
           workspaceId: targetWorkspace.id,
         },
       });
@@ -56,8 +57,9 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
         console.log('set workspace id', workspaceId);
         setCurrentWorkspaceId(targetWorkspace.id);
         void router.push({
-          pathname: '/workspace/[workspaceId]/all',
+          pathname: router.pathname,
           query: {
+            ...router.query,
             workspaceId: targetWorkspace.id,
           },
         });

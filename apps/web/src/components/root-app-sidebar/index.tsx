@@ -5,7 +5,7 @@ import {
   ResizeIndicator,
 } from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
@@ -69,7 +69,7 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace?.id || null;
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const onClickNewPage = useCallback(async () => {
     const page = await createPage();
@@ -86,7 +86,6 @@ export const RootAppSidebar = ({
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     if (environment.isDesktop) {
-      window.apis?.onClientUpdateInstall();
       unsubscribe = window.apis?.onClientUpdateAvailable((version: string) => {
         console.log(version);
         setUpdateAvailable(true);
@@ -102,14 +101,12 @@ export const RootAppSidebar = ({
       <AppSidebar
         ref={setRef}
         footer={
-          <>
-            <StyledNewPageButton
-              data-testid="new-page-button"
-              onClick={onClickNewPage}
-            >
-              <PlusIcon /> {t('New Page')}
-            </StyledNewPageButton>
-          </>
+          <StyledNewPageButton
+            data-testid="new-page-button"
+            onClick={onClickNewPage}
+          >
+            <PlusIcon /> {t['New Page']()}
+          </StyledNewPageButton>
         }
       >
         <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
@@ -124,8 +121,17 @@ export const RootAppSidebar = ({
               onOpenQuickSearchModal();
             }, [onOpenQuickSearchModal])}
           >
-            <SearchIcon />
-            {t('Quick search')}
+            <div
+              style={{
+                display: 'flex',
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+              }}
+            >
+              <SearchIcon />
+              {t['Quick search']()}
+            </div>
           </StyledListItem>
           <StyledListItem
             active={
@@ -144,7 +150,7 @@ export const RootAppSidebar = ({
               }}
             >
               <SettingsIcon />
-              <div>{t('Workspace Settings')}</div>
+              <div>{t['Workspace Settings']()}</div>
             </StyledLink>
           </StyledListItem>
           <StyledListItem
@@ -159,7 +165,7 @@ export const RootAppSidebar = ({
               }}
             >
               <FolderIcon />
-              <span data-testid="all-pages">{t('All pages')}</span>
+              <span data-testid="all-pages">{t['All pages']()}</span>
             </StyledLink>
           </StyledListItem>
           <StyledScrollWrapper
@@ -209,7 +215,7 @@ export const RootAppSidebar = ({
                   }}
                 >
                   <ShareIcon />
-                  <span data-testid="shared-pages">{t('Shared Pages')}</span>
+                  <span data-testid="shared-pages">{t['Shared Pages']()}</span>
                 </StyledLink>
               </StyledListItem>
             ))}
@@ -224,7 +230,7 @@ export const RootAppSidebar = ({
                 pathname: currentWorkspaceId && paths.trash(currentWorkspaceId),
               }}
             >
-              <DeleteTemporarilyIcon /> {t('Trash')}
+              <DeleteTemporarilyIcon /> {t['Trash']()}
             </StyledLink>
           </StyledListItem>
           {environment.isDesktop && clientUpdateAvailable && (
@@ -236,7 +242,7 @@ export const RootAppSidebar = ({
               icon={<ResetIcon />}
               type={'light'}
             >
-              {t('Restart Install Client Update')}
+              {t['Restart Install Client Update']()}
             </Button>
           )}
         </StyledSliderBarInnerWrapper>

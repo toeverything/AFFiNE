@@ -92,9 +92,13 @@ beforeEach(async () => {
     const frameId = page.addBlock('affine:frame', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
-  initPage(blockSuiteWorkspace.createPage('page0'));
-  initPage(blockSuiteWorkspace.createPage('page1'));
-  initPage(blockSuiteWorkspace.createPage('page2'));
+  initPage(
+    blockSuiteWorkspace.createPage({
+      id: 'page0',
+    })
+  );
+  initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('usePageMetas', async () => {

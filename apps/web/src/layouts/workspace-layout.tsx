@@ -1,7 +1,8 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
-import { ensureRootPinboard, initPage } from '@affine/env/blocksuite';
-import { setUpLanguage, useTranslation } from '@affine/i18n';
+import { initPage } from '@affine/env/blocksuite';
+import { setUpLanguage, useI18N } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
@@ -9,7 +10,7 @@ import {
   rootStore,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { LocalIndexedDBProvider } from '@affine/workspace/type';
+import type { BackgroundProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
@@ -17,14 +18,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import {
@@ -127,7 +121,10 @@ export const AllWorkspaceContext = ({
       // ignore current workspace
       .filter(workspace => workspace.id !== currentWorkspaceId)
       .flatMap(workspace =>
-        workspace.providers.filter(provider => provider.background)
+        workspace.providers.filter(
+          (provider): provider is BackgroundProvider =>
+            'background' in provider && provider.background
+        )
       );
     providers.forEach(provider => {
       provider.connect();
@@ -151,22 +148,23 @@ export const CurrentWorkspaceContext = ({
   useRouterWithWorkspaceIdDefense(router);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   if (!router.isReady) {
-    return <PageLoading text={t('Router is Loading')} />;
+    return <PageLoading text={t['Router is Loading']()} />;
   }
   if (!workspaceId) {
-    return <PageLoading text={t('Finding Workspace ID')} />;
+    return <PageLoading text={t['Finding Workspace ID']()} />;
   }
   if (!exist) {
-    return <PageLoading text={t('Workspace Not Found')} />;
+    return <PageLoading text={t['Workspace Not Found']()} />;
   }
   return <>{children}</>;
 };
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    const { i18n, t } = useTranslation();
+    const i18n = useI18N();
+    const t = useAFFiNEI18N();
     useEffect(() => {
       document.documentElement.lang = i18n.language;
       // todo(himself65): this is a hack, we should use a better way to set the language
@@ -243,7 +241,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         </AllWorkspaceContext>
         <CurrentWorkspaceContext>
           <Suspense
-            fallback={<PageLoading text={t('Finding Current Workspace')} />}
+            fallback={<PageLoading text={t['Finding Current Workspace']()} />}
           >
             <Provider>
               <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
@@ -260,69 +258,50 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
-  const [isLoading, setIsLoading] = useState(true);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   useEffect(() => {
     logger.info('currentWorkspace: ', currentWorkspace);
+    globalThis.currentWorkspace = currentWorkspace;
   }, [currentWorkspace]);
 
-  useEffect(() => {
-    if (currentWorkspace) {
-      globalThis.currentWorkspace = currentWorkspace;
+  //#region init workspace
+  if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
+    // this is a new workspace, so we should redirect to the new page
+    const pageId = nanoid();
+    const page = currentWorkspace.blockSuiteWorkspace.createPage({
+      id: pageId,
+    });
+    assertEquals(page.id, pageId);
+    currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
+      init: true,
+    });
+    initPage(page);
+    if (!router.query.pageId) {
+      setCurrentPageId(pageId);
+      void jumpToPage(currentWorkspace.id, pageId);
     }
-  }, [currentWorkspace]);
+  }
+
+  // fixme: pinboard has been removed,
+  //  the related code should be removed in the future.
+  // no matter the workspace is empty, ensure the root pinboard exists
+  // ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
+  //#endregion
 
   useEffect(() => {
-    if (currentWorkspace) {
-      currentWorkspace.providers.forEach(provider => {
-        provider.connect();
-      });
-      return () => {
-        currentWorkspace.providers.forEach(provider => {
-          provider.disconnect();
-        });
-      };
-    }
-  }, [currentWorkspace]);
-
-  useEffect(() => {
-    if (!router.isReady) {
-      return;
-    }
-    if (!currentWorkspace) {
-      return;
-    }
-    const localProvider = currentWorkspace.providers.find(
-      provider => provider.flavour === 'local-indexeddb'
+    const backgroundProviders = currentWorkspace.providers.filter(
+      (provider): provider is BackgroundProvider => 'background' in provider
     );
-    if (localProvider && localProvider.flavour === 'local-indexeddb') {
-      const provider = localProvider as LocalIndexedDBProvider;
-      const callback = () => {
-        setIsLoading(false);
-        if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
-          // this is a new workspace, so we should redirect to the new page
-          const pageId = nanoid();
-          const page = currentWorkspace.blockSuiteWorkspace.createPage(pageId);
-          assertEquals(page.id, pageId);
-          currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
-            init: true,
-          });
-          initPage(page);
-          if (!router.query.pageId) {
-            setCurrentPageId(pageId);
-            void jumpToPage(currentWorkspace.id, pageId);
-          }
-        }
-        // no matter the workspace is empty, ensure the root pinboard exists
-        ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
-      };
-      provider.callbacks.add(callback);
-      return () => {
-        provider.callbacks.delete(callback);
-      };
-    }
-  }, [currentWorkspace, jumpToPage, router, setCurrentPageId]);
+    backgroundProviders.forEach(provider => {
+      provider.connect();
+    });
+    return () => {
+      backgroundProviders.forEach(provider => {
+        provider.disconnect();
+      });
+    };
+  }, [currentWorkspace]);
 
   useEffect(() => {
     if (!currentWorkspace) {
@@ -394,12 +373,8 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         />
         <MainContainerWrapper>
           <MainContainer className="main-container">
-            <Suspense fallback={<PageLoading text={t('Page is Loading')} />}>
-              {isLoading ? (
-                <PageLoading text={t('Page is Loading')} />
-              ) : (
-                children
-              )}
+            <Suspense fallback={<PageLoading text={t['Page is Loading']()} />}>
+              {children}
             </Suspense>
             <StyledToolWrapper>
               {/* fixme(himself65): remove this */}
