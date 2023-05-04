@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
   FavoriteIcon,
@@ -16,26 +16,26 @@ export const useSwitchToConfig = (
   href: string;
   icon: FC<SVGProps<SVGSVGElement>>;
 }[] => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return useMemo(
     () => [
       {
-        title: t('All pages'),
+        title: t['All pages'](),
         href: pathGenerator.all(workspaceId),
         icon: FolderIcon,
       },
       {
-        title: t('Favorites'),
+        title: t['Favorites'](),
         href: pathGenerator.favorite(workspaceId),
         icon: FavoriteIcon,
       },
       {
-        title: t('Workspace Settings'),
+        title: t['Workspace Settings'](),
         href: pathGenerator.setting(workspaceId),
         icon: SettingsIcon,
       },
       {
-        title: t('Trash'),
+        title: t['Trash'](),
         href: pathGenerator.trash(workspaceId),
         icon: DeleteTemporarilyIcon,
       },

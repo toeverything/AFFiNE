@@ -10,6 +10,7 @@ export const StyledPage = styled('div')<{ resizing?: boolean }>(
       transition: 'background-color .5s',
       display: 'flex',
       flexGrow: '1',
+      flexDirection: 'row',
       '--affine-editor-width': '686px',
       [theme.breakpoints.down('sm')]: {
         '--affine-editor-width': '550px',
@@ -40,30 +41,22 @@ export const StyledWrapper = styled('div')(() => {
   };
 });
 
-export const MainContainerWrapper = styled('div')<{ resizing: boolean }>(
-  ({ resizing }) => {
-    return {
-      display: 'flex',
-      flexGrow: 1,
-      position: 'relative',
-      maxWidth: '100vw',
-      overflow: 'auto',
-    };
-  }
-);
+export const MainContainerWrapper = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexGrow: 1,
+    position: 'relative',
+    maxWidth: '100vw',
+    overflow: 'auto',
+  };
+});
 
-export const MainContainer = styled('div')(({ theme }) => {
+export const MainContainer = styled('div')(() => {
   return {
     position: 'relative',
     flexGrow: 1,
     maxWidth: '100%',
     backgroundColor: 'var(--affine-background-primary-color)',
-    [theme.breakpoints.up('md')]: {
-      minWidth: '686px',
-    },
-    [theme.breakpoints.down('sm')]: {
-      minWidth: '550px',
-    },
   };
 });
 
@@ -84,7 +77,7 @@ export const StyledToolWrapper = styled('div')(({ theme }) => {
 });
 
 export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
-  ({ theme }) => {
+  () => {
     return {
       position: 'absolute',
       top: 0,

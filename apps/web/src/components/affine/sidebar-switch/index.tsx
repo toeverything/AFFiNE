@@ -1,14 +1,10 @@
 import { Tooltip } from '@affine/component';
+import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { getEnvironment } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  useGuideHidden,
-  useGuideHiddenUntilNextUpdate,
-  useUpdateTipsOnVersionChange,
-} from '../../../hooks/use-is-first-load';
-import { useSidebarStatus } from '../../../hooks/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
 type SidebarSwitchProps = {
@@ -17,19 +13,15 @@ type SidebarSwitchProps = {
 };
 
 // fixme: the following code is not correct, SSR will fail because hydrate will not match the client side render
-//  in `StyledSidebarSwitch` component
+//  in `StyledSidebarSwitch` a component
 export const SidebarSwitch = ({
   visible = true,
   tooltipContent,
   ...props
 }: SidebarSwitchProps) => {
-  useUpdateTipsOnVersionChange();
-  const [open, setOpen] = useSidebarStatus();
+  const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [tooltipVisible, setTooltipVisible] = useState(false);
-  const [guideHidden, setGuideHidden] = useGuideHidden();
-  const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
-    useGuideHiddenUntilNextUpdate();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const checkIsMac = () => {
     const env = getEnvironment();
     return env.isBrowser && env.isMacOs;
@@ -42,7 +34,7 @@ export const SidebarSwitch = ({
   }, []);
 
   tooltipContent =
-    tooltipContent || (open ? t('Collapse sidebar') : t('Expand sidebar'));
+    tooltipContent || (open ? t['Collapse sidebar']() : t['Expand sidebar']());
 
   return (
     <Tooltip
@@ -56,25 +48,9 @@ export const SidebarSwitch = ({
         visible={visible}
         disabled={!visible}
         onClick={useCallback(() => {
-          setOpen(!open);
+          setOpen(open => !open);
           setTooltipVisible(false);
-          if (guideHiddenUntilNextUpdate['quickSearchTips'] === false) {
-            setGuideHiddenUntilNextUpdate({
-              ...guideHiddenUntilNextUpdate,
-              quickSearchTips: true,
-            });
-            setTimeout(() => {
-              setGuideHidden({ ...guideHidden, quickSearchTips: false });
-            }, 200);
-          }
-        }, [
-          guideHidden,
-          guideHiddenUntilNextUpdate,
-          open,
-          setGuideHidden,
-          setGuideHiddenUntilNextUpdate,
-          setOpen,
-        ])}
+        }, [setOpen])}
         onMouseEnter={useCallback(() => {
           setTooltipVisible(true);
         }, [])}

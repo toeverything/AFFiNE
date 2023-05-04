@@ -1,6 +1,6 @@
 import { styled, TextButton } from '@affine/component';
 
-export const StyledModalWrapper = styled('div')(({ theme }) => {
+export const StyledModalWrapper = styled('div')(() => {
   return {
     position: 'relative',
     padding: '0px',
@@ -11,7 +11,7 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledModalHeader = styled('div')(({ theme }) => {
+export const StyledModalHeader = styled('div')(() => {
   return {
     margin: '44px 0px 12px 0px',
     width: '560px',
@@ -21,7 +21,7 @@ export const StyledModalHeader = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledTextContent = styled('div')(({ theme }) => {
+export const StyledTextContent = styled('div')(() => {
   return {
     margin: 'auto',
     width: '560px',
@@ -40,7 +40,7 @@ export const StyledButtonContent = styled('div')(() => {
     justifyContent: 'center',
   };
 });
-export const StyledButton = styled(TextButton)(({ theme }) => {
+export const StyledButton = styled(TextButton)(() => {
   return {
     color: 'var(--affine-primary-color)',
     height: '32px',
@@ -50,7 +50,7 @@ export const StyledButton = styled(TextButton)(({ theme }) => {
     padding: '4px 20px',
   };
 });
-export const StyledDangerButton = styled(TextButton)(({ theme }) => {
+export const StyledDangerButton = styled(TextButton)(() => {
   return {
     color: '#FF631F',
     height: '32px',

@@ -6,12 +6,13 @@ export const ModalWrapper = styled('div')<{
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
   minHeight?: CSSProperties['minHeight'];
-}>(({ theme, width, height, minHeight }) => {
+}>(({ width, height, minHeight }) => {
   return {
     width,
     height,
     minHeight,
-    backgroundColor: 'var(--affine-white)',
+    backgroundColor: 'var(--affine-background-secondary-color)',
+    boxShadow: 'var(--affine-popover-shadow)',
     borderRadius: '16px',
     position: 'relative',
     maxHeight: 'calc(100vh - 32px)',

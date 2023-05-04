@@ -1,6 +1,6 @@
 import type { ConfirmProps } from '@affine/component';
 import { Confirm, MenuItem } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 
@@ -11,7 +11,7 @@ export const MoveToTrash = ({
   onItemClick,
   testId,
 }: CommonMenuItemProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   return (
     <>
@@ -23,7 +23,7 @@ export const MoveToTrash = ({
         }}
         icon={<DeleteTemporarilyIcon />}
       >
-        {t('Move to Trash')}
+        {t['Move to Trash']()}
       </MenuItem>
     </>
   );
@@ -35,15 +35,15 @@ const ConfirmModal = ({
 }: {
   meta: PageMeta;
 } & ConfirmProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   return (
     <Confirm
-      title={t('Delete page?')}
-      content={t('will be moved to Trash', {
+      title={t['Delete page?']()}
+      content={t['will be moved to Trash']({
         title: meta.title || 'Untitled',
       })}
-      confirmText={t('Delete')}
+      confirmText={t.Delete()}
       confirmType="danger"
       {...confirmModalProps}
     />

@@ -1,4 +1,4 @@
-import type { ModalUnstyledOwnProps } from '@mui/base/ModalUnstyled';
+import type { ModalProps as ModalUnstyledOwnProps } from '@mui/base/Modal';
 import Fade from '@mui/material/Fade';
 
 import { StyledBackdrop, StyledModal } from './styles';

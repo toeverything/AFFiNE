@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { Command } from 'cmdk';
@@ -41,7 +41,7 @@ export const PublishedResults: FC<PublishedResultsProps> = ({
   //       router.push('/404');
   //     });
   // }, [router, dataCenter, setPublishWorkspaceName]);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   useEffect(() => {
     setResults(blockSuiteWorkspace.search(query));
     //Save the Map<BlockId, PageId> obtained from the search as state
@@ -57,7 +57,7 @@ export const PublishedResults: FC<PublishedResultsProps> = ({
       {query ? (
         resultsPageMeta.length ? (
           <Command.Group
-            heading={t('Find results', { number: resultsPageMeta.length })}
+            heading={t['Find results']({ number: `${resultsPageMeta.length}` })}
           >
             {resultsPageMeta.map(result => {
               return (
@@ -85,7 +85,7 @@ export const PublishedResults: FC<PublishedResultsProps> = ({
           </Command.Group>
         ) : (
           <StyledNotFound>
-            <span>{t('Find 0 result')}</span>
+            <span>{t['Find 0 result']()}</span>
             <Image
               src="/imgs/no-result.svg"
               alt="no result"

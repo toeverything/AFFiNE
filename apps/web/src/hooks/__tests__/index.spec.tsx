@@ -35,12 +35,6 @@ import {
   useCurrentWorkspace,
 } from '../current/use-current-workspace';
 import {
-  useGuideHidden,
-  useGuideHiddenUntilNextUpdate,
-  useLastVersion,
-  useTipsDisplayStatus,
-} from '../use-is-first-load';
-import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
 } from '../use-recent-views';
@@ -98,9 +92,13 @@ beforeEach(async () => {
     const frameId = page.addBlock('affine:frame', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
-  initPage(blockSuiteWorkspace.createPage('page0'));
-  initPage(blockSuiteWorkspace.createPage('page1'));
-  initPage(blockSuiteWorkspace.createPage('page2'));
+  initPage(
+    blockSuiteWorkspace.createPage({
+      id: 'page0',
+    })
+  );
+  initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('usePageMetas', async () => {
@@ -276,50 +274,5 @@ describe('useRecentlyViewed', () => {
         mode: 'page',
       },
     ]);
-  });
-});
-describe('useIsFirstLoad', () => {
-  test('useLastVersion', async () => {
-    const lastVersion = renderHook(() => useLastVersion());
-    const setLastVersion = lastVersion.result.current[1];
-    expect(lastVersion.result.current[0]).toEqual('0.0.0');
-    setLastVersion('testVersion');
-    lastVersion.rerender();
-    expect(lastVersion.result.current[0]).toEqual('testVersion');
-  });
-  test('useGuideHidden', async () => {
-    const guideHidden = renderHook(() => useGuideHidden());
-    const setGuideHidden = guideHidden.result.current[1];
-    expect(guideHidden.result.current[0]).toEqual({});
-    setGuideHidden({ test: true });
-    guideHidden.rerender();
-    expect(guideHidden.result.current[0]).toEqual({ test: true });
-  });
-  test('useGuideHiddenUntilNextUpdate', async () => {
-    const guideHiddenUntilNextUpdate = renderHook(() =>
-      useGuideHiddenUntilNextUpdate()
-    );
-    const setGuideHiddenUntilNextUpdate =
-      guideHiddenUntilNextUpdate.result.current[1];
-    expect(guideHiddenUntilNextUpdate.result.current[0]).toEqual({});
-    setGuideHiddenUntilNextUpdate({ test: true });
-    guideHiddenUntilNextUpdate.rerender();
-    expect(guideHiddenUntilNextUpdate.result.current[0]).toEqual({
-      test: true,
-    });
-  });
-  test('useTipsDisplayStatus', async () => {
-    const tipsDisplayStatus = renderHook(() => useTipsDisplayStatus());
-    const setTipsDisplayStatus = tipsDisplayStatus.result.current;
-    expect(tipsDisplayStatus.result.current).toEqual({
-      quickSearchTips: {
-        permanentlyHidden: true,
-        hiddenUntilNextUpdate: true,
-      },
-      changeLog: {
-        permanentlyHidden: true,
-        hiddenUntilNextUpdate: true,
-      },
-    });
   });
 });

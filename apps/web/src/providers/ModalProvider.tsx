@@ -1,3 +1,4 @@
+import { getEnvironment } from '@affine/env';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -8,6 +9,8 @@ import { lazy, Suspense, useCallback, useTransition } from 'react';
 import {
   currentWorkspaceIdAtom,
   openCreateWorkspaceModalAtom,
+  openDisableCloudAlertModalAtom,
+  openOnboardingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
@@ -29,12 +32,32 @@ const CreateWorkspaceModal = lazy(() =>
   }))
 );
 
+const TmpDisableAffineCloudModal = lazy(() =>
+  import('../components/affine/tmp-disable-affine-cloud-modal').then(
+    module => ({
+      default: module.TmpDisableAffineCloudModal,
+    })
+  )
+);
+const OnboardingModalAtom = lazy(() =>
+  import('../components/pure/OnboardingModal').then(module => ({
+    default: module.OnboardingModal,
+  }))
+);
+
 export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
     openWorkspacesModalAtom
   );
   const [openCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
     openCreateWorkspaceModalAtom
+  );
+
+  const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
+    openDisableCloudAlertModalAtom
+  );
+  const [openOnboardingModal, setOpenOnboardingModal] = useAtom(
+    openOnboardingModalAtom
   );
 
   const router = useRouter();
@@ -46,9 +69,29 @@ export function Modals() {
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useAppHelper();
   const [transitioning, transition] = useTransition();
-
+  const env = getEnvironment();
+  const onCloseOnboardingModal = useCallback(() => {
+    setOpenOnboardingModal(false);
+  }, [setOpenOnboardingModal]);
   return (
     <>
+      <Suspense>
+        <TmpDisableAffineCloudModal
+          open={openDisableCloudAlertModal}
+          onClose={useCallback(() => {
+            setOpenDisableCloudAlertModal(false);
+          }, [setOpenDisableCloudAlertModal])}
+        />
+      </Suspense>
+      {env.isDesktop && (
+        <Suspense>
+          <OnboardingModalAtom
+            open={openOnboardingModal}
+            onClose={onCloseOnboardingModal}
+          />
+        </Suspense>
+      )}
+
       <Suspense>
         <WorkspaceListModal
           disabled={transitioning}

@@ -1,7 +1,9 @@
 import { BrowserWarning } from '@affine/component/affine-banner';
-import { useTranslation } from '@affine/i18n';
+import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
+import { useAtom } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
 import {
   forwardRef,
@@ -12,16 +14,11 @@ import {
   useState,
 } from 'react';
 
-import {
-  useSidebarFloating,
-  useSidebarStatus,
-} from '../../../hooks/use-sidebar-status';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import EditPage from './header-right-items/EditPage';
 import { HeaderShareMenu } from './header-right-items/ShareMenu';
 import SyncUser from './header-right-items/SyncUser';
-import ThemeModeSwitch from './header-right-items/theme-mode-switch';
 import TrashButtonGroup from './header-right-items/TrashButtonGroup';
 import UserAvatar from './header-right-items/UserAvatar';
 import {
@@ -49,7 +46,6 @@ export type BaseHeaderProps<
 export const enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
   TrashButtonGroup = 'trashButtonGroup',
-  ThemeModeSwitch = 'themeModeSwitch',
   SyncUser = 'syncUser',
   ShareMenu = 'shareMenu',
   EditPage = 'editPage',
@@ -81,34 +77,28 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       return !isPublic && !isPreview;
     },
   },
-  [HeaderRightItemName.ThemeModeSwitch]: {
-    Component: ThemeModeSwitch,
-    availableWhen: (_, currentPage) => {
-      return currentPage?.meta.trash !== true;
-    },
-  },
   [HeaderRightItemName.ShareMenu]: {
     Component: HeaderShareMenu,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage) => {
       return workspace.flavour !== WorkspaceFlavour.PUBLIC && !!currentPage;
     },
   },
   [HeaderRightItemName.EditPage]: {
     Component: EditPage,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage, { isPublic }) => {
       return isPublic;
     },
   },
   [HeaderRightItemName.UserAvatar]: {
     Component: UserAvatar,
-    availableWhen: (workspace, currentPage, { isPublic, isPreview }) => {
+    availableWhen: (workspace, currentPage, { isPublic }) => {
       return isPublic;
     },
   },
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
     availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !!currentPage && !isPublic && !isPreview;
+      return !isPublic && !isPreview;
     },
   },
 };
@@ -123,15 +113,14 @@ export const Header = forwardRef<
   useEffect(() => {
     setShowWarning(shouldShowWarning());
   }, []);
-  const [open] = useSidebarStatus();
-  const sidebarFloating = useSidebarFloating();
-  const { t } = useTranslation();
+  const [open] = useAtom(appSidebarOpenAtom);
+  const t = useAFFiNEI18N();
 
   return (
     <StyledHeaderContainer
-      sidebarFloating={sidebarFloating && open}
       ref={ref}
       hasWarning={showWarning}
+      data-open={open}
       {...props}
     >
       <BrowserWarning
@@ -149,7 +138,7 @@ export const Header = forwardRef<
         <Suspense>
           <SidebarSwitch
             visible={!open}
-            tooltipContent={t('Expand sidebar')}
+            tooltipContent={t['Expand sidebar']()}
             data-testid="sliderBar-arrowButton-expand"
           />
         </Suspense>

@@ -6,7 +6,7 @@ import {
 } from '@affine/component';
 import { Button } from '@affine/component';
 
-export const StyledSplitLine = styled('div')(({ theme }) => {
+export const StyledSplitLine = styled('div')(() => {
   return {
     width: '1px',
     height: '20px',
@@ -15,7 +15,7 @@ export const StyledSplitLine = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
+export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
@@ -36,7 +36,7 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
+export const StyleWorkspaceTitle = styled('div')(() => {
   return {
     fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
@@ -47,32 +47,6 @@ export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledCard = styled('div')<{
-  active?: boolean;
-}>(({ theme, active }) => {
-  const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
-  return {
-    width: '310px',
-    height: '124px',
-    cursor: 'pointer',
-    padding: '16px',
-    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
-    borderRadius: '12px',
-    border: `1px solid ${borderColor}`,
-    ...displayFlex('flex-start', 'flex-start'),
-    marginBottom: '24px',
-    transition: 'background .2s',
-    background: 'var(--affine-background-primary-color)',
-    ':hover': {
-      background: 'var(--affine-hover-color)',
-      '.add-icon': {
-        borderColor: 'var(--affine-primary-color)',
-        color: 'var(--affine-primary-color)',
-      },
-    },
-  };
-});
-
 export const StyledFooter = styled('div')({
   height: '84px',
   padding: '0 40px',
@@ -80,7 +54,7 @@ export const StyledFooter = styled('div')({
   ...displayFlex('space-between', 'center'),
 });
 
-export const StyleUserInfo = styled('div')(({ theme }) => {
+export const StyleUserInfo = styled('div')(() => {
   return {
     textAlign: 'left',
     marginLeft: '16px',
@@ -99,14 +73,14 @@ export const StyleUserInfo = styled('div')(({ theme }) => {
 export const StyledModalHeaderLeft = styled('div')(() => {
   return { ...displayFlex('flex-start', 'center') };
 });
-export const StyledModalTitle = styled('div')(({ theme }) => {
+export const StyledModalTitle = styled('div')(() => {
   return {
     fontWeight: 600,
     fontSize: 'var(--affine-font-h6)',
   };
 });
 
-export const StyledHelperContainer = styled('div')(({ theme }) => {
+export const StyledHelperContainer = styled('div')(() => {
   return {
     color: 'var(--affine-icon-color)',
     marginLeft: '15px',
@@ -154,7 +128,7 @@ export const StyledModalHeader = styled('div')(() => {
   };
 });
 
-export const StyledSignInButton = styled(Button)(({ theme }) => {
+export const StyledSignInButton = styled(Button)(() => {
   return {
     fontWeight: 600,
     paddingLeft: 0,

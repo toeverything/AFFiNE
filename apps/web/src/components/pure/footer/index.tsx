@@ -2,13 +2,15 @@ import { FlexWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
 import { config } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
+import { useSetAtom } from 'jotai';
 import type { CSSProperties } from 'react';
 import type React from 'react';
 import { forwardRef } from 'react';
 
+import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { stringToColour } from '../../../utils';
 import { StyledFooter, StyledSignInButton, StyleUserInfo } from './styles';
 
@@ -19,12 +21,8 @@ export type FooterProps = {
 };
 
 export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
-  const { t } = useTranslation();
-
-  if (!config.enableLegacyCloud) {
-    return null;
-  }
-
+  const t = useAFFiNEI18N();
+  const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
       {user && (
@@ -40,7 +38,7 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
               <p>{user.email}</p>
             </StyleUserInfo>
           </FlexWrapper>
-          <Tooltip content={t('Sign out')} disablePortal={true}>
+          <Tooltip content={t['Sign out']()} disablePortal={true}>
             <IconButton
               data-testid="workspace-list-modal-sign-out"
               onClick={() => {
@@ -55,6 +53,7 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
 
       {!user && (
         <StyledSignInButton
+          data-testid="sign-in-button"
           noBorder
           bold
           icon={
@@ -63,10 +62,14 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
             </div>
           }
           onClick={async () => {
-            onLogin();
+            if (!config.enableLegacyCloud) {
+              setOpen(true);
+            } else {
+              onLogin();
+            }
           }}
         >
-          {t('Sign in')}
+          {t['Sign in']()}
         </StyledSignInButton>
       )}
     </StyledFooter>

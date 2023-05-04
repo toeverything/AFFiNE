@@ -4,12 +4,12 @@ import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { forwardRef, useCallback, useRef } from 'react';
 
 import { currentEditorAtom, openQuickSearchModalAtom } from '../../../atoms';
-import { useGuideHidden } from '../../../hooks/use-is-first-load';
+import { guideQuickSearchTipsAtom } from '../../../atoms/guide';
 import { useElementResizeEffect } from '../../../hooks/use-workspaces';
 import { QuickSearchButton } from '../../pure/quick-search-button';
 import { EditorModeSwitch } from './editor-mode-switch';
@@ -39,7 +39,6 @@ export const WorkspaceHeader = forwardRef<
   );
   assertExists(pageMeta);
   const title = pageMeta.title;
-  const [isTipsHidden, setTipsHidden] = useGuideHidden();
   const isMac = () => {
     const env = getEnvironment();
     return env.isBrowser && env.isMacOs;
@@ -47,14 +46,18 @@ export const WorkspaceHeader = forwardRef<
 
   const popperRef: PopperProps['popperRef'] = useRef(null);
 
+  const [showQuickSearchTips, setShowQuickSearchTips] = useAtom(
+    guideQuickSearchTipsAtom
+  );
+
   useElementResizeEffect(
     useAtomValue(currentEditorAtom),
     useCallback(() => {
-      if (isTipsHidden.quickSearchTips || !popperRef.current) {
+      if (showQuickSearchTips || !popperRef.current) {
         return;
       }
       popperRef.current.update();
-    }, [isTipsHidden.quickSearchTips])
+    }, [showQuickSearchTips])
   );
 
   const TipsContent = (
@@ -77,9 +80,7 @@ export const WorkspaceHeader = forwardRef<
       </div>
       <StyledQuickSearchTipButton
         data-testid="quick-search-got-it"
-        onClick={() =>
-          setTipsHidden({ ...isTipsHidden, quickSearchTips: true })
-        }
+        onClick={() => setShowQuickSearchTips(false)}
       >
         Got it
       </StyledQuickSearchTipButton>
@@ -107,7 +108,7 @@ export const WorkspaceHeader = forwardRef<
               content={TipsContent}
               placement="bottom"
               popperRef={popperRef}
-              open={!isTipsHidden.quickSearchTips}
+              open={showQuickSearchTips}
               offset={[0, -5]}
             >
               <StyledSearchArrowWrapper>

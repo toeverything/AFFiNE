@@ -30,7 +30,6 @@ export const StyledIconButton = styled('button', {
   fontSize?: CSSProperties['fontSize'];
 }>(
   ({
-    theme,
     width,
     height,
     borderRadius,
@@ -44,6 +43,7 @@ export const StyledIconButton = styled('button', {
       width,
       height,
       fontSize,
+      WebkitAppRegion: 'no-drag',
       color: 'var(--affine-icon-color)',
       ...displayInlineFlex('center', 'center'),
       position: 'relative',
@@ -104,7 +104,6 @@ export const StyledTextButton = styled('button', {
   >
 >(
   ({
-    theme,
     size = 'default',
     disabled,
     hoverBackground,
@@ -185,6 +184,7 @@ export const StyledButton = styled('button', {
       paddingLeft: padding,
       paddingRight: padding,
       border: noBorder ? 'none' : '1px solid',
+      WebkitAppRegion: 'no-drag',
       ...displayInlineFlex('center', 'center'),
       position: 'relative',
       // TODO: disabled color is not decided

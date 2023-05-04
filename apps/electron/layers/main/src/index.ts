@@ -28,18 +28,13 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-app.on('second-instance', (event, argv) => {
+app.on('second-instance', () => {
   restoreOrCreateWindow();
 });
 
-app.on('open-url', async (_, url) => {
+app.on('open-url', async (_, _url) => {
   // todo: handle `affine://...` urls
 });
-
-/**
- * Disable Hardware Acceleration for more power-save
- */
-app.disableHardwareAcceleration();
 
 /**
  * Shout down background process if all windows was closed

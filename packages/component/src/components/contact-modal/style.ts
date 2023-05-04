@@ -1,6 +1,6 @@
 import { absoluteCenter, displayFlex, styled } from '@affine/component';
 
-export const StyledBigLink = styled('a')(({ theme }) => {
+export const StyledBigLink = styled('a')(() => {
   return {
     width: '268px',
     height: '76px',
@@ -57,7 +57,7 @@ export const StyledBigLink = styled('a')(({ theme }) => {
     },
   };
 });
-export const StyledSmallLink = styled('a')(({ theme }) => {
+export const StyledSmallLink = styled('a')(() => {
   return {
     width: '124px',
     height: '76px',
@@ -86,7 +86,7 @@ export const StyledSmallLink = styled('a')(({ theme }) => {
     },
   };
 });
-export const StyledSubTitle = styled('div')(({ theme }) => {
+export const StyledSubTitle = styled('div')(() => {
   return {
     fontSize: '18px',
     fontWeight: '600',
@@ -111,7 +111,7 @@ export const StyledModalHeader = styled('div')(() => {
   };
 });
 
-export const StyledModalFooter = styled('div')(({ theme }) => {
+export const StyledModalFooter = styled('div')(() => {
   return {
     fontSize: '14px',
     lineHeight: '20px',
@@ -121,7 +121,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledPrivacyContainer = styled('div')(({ theme }) => {
+export const StyledPrivacyContainer = styled('div')(() => {
   return {
     marginTop: '4px',
     position: 'relative',

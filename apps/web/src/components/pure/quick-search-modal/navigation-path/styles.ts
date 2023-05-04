@@ -1,6 +1,6 @@
 import { displayFlex, styled, textEllipsis } from '@affine/component';
 
-export const StyledNavigationPathContainer = styled('div')(({ theme }) => {
+export const StyledNavigationPathContainer = styled('div')(() => {
   return {
     height: '46px',
     ...displayFlex('flex-start', 'center'),
@@ -24,7 +24,7 @@ export const StyledNavigationPathContainer = styled('div')(({ theme }) => {
 });
 
 export const StyledNavPathLink = styled('div')<{ active?: boolean }>(
-  ({ theme, active }) => {
+  ({ active }) => {
     return {
       color: active
         ? 'var(--affine-text-primary-color)'
@@ -45,7 +45,7 @@ export const StyledNavPathLink = styled('div')<{ active?: boolean }>(
 );
 
 export const StyledNavPathExtendContainer = styled('div')<{ show: boolean }>(
-  ({ show, theme }) => {
+  ({ show }) => {
     return {
       position: 'absolute',
       left: '0',

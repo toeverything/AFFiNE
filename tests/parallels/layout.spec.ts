@@ -7,15 +7,15 @@ import { waitMarkdownImported } from '../libs/page-logic';
 test('Collapse Sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
-  await page.getByTestId('sliderBar-arrowButton-collapse').click();
-  const sliderBarArea = page.getByTestId('sliderBar-root');
+  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
+  const sliderBarArea = page.getByTestId('app-sidebar');
   await expect(sliderBarArea).not.toBeInViewport();
 });
 
 test('Expand Sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
-  await page.getByTestId('sliderBar-arrowButton-collapse').click();
+  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).not.toBeInViewport();
 
@@ -29,7 +29,7 @@ test('Click resizer can close sidebar', async ({ page }) => {
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).toBeVisible();
 
-  await page.getByTestId('sliderBar-resizer').click();
+  await page.getByTestId('app-sidebar-resizer').click();
   await expect(sliderBarArea).not.toBeInViewport();
 });
 
@@ -39,14 +39,14 @@ test('Drag resizer can resize sidebar', async ({ page }) => {
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).toBeVisible();
 
-  const sliderResizer = page.getByTestId('sliderBar-resizer');
+  const sliderResizer = page.getByTestId('app-sidebar-resizer');
   await sliderResizer.hover();
   await page.mouse.down();
   await page.mouse.move(400, 300, {
     steps: 10,
   });
   await page.mouse.up();
-  const boundingBox = await page.getByTestId('sliderBar-root').boundingBox();
+  const boundingBox = await page.getByTestId('app-sidebar').boundingBox();
   expect(boundingBox?.width).toBe(400);
 });
 
@@ -54,9 +54,7 @@ test('Sidebar in between sm & md breakpoint', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   const sliderBarArea = page.getByTestId('sliderBar-inner');
-  const sliderBarModalBackground = page.getByTestId(
-    'sliderBar-modalBackground'
-  );
+  const sliderBarModalBackground = page.getByTestId('app-sidebar-float-mask');
   await expect(sliderBarArea).toBeInViewport();
   await expect(sliderBarModalBackground).not.toBeVisible();
 
