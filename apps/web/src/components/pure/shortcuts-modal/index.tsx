@@ -4,7 +4,7 @@ import {
   MuiSlide,
 } from '@affine/component';
 import { getEnvironment } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useEffect, useState } from 'react';
 
 import {
@@ -32,7 +32,7 @@ const checkIsMac = () => {
 };
 
 export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const macMarkdownShortcuts = useMacMarkdownShortcuts();
   const winMarkdownShortcuts = useWinMarkdownShortcuts();
   const macKeyboardShortcuts = useMacKeyboardShortcuts();
@@ -59,7 +59,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
             <StyledModalHeader>
               <StyledTitle>
                 <KeyboardIcon />
-                {t('Shortcuts')}
+                {t['Shortcuts']()}
               </StyledTitle>
 
               <ModalCloseButton
@@ -73,7 +73,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
               />
             </StyledModalHeader>
             <StyledSubTitle style={{ marginTop: 0 }}>
-              {t('Keyboard Shortcuts')}
+              {t['Keyboard Shortcuts']()}
             </StyledSubTitle>
             {Object.entries(keyboardShortcuts).map(([title, shortcuts]) => {
               return (
@@ -83,7 +83,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
                 </StyledListItem>
               );
             })}
-            <StyledSubTitle>{t('Markdown Syntax')}</StyledSubTitle>
+            <StyledSubTitle>{t['Markdown Syntax']()}</StyledSubTitle>
             {Object.entries(markdownShortcuts).map(([title, shortcuts]) => {
               return (
                 <StyledListItem key={title}>

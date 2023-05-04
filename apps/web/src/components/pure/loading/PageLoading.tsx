@@ -1,6 +1,6 @@
 import { styled } from '@affine/component';
 import { AffineLoading } from '@affine/component/affine-loading';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { memo, Suspense } from 'react';
 
 export const Loading = memo(function Loading() {
@@ -36,11 +36,11 @@ const StyledLoadingContainer = styled('div')(() => {
 });
 
 export const PageLoading = ({ text }: { text?: string }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <StyledLoadingContainer>
       <Loading />
-      <h1>{text ? text : t('Loading')}</h1>
+      <h1>{text ? text : t['Loading']()}</h1>
     </StyledLoadingContainer>
   );
 };

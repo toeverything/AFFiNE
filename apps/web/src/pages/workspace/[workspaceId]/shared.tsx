@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ShareIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import Head from 'next/head';
@@ -18,7 +18,7 @@ const SharedPages: NextPageWithLayout = () => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   useSyncRouterWithCurrentWorkspaceId(router);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
@@ -39,7 +39,7 @@ const SharedPages: NextPageWithLayout = () => {
   return (
     <>
       <Head>
-        <title>{t('Shared Pages')} - AFFiNE</title>
+        <title>{t['Shared Pages']()} - AFFiNE</title>
       </Head>
       <WorkspaceTitle
         workspace={currentWorkspace}
@@ -48,7 +48,7 @@ const SharedPages: NextPageWithLayout = () => {
         isPublic={false}
         icon={<ShareIcon />}
       >
-        {t('Shared Pages')}
+        {t['Shared Pages']()}
       </WorkspaceTitle>
       <PageList
         blockSuiteWorkspace={blockSuiteWorkspace}

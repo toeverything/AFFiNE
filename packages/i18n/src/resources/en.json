@@ -8,6 +8,8 @@
   "It takes up more space on your device": {
     "": "It takes up more space on your device."
   },
+  "Synced with AFFiNE Cloud": "Synced with AFFiNE Cloud",
+  "Successfully deleted": "Successfully deleted",
   "Export AFFiNE backup file": "Export AFFiNE backup file",
   "Saved then enable AFFiNE Cloud": "All changes are saved locally, click to enable AFFiNE Cloud.",
   "Not now": "Not now",
@@ -95,6 +97,7 @@
   "Quick search placeholder": "Quick Search...",
   "Quick search placeholder2": "Search in {{workspace}}",
   "Settings": "Settings",
+  "Recent": "Recent",
   "recommendBrowser": " We recommend the <1>Chrome</1> browser for optimal experience.",
   "upgradeBrowser": "Please upgrade to the latest version of Chrome for the best experience.",
   "Invite Members": "Invite Members",

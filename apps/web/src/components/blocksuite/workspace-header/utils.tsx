@@ -1,5 +1,6 @@
 import { getEnvironment } from '@affine/env';
-import { Trans, useTranslation } from '@affine/i18n';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 
@@ -23,7 +24,7 @@ export const shouldShowWarning = () => {
 };
 
 export const OSWarningMessage: React.FC = () => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const [notChrome, setNotChrome] = useState(false);
   const [notGoodVersion, setNotGoodVersion] = useState(false);
   useEffect(() => {
@@ -44,7 +45,7 @@ export const OSWarningMessage: React.FC = () => {
       </span>
     );
   } else if (notGoodVersion) {
-    return <span>{t('upgradeBrowser')}</span>;
+    return <span>{t['upgradeBrowser']()}</span>;
   }
   return null;
 };

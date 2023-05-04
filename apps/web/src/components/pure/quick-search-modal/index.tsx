@@ -1,6 +1,6 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { getEnvironment } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';
 import type React from 'react';
@@ -45,7 +45,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   router,
   blockSuiteWorkspace,
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, startTransition] = useTransition();
   const [query, _setQuery] = useState('');
@@ -145,10 +145,10 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
               }}
               placeholder={
                 isPublicWorkspace
-                  ? t('Quick search placeholder2', {
+                  ? t['Quick search placeholder2']({
                       workspace: publishWorkspaceName,
                     })
-                  : t('Quick search placeholder')
+                  : t['Quick search placeholder']()
               }
             />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>

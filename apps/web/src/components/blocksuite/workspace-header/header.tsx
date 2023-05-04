@@ -1,5 +1,5 @@
 import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
@@ -133,7 +133,7 @@ export const Header = forwardRef<
     setShowWarning(shouldShowWarning());
   }, []);
   const [open] = useAtom(appSidebarOpenAtom);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   return (
     <StyledHeaderContainer
@@ -156,7 +156,7 @@ export const Header = forwardRef<
         <Suspense>
           <SidebarSwitch
             visible={!open}
-            tooltipContent={t('Expand sidebar')}
+            tooltipContent={t['Expand sidebar']()}
             data-testid="sliderBar-arrowButton-expand"
           />
         </Suspense>

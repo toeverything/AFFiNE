@@ -1,5 +1,5 @@
 import { IconButton, Tooltip, TreeView } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ArrowRightSmallIcon,
   CollapseIcon,
@@ -35,7 +35,7 @@ export const NavigationPath = ({
 }) => {
   const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const router = useRouter();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const [openExtend, setOpenExtend] = useState(false);
   const pageId = propsPageId ?? router.query.pageId;
@@ -59,7 +59,7 @@ export const NavigationPath = ({
     <>
       <StyledNavigationPathContainer data-testid="navigation-path">
         {openExtend ? (
-          <span>{t('Navigation Path')}</span>
+          <span>{t['Navigation Path']()}</span>
         ) : (
           pathData.path.map((meta, index) => {
             const isLast = index === pathData.path.length - 1;
@@ -96,7 +96,9 @@ export const NavigationPath = ({
         )}
         <Tooltip
           content={
-            openExtend ? t('Back to Quick Search') : t('View Navigation Path')
+            openExtend
+              ? t['Back to Quick Search']()
+              : t['View Navigation Path']()
           }
           placement="top"
           disablePortal={true}

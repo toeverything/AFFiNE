@@ -5075,6 +5075,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@magic-works/i18n-codegen@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "@magic-works/i18n-codegen@npm:0.5.0"
+  dependencies:
+    chokidar: ^3.5.3
+    i18next-translation-parser: ^1.0.1
+    yargs: ^17.7.0
+  peerDependencies:
+    typescript: ^4.8 || ^5
+  bin:
+    i18n-codegen: dist/cli.js
+  checksum: 6b730f322dbf90b55256ca818546252b43b9c86e051d3de697f09b64b12b09812af468b185f64546f0cb53ef07815b91dfaa9d0ed2de0b3a58fb2f81a4dc67a9
+  languageName: node
+  linkType: hard
+
 "@malept/cross-spawn-promise@npm:^1.0.0, @malept/cross-spawn-promise@npm:^1.1.0":
   version: 1.1.1
   resolution: "@malept/cross-spawn-promise@npm:1.1.1"
@@ -9431,6 +9446,7 @@ __metadata:
     "@commitlint/config-conventional": ^17.6.1
     "@faker-js/faker": ^7.6.0
     "@istanbuljs/schema": ^0.1.3
+    "@magic-works/i18n-codegen": ^0.5.0
     "@perfsee/sdk": ^1.6.0
     "@playwright/test": ^1.33.0
     "@testing-library/react": ^14.0.0
@@ -15536,6 +15552,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-parse-stringify2@github:locize/html-parse-stringify2":
+  version: 2.0.1
+  resolution: "html-parse-stringify2@https://github.com/locize/html-parse-stringify2.git#commit=d463109433b2c49c74a081044f54b2a6a1ccad7c"
+  dependencies:
+    void-elements: ^2.0.1
+  checksum: 4416c04f907ec14e4dac96b32094dd98a8633264f1d8b1128243c20d0e720dc79dfd5ccaac5ee4d80b7f845e676a248bfbe323fe86c096ea020c0e33d754d0b5
+  languageName: node
+  linkType: hard
+
 "html-parse-stringify@npm:^3.0.1":
   version: 3.0.1
   resolution: "html-parse-stringify@npm:3.0.1"
@@ -15700,6 +15725,15 @@ __metadata:
   bin:
     husky: lib/bin.js
   checksum: 837bc7e4413e58c1f2946d38fb050f5d7324c6f16b0fd66411ffce5703b294bd21429e8ba58711cd331951ee86ed529c5be4f76805959ff668a337dbfa82a1b0
+  languageName: node
+  linkType: hard
+
+"i18next-translation-parser@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "i18next-translation-parser@npm:1.0.1"
+  dependencies:
+    html-parse-stringify2: "github:locize/html-parse-stringify2"
+  checksum: c208e0335a7fc3f3e298811d4d512c86bfdf5e5d7048081ed1a1f41940e775efa7c330b8147fde97e46b0876d02c30d9b9213c672198add39215599cd019b802
   languageName: node
   linkType: hard
 
@@ -24739,6 +24773,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"void-elements@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "void-elements@npm:2.0.1"
+  checksum: 700c07ba9cfa2dff88bb23974b3173118f9ad8107143db9e5d753552be15cf93380954d4e7f7d7bc80e7306c35c3a7fb83ab0ce4d4dcc18abf90ca8b31452126
+  languageName: node
+  linkType: hard
+
 "vscode-oniguruma@npm:^1.7.0":
   version: 1.7.0
   resolution: "vscode-oniguruma@npm:1.7.0"
@@ -25437,7 +25478,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:^17.0.0, yargs@npm:^17.0.1, yargs@npm:^17.3.1, yargs@npm:^17.7.1":
+"yargs@npm:^17.0.0, yargs@npm:^17.0.1, yargs@npm:^17.3.1, yargs@npm:^17.7.0, yargs@npm:^17.7.1":
   version: 17.7.2
   resolution: "yargs@npm:17.7.2"
   dependencies:
