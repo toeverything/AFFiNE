@@ -1,30 +1,29 @@
 import type { Page, Workspace } from '@blocksuite/store';
-import { useEffect, useState } from 'react';
+import { assertExists } from '@blocksuite/store';
+import type { Atom } from 'jotai';
+import { atom, useAtomValue } from 'jotai';
+
+const weakMap = new WeakMap<Workspace, Atom<Page | null>>();
 
 export function useBlockSuiteWorkspacePage(
   blockSuiteWorkspace: Workspace,
   pageId: string | null
 ): Page | null {
-  const [page, setPage] = useState(() => {
-    if (pageId === null) {
-      return null;
-    }
-    return blockSuiteWorkspace.getPage(pageId);
-  });
-  useEffect(() => {
-    if (pageId) {
-      setPage(blockSuiteWorkspace.getPage(pageId));
-    }
-  }, [blockSuiteWorkspace, pageId]);
-  useEffect(() => {
-    const disposable = blockSuiteWorkspace.slots.pageAdded.on(id => {
-      if (pageId === id) {
-        setPage(blockSuiteWorkspace.getPage(id));
-      }
-    });
-    return () => {
-      disposable.dispose();
+  if (!weakMap.has(blockSuiteWorkspace)) {
+    const baseAtom = atom(pageId ? blockSuiteWorkspace.getPage(pageId) : null);
+    baseAtom.onMount = set => {
+      const disposable = blockSuiteWorkspace.slots.pageAdded.on(id => {
+        if (pageId === id) {
+          set(blockSuiteWorkspace.getPage(id));
+        }
+      });
+      return () => {
+        disposable.dispose();
+      };
     };
-  }, [blockSuiteWorkspace, pageId]);
-  return page;
+    weakMap.set(blockSuiteWorkspace, baseAtom);
+  }
+  const pageAtom = weakMap.get(blockSuiteWorkspace);
+  assertExists(pageAtom);
+  return useAtomValue(pageAtom);
 }

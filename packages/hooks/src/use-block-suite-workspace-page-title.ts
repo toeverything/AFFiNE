@@ -1,25 +1,33 @@
 import type { Workspace } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
-import { useEffect, useState } from 'react';
+import { assertEquals, assertExists } from '@blocksuite/store';
+import type { Atom } from 'jotai';
+import { atom, useAtomValue } from 'jotai';
+
+const weakMap = new WeakMap<Workspace, [string, Atom<string>]>();
 
 export function useBlockSuiteWorkspacePageTitle(
   blockSuiteWorkspace: Workspace,
   pageId: string
 ) {
-  const page = blockSuiteWorkspace.getPage(pageId);
-  const [title, setTitle] = useState(() => page?.meta.title || 'AFFiNE');
-  useEffect(() => {
-    const page = blockSuiteWorkspace.getPage(pageId);
-    setTitle(page?.meta.title || 'Untitled');
-    const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
-      const page = blockSuiteWorkspace.getPage(pageId);
-      assertExists(page);
-      setTitle(page?.meta.title || 'Untitled');
-    });
-    return () => {
-      dispose.dispose();
+  if (
+    !weakMap.has(blockSuiteWorkspace) ||
+    weakMap.get(blockSuiteWorkspace)?.[0] !== pageId
+  ) {
+    const baseAtom = atom<string>('');
+    baseAtom.onMount = set => {
+      const disposable = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
+        const page = blockSuiteWorkspace.getPage(pageId);
+        assertExists(page);
+        set(page?.meta.title || 'Untitled');
+      });
+      return () => {
+        disposable.dispose();
+      };
     };
-  }, [blockSuiteWorkspace, pageId]);
-
-  return title;
+    weakMap.set(blockSuiteWorkspace, [pageId, baseAtom]);
+  }
+  const titleAtom = weakMap.get(blockSuiteWorkspace);
+  assertExists(titleAtom);
+  assertEquals(titleAtom[0], pageId);
+  return useAtomValue(titleAtom[1]);
 }
