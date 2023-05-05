@@ -23,7 +23,10 @@ export const StyledHeaderContainer = styled('div')<{
     },
   };
 });
-export const StyledHeader = styled('div')<{ hasWarning: boolean }>(() => {
+export const StyledHeader = styled('div')<{
+  hasWarning: boolean;
+  isEdgeless: boolean;
+}>(({ isEdgeless }) => {
   return {
     flexShrink: 0,
     height: '52px',
@@ -33,6 +36,7 @@ export const StyledHeader = styled('div')<{ hasWarning: boolean }>(() => {
     background: 'var(--affine-background-primary-color)',
     zIndex: 99,
     position: 'relative',
+    borderBottom: isEdgeless ? '1px solid var(--affine-border-color)' : 'none',
   };
 });
 

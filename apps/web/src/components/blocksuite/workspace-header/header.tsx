@@ -14,6 +14,7 @@ import {
   useState,
 } from 'react';
 
+import { workspacePreferredModeAtom } from '../../../atoms';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import EditPage from './header-right-items/EditPage';
@@ -135,6 +136,9 @@ export const Header = forwardRef<
   const [open] = useAtom(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
 
+  const CurrenPageId = props.currentPage?.id || '';
+  const [currentModeList] = useAtom(workspacePreferredModeAtom);
+  const currentMode = currentModeList[CurrenPageId];
   return (
     <StyledHeaderContainer
       ref={ref}
@@ -152,6 +156,7 @@ export const Header = forwardRef<
         hasWarning={showWarning}
         data-testid="editor-header-items"
         data-tauri-drag-region
+        isEdgeless={currentMode === 'edgeless'}
       >
         <Suspense>
           <SidebarSwitch
