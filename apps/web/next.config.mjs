@@ -84,9 +84,7 @@ const nextConfig = {
       ? {
           properties: ['^data-testid$'],
         }
-      : {
-          // empty
-        },
+      : false,
     emotion: {
       sourceMap: true,
     },
