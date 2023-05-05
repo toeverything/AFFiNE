@@ -65,5 +65,11 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
         });
       }
     }
-  }, [currentWorkspaceId, metadata, router, setCurrentWorkspaceId]);
+  }, [
+    currentWorkspaceId,
+    metadata,
+    router.pathname,
+    router.query,
+    setCurrentWorkspaceId,
+  ]);
 }
