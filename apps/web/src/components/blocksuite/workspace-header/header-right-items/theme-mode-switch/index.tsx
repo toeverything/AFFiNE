@@ -1,6 +1,5 @@
 import { DarkModeIcon, LightModeIcon } from '@blocksuite/icons';
 import { useTheme } from 'next-themes';
-import { useEffect } from 'react';
 
 import {
   StyledSwitchItem,
@@ -13,13 +12,6 @@ import {
 
 export const MenuThemeModeSwitch = () => {
   const { setTheme, resolvedTheme, theme } = useTheme();
-  useEffect(() => {
-    if (environment.isDesktop) {
-      window.apis?.ui.handleThemeChange(
-        resolvedTheme === 'dark' ? 'dark' : 'light'
-      );
-    }
-  }, [resolvedTheme]);
   return (
     <StyledThemeModeContainer>
       <StyledThemeModeSwitch data-testid="change-theme-container" inMenu={true}>

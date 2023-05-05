@@ -10,7 +10,7 @@ dayjs.extend(localizedFormat);
 export const DateCell = ({
   pageMeta,
   dateKey,
-  backupKey = '',
+  backupKey = 'updatedDate',
   ...props
 }: {
   pageMeta: PageMeta;
