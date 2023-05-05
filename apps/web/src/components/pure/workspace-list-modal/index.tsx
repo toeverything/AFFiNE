@@ -5,7 +5,7 @@ import {
   Tooltip,
 } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -57,7 +57,7 @@ export const WorkspaceListModal = ({
   currentWorkspaceId,
   onMoveWorkspace,
 }: WorkspaceModalProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -71,9 +71,9 @@ export const WorkspaceListModal = ({
       >
         <StyledModalHeader>
           <StyledModalHeaderLeft>
-            <StyledModalTitle>{t('My Workspaces')}</StyledModalTitle>
+            <StyledModalTitle>{t['My Workspaces']()}</StyledModalTitle>
             <Tooltip
-              content={t('Workspace description')}
+              content={t['Workspace description']()}
               placement="top-start"
               disablePortal={true}
             >
@@ -124,8 +124,8 @@ export const WorkspaceListModal = ({
             </StyleWorkspaceAdd>
 
             <StyleWorkspaceInfo>
-              <StyleWorkspaceTitle>{t('New Workspace')}</StyleWorkspaceTitle>
-              <p>{t('Create Or Import')}</p>
+              <StyleWorkspaceTitle>{t['New Workspace']()}</StyleWorkspaceTitle>
+              <p>{t['Create Or Import']()}</p>
             </StyleWorkspaceInfo>
           </StyledCreateWorkspaceCard>
         </StyledModalContent>

@@ -1,0 +1,5 @@
+coverage:
+  # coverage decreases are allowed
+  status:
+    project: false
+    patch: false

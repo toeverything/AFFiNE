@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
@@ -23,7 +23,7 @@ const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   useSyncRouterWithCurrentWorkspaceId(router);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
@@ -47,7 +47,7 @@ const AllPage: NextPageWithLayout = () => {
     return (
       <>
         <Head>
-          <title>{t('All Pages')} - AFFiNE</title>
+          <title>{t['All pages']()} - AFFiNE</title>
         </Head>
         <WorkspaceTitle
           workspace={currentWorkspace}
@@ -56,7 +56,7 @@ const AllPage: NextPageWithLayout = () => {
           isPublic={false}
           icon={<FolderIcon />}
         >
-          {t('All pages')}
+          {t['All pages']()}
         </WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}
@@ -69,7 +69,7 @@ const AllPage: NextPageWithLayout = () => {
     return (
       <>
         <Head>
-          <title>{t('All Pages')} - AFFiNE</title>
+          <title>{t['All pages']()} - AFFiNE</title>
         </Head>
         <WorkspaceTitle
           workspace={currentWorkspace}
@@ -78,7 +78,7 @@ const AllPage: NextPageWithLayout = () => {
           isPublic={false}
           icon={<FolderIcon />}
         >
-          {t('All pages')}
+          {t['All pages']()}
         </WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}

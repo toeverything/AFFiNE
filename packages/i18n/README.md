@@ -6,7 +6,7 @@
 - Replace literal text with translation keys
 
 ```tsx
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 // src/resources/en.json
 // {
@@ -15,7 +15,7 @@ import { useTranslation } from '@affine/i18n';
 // };
 
 const App = () => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
 
   const changeLanguage = (language: string) => {
     i18n.changeLanguage(language);
@@ -25,12 +25,8 @@ const App = () => {
     <div>
       <div>{t('Text')}</div>
 
-      <button onClick={() => changeLanguage('en')}>
-        {t('Switch to language', { language: 'en' })}
-      </button>
-      <button onClick={() => changeLanguage('zh-Hans')}>
-        {t('Switch to language', { language: 'zh-Hans' })}
-      </button>
+      <button onClick={() => changeLanguage('en')}>{t('Switch to language', { language: 'en' })}</button>
+      <button onClick={() => changeLanguage('zh-Hans')}>{t('Switch to language', { language: 'zh-Hans' })}</button>
     </div>
   );
 };

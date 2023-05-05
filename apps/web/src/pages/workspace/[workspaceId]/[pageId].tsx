@@ -1,6 +1,6 @@
 import type { BlockSuiteFeatureFlags } from '@affine/env';
 import { config } from '@affine/env';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
@@ -41,7 +41,7 @@ const WorkspaceDetail: React.FC = () => {
   const { openPage } = useRouterHelper(router);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   assertExists(currentWorkspace);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
@@ -86,7 +86,7 @@ const WorkspaceDetail: React.FC = () => {
     }
   }, [currentWorkspace]);
   if (!currentPageId) {
-    return <PageLoading text={t('Loading Page')} />;
+    return <PageLoading text={t['Loading Page']()} />;
   }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
@@ -112,16 +112,16 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   useRouterAndWorkspaceWithPageIdDefense(router);
   const page = useBlockSuiteWorkspacePage(
     currentWorkspace.blockSuiteWorkspace,
     currentPageId
   );
   if (!router.isReady) {
-    return <PageLoading text={t('Router is Loading')} />;
+    return <PageLoading text={t['Router is Loading']()} />;
   } else if (!currentPageId || !page) {
-    return <PageLoading text={t('Page is Loading')} />;
+    return <PageLoading text={t['Page is Loading']()} />;
   }
   return <WorkspaceDetail />;
 };

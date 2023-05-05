@@ -4,7 +4,7 @@ import {
   ModalCloseButton,
   ModalWrapper,
 } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import {
   DiscordIcon,
@@ -64,17 +64,17 @@ export const ContactModal = ({
   onClose,
   logoSrc,
 }: ContactModalProps): JSX.Element => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const topLinkList = [
     {
       icon: <LogoIcon />,
-      title: t('Official Website'),
+      title: t['Official Website'](),
       subTitle: 'AFFiNE.pro',
       link: 'https://affine.pro',
     },
     {
       icon: <DocIcon />,
-      title: t('Check Our Docs'),
+      title: t['Check Our Docs'](),
       subTitle: 'Open Source',
       link: 'https://community.affine.pro',
     },
@@ -109,7 +109,7 @@ export const ContactModal = ({
           })}
         </FlexWrapper>
         <StyledSubTitle>
-          {t('Get in touch! Join our communities.')}
+          {t['Get in touch! Join our communities.']()}
         </StyledSubTitle>
         <FlexWrapper justifyContent="center">
           {linkList.map(({ icon, title, link }) => {

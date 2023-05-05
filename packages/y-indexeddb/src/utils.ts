@@ -129,7 +129,7 @@ export async function tryMigrate(
 export async function downloadBinary(
   id: string,
   dbName = DEFAULT_DB_NAME
-): Promise<UpdateMessage['update']> {
+): Promise<UpdateMessage['update'] | false> {
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
   });
@@ -137,7 +137,7 @@ export async function downloadBinary(
   const t = db.transaction('workspace', 'readonly').objectStore('workspace');
   const doc = await t.get(id);
   if (!doc) {
-    return new Uint8Array(0);
+    return false;
   } else {
     return mergeUpdates(doc.updates.map(({ update }) => update));
   }

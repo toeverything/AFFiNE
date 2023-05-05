@@ -1,5 +1,5 @@
 import { MenuItem } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, MoveToIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useRef, useState } from 'react';
@@ -27,7 +27,7 @@ export const MoveTo = ({
   onSelect,
   onItemClick,
 }: MoveToProps) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const ref = useRef<HTMLButtonElement>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const open = anchorEl !== null;
@@ -44,7 +44,7 @@ export const MoveTo = ({
         endIcon={<ArrowRightSmallIcon />}
         data-testid="move-to-menu-item"
       >
-        {t('Move to')}
+        {t['Move to']()}
       </MenuItem>
       <PinboardMenu
         anchorEl={anchorEl}

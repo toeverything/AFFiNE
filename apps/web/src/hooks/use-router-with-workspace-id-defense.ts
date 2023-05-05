@@ -22,6 +22,7 @@ export function useRouterWithWorkspaceIdDefense(router: NextRouter) {
     }
     const exist = metadata.find(m => m.id === currentWorkspaceId);
     if (!exist) {
+      console.warn('workspace not exist, redirect to first one');
       // clean up
       setCurrentWorkspaceId(null);
       setCurrentPageId(null);
