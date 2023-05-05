@@ -27,7 +27,6 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
       open={open}
       onClose={handleClose}
       wrapperPosition={['center', 'center']}
-      hideBackdrop
     >
       <ModalWrapper width={545} height={442} data-testid="onboarding-modal">
         <ModalCloseButton
@@ -60,7 +59,7 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
                 onClick={() => setStep(1)}
                 data-testid="onboarding-modal-next-button"
               >
-                Next Tip Please !
+                Next
               </Button>
             </div>
           </div>
