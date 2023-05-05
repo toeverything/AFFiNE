@@ -209,6 +209,8 @@ export const createIndexedDBProvider = (
   };
   const apis = {
     connect: async () => {
+      if (connected) return;
+
       apis.whenSynced = new Promise<void>((_resolve, _reject) => {
         early = true;
         resolve = _resolve;
@@ -287,6 +289,9 @@ export const createIndexedDBProvider = (
       (await dbPromise).delete('workspace', id);
     },
     whenSynced: Promise.resolve(),
+    get connected() {
+      return connected;
+    },
   };
 
   return apis;
