@@ -10,7 +10,9 @@ const DesktopThemeSync = memo(function DesktopThemeSync() {
   const { resolvedTheme } = useTheme();
   useEffect(() => {
     if (environment.isDesktop) {
-      window.apis?.onThemeChange(resolvedTheme === 'dark' ? 'dark' : 'light');
+      window.apis?.ui.handleThemeChange(
+        resolvedTheme === 'dark' ? 'dark' : 'light'
+      );
     }
   }, [resolvedTheme]);
   return null;
