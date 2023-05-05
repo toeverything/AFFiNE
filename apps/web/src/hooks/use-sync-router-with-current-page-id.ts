@@ -13,6 +13,9 @@ export function useSyncRouterWithCurrentPageId(router: NextRouter) {
     if (typeof pageId === 'string') {
       console.log('set page id', pageId);
       setCurrentPageId(pageId);
+    } else if (pageId === undefined) {
+      console.log('cleanup page');
+      setCurrentPageId(null);
     }
   }, [router.isReady, router.query.pageId, setCurrentPageId]);
 }

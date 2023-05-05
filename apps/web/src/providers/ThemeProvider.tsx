@@ -2,17 +2,19 @@ import type { ThemeProviderProps } from '@affine/component';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
 import type React from 'react';
-import { memo, useEffect } from 'react';
+import { memo, useRef } from 'react';
 
 const themes = ['dark', 'light'];
 
 const DesktopThemeSync = memo(function DesktopThemeSync() {
-  const { resolvedTheme } = useTheme();
-  useEffect(() => {
-    if (environment.isDesktop) {
-      window.apis?.onThemeChange(resolvedTheme === 'dark' ? 'dark' : 'light');
+  const { theme } = useTheme();
+  const lastThemeRef = useRef(theme);
+  if (lastThemeRef.current !== theme) {
+    if (environment.isDesktop && theme) {
+      window.apis?.onThemeChange(theme);
     }
-  }, [resolvedTheme]);
+    lastThemeRef.current = theme;
+  }
   return null;
 });
 
