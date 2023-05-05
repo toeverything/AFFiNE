@@ -59,7 +59,7 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
                 onClick={() => setStep(1)}
                 data-testid="onboarding-modal-next-button"
               >
-                Next Tip Please !
+                Next
               </Button>
             </div>
           </div>
