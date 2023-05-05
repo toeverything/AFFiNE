@@ -15,6 +15,7 @@ import { workspacePreferredModeAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
+import { pageListEmptyStyle } from './index.css';
 
 export type BlockSuitePageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -63,7 +64,7 @@ const PageListEmpty = (props: {
   };
 
   return (
-    <div style={{ height: 'calc(100% - 52px)' }}>
+    <div className={pageListEmptyStyle}>
       <Empty description={getEmptyDescription()} />
     </div>
   );
