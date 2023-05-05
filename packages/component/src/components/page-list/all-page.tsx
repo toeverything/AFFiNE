@@ -233,7 +233,6 @@ export type TrashListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
-  favorite: boolean;
   createDate: string;
   updatedDate?: string;
   trashDate?: string;
