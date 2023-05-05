@@ -50,6 +50,8 @@ function flattenToTree(
       []
     );
   };
+  // Unreachable code, we have removed the root pinboard
+  // @ts-expect-error
   return helper(rootMeta ? [{ ...rootMeta, renderTopLine: false }] : []);
 }
 
