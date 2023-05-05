@@ -80,6 +80,11 @@ const nextConfig = {
     removeConsole: {
       exclude: ['error', 'log', 'warn', 'info'],
     },
+    reactRemoveProperties: !buildFlags.enableTestProperties
+      ? {
+          properties: ['^data-testid$'],
+        }
+      : false,
     emotion: {
       sourceMap: true,
     },

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { getUaHelper } from './ua-helper';
 
 export const buildFlagsSchema = z.object({
+  enableTestProperties: z.boolean(),
   enableBroadCastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   enableLegacyCloud: z.boolean(),
