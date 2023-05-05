@@ -7,12 +7,12 @@ import { memo, useEffect } from 'react';
 const themes = ['dark', 'light'];
 
 const DesktopThemeSync = memo(function DesktopThemeSync() {
-  const { resolvedTheme } = useTheme();
+  const { theme } = useTheme();
   useEffect(() => {
-    if (environment.isDesktop) {
-      window.apis?.onThemeChange(resolvedTheme === 'dark' ? 'dark' : 'light');
+    if (environment.isDesktop && theme) {
+      window.apis?.onThemeChange(theme);
     }
-  }, [resolvedTheme]);
+  }, [theme]);
   return null;
 });
 
