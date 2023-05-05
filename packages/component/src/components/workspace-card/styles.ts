@@ -42,7 +42,7 @@ export const StyledCard = styled('div')<{
     height: '124px',
     cursor: 'pointer',
     padding: '16px',
-    boxShadow: 'var(--affine-shadow)',
+    boxShadow: 'var(--affine-shadow-1)',
     borderRadius: '12px',
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),
