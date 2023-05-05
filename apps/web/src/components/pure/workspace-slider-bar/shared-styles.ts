@@ -29,9 +29,7 @@ export const StyledListItem = styled('div')<{
       fontSize: '20px',
       marginLeft: '14px',
       marginRight: '12px',
-      color: active
-        ? 'var(--affine-primary-color)'
-        : 'var(--affine-icon-color)',
+      color: active ? 'inherit' : 'var(--affine-icon-color)',
     },
     ':hover:not([disabled])': {
       backgroundColor: 'var(--affine-hover-color)',

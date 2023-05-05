@@ -12,8 +12,9 @@ import {
 import { OperationCell, TrashOperationCell } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
+import { useDraggable } from '@dnd-kit/core';
 import { useMediaQuery, useTheme } from '@mui/material';
-import { forwardRef } from 'react';
+import React, { forwardRef } from 'react';
 
 import {
   StyledTableContainer,
@@ -68,18 +69,16 @@ export type PageListProps = {
   onClickPage: (pageId: string, newTab?: boolean) => void;
 };
 
-const TitleCell = ({
-  icon,
-  text,
-  suffix,
-  ...props
-}: {
-  icon: JSX.Element;
-  text: string;
-  suffix?: JSX.Element;
-} & TableCellProps) => {
+const TitleCell = React.forwardRef<
+  HTMLTableCellElement,
+  {
+    icon: JSX.Element;
+    text: string;
+    suffix?: JSX.Element;
+  } & TableCellProps
+>(({ icon, text, suffix, ...props }, ref) => {
   return (
-    <TableCell {...props}>
+    <TableCell ref={ref} {...props}>
       <StyledTitleWrapper>
         <StyledTitleLink>
           {icon}
@@ -91,7 +90,41 @@ const TitleCell = ({
       </StyledTitleWrapper>
     </TableCell>
   );
+});
+TitleCell.displayName = 'TitleCell';
+
+export type DraggableTitleCellData = {
+  pageId: string;
+  pageTitle: string;
+  isFavorite: boolean;
+  icon: React.ReactElement;
 };
+
+type DraggableTitleCellProps = {
+  pageId: string;
+  draggableData?: DraggableTitleCellData;
+} & React.ComponentProps<typeof TitleCell>;
+
+function DraggableTitleCell({
+  pageId,
+  draggableData,
+  ...props
+}: DraggableTitleCellProps) {
+  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
+    id: 'page-list-item-title-' + pageId,
+    data: draggableData,
+  });
+
+  return (
+    <TitleCell
+      ref={setNodeRef}
+      style={{ opacity: isDragging ? 0.5 : 1 }}
+      {...listeners}
+      {...attributes}
+      {...props}
+    />
+  );
+}
 
 export type ListData = {
   pageId: string;
@@ -166,7 +199,14 @@ export const PageList: React.FC<PageListProps> = ({
           data-testid={`page-list-item-${pageId}`}
           key={`${pageId}-${index}`}
         >
-          <TitleCell
+          <DraggableTitleCell
+            pageId={pageId}
+            draggableData={{
+              pageId,
+              pageTitle: title || t['Untitled'](),
+              isFavorite: favorite,
+              icon,
+            }}
             icon={icon}
             text={title || t['Untitled']()}
             suffix={

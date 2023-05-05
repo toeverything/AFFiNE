@@ -1,3 +1,6 @@
+import { Content, displayFlex, toast } from '@affine/component';
+import type { DraggableTitleCellData } from '@affine/component/page-list';
+import { StyledTitleLink } from '@affine/component/page-list';
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
@@ -13,6 +16,16 @@ import {
 import type { BackgroundProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  pointerWithin,
+  useDndContext,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
@@ -348,51 +361,130 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
+  const sensors = useSensors(
+    // Delay 10ms after mousedown
+    // Otherwise clicks would be intercepted
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        delay: 10,
+        tolerance: 10,
+      },
+    })
+  );
+
+  const handleDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      if (
+        e.over?.id === 'favorite-folder' &&
+        String(e.active.id).startsWith('page-list-item-')
+      ) {
+        // Mark page as favorite
+        const { pageId, isFavorite } = e.active.data
+          .current as DraggableTitleCellData;
+        if (!isFavorite) {
+          currentWorkspace.blockSuiteWorkspace.setPageMeta(pageId, {
+            favorite: true,
+          });
+
+          toast(t['Added to Favorites']());
+        }
+      }
+    },
+    [currentWorkspace.blockSuiteWorkspace, t]
+  );
+
   return (
     <>
       <Head>
         <title>{title}</title>
-      </Head>
-      <StyledPage>
-        <RootAppSidebar
-          isPublicWorkspace={isPublicWorkspace}
-          onOpenQuickSearchModal={handleOpenQuickSearchModal}
-          currentWorkspace={currentWorkspace}
-          currentPageId={currentPageId}
-          onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
-          openPage={useCallback(
-            (pageId: string) => {
-              assertExists(currentWorkspace);
-              return openPage(currentWorkspace.id, pageId);
-            },
-            [currentWorkspace, openPage]
-          )}
-          createPage={handleCreatePage}
-          currentPath={router.asPath.split('?')[0]}
-          paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
-        />
-        <MainContainerWrapper>
-          <MainContainer className="main-container">
-            <Suspense fallback={<PageLoading text={t['Page is Loading']()} />}>
-              {children}
-            </Suspense>
-            <StyledToolWrapper>
-              {/* fixme(himself65): remove this */}
-              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-                {/* Slot for block hub */}
-              </div>
-              {!isPublicWorkspace && (
-                <HelpIsland
-                  showList={
-                    router.query.pageId ? undefined : ['whatNew', 'contact']
-                  }
-                />
-              )}
-            </StyledToolWrapper>
-          </MainContainer>
-        </MainContainerWrapper>
-      </StyledPage>
+      </Head>{' '}
+      {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={pointerWithin}
+        onDragEnd={handleDragEnd}
+      >
+        <StyledPage>
+          <RootAppSidebar
+            isPublicWorkspace={isPublicWorkspace}
+            onOpenQuickSearchModal={handleOpenQuickSearchModal}
+            currentWorkspace={currentWorkspace}
+            currentPageId={currentPageId}
+            onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
+            openPage={useCallback(
+              (pageId: string) => {
+                assertExists(currentWorkspace);
+                return openPage(currentWorkspace.id, pageId);
+              },
+              [currentWorkspace, openPage]
+            )}
+            createPage={handleCreatePage}
+            currentPath={router.asPath.split('?')[0]}
+            paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
+          />
+          <MainContainerWrapper>
+            <MainContainer className="main-container">
+              <Suspense
+                fallback={<PageLoading text={t['Page is Loading']()} />}
+              >
+                {children}
+              </Suspense>
+              <StyledToolWrapper>
+                {/* fixme(himself65): remove this */}
+                <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+                  {/* Slot for block hub */}
+                </div>
+                {!isPublicWorkspace && (
+                  <HelpIsland
+                    showList={
+                      router.query.pageId ? undefined : ['whatNew', 'contact']
+                    }
+                  />
+                )}
+              </StyledToolWrapper>
+            </MainContainer>
+          </MainContainerWrapper>
+        </StyledPage>
+        <PageListTitleCellDragOverlay />
+      </DndContext>
       <QuickSearch />
     </>
   );
 };
+
+function PageListTitleCellDragOverlay() {
+  const { active } = useDndContext();
+
+  const renderChildren = useCallback(
+    ({ icon, pageTitle }: DraggableTitleCellData) => {
+      return (
+        <StyledTitleLink>
+          {icon}
+          <Content ellipsis={true} color="inherit">
+            {pageTitle}
+          </Content>
+        </StyledTitleLink>
+      );
+    },
+    []
+  );
+
+  return (
+    <DragOverlay
+      style={{
+        zIndex: 1001,
+        backgroundColor: 'var(--affine-drag-overlay-bg)',
+        boxShadow: 'var(--affine-shadow)',
+        padding: '0 30px',
+        cursor: 'default',
+        borderRadius: 10,
+        ...displayFlex('flex-start', 'center'),
+      }}
+      dropAnimation={null}
+    >
+      {active
+        ? renderChildren(active.data.current as DraggableTitleCellData)
+        : null}
+    </DragOverlay>
+  );
+}

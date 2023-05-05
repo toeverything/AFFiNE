@@ -1,5 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownSmallIcon, FavoriteIcon } from '@blocksuite/icons';
+import { useDroppable } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useCallback, useState } from 'react';
 
@@ -28,12 +29,26 @@ export const Favorite = ({
 
   const t = useAFFiNEI18N();
 
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'favorite-folder',
+  });
+
   return (
     <>
       <StyledListItem
+        ref={setNodeRef}
         active={
+          isOver ||
           currentPath ===
-          (currentWorkspaceId && paths.favorite(currentWorkspaceId))
+            (currentWorkspaceId && paths.favorite(currentWorkspaceId))
+        }
+        style={
+          isOver
+            ? {
+                color: 'white',
+                backgroundColor: 'var(--affine-primary-color)',
+              }
+            : undefined
         }
       >
         <StyledCollapseButton
