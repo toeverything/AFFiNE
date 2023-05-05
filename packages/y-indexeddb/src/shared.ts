@@ -13,7 +13,7 @@ export interface IndexedDBProvider {
   disconnect: () => void;
   cleanup: () => Promise<void>;
   whenSynced: Promise<void>;
-  connected: () => boolean;
+  readonly connected: boolean;
 }
 
 export type UpdateMessage = {
