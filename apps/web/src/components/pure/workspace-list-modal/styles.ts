@@ -47,7 +47,7 @@ export const StyledCreateWorkspaceCard = styled('div')(() => {
     height: '124px',
     cursor: 'pointer',
     padding: '16px',
-    boxShadow: 'var(--affine-shadow)',
+    boxShadow: 'var(--affine-shadow-1)',
     borderRadius: '12px',
     transition: 'all .1s',
     background: 'var(--affine-white-80)',
