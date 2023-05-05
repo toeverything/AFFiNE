@@ -8,6 +8,7 @@ export const browserWarningStyle = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
+  position: 'relative',
 });
 export const closeButtonStyle = style({
   width: '36px',
@@ -15,11 +16,10 @@ export const closeButtonStyle = style({
   color: 'var(--affine-icon-color)',
   cursor: 'pointer',
   display: 'flex',
-  justifyContent: 'center',
+  justifyContent: 'flex-end',
   alignItems: 'center',
   position: 'absolute',
   right: '16px',
-  top: '16px',
 });
 export const closeIconStyle = style({
   width: '15px',
