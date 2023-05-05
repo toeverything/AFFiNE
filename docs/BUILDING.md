@@ -81,9 +81,11 @@ Adding test cases is strongly encouraged when you contribute new features and bu
 
 We use [Playwright](https://playwright.dev/) for E2E test, and [vitest](https://vitest.dev/) for unit test.
 
-To test locally, please make sure browser binaries are already installed via `npx playwright install`. Then there are multi commands to choose from:
+To test locally, please make sure browser binaries are already installed via `npx playwright install`.
+Also make sure you have built the `@affine/web` workspace before running E2E tests.
 
 ```sh
+yarn  build
 # run tests in headless mode in another terminal window
 yarn test
 ```
