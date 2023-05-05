@@ -80,8 +80,8 @@ const nextConfig = {
     removeConsole: {
       exclude: ['error', 'log', 'warn', 'info'],
     },
-    reactRemoveProperties: { 
-      properties: ['^data-testid$'], 
+    reactRemoveProperties: process.env.NODE_ENV === 'production' && {
+      properties: ['^data-testid$'],
     },
     emotion: {
       sourceMap: true,
