@@ -1,7 +1,9 @@
 import { atomWithSyncStorage } from '@affine/jotai';
+import { atomWithQuery } from "@affine/jotai";
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom, createStore } from 'jotai';
-import { atomWithStorage, createJSONStorage } from 'jotai/utils';
+import { createJSONStorage } from 'jotai/utils';
+import router from  'next/router'
 
 import type { WorkspaceFlavour } from './type';
 
@@ -29,16 +31,22 @@ export const rootWorkspacesMetadataAtom = atomWithSyncStorage<
 );
 
 // two more atoms to store the current workspace and page
-export const rootCurrentWorkspaceIdAtom = atomWithStorage<string | null>(
-  'root-current-workspace-id',
+export const rootCurrentWorkspaceIdAtom = atomWithQuery<string | null>(
+  'workspaceId',
   null,
-  createJSONStorage(() => sessionStorage)
-);
-export const rootCurrentPageIdAtom = atomWithStorage<string | null>(
-  'root-current-page-id',
+  {
+    router: router,
+  }
+)
+export const rootCurrentPageIdAtom = atomWithQuery<string | null>(
+  'pageId',
   null,
-  createJSONStorage(() => sessionStorage)
-);
+  {
+    router: router,
+    serialize: v => v,
+    deserialize: v => v,
+  }
+)
 
 // current editor atom, each app should have only one editor in the same time
 export const rootCurrentEditorAtom = atom<Readonly<EditorContainer> | null>(

@@ -47,4 +47,5 @@ export function atomWithSyncStorage<Value>(key: string, initialValue: Value) {
   return anAtom;
 }
 
+export { atomWithQuery } from './atomWithQuery'
 export * from './resource';
