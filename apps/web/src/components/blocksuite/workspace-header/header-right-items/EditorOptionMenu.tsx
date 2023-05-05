@@ -1,5 +1,6 @@
 // fixme(himself65): refactor this file
 import { FlexWrapper, IconButton, Menu, MenuItem } from '@affine/component';
+import { Export, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   EdgelessIcon,
@@ -22,7 +23,6 @@ import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suit
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
-import { Export, MoveToTrash } from '../../../affine/operation-menu-items';
 import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
 import {
   StyledHorizontalDivider,
@@ -152,7 +152,7 @@ const PageMenu = () => {
         </Menu>
         <MoveToTrash.ConfirmModal
           open={openConfirm}
-          meta={pageMeta}
+          title={pageMeta.title}
           onConfirm={() => {
             removeToTrash(pageMeta.id);
             toast(t['Moved to Trash']());

@@ -11,6 +11,3 @@ export default {
 export const Basic: StoryFn = () => {
   return <Switch />;
 };
-Basic.args = {
-  logoSrc: '/imgs/affine-text-logo.png',
-};

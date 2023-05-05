@@ -1,9 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Page } from '@blocksuite/store';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
-import { useCallback } from 'react';
 
-import { Modal, ModalCloseButton, toast } from '../../..';
+import { Modal, ModalCloseButton } from '../../..';
 import {
   StyledButton,
   StyledButtonContent,
@@ -14,25 +11,17 @@ import {
 } from './style';
 
 export type PublicLinkDisableProps = {
-  page: Page;
   open: boolean;
+  onConfirmDisable: () => void;
   onClose: () => void;
 };
 
 export const PublicLinkDisableModal = ({
-  page,
   open,
+  onConfirmDisable,
   onClose,
 }: PublicLinkDisableProps) => {
   const t = useAFFiNEI18N();
-  const [, setIsPublic] = useBlockSuiteWorkspacePageIsPublic(page);
-  const handleDisable = useCallback(() => {
-    setIsPublic(false);
-    toast('Successfully disabled', {
-      portal: document.body,
-    });
-    onClose();
-  }, [onClose, setIsPublic]);
   return (
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
@@ -47,7 +36,10 @@ export const PublicLinkDisableModal = ({
           <StyledButton onClick={onClose}>{t['Cancel']()}</StyledButton>
           <StyledDangerButton
             data-testid="disable-public-link-confirm-button"
-            onClick={handleDisable}
+            onClick={() => {
+              onConfirmDisable();
+              onClose();
+            }}
             style={{ marginLeft: '24px' }}
           >
             {t['Disable']()}

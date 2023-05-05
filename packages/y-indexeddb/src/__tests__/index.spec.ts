@@ -136,10 +136,12 @@ describe('indexeddb provider', () => {
       rootDBName
     );
     provider.connect();
+    expect(provider.connected).toBe(true);
     const p1 = provider.whenSynced;
     await p1;
     const snapshot = encodeStateAsUpdate(workspace.doc);
     provider.disconnect();
+    expect(provider.connected).toBe(false);
     {
       const page = workspace.createPage('page0');
       const pageBlockId = page.addBlock('affine:page', { title: '' });
@@ -151,14 +153,18 @@ describe('indexeddb provider', () => {
       expect(updates.length).toBe(1);
       expect(updates[0]).toEqual(snapshot);
     }
+    expect(provider.connected).toBe(false);
     provider.connect();
+    expect(provider.connected).toBe(true);
     const p2 = provider.whenSynced;
     await p2;
     {
       const updates = await getUpdates(workspace.id);
       expect(updates).not.toEqual([]);
     }
+    expect(provider.connected).toBe(true);
     provider.disconnect();
+    expect(provider.connected).toBe(false);
     expect(p1).not.toBe(p2);
   });
 
