@@ -1,5 +1,5 @@
 import { FlexWrapper } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
@@ -16,14 +16,14 @@ export const SearchContent = ({
   results: PageMeta[];
   onClick?: (dropId: string) => void;
 }) => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const record = useAtomValue(workspacePreferredModeAtom);
 
   if (results.length) {
     return (
       <>
         <StyledMenuSubTitle>
-          {t('Find results', { number: results.length })}
+          {t['Find results']({ number: `${results.length}` })}
         </StyledMenuSubTitle>
         {results.map(meta => {
           return (
@@ -45,7 +45,7 @@ export const SearchContent = ({
 
   return (
     <>
-      <StyledMenuSubTitle>{t('Find 0 result')}</StyledMenuSubTitle>
+      <StyledMenuSubTitle>{t['Find 0 result']()}</StyledMenuSubTitle>
       <FlexWrapper
         alignItems="center"
         justifyContent="center"

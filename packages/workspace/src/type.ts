@@ -9,44 +9,76 @@ export type JotaiStore = ReturnType<typeof createStore>;
 
 export type BaseProvider = {
   flavour: string;
-  // if this is true, we will connect the provider on the background
-  background: boolean;
-  connect: () => void;
-  disconnect: () => void;
+
   // cleanup data when workspace is removed
   cleanup: () => void;
 };
 
+/**
+ * @description
+ * If a provider is marked as a background provider,
+ *  we will connect it in the `useEffect` in React.js.
+ *
+ * This means that the data might be stale when you use it.
+ */
 export interface BackgroundProvider extends BaseProvider {
+  // if this is true,
+  //  we will connect the provider on the background
   background: true;
+  get connected(): boolean;
+  connect(): void;
+  disconnect(): void;
   callbacks: Set<() => void>;
 }
 
-export interface AffineDownloadProvider extends BaseProvider {
+/**
+ * @description
+ * If a provider is marked as a necessary provider,
+ *  we will connect it once you read the workspace.
+ *
+ * This means that the data will be fresh when you use it.
+ *
+ * Currently, there is only on necessary provider: `local-indexeddb`.
+ */
+export interface NecessaryProvider extends Omit<BaseProvider, 'disconnect'> {
+  // if this is true,
+  //  we will ensure that the provider is connected before you can use it
+  necessary: true;
+  sync(): void;
+  get whenReady(): Promise<void>;
+}
+
+export interface AffineDownloadProvider extends BackgroundProvider {
   flavour: 'affine-download';
 }
 
-export interface BroadCastChannelProvider extends BaseProvider {
+/**
+ * Download the first binary from local indexeddb
+ */
+export interface BroadCastChannelProvider extends BackgroundProvider {
   flavour: 'broadcast-channel';
 }
 
-export interface LocalIndexedDBProvider extends BackgroundProvider {
-  flavour: 'local-indexeddb';
-  whenSynced: Promise<void>;
+/**
+ * Long polling provider with local indexeddb
+ */
+export interface LocalIndexedDBBackgroundProvider extends BackgroundProvider {
+  flavour: 'local-indexeddb-background';
 }
 
-export interface SQLiteProvider extends BaseProvider {
+export interface SQLiteProvider extends BackgroundProvider {
   flavour: 'sqlite';
 }
 
-export interface AffineWebSocketProvider extends BaseProvider {
+export interface LocalIndexedDBDownloadProvider extends NecessaryProvider {
+  flavour: 'local-indexeddb';
+}
+
+export interface AffineWebSocketProvider extends BackgroundProvider {
   flavour: 'affine-websocket';
 }
 
-export type Provider =
-  | LocalIndexedDBProvider
-  | AffineWebSocketProvider
-  | BroadCastChannelProvider;
+export type Provider = BackgroundProvider | NecessaryProvider;
 
 export interface AffineWorkspace extends RemoteWorkspace {
   flavour: WorkspaceFlavour.AFFINE;

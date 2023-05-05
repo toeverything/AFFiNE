@@ -1,7 +1,7 @@
 import { Modal } from '@affine/component';
 import { ModalCloseButton } from '@affine/component';
 import { Button } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import {
   StyledButtonContent,
@@ -17,7 +17,7 @@ interface WorkspaceDeleteProps {
 
 export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
   // const { leaveWorkSpace } = useWorkspaceHelper();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const handleLeave = async () => {
     // await leaveWorkSpace();
     onClose();
@@ -27,13 +27,13 @@ export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>{t('Leave Workspace')}</StyledModalHeader>
+        <StyledModalHeader>{t['Leave Workspace']()}</StyledModalHeader>
         <StyledTextContent>
-          {t('Leave Workspace Description')}
+          {t['Leave Workspace Description']()}
         </StyledTextContent>
         <StyledButtonContent>
           <Button shape="circle" onClick={onClose}>
-            {t('Cancel')}
+            {t['Cancel']()}
           </Button>
           <Button
             onClick={handleLeave}
@@ -41,7 +41,7 @@ export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
             shape="circle"
             style={{ marginLeft: '24px' }}
           >
-            {t('Leave')}
+            {t['Leave']()}
           </Button>
         </StyledButtonContent>
       </StyledModalWrapper>

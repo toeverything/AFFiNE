@@ -6,7 +6,7 @@ import {
   ModalWrapper,
   styled,
 } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
@@ -35,7 +35,7 @@ export const CreateWorkspaceModal = ({
     },
     [handleCreateWorkspace, workspaceName]
   );
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <Modal open={open} onClose={onClose}>
       <ModalWrapper width={560} height={342} style={{ padding: '10px' }}>
@@ -49,8 +49,8 @@ export const CreateWorkspaceModal = ({
           />
         </Header>
         <Content>
-          <ContentTitle>{t('New Workspace')}</ContentTitle>
-          <p>{t('Workspace description')}</p>
+          <ContentTitle>{t['New Workspace']()}</ContentTitle>
+          <p>{t['Workspace description']()}</p>
           <Input
             ref={ref => {
               if (ref) {
@@ -59,7 +59,7 @@ export const CreateWorkspaceModal = ({
             }}
             data-testid="create-workspace-input"
             onKeyDown={handleKeyDown}
-            placeholder={t('Set a Workspace name')}
+            placeholder={t['Set a Workspace name']()}
             maxLength={15}
             minLength={0}
             onChange={value => {
@@ -86,7 +86,7 @@ export const CreateWorkspaceModal = ({
               handleCreateWorkspace();
             }}
           >
-            {t('Create')}
+            {t['Create']()}
           </Button>
         </Content>
       </ModalWrapper>

@@ -1,5 +1,6 @@
 import { prefixUrl } from '@affine/env';
-import { Trans, useTranslation } from '@affine/i18n';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
@@ -23,17 +24,17 @@ import {
 } from './styles';
 
 export const LocalSharePage: FC<ShareMenuProps> = props => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
-      <div className={descriptionStyle}>{t('Shared Pages Description')}</div>
+      <div className={descriptionStyle}>{t['Shared Pages Description']()}</div>
       <StyledButton
         data-testid="share-menu-enable-affine-cloud-button"
         onClick={() => {
           props.onEnableAffineCloud(props.workspace as LocalWorkspace);
         }}
       >
-        {t('Enable AFFiNE Cloud')}
+        {t['Enable AFFiNE Cloud']()}
       </StyledButton>
     </div>
   );
@@ -44,7 +45,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
     props.currentPage
   );
   const [showDisable, setShowDisable] = useState(false);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const sharingUrl = useMemo(() => {
     return `${prefixUrl}public-workspace/${props.workspace.id}/${props.currentPage.id}`;
   }, [props.workspace.id, props.currentPage.id]);
@@ -53,13 +54,13 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   }, [setIsPublic]);
   const onClickCopyLink = useCallback(() => {
     navigator.clipboard.writeText(sharingUrl);
-    toast(t('Copied link to clipboard'));
+    toast(t['Copied link to clipboard']());
   }, [sharingUrl, t]);
 
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
-        {t('Create Shared Link Description')}
+        {t['Create Shared Link Description']()}
       </div>
       <div className={inputButtonRowStyle}>
         <StyledInput
@@ -72,7 +73,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
             data-testid="affine-share-create-link"
             onClick={onClickCreateLink}
           >
-            {t('Create')}
+            {t['Create']()}
           </StyledButton>
         )}
         {isPublic && (
@@ -80,7 +81,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
             data-testid="affine-share-copy-link"
             onClick={onClickCopyLink}
           >
-            {t('Copy Link')}
+            {t['Copy Link']()}
           </StyledButton>
         )}
       </div>
@@ -100,7 +101,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
       {isPublic && (
         <>
           <StyledDisableButton onClick={() => setShowDisable(true)}>
-            {t('Disable Public Link')}
+            {t['Disable Public Link']()}
           </StyledDisableButton>
           <PublicLinkDisableModal
             page={props.currentPage}

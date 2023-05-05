@@ -1,7 +1,9 @@
 import type { PageBlockModel } from '@blocksuite/blocks';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import { useEffect, useMemo, useState } from 'react';
+import type { Atom } from 'jotai';
+import { atom, useAtomValue } from 'jotai';
+import { useMemo } from 'react';
 
 declare module '@blocksuite/store' {
   interface PageMeta {
@@ -11,6 +13,9 @@ declare module '@blocksuite/store' {
     trashRelate?: string;
     trash?: boolean;
     trashDate?: number;
+    updatedDate?: number;
+    mode?: 'page' | 'edgeless';
+    jumpOnce?: boolean;
     // whether to create the page with the default template
     init?: boolean;
     // todo: support `number` in the future
@@ -19,37 +24,30 @@ declare module '@blocksuite/store' {
   }
 }
 
+const weakMap = new WeakMap<Workspace, Atom<PageMeta[]>>();
+
 export function useBlockSuitePageMeta(
   blockSuiteWorkspace: Workspace
 ): PageMeta[] {
-  const [pageMeta, setPageMeta] = useState<PageMeta[]>(
-    () => blockSuiteWorkspace?.meta.pageMetas ?? []
-  );
-  const [prev, setPrev] = useState(() => blockSuiteWorkspace);
-  if (prev !== blockSuiteWorkspace) {
-    setPrev(blockSuiteWorkspace);
-    if (blockSuiteWorkspace) {
-      setPageMeta(blockSuiteWorkspace.meta.pageMetas);
-    }
-  }
-  useEffect(() => {
-    if (blockSuiteWorkspace) {
+  if (!weakMap.has(blockSuiteWorkspace)) {
+    const baseAtom = atom<PageMeta[]>(blockSuiteWorkspace.meta.pageMetas);
+    weakMap.set(blockSuiteWorkspace, baseAtom);
+    baseAtom.onMount = set => {
       const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
-        setPageMeta(blockSuiteWorkspace.meta.pageMetas);
+        set(blockSuiteWorkspace.meta.pageMetas);
       });
       return () => {
         dispose.dispose();
       };
-    }
-  }, [blockSuiteWorkspace]);
-  return pageMeta;
+    };
+  }
+  return useAtomValue(weakMap.get(blockSuiteWorkspace) as Atom<PageMeta[]>);
 }
 
 export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
   return useMemo(
     () => ({
       setPageTitle: (pageId: string, newTitle: string) => {
-        assertExists(blockSuiteWorkspace);
         const page = blockSuiteWorkspace.getPage(pageId);
         assertExists(page);
         const pageBlock = page
@@ -60,19 +58,18 @@ export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
           pageBlock.title.delete(0, pageBlock.title.length);
           pageBlock.title.insert(newTitle, 0);
         });
-        assertExists(blockSuiteWorkspace);
         blockSuiteWorkspace.meta.setPageMeta(pageId, { title: newTitle });
       },
       setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
-        assertExists(blockSuiteWorkspace);
         blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);
       },
       getPageMeta: (pageId: string) => {
-        assertExists(blockSuiteWorkspace);
         return blockSuiteWorkspace.meta.getPageMeta(pageId);
       },
+      /**
+       * @deprecated
+       */
       shiftPageMeta: (pageId: string, index: number) => {
-        assertExists(blockSuiteWorkspace);
         return blockSuiteWorkspace.meta.shiftPageMeta(pageId, index);
       },
     }),

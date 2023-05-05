@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { FC } from 'react';
@@ -8,11 +8,11 @@ import type { ShareMenuProps } from './ShareMenu';
 import { StyledButton } from './styles';
 
 const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
-        {t('Share Menu Public Workspace Description1')}
+        {t['Share Menu Public Workspace Description1']()}
       </div>
       <StyledButton
         data-testid="share-menu-enable-affine-cloud-button"
@@ -20,7 +20,7 @@ const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
           props.onOpenWorkspaceSettings(props.workspace);
         }}
       >
-        {t('Open Workspace Settings')}
+        {t['Open Workspace Settings']()}
       </StyledButton>
     </div>
   );
@@ -28,13 +28,13 @@ const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
 
 const ShareAffineWorkspace: FC<ShareMenuProps<AffineWorkspace>> = props => {
   const isPublicWorkspace = props.workspace.public;
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>
         {isPublicWorkspace
-          ? t('Share Menu Public Workspace Description2')
-          : t('Share Menu Public Workspace Description1')}
+          ? t['Share Menu Public Workspace Description2']()
+          : t['Share Menu Public Workspace Description1']()}
       </div>
       <StyledButton
         data-testid="share-menu-publish-to-web-button"
@@ -42,7 +42,7 @@ const ShareAffineWorkspace: FC<ShareMenuProps<AffineWorkspace>> = props => {
           props.onOpenWorkspaceSettings(props.workspace);
         }}
       >
-        {t('Open Workspace Settings')}
+        {t['Open Workspace Settings']()}
       </StyledButton>
     </div>
   );

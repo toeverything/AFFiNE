@@ -189,5 +189,6 @@
   "is a Local Workspace": "是本地工作区",
   "Sign out description": "登出会导致未同步的内容丢失",
   "Not now": "稍后再说",
-  "Saved then enable AFFiNE Cloud": "所有改动已保存在本地，点击启用 AFFiNE 云服务"
+  "Saved then enable AFFiNE Cloud": "所有改动已保存在本地，点击启用 AFFiNE 云服务",
+  "You cannot delete the last workspace": "你不能删除最后一个工作区"
 }

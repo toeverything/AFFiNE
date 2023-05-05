@@ -1,4 +1,4 @@
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import Head from 'next/head';
@@ -18,7 +18,7 @@ const TrashPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   useSyncRouterWithCurrentWorkspaceId(router);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
@@ -42,7 +42,7 @@ const TrashPage: NextPageWithLayout = () => {
   return (
     <>
       <Head>
-        <title>{t('Trash')} - AFFiNE</title>
+        <title>{t['Trash']()} - AFFiNE</title>
       </Head>
       <WorkspaceTitle
         workspace={currentWorkspace}
@@ -51,7 +51,7 @@ const TrashPage: NextPageWithLayout = () => {
         isPublic={false}
         icon={<DeleteTemporarilyIcon />}
       >
-        {t('Trash')}
+        {t['Trash']()}
       </WorkspaceTitle>
       <PageList
         blockSuiteWorkspace={blockSuiteWorkspace}

@@ -17,7 +17,7 @@ export type RootWorkspaceMetadata = {
 /**
  * root workspaces atom
  * this atom stores the metadata of all workspaces,
- * which is `id` and `flavour`, that is enough to load the real workspace data
+ * which is `id` and `flavor`, that is enough to load the real workspace data
  */
 export const rootWorkspacesMetadataAtom = atomWithSyncStorage<
   RootWorkspaceMetadata[]

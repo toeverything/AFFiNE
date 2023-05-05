@@ -1,5 +1,5 @@
 import { Button, Confirm } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useRouter } from 'next/router';
@@ -20,7 +20,7 @@ export const TrashButtonGroup = () => {
     meta => meta.id === pageId
   );
   assertExists(pageMeta);
-  const { t } = useTranslation();
+  const t = useAFFiNEI18N();
   const router = useRouter();
   const { restoreFromTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
 
@@ -36,7 +36,7 @@ export const TrashButtonGroup = () => {
           restoreFromTrash(pageId);
         }}
       >
-        {t('Restore it')}
+        {t['Restore it']()}
       </Button>
       <Button
         bold={true}
@@ -46,12 +46,12 @@ export const TrashButtonGroup = () => {
           setOpen(true);
         }}
       >
-        {t('Delete permanently')}
+        {t['Delete permanently']()}
       </Button>
       <Confirm
-        title={t('TrashButtonGroupTitle')}
-        content={t('TrashButtonGroupDescription')}
-        confirmText={t('Delete')}
+        title={t['TrashButtonGroupTitle']()}
+        content={t['TrashButtonGroupDescription']()}
+        confirmText={t['Delete']()}
         confirmType="danger"
         open={open}
         onConfirm={() => {
