@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 
+import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
@@ -13,13 +14,12 @@ export default defineConfig({
     },
     sourcemap: true,
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      fileName: 'index',
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        css: resolve(__dirname, 'src/index.css.ts'),
+      },
       name: 'ToEverythingTheme',
     },
-    rollupOptions: {
-      external: ['idb', 'yjs'],
-    },
   },
-  plugins: [dts()],
+  plugins: [dts(), vanillaExtractPlugin()],
 });

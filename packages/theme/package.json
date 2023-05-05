@@ -8,6 +8,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public",
     "main": "dist/index.umd.cjs",
@@ -17,10 +20,12 @@
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js",
         "require": "./dist/index.umd.cjs"
-      }
+      },
+      "./style.css": "./dist/style.css"
     }
   },
   "devDependencies": {
+    "@vanilla-extract/vite-plugin": "^3.8.0",
     "vite": "^4.3.4",
     "vite-plugin-dts": "^2.3.0"
   }
