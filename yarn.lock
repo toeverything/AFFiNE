@@ -8001,7 +8001,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@0.5.4-canary.24, @toeverything/theme@workspace:*, @toeverything/theme@workspace:packages/theme":
+"@toeverything/theme@npm:0.5.4-canary.24":
+  version: 0.5.4-canary.24
+  resolution: "@toeverything/theme@npm:0.5.4-canary.24"
+  checksum: 1f9c49b200cc0aea5be545e8c3e405b3449ed27f05b3fb48eefaf90e051d9c57138e29d97741ef8edde68ec659b3ec0001d017213a1e7c90fdfee663b4a6321f
+  languageName: node
+  linkType: hard
+
+"@toeverything/theme@workspace:*, @toeverything/theme@workspace:packages/theme":
   version: 0.0.0-use.local
   resolution: "@toeverything/theme@workspace:packages/theme"
   dependencies:
