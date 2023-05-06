@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^3.8.0",
-    "vite": "^4.3.4",
+    "vite": "^4.3.5",
     "vite-plugin-dts": "^2.3.0"
   }
 }

@@ -24,7 +24,7 @@
     "@affine/env": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "firebase": "^9.21.0",
-    "jotai": "^2.0.4",
+    "jotai": "^2.1.0",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "lib0": "^0.2.74",

@@ -32,9 +32,9 @@
     "react-i18next": "^12.2.2"
   },
   "devDependencies": {
-    "@types/node": "^18.16.3",
+    "@types/node": "^18.16.5",
     "@types/prettier": "^2.7.2",
-    "next": "^13.4.0",
+    "next": "^13.4.1",
     "prettier": "^2.8.8",
     "react-dom": "^18.2.0",
     "ts-node": "^10.9.1",
