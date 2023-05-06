@@ -50,8 +50,7 @@ const getStorage = () => createJSONStorage(() => localStorage);
 
 export const getStoredWorkspaceMeta = () => {
   const storage = getStorage();
-  const data = storage.getItem('jotai-workspaces') as RootWorkspaceMetadata[];
-  return data;
+  return storage.getItem('jotai-workspaces', []) as RootWorkspaceMetadata[];
 };
 
 // global store

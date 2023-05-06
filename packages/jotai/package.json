@@ -4,13 +4,13 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@affine/env": "workspace:*",
-    "jotai": "^2.0.4"
+    "jotai": "^2.1.0"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230503040956-5c49643f-nightly",
-    "@blocksuite/editor": "0.0.0-20230503040956-5c49643f-nightly",
-    "@blocksuite/global": "0.0.0-20230503040956-5c49643f-nightly",
-    "@blocksuite/store": "0.0.0-20230503040956-5c49643f-nightly",
+    "@blocksuite/blocks": "0.0.0-20230505225643-03f75e5e-nightly",
+    "@blocksuite/editor": "0.0.0-20230505225643-03f75e5e-nightly",
+    "@blocksuite/global": "0.0.0-20230505225643-03f75e5e-nightly",
+    "@blocksuite/store": "0.0.0-20230505225643-03f75e5e-nightly",
     "lottie-web": "^5.11.0"
   },
   "peerDependencies": {
