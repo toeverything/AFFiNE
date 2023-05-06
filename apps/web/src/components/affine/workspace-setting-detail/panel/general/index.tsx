@@ -21,7 +21,7 @@ import * as style from '../../index.css';
 import { WorkspaceDeleteModal } from './delete';
 import { CameraIcon } from './icons';
 import { WorkspaceLeave } from './leave';
-import { StyledAvatar, StyledInput } from './style';
+import { StyledInput } from './style';
 
 export const GeneralPanel: React.FC<PanelProps> = ({
   workspace,
@@ -55,7 +55,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           </div>
         </div>
         <div className={clsx(style.col)}>
-          <StyledAvatar disabled={!isOwner}>
+          <div className={style.avatar[isOwner ? 'enabled' : 'disabled']}>
             {isOwner ? (
               <Upload
                 accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
@@ -72,7 +72,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
             ) : (
               <WorkspaceAvatar size={72} workspace={workspace} />
             )}
-          </StyledAvatar>
+          </div>
         </div>
         <div className={clsx(style.col)}></div>
       </div>

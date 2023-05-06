@@ -193,6 +193,7 @@ const SetSyncingModeContent = ({
           <input
             className={style.radio}
             type="radio"
+            readOnly
             checked={!enableCloudSyncing}
           />
           {t['Use on current device only']()}
@@ -201,6 +202,7 @@ const SetSyncingModeContent = ({
           <input
             className={style.radio}
             type="radio"
+            readOnly
             checked={enableCloudSyncing}
           />
           {t['Sync across devices with AFFiNE Cloud']()}

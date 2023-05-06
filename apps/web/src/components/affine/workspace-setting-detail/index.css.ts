@@ -1,7 +1,7 @@
 // import { styled } from '@affine/component';
 // import { FlexWrapper } from '@affine/component';
 
-import { style, styleVariants } from '@vanilla-extract/css';
+import { globalStyle, style, styleVariants } from '@vanilla-extract/css';
 
 export const container = style({
   display: 'flex',
@@ -18,6 +18,45 @@ export const content = style({
   overflow: 'auto',
   flex: 1,
   marginTop: '40px',
+});
+
+const baseAvatar = style({
+  position: 'relative',
+  marginRight: '20px',
+  cursor: 'pointer',
+});
+
+globalStyle(`${baseAvatar} .camera-icon`, {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  display: 'none',
+  width: '100%',
+  height: '100%',
+  borderRadius: '50%',
+  backgroundColor: 'rgba(60, 61, 63, 0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 10,
+});
+
+globalStyle(`${baseAvatar}:hover .camera-icon`, {
+  display: 'flex',
+});
+
+export const avatar = styleVariants({
+  disabled: [
+    baseAvatar,
+    {
+      cursor: 'default',
+    },
+  ],
+  enabled: [
+    baseAvatar,
+    {
+      cursor: 'pointer',
+    },
+  ],
 });
 
 const baseTagItem = style({
