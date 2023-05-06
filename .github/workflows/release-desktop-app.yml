@@ -124,12 +124,22 @@ jobs:
         run: yarn make-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
         working-directory: apps/electron
 
+      - name: make Linux (arm64)
+        if: ${{ matrix.spec.platform == 'macos' && matrix.spec.arch == 'arm64' }}
+        run: yarn make-linux-arm64
+        working-directory: apps/electron
+
       - name: Save artifacts (mac)
         if: ${{ matrix.spec.platform == 'macos' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
           mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+      - name: Save artifacts (linux arm64)
+        if: ${{ matrix.spec.platform == 'macos' && matrix.spec.arch == 'arm64' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/linux/arm64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-arm64.zip
       - name: Save artifacts (windows)
         if: ${{ matrix.spec.platform == 'windows' }}
         run: |
