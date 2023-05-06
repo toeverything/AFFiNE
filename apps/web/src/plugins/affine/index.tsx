@@ -45,7 +45,7 @@ const schema = z.object({
 });
 
 const getPersistenceAllWorkspace = () => {
-  const items = storage.getItem(AFFINE_STORAGE_KEY);
+  const items = storage.getItem(AFFINE_STORAGE_KEY, []);
   const allWorkspaces: AffineWorkspace[] = [];
   if (
     Array.isArray(items) &&
@@ -152,7 +152,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       return id;
     },
     delete: async workspace => {
-      const items = storage.getItem(AFFINE_STORAGE_KEY);
+      const items = storage.getItem(AFFINE_STORAGE_KEY, []);
       if (
         Array.isArray(items) &&
         items.every(item => schema.safeParse(item).success)
@@ -226,7 +226,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
                 permission: workspace.permission,
               } satisfies z.infer<typeof schema>;
             });
-            const old = storage.getItem(AFFINE_STORAGE_KEY);
+            const old = storage.getItem(AFFINE_STORAGE_KEY, []);
             if (
               Array.isArray(old) &&
               old.every(item => schema.safeParse(item).success)
