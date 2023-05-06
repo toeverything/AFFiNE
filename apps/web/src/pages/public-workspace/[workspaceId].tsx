@@ -1,4 +1,5 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
+import { StyledTableContainer } from '@affine/component/page-list';
 import { SearchIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -13,7 +14,6 @@ import {
   publicWorkspaceIdAtom,
 } from '../../atoms/public-workspace';
 import { QueryParamError } from '../../components/affine/affine-error-eoundary';
-import { StyledTableContainer } from '../../components/blocksuite/block-suite-page-list/page-list/styles';
 import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
 import {
@@ -23,9 +23,9 @@ import {
 import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
-const BlockSuitePublicPageList = lazy(() =>
+const BlockSuitePageList = lazy(() =>
   import('../../components/blocksuite/block-suite-page-list').then(module => ({
-    default: module.BlockSuitePublicPageList,
+    default: module.BlockSuitePageList,
   }))
 );
 
@@ -79,7 +79,9 @@ const ListPageInner: React.FC<{
           </StyledTableContainer>
         }
       >
-        <BlockSuitePublicPageList
+        <BlockSuitePageList
+          listType="public"
+          isPublic={true}
           onOpenPage={handleClickPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
         />

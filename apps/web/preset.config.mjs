@@ -18,6 +18,9 @@ export const blockSuiteFeatureFlags = {
  * @type {import('@affine/env').BuildFlags}
  */
 export const buildFlags = {
+  enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
+    ? process.env.ENABLE_TEST_PROPERTIES === 'true'
+    : true,
   enableLegacyCloud: process.env.ENABLE_LEGACY_PROVIDER
     ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
     : true,

@@ -304,6 +304,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
     PageList: ({ blockSuiteWorkspace, onOpenPage }) => {
       return (
         <BlockSuitePageList
+          listType="all"
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
         />

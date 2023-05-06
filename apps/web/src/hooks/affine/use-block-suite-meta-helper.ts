@@ -15,6 +15,32 @@ export function useBlockSuiteMetaHelper(
     useReferenceLinkHelper(blockSuiteWorkspace);
   const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
 
+  const addToFavorite = useCallback(
+    (pageId: string) => {
+      setPageMeta(pageId, {
+        favorite: true,
+      });
+    },
+    [setPageMeta]
+  );
+  const removeFromFavorite = useCallback(
+    (pageId: string) => {
+      setPageMeta(pageId, {
+        favorite: false,
+      });
+    },
+    [setPageMeta]
+  );
+  const toggleFavorite = useCallback(
+    (pageId: string) => {
+      const { favorite } = getPageMeta(pageId) ?? {};
+      setPageMeta(pageId, {
+        favorite: !favorite,
+      });
+    },
+    [getPageMeta, setPageMeta]
+  );
+
   const removeToTrash = useCallback(
     (pageId: string, isRoot = true) => {
       const parentMeta = metas.find(m => m.subpageIds?.includes(pageId));
@@ -58,8 +84,47 @@ export function useBlockSuiteMetaHelper(
     [addReferenceLink, getPageMeta, setPageMeta]
   );
 
+  const permanentlyDeletePage = useCallback(
+    (pageId: string) => {
+      blockSuiteWorkspace.removePage(pageId);
+    },
+    [blockSuiteWorkspace]
+  );
+
+  /**
+   * see {@link useBlockSuiteWorkspacePageIsPublic}
+   */
+  const publicPage = useCallback(
+    (pageId: string) => {
+      setPageMeta(pageId, {
+        isPublic: true,
+      });
+    },
+    [setPageMeta]
+  );
+
+  /**
+   * see {@link useBlockSuiteWorkspacePageIsPublic}
+   */
+  const cancelPublicPage = useCallback(
+    (pageId: string) => {
+      setPageMeta(pageId, {
+        isPublic: false,
+      });
+    },
+    [setPageMeta]
+  );
+
   return {
+    publicPage,
+    cancelPublicPage,
+
+    addToFavorite,
+    removeFromFavorite,
+    toggleFavorite,
+
     removeToTrash,
     restoreFromTrash,
+    permanentlyDeletePage,
   };
 }

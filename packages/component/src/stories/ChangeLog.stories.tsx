@@ -44,5 +44,5 @@ export const Close: StoryFn = () => {
 Close.play = async ({ canvasElement }) => {
   const element = within(canvasElement);
   await new Promise(resolve => setTimeout(resolve, 2000));
-  await element.getByTestId('change-log-close-button').click();
+  element.getByTestId('change-log-close-button').click();
 };

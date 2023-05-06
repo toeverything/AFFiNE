@@ -5,8 +5,11 @@ import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
+import { useState } from 'react';
 
+import { PublicLinkDisableModal } from '../components/share-menu/disable-public-link';
 import { ShareMenu } from '../components/share-menu/ShareMenu';
+import { StyledDisableButton } from '../components/share-menu/styles';
 import toast from '../ui/toast/toast';
 
 export default {
@@ -36,9 +39,9 @@ const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
   WorkspaceFlavour.LOCAL
 );
 
-initPage(blockSuiteWorkspace.createPage('page0'));
-initPage(blockSuiteWorkspace.createPage('page1'));
-initPage(blockSuiteWorkspace.createPage('page2'));
+initPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
+initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 
 const localWorkspace: LocalWorkspace = {
   id: 'test-workspace',
@@ -101,5 +104,24 @@ export const AffineBasic: StoryFn = () => {
       togglePagePublic={unimplemented}
       toggleWorkspacePublish={unimplemented}
     />
+  );
+};
+
+export const DisableModal: StoryFn = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <StyledDisableButton onClick={() => setOpen(!open)}>
+        Disable Public Link
+      </StyledDisableButton>
+      <PublicLinkDisableModal
+        open={open}
+        onConfirmDisable={() => {
+          toast('Disabled');
+          setOpen(false);
+        }}
+        onClose={() => setOpen(false)}
+      />
+    </>
   );
 };
