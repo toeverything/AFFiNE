@@ -8,7 +8,6 @@ export const HALT_PROBLEM_TIMEOUT = 1000;
 export function useRouterAndWorkspaceWithPageIdDefense(router: NextRouter) {
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const [currentPageId, setCurrentPageId] = useAtom(rootCurrentPageIdAtom);
-  const fallbackModeRef = useRef(false);
   const timeoutRef = useRef<unknown | null>(null);
   if (!router.isReady) {
     return;
@@ -37,7 +36,6 @@ export function useRouterAndWorkspaceWithPageIdDefense(router: NextRouter) {
                 pageId: firstOne.id,
               },
             });
-            fallbackModeRef.current = true;
           }
         }
       }
@@ -56,7 +54,7 @@ export function useRouterAndWorkspaceWithPageIdDefense(router: NextRouter) {
     console.warn('workspaceId is not currentWorkspace', workspaceId);
     return;
   }
-  if (currentPageId !== pageId && !fallbackModeRef.current) {
+  if (currentPageId !== pageId) {
     console.log('set current page id', pageId);
     setCurrentPageId(pageId);
     void router.push({
