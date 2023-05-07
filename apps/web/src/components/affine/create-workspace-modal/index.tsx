@@ -33,7 +33,7 @@ const logger = new DebugLogger('CreateWorkspaceModal');
 interface ModalProps {
   mode: CreateWorkspaceMode; // false means not open
   onClose: () => void;
-  onCreate: (name: string) => void;
+  onCreate: (id: string) => void;
 }
 
 interface NameWorkspaceContentProps {
@@ -211,13 +211,13 @@ const SetSyncingModeContent = ({
 
       <div className={style.buttonGroup}>
         <Button
-          data-testid="create-workspace-finish-button"
+          data-testid="create-workspace-continue-button"
           type="primary"
           onClick={() => {
             onConfirmMode(enableCloudSyncing);
           }}
         >
-          {t['Finish']()}
+          {t['Continue']()}
         </Button>
       </div>
     </div>
@@ -231,7 +231,7 @@ export const CreateWorkspaceModal = ({
 }: ModalProps) => {
   const { createLocalWorkspace, addLocalWorkspace } = useAppHelper();
   const [step, setStep] = useState<CreateWorkspaceStep>();
-  const [workspaceId, setWorkspaceId] = useState<string>();
+  const [addedId, setAddedId] = useState<string>();
   const [workspaceName, setWorkspaceName] = useState<string>();
   const [dbFileLocation, setDBFileLocation] = useState<string>();
   const setOpenDisableCloudAlertModal = useSetAtom(
@@ -256,7 +256,7 @@ export const CreateWorkspaceModal = ({
         setStep(undefined);
         const result = await window.apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
-          setWorkspaceId(result.workspaceId);
+          setAddedId(result.workspaceId);
           setStep('set-syncing-mode');
         } else if (result.error || result.canceled) {
           if (result.error) {
@@ -291,9 +291,16 @@ export const CreateWorkspaceModal = ({
           <NameWorkspaceContent
             // go to previous step instead?
             onClose={onClose}
-            onConfirmName={name => {
+            onConfirmName={async name => {
               setWorkspaceName(name);
-              setStep('set-syncing-mode');
+              if (environment.isDesktop) {
+                setStep('set-syncing-mode');
+              } else {
+                // this will be the last step for web for now
+                // fix me later
+                const id = await createLocalWorkspace(name);
+                onCreate(id);
+              }
             }}
           />
         )}
@@ -312,23 +319,23 @@ export const CreateWorkspaceModal = ({
               if (!config.enableLegacyCloud && enableCloudSyncing) {
                 setOpenDisableCloudAlertModal(true);
               } else {
-                let id = workspaceId;
+                let id = addedId;
                 // syncing mode is also the last step
-                if (workspaceId && mode === 'add') {
-                  await addLocalWorkspace(workspaceId);
+                if (addedId && mode === 'add') {
+                  await addLocalWorkspace(addedId);
                 } else if (mode === 'new' && workspaceName) {
                   id = await createLocalWorkspace(workspaceName);
                   // if dbFileLocation is set, move db file to that location
                   if (dbFileLocation) {
                     await window.apis?.dialog.moveDBFile(id, dbFileLocation);
                   }
+                } else {
+                  logger.error('invalid state');
+                  return;
                 }
-                onClose();
-                setTimeout(() => {
-                  if (id) {
-                    onCreate(id);
-                  }
-                });
+                if (id) {
+                  onCreate(id);
+                }
               }
             }}
           />

@@ -127,7 +127,7 @@ export const WorkspaceListModal = ({
           {!environment.isDesktop && (
             <StyledCreateWorkspaceCard
               onClick={onNewWorkspace}
-              data-testid="add-workspace"
+              data-testid="new-workspace"
             >
               <StyleWorkspaceAdd className="add-icon">
                 <PlusIcon />

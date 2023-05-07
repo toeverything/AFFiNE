@@ -4,9 +4,8 @@ import {
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { useAtom, useAtomValue } from 'jotai';
-import { selectAtom } from 'jotai/utils';
 import type { NextRouter } from 'next/router';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect } from 'react';
 
 const logger = new DebugLogger('useSyncRouterWithCurrentWorkspaceId');
 
@@ -14,41 +13,60 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
     rootCurrentWorkspaceIdAtom
   );
-
-  const routerRef = useRef(router);
-
-  const targetWorkspaceIdAtom = useMemo(
-    () =>
-      selectAtom(rootWorkspacesMetadataAtom, metadata => {
-        const workspaceId = router.query.workspaceId;
-        if (typeof workspaceId !== 'string') {
-          return null;
-        }
-        const target = metadata.find(workspace => workspace.id === workspaceId);
-        return target?.id || currentWorkspaceId || metadata[0].id;
-      }),
-    [currentWorkspaceId, router.query.workspaceId]
-  );
-
-  const targetWorkspaceId = useAtomValue(targetWorkspaceIdAtom);
-  routerRef.current = router;
-
+  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   useEffect(() => {
-    const router = routerRef.current;
     if (!router.isReady) {
       return;
     }
-
-    if (targetWorkspaceId !== currentWorkspaceId) {
-      logger.debug('redirect to', targetWorkspaceId);
-      setCurrentWorkspaceId(targetWorkspaceId);
+    const workspaceId = router.query.workspaceId;
+    if (typeof workspaceId !== 'string') {
+      return;
+    }
+    if (currentWorkspaceId) {
+      if (currentWorkspaceId !== workspaceId) {
+        const target = metadata.find(workspace => workspace.id === workspaceId);
+        if (!target) {
+          logger.debug('workspace not exist, redirect to current one');
+          // workspaceId is invalid, redirect to currentWorkspaceId
+          void router.push({
+            pathname: router.pathname,
+            query: {
+              ...router.query,
+              workspaceId: currentWorkspaceId,
+            },
+          });
+        }
+      }
+      return;
+    }
+    const targetWorkspace = metadata.find(
+      workspace => workspace.id === workspaceId
+    );
+    if (targetWorkspace) {
+      console.log('set workspace id', workspaceId);
+      setCurrentWorkspaceId(targetWorkspace.id);
+      logger.debug('redirect to', targetWorkspace.id);
       void router.push({
         pathname: router.pathname,
         query: {
           ...router.query,
-          workspaceId: targetWorkspaceId,
+          workspaceId: targetWorkspace.id,
         },
       });
+    } else {
+      const targetWorkspace = metadata.at(0);
+      if (targetWorkspace) {
+        console.log('set workspace id', workspaceId);
+        setCurrentWorkspaceId(targetWorkspace.id);
+        logger.debug('redirect to', targetWorkspace.id);
+        void router.push({
+          pathname: router.pathname,
+          query: {
+            ...router.query,
+            workspaceId: targetWorkspace.id,
+          },
+        });
+      }
     }
-  }, [targetWorkspaceId, setCurrentWorkspaceId, currentWorkspaceId]);
+  }, [currentWorkspaceId, metadata, router, setCurrentWorkspaceId]);
 }
