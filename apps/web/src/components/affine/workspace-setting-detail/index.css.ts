@@ -166,11 +166,11 @@ export const storageTypeWrapper = style({
   padding: '12px',
   borderRadius: '10px',
   gap: '12px',
-  boxShadow: 'var(--affine-shadow)',
+  boxShadow: 'var(--affine-shadow-1)',
   cursor: 'pointer',
   selectors: {
     '&:hover': {
-      boxShadow: 'var(--affine-menu-shadow)',
+      boxShadow: 'var(--affine-shadow-2)',
     },
     '&:not(:last-child)': {
       marginBottom: '12px',

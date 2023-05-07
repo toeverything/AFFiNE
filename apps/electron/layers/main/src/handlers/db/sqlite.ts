@@ -75,6 +75,7 @@ export class WorkspaceSQLiteDB {
 
     const updates = this.getUpdates();
     updates.forEach(update => {
+      // give SQLITE_ORIGIN to skip self update
       Y.applyUpdate(this.ydoc, update.data, SQLITE_ORIGIN);
     });
 
