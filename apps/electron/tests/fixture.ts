@@ -52,7 +52,7 @@ export const test = base.extend<{
       return app.getPath('sessionData');
     });
     await use(electronApp);
-    await fs.rm(sessionDataPath, { recursive: true });
+    await fs.rm(sessionDataPath, { recursive: true, force: true });
   },
   appInfo: async ({ electronApp }, use) => {
     const appInfo = await electronApp.evaluate(async ({ app }) => {
