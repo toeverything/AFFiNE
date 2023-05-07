@@ -18,6 +18,31 @@ export async function revealDBFile(workspaceId: string) {
   shell.showItemInFolder(workspaceDB.path);
 }
 
+// provide a backdoor to set dialog path for testing in playwright
+interface FakeDialogResult {
+  canceled: boolean;
+  filePath?: string;
+  filePaths?: string[];
+}
+
+// result will be used in the next call to showOpenDialog
+// if it is being read once, it will be reset to undefined
+let fakeDialogResult: FakeDialogResult | undefined = undefined;
+
+function getFakedResult() {
+  const result = fakeDialogResult;
+  fakeDialogResult = undefined;
+  return result;
+}
+
+export function setFakeDialogResult(result: FakeDialogResult | undefined) {
+  fakeDialogResult = result;
+  // for convenience, we will fill filePaths with filePath if it is not set
+  if (result?.filePaths === undefined && result?.filePath !== undefined) {
+    result.filePaths = [result.filePath];
+  }
+}
+
 const ErrorMessages = [
   'DB_FILE_ALREADY_LOADED',
   'DB_FILE_PATH_INVALID',
@@ -43,14 +68,16 @@ export async function saveDBFileAs(
 ): Promise<SaveDBFileResult> {
   try {
     const db = await ensureSQLiteDB(workspaceId);
-    const ret = await dialog.showSaveDialog({
-      properties: ['showOverwriteConfirmation'],
-      title: 'Save Workspace',
-      showsTagField: false,
-      buttonLabel: 'Save',
-      defaultPath: `${db.getWorkspaceName()}_${workspaceId}.db`,
-      message: 'Save Workspace as a SQLite Database file',
-    });
+    const ret =
+      getFakedResult() ??
+      (await dialog.showSaveDialog({
+        properties: ['showOverwriteConfirmation'],
+        title: 'Save Workspace',
+        showsTagField: false,
+        buttonLabel: 'Save',
+        defaultPath: `${db.getWorkspaceName()}_${workspaceId}.db`,
+        message: 'Save Workspace as a SQLite Database file',
+      }));
     const filePath = ret.filePath;
     if (ret.canceled || !filePath) {
       return {
@@ -78,14 +105,16 @@ interface SelectDBFileLocationResult {
 
 export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult> {
   try {
-    const ret = await dialog.showSaveDialog({
-      properties: ['showOverwriteConfirmation'],
-      title: 'Set database location',
-      showsTagField: false,
-      buttonLabel: 'Select',
-      defaultPath: `workspace-storage.db`,
-      message: "Select a location to store the workspace's database file",
-    });
+    const ret =
+      getFakedResult() ??
+      (await dialog.showSaveDialog({
+        properties: ['showOverwriteConfirmation'],
+        title: 'Set database location',
+        showsTagField: false,
+        buttonLabel: 'Select',
+        defaultPath: `workspace-storage.db`,
+        message: "Select a location to store the workspace's database file",
+      }));
     const filePath = ret.filePath;
     if (ret.canceled || !filePath) {
       return {
@@ -129,19 +158,21 @@ interface LoadDBFileResult {
  */
 export async function loadDBFile(): Promise<LoadDBFileResult> {
   try {
-    const ret = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      title: 'Load Workspace',
-      buttonLabel: 'Load',
-      filters: [
-        {
-          name: 'SQLite Database',
-          // do we want to support other file format?
-          extensions: ['db'],
-        },
-      ],
-      message: 'Load Workspace from a SQLite Database file',
-    });
+    const ret =
+      getFakedResult() ??
+      (await dialog.showOpenDialog({
+        properties: ['openFile'],
+        title: 'Load Workspace',
+        buttonLabel: 'Load',
+        filters: [
+          {
+            name: 'SQLite Database',
+            // do we want to support other file format?
+            extensions: ['db'],
+          },
+        ],
+        message: 'Load Workspace from a SQLite Database file',
+      }));
     const filePath = ret.filePaths?.[0];
     if (ret.canceled || !filePath) {
       logger.info('loadDBFile canceled');
@@ -210,14 +241,15 @@ export async function moveDBFile(
     const newFilePath =
       dbFileLocation ||
       (
-        await dialog.showSaveDialog({
+        getFakedResult() ||
+        (await dialog.showSaveDialog({
           properties: ['showOverwriteConfirmation'],
           title: 'Move Workspace Storage',
           showsTagField: false,
           buttonLabel: 'Save',
           defaultPath: realpath,
           message: 'Move Workspace storage file',
-        })
+        }))
       ).filePath;
 
     // skips if

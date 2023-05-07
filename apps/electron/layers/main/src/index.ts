@@ -1,23 +1,19 @@
 import './security-restrictions';
 
 import { app } from 'electron';
-import path from 'path';
 
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 
-if (require('electron-squirrel-startup')) app.exit();
-if (process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('affine', process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
-  }
-} else {
-  app.setAsDefaultProtocolClient('affine');
+// allow tests to overwrite app name through passing args
+if (process.argv.includes('--app-name')) {
+  const appNameIndex = process.argv.indexOf('--app-name');
+  const appName = process.argv[appNameIndex + 1];
+  app.setName(appName);
 }
+
 /**
  * Prevent multiple instances
  */
