@@ -88,7 +88,7 @@ const NameWorkspaceContent = ({
       />
       <div className={style.buttonGroup}>
         <Button
-          data-testid="create-workspace-button"
+          data-testid="create-workspace-close-button"
           type="light"
           onClick={() => {
             onClose();
@@ -97,7 +97,7 @@ const NameWorkspaceContent = ({
           {t.Cancel()}
         </Button>
         <Button
-          data-testid="create-workspace-button"
+          data-testid="create-workspace-create-button"
           disabled={!workspaceName}
           style={{
             opacity: !workspaceName ? 0.5 : 1,
@@ -136,7 +136,7 @@ const SetDBLocationContent = ({
       <p>{t['Workspace database storage description']()}</p>
       <div className={style.buttonGroup}>
         <Button
-          data-testid="create-workspace-button"
+          data-testid="create-workspace-customize-button"
           type="light"
           onClick={async () => {
             const result = await window.apis?.dialog.selectDBFileLocation();
@@ -155,7 +155,7 @@ const SetDBLocationContent = ({
           placement="top-start"
         >
           <Button
-            data-testid="create-workspace-button"
+            data-testid="create-workspace-default-location-button"
             type="primary"
             onClick={() => {
               onConfirmLocation();
@@ -211,7 +211,7 @@ const SetSyncingModeContent = ({
 
       <div className={style.buttonGroup}>
         <Button
-          data-testid="create-workspace-button"
+          data-testid="create-workspace-finish-button"
           type="primary"
           onClick={() => {
             onConfirmMode(enableCloudSyncing);

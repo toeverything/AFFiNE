@@ -8,8 +8,8 @@ import * as esbuild from 'esbuild';
 
 import { config, root } from './common.mjs';
 
-/** @type 'production' | 'development'' */
-const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
+// this means we don't spawn electron windows, mainly for testing
+const watchMode = process.argv.includes('--watch');
 
 /** Messages on stderr that match any of the contained patterns will be stripped from output */
 const stderrFilterPatterns = [
@@ -30,14 +30,13 @@ try {
   );
 }
 
-// hard-coded for now:
-// fixme(xp): report error if app is not running on DEV_SERVER_URL
-const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
-
 /** @type {ChildProcessWithoutNullStreams | null} */
 let spawnProcess = null;
 
 function spawnOrReloadElectron() {
+  if (watchMode) {
+    return;
+  }
   if (spawnProcess !== null) {
     spawnProcess.off('exit', process.exit);
     spawnProcess.kill('SIGINT');
@@ -96,20 +95,10 @@ function watchPreload() {
 
 async function watchMain() {
   return new Promise(async resolve => {
-    const define = {
-      ...common.main.define,
-      'process.env.NODE_ENV': `"${mode}"`,
-    };
-
-    if (DEV_SERVER_URL) {
-      define['process.env.DEV_SERVER_URL'] = `"${DEV_SERVER_URL}"`;
-    }
-
     let initialBuild = false;
 
     const mainBuild = await esbuild.context({
       ...common.main,
-      define: define,
       plugins: [
         ...(common.main.plugins ?? []),
         {
@@ -137,8 +126,13 @@ async function watchMain() {
 async function main() {
   await watchMain();
   await watchPreload();
-  spawnOrReloadElectron();
-  console.log(`Electron is started, watching for changes...`);
+
+  if (watchMode) {
+    console.log(`Watching for changes...`);
+  } else {
+    spawnOrReloadElectron();
+    console.log(`Electron is started, watching for changes...`);
+  }
 }
 
 main();

@@ -180,7 +180,7 @@ export const WorkspaceListModal = ({
           >
             <StyledCreateWorkspaceCard
               ref={anchorEL}
-              data-testid="new-workspace"
+              data-testid="add-or-new-workspace"
             >
               <StyleWorkspaceAdd className="add-icon">
                 <PlusIcon />

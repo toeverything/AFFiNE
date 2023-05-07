@@ -1,59 +1,77 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../layers/preload/preload.d.ts" />
+
 /* eslint-disable no-empty-pattern */
+import crypto from 'node:crypto';
 import { resolve } from 'node:path';
 
 import { test as base } from '@affine-test/kit/playwright';
-import type { App } from 'electron';
 import fs from 'fs-extra';
 import type { ElectronApplication, Page } from 'playwright';
 import { _electron as electron } from 'playwright';
 
-let electronApp: ElectronApplication;
-let page: Page;
-
-let appInfo: {
-  appPath: string;
-  appData: string;
-  sessionData: string;
-};
+function generateUUID() {
+  return crypto.randomUUID();
+}
 
 export const test = base.extend<{
   page: Page;
   electronApp: ElectronApplication;
+  appInfo: {
+    appPath: string;
+    appData: string;
+    sessionData: string;
+  };
+  workspace: {
+    // get current workspace
+    current: () => Promise<any>; // todo: type
+  };
 }>({
-  page: async ({}, use) => {
+  page: async ({ electronApp }, use) => {
+    const page = await electronApp.firstWindow();
+    await page.getByTestId('onboarding-modal-close-button').click({
+      delay: 100,
+    });
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0].webContents.openDevTools({
+        mode: 'detach',
+      });
+    });
     await use(page);
+    await page.close();
   },
   electronApp: async ({}, use) => {
+    // a random id to avoid conflicts between tests
+    const id = generateUUID();
+    const electronApp = await electron.launch({
+      args: [resolve(__dirname, '..'), '--app-name', 'affine-test-' + id],
+      executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
+      colorScheme: 'light',
+    });
+    const sessionDataPath = await electronApp.evaluate(async ({ app }) => {
+      return app.getPath('sessionData');
+    });
     await use(electronApp);
+    await fs.rm(sessionDataPath, { recursive: true });
   },
-});
-
-test.beforeEach(async () => {
-  // a random id to avoid conflicts between tests
-  const id = Math.random().toString(36).substring(2, 9);
-  electronApp = await electron.launch({
-    args: [resolve(__dirname, '..'), '--app-name', 'affine-test-' + id],
-    executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
-    colorScheme: 'light',
-  });
-
-  appInfo = await electronApp.evaluate(async ({ app }: { app: App }) => {
-    return {
-      appPath: app.getAppPath(),
-      appData: app.getPath('appData'),
-      sessionData: app.getPath('sessionData'),
-    };
-  });
-
-  page = await electronApp.firstWindow();
-  await page.getByTestId('onboarding-modal-close-button').click({
-    delay: 100,
-  });
-});
-
-test.afterEach(async () => {
-  await page.close();
-  await electronApp.close();
-  // cleanup session data
-  await fs.rm(appInfo.sessionData, { recursive: true });
+  appInfo: async ({ electronApp }, use) => {
+    const appInfo = await electronApp.evaluate(async ({ app }) => {
+      return {
+        appPath: app.getAppPath(),
+        appData: app.getPath('appData'),
+        sessionData: app.getPath('sessionData'),
+      };
+    });
+    await use(appInfo);
+  },
+  workspace: async ({ page }, use) => {
+    await use({
+      current: async () => {
+        return await page.evaluate(async () => {
+          // @ts-expect-error
+          return globalThis.currentWorkspace;
+        });
+      },
+    });
+  },
 });

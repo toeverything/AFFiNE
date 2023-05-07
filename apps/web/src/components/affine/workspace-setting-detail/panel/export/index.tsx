@@ -13,6 +13,7 @@ export const ExportPanel = () => {
         type="light"
         shape="circle"
         disabled={!environment.isDesktop || !id}
+        data-testid="export-affine-backup"
         onClick={async () => {
           if (id && (await window.apis?.dialog.saveDBFileAs(id))) {
             toast(t['Export success']());

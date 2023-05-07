@@ -38,6 +38,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
 
   const handleUpdateWorkspaceName = (name: string) => {
     setName(name);
+    toast(t['Update workspace name success']());
   };
 
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
@@ -90,6 +91,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
             width={284}
             height={38}
             value={input}
+            data-testid="workspace-name-input"
             placeholder={t['Workspace Name']()}
             maxLength={50}
             minLength={0}
@@ -103,6 +105,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           <Button
             type="light"
             size="middle"
+            data-testid="save-workspace-name"
             icon={<SaveIcon />}
             disabled={input === workspace.blockSuiteWorkspace.meta.name}
             onClick={() => {
@@ -147,6 +150,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
             </div>
 
             <div
+              data-testid="move-folder"
               className={style.storageTypeWrapper}
               onClick={async () => {
                 if (await window.apis?.dialog.moveDBFile(workspace.id)) {

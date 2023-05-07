@@ -20,7 +20,7 @@ export async function revealDBFile(workspaceId: string) {
 
 // provide a backdoor to set dialog path for testing in playwright
 interface FakeDialogResult {
-  canceled: boolean;
+  canceled?: boolean;
   filePath?: string;
   filePaths?: string[];
 }
@@ -180,7 +180,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
     }
 
     // the imported file should not be in app data dir
-    if (filePath.startsWith(appContext.appDataPath)) {
+    if (filePath.startsWith(path.join(appContext.appDataPath, 'workspaces'))) {
       logger.warn('loadDBFile: db file in app data dir');
       return { error: 'DB_FILE_PATH_INVALID' };
     }

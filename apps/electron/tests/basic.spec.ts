@@ -2,15 +2,12 @@ import { expect } from '@playwright/test';
 
 import { test } from './fixture';
 
-test('new page', async ({ page }) => {
+test('new page', async ({ page, workspace }) => {
   await page.getByTestId('new-page-button').click({
     delay: 100,
   });
   await page.waitForSelector('v-line');
-  const flavour = await page.evaluate(
-    // @ts-expect-error
-    () => globalThis.currentWorkspace.flavour
-  );
+  const flavour = (await workspace.current()).flavour;
   expect(flavour).toBe('local');
 });
 

@@ -7,7 +7,9 @@
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
     "dev": "yarn electron-rebuild && yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
+    "watch": "yarn electron-rebuild && yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs --watch",
     "prod": "yarn electron-rebuild && yarn node scripts/dev.mjs",
+    "build-layers": "zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "generate-handlers-meta": "zx scripts/generate-handlers-meta.mjs",
     "package": "electron-forge package",

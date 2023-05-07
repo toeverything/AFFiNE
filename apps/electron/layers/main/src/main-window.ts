@@ -60,7 +60,9 @@ async function createWindow() {
     logger.info('main window is ready to show');
 
     if (DEV_TOOL) {
-      browserWindow.webContents.openDevTools();
+      browserWindow.webContents.openDevTools({
+        mode: 'detach',
+      });
     }
   });
 

@@ -5,6 +5,7 @@ import {
   revealDBFile,
   saveDBFileAs,
   selectDBFileLocation,
+  setFakeDialogResult,
 } from './dialog';
 
 export const dialogHandlers = {
@@ -22,5 +23,11 @@ export const dialogHandlers = {
   },
   selectDBFileLocation: async () => {
     return selectDBFileLocation();
+  },
+  setFakeDialogResult: async (
+    _,
+    result: Parameters<typeof setFakeDialogResult>[0]
+  ) => {
+    return setFakeDialogResult(result);
   },
 } satisfies NamespaceHandlers;
