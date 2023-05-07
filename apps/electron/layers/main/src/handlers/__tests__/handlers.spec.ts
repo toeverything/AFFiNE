@@ -34,7 +34,7 @@ ReturnType<MainIPCHandlerMap[T][F]> {
   return await handler(null, ...args);
 }
 
-const APP_PATH = path.join(__dirname, './tmp');
+const SESSION_DATA_PATH = path.join(__dirname, './tmp', 'affine-test');
 
 const browserWindow = {
   isDestroyed: () => {
@@ -80,8 +80,8 @@ function compareBuffer(a: Uint8Array | null, b: Uint8Array | null) {
 const electronModule = {
   app: {
     getPath: (name: string) => {
-      assert(name === 'appData');
-      return APP_PATH;
+      assert(name === 'sessionData');
+      return SESSION_DATA_PATH;
     },
     name: 'affine-test',
     on: (name: string, callback: (...args: any[]) => any) => {
@@ -113,7 +113,7 @@ beforeEach(async () => {
 afterEach(async () => {
   const { cleanupSQLiteDBs } = await import('../db/ensure-db');
   await cleanupSQLiteDBs();
-  await fs.remove(APP_PATH);
+  await fs.remove(SESSION_DATA_PATH);
 });
 
 describe('ensureSQLiteDB', () => {
@@ -230,7 +230,7 @@ describe('UI handlers', () => {
 describe('db handlers', () => {
   test('apply doc and get doc updates', async () => {
     const workspaceId = 'test-workspace-id';
-    const bin = await dispatch('db', 'getDoc', workspaceId);
+    const bin = await dispatch('db', 'getDocAsUpdates', workspaceId);
     // ? is this a good test?
     expect(bin.every((byte: number) => byte === 0)).toBe(true);
 
@@ -241,7 +241,7 @@ describe('db handlers', () => {
 
     await dispatch('db', 'applyDocUpdate', workspaceId, bin2);
 
-    const bin3 = await dispatch('db', 'getDoc', workspaceId);
+    const bin3 = await dispatch('db', 'getDocAsUpdates', workspaceId);
     const ydoc2 = new Y.Doc();
     Y.applyUpdate(ydoc2, bin3);
     const ytext2 = ydoc2.getText('test');
@@ -329,7 +329,7 @@ describe('dialog handlers', () => {
   });
 
   test('saveDBFileAs', async () => {
-    const newSavedPath = path.join(APP_PATH, 'saved-to');
+    const newSavedPath = path.join(SESSION_DATA_PATH, 'saved-to');
     const mockShowSaveDialog = vi.fn(() => {
       return { filePath: newSavedPath };
     }) as any;
@@ -362,7 +362,9 @@ describe('dialog handlers', () => {
 
   test('loadDBFile (error, in app-data)', async () => {
     const mockShowOpenDialog = vi.fn(() => {
-      return { filePaths: [path.join(APP_PATH, 'affine-test', 'xxx')] };
+      return {
+        filePaths: [path.join(SESSION_DATA_PATH, 'workspaces')],
+      };
     }) as any;
     electronModule.dialog.showOpenDialog = mockShowOpenDialog;
 
@@ -373,7 +375,7 @@ describe('dialog handlers', () => {
 
   test('loadDBFile (error, not a valid db file)', async () => {
     // create a random db file
-    const basePath = path.join(APP_PATH, 'random-path');
+    const basePath = path.join(SESSION_DATA_PATH, 'random-path');
     const dbPath = path.join(basePath, 'xxx.db');
     await fs.ensureDir(basePath);
     await fs.writeFile(dbPath, 'hello world');
@@ -395,7 +397,7 @@ describe('dialog handlers', () => {
     const db = await ensureSQLiteDB(id);
 
     // copy db file to dbPath
-    const basePath = path.join(APP_PATH, 'random-path');
+    const basePath = path.join(SESSION_DATA_PATH, 'random-path');
     const originDBFilePath = path.join(basePath, 'xxx.db');
     await fs.ensureDir(basePath);
     await fs.copyFile(db.path, originDBFilePath);
@@ -423,7 +425,7 @@ describe('dialog handlers', () => {
   });
 
   test('moveDBFile', async () => {
-    const newPath = path.join(APP_PATH, 'affine-test', 'xxx');
+    const newPath = path.join(SESSION_DATA_PATH, 'affine-test', 'xxx');
     const mockShowSaveDialog = vi.fn(() => {
       return { filePath: newPath };
     }) as any;
