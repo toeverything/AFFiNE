@@ -34,15 +34,24 @@ export const registerHandlers = () => {
   for (const [namespace, namespaceHandlers] of Object.entries(allHandlers)) {
     for (const [key, handler] of Object.entries(namespaceHandlers)) {
       const chan = `${namespace}:${key}`;
-      ipcMain.handle(chan, (e, ...args) => {
-        logger.info(
-          '[ipc]',
-          chan,
-          ...args.filter(arg => {
-            return typeof arg !== 'object';
-          })
-        );
-        return handler(e, ...args);
+      ipcMain.handle(chan, async (e, ...args) => {
+        const start = performance.now();
+        try {
+          const result = await handler(e, ...args);
+          logger.info(
+            '[ipc]',
+            chan,
+            args.filter(
+              arg => typeof arg !== 'function' && typeof arg !== 'object'
+            ),
+            '-',
+            (performance.now() - start).toFixed(2),
+            'ms'
+          );
+          return result;
+        } catch (error) {
+          logger.error('[ipc]', chan, error);
+        }
       });
     }
   }

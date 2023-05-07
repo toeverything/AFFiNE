@@ -5,7 +5,7 @@ import 'zx/globals';
 const mainDistDir = path.resolve(__dirname, '../dist/layers/main');
 
 // be careful for any side effects in handlers.js
-const moduleFile = await import(path.resolve(mainDistDir, 'handlers.js'));
+const moduleFile = await import(path.resolve(mainDistDir, 'handlers/index.js'));
 
 const meta = Object.entries(moduleFile.allHandlers).map(
   ([namespace, namespaceHandlers]) => {

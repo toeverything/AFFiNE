@@ -3,9 +3,9 @@ import type { NamespaceHandlers } from '../type';
 import { ensureSQLiteDB } from './ensure-db';
 
 export const dbHandlers = {
-  getDoc: async (_, id: string) => {
+  getDocAsUpdates: async (_, id: string) => {
     const workspaceDB = await ensureSQLiteDB(id);
-    return workspaceDB.getEncodedDocUpdates();
+    return workspaceDB.getDocAsUpdates();
   },
   applyDocUpdate: async (_, id: string, update: Uint8Array) => {
     const workspaceDB = await ensureSQLiteDB(id);

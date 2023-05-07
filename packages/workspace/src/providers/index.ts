@@ -202,7 +202,7 @@ const createSQLiteProvider = (
 
   async function syncUpdates() {
     logger.info('syncing updates from sqlite', blockSuiteWorkspace.id);
-    const updates = await apis.db.getDoc(blockSuiteWorkspace.id);
+    const updates = await apis.db.getDocAsUpdates(blockSuiteWorkspace.id);
 
     if (updates) {
       Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);

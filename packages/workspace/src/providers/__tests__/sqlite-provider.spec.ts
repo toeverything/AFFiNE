@@ -21,7 +21,7 @@ const mockedAddBlob = vi.fn();
 vi.stubGlobal('window', {
   apis: {
     db: {
-      getDoc: async () => {
+      getDocAsUpdates: async () => {
         return Y.encodeStateAsUpdate(offlineYdoc);
       },
       applyDocUpdate: async (id: string, update: Uint8Array) => {

@@ -19,9 +19,10 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
 
   const debounceOnChange = debounce(() => {
     logger.info(
-      'handle db file changed',
+      'db file changed on disk',
       db.workspaceId,
-      new Date().getTime() - db.lastUpdateTime
+      new Date().getTime() - db.lastUpdateTime,
+      'ms'
     );
     // reconnect db
     db.reconnectDB();

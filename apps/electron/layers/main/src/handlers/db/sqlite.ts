@@ -73,10 +73,12 @@ export class WorkspaceSQLiteDB {
       });
     }
 
-    const updates = this.getUpdates();
-    updates.forEach(update => {
-      // give SQLITE_ORIGIN to skip self update
-      Y.applyUpdate(this.ydoc, update.data, SQLITE_ORIGIN);
+    Y.transact(this.ydoc, () => {
+      const updates = this.getUpdates();
+      updates.forEach(update => {
+        // give SQLITE_ORIGIN to skip self update
+        Y.applyUpdate(this.ydoc, update.data, SQLITE_ORIGIN);
+      });
     });
 
     this.lastUpdateTime = new Date().getTime();
@@ -92,7 +94,7 @@ export class WorkspaceSQLiteDB {
     return db;
   };
 
-  getEncodedDocUpdates = () => {
+  getDocAsUpdates = () => {
     return Y.encodeStateAsUpdate(this.ydoc);
   };
 
@@ -100,6 +102,7 @@ export class WorkspaceSQLiteDB {
   // after that, the update is added to the db
   applyUpdate = (data: Uint8Array) => {
     Y.applyUpdate(this.ydoc, data);
+
     // todo: trim the updates when the number of records is too large
     // 1. store the current ydoc state in the db
     // 2. then delete the old updates
@@ -178,6 +181,8 @@ export class WorkspaceSQLiteDB {
       logger.debug(
         'addUpdateToSQLite',
         this.workspaceId,
+        'length:',
+        data.length,
         performance.now() - start,
         'ms'
       );
