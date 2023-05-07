@@ -52,7 +52,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
   if (environment.isDesktop) {
     window.apis?.workspace.list().then(workspaceIDs => {
       const newMetadata = workspaceIDs.map(w => ({
-        id: w,
+        id: w[0],
         flavour: WorkspaceFlavour.LOCAL,
       }));
       setAtom(metadata => {
