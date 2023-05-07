@@ -124,63 +124,10 @@ export const WorkspaceListModal = ({
               [onMoveWorkspace]
             )}
           />
-          <Menu
-            placement="auto"
-            trigger="click"
-            zIndex={1000}
-            content={
-              <StyledCreateWorkspaceCardPillContainer>
-                <StyledCreateWorkspaceCardPill>
-                  <MenuItem
-                    style={{
-                      height: 'auto',
-                      padding: '8px 12px',
-                    }}
-                    onClick={onNewWorkspace}
-                    data-testid="new-workspace"
-                  >
-                    <StyledCreateWorkspaceCardPillContent>
-                      <div>
-                        <p>{t['New Workspace']()}</p>
-                        <StyledCreateWorkspaceCardPillTextSecondary>
-                          <p>{t['Create your own workspace']()}</p>
-                        </StyledCreateWorkspaceCardPillTextSecondary>
-                      </div>
-                      <StyledCreateWorkspaceCardPillIcon>
-                        <PlusIcon />
-                      </StyledCreateWorkspaceCardPillIcon>
-                    </StyledCreateWorkspaceCardPillContent>
-                  </MenuItem>
-                </StyledCreateWorkspaceCardPill>
-                <StyledCreateWorkspaceCardPill>
-                  <MenuItem
-                    disabled={!environment.isDesktop}
-                    onClick={onAddWorkspace}
-                    data-testid="add-workspace"
-                    style={{
-                      height: 'auto',
-                      padding: '8px 12px',
-                    }}
-                  >
-                    <StyledCreateWorkspaceCardPillContent>
-                      <div>
-                        <p>{t['Add Workspace']()}</p>
-                        <StyledCreateWorkspaceCardPillTextSecondary>
-                          <p>{t['Add Workspace Hint']()}</p>
-                        </StyledCreateWorkspaceCardPillTextSecondary>
-                      </div>
-                      <StyledCreateWorkspaceCardPillIcon>
-                        <ImportIcon />
-                      </StyledCreateWorkspaceCardPillIcon>
-                    </StyledCreateWorkspaceCardPillContent>
-                  </MenuItem>
-                </StyledCreateWorkspaceCardPill>
-              </StyledCreateWorkspaceCardPillContainer>
-            }
-          >
+          {!environment.isDesktop && (
             <StyledCreateWorkspaceCard
-              ref={anchorEL}
-              data-testid="add-or-new-workspace"
+              onClick={onNewWorkspace}
+              data-testid="add-workspace"
             >
               <StyleWorkspaceAdd className="add-icon">
                 <PlusIcon />
@@ -193,7 +140,80 @@ export const WorkspaceListModal = ({
                 <p>{t['Create Or Import']()}</p>
               </StyleWorkspaceInfo>
             </StyledCreateWorkspaceCard>
-          </Menu>
+          )}
+
+          {environment.isDesktop && (
+            <Menu
+              placement="auto"
+              trigger={['click', 'hover']}
+              zIndex={1000}
+              content={
+                <StyledCreateWorkspaceCardPillContainer>
+                  <StyledCreateWorkspaceCardPill>
+                    <MenuItem
+                      style={{
+                        height: 'auto',
+                        padding: '8px 12px',
+                      }}
+                      onClick={onNewWorkspace}
+                      data-testid="new-workspace"
+                    >
+                      <StyledCreateWorkspaceCardPillContent>
+                        <div>
+                          <p>{t['New Workspace']()}</p>
+                          <StyledCreateWorkspaceCardPillTextSecondary>
+                            <p>{t['Create your own workspace']()}</p>
+                          </StyledCreateWorkspaceCardPillTextSecondary>
+                        </div>
+                        <StyledCreateWorkspaceCardPillIcon>
+                          <PlusIcon />
+                        </StyledCreateWorkspaceCardPillIcon>
+                      </StyledCreateWorkspaceCardPillContent>
+                    </MenuItem>
+                  </StyledCreateWorkspaceCardPill>
+                  <StyledCreateWorkspaceCardPill>
+                    <MenuItem
+                      disabled={!environment.isDesktop}
+                      onClick={onAddWorkspace}
+                      data-testid="add-workspace"
+                      style={{
+                        height: 'auto',
+                        padding: '8px 12px',
+                      }}
+                    >
+                      <StyledCreateWorkspaceCardPillContent>
+                        <div>
+                          <p>{t['Add Workspace']()}</p>
+                          <StyledCreateWorkspaceCardPillTextSecondary>
+                            <p>{t['Add Workspace Hint']()}</p>
+                          </StyledCreateWorkspaceCardPillTextSecondary>
+                        </div>
+                        <StyledCreateWorkspaceCardPillIcon>
+                          <ImportIcon />
+                        </StyledCreateWorkspaceCardPillIcon>
+                      </StyledCreateWorkspaceCardPillContent>
+                    </MenuItem>
+                  </StyledCreateWorkspaceCardPill>
+                </StyledCreateWorkspaceCardPillContainer>
+              }
+            >
+              <StyledCreateWorkspaceCard
+                ref={anchorEL}
+                data-testid="add-or-new-workspace"
+              >
+                <StyleWorkspaceAdd className="add-icon">
+                  <PlusIcon />
+                </StyleWorkspaceAdd>
+
+                <StyleWorkspaceInfo>
+                  <StyleWorkspaceTitle>
+                    {t['New Workspace']()}
+                  </StyleWorkspaceTitle>
+                  <p>{t['Create Or Import']()}</p>
+                </StyleWorkspaceInfo>
+              </StyledCreateWorkspaceCard>
+            </Menu>
+          )}
         </StyledModalContent>
 
         <Footer user={user} onLogin={onClickLogin} onLogout={onClickLogout} />

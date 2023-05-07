@@ -266,7 +266,7 @@ export const CreateWorkspaceModal = ({
         }
       })();
     } else if (mode === 'new') {
-      setStep('set-db-location');
+      setStep(environment.isDesktop ? 'set-db-location' : 'name-workspace');
     } else {
       setStep(undefined);
     }
