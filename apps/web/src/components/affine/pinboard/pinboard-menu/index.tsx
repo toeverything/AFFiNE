@@ -45,7 +45,8 @@ export const PinboardMenu = ({
   const isSearching = query.length > 0;
 
   const searchResult = metas.filter(
-    meta => !meta.trash && meta.title.includes(query)
+    // fixme: title might be undefined for unknown reason
+    meta => !meta.trash && meta.title?.includes(query)
   );
   const { removeReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
 
