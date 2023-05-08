@@ -14,6 +14,7 @@ import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
 
 const require = createRequire(import.meta.url);
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin');
+const withForgetti = require('forgetti-loader/next');
 const withVanillaExtract = createVanillaExtractPlugin();
 
 console.info('Build Flags', buildFlags);
@@ -238,4 +239,4 @@ if (process.env.PERFSEE_TOKEN) {
   );
 }
 
-export default withVanillaExtract(config);
+export default withForgetti(withVanillaExtract(config));
