@@ -16,12 +16,12 @@ export const updateAvailableAtom = atomWithObservable<boolean>(() => {
   return new Observable<boolean>(subscriber => {
     if (typeof window !== 'undefined') {
       const isMacosDesktop = environment.isDesktop && environment.isMacOs;
-      if (!isMacosDesktop) {
+      if (isMacosDesktop) {
         const dispose = window.apis?.onClientUpdateAvailable(() => {
           subscriber.next(true);
         });
         return () => {
-          dispose();
+          dispose?.();
         };
       }
     }
