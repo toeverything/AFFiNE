@@ -4,7 +4,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { FC } from 'react';
 
 import { descriptionStyle, menuItemStyle } from './index.css';
-import type { ShareMenuProps } from './ShareMenu';
+import type { ShareMenuProps } from './share-menu';
 import { StyledButton } from './styles';
 
 const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {

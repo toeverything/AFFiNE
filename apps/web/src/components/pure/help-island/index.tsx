@@ -8,7 +8,7 @@ import { lazy, Suspense, useState } from 'react';
 import { openOnboardingModalAtom } from '../../../atoms';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import { ShortcutsModal } from '../shortcuts-modal';
-import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
+import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import {
   StyledAnimateWrapper,
   StyledIconWrapper,

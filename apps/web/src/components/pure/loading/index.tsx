@@ -1,3 +1,3 @@
-import { Loading } from './PageLoading';
-export * from './PageLoading';
+import { Loading } from './page-loading';
+export * from './page-loading';
 export default Loading;

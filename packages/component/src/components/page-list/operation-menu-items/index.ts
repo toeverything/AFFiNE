@@ -1,5 +1,5 @@
-export * from './CopyLink';
-export * from './DisablePublicSharing';
-export * from './Export';
+export * from './copy-link';
+export * from './disable-public-sharing';
+export * from './export';
 // export * from './MoveTo';
-export * from './MoveToTrash';
+export * from './move-to-trash';

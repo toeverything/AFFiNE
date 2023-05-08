@@ -7,6 +7,7 @@ import { logger } from '../../logger';
 import { registerHandlers } from './handlers';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
+import { registerUpdater } from './updater';
 
 if (require('electron-squirrel-startup')) app.exit();
 if (process.defaultApp) {
@@ -58,6 +59,7 @@ app
   .then(registerProtocol)
   .then(registerHandlers)
   .then(restoreOrCreateWindow)
+  .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
 /**
  * Check new app version in production mode only

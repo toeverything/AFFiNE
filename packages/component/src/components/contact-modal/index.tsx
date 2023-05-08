@@ -15,7 +15,7 @@ import {
   RedditIcon,
   TelegramIcon,
   TwitterIcon,
-} from './Icons';
+} from './icons';
 import {
   StyledBigLink,
   StyledLogo,

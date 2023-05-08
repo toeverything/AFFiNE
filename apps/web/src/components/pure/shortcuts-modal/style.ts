@@ -44,8 +44,7 @@ export const StyledModalHeader = styled('div')(() => ({
   position: 'sticky',
   left: '0',
   top: '0',
-  background: 'var(--affine-popover-background)',
-
+  background: 'var(--affine-white)',
   transition: 'background-color 0.5s',
 }));
 

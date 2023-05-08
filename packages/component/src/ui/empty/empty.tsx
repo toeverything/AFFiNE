@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import { EmptySVG } from './EmptySVG';
+import { EmptySvg } from './empty-svg';
 import { StyledEmptyContainer } from './style';
 export type EmptyContentProps = {
   containerStyle?: CSSProperties;
@@ -15,7 +15,7 @@ export const Empty = ({
 }: EmptyContentProps) => {
   return (
     <StyledEmptyContainer style={containerStyle}>
-      <EmptySVG />
+      <EmptySvg />
       <p style={descriptionStyle}>{description}</p>
     </StyledEmptyContainer>
   );

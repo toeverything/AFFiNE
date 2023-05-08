@@ -28,7 +28,7 @@ import {
   StyledHorizontalDivider,
   StyledHorizontalDividerContainer,
 } from '../styles';
-import { LanguageMenu } from './LanguageMenu';
+import { LanguageMenu } from './language-menu';
 const CommonMenu = () => {
   const content = (
     <div

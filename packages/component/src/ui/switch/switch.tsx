@@ -1,6 +1,7 @@
-// components/Switch.tsx
-import { styled } from '@affine/component';
+// components/switch.tsx
 import { useState } from 'react';
+
+import { styled } from '../../styles';
 
 const StyledLabel = styled('label')(() => {
   return {

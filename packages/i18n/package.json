@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./hooks": "./src/i18n_generated"
+    "./hooks": "./src/i18n-generated"
   },
   "publishConfig": {
     "main": "dist/src/index.js",
@@ -40,5 +40,5 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
   },
-  "version": "0.5.4-canary.25"
+  "version": "0.5.4-canary.27"
 }
