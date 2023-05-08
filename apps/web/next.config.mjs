@@ -239,4 +239,6 @@ if (process.env.PERFSEE_TOKEN) {
   );
 }
 
-export default withForgetti(withVanillaExtract(config));
+export default withForgetti({
+  preset: 'react',
+})(withVanillaExtract(config));
