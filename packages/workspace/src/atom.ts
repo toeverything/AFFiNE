@@ -13,6 +13,20 @@ export type RootWorkspaceMetadata = {
 // be careful when you use this atom,
 // it should be used only in the root component
 
+// we use async storage to make sure the hydration is correct
+// todo(pengx17): we could save the item to electron through IPC channel
+export const asyncStorage = createJSONStorage<RootWorkspaceMetadata[]>(() => ({
+  getItem: async (key: string) => {
+    return localStorage.getItem(key);
+  },
+  setItem: async (key: string, value: string) => {
+    return localStorage.setItem(key, value);
+  },
+  removeItem: async (key: string) => {
+    return localStorage.removeItem(key);
+  },
+}));
+
 /**
  * root workspaces atom
  * this atom stores the metadata of all workspaces,
@@ -24,7 +38,8 @@ export const rootWorkspacesMetadataAtom = atomWithStorage<
   // don't change this key,
   // otherwise it will cause the data loss in the production
   'jotai-workspaces',
-  []
+  [],
+  asyncStorage
 );
 
 // two more atoms to store the current workspace and page
