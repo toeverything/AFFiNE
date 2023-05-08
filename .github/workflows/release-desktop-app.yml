@@ -92,6 +92,7 @@ jobs:
           - { os: macos-latest, platform: macos, arch: x64 }
           - { os: macos-latest, platform: macos, arch: arm64 }
           - { os: ubuntu-latest, platform: linux, arch: x64 }
+          - { os: ubuntu-latest, platform: linux, arch: aarch64 }
           - { os: windows-latest, platform: windows, arch: x64 }
     runs-on: ${{ matrix.spec.os }}
     needs: before-make
@@ -122,11 +123,6 @@ jobs:
 
       - name: make
         run: yarn make-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-        working-directory: apps/electron
-
-      - name: make Linux (arm64)
-        if: ${{ matrix.spec.platform == 'macos' && matrix.spec.arch == 'arm64' }}
-        run: yarn make-linux-arm64
         working-directory: apps/electron
 
       - name: Save artifacts (mac)

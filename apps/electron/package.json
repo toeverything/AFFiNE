@@ -15,7 +15,7 @@
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
     "make-linux-x64": "electron-forge make --platform=linux --arch=x64",
-    "make-linux-arm64": "electron-forge make --platform=linux --arch=arm64",
+    "make-linux-aarch64": "electron-forge make --platform=linux --arch=arm64",
     "rebuild:for-test": "yarn rebuild better-sqlite3",
     "rebuild:for-electron": "yarn electron-rebuild",
     "test": "playwright test"
