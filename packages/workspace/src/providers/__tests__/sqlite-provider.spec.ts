@@ -35,11 +35,18 @@ vi.stubGlobal('window', {
     } satisfies Partial<NonNullable<typeof window.apis>['db']>,
   },
   events: {
-    onDBFileUpdate: (fn: (id: string) => void) => {
-      triggerDBUpdate = fn;
-      return () => {
-        triggerDBUpdate = null;
-      };
+    db: {
+      onDbFileUpdate: (fn: (id: string) => void) => {
+        triggerDBUpdate = fn;
+        return () => {
+          triggerDBUpdate = null;
+        };
+      },
+
+      // not used in this test
+      onDbFileMissing: () => {
+        return () => {};
+      },
     },
   } satisfies Partial<NonNullable<typeof window.events>>,
 });
