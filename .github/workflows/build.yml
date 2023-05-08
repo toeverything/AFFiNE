@@ -291,7 +291,7 @@ jobs:
           path: ./apps/electron/resources/web-static
 
       - name: Rebuild Electron dependences
-        run: yarn exec rebuild:for-electron
+        run: yarn rebuild:for-electron
         working-directory: apps/electron
 
       - name: Run desktop tests
