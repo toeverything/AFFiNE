@@ -1,1 +1,1 @@
-export * from './TourModal';
+export * from './tour-modal';

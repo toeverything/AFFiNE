@@ -1,2 +1,2 @@
-export * from './QuickSearch-tips';
-export * from './Tooltip';
+export * from './quick-search-tips';
+export * from './tooltip';

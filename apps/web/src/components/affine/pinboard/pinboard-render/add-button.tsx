@@ -1,7 +1,7 @@
 import { PlusIcon } from '@blocksuite/icons';
 
 import { StyledOperationButton } from '../styles';
-import type { OperationButtonProps } from './OperationButton';
+import type { OperationButtonProps } from './operation-button';
 
 export const AddButton = ({
   onAdd,

@@ -9,9 +9,9 @@ import {
 } from '@dnd-kit/core';
 import { useCallback, useState } from 'react';
 
-import useCollapsed from './hooks/useCollapsed';
-import useSelectWithKeyboard from './hooks/useSelectWithKeyboard';
-import { TreeNode, TreeNodeWithDnd } from './TreeNode';
+import useCollapsed from './hooks/use-collapsed';
+import useSelectWithKeyboard from './hooks/use-select-with-keyboard';
+import { TreeNode, TreeNodeWithDnd } from './tree-node';
 import type { TreeViewProps } from './types';
 import { findNode } from './utils';
 export const TreeView = <RenderProps,>({

@@ -3,8 +3,8 @@ import Grow from '@mui/material/Grow';
 import type { CSSProperties, PropsWithChildren } from 'react';
 import { useState } from 'react';
 
-import { PopperArrow } from './PopoverArrow';
-import { BasicStyledPopper } from './Popper';
+import { PopperArrow } from './popover-arrow';
+import { BasicStyledPopper } from './popper';
 import { PopperWrapper } from './styles';
 
 export type PurePopperProps = {

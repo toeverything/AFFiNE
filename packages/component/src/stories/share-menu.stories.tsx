@@ -8,7 +8,7 @@ import type { StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
 import { PublicLinkDisableModal } from '../components/share-menu/disable-public-link';
-import { ShareMenu } from '../components/share-menu/ShareMenu';
+import { ShareMenu } from '../components/share-menu/share-menu';
 import { StyledDisableButton } from '../components/share-menu/styles';
 import toast from '../ui/toast/toast';
 

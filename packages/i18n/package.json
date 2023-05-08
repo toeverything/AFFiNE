@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./hooks": "./src/i18n_generated"
+    "./hooks": "./src/i18n-generated"
   },
   "publishConfig": {
     "main": "dist/src/index.js",
