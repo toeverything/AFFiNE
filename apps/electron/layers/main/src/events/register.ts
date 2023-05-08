@@ -1,4 +1,4 @@
-import { app,BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 
 import { logger } from '../logger';
 import { dbEvents } from './db';
