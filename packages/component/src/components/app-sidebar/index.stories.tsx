@@ -2,21 +2,28 @@ import { IconButton } from '@affine/component';
 import { SidebarIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { AppSidebar, appSidebarOpenAtom, ResizeIndicator } from '.';
 import { navHeaderStyle, sidebarButtonStyle } from './index.css';
+import { app } from './vue';
 
 export default {
   title: 'Components/AppSidebar',
   component: AppSidebar,
 } satisfies Meta;
 
-const Footer = () => <div>Add Page</div>;
+let mounted = false;
 
+const Footer = () => <div>Add Page</div>;
 export const Default: StoryFn = () => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [ref, setRef] = useState<HTMLElement | null>(null);
+  const divRef = useRef<HTMLDivElement>(null);
+  if (divRef.current && !mounted) {
+    app.mount(divRef.current);
+    mounted = true;
+  }
   return (
     <>
       <main
@@ -30,7 +37,7 @@ export const Default: StoryFn = () => {
         }}
       >
         <AppSidebar footer={<Footer />} ref={setRef}>
-          Test
+          <div ref={divRef} />
         </AppSidebar>
         <ResizeIndicator targetElement={ref} />
         <div>
