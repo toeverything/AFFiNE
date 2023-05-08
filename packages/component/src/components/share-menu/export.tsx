@@ -12,7 +12,7 @@ import {
   menuItemStyle,
   svgStyle,
 } from './index.css';
-import type { ShareMenuProps } from './ShareMenu';
+import type { ShareMenuProps } from './share-menu';
 
 export const Export: FC<ShareMenuProps> = props => {
   const contentParserRef = useRef<ContentParser>();

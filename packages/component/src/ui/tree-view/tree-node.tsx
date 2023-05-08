@@ -6,7 +6,7 @@ import {
   StyledTreeNodeContainer,
   StyledTreeNodeWrapper,
 } from './styles';
-import { NodeLine, TreeNodeItem, TreeNodeItemWithDnd } from './TreeNodeInner';
+import { NodeLine, TreeNodeItem, TreeNodeItemWithDnd } from './tree-node-inner';
 import type { TreeNodeProps } from './types';
 export const TreeNodeWithDnd = <RenderProps,>(
   props: TreeNodeProps<RenderProps>

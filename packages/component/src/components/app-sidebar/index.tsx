@@ -13,7 +13,7 @@ import type { PropsWithChildren, ReactElement } from 'react';
 import type { ReactNode } from 'react';
 import { forwardRef, useCallback, useEffect } from 'react';
 
-import { IconButton } from '../../ui/button/IconButton';
+import { IconButton } from '../../ui/button/icon-button';
 import {
   floatingMaxWidth,
   haloStyle,

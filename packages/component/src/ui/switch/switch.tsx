@@ -1,4 +1,4 @@
-// components/Switch.tsx
+// components/switch.tsx
 import { useState } from 'react';
 
 import { styled } from '../../styles';

@@ -1,4 +1,4 @@
-export * from './components/ListSkeleton';
+export * from './components/list-skeleton';
 export * from './styles';
 export * from './ui/breadcrumbs';
 export * from './ui/button';
@@ -11,7 +11,7 @@ export * from './ui/menu';
 export * from './ui/modal';
 export * from './ui/mui';
 export * from './ui/popper';
-export * from './ui/shared/Container';
+export * from './ui/shared/container';
 export * from './ui/switch';
 export * from './ui/table';
 export * from './ui/toast';

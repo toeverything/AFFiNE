@@ -22,7 +22,7 @@
       "@affine/component/*": ["./packages/component/src/components/*/index"],
       "@affine/templates/*": ["./packages/templates/src/*"],
       "@affine/i18n": ["./packages/i18n/src"],
-      "@affine/i18n/hooks": ["./packages/i18n/src/i18n_generated"],
+      "@affine/i18n/hooks": ["./packages/i18n/src/i18n-generated"],
       "@affine/debug": ["./packages/debug"],
       "@affine/jotai": ["./packages/jotai"],
       "@affine/env": ["./packages/env"],

@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 
 import { displayFlex, styled, textEllipsis } from '../../styles';
-import StyledPopperContainer from '../shared/Container';
+import StyledPopperContainer from '../shared/container';
 
 export const StyledMenuWrapper = styled(StyledPopperContainer)<{
   width?: CSSProperties['width'];

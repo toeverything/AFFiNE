@@ -10,7 +10,7 @@ const config: SWRConfiguration = {
   fetcher,
 };
 
-export const AffineSWRConfigProvider = memo<React.PropsWithChildren>(
+export const AffineSwrConfigProvider = memo<React.PropsWithChildren>(
   function AffineSWRConfigProvider({ children }) {
     return <SWRConfig value={config}>{children}</SWRConfig>;
   }
