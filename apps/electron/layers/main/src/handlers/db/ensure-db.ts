@@ -3,11 +3,11 @@ import { watch } from 'chokidar';
 import { appContext } from '../../context';
 import { subjects } from '../../events';
 import { logger } from '../../logger';
-import { debounce } from '../../utils';
+import { debounce, ts } from '../../utils';
 import type { WorkspaceSQLiteDB } from './sqlite';
 import { openWorkspaceDatabase } from './sqlite';
 
-const dbMapping = new Map<string, WorkspaceSQLiteDB>();
+const dbMapping = new Map<string, Promise<WorkspaceSQLiteDB>>();
 const dbWatchers = new Map<string, () => void>();
 
 // if we removed the file, we will stop watching it
@@ -22,7 +22,7 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
     logger.info(
       'db file changed on disk',
       db.workspaceId,
-      new Date().getTime() - db.lastUpdateTime,
+      ts() - db.lastUpdateTime,
       'ms'
     );
     // reconnect db
@@ -31,7 +31,7 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
   }, 1000);
 
   watcher.on('change', () => {
-    const currentTime = new Date().getTime();
+    const currentTime = ts();
     if (currentTime - db.lastUpdateTime > 100) {
       debounceOnChange();
     }
@@ -59,17 +59,19 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
 export async function ensureSQLiteDB(id: string) {
   let workspaceDB = dbMapping.get(id);
   if (!workspaceDB) {
-    // hmm... potential race condition?
-    workspaceDB = await openWorkspaceDatabase(appContext, id);
+    logger.info('[ensureSQLiteDB] open db connection', id);
+    workspaceDB = openWorkspaceDatabase(appContext, id);
     dbMapping.set(id, workspaceDB);
-    startWatchingDBFile(workspaceDB);
+    startWatchingDBFile(await workspaceDB);
   }
-  return workspaceDB;
+  return await workspaceDB;
 }
 
-export function disconnectSQLiteDB(id: string) {
-  const db = dbMapping.get(id);
-  if (db) {
+export async function disconnectSQLiteDB(id: string) {
+  const dbp = dbMapping.get(id);
+  if (dbp) {
+    const db = await dbp;
+    logger.info('close db connection', id);
     db.destroy();
     dbWatchers.get(id)?.();
     dbWatchers.delete(id);
@@ -78,10 +80,9 @@ export function disconnectSQLiteDB(id: string) {
 }
 
 export async function cleanupSQLiteDBs() {
-  for (const [id, db] of dbMapping) {
+  for (const [id] of dbMapping) {
     logger.info('close db connection', id);
-    db.destroy();
-    dbWatchers.get(id)?.();
+    await disconnectSQLiteDB(id);
   }
   dbMapping.clear();
   dbWatchers.clear();

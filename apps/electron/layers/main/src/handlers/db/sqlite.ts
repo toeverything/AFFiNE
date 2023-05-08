@@ -7,6 +7,7 @@ import * as Y from 'yjs';
 
 import type { AppContext } from '../../context';
 import { logger } from '../../logger';
+import { ts } from '../../utils';
 
 const schemas = [
   `CREATE TABLE IF NOT EXISTS "updates" (
@@ -39,7 +40,7 @@ export class WorkspaceSQLiteDB {
   db: Database;
   ydoc = new Y.Doc();
   firstConnect = false;
-  lastUpdateTime = new Date().getTime();
+  lastUpdateTime = ts();
 
   constructor(public path: string, public workspaceId: string) {
     this.db = this.reconnectDB();
@@ -81,7 +82,7 @@ export class WorkspaceSQLiteDB {
       });
     });
 
-    this.lastUpdateTime = new Date().getTime();
+    this.lastUpdateTime = ts();
 
     if (this.firstConnect) {
       logger.info('db reconnected', this.workspaceId);
@@ -107,12 +108,12 @@ export class WorkspaceSQLiteDB {
     // 1. store the current ydoc state in the db
     // 2. then delete the old updates
     // yjs-idb will always trim the db for the first time after DB is loaded
-    this.lastUpdateTime = new Date().getTime();
-    logger.debug('applyUpdate', this.workspaceId);
+    this.lastUpdateTime = ts();
+    logger.debug('applyUpdate', this.workspaceId, this.lastUpdateTime);
   };
 
   addBlob = (key: string, data: Uint8Array) => {
-    this.lastUpdateTime = new Date().getTime();
+    this.lastUpdateTime = ts();
     try {
       const statement = this.db.prepare(
         'INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?'
@@ -139,7 +140,7 @@ export class WorkspaceSQLiteDB {
   };
 
   deleteBlob = (key: string) => {
-    this.lastUpdateTime = new Date().getTime();
+    this.lastUpdateTime = ts();
     try {
       const statement = this.db.prepare('DELETE FROM blobs WHERE key = ?');
       statement.run(key);

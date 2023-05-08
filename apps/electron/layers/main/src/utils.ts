@@ -13,3 +13,7 @@ export function debounce<T extends (...args: any[]) => void>(
     }, delay);
   };
 }
+
+export function ts() {
+  return new Date().getTime();
+}
