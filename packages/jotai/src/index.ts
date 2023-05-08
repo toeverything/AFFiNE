@@ -15,16 +15,16 @@ type SetStateActionWithReset<Value> =
 // similar to atomWithStorage, but will not trigger twice on init
 // https://github.com/pmndrs/jotai/discussions/1737
 export function atomWithSyncStorage<Value>(key: string, initialValue: Value) {
-  const storedValue = storage.getItem(key) as Value;
+  const storedValue = storage.getItem(key, initialValue) as Value;
   const _value =
     typeof storedValue === 'symbol'
       ? initialValue
-      : (storage.getItem(key) as Value);
+      : (storage.getItem(key, initialValue) as Value);
   const baseAtom = atom(_value);
 
   baseAtom.onMount = setAtom => {
     if (storage.subscribe) {
-      return storage.subscribe(key, setAtom);
+      return storage.subscribe(key, setAtom, initialValue);
     }
   };
 
