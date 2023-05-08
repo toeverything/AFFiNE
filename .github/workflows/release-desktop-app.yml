@@ -131,11 +131,6 @@ jobs:
           mkdir -p builds
           mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
           mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
-      - name: Save artifacts (linux arm64)
-        if: ${{ matrix.spec.platform == 'macos' && matrix.spec.arch == 'arm64' }}
-        run: |
-          mkdir -p builds
-          mv apps/electron/out/*/make/zip/linux/arm64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-arm64.zip
       - name: Save artifacts (windows)
         if: ${{ matrix.spec.platform == 'windows' }}
         run: |
@@ -145,8 +140,14 @@ jobs:
           mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
           mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
 
+      - name: Save artifacts (linux arm64)
+        if: ${{ matrix.spec.platform == 'macos' && matrix.spec.arch == 'arm64' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/linux/arm64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-arm64.zip
+
       - name: Save artifacts (linux)
-        if: ${{ matrix.spec.platform == 'linux' }}
+        if: ${{ matrix.spec.platform == 'linux' && matrix.spec.arch == 'x64' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
