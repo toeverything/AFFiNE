@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-import { logger, revealLogFile } from '../logger';
+import { getLogFilePath, logger, revealLogFile } from '../logger';
 import { dbHandlers } from './db';
 import { dialogHandlers } from './dialog';
 import { uiHandlers } from './ui';
@@ -18,6 +18,9 @@ type NamespaceHandlers = {
 export const debugHandlers = {
   revealLogFile: async () => {
     return revealLogFile();
+  },
+  logFilePath: async () => {
+    return getLogFilePath();
   },
 };
 
