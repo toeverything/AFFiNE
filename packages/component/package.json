@@ -36,7 +36,7 @@
     "@popperjs/core": "^2.11.7",
     "@radix-ui/react-avatar": "^1.0.2",
     "@toeverything/hooks": "workspace:*",
-    "@toeverything/theme": "workspace:*",
+    "@toeverything/theme": "^0.5.7",
     "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^1.2.1",
     "jotai": "^2.1.0",

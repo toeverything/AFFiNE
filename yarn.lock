@@ -80,7 +80,7 @@ __metadata:
     "@storybook/test-runner": ^0.10.0
     "@storybook/testing-library": ^0.1.0
     "@toeverything/hooks": "workspace:*"
-    "@toeverything/theme": "workspace:*"
+    "@toeverything/theme": ^0.5.7
     "@types/react": ^18.2.6
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.2.4
@@ -8008,15 +8008,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/theme@workspace:*, @toeverything/theme@workspace:packages/theme":
-  version: 0.0.0-use.local
-  resolution: "@toeverything/theme@workspace:packages/theme"
-  dependencies:
-    "@vanilla-extract/vite-plugin": ^3.8.0
-    vite: ^4.3.5
-    vite-plugin-dts: ^2.3.0
-  languageName: unknown
-  linkType: soft
+"@toeverything/theme@npm:^0.5.7":
+  version: 0.5.7
+  resolution: "@toeverything/theme@npm:0.5.7"
+  checksum: feb099f65a57dc18c3262244745d3e0144bfc58bde7d9950a32c4d3e9d3ab8290bb36b445f6608b4f54472dfa4243e675ecd0635720a26952501ba4c5948c013
+  languageName: node
+  linkType: hard
 
 "@toeverything/y-indexeddb@workspace:*, @toeverything/y-indexeddb@workspace:packages/y-indexeddb":
   version: 0.0.0-use.local
