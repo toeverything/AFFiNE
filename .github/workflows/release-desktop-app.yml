@@ -141,7 +141,7 @@ jobs:
           mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
 
       - name: Save artifacts (linux arm64)
-        if: ${{ matrix.spec.platform == 'macos' && matrix.spec.arch == 'arm64' }}
+        if: ${{ matrix.spec.platform == 'linux' && matrix.spec.arch == 'aarch64' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/linux/arm64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-arm64.zip
