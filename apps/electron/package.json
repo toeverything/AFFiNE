@@ -11,7 +11,7 @@
     "prod": "yarn electron-rebuild && yarn node scripts/dev.mjs",
     "build-layers": "zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
-    "generate-handlers-meta": "zx scripts/generate-handlers-meta.mjs",
+    "generate-main-exposed-meta": "zx scripts/generate-main-exposed-meta.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
@@ -56,6 +56,7 @@
     "better-sqlite3": "^8.3.0",
     "chokidar": "^3.5.3",
     "nanoid": "^4.0.2",
+    "rxjs": "^7.8.1",
     "yjs": "^13.6.1"
   },
   "build": {

@@ -1,8 +1,9 @@
 import { watch } from 'chokidar';
 
 import { appContext } from '../../context';
+import { subjects } from '../../events';
 import { logger } from '../../logger';
-import { debounce, sendMainEvent } from '../../utils';
+import { debounce } from '../../utils';
 import type { WorkspaceSQLiteDB } from './sqlite';
 import { openWorkspaceDatabase } from './sqlite';
 
@@ -26,7 +27,7 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
     );
     // reconnect db
     db.reconnectDB();
-    sendMainEvent('main:on-db-file-update', db.workspaceId);
+    subjects.db.dbFileUpdate.next(db.workspaceId);
   }, 1000);
 
   watcher.on('change', () => {
@@ -45,8 +46,7 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
   // access the db
   watcher.on('unlink', () => {
     logger.info('db file missing', db.workspaceId);
-    sendMainEvent('main:on-db-file-missing', db.workspaceId);
-
+    subjects.db.dbFileMissing.next(db.workspaceId);
     // cleanup
     watcher.close().then(() => {
       db.destroy();

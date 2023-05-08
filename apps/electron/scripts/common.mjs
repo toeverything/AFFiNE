@@ -43,7 +43,7 @@ export const config = () => {
     main: {
       entryPoints: [
         resolve(root, './layers/main/src/index.ts'),
-        resolve(root, './layers/main/src/handlers/index.ts'),
+        resolve(root, './layers/main/src/exposed.ts'),
       ],
       outdir: resolve(root, './dist/layers/main'),
       bundle: true,
@@ -60,7 +60,7 @@ export const config = () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', '../main/handlers-meta'],
+      external: ['electron', '../main/exposed-meta'],
       plugins: [nativeNodeModulesPlugin],
       define: define,
     },

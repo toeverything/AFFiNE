@@ -39,7 +39,7 @@ export const registerHandlers = () => {
         try {
           const result = await handler(e, ...args);
           logger.info(
-            '[ipc]',
+            '[ipc-api]',
             chan,
             args.filter(
               arg => typeof arg !== 'function' && typeof arg !== 'object'

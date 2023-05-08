@@ -20,7 +20,7 @@ async function buildLayers() {
     },
   });
 
-  await $`yarn workspace @affine/electron generate-handlers-meta`;
+  await $`yarn workspace @affine/electron generate-main-exposed-meta`;
 }
 
 await buildLayers();
