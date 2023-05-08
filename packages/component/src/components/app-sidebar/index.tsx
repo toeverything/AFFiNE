@@ -11,7 +11,7 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import type { ReactNode } from 'react';
-import { forwardRef, useCallback, useEffect, useState } from 'react';
+import { forwardRef, useCallback, useEffect } from 'react';
 
 import { IconButton } from '../../ui/button/IconButton';
 import {
@@ -32,6 +32,7 @@ import {
   APP_SIDEBAR_OPEN,
   appSidebarOpenAtom,
   appSidebarWidthAtom,
+  updateAvailableAtom,
 } from './index.jotai';
 
 export { appSidebarOpenAtom };
@@ -43,7 +44,7 @@ export type AppSidebarProps = PropsWithChildren<{
 export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   function AppSidebar(props, forwardedRef): ReactElement {
     const [open, setOpen] = useAtom(appSidebarOpenAtom);
-    const [clientUpdateAvailable, setUpdateAvailable] = useState(false);
+    const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
     const t = useAFFiNEI18N();
     const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
     const initialRender = open === undefined;
@@ -69,17 +70,6 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
 
     const environment = getEnvironment();
     const isMacosDesktop = environment.isDesktop && environment.isMacOs;
-    useEffect(() => {
-      let unsubscribe: (() => void) | undefined;
-      if (isMacosDesktop) {
-        unsubscribe = window.apis?.onClientUpdateAvailable(() => {
-          setUpdateAvailable(true);
-        });
-      }
-      return () => {
-        unsubscribe && unsubscribe();
-      };
-    }, [isMacosDesktop]);
     if (initialRender) {
       // avoid the UI flash
       return <div />;
@@ -131,7 +121,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
             </IconButton>
           </div>
           <div className={navBodyStyle}>{props.children}</div>
-          {isMacosDesktop && clientUpdateAvailable && (
+          {clientUpdateAvailable && (
             <Button
               onClick={() => {
                 window.apis?.onClientUpdateInstall();
