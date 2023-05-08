@@ -85,9 +85,6 @@
     },
     {
       "path": "./apps/electron"
-    },
-    {
-      "path": "./packages/theme"
     }
   ],
   "files": [],
