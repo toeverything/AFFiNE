@@ -1,4 +1,3 @@
-import { Button } from '@affine/component';
 import {
   AppSidebar,
   appSidebarOpenAtom,
@@ -11,7 +10,6 @@ import {
   DeleteTemporarilyIcon,
   FolderIcon,
   PlusIcon,
-  ResetIcon,
   SearchIcon,
   SettingsIcon,
   ShareIcon,
@@ -77,25 +75,11 @@ export const RootAppSidebar = ({
     openPage(page.id);
   }, [createPage, openPage]);
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
-  const [clientUpdateAvailable, setUpdateAvailable] = useState(false);
   useEffect(() => {
     if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
       window.apis?.onSidebarVisibilityChange(sidebarOpen);
     }
   }, [sidebarOpen]);
-
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    if (environment.isDesktop) {
-      unsubscribe = window.apis?.onClientUpdateAvailable((version: string) => {
-        console.log(version);
-        setUpdateAvailable(true);
-      });
-    }
-    return () => {
-      unsubscribe && unsubscribe();
-    };
-  }, []);
   const [ref, setRef] = useState<HTMLElement | null>(null);
 
   const handleQuickSearchButtonKeyDown = useCallback(
@@ -247,18 +231,6 @@ export const RootAppSidebar = ({
               <DeleteTemporarilyIcon /> {t['Trash']()}
             </StyledLink>
           </StyledListItem>
-          {environment.isDesktop && clientUpdateAvailable && (
-            <Button
-              onClick={() => {
-                window.apis?.onClientUpdateInstall();
-              }}
-              noBorder
-              icon={<ResetIcon />}
-              type={'light'}
-            >
-              {t['Restart Install Client Update']()}
-            </Button>
-          )}
         </StyledSliderBarInnerWrapper>
       </AppSidebar>
       <ResizeIndicator targetElement={ref} />
