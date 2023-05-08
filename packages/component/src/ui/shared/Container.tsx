@@ -32,7 +32,7 @@ export const placementToContainerDirection: Record<
   'right-end': 'left-bottom',
   bottom: 'none',
   'bottom-start': 'left-top',
-  'bottom-end': 'right-top',
+  'bottom-end': 'none',
   left: 'none',
   'left-start': 'right-top',
   'left-end': 'right-bottom',
