@@ -9,7 +9,7 @@ import {
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
-import { atomWithStorage } from 'jotai/esm/utils';
+import { atomWithStorage } from 'jotai/utils';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
