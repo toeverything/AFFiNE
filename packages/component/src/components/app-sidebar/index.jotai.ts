@@ -14,6 +14,7 @@ export const appSidebarWidthAtom = atomWithStorage(
 
 export const updateAvailableAtom = atomWithObservable<boolean>(() => {
   return new Observable<boolean>(subscriber => {
+    subscriber.next(false);
     if (typeof window !== 'undefined') {
       const isMacosDesktop = environment.isDesktop && environment.isMacOs;
       if (isMacosDesktop) {
@@ -25,6 +26,5 @@ export const updateAvailableAtom = atomWithObservable<boolean>(() => {
         };
       }
     }
-    subscriber.next(false);
   });
 });

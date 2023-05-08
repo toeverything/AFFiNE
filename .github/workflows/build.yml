@@ -271,6 +271,14 @@ jobs:
     name: Desktop Test
     runs-on: ubuntu-latest
     environment: development
+    strategy:
+      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      matrix:
+        spec:
+          - { os: macos-latest, platform: macos, arch: x64 }
+          - { os: macos-latest, platform: macos, arch: arm64 }
+          - { os: ubuntu-latest, platform: linux, arch: x64 }
+          - { os: windows-latest, platform: windows, arch: x64 }
     needs: [build, build-electron]
     steps:
       - uses: actions/checkout@v3
