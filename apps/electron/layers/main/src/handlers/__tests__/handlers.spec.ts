@@ -105,15 +105,19 @@ vi.doMock('electron', () => {
 });
 
 beforeEach(async () => {
-  // clean up tmp folder
   const { registerHandlers } = await import('../register');
   registerHandlers();
+
+  // should also register events
+  const { registerEvents } = await import('../../events');
+  registerEvents();
 });
 
 afterEach(async () => {
   const { cleanupSQLiteDBs } = await import('../db/ensure-db');
   await cleanupSQLiteDBs();
   await fs.remove(SESSION_DATA_PATH);
+  registeredHandlers.get('before-quit')?.();
 });
 
 describe('ensureSQLiteDB', () => {
@@ -142,7 +146,7 @@ describe('ensureSQLiteDB', () => {
     // wait for 1000ms for file watcher to detect file removal
     await delay(2000);
 
-    expect(sendStub).toBeCalledWith('main:on-db-file-missing', id);
+    expect(sendStub).toBeCalledWith('db:onDbFileMissing', id);
 
     // ensureSQLiteDB should recreate the db file
     workspaceDB = await ensureSQLiteDB(id);
@@ -172,7 +176,7 @@ describe('ensureSQLiteDB', () => {
     // wait for 200ms for file watcher to detect file change
     await delay(2000);
 
-    expect(sendStub).toBeCalledWith('main:on-db-file-update', id);
+    expect(sendStub).toBeCalledWith('db:onDbFileUpdate', id);
 
     // should only call once for multiple writes
     expect(sendStub).toBeCalledTimes(1);
