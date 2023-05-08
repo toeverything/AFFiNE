@@ -35,6 +35,15 @@ export function useBlockSuitePageMeta(
   useEffect(() => {
     if (blockSuiteWorkspace) {
       const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
+        blockSuiteWorkspace.meta.pageMetas.forEach(meta => {
+          // fixme: hotfix for title
+          if (!meta.title) {
+            blockSuiteWorkspace.meta.setPageMeta(meta.id, {
+              title: 'Untitled',
+            });
+          }
+        });
+
         setPageMeta(blockSuiteWorkspace.meta.pageMetas);
       });
       return () => {
