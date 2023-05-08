@@ -1,7 +1,10 @@
+import { Button } from '@affine/component';
 import { getEnvironment } from '@affine/env';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ArrowLeftSmallIcon,
   ArrowRightSmallIcon,
+  ResetIcon,
   SidebarIcon,
 } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
@@ -13,18 +16,23 @@ import { forwardRef, useCallback, useEffect } from 'react';
 import { IconButton } from '../../ui/button/IconButton';
 import {
   floatingMaxWidth,
+  haloStyle,
+  installLabelStyle,
   navBodyStyle,
   navFooterStyle,
   navHeaderStyle,
   navStyle,
   navWidthVar,
+  particlesStyle,
   sidebarButtonStyle,
   sidebarFloatMaskStyle,
+  updaterButtonStyle,
 } from './index.css';
 import {
   APP_SIDEBAR_OPEN,
   appSidebarOpenAtom,
   appSidebarWidthAtom,
+  updateAvailableAtom,
 } from './index.jotai';
 
 export { appSidebarOpenAtom };
@@ -36,7 +44,8 @@ export type AppSidebarProps = PropsWithChildren<{
 export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   function AppSidebar(props, forwardedRef): ReactElement {
     const [open, setOpen] = useAtom(appSidebarOpenAtom);
-
+    const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
+    const t = useAFFiNEI18N();
     const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
     const initialRender = open === undefined;
 
@@ -112,6 +121,23 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
             </IconButton>
           </div>
           <div className={navBodyStyle}>{props.children}</div>
+          {clientUpdateAvailable && (
+            <Button
+              onClick={() => {
+                window.apis?.onClientUpdateInstall();
+              }}
+              noBorder
+              className={updaterButtonStyle}
+              type={'light'}
+            >
+              <div className={particlesStyle} aria-hidden="true"></div>
+              <span className={haloStyle} aria-hidden="true"></span>
+              <div className={installLabelStyle}>
+                <ResetIcon />
+                <span>{t['Restart Install Client Update']()}</span>
+              </div>
+            </Button>
+          )}
           <div className={navFooterStyle}>{props.footer}</div>
         </nav>
         <div

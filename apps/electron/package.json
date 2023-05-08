@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.5.4-canary.26",
   "author": "affine",
+  "repository": {
+    "url": "https://github.com/toeverything/AFFiNE",
+    "type": "git"
+  },
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
@@ -51,6 +55,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^8.3.0",
+    "electron-updater": "^5.3.0",
     "yjs": "^13.6.1"
   },
   "build": {

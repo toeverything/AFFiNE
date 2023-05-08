@@ -18,6 +18,7 @@ import { openWorkspaceDatabase } from './data/sqlite';
 import { deleteWorkspace, listWorkspaces } from './data/workspace';
 import { getExchangeTokenParams, oauthEndpoint } from './google-auth';
 import { sendMainEvent } from './send-main-event';
+import { updateClient } from './updater';
 
 let currentWorkspaceId = '';
 
@@ -143,6 +144,10 @@ function registerUIHandlers() {
 
   ipcMain.handle('main:env-update', async (_, env, value) => {
     process.env[env] = value;
+  });
+
+  ipcMain.handle('ui:client-update-install', async () => {
+    await updateClient();
   });
 }
 

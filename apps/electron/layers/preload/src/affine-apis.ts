@@ -72,6 +72,13 @@ const apis = {
   updateEnv: (env: string, value: string) => {
     ipcRenderer.invoke('main:env-update', env, value);
   },
+  onClientUpdateInstall: () => {
+    ipcRenderer.invoke('ui:client-update-install');
+  },
+
+  onClientUpdateAvailable: (callback: (version: string) => void) => {
+    return onMainEvent('main:client-update-available', callback);
+  },
 };
 
 const appInfo = {
