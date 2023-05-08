@@ -49,7 +49,7 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/jotai": "workspace:*"
-    "@affine/workspace": "workspace:^"
+    "@affine/workspace": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230508043859-34d0cc68-nightly
     "@blocksuite/editor": 0.0.0-20230508043859-34d0cc68-nightly
     "@blocksuite/global": 0.0.0-20230508043859-34d0cc68-nightly
@@ -353,7 +353,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/workspace@workspace:*, @affine/workspace@workspace:^, @affine/workspace@workspace:packages/workspace":
+"@affine/workspace@workspace:*, @affine/workspace@workspace:packages/workspace":
   version: 0.0.0-use.local
   resolution: "@affine/workspace@workspace:packages/workspace"
   dependencies:

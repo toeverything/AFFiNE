@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { atomWithSyncStorage } from '@affine/jotai';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   rootCurrentEditorAtom,
@@ -10,6 +9,7 @@ import {
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
 import { WorkspacePlugins } from '../plugins';
 
@@ -87,12 +87,16 @@ type View = { id: string; mode: 'page' | 'edgeless' };
 
 export type WorkspaceRecentViews = Record<string, View[]>;
 
-export const workspaceRecentViewsAtom =
-  atomWithSyncStorage<WorkspaceRecentViews>('recentViews', {});
+export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
+  'recentViews',
+  {}
+);
 
 export type PreferredModeRecord = Record<Page['id'], 'page' | 'edgeless'>;
-export const workspacePreferredModeAtom =
-  atomWithSyncStorage<PreferredModeRecord>('preferredMode', {});
+export const workspacePreferredModeAtom = atomWithStorage<PreferredModeRecord>(
+  'preferredMode',
+  {}
+);
 
 export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
   null,
