@@ -1,6 +1,6 @@
 import { RequestError } from '@affine/workspace/affine/api';
 import type { NextRouter } from 'next/router';
-import type { ErrorInfo } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';
 
@@ -77,7 +77,7 @@ export class AffineErrorBoundary extends Component<
     console.error('Uncaught error:', error, errorInfo);
   }
 
-  public render() {
+  public render(): ReactNode {
     if (this.state.error) {
       const error = this.state.error;
       if (error instanceof PageNotFoundError) {
