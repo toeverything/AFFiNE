@@ -39,6 +39,6 @@ export const buttonStyle = style({
   padding: '4 20px',
   ':hover': {
     backgroundColor: 'var(--affine-primary-color)',
-    color: 'var(--affine-text-primary-color)',
+    color: 'var(--affine-white)',
   },
 });

@@ -21,8 +21,9 @@ const logger = new DebugLogger('affine:workspace:local:crud');
  */
 export function saveWorkspaceToLocalStorage(workspaceId: string) {
   const storage = getStorage();
-  !Array.isArray(storage.getItem(kStoreKey)) && storage.setItem(kStoreKey, []);
-  const data = storage.getItem(kStoreKey) as z.infer<typeof schema>;
+  !Array.isArray(storage.getItem(kStoreKey, [])) &&
+    storage.setItem(kStoreKey, []);
+  const data = storage.getItem(kStoreKey, []) as z.infer<typeof schema>;
   const id = data.find(id => id === workspaceId);
   if (!id) {
     logger.debug('saveWorkspaceToLocalStorage', workspaceId);
@@ -34,9 +35,9 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
   get: async workspaceId => {
     logger.debug('get', workspaceId);
     const storage = getStorage();
-    !Array.isArray(storage.getItem(kStoreKey)) &&
+    !Array.isArray(storage.getItem(kStoreKey, [])) &&
       storage.setItem(kStoreKey, []);
-    const data = storage.getItem(kStoreKey) as z.infer<typeof schema>;
+    const data = storage.getItem(kStoreKey, []) as z.infer<typeof schema>;
     const id = data.find(id => id === workspaceId);
     if (!id) {
       return null;
@@ -56,7 +57,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
   create: async ({ doc }) => {
     logger.debug('create', doc);
     const storage = getStorage();
-    !Array.isArray(storage.getItem(kStoreKey)) &&
+    !Array.isArray(storage.getItem(kStoreKey, [])) &&
       storage.setItem(kStoreKey, []);
     const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdateV2(doc);
     const id = nanoid();
@@ -76,9 +77,9 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
   delete: async workspace => {
     logger.debug('delete', workspace);
     const storage = getStorage();
-    !Array.isArray(storage.getItem(kStoreKey)) &&
+    !Array.isArray(storage.getItem(kStoreKey, [])) &&
       storage.setItem(kStoreKey, []);
-    const data = storage.getItem(kStoreKey) as z.infer<typeof schema>;
+    const data = storage.getItem(kStoreKey, []) as z.infer<typeof schema>;
     const idx = data.findIndex(id => id === workspace.id);
     if (idx === -1) {
       throw new Error('workspace not found');
@@ -93,8 +94,10 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
   list: async () => {
     logger.debug('list');
     const storage = getStorage();
-    let allWorkspaceIDs: string[] = Array.isArray(storage.getItem(kStoreKey))
-      ? (storage.getItem(kStoreKey) as z.infer<typeof schema>)
+    let allWorkspaceIDs: string[] = Array.isArray(
+      storage.getItem(kStoreKey, [])
+    )
+      ? (storage.getItem(kStoreKey, []) as z.infer<typeof schema>)
       : [];
 
     // workspaces in desktop

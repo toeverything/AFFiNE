@@ -163,6 +163,7 @@ input {
   border-radius: 0; /*Solve the problem of rounded corners of the input box on ios*/
   outline: medium; /*Remove the default yellow border on mouse click*/
   background-color: transparent;
+  caret-color: var(--affine-primary-color);
 }
 
 input:-webkit-autofill {

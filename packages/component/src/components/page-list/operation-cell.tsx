@@ -15,41 +15,33 @@ import {
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import type React from 'react';
 import { useState } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../../../shared';
-import { toast } from '../../../../utils';
-import {
-  DisablePublicSharing,
-  MoveToTrash,
-} from '../../../affine/operation-menu-items';
+import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export type OperationCellProps = {
-  pageMeta: PageMeta;
-  metas: PageMeta[];
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-  onOpenPageInNewTab: (pageId: string) => void;
-  onToggleFavoritePage: (pageId: string) => void;
-  onToggleTrashPage: (pageId: string, isTrash: boolean) => void;
+  title: string;
+  favorite: boolean;
+  isPublic: boolean;
+  onOpenPageInNewTab: () => void;
+  onToggleFavoritePage: () => void;
+  onRemoveToTrash: () => void;
+  onDisablePublicSharing: () => void;
 };
 
 export const OperationCell: React.FC<OperationCellProps> = ({
-  pageMeta,
-  blockSuiteWorkspace,
+  title,
+  favorite,
+  isPublic,
   onOpenPageInNewTab,
   onToggleFavoritePage,
-  onToggleTrashPage,
+  onRemoveToTrash,
+  onDisablePublicSharing,
 }) => {
-  const { id, favorite, isPublic } = pageMeta;
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   const [openDisableShared, setOpenDisableShared] = useState(false);
-
-  const page = blockSuiteWorkspace.getPage(id);
-  assertExists(page);
 
   const OperationMenu = (
     <>
@@ -62,12 +54,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         />
       )}
       <MenuItem
-        onClick={() => {
-          onToggleFavoritePage(id);
-          toast(
-            favorite ? t['Removed from Favorites']() : t['Added to Favorites']()
-          );
-        }}
+        onClick={onToggleFavoritePage}
         icon={
           favorite ? (
             <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
@@ -79,23 +66,16 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
       </MenuItem>
       {!environment.isDesktop && (
-        <MenuItem
-          onClick={() => {
-            onOpenPageInNewTab(id);
-          }}
-          icon={<OpenInNewIcon />}
-        >
+        <MenuItem onClick={onOpenPageInNewTab} icon={<OpenInNewIcon />}>
           {t['Open in new tab']()}
         </MenuItem>
       )}
-      {!pageMeta.isRootPinboard && (
-        <MoveToTrash
-          testId="move-to-trash"
-          onItemClick={() => {
-            setOpen(true);
-          }}
-        />
-      )}
+      <MoveToTrash
+        testId="move-to-trash"
+        onItemClick={() => {
+          setOpen(true);
+        }}
+      />
     </>
   );
   return (
@@ -114,10 +94,9 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       </FlexWrapper>
       <MoveToTrash.ConfirmModal
         open={open}
-        meta={pageMeta}
+        title={title}
         onConfirm={() => {
-          onToggleTrashPage(id, true);
-          toast(t['Moved to Trash']());
+          onRemoveToTrash();
           setOpen(false);
         }}
         onClose={() => {
@@ -128,7 +107,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         }}
       />
       <DisablePublicSharing.DisablePublicSharingModal
-        page={page}
+        onConfirmDisable={onDisablePublicSharing}
         open={openDisableShared}
         onClose={() => {
           setOpenDisableShared(false);
@@ -139,18 +118,15 @@ export const OperationCell: React.FC<OperationCellProps> = ({
 };
 
 export type TrashOperationCellProps = {
-  pageMeta: PageMeta;
-  onPermanentlyDeletePage: (pageId: string) => void;
-  onRestorePage: (pageId: string) => void;
-  onOpenPage: (pageId: string) => void;
+  onPermanentlyDeletePage: () => void;
+  onRestorePage: () => void;
+  onOpenPage: () => void;
 };
 
 export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
-  pageMeta,
   onPermanentlyDeletePage,
   onRestorePage,
 }) => {
-  const { id, title } = pageMeta;
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   return (
@@ -159,8 +135,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
         <IconButton
           style={{ marginRight: '12px' }}
           onClick={() => {
-            onRestorePage(id);
-            toast(t['restored']({ title: title || 'Untitled' }));
+            onRestorePage();
           }}
         >
           <ResetIcon />
@@ -182,8 +157,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
         confirmType="danger"
         open={open}
         onConfirm={() => {
-          onPermanentlyDeletePage(id);
-          toast(t['Permanently deleted']());
+          onPermanentlyDeletePage();
           setOpen(false);
         }}
         onClose={() => {

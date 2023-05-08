@@ -90,6 +90,12 @@ export class EarlyDisconnectError extends Error {
   }
 }
 
+export class CleanupWhenConnectingError extends Error {
+  constructor() {
+    super('Cleanup when connecting');
+  }
+}
+
 export const markMilestone = async (
   id: string,
   doc: Doc,
@@ -144,11 +150,11 @@ export const createIndexedDBProvider = (
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
   let early = true;
-  let connect = false;
+  let connected = false;
 
   async function handleUpdate(update: Uint8Array, origin: unknown) {
     const db = await dbPromise;
-    if (!connect) {
+    if (!connected) {
       return;
     }
     if (origin === indexeddbOrigin) {
@@ -197,18 +203,20 @@ export const createIndexedDBProvider = (
     upgrade: upgradeDB,
   });
   const handleDestroy = async () => {
-    connect = true;
+    connected = true;
     const db = await dbPromise;
     db.close();
   };
   const apis = {
     connect: async () => {
+      if (connected) return;
+
       apis.whenSynced = new Promise<void>((_resolve, _reject) => {
         early = true;
         resolve = _resolve;
         reject = _reject;
       });
-      connect = true;
+      connected = true;
       doc.on('update', handleUpdate);
       doc.on('destroy', handleDestroy);
       // only run promise below, otherwise the logic is incorrect
@@ -218,7 +226,7 @@ export const createIndexedDBProvider = (
         .transaction('workspace', 'readwrite')
         .objectStore('workspace');
       const data = await store.get(id);
-      if (!connect) {
+      if (!connected) {
         return;
       }
       if (!data) {
@@ -267,17 +275,23 @@ export const createIndexedDBProvider = (
       resolve();
     },
     disconnect() {
-      connect = false;
+      connected = false;
       if (early) {
         reject(new EarlyDisconnectError());
       }
       doc.off('update', handleUpdate);
       doc.off('destroy', handleDestroy);
     },
-    cleanup() {
-      // todo
+    async cleanup() {
+      if (connected) {
+        throw new CleanupWhenConnectingError();
+      }
+      (await dbPromise).delete('workspace', id);
     },
     whenSynced: Promise.resolve(),
+    get connected() {
+      return connected;
+    },
   };
 
   return apis;

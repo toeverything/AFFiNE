@@ -39,13 +39,14 @@ export const StyledLink = styled(Link)(() => {
 });
 export const StyledNewPageButton = styled('button')(() => {
   return {
+    width: '100%',
     height: '52px',
     ...displayFlex('flex-start', 'center'),
-    padding: '0 8px 0 16px',
+    padding: '0 16px',
     svg: {
       fontSize: '20px',
       color: 'var(--affine-icon-color)',
-      marginRight: '8px',
+      marginRight: '12px',
     },
     ':hover': {
       color: 'var(--affine-primary-color)',

@@ -13,6 +13,7 @@ import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspacePersist } from '../index';
 import {
+  CleanupWhenConnectingError,
   createIndexedDBProvider,
   dbVersion,
   DEFAULT_DB_NAME,
@@ -59,7 +60,7 @@ describe('indexeddb provider', () => {
     await provider.whenSynced;
     const db = await openDB(rootDBName, dbVersion);
     {
-      const store = await db
+      const store = db
         .transaction('workspace', 'readonly')
         .objectStore('workspace');
       const data = await store.get(id);
@@ -135,10 +136,12 @@ describe('indexeddb provider', () => {
       rootDBName
     );
     provider.connect();
+    expect(provider.connected).toBe(true);
     const p1 = provider.whenSynced;
     await p1;
     const snapshot = encodeStateAsUpdate(workspace.doc);
     provider.disconnect();
+    expect(provider.connected).toBe(false);
     {
       const page = workspace.createPage('page0');
       const pageBlockId = page.addBlock('affine:page', { title: '' });
@@ -150,15 +153,56 @@ describe('indexeddb provider', () => {
       expect(updates.length).toBe(1);
       expect(updates[0]).toEqual(snapshot);
     }
+    expect(provider.connected).toBe(false);
     provider.connect();
+    expect(provider.connected).toBe(true);
     const p2 = provider.whenSynced;
     await p2;
     {
       const updates = await getUpdates(workspace.id);
       expect(updates).not.toEqual([]);
     }
+    expect(provider.connected).toBe(true);
     provider.disconnect();
+    expect(provider.connected).toBe(false);
     expect(p1).not.toBe(p2);
+  });
+
+  test('cleanup', async () => {
+    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    provider.connect();
+    await provider.whenSynced;
+    const db = await openDB(rootDBName, dbVersion);
+
+    {
+      const store = db
+        .transaction('workspace', 'readonly')
+        .objectStore('workspace');
+      const keys = await store.getAllKeys();
+      expect(keys).contain(workspace.id);
+    }
+
+    provider.disconnect();
+    await provider.cleanup();
+
+    {
+      const store = db
+        .transaction('workspace', 'readonly')
+        .objectStore('workspace');
+      const keys = await store.getAllKeys();
+      expect(keys).not.contain(workspace.id);
+    }
+  });
+
+  test('cleanup when connecting', async () => {
+    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    provider.connect();
+    expect(() => provider.cleanup()).rejects.toThrowError(
+      CleanupWhenConnectingError
+    );
+    await provider.whenSynced;
+    provider.disconnect();
+    await provider.cleanup();
   });
 
   test('merge', async () => {

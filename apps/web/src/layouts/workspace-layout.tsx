@@ -37,7 +37,6 @@ import { useSyncRouterWithCurrentWorkspaceId } from '../hooks/use-sync-router-wi
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
-import type { AllWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import {
   MainContainer,
@@ -45,11 +44,6 @@ import {
   StyledPage,
   StyledToolWrapper,
 } from './styles';
-
-declare global {
-  // eslint-disable-next-line no-var
-  var currentWorkspace: AllWorkspace;
-}
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -259,11 +253,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
   const t = useAFFiNEI18N();
-
-  useEffect(() => {
-    logger.info('currentWorkspace: ', currentWorkspace);
-    globalThis.currentWorkspace = currentWorkspace;
-  }, [currentWorkspace]);
 
   //#region init workspace
   if (currentWorkspace.blockSuiteWorkspace.isEmpty) {

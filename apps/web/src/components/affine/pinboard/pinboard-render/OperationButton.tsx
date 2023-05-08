@@ -1,4 +1,5 @@
 import { MenuItem, MuiClickAwayListener, PureMenu } from '@affine/component';
+import { CopyLink, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   MoreVerticalIcon,
@@ -13,7 +14,6 @@ import { useMemo, useRef, useState } from 'react';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
-import { CopyLink, MoveToTrash } from '../../operation-menu-items';
 import { PinboardMenu } from '../pinboard-menu/';
 import { StyledOperationButton } from '../styles';
 
@@ -152,7 +152,7 @@ export const OperationButton = ({
         />
         <MoveToTrash.ConfirmModal
           open={confirmModalOpen}
-          meta={currentMeta}
+          title={currentMeta.title}
           onConfirm={() => {
             toast(t['Moved to Trash']());
             removeToTrash(currentMeta.id);

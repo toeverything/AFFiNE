@@ -11,8 +11,9 @@ export function upgradeDB(db: IDBPDatabase<BlockSuiteBinaryDB>) {
 export interface IndexedDBProvider {
   connect: () => void;
   disconnect: () => void;
-  cleanup: () => void;
+  cleanup: () => Promise<void>;
   whenSynced: Promise<void>;
+  readonly connected: boolean;
 }
 
 export type UpdateMessage = {

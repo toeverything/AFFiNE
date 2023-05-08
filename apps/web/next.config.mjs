@@ -80,6 +80,11 @@ const nextConfig = {
     removeConsole: {
       exclude: ['error', 'log', 'warn', 'info'],
     },
+    reactRemoveProperties: !buildFlags.enableTestProperties
+      ? {
+          properties: ['^data-testid$'],
+        }
+      : false,
     emotion: {
       sourceMap: true,
     },
@@ -106,7 +111,6 @@ const nextConfig = {
     '@affine/jotai',
     '@toeverything/hooks',
     '@toeverything/y-indexeddb',
-    '@toeverything/theme',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
