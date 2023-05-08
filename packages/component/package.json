@@ -23,7 +23,7 @@
     "@affine/debug": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/jotai": "workspace:*",
-    "@affine/workspace": "workspace:^",
+    "@affine/workspace": "workspace:*",
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.11.0",
