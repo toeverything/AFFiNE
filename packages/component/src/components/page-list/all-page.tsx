@@ -169,6 +169,7 @@ export const PageList: React.FC<PageListProps> = ({
           <TitleCell
             icon={icon}
             text={title || t['Untitled']()}
+            data-testid="title"
             suffix={
               <FavoriteTag
                 className={favorite ? '' : 'favorite-button'}
@@ -178,10 +179,18 @@ export const PageList: React.FC<PageListProps> = ({
             }
             onClick={onClickPage}
           />
-          <TableCell ellipsis={true} onClick={onClickPage}>
+          <TableCell
+            data-testid="created-date"
+            ellipsis={true}
+            onClick={onClickPage}
+          >
             {createDate}
           </TableCell>
-          <TableCell ellipsis={true} onClick={onClickPage}>
+          <TableCell
+            data-testid="updated-date"
+            ellipsis={true}
+            onClick={onClickPage}
+          >
             {updatedDate ?? createDate}
           </TableCell>
           {!isPublicWorkspace && (
