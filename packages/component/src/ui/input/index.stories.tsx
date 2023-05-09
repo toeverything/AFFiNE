@@ -1,7 +1,6 @@
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
-import { within } from '@storybook/testing-library';
-import { fireEvent } from '@testing-library/react';
+import { userEvent, within } from '@storybook/testing-library';
 
 import { Input } from '.';
 
@@ -19,7 +18,8 @@ Basic.play = async ({ canvasElement }) => {
   const item = element.getByTestId('test-input') as HTMLInputElement;
   expect(item).toBeTruthy();
   expect(item.value).toBe('test');
-  fireEvent.change(item, { target: { value: 'test 2' } });
+  userEvent.clear(item);
+  userEvent.type(item, 'test 2');
   expect(item.value).toBe('test 2');
 };
 
