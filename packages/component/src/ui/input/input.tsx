@@ -56,7 +56,7 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
         [widthVar]: width ? `${width}px` : '100%',
         [heightVar]: height ? `${height}px` : 'unset',
       })}
-      data-no-boder={noBorder}
+      data-no-border={noBorder}
       data-disabled={disabled}
       ref={ref}
       value={value}

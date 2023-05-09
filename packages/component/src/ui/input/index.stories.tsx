@@ -33,3 +33,7 @@ DynamicHeight.play = async ({ canvasElement }) => {
   expect(item).toBeTruthy();
   expect(item.getBoundingClientRect().width).toBe(200);
 };
+
+export const NoBorder: StoryFn<typeof Input> = () => {
+  return <Input noBorder={true} data-testid="test-input" />;
+};
