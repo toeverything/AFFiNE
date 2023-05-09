@@ -21,7 +21,6 @@ export type PageDetailEditorProps = {
   workspace: AffineOfficialWorkspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
-  onLoad?: (page: Page, editor: EditorContainer) => void;
   header?: React.ReactNode;
 };
 
@@ -29,7 +28,6 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   workspace,
   pageId,
   onInit,
-  onLoad,
   header,
   isPublic,
   isPreview,
@@ -81,9 +79,11 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
             startTransition(() => {
               setEditor(editor);
             });
-            onLoad?.(page, editor);
+            page.workspace.setPageMeta(page.id, {
+              updatedDate: Date.now(),
+            });
           },
-          [onLoad, setEditor]
+          [setEditor]
         )}
       />
     </>
