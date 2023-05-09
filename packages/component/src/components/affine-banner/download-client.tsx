@@ -11,7 +11,10 @@ import {
 
 export const DownloadTips = ({ onClose }: { onClose: () => void }) => {
   return (
-    <div className={downloadTipContainerStyle}>
+    <div
+      className={downloadTipContainerStyle}
+      data-testid="download-client-tip"
+    >
       <div className={downloadTipStyle}>
         <AffineLogoSimSBlue1_1Icon className={downloadTipIconStyle} />
         <div className={downloadMessageStyle}>
@@ -27,7 +30,11 @@ export const DownloadTips = ({ onClose }: { onClose: () => void }) => {
           &nbsp;for the full experience.
         </div>
       </div>
-      <div className={downloadCloseButtonStyle} onClick={onClose}>
+      <div
+        className={downloadCloseButtonStyle}
+        onClick={onClose}
+        data-testid="download-client-tip-close-button"
+      >
         <CloseIcon className={downloadTipIconStyle} />
       </div>
     </div>
