@@ -18,7 +18,7 @@ import {
   StyledPinboard,
   StyledSearchContainer,
 } from '../styles';
-import { SearchContent } from './SearchContent';
+import { SearchContent } from './search-content';
 
 export interface PinboardMenuProps extends PureMenuProps {
   metas: PageMeta[];

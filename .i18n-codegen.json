@@ -4,7 +4,7 @@
   "list": [
     {
       "input": "./packages/i18n/src/resources/en.json",
-      "output": "./packages/i18n/src/i18n_generated",
+      "output": "./packages/i18n/src/i18n-generated",
       "parser": {
         "type": "i18next",
         "contextSeparator": "$",

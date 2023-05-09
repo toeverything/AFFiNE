@@ -234,3 +234,14 @@ affine-block-hub {
     padding: 0;
   }
 }
+
+/* TODO-Doma Move CSS variable definitions to @toeverything/theme */
+:root {
+  --affine-drag-overlay-bg: rgba(255, 255, 255, 0.95);
+  --affine-drag-overlay-shadow: var(--affine-shadow-1);
+}
+
+[data-theme='dark'] {
+  --affine-drag-overlay-bg: rgba(255, 255, 255, 0.15);
+  --affine-drag-overlay-shadow: none;
+}

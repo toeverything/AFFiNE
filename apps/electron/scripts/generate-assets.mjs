@@ -85,6 +85,7 @@ async function buildLayers() {
     define: {
       ...common.main.define,
       'process.env.NODE_ENV': `"production"`,
+      'process.env.BUILD_TYPE': `"${process.env.BUILD_TYPE || 'statble'}"`,
     },
   });
 }
