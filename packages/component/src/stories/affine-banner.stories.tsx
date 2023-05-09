@@ -24,11 +24,10 @@ export const Default: StoryFn = () => {
 };
 
 export const Download: StoryFn = () => {
-  const [closed, setIsClosed] = useState(true);
+  const [, setIsClosed] = useState(true);
   return (
     <div>
       <DownloadTips
-        show={closed}
         onClose={() => {
           setIsClosed(false);
         }}
