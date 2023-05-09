@@ -1,4 +1,13 @@
-import { style } from '@vanilla-extract/css';
+import { keyframes, style } from '@vanilla-extract/css';
+
+const slideDown = keyframes({
+  '0%': {
+    height: '0px',
+  },
+  '100%': {
+    height: '44px',
+  },
+});
 
 export const browserWarningStyle = style({
   backgroundColor: 'var(--affine-background-warning-color)',
@@ -37,6 +46,7 @@ export const downloadTipContainerStyle = style({
   justifyContent: 'center',
   alignItems: 'center',
   position: 'relative',
+  animation: `${slideDown} .3s ease-in-out forwards`,
 });
 export const downloadTipStyle = style({
   display: 'flex',
