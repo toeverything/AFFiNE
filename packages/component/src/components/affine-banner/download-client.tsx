@@ -9,16 +9,7 @@ import {
   linkStyle,
 } from './index.css';
 
-export const DownloadTips = ({
-  show,
-  onClose,
-}: {
-  show: boolean;
-  onClose: () => void;
-}) => {
-  if (!show) {
-    return null;
-  }
+export const DownloadTips = ({ onClose }: { onClose: () => void }) => {
   return (
     <div className={downloadTipContainerStyle}>
       <div className={downloadTipStyle}>
