@@ -1,14 +1,16 @@
+import { assignInlineVars } from '@vanilla-extract/dynamic';
+import clsx from 'clsx';
 import type {
+  ChangeEventHandler,
   CSSProperties,
   FocusEventHandler,
   ForwardedRef,
   HTMLAttributes,
-  InputHTMLAttributes,
   KeyboardEventHandler,
 } from 'react';
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef, useCallback } from 'react';
 
-import { StyledInput } from './style';
+import { heightVar, inputStyle, widthVar } from './index.css';
 
 type inputProps = {
   value?: string;
@@ -27,39 +29,35 @@ type inputProps = {
 export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
   {
     disabled,
-    value: valueProp,
+    value,
     placeholder,
     maxLength,
     minLength,
     height,
     width,
     onChange,
-    onBlur,
-    onKeyDown,
     noBorder = false,
     ...otherProps
   }: inputProps,
   ref: ForwardedRef<HTMLInputElement>
 ) {
-  const [value, setValue] = useState<string>(valueProp || '');
-  const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
-    const { value } = e.target;
-    setValue(value);
-    onChange && onChange(value);
-  };
-
-  const handleBlur: InputHTMLAttributes<HTMLInputElement>['onBlur'] = e => {
-    onBlur && onBlur(e);
-  };
-  const handleKeyDown: InputHTMLAttributes<HTMLInputElement>['onKeyDown'] =
+  const handleChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
     e => {
-      onKeyDown && onKeyDown(e);
-    };
-  useEffect(() => {
-    setValue(valueProp || '');
-  }, [valueProp]);
+      const { value } = e.target;
+      onChange && onChange(value);
+    },
+    [onChange]
+  );
+
   return (
-    <StyledInput
+    <input
+      className={clsx(inputStyle, otherProps.className)}
+      style={assignInlineVars({
+        [widthVar]: width ? `${width}px` : '100%',
+        [heightVar]: height ? `${height}px` : 'unset',
+      })}
+      data-no-border={noBorder}
+      data-disabled={disabled}
       ref={ref}
       value={value}
       disabled={disabled}
@@ -68,10 +66,7 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
       maxLength={maxLength}
       minLength={minLength}
       onChange={handleChange}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
       height={height}
-      noBorder={noBorder}
       {...otherProps}
     />
   );

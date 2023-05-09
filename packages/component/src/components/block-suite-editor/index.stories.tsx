@@ -48,6 +48,7 @@ const Template: StoryFn<EditorProps> = (props: Partial<EditorProps>) => {
       style={{
         height: '100vh',
         width: '100vw',
+        overflow: 'auto',
       }}
     >
       <BlockSuiteEditor onInit={initPage} page={page} mode="page" {...props} />

@@ -26,6 +26,7 @@ const WorkspaceListModal = lazy(() =>
     default: module.WorkspaceListModal,
   }))
 );
+
 const CreateWorkspaceModal = lazy(() =>
   import('../components/affine/create-workspace-modal').then(module => ({
     default: module.CreateWorkspaceModal,
@@ -39,7 +40,8 @@ const TmpDisableAffineCloudModal = lazy(() =>
     })
   )
 );
-const OnboardingModalAtom = lazy(() =>
+
+const OnboardingModal = lazy(() =>
   import('../components/pure/onboarding-modal').then(module => ({
     default: module.OnboardingModal,
   }))
@@ -84,7 +86,7 @@ export function Modals() {
       </Suspense>
       {env.isDesktop && (
         <Suspense>
-          <OnboardingModalAtom
+          <OnboardingModal
             open={openOnboardingModal}
             onClose={onCloseOnboardingModal}
           />
