@@ -22,13 +22,7 @@ import { HeaderShareMenu } from './header-right-items/share-menu';
 import SyncUser from './header-right-items/sync-user';
 import TrashButtonGroup from './header-right-items/trash-button-group';
 import UserAvatar from './header-right-items/user-avatar';
-import {
-  StyledBrowserWarning,
-  StyledCloseButton,
-  StyledHeader,
-  StyledHeaderContainer,
-  StyledHeaderRightSide,
-} from './styles';
+import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
 
 const SidebarSwitch = lazy(() =>
@@ -45,12 +39,12 @@ const BrowserWarning = ({
   onClose: () => void;
 }) => {
   return (
-    <StyledBrowserWarning show={show}>
+    <div className={styles.browserWarning} data-show={show}>
       <OSWarningMessage />
-      <StyledCloseButton onClick={onClose}>
+      <div className={styles.closeButton} onClick={onClose}>
         <CloseIcon />
-      </StyledCloseButton>
-    </StyledBrowserWarning>
+      </div>
+    </div>
   );
 };
 
@@ -138,9 +132,10 @@ export const Header = forwardRef<
 
   const mode = useCurrentMode();
   return (
-    <StyledHeaderContainer
+    <div
+      className={styles.headerContainer}
       ref={ref}
-      hasWarning={showWarning}
+      data-has-warning={showWarning}
       data-open={open}
       {...props}
     >
@@ -150,11 +145,12 @@ export const Header = forwardRef<
           setShowWarning(false);
         }}
       />
-      <StyledHeader
-        hasWarning={showWarning}
+      <div
+        className={styles.header}
+        data-has-warning={showWarning}
         data-testid="editor-header-items"
         data-tauri-drag-region
-        isEdgeless={mode === 'edgeless'}
+        data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>
           <SidebarSwitch
@@ -165,7 +161,7 @@ export const Header = forwardRef<
         </Suspense>
 
         {props.children}
-        <StyledHeaderRightSide>
+        <div className={styles.headerRightSide}>
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
               ([name, { availableWhen, Component }]) => {
@@ -189,10 +185,9 @@ export const Header = forwardRef<
               }
             );
           }, [props])}
-          {/*<ShareMenu />*/}
-        </StyledHeaderRightSide>
-      </StyledHeader>
-    </StyledHeaderContainer>
+        </div>
+      </div>
+    </div>
   );
 });
 

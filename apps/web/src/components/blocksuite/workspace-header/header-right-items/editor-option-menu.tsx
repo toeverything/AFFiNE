@@ -24,10 +24,7 @@ import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id'
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
 import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
-import {
-  StyledHorizontalDivider,
-  StyledHorizontalDividerContainer,
-} from '../styles';
+import * as styles from '../styles.css';
 import { LanguageMenu } from './language-menu';
 const CommonMenu = () => {
   const content = (
@@ -120,9 +117,9 @@ const PageMenu = () => {
             }}
           />
         )}
-        <StyledHorizontalDividerContainer>
-          <StyledHorizontalDivider />
-        </StyledHorizontalDividerContainer>
+        <div className={styles.horizontalDividerContainer}>
+          <div className={styles.horizontalDivider} />
+        </div>
       </>
 
       <div
