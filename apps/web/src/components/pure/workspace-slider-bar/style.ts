@@ -32,9 +32,9 @@ export const StyledLink = styled(Link)(() => {
     userDrag: 'none',
     userSelect: 'none',
     appRegion: 'no-drag',
-    '-webkit-user-select': 'none',
-    '-webkit-user-drag': 'none',
-    '-webkit-app-region': 'no-drag',
+    WebkitUserSelect: 'none',
+    WebkitUserDrag: 'none',
+    WebkitAppRegion: 'no-drag',
   };
 });
 export const StyledNewPageButton = styled('button')(() => {
