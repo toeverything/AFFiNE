@@ -7,7 +7,7 @@ import { StyledMenuWrapper } from './styles';
 export type MenuProps = {
   width?: CSSProperties['width'];
 } & PopperProps &
-  Omit<TooltipProps, 'title' | 'content'>;
+  Omit<TooltipProps, 'title' | 'content' | 'placement'>;
 export const Menu = (props: MenuProps) => {
   const { width, content, placement = 'bottom-start', children } = props;
   return content ? (

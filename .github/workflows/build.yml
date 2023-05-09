@@ -47,7 +47,7 @@ jobs:
         uses: ./.github/actions/setup-node
       - name: Build Electron
         working-directory: apps/electron
-        run: yarn exec ts-node-esm ./scripts/build-ci.mts
+        run: yarn build-layers
       - name: Upload Ubuntu desktop artifact
         uses: actions/upload-artifact@v3
         with:
@@ -297,6 +297,10 @@ jobs:
         with:
           name: next-js-static
           path: ./apps/electron/resources/web-static
+
+      - name: Rebuild Electron dependences
+        run: yarn rebuild:for-electron
+        working-directory: apps/electron
 
       - name: Run desktop tests
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test

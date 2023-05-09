@@ -124,7 +124,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
           {clientUpdateAvailable && (
             <Button
               onClick={() => {
-                window.apis?.onClientUpdateInstall();
+                window.apis?.updater.updateClient();
               }}
               noBorder
               className={updaterButtonStyle}

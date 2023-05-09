@@ -9,18 +9,12 @@ import { preload } from 'swr';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
 import type { AffineOfficialWorkspace } from '../../../shared';
+import * as style from './index.css';
 import { CollaborationPanel } from './panel/collaboration';
 import { ExportPanel } from './panel/export';
 import { GeneralPanel } from './panel/general';
 import { PublishPanel } from './panel/publish';
 import { SyncPanel } from './panel/sync';
-import {
-  StyledIndicator,
-  StyledSettingContainer,
-  StyledSettingContent,
-  StyledTabButtonWrapper,
-  WorkspaceSettingTagItem,
-} from './style';
 
 export type WorkspaceSettingDetailProps = {
   workspace: AffineOfficialWorkspace;
@@ -133,39 +127,43 @@ export const WorkspaceSettingDetail: React.FC<
   );
   const Component = useMemo(() => panelMap[currentTab].ui, [currentTab]);
   return (
-    <StyledSettingContainer
+    <div
+      className={style.container}
       aria-label="workspace-setting-detail"
       ref={containerRef}
     >
-      <StyledTabButtonWrapper>
+      <div className={style.tabButtonWrapper}>
         {Object.entries(panelMap).map(([key, value]) => {
           if ('enable' in value && !value.enable(workspace.flavour)) {
             return null;
           }
           return (
-            <WorkspaceSettingTagItem
+            <div
+              className={
+                style.tagItem[currentTab === key ? 'active' : 'inactive']
+              }
               key={key}
-              isActive={currentTab === key}
               data-tab-key={key}
               onClick={handleTabClick}
             >
               {t[value.name]()}
-            </WorkspaceSettingTagItem>
+            </div>
           );
         })}
-        <StyledIndicator
+        <div
+          className={style.indicator}
           ref={ref => {
             indicatorRef.current = ref;
             startTransaction();
           }}
         />
-      </StyledTabButtonWrapper>
-      <StyledSettingContent>
+      </div>
+      <div className={style.content}>
         {/* todo: add skeleton */}
         <Suspense fallback="loading panel...">
           <Component {...props} key={currentTab} data-tab-ui={currentTab} />
         </Suspense>
-      </StyledSettingContent>
-    </StyledSettingContainer>
+      </div>
+    </div>
   );
 };

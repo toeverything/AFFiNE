@@ -29,5 +29,14 @@
   "rust-analyzer.linkedProjects": ["packages/octobase-node/Cargo.toml"],
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "vitest.include": [
+    "packages/**/*.spec.ts",
+    "packages/**/*.spec.tsx",
+    "apps/web/**/*.spec.ts",
+    "apps/web/**/*.spec.tsx",
+    "apps/electron/layers/**/*.spec.ts",
+    "tests/unit/**/*.spec.ts",
+    "tests/unit/**/*.spec.tsx"
+  ]
 }

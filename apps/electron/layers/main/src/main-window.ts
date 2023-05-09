@@ -2,8 +2,8 @@ import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
-import { logger } from '../../logger';
 import { isMacOS } from '../../utils';
+import { logger } from './logger';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
@@ -60,7 +60,9 @@ async function createWindow() {
     logger.info('main window is ready to show');
 
     if (DEV_TOOL) {
-      browserWindow.webContents.openDevTools();
+      browserWindow.webContents.openDevTools({
+        mode: 'detach',
+      });
     }
   });
 
@@ -75,9 +77,11 @@ async function createWindow() {
    */
   const pageUrl = process.env.DEV_SERVER_URL || 'file://./index.html'; // see protocol.ts
 
+  logger.info('loading page at', pageUrl);
+
   await browserWindow.loadURL(pageUrl);
 
-  logger.info('main window is loaded at' + pageUrl);
+  logger.info('main window is loaded at', pageUrl);
 
   return browserWindow;
 }

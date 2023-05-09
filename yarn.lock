@@ -142,6 +142,7 @@ __metadata:
     "@types/better-sqlite3": ^7.6.4
     "@types/fs-extra": ^11.0.1
     better-sqlite3: ^8.3.0
+    chokidar: ^3.5.3
     cross-env: 7.0.3
     electron: 24.2.0
     electron-log: ^5.0.0-beta.23
@@ -150,7 +151,9 @@ __metadata:
     electron-window-state: ^5.0.3
     esbuild: ^0.17.18
     fs-extra: ^11.1.1
+    nanoid: ^4.0.2
     playwright: ^1.33.0
+    rxjs: ^7.8.1
     ts-node: ^10.9.1
     undici: ^5.22.0
     yjs: ^13.6.1

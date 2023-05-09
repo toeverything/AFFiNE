@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -5,6 +6,8 @@ import {
 import { useAtom, useAtomValue } from 'jotai';
 import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
+
+const logger = new DebugLogger('useSyncRouterWithCurrentWorkspaceId');
 
 export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
@@ -23,6 +26,7 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
       if (currentWorkspaceId !== workspaceId) {
         const target = metadata.find(workspace => workspace.id === workspaceId);
         if (!target) {
+          logger.debug('workspace not exist, redirect to current one');
           // workspaceId is invalid, redirect to currentWorkspaceId
           void router.push({
             pathname: router.pathname,
@@ -41,9 +45,7 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
     if (targetWorkspace) {
       console.log('set workspace id', workspaceId);
       setCurrentWorkspaceId(targetWorkspace.id);
-      if (environment.isDesktop) {
-        window.apis?.onWorkspaceChange(targetWorkspace.id);
-      }
+      logger.debug('redirect to', targetWorkspace.id);
       void router.push({
         pathname: router.pathname,
         query: {
@@ -56,6 +58,7 @@ export function useSyncRouterWithCurrentWorkspaceId(router: NextRouter) {
       if (targetWorkspace) {
         console.log('set workspace id', workspaceId);
         setCurrentWorkspaceId(targetWorkspace.id);
+        logger.debug('redirect to', targetWorkspace.id);
         void router.push({
           pathname: router.pathname,
           query: {
