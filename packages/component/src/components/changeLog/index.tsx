@@ -12,6 +12,7 @@ import {
   iconButtonStyle,
   iconStyle,
   linkStyle,
+  linkTextStyle,
 } from './index.css';
 
 type ChangeLogProps = {
@@ -47,7 +48,7 @@ export const ChangeLog = (props: ChangeLogProps) => {
           }}
         >
           <NewIcon className={iconStyle} />
-          {t["Discover what's new!"]()}
+          <div className={linkTextStyle}>{t["Discover what's new!"]()}</div>
         </div>
         <IconButton
           className={iconButtonStyle}
