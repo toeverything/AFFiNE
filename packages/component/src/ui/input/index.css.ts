@@ -1,9 +1,9 @@
-import { createVar, style } from '@vanilla-extract/css';
+import { createVar, style, styleVariants } from '@vanilla-extract/css';
 
 export const heightVar = createVar('heightVar');
 export const widthVar = createVar('widthVar');
 
-export const inputStyle = style({
+const inputStyle = style({
   vars: {
     [heightVar]: 'unset',
     [widthVar]: '100%',
@@ -18,12 +18,6 @@ export const inputStyle = style({
   backgroundColor: 'var(--affine-white)',
   borderRadius: '10px',
   selectors: {
-    '&[data-no-border="true"]': {
-      border: 'unset',
-    },
-    '&[data-disabled="true"]': {
-      color: 'var(--affine-text-disable-color)',
-    },
     '&::placeholder': {
       color: 'var(--affine-placeholder-color)',
     },
@@ -31,4 +25,22 @@ export const inputStyle = style({
       borderColor: 'var(--affine-primary-color)',
     },
   },
+});
+
+export const inputVariantStyle = styleVariants({
+  noBorder: {
+    border: 'unset',
+  },
+  enabled: [
+    inputStyle,
+    {
+      color: 'var(--affine-text-active-color)',
+    },
+  ],
+  disabled: [
+    inputStyle,
+    {
+      color: 'var(--affine-text-inactive-color)',
+    },
+  ],
 });

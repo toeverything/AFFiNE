@@ -10,7 +10,7 @@ import type {
 } from 'react';
 import { forwardRef, useCallback } from 'react';
 
-import { heightVar, inputStyle, widthVar } from './index.css';
+import { heightVar, inputVariantStyle, widthVar } from './index.css';
 
 type inputProps = {
   value?: string;
@@ -51,13 +51,15 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
 
   return (
     <input
-      className={clsx(inputStyle, otherProps.className)}
+      className={clsx(
+        otherProps.className,
+        disabled ? inputVariantStyle.disabled : inputVariantStyle.enabled,
+        noBorder && inputVariantStyle.noBorder
+      )}
       style={assignInlineVars({
         [widthVar]: width ? `${width}px` : '100%',
         [heightVar]: height ? `${height}px` : 'unset',
       })}
-      data-no-border={noBorder}
-      data-disabled={disabled}
       ref={ref}
       value={value}
       disabled={disabled}
