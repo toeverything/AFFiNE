@@ -3,11 +3,14 @@ import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
+import { Skeleton } from '@mui/material';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
 import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
+
+import { blockSuiteEditorStyle } from './index.css';
 
 export type EditorProps = {
   page: Page;
@@ -122,6 +125,18 @@ const BlockSuiteErrorFallback = (
   );
 };
 
+export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
+  return (
+    <div className={blockSuiteEditorStyle}>
+      <Skeleton animation="wave" height={60} />
+      {Array.from({ length: 10 }).map((_, index) => (
+        <Skeleton animation="wave" height={30} key={index} />
+      ))}
+      <Skeleton animation="wave" height={30} width="40%" />
+    </div>
+  );
+});
+
 export const BlockSuiteEditor = memo(function BlockSuiteEditor(
   props: EditorProps & ErrorBoundaryProps
 ): ReactElement {
@@ -134,7 +149,7 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
         [props.onReset]
       )}
     >
-      <Suspense fallback={null}>
+      <Suspense fallback={<BlockSuiteFallback />}>
         <BlockSuiteEditorImpl {...props} />
       </Suspense>
     </ErrorBoundary>
