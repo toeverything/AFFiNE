@@ -1,7 +1,7 @@
-import Modal from './Modal';
+import Modal from './modal';
 
-export * from './Modal';
-export * from './ModalCloseButton';
-export * from './ModalWrapper';
+export * from './modal';
+export * from './modal-close-button';
+export * from './modal-wrapper';
 
 export default Modal;

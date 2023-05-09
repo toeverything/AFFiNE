@@ -1,1 +1,1 @@
-export * from './WorkspaceSelector';
+export * from './workspace-selector';

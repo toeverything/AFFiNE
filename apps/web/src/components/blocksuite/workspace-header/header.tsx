@@ -14,13 +14,14 @@ import {
   useState,
 } from 'react';
 
+import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
-import EditPage from './header-right-items/EditPage';
-import { HeaderShareMenu } from './header-right-items/ShareMenu';
-import SyncUser from './header-right-items/SyncUser';
-import TrashButtonGroup from './header-right-items/TrashButtonGroup';
-import UserAvatar from './header-right-items/UserAvatar';
+import EditPage from './header-right-items/edit-page';
+import { EditorOptionMenu } from './header-right-items/editor-option-menu';
+import { HeaderShareMenu } from './header-right-items/share-menu';
+import SyncUser from './header-right-items/sync-user';
+import TrashButtonGroup from './header-right-items/trash-button-group';
+import UserAvatar from './header-right-items/user-avatar';
 import {
   StyledHeader,
   StyledHeaderContainer,
@@ -116,6 +117,7 @@ export const Header = forwardRef<
   const [open] = useAtom(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
 
+  const mode = useCurrentMode();
   return (
     <StyledHeaderContainer
       ref={ref}
@@ -134,6 +136,7 @@ export const Header = forwardRef<
         hasWarning={showWarning}
         data-testid="editor-header-items"
         data-tauri-drag-region
+        isEdgeless={mode === 'edgeless'}
       >
         <Suspense>
           <SidebarSwitch

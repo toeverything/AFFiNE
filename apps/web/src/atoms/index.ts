@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { atomWithSyncStorage } from '@affine/jotai';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   rootCurrentEditorAtom,
@@ -10,7 +9,9 @@ import {
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
+import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 import { WorkspacePlugins } from '../plugins';
 
 const logger = new DebugLogger('web:atoms');
@@ -49,9 +50,9 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
   });
 
   if (environment.isDesktop) {
-    window.apis.workspace.list().then(workspaceIDs => {
+    window.apis?.workspace.list().then(workspaceIDs => {
       const newMetadata = workspaceIDs.map(w => ({
-        id: w,
+        id: w[0],
         flavour: WorkspaceFlavour.LOCAL,
       }));
       setAtom(metadata => {
@@ -75,7 +76,7 @@ export const currentEditorAtom = rootCurrentEditorAtom;
 
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
-export const openCreateWorkspaceModalAtom = atom(false);
+export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
 export const openQuickSearchModalAtom = atom(false);
 export const openOnboardingModalAtom = atom(false);
 
@@ -87,12 +88,16 @@ type View = { id: string; mode: 'page' | 'edgeless' };
 
 export type WorkspaceRecentViews = Record<string, View[]>;
 
-export const workspaceRecentViewsAtom =
-  atomWithSyncStorage<WorkspaceRecentViews>('recentViews', {});
+export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
+  'recentViews',
+  {}
+);
 
 export type PreferredModeRecord = Record<Page['id'], 'page' | 'edgeless'>;
-export const workspacePreferredModeAtom =
-  atomWithSyncStorage<PreferredModeRecord>('preferredMode', {});
+export const workspacePreferredModeAtom = atomWithStorage<PreferredModeRecord>(
+  'preferredMode',
+  {}
+);
 
 export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
   null,

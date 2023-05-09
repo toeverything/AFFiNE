@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process';
+/* eslint-disable no-async-promise-executor */
+import { execSync, spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -7,8 +8,8 @@ import * as esbuild from 'esbuild';
 
 import { config, root } from './common.mjs';
 
-/** @type 'production' | 'development'' */
-const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
+// this means we don't spawn electron windows, mainly for testing
+const watchMode = process.argv.includes('--watch');
 
 /** Messages on stderr that match any of the contained patterns will be stripped from output */
 const stderrFilterPatterns = [
@@ -29,14 +30,13 @@ try {
   );
 }
 
-// hard-coded for now:
-// fixme(xp): report error if app is not running on DEV_SERVER_URL
-const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
-
 /** @type {ChildProcessWithoutNullStreams | null} */
 let spawnProcess = null;
 
 function spawnOrReloadElectron() {
+  if (watchMode) {
+    return;
+  }
   if (spawnProcess !== null) {
     spawnProcess.off('exit', process.exit);
     spawnProcess.kill('SIGINT');
@@ -59,77 +59,80 @@ function spawnOrReloadElectron() {
     console.error(data);
   });
 
-  // Stops the watch script when the application has been quit
+  // Stops the watch script when the application has quit
   spawnProcess.on('exit', process.exit);
 }
 
 const common = config();
 
-async function main() {
-  async function watchPreload(onInitialBuild) {
+function watchPreload() {
+  return new Promise(async resolve => {
+    let initialBuild = false;
     const preloadBuild = await esbuild.context({
       ...common.preload,
       plugins: [
         ...(common.preload.plugins ?? []),
         {
-          name: 'affine-dev:reload-app-on-preload-change',
+          name: 'electron-dev:reload-app-on-preload-change',
           setup(build) {
-            let initialBuild = false;
             build.onEnd(() => {
               if (initialBuild) {
-                console.log(`[preload] has changed`);
+                console.log(`[preload] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
               } else {
+                resolve();
                 initialBuild = true;
-                onInitialBuild();
               }
             });
           },
         },
       ],
     });
+    // watch will trigger build.onEnd() on first run & on subsequent changes
     await preloadBuild.watch();
-  }
+  });
+}
 
-  async function watchMain() {
-    const define = {
-      ...common.main.define,
-      'process.env.NODE_ENV': `"${mode}"`,
-    };
-
-    if (DEV_SERVER_URL) {
-      define['process.env.DEV_SERVER_URL'] = `"${DEV_SERVER_URL}"`;
-    }
+async function watchMain() {
+  return new Promise(async resolve => {
+    let initialBuild = false;
 
     const mainBuild = await esbuild.context({
       ...common.main,
-      define: define,
       plugins: [
         ...(common.main.plugins ?? []),
         {
-          name: 'affine-dev:reload-app-on-main-change',
+          name: 'electron-dev:reload-app-on-main-change',
           setup(build) {
-            let initialBuild = false;
             build.onEnd(() => {
+              execSync('yarn generate-main-exposed-meta');
+
               if (initialBuild) {
                 console.log(`[main] has changed, [re]launching electron...`);
+                spawnOrReloadElectron();
               } else {
+                resolve();
                 initialBuild = true;
               }
-              spawnOrReloadElectron();
             });
           },
         },
       ],
     });
     await mainBuild.watch();
-  }
+  });
+}
 
-  await watchPreload(async () => {
-    await watchMain();
+async function main() {
+  await watchMain();
+  await watchPreload();
+
+  if (watchMode) {
+    console.log(`Watching for changes...`);
+  } else {
     spawnOrReloadElectron();
     console.log(`Electron is started, watching for changes...`);
-  });
+  }
 }
 
 main();

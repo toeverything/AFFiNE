@@ -10,7 +10,7 @@ import debugLocal from 'next-debug-local';
 import { fileURLToPath } from 'url';
 
 import { blockSuiteFeatureFlags, buildFlags } from './preset.config.mjs';
-import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
+import { getCommitHash, getGitVersion } from './scripts/git-info.mjs';
 
 const require = createRequire(import.meta.url);
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin');
@@ -80,6 +80,11 @@ const nextConfig = {
     removeConsole: {
       exclude: ['error', 'log', 'warn', 'info'],
     },
+    reactRemoveProperties: !buildFlags.enableTestProperties
+      ? {
+          properties: ['^data-testid$'],
+        }
+      : false,
     emotion: {
       sourceMap: true,
     },
@@ -106,7 +111,6 @@ const nextConfig = {
     '@affine/jotai',
     '@toeverything/hooks',
     '@toeverything/y-indexeddb',
-    '@toeverything/theme',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',

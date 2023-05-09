@@ -1,2 +1,2 @@
-export * from './localStorageThemeHelper';
-export * from './systemThemeHelper';
+export * from './local-storage-theme-helper';
+export * from './system-theme-helper';

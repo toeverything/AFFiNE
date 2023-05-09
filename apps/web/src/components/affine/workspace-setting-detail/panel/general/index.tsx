@@ -1,30 +1,27 @@
-import { Button, FlexWrapper, MuiFade } from '@affine/component';
+import { Button, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import {
+  ArrowRightSmallIcon,
+  DeleteIcon,
+  FolderIcon,
+  MoveToIcon,
+  SaveIcon,
+} from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import clsx from 'clsx';
 import type React from 'react';
 import { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
 import { Upload } from '../../../../pure/file-upload';
-import {
-  CloudWorkspaceIcon,
-  JoinedWorkspaceIcon,
-  LocalWorkspaceIcon,
-} from '../../../../pure/icons';
 import type { PanelProps } from '../../index';
-import { StyledRow, StyledSettingKey } from '../../style';
+import * as style from '../../index.css';
 import { WorkspaceDeleteModal } from './delete';
 import { CameraIcon } from './icons';
 import { WorkspaceLeave } from './leave';
-import {
-  StyledAvatar,
-  StyledEditButton,
-  StyledInput,
-  StyledWorkspaceInfo,
-} from './style';
+import { StyledInput } from './style';
 
 export const GeneralPanel: React.FC<PanelProps> = ({
   workspace,
@@ -37,11 +34,11 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   );
   const [input, setInput] = useState<string>(name);
   const isOwner = useIsWorkspaceOwner(workspace);
-  const [showEditInput, setShowEditInput] = useState(false);
   const t = useAFFiNEI18N();
 
   const handleUpdateWorkspaceName = (name: string) => {
     setName(name);
+    toast(t['Update workspace name success']());
   };
 
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
@@ -49,187 +46,189 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   );
   return (
     <>
-      <StyledRow>
-        <StyledSettingKey>{t['Workspace Avatar']()}</StyledSettingKey>
-        <StyledAvatar disabled={!isOwner}>
-          {isOwner ? (
-            <Upload
-              accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-              fileChange={update}
-              data-testid="upload-avatar"
+      <div data-testid="avatar-row" className={style.row}>
+        <div className={style.col}>
+          <div className={style.settingItemLabel}>
+            {t['Workspace Avatar']()}
+          </div>
+          <div className={style.settingItemLabelHint}>
+            {t['Change avatar hint']()}
+          </div>
+        </div>
+        <div className={clsx(style.col)}>
+          <div className={style.avatar[isOwner ? 'enabled' : 'disabled']}>
+            {isOwner ? (
+              <Upload
+                accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+                fileChange={update}
+                data-testid="upload-avatar"
+              >
+                <>
+                  <div className="camera-icon">
+                    <CameraIcon></CameraIcon>
+                  </div>
+                  <WorkspaceAvatar size={72} workspace={workspace} />
+                </>
+              </Upload>
+            ) : (
+              <WorkspaceAvatar size={72} workspace={workspace} />
+            )}
+          </div>
+        </div>
+        <div className={clsx(style.col)}></div>
+      </div>
+
+      <div data-testid="workspace-name-row" className={style.row}>
+        <div className={style.col}>
+          <div className={style.settingItemLabel}>{t['Workspace Name']()}</div>
+          <div className={style.settingItemLabelHint}>
+            {t['Change workspace name hint']()}
+          </div>
+        </div>
+
+        <div className={style.col}>
+          <StyledInput
+            width={284}
+            height={38}
+            value={input}
+            data-testid="workspace-name-input"
+            placeholder={t['Workspace Name']()}
+            maxLength={50}
+            minLength={0}
+            onChange={newName => {
+              setInput(newName);
+            }}
+          ></StyledInput>
+        </div>
+
+        <div className={style.col}>
+          <Button
+            type="light"
+            size="middle"
+            data-testid="save-workspace-name"
+            icon={<SaveIcon />}
+            disabled={input === workspace.blockSuiteWorkspace.meta.name}
+            onClick={() => {
+              handleUpdateWorkspaceName(input);
+            }}
+          >
+            {t['Save']()}
+          </Button>
+        </div>
+      </div>
+
+      {environment.isDesktop && (
+        <div className={style.row}>
+          <div className={style.col}>
+            <div className={style.settingItemLabel}>
+              {t['Storage Folder']()}
+            </div>
+            <div className={style.settingItemLabelHint}>
+              {t['Storage Folder Hint']()}
+            </div>
+          </div>
+
+          <div className={style.col}>
+            <div
+              className={style.storageTypeWrapper}
+              onClick={() => {
+                if (environment.isDesktop) {
+                  window.apis?.dialog.revealDBFile(workspace.id);
+                }
+              }}
             >
-              <>
-                <div className="camera-icon">
-                  <CameraIcon></CameraIcon>
+              <FolderIcon color="var(--affine-primary-color)" />
+              <div className={style.storageTypeLabelWrapper}>
+                <div className={style.storageTypeLabel}>
+                  {t['Open folder']()}
                 </div>
-                <WorkspaceAvatar size={72} workspace={workspace} />
-              </>
-            </Upload>
+                <div className={style.storageTypeLabelHint}>
+                  {t['Open folder hint']()}
+                </div>
+              </div>
+              <ArrowRightSmallIcon color="var(--affine-primary-color)" />
+            </div>
+
+            <div
+              data-testid="move-folder"
+              className={style.storageTypeWrapper}
+              onClick={async () => {
+                if (await window.apis?.dialog.moveDBFile(workspace.id)) {
+                  toast(t['Move folder success']());
+                }
+              }}
+            >
+              <MoveToIcon color="var(--affine-primary-color)" />
+              <div className={style.storageTypeLabelWrapper}>
+                <div className={style.storageTypeLabel}>
+                  {t['Move folder']()}
+                </div>
+                <div className={style.storageTypeLabelHint}>
+                  {t['Move folder hint']()}
+                </div>
+              </div>
+              <ArrowRightSmallIcon color="var(--affine-primary-color)" />
+            </div>
+          </div>
+          <div className={style.col}></div>
+        </div>
+      )}
+
+      <div className={style.row}>
+        <div className={style.col}>
+          <div className={style.settingItemLabel}>
+            {t['Delete Workspace']()}
+          </div>
+          <div className={style.settingItemLabelHint}>
+            {t['Delete Workspace Label Hint']()}
+          </div>
+        </div>
+
+        <div className={style.col}></div>
+        <div className={style.col}>
+          {isOwner ? (
+            <>
+              <Button
+                type="warning"
+                data-testid="delete-workspace-button"
+                size="middle"
+                icon={<DeleteIcon />}
+                onClick={() => {
+                  setShowDelete(true);
+                }}
+              >
+                {t['Delete']()}
+              </Button>
+              <WorkspaceDeleteModal
+                onDeleteWorkspace={onDeleteWorkspace}
+                open={showDelete}
+                onClose={() => {
+                  setShowDelete(false);
+                }}
+                workspace={workspace}
+              />
+            </>
           ) : (
-            <WorkspaceAvatar size={72} workspace={workspace} />
-          )}
-        </StyledAvatar>
-      </StyledRow>
-
-      <StyledRow>
-        <StyledSettingKey>{t['Workspace Name']()}</StyledSettingKey>
-
-        <div style={{ position: 'relative' }}>
-          <MuiFade in={!showEditInput}>
-            <FlexWrapper>
-              {name}
-              {isOwner && (
-                <StyledEditButton
-                  onClick={() => {
-                    setShowEditInput(true);
-                  }}
-                >
-                  {t['Edit']()}
-                </StyledEditButton>
-              )}
-            </FlexWrapper>
-          </MuiFade>
-
-          {isOwner && (
-            <MuiFade in={showEditInput}>
-              <FlexWrapper style={{ position: 'absolute', top: 0, left: 0 }}>
-                <StyledInput
-                  width={284}
-                  height={38}
-                  value={input}
-                  placeholder={t['Workspace Name']()}
-                  maxLength={50}
-                  minLength={0}
-                  onChange={newName => {
-                    setInput(newName);
-                  }}
-                ></StyledInput>
-                <Button
-                  type="light"
-                  shape="circle"
-                  style={{ marginLeft: '24px' }}
-                  disabled={input === workspace.blockSuiteWorkspace.meta.name}
-                  onClick={() => {
-                    handleUpdateWorkspaceName(input);
-                    setShowEditInput(false);
-                  }}
-                >
-                  {t['Confirm']()}
-                </Button>
-                <Button
-                  type="default"
-                  shape="circle"
-                  style={{ marginLeft: '24px' }}
-                  onClick={() => {
-                    setInput(workspace.blockSuiteWorkspace.meta.name ?? '');
-                    setShowEditInput(false);
-                  }}
-                >
-                  {t['Cancel']()}
-                </Button>
-              </FlexWrapper>
-            </MuiFade>
+            <>
+              <Button
+                type="warning"
+                size="middle"
+                onClick={() => {
+                  setShowLeave(true);
+                }}
+              >
+                {t['Leave']()}
+              </Button>
+              <WorkspaceLeave
+                open={showLeave}
+                onClose={() => {
+                  setShowLeave(false);
+                }}
+              />
+            </>
           )}
         </div>
-      </StyledRow>
-
-      {/* fixme(himself65): how to know a workspace owner by api? */}
-      {/*{!isOwner && (*/}
-      {/*  <StyledRow>*/}
-      {/*    <StyledSettingKey>{t('Workspace Owner')}</StyledSettingKey>*/}
-      {/*    <FlexWrapper alignItems="center">*/}
-      {/*      <MuiAvatar*/}
-      {/*        sx={{ width: 72, height: 72, marginRight: '12px' }}*/}
-      {/*        alt="owner avatar"*/}
-      {/*        // src={currentWorkspace?.owner?.avatar}*/}
-      {/*      >*/}
-      {/*        <EmailIcon />*/}
-      {/*      </MuiAvatar>*/}
-      {/*      /!*<span>{currentWorkspace?.owner?.name}</span>*!/*/}
-      {/*    </FlexWrapper>*/}
-      {/*  </StyledRow>*/}
-      {/*)}*/}
-      {/*{!isOwner && (*/}
-      {/*  <StyledRow>*/}
-      {/*    <StyledSettingKey>{t('Members')}</StyledSettingKey>*/}
-      {/*    <FlexWrapper alignItems="center">*/}
-      {/*      /!*<span>{currentWorkspace?.memberCount}</span>*!/*/}
-      {/*    </FlexWrapper>*/}
-      {/*  </StyledRow>*/}
-      {/*)}*/}
-
-      <StyledRow
-        onClick={() => {
-          if (environment.isDesktop) {
-            window.apis.openDBFolder();
-          }
-        }}
-      >
-        <StyledSettingKey>{t['Workspace Type']()}</StyledSettingKey>
-        {isOwner ? (
-          workspace.flavour === WorkspaceFlavour.LOCAL ? (
-            <StyledWorkspaceInfo>
-              <LocalWorkspaceIcon />
-              <span>{t['Local Workspace']()}</span>
-            </StyledWorkspaceInfo>
-          ) : (
-            <StyledWorkspaceInfo>
-              <CloudWorkspaceIcon />
-              <span>{t['Cloud Workspace']()}</span>
-            </StyledWorkspaceInfo>
-          )
-        ) : (
-          <StyledWorkspaceInfo>
-            <JoinedWorkspaceIcon />
-            <span>{t['Joined Workspace']()}</span>
-          </StyledWorkspaceInfo>
-        )}
-      </StyledRow>
-
-      <StyledRow>
-        <StyledSettingKey> {t['Delete Workspace']()}</StyledSettingKey>
-        {isOwner ? (
-          <>
-            <Button
-              type="warning"
-              shape="circle"
-              style={{ borderRadius: '40px' }}
-              data-testid="delete-workspace-button"
-              onClick={() => {
-                setShowDelete(true);
-              }}
-            >
-              {t['Delete Workspace']()}
-            </Button>
-            <WorkspaceDeleteModal
-              onDeleteWorkspace={onDeleteWorkspace}
-              open={showDelete}
-              onClose={() => {
-                setShowDelete(false);
-              }}
-              workspace={workspace}
-            />
-          </>
-        ) : (
-          <>
-            <Button
-              type="warning"
-              shape="circle"
-              onClick={() => {
-                setShowLeave(true);
-              }}
-            >
-              {t['Leave Workspace']()}
-            </Button>
-            <WorkspaceLeave
-              open={showLeave}
-              onClose={() => {
-                setShowLeave(false);
-              }}
-            />
-          </>
-        )}
-      </StyledRow>
+      </div>
     </>
   );
 };

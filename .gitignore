@@ -57,7 +57,7 @@ Thumbs.db
 .next
 out/
 storybook-static
-i18n_generated.ts
+i18n-generated.ts
 
 /test-results/
 /playwright-report/

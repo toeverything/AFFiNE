@@ -4,7 +4,7 @@ import { Input } from '@affine/component';
 export const StyledInput = styled(Input)(() => {
   return {
     border: '1px solid var(--affine-border-color)',
-    borderRadius: '10px',
+    borderRadius: '8px',
     fontSize: 'var(--affine-font-sm)',
   };
 });

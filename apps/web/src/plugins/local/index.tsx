@@ -78,6 +78,7 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
     PageList: ({ blockSuiteWorkspace, onOpenPage }) => {
       return (
         <BlockSuitePageList
+          listType="all"
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
         />
