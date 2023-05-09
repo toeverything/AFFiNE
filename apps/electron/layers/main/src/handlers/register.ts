@@ -4,6 +4,7 @@ import { getLogFilePath, logger, revealLogFile } from '../logger';
 import { dbHandlers } from './db';
 import { dialogHandlers } from './dialog';
 import { uiHandlers } from './ui';
+import { updaterHandlers } from './updater';
 import { workspaceHandlers } from './workspace';
 
 type IsomorphicHandler = (
@@ -31,6 +32,7 @@ export const allHandlers = {
   db: dbHandlers,
   dialog: dialogHandlers,
   debug: debugHandlers,
+  updater: updaterHandlers,
 } satisfies Record<string, NamespaceHandlers>;
 
 export const registerHandlers = () => {

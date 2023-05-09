@@ -4,10 +4,10 @@ import { app } from 'electron';
 
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
+import { registerUpdater } from './handlers/updater';
 import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
-import { registerUpdater } from './updater';
 
 // allow tests to overwrite app name through passing args
 if (process.argv.includes('--app-name')) {

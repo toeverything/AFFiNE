@@ -49,7 +49,7 @@ export const config = () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', 'yjs', 'better-sqlite3'],
+      external: ['electron', 'yjs', 'better-sqlite3', 'electron-updater'],
       plugins: [nativeNodeModulesPlugin],
       define: define,
       format: 'cjs',
