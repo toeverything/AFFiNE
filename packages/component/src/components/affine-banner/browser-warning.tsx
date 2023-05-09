@@ -28,3 +28,5 @@ export const BrowserWarning = ({
     </div>
   );
 };
+
+export default BrowserWarning;

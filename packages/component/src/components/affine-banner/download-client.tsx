@@ -40,3 +40,5 @@ export const DownloadTips = ({ onClose }: { onClose: () => void }) => {
     </div>
   );
 };
+
+export default DownloadTips;
