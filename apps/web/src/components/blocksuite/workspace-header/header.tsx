@@ -1,7 +1,7 @@
+import { BrowserWarning } from '@affine/component/affine-banner';
 import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { CloseIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
@@ -14,8 +14,10 @@ import {
   useState,
 } from 'react';
 
+import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
+import { DownloadClientTip } from './download-tips';
 import EditPage from './header-right-items/edit-page';
 import { EditorOptionMenu } from './header-right-items/editor-option-menu';
 import { HeaderShareMenu } from './header-right-items/share-menu';
@@ -23,8 +25,6 @@ import SyncUser from './header-right-items/sync-user';
 import TrashButtonGroup from './header-right-items/trash-button-group';
 import UserAvatar from './header-right-items/user-avatar';
 import {
-  StyledBrowserWarning,
-  StyledCloseButton,
   StyledHeader,
   StyledHeaderContainer,
   StyledHeaderRightSide,
@@ -36,23 +36,6 @@ const SidebarSwitch = lazy(() =>
     default: module.SidebarSwitch,
   }))
 );
-
-const BrowserWarning = ({
-  show,
-  onClose,
-}: {
-  show: boolean;
-  onClose: () => void;
-}) => {
-  return (
-    <StyledBrowserWarning show={show}>
-      <OSWarningMessage />
-      <StyledCloseButton onClick={onClose}>
-        <CloseIcon />
-      </StyledCloseButton>
-    </StyledBrowserWarning>
-  );
-};
 
 export type BaseHeaderProps<
   Workspace extends AffineOfficialWorkspace = AffineOfficialWorkspace
@@ -130,9 +113,15 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
+  const [showGuideDownloadClientTip, setShowGuideDownloadClientTip] =
+    useState(false);
+  const [shouldShowGuideDownloadClientTip] = useAtom(
+    guideDownloadClientTipAtom
+  );
   useEffect(() => {
     setShowWarning(shouldShowWarning());
-  }, []);
+    setShowGuideDownloadClientTip(shouldShowGuideDownloadClientTip);
+  }, [shouldShowGuideDownloadClientTip]);
   const [open] = useAtom(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
 
@@ -144,12 +133,18 @@ export const Header = forwardRef<
       data-open={open}
       {...props}
     >
-      <BrowserWarning
-        show={showWarning}
-        onClose={() => {
-          setShowWarning(false);
-        }}
-      />
+      {showGuideDownloadClientTip ? (
+        <DownloadClientTip />
+      ) : (
+        <BrowserWarning
+          show={showWarning}
+          message={<OSWarningMessage />}
+          onClose={() => {
+            setShowWarning(false);
+          }}
+        />
+      )}
+
       <StyledHeader
         hasWarning={showWarning}
         data-testid="editor-header-items"

@@ -10,12 +10,15 @@ export type Guide = {
   changeLog: boolean;
   // should show recording tips
   onBoarding: boolean;
+  // should show download client tips
+  downloadClientTip: boolean;
 };
 
 const guidePrimitiveAtom = atomWithStorage<Guide>('helper-guide', {
   quickSearchTips: true,
   changeLog: true,
   onBoarding: true,
+  downloadClientTip: true,
 });
 
 export const guideQuickSearchTipsAtom = atom<
@@ -64,6 +67,21 @@ export const guideOnboardingAtom = atom<
     set(guidePrimitiveAtom, tips => ({
       ...tips,
       onBoarding: open,
+    }));
+  }
+);
+export const guideDownloadClientTipAtom = atom<
+  Guide['downloadClientTip'],
+  [open: boolean],
+  void
+>(
+  get => {
+    return get(guidePrimitiveAtom).downloadClientTip;
+  },
+  (_, set, open) => {
+    set(guidePrimitiveAtom, tips => ({
+      ...tips,
+      downloadClientTip: open,
     }));
   }
 );
