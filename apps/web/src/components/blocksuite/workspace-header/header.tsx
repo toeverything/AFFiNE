@@ -113,10 +113,15 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
-  const [showGuideDownloadClientTip] = useAtom(guideDownloadClientTipAtom);
+  const [showGuideDownloadClientTip, setShowGuideDownloadClientTip] =
+    useState(false);
+  const [shouldShowGuideDownloadClientTip] = useAtom(
+    guideDownloadClientTipAtom
+  );
   useEffect(() => {
     setShowWarning(shouldShowWarning());
-  }, []);
+    setShowGuideDownloadClientTip(shouldShowGuideDownloadClientTip);
+  }, [shouldShowGuideDownloadClientTip]);
   const [open] = useAtom(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
 
@@ -128,8 +133,9 @@ export const Header = forwardRef<
       data-open={open}
       {...props}
     >
-      <DownloadClientTip />
-      {!showGuideDownloadClientTip && (
+      {showGuideDownloadClientTip ? (
+        <DownloadClientTip />
+      ) : (
         <BrowserWarning
           show={showWarning}
           message={<OSWarningMessage />}
