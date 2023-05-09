@@ -74,7 +74,7 @@ const ImagePreviewModalImpl = (
     return null;
   }
   return (
-    <div className={imagePreviewModalStyle}>
+    <div data-testid="image-preview-modal" className={imagePreviewModalStyle}>
       <button
         onClick={() => {
           props.onClose();
