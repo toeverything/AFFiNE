@@ -11,28 +11,45 @@ export const imagePreviewModalStyle = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(0, 0, 0, 0.5)',
+  background: 'var(--affine-background-modal-color)',
 });
 
 export const imagePreviewModalCloseButtonStyle = style({
   position: 'absolute',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+
+  height: '36px',
+  width: '36px',
+  borderRadius: '10px',
+
   top: '0.5rem',
   right: '0.5rem',
   background: 'var(--affine-white)',
   border: 'none',
   padding: '0.5rem',
   cursor: 'pointer',
-  color: 'var(--affine-black)',
-  fontSize: '1.5rem',
-  borderRadius: '4px',
+  color: 'var(--affine-icon-color)',
   transition: 'background 0.2s ease-in-out',
+});
+
+export const imagePreviewModalContainerStyle = style({
+  position: 'absolute',
+  top: '20%',
 });
 
 export const imagePreviewModalImageStyle = style({
   background: 'transparent',
-  width: '50%',
-  height: '50%',
+  maxWidth: '686px',
   objectFit: 'contain',
   objectPosition: 'center',
   borderRadius: '4px',
+});
+
+export const imagePreviewModalActionsStyle = style({
+  position: 'absolute',
+  bottom: '28px',
+  background: 'var(--affine-white)',
 });
