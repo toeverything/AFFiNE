@@ -160,7 +160,7 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
       <Suspense fallback={<BlockSuiteFallback />}>
         <BlockSuiteEditorImpl {...props} />
       </Suspense>
-      {config.enableImagePreviewModal && (
+      {config.enableImagePreviewModal && props.page.workspace && (
         <Suspense fallback={null}>
           {createPortal(
             <ImagePreviewModal
