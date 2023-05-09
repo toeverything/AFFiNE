@@ -1,13 +1,7 @@
 import { displayFlex, styled } from '@affine/component';
 import { Input } from '@affine/component';
 
-export const StyledInput = styled(Input)(() => {
-  return {
-    border: '1px solid var(--affine-border-color)',
-    borderRadius: '8px',
-    fontSize: 'var(--affine-font-sm)',
-  };
-});
+export const StyledInput = Input;
 
 export const StyledWorkspaceInfo = styled('div')(() => {
   return {
