@@ -22,21 +22,21 @@ export function useReferenceLinkEffect(props?: {
       }
     );
 
-    const subpageLinkedDisposable = editor.slots.subpageLinked.on(
-      ({ pageId }) => {
-        subpageLinked?.({ pageId });
-      }
-    );
-    const subpageUnlinkedDisposable = editor.slots.subpageUnlinked.on(
-      ({ pageId }) => {
-        subpageUnlinked?.({ pageId });
-      }
-    );
+    // const subpageLinkedDisposable = editor.slots.subpageLinked.on(
+    //   ({ pageId }) => {
+    //     subpageLinked?.({ pageId });
+    //   }
+    // );
+    // const subpageUnlinkedDisposable = editor.slots.subpageUnlinked.on(
+    //   ({ pageId }) => {
+    //     subpageUnlinked?.({ pageId });
+    //   }
+    // );
 
     return () => {
       linkClickedDisposable.dispose();
-      subpageLinkedDisposable.dispose();
-      subpageUnlinkedDisposable.dispose();
+      // subpageLinkedDisposable.dispose();
+      // subpageUnlinkedDisposable.dispose();
     };
   }, [editor, pageLinkClicked, subpageLinked, subpageUnlinked]);
 }
