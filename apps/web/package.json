@@ -1,7 +1,7 @@
 {
   "name": "@affine/web",
   "private": true,
-  "version": "0.5.4-canary.26",
+  "version": "0.5.4-canary.27",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -46,6 +46,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-is": "^18.2.0",
+    "rxjs": "^7.8.1",
     "swr": "^2.1.5",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.1",
@@ -66,6 +67,7 @@
     "dotenv": "^16.0.3",
     "eslint": "^8.40.0",
     "eslint-config-next": "^13.4.1",
+    "eslint-plugin-unicorn": "^47.0.0",
     "next": "^13.4.1",
     "next-debug-local": "^0.1.5",
     "next-router-mock": "^0.9.3",

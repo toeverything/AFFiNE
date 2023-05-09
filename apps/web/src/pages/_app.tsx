@@ -17,7 +17,7 @@ import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary'
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
 import { MessageCenter } from '../components/pure/message-center';
-import { ThemeProvider } from '../providers/ThemeProvider';
+import { ThemeProvider } from '../providers/theme-provider';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
 

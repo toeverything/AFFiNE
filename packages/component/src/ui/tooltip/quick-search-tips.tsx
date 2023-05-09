@@ -2,7 +2,7 @@ import type { TooltipProps } from '@mui/material';
 
 import { css, displayFlex, styled } from '../../styles';
 import { Popper, type PopperProps } from '../popper';
-import StyledPopperContainer from '../shared/Container';
+import StyledPopperContainer from '../shared/container';
 const StyledTooltip = styled(StyledPopperContainer)(() => {
   return {
     width: '390px',

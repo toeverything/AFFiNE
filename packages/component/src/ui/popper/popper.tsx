@@ -13,7 +13,7 @@ import {
 
 import { styled } from '../../styles';
 import type { PopperProps, VirtualElement } from './interface';
-import { PopperArrow } from './PopoverArrow';
+import { PopperArrow } from './popover-arrow';
 export const Popper = ({
   children,
   content,

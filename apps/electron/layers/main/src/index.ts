@@ -7,6 +7,7 @@ import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
+import { registerUpdater } from './updater';
 
 // allow tests to overwrite app name through passing args
 if (process.argv.includes('--app-name')) {
@@ -56,6 +57,7 @@ app
   .then(registerHandlers)
   .then(registerEvents)
   .then(restoreOrCreateWindow)
+  .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
 /**
  * Check new app version in production mode only

@@ -36,7 +36,7 @@ import { useSyncRouterWithCurrentPageId } from '../hooks/use-sync-router-with-cu
 import { useSyncRouterWithCurrentWorkspaceId } from '../hooks/use-sync-router-with-current-workspace-id';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
-import { ModalProvider } from '../providers/ModalProvider';
+import { ModalProvider } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import {
   MainContainer,

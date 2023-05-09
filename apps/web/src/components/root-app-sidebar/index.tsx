@@ -17,7 +17,8 @@ import {
 import type { Page } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import type { ReactElement, UIEvent } from 'react';
-import React, { useCallback, useEffect, useState } from 'react';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { AllWorkspace } from '../../shared';
 import ChangeLog from '../pure/workspace-slider-bar/changeLog';
@@ -80,6 +81,16 @@ export const RootAppSidebar = ({
     }
   }, [sidebarOpen]);
   const [ref, setRef] = useState<HTMLElement | null>(null);
+
+  const handleQuickSearchButtonKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onOpenQuickSearchModal();
+      }
+    },
+    [onOpenQuickSearchModal]
+  );
   return (
     <>
       <AppSidebar
@@ -104,8 +115,11 @@ export const RootAppSidebar = ({
             onClick={useCallback(() => {
               onOpenQuickSearchModal();
             }, [onOpenQuickSearchModal])}
+            onKeyDown={handleQuickSearchButtonKeyDown}
           >
             <div
+              role="button"
+              tabIndex={0}
               style={{
                 display: 'flex',
                 flex: 1,

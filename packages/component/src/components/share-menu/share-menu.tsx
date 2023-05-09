@@ -7,10 +7,10 @@ import { useRef } from 'react';
 import { useCallback, useState } from 'react';
 
 import { Menu } from '../..';
-import { Export } from './Export';
+import { Export } from './export';
 import { containerStyle, indicatorContainerStyle, tabStyle } from './index.css';
-import { SharePage } from './SharePage';
-import { ShareWorkspace } from './ShareWorkspace';
+import { SharePage } from './share-page';
+import { ShareWorkspace } from './share-workspace';
 import { StyledIndicator, StyledShareButton, TabItem } from './styles';
 type SharePanel = 'SharePage' | 'Export' | 'ShareWorkspace';
 const MenuItems: Record<SharePanel, FC<ShareMenuProps>> = {

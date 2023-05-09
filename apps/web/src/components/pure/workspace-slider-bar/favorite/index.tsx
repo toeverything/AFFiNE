@@ -36,14 +36,6 @@ export const Favorite = ({
           (currentWorkspaceId && paths.favorite(currentWorkspaceId))
         }
       >
-        <StyledCollapseButton
-          onClick={useCallback(() => {
-            setOpenSubFavorite(!showSubFavorite);
-          }, [showSubFavorite])}
-          collapse={showSubFavorite}
-        >
-          <ArrowDownSmallIcon />
-        </StyledCollapseButton>
         <StyledLink
           href={{
             pathname: currentWorkspaceId && paths.favorite(currentWorkspaceId),
@@ -52,6 +44,14 @@ export const Favorite = ({
           <FavoriteIcon />
           {t['Favorites']()}
         </StyledLink>
+        <StyledCollapseButton
+          onClick={useCallback(() => {
+            setOpenSubFavorite(!showSubFavorite);
+          }, [showSubFavorite])}
+          collapse={showSubFavorite}
+        >
+          <ArrowDownSmallIcon />
+        </StyledCollapseButton>
       </StyledListItem>
       <FavoriteList
         currentPageId={currentPageId}

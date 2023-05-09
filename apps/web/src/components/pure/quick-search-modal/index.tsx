@@ -14,10 +14,10 @@ import {
 } from 'react';
 
 import type { BlockSuiteWorkspace } from '../../../shared';
-import { Footer } from './Footer';
-import { PublishedResults } from './PublishedResults';
-import { Results } from './Results';
-import { SearchInput } from './SearchInput';
+import { Footer } from './footer';
+import { PublishedResults } from './published-results';
+import { Results } from './results';
+import { SearchInput } from './search-input';
 import {
   StyledContent,
   StyledModalDivider,

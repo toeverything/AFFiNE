@@ -15,7 +15,7 @@ import {
   inputButtonRowStyle,
   menuItemStyle,
 } from './index.css';
-import type { ShareMenuProps } from './ShareMenu';
+import type { ShareMenuProps } from './share-menu';
 import {
   StyledButton,
   StyledDisableButton,
