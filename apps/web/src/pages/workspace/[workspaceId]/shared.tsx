@@ -5,7 +5,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
-import PageList from '../../../components/blocksuite/block-suite-page-list/page-list';
+import { BlockSuitePageList } from '../../../components/blocksuite/block-suite-page-list';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
@@ -50,9 +50,9 @@ const SharedPages: NextPageWithLayout = () => {
       >
         {t['Shared Pages']()}
       </WorkspaceTitle>
-      <PageList
+      <BlockSuitePageList
         blockSuiteWorkspace={blockSuiteWorkspace}
-        onClickPage={onClickPage}
+        onOpenPage={onClickPage}
         listType="shared"
       />
     </>

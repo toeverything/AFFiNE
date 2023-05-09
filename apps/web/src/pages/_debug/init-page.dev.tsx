@@ -6,7 +6,7 @@ import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import type { NextPageWithLayout } from '../../shared';
 
 const Editor = lazy(() =>
-  import('../../components/__debug__/client/Editor').then(module => ({
+  import('../../components/__debug__/client/editor').then(module => ({
     default: module.default,
   }))
 );

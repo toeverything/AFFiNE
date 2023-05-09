@@ -10,7 +10,7 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import clsx from 'clsx';
 import type React from 'react';
 
-import { DefaultAvatar } from './DefaultAvatar';
+import { DefaultAvatar } from './default-avatar';
 import { avatarImageStyle, avatarStyle } from './index.css';
 
 export type WorkspaceAvatarProps = {

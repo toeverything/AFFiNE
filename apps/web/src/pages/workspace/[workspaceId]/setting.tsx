@@ -1,5 +1,4 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { atomWithSyncStorage } from '@affine/jotai';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { SettingPanel } from '@affine/workspace/type';
 import {
@@ -10,6 +9,7 @@ import {
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
@@ -26,7 +26,7 @@ import { WorkspacePlugins } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 import { toast } from '../../../utils';
 
-const settingPanelAtom = atomWithSyncStorage<SettingPanel>(
+const settingPanelAtom = atomWithStorage<SettingPanel>(
   'workspaceId',
   settingPanel.General
 );

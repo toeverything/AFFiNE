@@ -63,6 +63,9 @@ export const StyledCollapseButton = styled('button')<{
     ':hover': {
       opacity: '1',
     },
+    ':focus-visible': {
+      outline: '-webkit-focus-ring-color auto 1px',
+    },
   };
 });
 

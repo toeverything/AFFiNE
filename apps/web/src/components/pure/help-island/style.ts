@@ -2,12 +2,17 @@ import { displayFlex, positionAbsolute, styled } from '@affine/component';
 
 export const StyledIsland = styled('div')<{
   spread: boolean;
-}>(({ spread }) => {
+  inEdgelessPage?: boolean;
+}>(({ spread, inEdgelessPage }) => {
   return {
     transition: 'box-shadow 0.2s',
     width: '44px',
     position: 'relative',
-    boxShadow: spread ? 'var(--affine-menu-shadow)' : 'unset',
+    boxShadow: spread
+      ? 'var(--affine-menu-shadow)'
+      : inEdgelessPage
+      ? 'var(--affine-menu-shadow)'
+      : 'unset',
     padding: '0 4px 44px',
     borderRadius: '10px',
     background: spread
@@ -15,6 +20,7 @@ export const StyledIsland = styled('div')<{
       : 'var(--affine-background-primary-color)',
     ':hover': {
       background: spread ? null : 'var(--affine-white)',
+      boxShadow: spread ? null : 'var(--affine-menu-shadow)',
     },
     '::after': {
       content: '""',

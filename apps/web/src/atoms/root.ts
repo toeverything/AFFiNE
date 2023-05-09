@@ -110,9 +110,27 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
       // we will wait for the necessary providers to be ready
       await provider.whenReady;
     }
+    logger.info('current workspace', workspace);
+    globalThis.currentWorkspace = workspace;
+    globalThis.dispatchEvent(
+      new CustomEvent('affine:workspace:change', {
+        detail: { id: workspace.id },
+      })
+    );
     return workspace;
   }
 );
+
+declare global {
+  /**
+   * @internal debug only
+   */
+  // eslint-disable-next-line no-var
+  var currentWorkspace: AllWorkspace | undefined;
+  interface WindowEventMap {
+    'affine:workspace:change': CustomEvent<{ id: string }>;
+  }
+}
 
 // Do not add `rootCurrentWorkspacePageAtom`, this is not needed.
 // It can be derived from `rootCurrentWorkspaceAtom` and `rootCurrentPageIdAtom`

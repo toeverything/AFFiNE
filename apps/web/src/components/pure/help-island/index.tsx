@@ -6,8 +6,9 @@ import { useAtom } from 'jotai';
 import { lazy, Suspense, useState } from 'react';
 
 import { openOnboardingModalAtom } from '../../../atoms';
+import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import { ShortcutsModal } from '../shortcuts-modal';
-import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
+import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import {
   StyledAnimateWrapper,
   StyledIconWrapper,
@@ -32,6 +33,7 @@ export const HelpIsland = ({
 }: {
   showList?: IslandItemNames[];
 }) => {
+  const mode = useCurrentMode();
   const [, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
   const [spread, setShowSpread] = useState(false);
   // const { triggerShortcutsModal, triggerContactModal } = useModal();
@@ -62,6 +64,7 @@ export const HelpIsland = ({
         onClick={() => {
           setShowSpread(!spread);
         }}
+        inEdgelessPage={mode === 'edgeless'}
       >
         <StyledAnimateWrapper
           style={{ height: spread ? `${showList.length * 44}px` : 0 }}
