@@ -43,7 +43,6 @@ const config: PlaywrightTestConfig = {
 
   webServer: [
     {
-      // Intentionally not building the storybook, reminds you to run it by yourself.
       command: 'yarn serve:test-static',
       port: 8081,
       timeout: 120 * 1000,
