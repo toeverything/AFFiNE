@@ -92,7 +92,6 @@ export const PinboardMenu = ({
         <Input
           value={query}
           onChange={setQuery}
-          placeholder={t['Move page to...']()}
           height={32}
           noBorder={true}
           onClick={e => e.stopPropagation()}
