@@ -14,8 +14,10 @@ import {
   useState,
 } from 'react';
 
+import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
+import { DownloadClientTip } from './download-tips';
 import EditPage from './header-right-items/edit-page';
 import { EditorOptionMenu } from './header-right-items/editor-option-menu';
 import { HeaderShareMenu } from './header-right-items/share-menu';
@@ -111,6 +113,7 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
+  const [showGuideDownloadClientTip] = useAtom(guideDownloadClientTipAtom);
   useEffect(() => {
     setShowWarning(shouldShowWarning());
   }, []);
@@ -125,13 +128,17 @@ export const Header = forwardRef<
       data-open={open}
       {...props}
     >
-      <BrowserWarning
-        show={showWarning}
-        message={<OSWarningMessage />}
-        onClose={() => {
-          setShowWarning(false);
-        }}
-      />
+      <DownloadClientTip />
+      {!showGuideDownloadClientTip && (
+        <BrowserWarning
+          show={showWarning}
+          message={<OSWarningMessage />}
+          onClose={() => {
+            setShowWarning(false);
+          }}
+        />
+      )}
+
       <StyledHeader
         hasWarning={showWarning}
         data-testid="editor-header-items"
