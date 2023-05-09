@@ -12,6 +12,7 @@ export const dbSubjects = {
 export const dbEvents = {
   onDbFileMissing: (fn: (workspaceId: string) => void) => {
     const sub = dbSubjects.dbFileMissing.subscribe(fn);
+
     return () => {
       sub.unsubscribe();
     };

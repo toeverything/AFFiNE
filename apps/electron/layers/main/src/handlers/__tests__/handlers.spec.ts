@@ -7,7 +7,10 @@ import * as Y from 'yjs';
 
 import type { MainIPCHandlerMap } from '../../../../constraints';
 
-const registeredHandlers = new Map<string, (...args: any[]) => any>();
+const registeredHandlers = new Map<
+  string,
+  ((...args: any[]) => Promise<any>)[]
+>();
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -29,9 +32,11 @@ async function dispatch<
 ): // @ts-ignore
 ReturnType<MainIPCHandlerMap[T][F]> {
   // @ts-ignore
-  const handler = registeredHandlers.get(namespace + ':' + functionName);
-  assert(handler);
-  return await handler(null, ...args);
+  const handlers = registeredHandlers.get(namespace + ':' + functionName);
+  assert(handlers);
+
+  // we only care about the first handler here
+  return await handlers[0](null, ...args);
 }
 
 const SESSION_DATA_PATH = path.join(__dirname, './tmp', 'affine-test');
@@ -51,8 +56,10 @@ const browserWindow = {
 };
 
 const ipcMain = {
-  handle: (key: string, callback: (...args: any[]) => any) => {
-    registeredHandlers.set(key, callback);
+  handle: (key: string, callback: (...args: any[]) => Promise<any>) => {
+    const handlers = registeredHandlers.get(key) || [];
+    handlers.push(callback);
+    registeredHandlers.set(key, handlers);
   },
 };
 
@@ -85,7 +92,9 @@ const electronModule = {
     },
     name: 'affine-test',
     on: (name: string, callback: (...args: any[]) => any) => {
-      registeredHandlers.set(name, callback);
+      const handlers = registeredHandlers.get(name) || [];
+      handlers.push(callback);
+      registeredHandlers.set(name, handlers);
     },
   },
   BrowserWindow: {
@@ -117,7 +126,9 @@ afterEach(async () => {
   const { cleanupSQLiteDBs } = await import('../db/ensure-db');
   await cleanupSQLiteDBs();
   await fs.remove(SESSION_DATA_PATH);
-  registeredHandlers.get('before-quit')?.();
+
+  // reset registered handlers
+  registeredHandlers.get('before-quit')?.forEach(fn => fn());
 });
 
 describe('ensureSQLiteDB', () => {
