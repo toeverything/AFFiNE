@@ -159,15 +159,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
             <StyledContent
               style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
             >
-              {!isPublicWorkspace ? (
-                <Results
-                  query={query}
-                  onClose={handleClose}
-                  router={router}
-                  blockSuiteWorkspace={blockSuiteWorkspace}
-                  setShowCreatePage={setShowCreatePage}
-                />
-              ) : (
+              {isPublicWorkspace ? (
                 <PublishedResults
                   blockSuiteWorkspace={blockSuiteWorkspace}
                   query={query}
@@ -176,22 +168,28 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                   setPublishWorkspaceName={setPublishWorkspaceName}
                   data-testid="published-search-results"
                 />
+              ) : (
+                <Results
+                  query={query}
+                  onClose={handleClose}
+                  router={router}
+                  blockSuiteWorkspace={blockSuiteWorkspace}
+                  setShowCreatePage={setShowCreatePage}
+                />
               )}
             </StyledContent>
-            {!isPublicWorkspace ? (
-              showCreatePage ? (
-                <>
-                  <StyledModalDivider />
-                  <StyledModalFooter>
-                    <Footer
-                      query={query}
-                      onClose={handleClose}
-                      blockSuiteWorkspace={blockSuiteWorkspace}
-                      router={router}
-                    />
-                  </StyledModalFooter>
-                </>
-              ) : null
+            {isPublicWorkspace ? null : showCreatePage ? (
+              <>
+                <StyledModalDivider />
+                <StyledModalFooter>
+                  <Footer
+                    query={query}
+                    onClose={handleClose}
+                    blockSuiteWorkspace={blockSuiteWorkspace}
+                    router={router}
+                  />
+                </StyledModalFooter>
+              </>
             ) : null}
           </Command.List>
         </Command>
