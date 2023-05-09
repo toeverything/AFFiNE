@@ -115,6 +115,7 @@ export const ImagePreviewModal = (
   if (!blockId) {
     return null;
   }
+
   return (
     <ImagePreviewModalImpl
       {...props}

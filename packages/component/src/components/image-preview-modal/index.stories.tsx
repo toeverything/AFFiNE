@@ -60,7 +60,6 @@ export const Default = () => {
         }}
         id="toolWrapper"
       />
-      <ImagePreviewModal workspace={workspace} pageId="page0" />
     </>
   );
 };
