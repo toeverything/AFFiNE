@@ -161,7 +161,7 @@ export const StyledModalFooterContent = styled('button')(() => {
 });
 export const StyledListItem = styled('button')(() => {
   return {
-    // width: '612px',
+    width: '100%',
     height: '32px',
     fontSize: 'inherit',
     color: 'inherit',
