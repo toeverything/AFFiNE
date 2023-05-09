@@ -232,9 +232,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/octobase-node@workspace:packages/octobase-node":
+"@affine/octobase-node@workspace:packages/native":
   version: 0.0.0-use.local
-  resolution: "@affine/octobase-node@workspace:packages/octobase-node"
+  resolution: "@affine/octobase-node@workspace:packages/native"
   dependencies:
     "@napi-rs/cli": ^2.15.2
     "@types/node": ^18.16.7

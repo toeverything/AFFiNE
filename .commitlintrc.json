@@ -17,7 +17,7 @@
         "hooks",
         "i18n",
         "jotai",
-        "octobase-node",
+        "native",
         "templates",
         "y-indexeddb",
         "debug",
