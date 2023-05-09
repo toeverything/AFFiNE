@@ -1,7 +1,7 @@
 import { Button, displayFlex, Menu, MenuItem, styled } from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
-import { ArrowDownSmallIcon, PublishIcon } from '@blocksuite/icons';
+import { ArrowDownSmallIcon, LanguageIcon } from '@blocksuite/icons';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
 
@@ -39,7 +39,7 @@ export const LanguageMenu: React.FC = () => {
   return (
     <StyledContainer>
       <StyledIconContainer>
-        <PublishIcon />
+        <LanguageIcon />
       </StyledIconContainer>
       <StyledButtonContainer>
         <Menu
