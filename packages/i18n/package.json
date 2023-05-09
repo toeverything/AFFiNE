@@ -40,5 +40,5 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
   },
-  "version": "0.5.4-canary.28"
+  "version": "0.5.4-canary.29"
 }
