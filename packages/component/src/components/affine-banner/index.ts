@@ -1,2 +1,2 @@
-export * from './BrowserWarning';
-export * from './DownloadClient';
+export * from './browser-warning';
+export * from './download-client';
