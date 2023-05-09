@@ -1,7 +1,7 @@
-import type { SvgIconProps } from '@mui/material/SvgIcon';
 import SvgIcon from '@mui/material/SvgIcon';
+import { memo } from 'react';
 
-export const EmptySvg = (_props: SvgIconProps) => {
+export const EmptySvg = memo(function EmptySvg() {
   return (
     <SvgIcon
       width="200"
@@ -411,4 +411,4 @@ export const EmptySvg = (_props: SvgIconProps) => {
       </defs>
     </SvgIcon>
   );
-};
+});
