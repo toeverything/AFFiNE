@@ -1,15 +1,11 @@
 {
   "Confirm": "Confirm",
   "Download core data": "Download core data",
-  "It takes up little space on your device": {
-    "": "It takes up little space on your device."
-  },
+  "It takes up little space on your device": "It takes up little space on your device.",
   "AFFiNE Cloud": "AFFiNE Cloud",
   "Members": "Members",
   "Add to favorites": "Add to favorites",
-  "It takes up more space on your device": {
-    "": "It takes up more space on your device."
-  },
+  "It takes up more space on your device": "It takes up more space on your device.",
   "Export AFFiNE backup file": "Export AFFiNE backup file (coming soon)",
   "Saved then enable AFFiNE Cloud": "All changes are saved locally, click to enable AFFiNE Cloud.",
   "Help and Feedback": "Help and Feedback",
@@ -72,9 +68,7 @@
   "Reduce indent": "Reduce indent",
   "Markdown Syntax": "Markdown Syntax",
   "Divider": "Divider",
-  "Once deleted, you can't undo this action": {
-    "": "Once deleted, you can't undo this action."
-  },
+  "Once deleted, you can't undo this action": "Once deleted, you can't undo this action.",
   "Remove from favorites": "Remove from favorites",
   "Removed from Favorites": "Removed from Favorites",
   "Add to Favorites": "Add to Favorites",
@@ -161,9 +155,7 @@
   "Data sync mode": "Data sync mode",
   "Favorites": "Favorites",
   "Check Our Docs": "Check Our Docs",
-  "Get in touch! Join our communities": {
-    "": "Get in touch! Join our communities."
-  },
+  "Get in touch! Join our communities": "Get in touch! Join our communities.",
   "Download data": "Download {{CoreOrAll}} data",
   "Back Home": "Back Home",
   "Set a Workspace name": "Set a Workspace name",
@@ -207,13 +199,7 @@
   "Rename": "Rename",
   "RFP": "Pages can be freely added/removed from pivots, remaining accessible from \"All Pages\".",
   "Remove from Pivots": "Remove from Pivots",
-  "Move page to": {
-    "": {
-      "": {
-        "": "Move page to..."
-      }
-    }
-  },
+  "Move page to": "Move page to...",
   "Discover what's new!": "Discover what's new!",
   "View Navigation Path": "View Navigation Path",
   "Back to Quick Search": "Back to Quick Search",

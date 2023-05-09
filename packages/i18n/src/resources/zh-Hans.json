@@ -6,9 +6,7 @@
   "will delete member": "将删除成员",
   "Download data Description1": "此操作会在你的设备上占用更多空间。",
   "Download data Description2": "此操作会在你的设备上占用少许空间。",
-  "It takes up more space on your device": {
-    "": "此操作会在你的设备上占用更多空间。"
-  },
+  "It takes up more space on your device": "此操作会在你的设备上占用更多空间。",
   "Help and Feedback": "帮助与反馈",
   "Remove from workspace": "从工作区移除",
   "Retain cached cloud data": "保留缓存的云数据",
@@ -104,9 +102,7 @@
   "Non-Gmail": "不支持非Gmail邮箱",
   "NotLoggedIn": "当前未登录",
   "Official Website": "官网",
-  "Once deleted, you can't undo this action": {
-    "": "一旦删除，将无法撤销！"
-  },
+  "Once deleted, you can't undo this action": "一旦删除，将无法撤销！",
   "Ooops!": "啊哦！",
   "Created": "已创建",
   "Delete Workspace Description": "正在删除 (<1>{{workspace}}</1>) ，此操作无法撤销，所有内容将会丢失。",
@@ -185,9 +181,7 @@
   "Export AFFiNE backup file": "导出 AFFiNE 备份文件（即将到来）",
   "AFFiNE Cloud": "AFFiNE 云服务",
   "Export Description": "您可以导出整个工作区数据进行备份，导出的数据可以重新被导入。",
-  "It takes up little space on your device": {
-    "": "此操作会在你的设备上占用少许空间。"
-  },
+  "It takes up little space on your device": "此操作会在你的设备上占用少许空间。",
   "Add to favorites": "加入收藏",
   "Retain local cached data": "保留本地缓存数据",
   "Set a Workspace name": "设置工作区名字",
@@ -200,16 +194,8 @@
   "Move to Trash": "移到垃圾箱",
   "Add a subpage inside": "添加一个子页面",
   "Discover what's new!": "发现最近更新！",
-  "Get in touch! Join our communities": {
-    "": "加入社区，保持联络！"
-  },
-  "Move page to": {
-    "": {
-      "": {
-        "": "将此页面移动..."
-      }
-    }
-  },
+  "Get in touch! Join our communities": "加入社区，保持联络！",
+  "Move page to": "将此页面移动...",
   "Move to": "移动到",
   "Pivots": "枢纽",
   "Placeholder of delete workspace": "请输入工作区名字以确认",

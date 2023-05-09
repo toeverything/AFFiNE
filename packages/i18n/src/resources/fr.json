@@ -169,9 +169,7 @@
   "AFFiNE Cloud": "AFFiNE Cloud",
   "Please make sure you are online": "Vérifiez que vous êtes bien en ligne",
   "Remove from workspace": "Retirer de l'espace de travail",
-  "Get in touch! Join our communities": {
-    "": "Contactez-nous ! Rejoignez nos communautés."
-  },
+  "Get in touch! Join our communities": "Contactez-nous ! Rejoignez nos communautés.",
   "All changes are saved locally": "Les changements sont sauvegardés localement",
   "Continue with Google": "Se connecter avec Google ",
   "Delete": "Supprimer objet ",
@@ -185,9 +183,7 @@
   "core": "l'essentiel",
   "Download data": "Télécharger les données {{CoreOrAll}}",
   "Download all data": "Télécharger toutes les données",
-  "It takes up more space on your device": {
-    "": "Cela prend davantage d’espace sur votre appareil."
-  },
+  "It takes up more space on your device": "Cela prend davantage d’espace sur votre appareil.",
   "is a Cloud Workspace": "est un espace de travail distant",
   "will delete member": "supprimera le membre",
   "is a Local Workspace": "est un espace de travail local",
@@ -195,9 +191,7 @@
   "Export AFFiNE backup file": "Exporter un fichier de sauvegarde AFFiNE (à venir...)",
   "Export Description": "Vous pouvez exporter l'intégralité des données de l'espace de travail à titre de sauvegarde ; les données ainsi exportées peuvent être réimportées.",
   "Download data Description1": "Cela prend davantage d’espace sur votre appareil.",
-  "It takes up little space on your device": {
-    "": "Cela prend peu d’espace sur votre appareil."
-  },
+  "It takes up little space on your device": "Cela prend peu d’espace sur votre appareil.",
   "Members": "Membres",
   "Move to Trash": "Déplacer à la corbeille",
   "Saved then enable AFFiNE Cloud": "Toutes les modifications sont sauvegardées localement, cliquez ici pour activer la sauvegarde AFFiNE Cloud",
@@ -208,13 +202,7 @@
   "Pivots": "Arborescence",
   "Remove from Pivots": "Retirer de l'Arborescence",
   "Add a subpage inside": "Ajouter une sous-page à l'intérieur ",
-  "Move page to": {
-    "": {
-      "": {
-        "": "Déplacer la page vers..."
-      }
-    }
-  },
+  "Move page to": "Déplacer la page vers...",
   "Move to": "Déplacer vers",
   "Rename": "Renommer",
   "Disable": "Désactiver",

@@ -109,7 +109,7 @@ export const ContactModal = ({
           })}
         </FlexWrapper>
         <StyledSubTitle>
-          {t['Get in touch! Join our communities.']()}
+          {t['Get in touch! Join our communities']()}
         </StyledSubTitle>
         <FlexWrapper justifyContent="center">
           {linkList.map(({ icon, title, link }) => {
