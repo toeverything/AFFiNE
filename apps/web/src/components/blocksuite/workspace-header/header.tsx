@@ -1,7 +1,7 @@
 import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { CloseIcon } from '@blocksuite/icons';
+import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
@@ -64,6 +64,9 @@ export const enum HeaderRightItemName {
   ShareMenu = 'shareMenu',
   EditPage = 'editPage',
   UserAvatar = 'userAvatar',
+
+  // some windows only items
+  WindowsAppControls = 'windowsAppControls',
 }
 
 type HeaderItem = {
@@ -78,6 +81,7 @@ type HeaderItem = {
     }
   ) => boolean;
 };
+
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.TrashButtonGroup]: {
     Component: TrashButtonGroup,
@@ -113,6 +117,44 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
     Component: EditorOptionMenu,
     availableWhen: (_, currentPage, { isPublic, isPreview }) => {
       return !isPublic && !isPreview;
+    },
+  },
+  [HeaderRightItemName.WindowsAppControls]: {
+    Component: () => {
+      return (
+        <div className={styles.windowAppControlsWrapper}>
+          <button
+            data-type="minimize"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleMinimizeApp();
+            }}
+          >
+            <MinusIcon />
+          </button>
+          <button
+            data-type="maximize"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleMaximizeApp();
+            }}
+          >
+            <RoundedRectangleIcon />
+          </button>
+          <button
+            data-type="close"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleCloseApp();
+            }}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      );
+    },
+    availableWhen: () => {
+      return environment.isDesktop && environment.isWindows;
     },
   },
 };

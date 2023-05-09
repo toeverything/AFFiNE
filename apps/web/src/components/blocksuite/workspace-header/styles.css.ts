@@ -89,6 +89,7 @@ export const headerRightSide = style({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
+  zIndex: 1,
 });
 
 export const browserWarning = style({
@@ -186,4 +187,30 @@ export const horizontalDivider = style({
 export const horizontalDividerContainer = style({
   width: '100%',
   padding: '14px',
+});
+
+export const windowAppControlsWrapper = style({
+  display: 'flex',
+  gap: '2px',
+  transform: 'translateX(8px)',
+});
+
+export const windowAppControl = style({
+  // @ts-ignore
+  WebkitAppRegion: 'no-drag',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  width: '32px',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '2px',
+  selectors: {
+    '&[data-type="close"]:hover': {
+      background: 'var(--affine-error-color)',
+      color: '#FFFFFF',
+    },
+    '&:hover': {
+      background: 'var(--affine-background-tertiary-color)',
+    },
+  },
 });
