@@ -37,6 +37,7 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
     width,
     onChange,
     noBorder = false,
+    className,
     ...otherProps
   }: inputProps,
   ref: ForwardedRef<HTMLInputElement>
@@ -51,7 +52,7 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
 
   return (
     <input
-      className={clsx(inputStyle, otherProps.className)}
+      className={clsx(inputStyle, className)}
       style={assignInlineVars({
         [widthVar]: width ? `${width}px` : '100%',
         [heightVar]: height ? `${height}px` : 'unset',
