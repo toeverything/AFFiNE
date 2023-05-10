@@ -1,9 +1,13 @@
+import { ReleaseTypeSchema } from '@affine/env/constant';
 import type { AppUpdater } from 'electron-updater';
 
 import { isMacOS } from '../../../../utils';
 import { updaterSubjects } from '../../events/updater';
 import { logger } from '../../logger';
 
+ReleaseTypeSchema.parse(
+  (process.env.BUILD_TYPE || 'canary').trim().toLowerCase()
+);
 const buildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
