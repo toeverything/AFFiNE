@@ -169,7 +169,12 @@ jobs:
           name: release-yml-build-script
           path: ./
       - name: Setup Node.js
-        uses: ./.github/actions/setup-node
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+          cache: 'yarn'
       - name: Generate Release yml
         run: |
           node generate-yml.js
