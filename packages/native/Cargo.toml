@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "affine_octobase"
+name = "affine_native"
 version = "0.0.0"
 
 [lib]
