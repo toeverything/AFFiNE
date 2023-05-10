@@ -66,3 +66,7 @@ i18n-generated.ts
 # Cache
 .eslintcache
 next-env.d.ts
+
+# Rust
+target
+*.node
