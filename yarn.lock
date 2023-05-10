@@ -129,6 +129,7 @@ __metadata:
   resolution: "@affine/electron@workspace:apps/electron"
   dependencies:
     "@affine-test/kit": "workspace:*"
+    "@affine/env": "workspace:*"
     "@electron-forge/cli": ^6.1.1
     "@electron-forge/core": ^6.1.1
     "@electron-forge/core-utils": ^6.1.1

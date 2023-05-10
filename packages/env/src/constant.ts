@@ -1,3 +1,13 @@
+import { z } from 'zod';
+
+export const ReleaseTypeSchema = z.enum([
+  'stable',
+  'beta',
+  'canary',
+  'internal',
+]);
+export const ReleaseType = ReleaseTypeSchema.enum;
+
 export const AFFINE_STORAGE_KEY = 'affine-local-storage-v2';
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';

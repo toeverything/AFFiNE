@@ -1,10 +1,12 @@
+import { ReleaseTypeSchema } from '@affine/env/constant';
 import type { AppUpdater } from 'electron-updater';
 
 import { isMacOS } from '../../../../utils';
 import { updaterSubjects } from '../../events/updater';
 import { logger } from '../../logger';
 
-const buildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+const buildType = ReleaseTypeSchema.parse(envBuildType);
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
 
@@ -17,8 +19,7 @@ export const updateClient = async () => {
 export const registerUpdater = async () => {
   // require it will cause some side effects and will break generate-main-exposed-meta,
   // so we wrap it in a function
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { autoUpdater } = require('electron-updater');
+  const { autoUpdater } = await import('electron-updater');
 
   _autoUpdater = autoUpdater;
 
@@ -33,19 +34,7 @@ export const registerUpdater = async () => {
   _autoUpdater.setFeedURL({
     channel: buildType,
     provider: 'github',
-    repo: 'AFFiNE',
-    owner: 'toeverything',
-    releaseType: buildType === 'stable' ? 'release' : 'prerelease',
-  });
-
-  _autoUpdater.autoDownload = false;
-  _autoUpdater.allowPrerelease = buildType !== 'stable';
-  _autoUpdater.autoInstallOnAppQuit = false;
-  _autoUpdater.autoRunAppAfterInstall = true;
-  _autoUpdater.setFeedURL({
-    channel: buildType,
-    provider: 'github',
-    repo: 'AFFiNE',
+    repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
   });
