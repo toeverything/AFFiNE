@@ -26,7 +26,6 @@
   "[toml]": {
     "editor.defaultFormatter": "tamasfe.even-better-toml"
   },
-  "rust-analyzer.linkedProjects": ["packages/octobase-node/Cargo.toml"],
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },

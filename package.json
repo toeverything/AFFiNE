@@ -36,7 +36,10 @@
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown --cache",
-    "*.{ts,tsx,mjs,js,jsx}": "eslint --cache --fix"
+    "*.{ts,tsx,mjs,js,jsx}": "eslint --cache --fix",
+    "*.toml": [
+      "taplo format"
+    ]
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
@@ -48,6 +51,7 @@
     "@magic-works/i18n-codegen": "^0.5.0",
     "@perfsee/sdk": "^1.6.0",
     "@playwright/test": "^1.33.0",
+    "@taplo/cli": "^0.5.2",
     "@testing-library/react": "^14.0.0",
     "@types/eslint": "^8.37.0",
     "@types/node": "^18.16.7",

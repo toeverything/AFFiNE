@@ -232,12 +232,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/octobase-node@workspace:packages/native":
+"@affine/native@workspace:packages/native":
   version: 0.0.0-use.local
-  resolution: "@affine/octobase-node@workspace:packages/native"
+  resolution: "@affine/native@workspace:packages/native"
   dependencies:
     "@napi-rs/cli": ^2.15.2
     "@types/node": ^18.16.7
+    "@types/uuid": ^9.0.1
+    cross-env: ^7.0.3
+    rxjs: ^7.8.1
+    ts-node: ^10.9.1
+    typescript: ^5.0.4
+    uuid: ^9.0.0
   languageName: unknown
   linkType: soft
 
@@ -8143,6 +8149,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@taplo/cli@npm:^0.5.2":
+  version: 0.5.2
+  resolution: "@taplo/cli@npm:0.5.2"
+  bin:
+    taplo: dist/cli.js
+  checksum: c2e0e584172bfee1cca6624bdb4470259179e232472fc7f4bbbd2e0127233039b9ace21a8d6b8d5081b157d9f046dc942ab27a634e23924b8c8a6096f1d04e27
+  languageName: node
+  linkType: hard
+
 "@testing-library/dom@npm:^8.3.0":
   version: 8.20.0
   resolution: "@testing-library/dom@npm:8.20.0"
@@ -9035,6 +9050,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/uuid@npm:^9.0.1":
+  version: 9.0.1
+  resolution: "@types/uuid@npm:9.0.1"
+  checksum: c472b8a77cbeded4bc529220b8611afa39bd64677f507838f8083d8aac8033b1f88cb9ddaa2f8589e0dcd2317291d0f6e1379f82d5ceebd6f74f3b4825288e00
+  languageName: node
+  linkType: hard
+
 "@types/wait-on@npm:^5.2.0":
   version: 5.3.1
   resolution: "@types/wait-on@npm:5.3.1"
@@ -9748,6 +9770,7 @@ __metadata:
     "@magic-works/i18n-codegen": ^0.5.0
     "@perfsee/sdk": ^1.6.0
     "@playwright/test": ^1.33.0
+    "@taplo/cli": ^0.5.2
     "@testing-library/react": ^14.0.0
     "@types/eslint": ^8.37.0
     "@types/node": ^18.16.7
@@ -12195,7 +12218,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cross-env@npm:7.0.3":
+"cross-env@npm:7.0.3, cross-env@npm:^7.0.3":
   version: 7.0.3
   resolution: "cross-env@npm:7.0.3"
   dependencies:
