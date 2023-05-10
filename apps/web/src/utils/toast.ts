@@ -9,8 +9,20 @@ export const toast = (message: string, options?: ToastOptions) => {
     '.main-container'
   ) as HTMLElement;
   logger.debug(`toast with message: "${message}"`, options);
+  window.dispatchEvent(
+    new CustomEvent('affine-toast:emit', { detail: message })
+  );
   return basicToast(message, {
     portal: mainContainer || document.body,
     ...options,
   });
 };
+
+declare global {
+  // global Events
+  interface WindowEventMap {
+    'affine-toast:emit': CustomEvent<{
+      message: string;
+    }>;
+  }
+}
