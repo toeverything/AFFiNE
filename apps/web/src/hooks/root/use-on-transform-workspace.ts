@@ -47,3 +47,15 @@ export function useOnTransformWorkspace() {
     [setUser, transformWorkspace]
   );
 }
+
+declare global {
+  // global Events
+  interface WindowEventMap {
+    'affine-workspace:transform': CustomEvent<{
+      from: WorkspaceFlavour;
+      to: WorkspaceFlavour;
+      oldId: string;
+      newId: string;
+    }>;
+  }
+}
