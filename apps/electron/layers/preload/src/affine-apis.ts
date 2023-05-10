@@ -57,6 +57,10 @@ const events: MainIPCEventMap = (() => {
   const {
     events: eventsMeta,
   }: MainExposedMeta = require('../main/exposed-meta');
+
+  // NOTE: ui may try to listen to a lot of the same events, so we increase the limit...
+  ipcRenderer.setMaxListeners(100);
+
   const all = eventsMeta.map(([namespace, eventNames]) => {
     const namespaceEvents = eventNames.map(name => {
       const channel = `${namespace}:${name}`;

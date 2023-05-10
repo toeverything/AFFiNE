@@ -36,6 +36,8 @@ export const allHandlers = {
 } satisfies Record<string, NamespaceHandlers>;
 
 export const registerHandlers = () => {
+  // TODO: listen to namespace instead of individual event types
+  ipcMain.setMaxListeners(100);
   for (const [namespace, namespaceHandlers] of Object.entries(allHandlers)) {
     for (const [key, handler] of Object.entries(namespaceHandlers)) {
       const chan = `${namespace}:${key}`;
