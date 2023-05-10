@@ -265,5 +265,7 @@
   "Default db location hint": "By default will be saved to {{location}}",
   "light": "light",
   "dark": "dark",
-  "system": "system"
+  "system": "system",
+  "com.affine.pageMode": "Page Mode",
+  "com.affine.edgelessMode": "Edgeless Mode"
 }
