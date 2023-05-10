@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
 import {
   forwardRef,
@@ -161,7 +161,7 @@ export const Header = forwardRef<
     setShowWarning(shouldShowWarning());
     setShowGuideDownloadClientTip(shouldShowGuideDownloadClientTip);
   }, [shouldShowGuideDownloadClientTip]);
-  const [open] = useAtom(appSidebarOpenAtom);
+  const open = useAtomValue(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
 
   const mode = useCurrentMode();
@@ -189,7 +189,6 @@ export const Header = forwardRef<
         className={styles.header}
         data-has-warning={showWarning}
         data-testid="editor-header-items"
-        data-tauri-drag-region
         data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>

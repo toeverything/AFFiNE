@@ -13,7 +13,6 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
-  transition: 'margin-left .3s, width .3s',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
@@ -35,8 +34,8 @@ export const navWrapperStyle = style({
     '&[data-is-macos-electron="true"]': {
       backgroundColor: 'transparent',
     },
-    '&[data-is-resizing="true"]': {
-      transition: 'none',
+    '&[data-enable-animation="true"]': {
+      transition: 'margin-left .3s, width .3s',
     },
   },
 });
@@ -55,10 +54,11 @@ export const navStyle = style({
 export const navHeaderStyle = style({
   flex: '0 0 auto',
   height: '52px',
-  padding: '0px 16px 0px 10px',
+  padding: '0px 16px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  gap: '32px',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       selectors: {
@@ -80,13 +80,8 @@ export const navBodyStyle = style({
   flex: '1 1 auto',
 });
 
-export const navFooterStyle = style({
-  flex: '0 0 auto',
-  borderTop: '1px solid var(--affine-border-color)',
-});
-
 export const sidebarButtonStyle = style({
-  width: '32px',
+  width: 'auto',
   height: '32px',
   color: 'var(--affine-icon-color)',
 });

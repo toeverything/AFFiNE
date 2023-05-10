@@ -1,19 +1,28 @@
 import { IconButton } from '@affine/component';
-import { SidebarIcon } from '@blocksuite/icons';
+import {
+  DeleteTemporarilyIcon,
+  SettingsIcon,
+  SidebarIcon,
+} from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
 
 import { AppSidebar, appSidebarOpenAtom } from '.';
+import { CategoryDivider } from './category-divider';
 import { navHeaderStyle, sidebarButtonStyle } from './index.css';
+import { MenuLinkItem } from './menu-item';
+import { QuickSearchInput } from './quick-search-input';
+import {
+  SidebarScrollableContainer,
+  SidebarTopContainer,
+} from './sidebar-containers';
 
 export default {
   title: 'Components/AppSidebar',
   component: AppSidebar,
 } satisfies Meta;
 
-const Footer = () => <div>Add Page</div>;
-
-export const Default: StoryFn = () => {
+const AppSidebarTemplate = (props: { children?: React.ReactNode }) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   return (
     <>
@@ -27,7 +36,7 @@ export const Default: StoryFn = () => {
           flexDirection: 'row',
         }}
       >
-        <AppSidebar footer={<Footer />}>Test</AppSidebar>
+        <AppSidebar>{props.children}</AppSidebar>
         <div>
           <div className={navHeaderStyle}>
             {!open && (
@@ -44,5 +53,69 @@ export const Default: StoryFn = () => {
         </div>
       </main>
     </>
+  );
+};
+
+export const EmptyAppSidebar = () => {
+  return <AppSidebarTemplate />;
+};
+
+export const WithItems: StoryFn = () => {
+  return (
+    <AppSidebarTemplate>
+      <SidebarTopContainer>
+        <QuickSearchInput />
+        <div style={{ padding: '24px 0' }}>
+          <MenuLinkItem
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Settings
+          </MenuLinkItem>
+          <MenuLinkItem
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Settings
+          </MenuLinkItem>
+          <MenuLinkItem
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Settings
+          </MenuLinkItem>
+        </div>
+      </SidebarTopContainer>
+
+      <SidebarScrollableContainer>
+        <CategoryDivider label="Favorites" />
+        <MenuLinkItem
+          icon={<SettingsIcon />}
+          href="/test"
+          onClick={() => alert('opened')}
+        >
+          Settings
+        </MenuLinkItem>
+        <MenuLinkItem
+          icon={<SettingsIcon />}
+          href="/test"
+          onClick={() => alert('opened')}
+        >
+          Settings
+        </MenuLinkItem>
+
+        <CategoryDivider label="Others" />
+        <MenuLinkItem
+          icon={<DeleteTemporarilyIcon />}
+          href="/test"
+          onClick={() => alert('opened')}
+        >
+          Trash
+        </MenuLinkItem>
+      </SidebarScrollableContainer>
+    </AppSidebarTemplate>
   );
 };

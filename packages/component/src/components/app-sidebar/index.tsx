@@ -1,30 +1,21 @@
 import { Button } from '@affine/component';
 import { getEnvironment } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  ArrowLeftSmallIcon,
-  ArrowRightSmallIcon,
-  ResetIcon,
-  SidebarIcon,
-} from '@blocksuite/icons';
+import { ResetIcon } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
-import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { IconButton } from '../../ui/button/icon-button';
 import {
   floatingMaxWidth,
   haloStyle,
   installLabelStyle,
   navBodyStyle,
-  navFooterStyle,
-  navHeaderStyle,
   navStyle,
   navWidthVar,
   navWrapperStyle,
   particlesStyle,
-  sidebarButtonStyle,
   sidebarFloatMaskStyle,
   updaterButtonStyle,
 } from './index.css';
@@ -36,12 +27,21 @@ import {
   updateAvailableAtom,
 } from './index.jotai';
 import { ResizeIndicator } from './resize-indicator';
+import { SidebarHeader } from './sidebar-header';
 
 export { appSidebarOpenAtom };
 
-export type AppSidebarProps = PropsWithChildren<{
-  footer?: ReactNode | undefined;
-}>;
+export type AppSidebarProps = PropsWithChildren;
+
+function useEnableAnimation() {
+  const [enable, setEnable] = useState(false);
+  useEffect(() => {
+    setTimeout(() => {
+      setEnable(true);
+    }, 500);
+  }, []);
+  return enable;
+}
 
 export function AppSidebar(props: AppSidebarProps): ReactElement {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
@@ -51,11 +51,6 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   const initialRender = open === undefined;
 
   const isResizing = useAtomValue(appSidebarResizingAtom);
-
-  const handleSidebarOpen = useCallback(() => {
-    setOpen(open => !open);
-  }, [setOpen]);
-
   const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,10 +60,12 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
       const { matches } = window.matchMedia(
         `(min-width: ${floatingMaxWidth}px)`
       );
-
       setOpen(matches);
     }
   }, [open, setOpen]);
+
+  // disable animation to avoid UI flash
+  const enableAnimation = useEnableAnimation();
 
   const environment = getEnvironment();
   const isMacosDesktop = environment.isDesktop && environment.isMacOs;
@@ -76,6 +73,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
     // avoid the UI flash
     return <div />;
   }
+
   return (
     <div
       style={assignInlineVars({
@@ -84,43 +82,10 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
       className={navWrapperStyle}
       data-open={open}
       data-is-macos-electron={isMacosDesktop}
-      data-is-resizing={isResizing}
+      data-enable-animation={enableAnimation && !isResizing}
     >
       <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
-        <div
-          className={navHeaderStyle}
-          data-is-macos-electron={isMacosDesktop}
-          data-open={open}
-        >
-          {isMacosDesktop && (
-            <>
-              <IconButton
-                size="middle"
-                onClick={() => {
-                  window.history.back();
-                }}
-              >
-                <ArrowLeftSmallIcon />
-              </IconButton>
-              <IconButton
-                size="middle"
-                onClick={() => {
-                  window.history.forward();
-                }}
-                style={{ marginLeft: '32px' }}
-              >
-                <ArrowRightSmallIcon />
-              </IconButton>
-            </>
-          )}
-          <IconButton
-            data-testid="app-sidebar-arrow-button-collapse"
-            className={sidebarButtonStyle}
-            onClick={handleSidebarOpen}
-          >
-            <SidebarIcon width={24} height={24} />
-          </IconButton>
-        </div>
+        <SidebarHeader />
         <div className={navBodyStyle}>{props.children}</div>
         {clientUpdateAvailable && (
           <Button
@@ -139,7 +104,6 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
             </div>
           </Button>
         )}
-        <div className={navFooterStyle}>{props.footer}</div>
       </nav>
       <div
         data-testid="app-sidebar-float-mask"
