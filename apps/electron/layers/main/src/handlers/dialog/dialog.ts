@@ -47,6 +47,7 @@ const ErrorMessages = [
   'DB_FILE_ALREADY_LOADED',
   'DB_FILE_PATH_INVALID',
   'DB_FILE_INVALID',
+  'FILE_ALREADY_EXISTS',
   'UNKNOWN_ERROR',
 ] as const;
 
@@ -262,6 +263,12 @@ export async function moveDBFile(
       };
     }
 
+    if (await fs.pathExists(newFilePath)) {
+      return {
+        error: 'FILE_ALREADY_EXISTS',
+      };
+    }
+
     if (isLink) {
       // remove the old link to unblock new link
       await fs.unlink(db.path);
@@ -274,6 +281,7 @@ export async function moveDBFile(
     await fs.ensureSymlink(newFilePath, db.path);
     logger.info(`openMoveDBFileDialog symlink: ${realpath} -> ${newFilePath}`);
     db.reconnectDB();
+
     return {
       filePath: newFilePath,
     };

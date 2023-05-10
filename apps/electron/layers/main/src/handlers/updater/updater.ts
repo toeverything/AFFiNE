@@ -38,18 +38,6 @@ export const registerUpdater = async () => {
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
   });
 
-  _autoUpdater.autoDownload = false;
-  _autoUpdater.allowPrerelease = buildType !== 'stable';
-  _autoUpdater.autoInstallOnAppQuit = false;
-  _autoUpdater.autoRunAppAfterInstall = true;
-  _autoUpdater.setFeedURL({
-    channel: buildType,
-    provider: 'github',
-    repo: 'AFFiNE',
-    owner: 'toeverything',
-    releaseType: buildType === 'stable' ? 'release' : 'prerelease',
-  });
-
   if (isMacOS()) {
     _autoUpdater.on('update-available', () => {
       _autoUpdater!.downloadUpdate();

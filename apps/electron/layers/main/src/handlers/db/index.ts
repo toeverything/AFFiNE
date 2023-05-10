@@ -1,3 +1,5 @@
+import fs from 'fs-extra';
+
 import { appContext } from '../../context';
 import type { NamespaceHandlers } from '../type';
 import { ensureSQLiteDB } from './ensure-db';
@@ -29,5 +31,12 @@ export const dbHandlers = {
   },
   getDefaultStorageLocation: async () => {
     return appContext.appDataPath;
+  },
+  getDBFilePath: async (_, workspaceId: string) => {
+    const workspaceDB = await ensureSQLiteDB(workspaceId);
+    return {
+      path: workspaceDB.path,
+      realPath: await fs.realpath(workspaceDB.path),
+    };
   },
 } satisfies NamespaceHandlers;

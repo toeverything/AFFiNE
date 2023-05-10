@@ -260,6 +260,7 @@
   "Move folder hint": "Select a new storage location.",
   "Storage Folder": "Storage Folder",
   "DB_FILE_INVALID": "Invalid Database file",
+  "FILE_ALREADY_EXISTS": "File already exists",
   "Name Your Workspace": "Name Your Workspace",
   "DB_FILE_PATH_INVALID": "Database file path invalid",
   "Default db location hint": "By default will be saved to {{location}}",
