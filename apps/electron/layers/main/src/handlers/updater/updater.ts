@@ -12,8 +12,10 @@ export const ReleaseTypeSchema = z.enum([
   'internal',
 ]);
 
-const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
-const buildType = ReleaseTypeSchema.parse(envBuildType);
+export const envBuildType = (process.env.BUILD_TYPE || 'canary')
+  .trim()
+  .toLowerCase();
+export const buildType = ReleaseTypeSchema.parse(envBuildType);
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
 
