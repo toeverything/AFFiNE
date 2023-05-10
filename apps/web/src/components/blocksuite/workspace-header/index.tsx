@@ -15,15 +15,7 @@ import { QuickSearchButton } from '../../pure/quick-search-button';
 import { EditorModeSwitch } from './editor-mode-switch';
 import type { BaseHeaderProps } from './header';
 import { Header } from './header';
-import {
-  StyledQuickSearchTipButton,
-  StyledQuickSearchTipContent,
-  StyledSearchArrowWrapper,
-  StyledSwitchWrapper,
-  StyledTitle,
-  StyledTitleContainer,
-  StyledTitleWrapper,
-} from './styles';
+import * as styles from './styles.css';
 
 export type WorkspaceHeaderProps = BaseHeaderProps;
 
@@ -61,7 +53,7 @@ export const WorkspaceHeader = forwardRef<
   );
 
   const TipsContent = (
-    <StyledQuickSearchTipContent>
+    <div className={styles.quickSearchTipContent}>
       <div>
         Click button
         {
@@ -78,22 +70,23 @@ export const WorkspaceHeader = forwardRef<
         {isMac() ? ' ⌘ + K' : ' Ctrl + K'} to activate Quick Search. Then you
         can search keywords or quickly open recently viewed pages.
       </div>
-      <StyledQuickSearchTipButton
+      <div
+        className={styles.quickSearchTipButton}
         data-testid="quick-search-got-it"
         onClick={() => setShowQuickSearchTips(false)}
       >
         Got it
-      </StyledQuickSearchTipButton>
-    </StyledQuickSearchTipContent>
+      </div>
+    </div>
   );
 
   return (
     <Header ref={ref} {...props}>
       {children}
       {!isPublic && currentPage && (
-        <StyledTitleContainer data-tauri-drag-region>
-          <StyledTitleWrapper>
-            <StyledSwitchWrapper>
+        <div className={styles.titleContainer}>
+          <div className={styles.titleWrapper}>
+            <div className={styles.switchWrapper}>
               <EditorModeSwitch
                 blockSuiteWorkspace={workspace.blockSuiteWorkspace}
                 pageId={currentPage.id}
@@ -101,8 +94,8 @@ export const WorkspaceHeader = forwardRef<
                   marginRight: '12px',
                 }}
               />
-            </StyledSwitchWrapper>
-            <StyledTitle>{title || 'Untitled'}</StyledTitle>
+            </div>
+            <div className={styles.title}>{title || 'Untitled'}</div>
             <QuickSearchTips
               data-testid="quick-search-tips"
               content={TipsContent}
@@ -111,16 +104,16 @@ export const WorkspaceHeader = forwardRef<
               open={showQuickSearchTips}
               offset={[0, -5]}
             >
-              <StyledSearchArrowWrapper>
+              <div className={styles.searchArrowWrapper}>
                 <QuickSearchButton
                   onClick={() => {
                     setOpenQuickSearch(true);
                   }}
                 />
-              </StyledSearchArrowWrapper>
+              </div>
             </QuickSearchTips>
-          </StyledTitleWrapper>
-        </StyledTitleContainer>
+          </div>
+        </div>
       )}
     </Header>
   );

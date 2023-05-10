@@ -42,6 +42,8 @@ export const test = base.extend<{
     const logFilePath = await page.evaluate(async () => {
       return window.apis?.debug.logFilePath();
     });
+    // wat for blocksuite to be loaded
+    await page.waitForSelector('v-line');
     await use(page);
     await page.close();
     if (logFilePath) {
@@ -57,11 +59,12 @@ export const test = base.extend<{
       executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
       colorScheme: 'light',
     });
-    const sessionDataPath = await electronApp.evaluate(async ({ app }) => {
-      return app.getPath('sessionData');
-    });
     await use(electronApp);
-    await fs.rm(sessionDataPath, { recursive: true, force: true });
+    // FIXME: the following does not work well on CI
+    // const sessionDataPath = await electronApp.evaluate(async ({ app }) => {
+    //   return app.getPath('sessionData');
+    // });
+    // await fs.rm(sessionDataPath, { recursive: true, force: true });
   },
   appInfo: async ({ electronApp }, use) => {
     const appInfo = await electronApp.evaluate(async ({ app }) => {

@@ -2,7 +2,7 @@ import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
-import { isMacOS } from '../../utils';
+import { isMacOS, isWindows } from '../../utils';
 import { logger } from './logger';
 
 const IS_DEV: boolean =
@@ -18,7 +18,11 @@ async function createWindow() {
   });
 
   const browserWindow = new BrowserWindow({
-    titleBarStyle: isMacOS() ? 'hiddenInset' : 'default',
+    titleBarStyle: isMacOS()
+      ? 'hiddenInset'
+      : isWindows()
+      ? 'hidden'
+      : 'default',
     trafficLightPosition: { x: 24, y: 18 },
     x: mainWindowState.x,
     y: mainWindowState.y,

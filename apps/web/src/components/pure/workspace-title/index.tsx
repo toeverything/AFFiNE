@@ -5,7 +5,7 @@ import type React from 'react';
 import { openQuickSearchModalAtom } from '../../../atoms';
 import type { HeaderProps } from '../../blocksuite/workspace-header/header';
 import { Header } from '../../blocksuite/workspace-header/header';
-import { StyledPageListTittleWrapper } from '../../blocksuite/workspace-header/styles';
+import * as styles from '../../blocksuite/workspace-header/styles.css';
 import { QuickSearchButton } from '../quick-search-button';
 
 export type WorkspaceTitleProps = React.PropsWithChildren<
@@ -22,15 +22,15 @@ export const WorkspaceTitle: React.FC<WorkspaceTitleProps> = ({
   const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
   return (
     <Header {...props}>
-      <StyledPageListTittleWrapper>
-        {icon}
+      <div className={styles.pageListTitleWrapper}>
+        <div className={styles.pageListTitleIcon}>{icon}</div>
         {children}
         <QuickSearchButton
           onClick={() => {
             setOpenQuickSearch(true);
           }}
         />
-      </StyledPageListTittleWrapper>
+      </div>
     </Header>
   );
 };

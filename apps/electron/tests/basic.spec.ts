@@ -12,7 +12,6 @@ test('new page', async ({ page, workspace }) => {
 });
 
 test('app theme', async ({ page, electronApp }) => {
-  await page.waitForSelector('v-line');
   const root = page.locator('html');
   {
     const themeMode = await root.evaluate(element =>
@@ -20,30 +19,25 @@ test('app theme', async ({ page, electronApp }) => {
     );
     expect(themeMode).toBe('light');
 
-    // check if electron theme source is set to light
-    const themeSource = await electronApp.evaluate(({ nativeTheme }) => {
-      return nativeTheme.themeSource;
+    const theme = await electronApp.evaluate(({ nativeTheme }) => {
+      return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
     });
 
-    expect(themeSource).toBe('light');
+    expect(theme).toBe('light');
   }
 
   {
     await page.getByTestId('editor-option-menu').click();
     await page.getByTestId('change-theme-dark').click();
     await page.waitForTimeout(50);
-    {
-      const themeMode = await root.evaluate(element =>
-        element.getAttribute('data-theme')
-      );
-      expect(themeMode).toBe('dark');
-    }
-
-    const themeSource = await electronApp.evaluate(({ nativeTheme }) => {
-      return nativeTheme.themeSource;
+    const themeMode = await root.evaluate(element =>
+      element.getAttribute('data-theme')
+    );
+    expect(themeMode).toBe('dark');
+    const theme = await electronApp.evaluate(({ nativeTheme }) => {
+      return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
     });
-
-    expect(themeSource).toBe('dark');
+    expect(theme).toBe('dark');
   }
 });
 
