@@ -6,12 +6,8 @@ const {
 } = require('@electron-forge/core');
 
 const path = require('node:path');
-export const ReleaseTypeSchema = z.enum([
-  'stable',
-  'beta',
-  'canary',
-  'internal',
-]);
+
+const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
 
 const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
 const buildType = ReleaseTypeSchema.parse(envBuildType);
