@@ -1,3 +1,8 @@
+import {
+  AppContainer,
+  MainContainer,
+  ToolContainer,
+} from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
@@ -38,12 +43,6 @@ import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
-import {
-  MainContainer,
-  MainContainerWrapper,
-  StyledPage,
-  StyledToolWrapper,
-} from './styles';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -342,7 +341,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       <Head>
         <title>{title}</title>
       </Head>
-      <StyledPage>
+      <AppContainer>
         <RootAppSidebar
           isPublicWorkspace={isPublicWorkspace}
           onOpenQuickSearchModal={handleOpenQuickSearchModal}
@@ -360,27 +359,25 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <MainContainerWrapper>
-          <MainContainer className="main-container">
-            <Suspense fallback={<PageLoading text={t['Page is Loading']()} />}>
-              {children}
-            </Suspense>
-            <StyledToolWrapper>
-              {/* fixme(himself65): remove this */}
-              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-                {/* Slot for block hub */}
-              </div>
-              {!isPublicWorkspace && (
-                <HelpIsland
-                  showList={
-                    router.query.pageId ? undefined : ['whatNew', 'contact']
-                  }
-                />
-              )}
-            </StyledToolWrapper>
-          </MainContainer>
-        </MainContainerWrapper>
-      </StyledPage>
+        <MainContainer>
+          <Suspense fallback={<PageLoading text={t['Page is Loading']()} />}>
+            {children}
+          </Suspense>
+          <ToolContainer>
+            {/* fixme(himself65): remove this */}
+            <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+              {/* Slot for block hub */}
+            </div>
+            {!isPublicWorkspace && (
+              <HelpIsland
+                showList={
+                  router.query.pageId ? undefined : ['whatNew', 'contact']
+                }
+              />
+            )}
+          </ToolContainer>
+        </MainContainer>
+      </AppContainer>
       <QuickSearch />
     </>
   );

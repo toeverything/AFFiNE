@@ -1,4 +1,5 @@
 import { Button } from '@affine/component';
+import { AppContainer, MainContainer } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { createBroadCastChannelProvider } from '@affine/workspace/providers';
 import type { BroadCastChannelProvider } from '@affine/workspace/type';
@@ -10,7 +11,6 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
-import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import { toast } from '../../utils';
 
 const logger = new DebugLogger('broadcast');
@@ -44,8 +44,8 @@ const BroadcastPage: React.FC = () => {
     return null;
   }
   return (
-    <StyledPage>
-      <StyledWrapper>
+    <AppContainer>
+      <MainContainer>
         <Typography variant="h5">Broadcast Provider Test</Typography>
         <Button
           type="primary"
@@ -64,8 +64,8 @@ const BroadcastPage: React.FC = () => {
             toast('do nothing');
           }}
         />
-      </StyledWrapper>
-    </StyledPage>
+      </MainContainer>
+    </AppContainer>
   );
 };
 
