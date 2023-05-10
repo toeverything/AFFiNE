@@ -110,7 +110,8 @@ export const settingItemLabelHint = style({
 export const row = style({
   padding: '40px 0',
   display: 'flex',
-  gap: '60px',
+  columnGap: '60px',
+  rowGap: '12px',
   selectors: {
     '&': {
       borderBottom: '1px solid var(--affine-border-color)',
@@ -119,22 +120,22 @@ export const row = style({
       paddingTop: 0,
     },
   },
+  flexWrap: 'wrap',
 });
 
 export const col = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-start',
-  flexShrink: 0,
   selectors: {
     [`${row} &:nth-child(1)`]: {
-      flex: 3,
+      flex: '3 0 200px',
     },
     [`${row} &:nth-child(2)`]: {
-      flex: 5,
+      flex: '5 0 240px',
     },
     [`${row} &:nth-child(3)`]: {
-      flex: 2,
+      flex: '2 0 200px',
       alignItems: 'flex-end',
     },
   },

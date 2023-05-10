@@ -88,7 +88,6 @@ export const GeneralPanel: React.FC<PanelProps> = ({
 
         <div className={style.col}>
           <StyledInput
-            width={284}
             height={38}
             value={input}
             data-testid="workspace-name-input"
