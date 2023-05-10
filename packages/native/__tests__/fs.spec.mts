@@ -57,7 +57,7 @@ test('fs watch', { concurrency: false }, async t => {
       const defer = new Subject<void>();
       const subscription = watcher.subscribe(
         event => {
-          if (event.type.remove) {
+          if (typeof event.type === 'object' && 'rename' in event.type) {
             assert.deepEqual(event.paths, [fixture]);
             assert.deepEqual(event.type, {
               remove: {
