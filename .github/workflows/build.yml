@@ -280,6 +280,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     strategy:
+      fail-fast: false
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
         spec:
