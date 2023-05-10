@@ -1,9 +1,16 @@
-import { ReleaseTypeSchema } from '@affine/env/constant';
 import type { AppUpdater } from 'electron-updater';
+import { z } from 'zod';
 
 import { isMacOS } from '../../../../utils';
 import { updaterSubjects } from '../../events/updater';
 import { logger } from '../../logger';
+
+export const ReleaseTypeSchema = z.enum([
+  'stable',
+  'beta',
+  'canary',
+  'internal',
+]);
 
 const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
 const buildType = ReleaseTypeSchema.parse(envBuildType);
