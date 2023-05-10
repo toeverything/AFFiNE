@@ -34,7 +34,7 @@ export const registerUpdater = async () => {
   _autoUpdater.setFeedURL({
     channel: buildType,
     provider: 'github',
-    repo: 'AFFiNE',
+    repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
   });
