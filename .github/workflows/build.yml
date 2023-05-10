@@ -20,6 +20,12 @@ on:
       - .github/**
       - '!.github/workflows/build.yml'
 
+env:
+  CARGO_BUILD_INCREMENTAL: 'false'
+  DEBUG: napi:*
+  APP_NAME: affine
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
+
 jobs:
   lint:
     name: Lint
@@ -273,7 +279,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
@@ -281,17 +287,41 @@ jobs:
 
   dekstop-test:
     name: Desktop Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.spec.os }}
     environment: development
     strategy:
       fail-fast: false
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
         spec:
-          - { os: macos-latest, platform: macos, arch: x64 }
-          - { os: macos-latest, platform: macos, arch: arm64 }
-          - { os: ubuntu-latest, platform: linux, arch: x64 }
-          - { os: windows-latest, platform: windows, arch: x64 }
+          - {
+              os: macos-latest,
+              platform: macos,
+              arch: x64,
+              target: x86_64-apple-darwin,
+              test: true,
+            }
+          - {
+              os: macos-latest,
+              platform: macos,
+              arch: arm64,
+              target: aarch64-apple-darwin,
+              test: false,
+            }
+          - {
+              os: ubuntu-latest,
+              platform: linux,
+              arch: x64,
+              target: x86_64-unknown-linux-gnu,
+              test: true,
+            }
+          - {
+              os: windows-latest,
+              platform: windows,
+              arch: x64,
+              target: x86_64-pc-windows-msvc,
+              test: true,
+            }
     needs: [build, build-electron]
     steps:
       - uses: actions/checkout@v3
@@ -299,6 +329,10 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.spec.target }}
       - name: Download Ubuntu desktop artifact
         uses: actions/download-artifact@v3
         with:
@@ -316,12 +350,18 @@ jobs:
         working-directory: apps/electron
 
       - name: Run desktop tests
+        if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
+        working-directory: apps/electron
+
+      - name: Run desktop tests
+        if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
+        run: yarn test
         working-directory: apps/electron
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
