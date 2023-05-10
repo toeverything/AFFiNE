@@ -27,6 +27,7 @@ export function watch(
   options?: WatchOptions | undefined | null
 ): FSWatcher;
 export class Subscription {
+  toString(): string;
   unsubscribe(): void;
 }
 export type FSWatcher = FsWatcher;
@@ -34,11 +35,8 @@ export class FsWatcher {
   get kind(): WatcherKind;
   toString(): string;
   subscribe(
-    callback: (value: any) => any,
-    errorCallback?: (
-      err: Error | null,
-      value: undefined
-    ) => any | undefined | null
+    callback: (event: import('./event').NotifyEvent) => void,
+    errorCallback?: (err: Error) => void
   ): Subscription;
   close(): void;
 }
