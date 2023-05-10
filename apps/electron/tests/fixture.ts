@@ -42,6 +42,8 @@ export const test = base.extend<{
     const logFilePath = await page.evaluate(async () => {
       return window.apis?.debug.logFilePath();
     });
+    // wat for blocksuite to be loaded
+    await page.waitForSelector('v-line');
     await use(page);
     await page.close();
     if (logFilePath) {
