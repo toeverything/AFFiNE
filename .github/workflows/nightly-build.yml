@@ -1,0 +1,139 @@
+name: Build Canary Desktop App on Staging Branch
+
+on:
+  push:
+    branches:
+      - master
+      - v[0-9]+.[0-9]+.x-staging
+    paths-ignore:
+      - README.md
+      - .github/**
+      - '!.github/workflows/nightly-build.yml'
+
+permissions:
+  actions: write
+  contents: write
+  security-events: write
+
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for
+  # pull requests or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+env:
+  BUILD_TYPE: canary
+
+jobs:
+  before-make:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: generate-assets
+        working-directory: apps/electron
+        run: yarn generate-assets
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
+          AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          API_SERVER_PROFILE: prod
+          ENABLE_TEST_PROPERTIES: false
+
+      - name: Upload Artifact (web-static)
+        uses: actions/upload-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+
+      - name: Upload Artifact (electron dist)
+        uses: actions/upload-artifact@v3
+        with:
+          name: before-make-electron-dist
+          path: apps/electron/dist
+
+      - name: Upload YML Build Script
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-yml-build-script
+          path: apps/electron/scripts/generate-yml.js
+
+  make-distribution:
+    environment: production
+    strategy:
+      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      matrix:
+        spec:
+          - { os: macos-latest, platform: macos, arch: x64 }
+          - { os: macos-latest, platform: macos, arch: arm64 }
+          - { os: ubuntu-latest, platform: linux, arch: x64 }
+          - { os: windows-latest, platform: windows, arch: x64 }
+    runs-on: ${{ matrix.spec.os }}
+    needs: before-make
+    env:
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      SKIP_GENERATE_ASSETS: 1
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-electron-dist
+          path: apps/electron/dist
+
+      - name: Signing By Apple Developer ID
+        if: ${{ matrix.spec.platform == 'macos' }}
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
+      - name: make
+        run: yarn make-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+        working-directory: apps/electron
+
+      - name: Save artifacts (mac)
+        if: ${{ matrix.spec.platform == 'macos' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+          mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+      - name: Save artifacts (windows)
+        if: ${{ matrix.spec.platform == 'windows' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
+
+      - name: Save artifacts (linux)
+        if: ${{ matrix.spec.platform == 'linux' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
+          path: builds
