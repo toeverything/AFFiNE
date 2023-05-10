@@ -1,6 +1,6 @@
+import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { BlockSuiteFeatureFlags } from '@affine/env';
 import { config } from '@affine/env';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
@@ -16,7 +16,6 @@ import { useCallback, useEffect } from 'react';
 
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
-import { PageLoading } from '../../../components/pure/loading';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
@@ -41,8 +40,8 @@ const WorkspaceDetail: React.FC = () => {
   const { openPage } = useRouterHelper(router);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
-  const t = useAFFiNEI18N();
   assertExists(currentWorkspace);
+  assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const { deletePin } = usePinboardHandler({
@@ -85,9 +84,6 @@ const WorkspaceDetail: React.FC = () => {
       setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     }
   }, [currentWorkspace]);
-  if (!currentPageId) {
-    return <PageLoading text={t['Loading Page']()} />;
-  }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
@@ -112,16 +108,15 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  const t = useAFFiNEI18N();
   useRouterAndWorkspaceWithPageIdDefense(router);
   const page = useBlockSuiteWorkspacePage(
     currentWorkspace.blockSuiteWorkspace,
     currentPageId
   );
   if (!router.isReady) {
-    return <PageLoading text={t['Router is Loading']()} />;
+    return <PageDetailSkeleton key="router-not-ready" />;
   } else if (!currentPageId || !page) {
-    return <PageLoading text={t['Page is Loading']()} />;
+    return <PageDetailSkeleton key="current-page-is-null" />;
   }
   return <WorkspaceDetail />;
 };
