@@ -171,10 +171,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version-file: '.nvmrc'
-          registry-url: https://npm.pkg.github.com
-          scope: '@toeverything'
-          cache: 'yarn'
+          node-version: 18
       - name: Generate Release yml
         run: |
           node generate-yml.js
