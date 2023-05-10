@@ -15,7 +15,7 @@ import { listWorkspaces } from '../workspace/workspace';
 
 export async function revealDBFile(workspaceId: string) {
   const workspaceDB = await ensureSQLiteDB(workspaceId);
-  shell.showItemInFolder(workspaceDB.path);
+  shell.showItemInFolder(await fs.realpath(workspaceDB.path));
 }
 
 // provide a backdoor to set dialog path for testing in playwright
