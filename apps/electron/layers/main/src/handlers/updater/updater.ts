@@ -18,15 +18,19 @@ export const registerUpdater = async () => {
   // require it will cause some side effects and will break generate-main-exposed-meta,
   // so we wrap it in a function
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { autoUpdater } = await import('electron-updater');
+  const { autoUpdater } = require('electron-updater');
 
   _autoUpdater = autoUpdater;
 
-  autoUpdater.autoDownload = false;
-  autoUpdater.allowPrerelease = buildType !== 'stable';
-  autoUpdater.autoInstallOnAppQuit = false;
-  autoUpdater.autoRunAppAfterInstall = true;
-  autoUpdater.setFeedURL({
+  if (!_autoUpdater) {
+    return;
+  }
+
+  _autoUpdater.autoDownload = false;
+  _autoUpdater.allowPrerelease = buildType !== 'stable';
+  _autoUpdater.autoInstallOnAppQuit = false;
+  _autoUpdater.autoRunAppAfterInstall = true;
+  _autoUpdater.setFeedURL({
     channel: buildType,
     provider: 'github',
     repo: 'AFFiNE',
@@ -34,11 +38,11 @@ export const registerUpdater = async () => {
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
   });
 
-  autoUpdater.autoDownload = false;
-  autoUpdater.allowPrerelease = buildType !== 'stable';
-  autoUpdater.autoInstallOnAppQuit = false;
-  autoUpdater.autoRunAppAfterInstall = true;
-  autoUpdater.setFeedURL({
+  _autoUpdater.autoDownload = false;
+  _autoUpdater.allowPrerelease = buildType !== 'stable';
+  _autoUpdater.autoInstallOnAppQuit = false;
+  _autoUpdater.autoRunAppAfterInstall = true;
+  _autoUpdater.setFeedURL({
     channel: buildType,
     provider: 'github',
     repo: 'AFFiNE',
@@ -47,23 +51,23 @@ export const registerUpdater = async () => {
   });
 
   if (isMacOS()) {
-    autoUpdater.on('update-available', () => {
-      autoUpdater.downloadUpdate();
+    _autoUpdater.on('update-available', () => {
+      _autoUpdater!.downloadUpdate();
       logger.info('Update available, downloading...');
     });
-    autoUpdater.on('download-progress', e => {
+    _autoUpdater.on('download-progress', e => {
       logger.info(`Download progress: ${e.percent}`);
     });
-    autoUpdater.on('update-downloaded', e => {
+    _autoUpdater.on('update-downloaded', e => {
       updaterSubjects.clientUpdateReady.next({
         version: e.version,
       });
       logger.info('Update downloaded, ready to install');
     });
-    autoUpdater.on('error', e => {
+    _autoUpdater.on('error', e => {
       logger.error('Error while updating client', e);
     });
-    autoUpdater.forceDevUpdateConfig = isDev;
-    await autoUpdater.checkForUpdatesAndNotify();
+    _autoUpdater.forceDevUpdateConfig = isDev;
+    await _autoUpdater.checkForUpdatesAndNotify();
   }
 };
