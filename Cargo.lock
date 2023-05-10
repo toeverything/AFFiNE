@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "affine_octobase"
+name = "affine_native"
 version = "0.0.0"
 dependencies = [
  "anyhow",

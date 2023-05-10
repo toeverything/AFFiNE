@@ -54,9 +54,16 @@ export const test = base.extend<{
   electronApp: async ({}, use) => {
     // a random id to avoid conflicts between tests
     const id = generateUUID();
+    const ext = process.platform === 'win32' ? '.cmd' : '';
     const electronApp = await electron.launch({
       args: [resolve(__dirname, '..'), '--app-name', 'affine-test-' + id],
-      executablePath: resolve(__dirname, '../node_modules/.bin/electron'),
+      executablePath: resolve(
+        __dirname,
+        '..',
+        'node_modules',
+        '.bin',
+        `electron${ext}`
+      ),
       colorScheme: 'light',
     });
     await use(electronApp);
