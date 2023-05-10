@@ -63,13 +63,17 @@ export class WorkspaceSQLiteDB {
       this.db.close();
     }
 
-    fs.realpath(this.path).then(realPath => {
-      dbSubjects.dbFilePathChange.next({
-        workspaceId: this.workspaceId,
-        path: this.path,
-        realPath,
+    fs.realpath(this.path)
+      .then(realPath => {
+        dbSubjects.dbFilePathChange.next({
+          workspaceId: this.workspaceId,
+          path: this.path,
+          realPath,
+        });
+      })
+      .catch(() => {
+        // skip error
       });
-    });
 
     // use cached version?
     const db = (this.db = sqlite(this.path));
