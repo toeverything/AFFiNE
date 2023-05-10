@@ -4,9 +4,17 @@ on:
   push:
     branches:
       - master
+      - v[0-9]+.[0-9]+.x-staging
+      - v[0-9]+.[0-9]+.x
   pull_request:
     branches:
       - master
+      - v[0-9]+.[0-9]+.x-staging
+      - v[0-9]+.[0-9]+.x
+    paths-ignore:
+      - README.md
+      - .github/**
+      - '!.github/workflows/build.yml'
 
 jobs:
   lint:
