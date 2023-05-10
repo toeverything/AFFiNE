@@ -20,7 +20,7 @@ export const registerUpdater = async () => {
   // require it will cause some side effects and will break generate-main-exposed-meta,
   // so we wrap it in a function
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { autoUpdater } = require('electron-updater');
+  const { autoUpdater } = await import('electron-updater');
 
   _autoUpdater = autoUpdater;
 

@@ -1,8 +1,8 @@
 import type { NamespaceHandlers } from '../type';
-import { updateClient } from './updater';
 
 export const updaterHandlers = {
   updateClient: async () => {
+    const { updateClient } = await import('./updater');
     return updateClient();
   },
 } satisfies NamespaceHandlers;
