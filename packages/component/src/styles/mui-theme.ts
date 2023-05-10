@@ -21,7 +21,12 @@ export const muiThemes = {
 // Ported from mui
 // See https://github.com/mui/material-ui/blob/eba90da5359ff9c58b02800dfe468dc6c0b95bd2/packages/mui-system/src/createTheme/createBreakpoints.js
 // License under MIT
-function createBreakpoints(breakpoints: BreakpointsOptions) {
+function createBreakpoints(breakpoints: BreakpointsOptions): Readonly<
+  Omit<BreakpointsOptions, 'up' | 'down'> & {
+    up: (key: Breakpoint | number, pure?: boolean) => string;
+    down: (key: Breakpoint | number, pure?: boolean) => string;
+  }
+> {
   const {
     // The breakpoint **start** at this value.
     // For instance with the first breakpoint xs: [xs, sm).
@@ -39,14 +44,22 @@ function createBreakpoints(breakpoints: BreakpointsOptions) {
 
   const keys = Object.keys(values) as ['xs', 'sm', 'md', 'lg', 'xl'];
 
-  function up(key: Breakpoint | number) {
+  function up(key: Breakpoint | number, pure = false) {
     const value = typeof key === 'number' ? key : values[key];
-    return `@media (min-width:${value}${unit})`;
+    const original = `(min-width:${value}${unit})`;
+    if (pure) {
+      return original;
+    }
+    return `@media ${original}`;
   }
 
-  function down(key: Breakpoint | number) {
+  function down(key: Breakpoint | number, pure = false) {
     const value = typeof key === 'number' ? key : values[key];
-    return `@media (max-width:${value - step / 100}${unit})`;
+    const original = `(max-width:${value - step / 100}${unit})`;
+    if (pure) {
+      return original;
+    }
+    return `@media ${original}`;
   }
 
   return {

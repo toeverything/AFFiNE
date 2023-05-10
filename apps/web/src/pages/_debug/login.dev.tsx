@@ -1,4 +1,5 @@
 import { Button } from '@affine/component';
+import { AppContainer, MainContainer } from '@affine/component/workspace';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
@@ -21,14 +22,12 @@ const Viewer = lazy(() =>
 
 import { useTheme } from 'next-themes';
 
-import { StyledPage, StyledWrapper } from '../../layouts/styles';
-
 const LoginDevPage: NextPage = () => {
   const [user, setUser] = useAtom(currentAffineUserAtom);
   const auth = useMemo(() => createAffineAuth(), []);
   return (
-    <StyledPage>
-      <StyledWrapper>
+    <AppContainer>
+      <MainContainer>
         <h1>LoginDevPage</h1>
         <Button
           onClick={async () => {
@@ -97,8 +96,8 @@ const LoginDevPage: NextPage = () => {
             value={user}
           />
         </Suspense>
-      </StyledWrapper>
-    </StyledPage>
+      </MainContainer>
+    </AppContainer>
   );
 };
 
