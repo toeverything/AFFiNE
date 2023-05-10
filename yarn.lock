@@ -129,7 +129,7 @@ __metadata:
   resolution: "@affine/electron@workspace:apps/electron"
   dependencies:
     "@affine-test/kit": "workspace:*"
-    "@affine/env": "workspace:^"
+    "@affine/env": "workspace:*"
     "@electron-forge/cli": ^6.1.1
     "@electron-forge/core": ^6.1.1
     "@electron-forge/core-utils": ^6.1.1
@@ -165,7 +165,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/env@workspace:*, @affine/env@workspace:^, @affine/env@workspace:packages/env":
+"@affine/env@workspace:*, @affine/env@workspace:packages/env":
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
