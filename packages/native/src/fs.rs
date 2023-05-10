@@ -122,8 +122,9 @@ impl FSWatcher {
   #[napi]
   pub fn subscribe(
     &mut self,
+    #[napi(ts_arg_type = "(event: import('./event').NotifyEvent) => void")]
     callback: ThreadsafeFunction<serde_json::Value, ErrorStrategy::Fatal>,
-    error_callback: Option<ThreadsafeFunction<()>>,
+    #[napi(ts_arg_type = "(err: Error) => void")] error_callback: Option<ThreadsafeFunction<()>>,
   ) -> Subscription {
     let uuid = uuid::Uuid::new_v4();
     let mut event_emitter = self.event_emitter.lock();
