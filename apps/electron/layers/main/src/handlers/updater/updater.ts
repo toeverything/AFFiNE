@@ -5,10 +5,8 @@ import { isMacOS } from '../../../../utils';
 import { updaterSubjects } from '../../events/updater';
 import { logger } from '../../logger';
 
-ReleaseTypeSchema.parse(
-  (process.env.BUILD_TYPE || 'canary').trim().toLowerCase()
-);
-const buildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+const buildType = ReleaseTypeSchema.parse(envBuildType);
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
 
