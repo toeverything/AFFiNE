@@ -61,6 +61,9 @@ const ipcMain = {
     handlers.push(callback);
     registeredHandlers.set(key, handlers);
   },
+  setMaxListeners: (_n: number) => {
+    // noop
+  },
 };
 
 const nativeTheme = {
