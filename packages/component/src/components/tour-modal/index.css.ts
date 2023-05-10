@@ -24,25 +24,26 @@ export const containerStyle = style({
 });
 export const videoContainerStyle = style({
   paddingTop: '25px',
-  height: '240px',
+  height: '300px',
   width: 'calc(100% - 72px)',
   display: 'flex',
   alignItems: 'center',
   flexGrow: 1,
   justifyContent: 'space-between',
-  border: '1px solid var(--affine-border-color)',
   position: 'relative',
 });
 export const videoSlideStyle = style({
   width: '100%',
   position: 'absolute',
   top: 0,
+  display: 'flex',
+  justifyContent: 'center',
 });
 export const videoStyle = style({
   position: 'absolute',
   objectFit: 'fill',
-  height: '240px',
-  width: '100%',
+  height: '300px',
+  border: '1px solid var(--affine-border-color)',
   transition: 'opacity 0.5s ease-in-out',
 });
 export const videoActiveStyle = style({
@@ -67,6 +68,7 @@ export const descriptionStyle = style({
   padding: '0 56px',
   fontSize: 'var(--affine-font-sm)',
   lineHeight: '18px',
+  marginBottom: '20px',
 });
 export const tabStyle = style({
   width: '40px',

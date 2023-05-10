@@ -39,7 +39,11 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
       wrapperPosition={['center', 'center']}
       hideBackdrop
     >
-      <ModalWrapper width={545} height={440} data-testid="onboarding-modal">
+      <ModalWrapper
+        width={545}
+        style={{ minHeight: '480px' }}
+        data-testid="onboarding-modal"
+      >
         <ModalCloseButton
           top={6}
           right={10}
