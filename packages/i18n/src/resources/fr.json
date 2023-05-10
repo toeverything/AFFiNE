@@ -188,7 +188,7 @@
   "will delete member": "supprimera le membre",
   "is a Local Workspace": "est un espace de travail local",
   "Cloud Workspace Description": "Toutes les données vont être synchronisées et sauvegardées sur le compte AFFiNE <1>{{email}}</1>",
-  "Export AFFiNE backup file": "Exporter un fichier de sauvegarde AFFiNE (à venir...)",
+  "Export AFFiNE backup file": "Exporter un fichier de sauvegarde AFFiNE",
   "Export Description": "Vous pouvez exporter l'intégralité des données de l'espace de travail à titre de sauvegarde ; les données ainsi exportées peuvent être réimportées.",
   "Download data Description1": "Cela prend davantage d’espace sur votre appareil.",
   "It takes up little space on your device": "Cela prend peu d’espace sur votre appareil.",

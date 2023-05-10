@@ -1,4 +1,4 @@
-import { BrowserWindow, nativeTheme } from 'electron';
+import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import { isMacOS } from '../../../../utils';
 import type { NamespaceHandlers } from '../type';
@@ -16,6 +16,25 @@ export const uiHandlers = {
         w.setWindowButtonVisibility(visible);
       });
     }
+  },
+  handleMinimizeApp: async () => {
+    const windows = BrowserWindow.getAllWindows();
+    windows.forEach(w => {
+      w.minimize();
+    });
+  },
+  handleMaximizeApp: async () => {
+    const windows = BrowserWindow.getAllWindows();
+    windows.forEach(w => {
+      if (w.isMaximized()) {
+        w.unmaximize();
+      } else {
+        w.maximize();
+      }
+    });
+  },
+  handleCloseApp: async () => {
+    app.quit();
   },
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();

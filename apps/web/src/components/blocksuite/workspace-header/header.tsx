@@ -2,6 +2,7 @@ import { BrowserWarning } from '@affine/component/affine-banner';
 import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
@@ -24,11 +25,7 @@ import { HeaderShareMenu } from './header-right-items/share-menu';
 import SyncUser from './header-right-items/sync-user';
 import TrashButtonGroup from './header-right-items/trash-button-group';
 import UserAvatar from './header-right-items/user-avatar';
-import {
-  StyledHeader,
-  StyledHeaderContainer,
-  StyledHeaderRightSide,
-} from './styles';
+import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
 
 const SidebarSwitch = lazy(() =>
@@ -53,6 +50,9 @@ export const enum HeaderRightItemName {
   ShareMenu = 'shareMenu',
   EditPage = 'editPage',
   UserAvatar = 'userAvatar',
+
+  // some windows only items
+  WindowsAppControls = 'windowsAppControls',
 }
 
 type HeaderItem = {
@@ -67,6 +67,7 @@ type HeaderItem = {
     }
   ) => boolean;
 };
+
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.TrashButtonGroup]: {
     Component: TrashButtonGroup,
@@ -104,6 +105,44 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       return !isPublic && !isPreview;
     },
   },
+  [HeaderRightItemName.WindowsAppControls]: {
+    Component: () => {
+      return (
+        <div className={styles.windowAppControlsWrapper}>
+          <button
+            data-type="minimize"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleMinimizeApp();
+            }}
+          >
+            <MinusIcon />
+          </button>
+          <button
+            data-type="maximize"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleMaximizeApp();
+            }}
+          >
+            <RoundedRectangleIcon />
+          </button>
+          <button
+            data-type="close"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleCloseApp();
+            }}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      );
+    },
+    availableWhen: () => {
+      return environment.isDesktop && environment.isWindows;
+    },
+  },
 };
 
 export type HeaderProps = BaseHeaderProps;
@@ -127,9 +166,10 @@ export const Header = forwardRef<
 
   const mode = useCurrentMode();
   return (
-    <StyledHeaderContainer
+    <div
+      className={styles.headerContainer}
       ref={ref}
-      hasWarning={showWarning}
+      data-has-warning={showWarning}
       data-open={open}
       {...props}
     >
@@ -145,11 +185,12 @@ export const Header = forwardRef<
         />
       )}
 
-      <StyledHeader
-        hasWarning={showWarning}
+      <div
+        className={styles.header}
+        data-has-warning={showWarning}
         data-testid="editor-header-items"
         data-tauri-drag-region
-        isEdgeless={mode === 'edgeless'}
+        data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>
           <SidebarSwitch
@@ -160,7 +201,7 @@ export const Header = forwardRef<
         </Suspense>
 
         {props.children}
-        <StyledHeaderRightSide>
+        <div className={styles.headerRightSide}>
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
               ([name, { availableWhen, Component }]) => {
@@ -184,10 +225,9 @@ export const Header = forwardRef<
               }
             );
           }, [props])}
-          {/*<ShareMenu />*/}
-        </StyledHeaderRightSide>
-      </StyledHeader>
-    </StyledHeaderContainer>
+        </div>
+      </div>
+    </div>
   );
 });
 

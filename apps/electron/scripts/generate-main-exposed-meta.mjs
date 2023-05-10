@@ -6,7 +6,7 @@ const mainDistDir = path.resolve(__dirname, '../dist/layers/main');
 
 // be careful and avoid any side effects in
 const { handlers, events } = await import(
-  path.resolve(mainDistDir, 'exposed.js')
+  'file://' + path.resolve(mainDistDir, 'exposed.js')
 );
 
 const handlersMeta = Object.entries(handlers).map(
