@@ -1,3 +1,4 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import type { FC } from 'react';
@@ -25,6 +26,7 @@ type TourModalProps = {
 };
 
 export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
+  const t = useAFFiNEI18N();
   const [step, setStep] = useState(0);
   const handleClose = () => {
     setStep(0);
@@ -47,8 +49,8 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
         <div className={modalStyle}>
           <div className={titleStyle}>
             {step === 1
-              ? 'Intuitive & robust block-based editing'
-              : 'Hyper merged whiteboard and docs'}
+              ? t['com.affine.onboarding.title2']()
+              : t['com.affine.onboarding.title1']()}
           </div>
           <div className={containerStyle}>
             <div className={arrowStyle} onClick={() => setStep(0)}>
@@ -98,8 +100,8 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
           </ul>
           <div className={descriptionStyle}>
             {step === 1
-              ? ' Create structured documents with ease, using a modular interface to drag and drop blocks of text, images, and other content.'
-              : 'Easily switch between Page mode for structured document creation and Whiteboard mode for the freeform visual expression of creative ideas.'}
+              ? t['com.affine.onboarding.videoDescription2']()
+              : t['com.affine.onboarding.videoDescription1']()}
           </div>
         </div>
       </ModalWrapper>

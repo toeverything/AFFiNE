@@ -267,5 +267,9 @@
   "dark": "dark",
   "system": "system",
   "com.affine.pageMode": "Page Mode",
-  "com.affine.edgelessMode": "Edgeless Mode"
+  "com.affine.edgelessMode": "Edgeless Mode",
+  "com.affine.onboarding.title1": "Hyper merged whiteboard and docs",
+  "com.affine.onboarding.title2": "Intuitive & robust block-based editing",
+  "com.affine.onboarding.videoDescription1": "Easily switch between Page mode for structured document creation and Whiteboard mode for the freeform visual expression of creative ideas.",
+  "com.affine.onboarding.videoDescription2": "Create structured documents with ease, using a modular interface to drag and drop blocks of text, images, and other content."
 }
