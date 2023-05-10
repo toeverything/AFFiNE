@@ -67,7 +67,7 @@ test('affine onboarding button', async ({ page }) => {
     '[data-testid=onboarding-modal-editing-video]'
   );
   expect(await editingVideo.isVisible()).toEqual(true);
-  await page.getByTestId('onboarding-modal-ok-button').click();
+  await page.getByTestId('onboarding-modal-close-button').click();
 
   expect(await onboardingModal.isVisible()).toEqual(false);
 });
