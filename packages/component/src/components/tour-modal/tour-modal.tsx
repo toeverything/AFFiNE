@@ -57,7 +57,11 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
               : t['com.affine.onboarding.title1']()}
           </div>
           <div className={containerStyle}>
-            <div className={arrowStyle} onClick={() => setStep(0)}>
+            <div
+              className={arrowStyle}
+              onClick={() => setStep(0)}
+              data-testid="onboarding-modal-pre-button"
+            >
               <ArrowLeftSmallIcon />
             </div>
             <div className={videoContainerStyle}>
@@ -88,7 +92,11 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
                 </video>
               </div>
             </div>
-            <div className={arrowStyle} onClick={() => setStep(1)}>
+            <div
+              className={arrowStyle}
+              onClick={() => setStep(1)}
+              data-testid="onboarding-modal-next-button"
+            >
               <ArrowRightSmallIcon />
             </div>
           </div>
