@@ -1,0 +1,2 @@
+static_hosting:/usr/bin/caddy run
+affine_cloud:/srv/cloud
