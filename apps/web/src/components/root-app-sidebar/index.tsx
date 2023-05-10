@@ -1,8 +1,4 @@
-import {
-  AppSidebar,
-  appSidebarOpenAtom,
-  ResizeIndicator,
-} from '@affine/component/app-sidebar';
+import { AppSidebar, appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -80,7 +76,6 @@ export const RootAppSidebar = ({
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen);
     }
   }, [sidebarOpen]);
-  const [ref, setRef] = useState<HTMLElement | null>(null);
 
   const handleQuickSearchButtonKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -94,7 +89,6 @@ export const RootAppSidebar = ({
   return (
     <>
       <AppSidebar
-        ref={setRef}
         footer={
           <StyledNewPageButton
             data-testid="new-page-button"
@@ -233,7 +227,6 @@ export const RootAppSidebar = ({
           </StyledListItem>
         </StyledSliderBarInnerWrapper>
       </AppSidebar>
-      <ResizeIndicator targetElement={ref} />
     </>
   );
 };

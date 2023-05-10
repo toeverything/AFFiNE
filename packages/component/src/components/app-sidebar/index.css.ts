@@ -5,17 +5,15 @@ import { createVar, style } from '@vanilla-extract/css';
 export const floatingMaxWidth = 768;
 export const navWidthVar = createVar('nav-width');
 
-export const navStyle = style({
+export const navWrapperStyle = style({
+  vars: {
+    [navWidthVar]: '256px',
+  },
   position: 'relative',
-  backgroundColor: 'var(--affine-background-secondary-color)',
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
   transition: 'margin-left .3s, width .3s',
-  zIndex: parseInt(baseTheme.zIndexModal),
-  borderRight: '1px solid var(--affine-border-color)',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
@@ -37,10 +35,21 @@ export const navStyle = style({
     '&[data-is-macos-electron="true"]': {
       backgroundColor: 'transparent',
     },
+    '&[data-is-resizing="true"]': {
+      transition: 'none',
+    },
   },
-  vars: {
-    [navWidthVar]: '256px',
-  },
+});
+
+export const navStyle = style({
+  position: 'relative',
+  backgroundColor: 'var(--affine-background-secondary-color)',
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  zIndex: parseInt(baseTheme.zIndexModal),
+  borderRight: '1px solid var(--affine-border-color)',
 });
 
 export const navHeaderStyle = style({
