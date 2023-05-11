@@ -9,7 +9,7 @@ on:
     paths-ignore:
       - README.md
       - .github/**
-      - '!.github/workflows/build.yml'
+      - '!.github/workflows/build-aio-docker.yml'
   pull_request:
     branches:
       - master
