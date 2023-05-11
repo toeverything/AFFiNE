@@ -65,29 +65,28 @@ export const WithItems: StoryFn = () => {
     <AppSidebarTemplate>
       <SidebarTopContainer>
         <QuickSearchInput />
-        <div style={{ padding: '24px 0' }}>
-          <MenuLinkItem
-            icon={<SettingsIcon />}
-            href="/test"
-            onClick={() => alert('opened')}
-          >
-            Settings
-          </MenuLinkItem>
-          <MenuLinkItem
-            icon={<SettingsIcon />}
-            href="/test"
-            onClick={() => alert('opened')}
-          >
-            Settings
-          </MenuLinkItem>
-          <MenuLinkItem
-            icon={<SettingsIcon />}
-            href="/test"
-            onClick={() => alert('opened')}
-          >
-            Settings
-          </MenuLinkItem>
-        </div>
+        <div style={{ height: '20px' }} />
+        <MenuLinkItem
+          icon={<SettingsIcon />}
+          href="/test"
+          onClick={() => alert('opened')}
+        >
+          Settings
+        </MenuLinkItem>
+        <MenuLinkItem
+          icon={<SettingsIcon />}
+          href="/test"
+          onClick={() => alert('opened')}
+        >
+          Settings
+        </MenuLinkItem>
+        <MenuLinkItem
+          icon={<SettingsIcon />}
+          href="/test"
+          onClick={() => alert('opened')}
+        >
+          Settings
+        </MenuLinkItem>
       </SidebarTopContainer>
 
       <SidebarScrollableContainer>
