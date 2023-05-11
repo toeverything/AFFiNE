@@ -6,8 +6,10 @@ import { globalStyle, style, styleVariants } from '@vanilla-extract/css';
 export const container = style({
   display: 'flex',
   flexDirection: 'column',
-  padding: '52px 52px 0 52px',
+  marginTop: '52px',
+  padding: '0 52px 52px 52px',
   height: 'calc(100vh - 52px)',
+  overflow: 'auto',
 });
 
 export const sidebar = style({
@@ -15,7 +17,6 @@ export const sidebar = style({
 });
 
 export const content = style({
-  overflow: 'auto',
   flex: 1,
   marginTop: '40px',
 });
@@ -157,7 +158,10 @@ export const indicator = style({
 
 export const tabButtonWrapper = style({
   display: 'flex',
-  position: 'relative',
+  position: 'sticky',
+  top: '0',
+  background: 'var(--affine-background-primary-color)',
+  zIndex: 1,
 });
 
 export const storageTypeWrapper = style({
@@ -175,6 +179,10 @@ export const storageTypeWrapper = style({
     },
     '&:not(:last-child)': {
       marginBottom: '12px',
+    },
+    '&[data-disabled="true"]': {
+      cursor: 'default',
+      pointerEvents: 'none',
     },
   },
 });

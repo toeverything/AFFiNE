@@ -36,7 +36,7 @@ vi.stubGlobal('window', {
   },
   events: {
     db: {
-      onDbFileUpdate: (fn: (id: string) => void) => {
+      onDBFileUpdate: (fn: (id: string) => void) => {
         triggerDBUpdate = fn;
         return () => {
           triggerDBUpdate = null;
@@ -44,7 +44,10 @@ vi.stubGlobal('window', {
       },
 
       // not used in this test
-      onDbFileMissing: () => {
+      onDBFileMissing: () => {
+        return () => {};
+      },
+      onDBFilePathChange: () => {
         return () => {};
       },
     },
