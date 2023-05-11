@@ -187,6 +187,7 @@ jobs:
         with:
           repository: 'toeverything/AFFiNE-Releases'
           name: ${{ env.RELEASE_VERSION }}
+          tag_name: ${{ env.RELEASE_VERSION }}
           prerelease: true
           files: |
             ./VERSION
