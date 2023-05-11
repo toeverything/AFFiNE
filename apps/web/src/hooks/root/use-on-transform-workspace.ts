@@ -14,7 +14,7 @@ import { useCallback } from 'react';
 import { affineAuth } from '../../plugins/affine';
 import { useTransformWorkspace } from '../use-transform-workspace';
 
-export function useOnTransformWorkspace() {
+export function useOnTransformWorkspace(callback: (newId: string) => void) {
   const transformWorkspace = useTransformWorkspace();
   const setUser = useSetAtom(currentAffineUserAtom);
   return useCallback(
@@ -43,8 +43,9 @@ export function useOnTransformWorkspace() {
           },
         })
       );
+      callback(workspaceId);
     },
-    [setUser, transformWorkspace]
+    [setUser, transformWorkspace, callback]
   );
 }
 
