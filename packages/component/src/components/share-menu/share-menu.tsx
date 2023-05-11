@@ -1,4 +1,7 @@
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { ExportIcon, PublishIcon, ShareIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
@@ -24,8 +27,8 @@ const tabIcons = {
   ShareWorkspace: <PublishIcon />,
 };
 export type ShareMenuProps<
-  Workspace extends AffineWorkspace | LocalWorkspace =
-    | AffineWorkspace
+  Workspace extends AffineLegacyCloudWorkspace | LocalWorkspace =
+    | AffineLegacyCloudWorkspace
     | LocalWorkspace
 > = {
   workspace: Workspace;
