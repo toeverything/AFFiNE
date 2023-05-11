@@ -30,6 +30,7 @@ export const createAffineDownloadProvider = (
           new Uint8Array(hashMap.get(id) as ArrayBuffer)
         );
         connected = true;
+        callbacks.forEach(cb => cb());
         return;
       }
       affineApis
@@ -41,6 +42,8 @@ export const createAffineDownloadProvider = (
             blockSuiteWorkspace.doc,
             new Uint8Array(binary)
           );
+          connected = true;
+          callbacks.forEach(cb => cb());
         })
         .catch(e => {
           providerLogger.error('downloadWorkspace', e);

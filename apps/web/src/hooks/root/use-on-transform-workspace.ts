@@ -6,6 +6,7 @@ import {
   SignMethod,
   storageChangeSlot,
 } from '@affine/workspace/affine/login';
+import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
@@ -17,6 +18,7 @@ import { useTransformWorkspace } from '../use-transform-workspace';
 export function useOnTransformWorkspace() {
   const transformWorkspace = useTransformWorkspace();
   const setUser = useSetAtom(currentAffineUserAtom);
+  const setWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -43,8 +45,9 @@ export function useOnTransformWorkspace() {
           },
         })
       );
+      setWorkspaceId(workspaceId);
     },
-    [setUser, transformWorkspace]
+    [setUser, setWorkspaceId, transformWorkspace]
   );
 }
 
