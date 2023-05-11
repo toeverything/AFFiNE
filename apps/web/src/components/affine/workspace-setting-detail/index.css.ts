@@ -7,7 +7,7 @@ export const container = style({
   display: 'flex',
   flexDirection: 'column',
   marginTop: '52px',
-  padding: '0 52px 0 52px',
+  padding: '0 52px 52px 52px',
   height: 'calc(100vh - 52px)',
   overflow: 'auto',
 });
