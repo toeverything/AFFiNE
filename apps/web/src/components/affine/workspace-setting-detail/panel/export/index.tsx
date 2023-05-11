@@ -15,8 +15,13 @@ export const ExportPanel = () => {
         disabled={!environment.isDesktop || !id}
         data-testid="export-affine-backup"
         onClick={async () => {
-          if (id && (await window.apis?.dialog.saveDBFileAs(id))) {
-            toast(t['Export success']());
+          if (id) {
+            const result = await window.apis?.dialog.saveDBFileAs(id);
+            if (result?.error) {
+              toast(t[result.error]());
+            } else if (!result?.canceled) {
+              toast(t['Export success']());
+            }
           }
         }}
       >
