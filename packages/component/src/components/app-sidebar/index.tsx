@@ -46,13 +46,12 @@ type navigationProps = {
 
 export type AppSidebarProps = PropsWithChildren<{
   footer?: ReactNode | undefined;
-  navigation: navigationProps;
+  navigation?: navigationProps | undefined;
 }>;
 
 export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   function AppSidebar(props, forwardedRef): ReactElement {
     const [open, setOpen] = useAtom(appSidebarOpenAtom);
-    const { canGoBack, canGoForward, goBack, goForward } = props.navigation;
 
     const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
     const t = useAFFiNEI18N();
@@ -106,15 +105,15 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
               <>
                 <IconButton
                   size="middle"
-                  onClick={goBack}
-                  disabled={!canGoBack}
+                  onClick={props.navigation?.goBack}
+                  disabled={!props.navigation?.canGoBack}
                 >
                   <ArrowLeftSmallIcon />
                 </IconButton>
                 <IconButton
                   size="middle"
-                  onClick={goForward}
-                  disabled={!canGoForward}
+                  onClick={props.navigation?.goForward}
+                  disabled={!props.navigation?.canGoForward}
                   style={{ marginLeft: '32px' }}
                 >
                   <ArrowRightSmallIcon />
@@ -160,6 +159,5 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   }
 );
 
-export { AppSidebarFallback } from './fallback';
 export type { ResizeIndicatorProps } from './resize-indicator';
 export { ResizeIndicator } from './resize-indicator';
