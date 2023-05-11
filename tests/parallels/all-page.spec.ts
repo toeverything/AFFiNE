@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test } from '@affine-test/kit/playwright';
 
 import { openHomePage } from '../libs/load-page';
 import { waitMarkdownImported } from '../libs/page-logic';
