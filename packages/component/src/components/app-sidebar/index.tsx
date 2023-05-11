@@ -87,7 +87,9 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
       >
         <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
           <SidebarHeader />
-          <div className={navBodyStyle}>{props.children}</div>
+          <div className={navBodyStyle} data-testid="sliderBar-inner">
+            {props.children}
+          </div>
           {clientUpdateAvailable && (
             <Button
               onClick={() => {

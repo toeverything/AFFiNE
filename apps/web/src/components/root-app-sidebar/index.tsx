@@ -55,7 +55,7 @@ const RouteMenuLinkItem = ({
   path?: string | null;
   icon: ReactElement;
   children?: ReactElement;
-}) => {
+} & React.HTMLAttributes<HTMLAnchorElement>) => {
   const active = currentPath === path;
   return (
     <MenuLinkItem active={active} href={path ?? ''} icon={icon}>
@@ -102,7 +102,10 @@ export const RootAppSidebar = ({
             onClick={onOpenWorkspaceListModal}
           />
           <ChangeLog />
-          <QuickSearchInput onClick={onOpenQuickSearchModal} />
+          <QuickSearchInput
+            data-testid="slider-bar-quick-search-button"
+            onClick={onOpenQuickSearchModal}
+          />
           <RouteMenuLinkItem
             icon={<FolderIcon />}
             currentPath={currentPath}
@@ -111,6 +114,7 @@ export const RootAppSidebar = ({
             <span data-testid="all-pages">{t['All pages']()}</span>
           </RouteMenuLinkItem>
           <RouteMenuLinkItem
+            data-testid="slider-bar-workspace-setting-button"
             icon={<SettingsIcon />}
             currentPath={currentPath}
             path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
