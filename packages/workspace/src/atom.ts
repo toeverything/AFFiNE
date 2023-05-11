@@ -12,7 +12,6 @@ export type RootWorkspaceMetadata = {
 // root primitive atom that stores the necessary data for the whole app
 // be careful when you use this atom,
 // it should be used only in the root component
-
 /**
  * root workspaces atom
  * this atom stores the metadata of all workspaces,
