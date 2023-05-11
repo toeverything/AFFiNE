@@ -84,9 +84,7 @@ function AuthContext({ children }: PropsWithChildren): ReactElement {
     }
   }, [login]);
   if (!login) {
-    return (
-      <PageLoading text="No login, redirecting to local workspace page..." />
-    );
+    return <PageLoading />;
   }
   return <>{children}</>;
 }
@@ -278,7 +276,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
   UI: {
     Provider: ({ children }) => {
       return (
-        <Suspense fallback={<PageLoading text="Checking login status..." />}>
+        <Suspense fallback={<PageLoading />}>
           <AuthContext>{children}</AuthContext>
         </Suspense>
       );

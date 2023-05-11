@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.5.4-canary.31",
+  "version": "0.6.0-canary.0",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -45,7 +45,7 @@
     "@types/better-sqlite3": "^7.6.4",
     "@types/fs-extra": "^11.0.1",
     "cross-env": "7.0.3",
-    "electron": "24.2.0",
+    "electron": "24.3.0",
     "electron-log": "^5.0.0-beta.23",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",

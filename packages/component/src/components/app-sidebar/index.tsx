@@ -115,3 +115,5 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
     </div>
   );
 }
+
+export { AppSidebarFallback } from './fallback';

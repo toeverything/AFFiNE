@@ -1,10 +1,21 @@
 import type { AppUpdater } from 'electron-updater';
+import { z } from 'zod';
 
 import { isMacOS } from '../../../../utils';
 import { updaterSubjects } from '../../events/updater';
 import { logger } from '../../logger';
 
-const buildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+export const ReleaseTypeSchema = z.enum([
+  'stable',
+  'beta',
+  'canary',
+  'internal',
+]);
+
+export const envBuildType = (process.env.BUILD_TYPE || 'canary')
+  .trim()
+  .toLowerCase();
+export const buildType = ReleaseTypeSchema.parse(envBuildType);
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
 
@@ -33,19 +44,7 @@ export const registerUpdater = async () => {
   _autoUpdater.setFeedURL({
     channel: buildType,
     provider: 'github',
-    repo: 'AFFiNE',
-    owner: 'toeverything',
-    releaseType: buildType === 'stable' ? 'release' : 'prerelease',
-  });
-
-  _autoUpdater.autoDownload = false;
-  _autoUpdater.allowPrerelease = buildType !== 'stable';
-  _autoUpdater.autoInstallOnAppQuit = false;
-  _autoUpdater.autoRunAppAfterInstall = true;
-  _autoUpdater.setFeedURL({
-    channel: buildType,
-    provider: 'github',
-    repo: 'AFFiNE',
+    repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
   });

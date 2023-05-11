@@ -47,6 +47,7 @@ const ErrorMessages = [
   'DB_FILE_ALREADY_LOADED',
   'DB_FILE_PATH_INVALID',
   'DB_FILE_INVALID',
+  'FILE_ALREADY_EXISTS',
   'UNKNOWN_ERROR',
 ] as const;
 
@@ -201,7 +202,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
 
     await fs.ensureDir(path.join(appContext.appDataPath, 'workspaces'));
 
-    await fs.symlink(filePath, linkedFilePath);
+    await fs.symlink(filePath, linkedFilePath, 'file');
     logger.info(`loadDBFile, symlink: ${filePath} -> ${linkedFilePath}`);
 
     return { workspaceId };
@@ -262,6 +263,14 @@ export async function moveDBFile(
       };
     }
 
+    if (await fs.pathExists(newFilePath)) {
+      return {
+        error: 'FILE_ALREADY_EXISTS',
+      };
+    }
+
+    db.db.close();
+
     if (isLink) {
       // remove the old link to unblock new link
       await fs.unlink(db.path);
@@ -271,9 +280,10 @@ export async function moveDBFile(
       overwrite: true,
     });
 
-    await fs.ensureSymlink(newFilePath, db.path);
+    await fs.ensureSymlink(newFilePath, db.path, 'file');
     logger.info(`openMoveDBFileDialog symlink: ${realpath} -> ${newFilePath}`);
     db.reconnectDB();
+
     return {
       filePath: newFilePath,
     };

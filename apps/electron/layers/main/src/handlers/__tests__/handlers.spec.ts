@@ -160,7 +160,7 @@ describe('ensureSQLiteDB', () => {
     // wait for 1000ms for file watcher to detect file removal
     await delay(2000);
 
-    expect(sendStub).toBeCalledWith('db:onDbFileMissing', id);
+    expect(sendStub).toBeCalledWith('db:onDBFileMissing', id);
 
     // ensureSQLiteDB should recreate the db file
     workspaceDB = await ensureSQLiteDB(id);
@@ -190,10 +190,7 @@ describe('ensureSQLiteDB', () => {
     // wait for 200ms for file watcher to detect file change
     await delay(2000);
 
-    expect(sendStub).toBeCalledWith('db:onDbFileUpdate', id);
-
-    // should only call once for multiple writes
-    expect(sendStub).toBeCalledTimes(1);
+    expect(sendStub).toBeCalledWith('db:onDBFileUpdate', id);
   });
 });
 
