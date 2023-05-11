@@ -39,7 +39,7 @@ export const resizerInner = style({
   position: 'absolute',
   height: '100%',
   width: '2px',
-  left: '4px',
+  left: '3px',
   backgroundColor: 'var(--affine-border-color)',
   selectors: {
     [`${resizerContainer}:hover &`]: {},

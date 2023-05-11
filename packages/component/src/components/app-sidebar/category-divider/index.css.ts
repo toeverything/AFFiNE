@@ -4,7 +4,6 @@ export const root = style({
   fontSize: 'var(--affine-font-xs)',
   height: '16px',
   userSelect: 'none',
-  padding: '0 16px',
   marginTop: '12px',
 });
 

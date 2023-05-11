@@ -4,7 +4,7 @@ import { type PropsWithChildren, useEffect, useRef, useState } from 'react';
 
 import * as styles from './index.css';
 
-export function SidebarTopContainer({ children }: PropsWithChildren) {
+export function SidebarContainer({ children }: PropsWithChildren) {
   return <div className={clsx([styles.topContainer])}>{children}</div>;
 }
 
@@ -44,10 +44,10 @@ export function SidebarScrollableContainer({ children }: PropsWithChildren) {
       className={styles.scrollableContainerRoot}
     >
       <ScrollArea.Viewport
+        className={clsx([styles.scrollableViewport])}
         ref={ref}
-        className={clsx([styles.scrollableContainer])}
       >
-        {children}
+        <div className={clsx([styles.scrollableContainer])}>{children}</div>
       </ScrollArea.Viewport>
       <ScrollArea.Scrollbar
         forceMount

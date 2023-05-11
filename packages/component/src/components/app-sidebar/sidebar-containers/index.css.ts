@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css';
 
 const baseContainer = style({
-  padding: '12px 8px',
+  padding: '12px 16px',
   display: 'flex',
   flexFlow: 'column nowrap',
   rowGap: '8px',
@@ -15,7 +15,8 @@ export const scrollableContainerRoot = style({
   vars: {
     '--scrollbar-width': '10px',
   },
-  transition: 'box-shadow .15s .15s',
+  transition: 'all .3s .2s',
+  borderTop: '1px solid transparent',
   selectors: {
     '&[data-has-scroll-top="true"]': {
       boxShadow: 'inset 0 8px 8px -8px var(--affine-black-10)',
@@ -23,11 +24,14 @@ export const scrollableContainerRoot = style({
   },
 });
 
+export const scrollableViewport = style({
+  height: '100%',
+});
+
 export const scrollableContainer = style([
   baseContainer,
   {
     height: '100%',
-    paddingBottom: '200px',
   },
 ]);
 

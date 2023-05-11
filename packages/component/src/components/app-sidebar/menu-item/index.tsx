@@ -7,16 +7,24 @@ import * as styles from './index.css';
 
 interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactElement;
+  active?: boolean;
 }
 
 interface MenuLinkItemProps extends MenuItemProps, Pick<LinkProps, 'href'> {}
 
-export function MenuItem({ onClick, icon, children, ...props }: MenuItemProps) {
+export function MenuItem({
+  onClick,
+  icon,
+  active,
+  children,
+  ...props
+}: MenuItemProps) {
   return (
     <div
       {...props}
       className={clsx([styles.root, props.className])}
       onClick={onClick}
+      data-active={active}
     >
       {icon &&
         React.cloneElement(icon, {

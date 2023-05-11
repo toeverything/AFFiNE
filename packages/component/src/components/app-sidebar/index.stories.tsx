@@ -9,13 +9,14 @@ import { useAtom } from 'jotai';
 import type { PropsWithChildren } from 'react';
 
 import { AppSidebar, AppSidebarFallback, appSidebarOpenAtom } from '.';
+import { AddPageButton } from './add-page-button';
 import { CategoryDivider } from './category-divider';
 import { navHeaderStyle, sidebarButtonStyle } from './index.css';
 import { MenuLinkItem } from './menu-item';
 import { QuickSearchInput } from './quick-search-input';
 import {
+  SidebarContainer,
   SidebarScrollableContainer,
-  SidebarTopContainer,
 } from './sidebar-containers';
 
 export default {
@@ -81,7 +82,7 @@ export const WithItems: StoryFn = () => {
   return (
     <Container>
       <AppSidebar>
-        <SidebarTopContainer>
+        <SidebarContainer>
           <QuickSearchInput />
           <div style={{ height: '20px' }} />
           <MenuLinkItem
@@ -105,7 +106,7 @@ export const WithItems: StoryFn = () => {
           >
             Settings
           </MenuLinkItem>
-        </SidebarTopContainer>
+        </SidebarContainer>
 
         <SidebarScrollableContainer>
           <CategoryDivider label="Favorites" />
@@ -133,6 +134,9 @@ export const WithItems: StoryFn = () => {
             Trash
           </MenuLinkItem>
         </SidebarScrollableContainer>
+        <SidebarContainer>
+          <AddPageButton />
+        </SidebarContainer>
       </AppSidebar>
       <Main />
     </Container>

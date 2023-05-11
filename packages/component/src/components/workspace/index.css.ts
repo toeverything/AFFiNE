@@ -30,6 +30,7 @@ export const mainContainerStyle = style({
   position: 'relative',
   flexGrow: 1,
   maxWidth: '100%',
+  zIndex: 0,
   backgroundColor: 'var(--affine-background-primary-color)',
 });
 

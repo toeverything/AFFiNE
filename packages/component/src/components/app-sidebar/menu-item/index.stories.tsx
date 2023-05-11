@@ -12,14 +12,22 @@ export const Default: StoryFn = () => {
   return (
     <main style={{ width: '240px' }}>
       <MenuItem icon={<SettingsIcon />} onClick={() => alert('opened')}>
-        Settings
+        Normal Item
       </MenuItem>
       <MenuLinkItem
         icon={<SettingsIcon />}
         href="/test"
         onClick={() => alert('opened')}
       >
-        Settings
+        Normal Link Item
+      </MenuLinkItem>
+      <MenuLinkItem
+        active
+        icon={<SettingsIcon />}
+        href="/test"
+        onClick={() => alert('opened')}
+      >
+        Primary Item
       </MenuLinkItem>
     </main>
   );

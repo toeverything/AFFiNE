@@ -75,45 +75,52 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   }
 
   return (
-    <div
-      style={assignInlineVars({
-        [navWidthVar]: `${appSidebarWidth}px`,
-      })}
-      className={navWrapperStyle}
-      data-open={open}
-      data-is-macos-electron={isMacosDesktop}
-      data-enable-animation={enableAnimation && !isResizing}
-    >
-      <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
-        <SidebarHeader />
-        <div className={navBodyStyle}>{props.children}</div>
-        {clientUpdateAvailable && (
-          <Button
-            onClick={() => {
-              window.apis?.updater.updateClient();
-            }}
-            noBorder
-            className={updaterButtonStyle}
-            type={'light'}
-          >
-            <div className={particlesStyle} aria-hidden="true"></div>
-            <span className={haloStyle} aria-hidden="true"></span>
-            <div className={installLabelStyle}>
-              <ResetIcon />
-              <span>{t['Restart Install Client Update']()}</span>
-            </div>
-          </Button>
-        )}
-      </nav>
+    <>
+      <div
+        style={assignInlineVars({
+          [navWidthVar]: `${appSidebarWidth}px`,
+        })}
+        className={navWrapperStyle}
+        data-open={open}
+        data-is-macos-electron={isMacosDesktop}
+        data-enable-animation={enableAnimation && !isResizing}
+      >
+        <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
+          <SidebarHeader />
+          <div className={navBodyStyle}>{props.children}</div>
+          {clientUpdateAvailable && (
+            <Button
+              onClick={() => {
+                window.apis?.updater.updateClient();
+              }}
+              noBorder
+              className={updaterButtonStyle}
+              type={'light'}
+            >
+              <div className={particlesStyle} aria-hidden="true"></div>
+              <span className={haloStyle} aria-hidden="true"></span>
+              <div className={installLabelStyle}>
+                <ResetIcon />
+                <span>{t['Restart Install Client Update']()}</span>
+              </div>
+            </Button>
+          )}
+        </nav>
+        <ResizeIndicator targetElement={navRef.current} />
+      </div>
       <div
         data-testid="app-sidebar-float-mask"
         data-open={open}
         className={sidebarFloatMaskStyle}
         onClick={() => setOpen(false)}
       />
-      <ResizeIndicator targetElement={navRef.current} />
-    </div>
+    </>
   );
 }
 
+export * from './add-page-button';
+export * from './category-divider';
 export { AppSidebarFallback } from './fallback';
+export * from './menu-item';
+export * from './quick-search-input';
+export * from './sidebar-containers';
