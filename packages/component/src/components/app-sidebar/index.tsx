@@ -151,5 +151,6 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   }
 );
 
+export { AppSidebarFallback } from './fallback';
 export type { ResizeIndicatorProps } from './resize-indicator';
 export { ResizeIndicator } from './resize-indicator';
