@@ -39,7 +39,7 @@ import { useRouterWithWorkspaceIdDefense } from '../hooks/use-router-with-worksp
 import { useSyncRouterWithCurrentPageId } from '../hooks/use-sync-router-with-current-page-id';
 import { useSyncRouterWithCurrentWorkspaceId } from '../hooks/use-sync-router-with-current-workspace-id';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspacePlugins } from '../plugins';
+import { WorkspaceAdapters } from '../plugins';
 import { ModalProvider } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 
@@ -100,7 +100,7 @@ export const QuickSearch: FC = () => {
 const logger = new DebugLogger('workspace-layout');
 
 const affineGlobalChannel = createAffineGlobalChannel(
-  WorkspacePlugins[WorkspaceFlavour.AFFINE].CRUD
+  WorkspaceAdapters[WorkspaceFlavour.AFFINE].CRUD
 );
 
 export const AllWorkspaceContext = ({
@@ -170,7 +170,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     useEffect(() => {
       logger.info('mount');
       const controller = new AbortController();
-      const lists = Object.values(WorkspacePlugins)
+      const lists = Object.values(WorkspaceAdapters)
         .sort((a, b) => a.loadPriority - b.loadPriority)
         .map(({ CRUD }) => CRUD.list);
 
@@ -220,7 +220,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     }, [currentWorkspaceId, jotaiWorkspaces]);
 
     const Provider =
-      (meta && WorkspacePlugins[meta.flavour].UI.Provider) ?? DefaultProvider;
+      (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
     return (
       <>
         {/* fixme(himself65): don't re-render whole modals */}

@@ -1,6 +1,9 @@
 import { ShareMenu } from '@affine/component/share-menu';
 import { config } from '@affine/env';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { assertEquals } from '@blocksuite/store';
@@ -19,12 +22,12 @@ import type { BaseHeaderProps } from '../header';
 const AffineHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
   // todo: these hooks should be moved to the top level
   const togglePublish = useToggleWorkspacePublish(
-    props.workspace as AffineWorkspace
+    props.workspace as AffineLegacyCloudWorkspace
   );
   const helper = useRouterHelper(useRouter());
   return (
     <ShareMenu
-      workspace={props.workspace as AffineWorkspace}
+      workspace={props.workspace as AffineLegacyCloudWorkspace}
       currentPage={props.currentPage as Page}
       onEnableAffineCloud={useCallback(async () => {
         throw new Unreachable(

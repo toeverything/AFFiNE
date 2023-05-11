@@ -9,7 +9,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 import { workspacesAtom } from '../atoms';
-import { WorkspacePlugins } from '../plugins';
+import { WorkspaceAdapters } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
 import type { AllWorkspace } from '../shared';
 
@@ -86,7 +86,7 @@ export function useAppHelper() {
         }
 
         // delete workspace from plugin
-        await WorkspacePlugins[targetWorkspace.flavour].CRUD.delete(
+        await WorkspaceAdapters[targetWorkspace.flavour].CRUD.delete(
           // fixme: type casting
           targetWorkspace as any
         );
