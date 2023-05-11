@@ -9,9 +9,6 @@ export const root = style({
   userSelect: 'none',
   cursor: 'pointer',
   padding: '0 12px',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
   fontSize: 'var(--affine-font-sm)',
   selectors: {
     '&:hover': {
@@ -22,6 +19,12 @@ export const root = style({
       background: 'var(--affine-hover-color)',
     },
   },
+});
+
+export const content = style({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 
 export const icon = style({

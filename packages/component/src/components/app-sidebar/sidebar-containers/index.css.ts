@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 const baseContainer = style({
   padding: '12px 16px',
@@ -26,6 +26,11 @@ export const scrollableContainerRoot = style({
 
 export const scrollableViewport = style({
   height: '100%',
+});
+
+globalStyle(`${scrollableViewport} > div`, {
+  maxWidth: '100%',
+  display: 'block !important',
 });
 
 export const scrollableContainer = style([

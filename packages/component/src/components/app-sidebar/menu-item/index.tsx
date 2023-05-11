@@ -30,7 +30,7 @@ export function MenuItem({
         React.cloneElement(icon, {
           className: clsx([styles.icon, icon.props.className]),
         })}
-      {children}
+      <div className={styles.content}>{children}</div>
     </div>
   );
 }

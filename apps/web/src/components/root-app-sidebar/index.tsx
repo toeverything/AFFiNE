@@ -25,7 +25,7 @@ import { useCallback, useEffect } from 'react';
 
 import type { AllWorkspace } from '../../shared';
 import ChangeLog from '../pure/workspace-slider-bar/changeLog';
-import Favorite from '../pure/workspace-slider-bar/favorite';
+import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 
 export type RootAppSidebarProps = {
@@ -33,7 +33,6 @@ export type RootAppSidebarProps = {
   onOpenQuickSearchModal: () => void;
   onOpenWorkspaceListModal: () => void;
   currentWorkspace: AllWorkspace | null;
-  currentPageId: string | null;
   openPage: (pageId: string) => void;
   createPage: () => Page;
   currentPath: string;
@@ -65,33 +64,6 @@ const RouteMenuLinkItem = ({
   );
 };
 
-// type TranslateKey = keyof ReturnType<typeof useAFFiNEI18N>;
-
-// const routeItems = {
-//   all: {
-//     icon: <FolderIcon />,
-//     labelKey: 'All pages',
-//   },
-// } satisfies {
-//   [key in keyof RootAppSidebarProps['paths']]?: {
-//     icon: ReactElement;
-//     labelKey: TranslateKey;
-//   };
-// };
-
-// function renderRouteItem(
-//   key: keyof typeof routeItems,
-//   currentPath: string,
-//   t: ReturnType<typeof useAFFiNEI18N>
-// ) {
-//   const { labelKey, icon } = { ...routeItems[key] };
-//   return (
-//     <RouteMenuLinkItem icon={icon} path={key} currentPath={currentPath}>
-//       <span data-testid={labelKey}>{t[labelKey]()}</span>
-//     </RouteMenuLinkItem>
-//   );
-// }
-
 /**
  * This is for the whole affine app sidebar.
  * This component wraps the app sidebar in `@affine/component` with logic and data.
@@ -100,7 +72,6 @@ const RouteMenuLinkItem = ({
  */
 export const RootAppSidebar = ({
   currentWorkspace,
-  currentPageId,
   openPage,
   createPage,
   currentPath,
@@ -149,14 +120,9 @@ export const RootAppSidebar = ({
         </SidebarContainer>
 
         <SidebarScrollableContainer>
+          <CategoryDivider label={t['Favorites']()} />
           {blockSuiteWorkspace && (
-            <Favorite
-              currentPath={currentPath}
-              paths={paths}
-              currentPageId={currentPageId}
-              openPage={openPage}
-              currentWorkspace={currentWorkspace}
-            />
+            <FavoriteList currentWorkspace={currentWorkspace} />
           )}
           {config.enableLegacyCloud &&
             (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
@@ -177,8 +143,8 @@ export const RootAppSidebar = ({
                 <span data-testid="shared-pages">{t['Shared Pages']()}</span>
               </RouteMenuLinkItem>
             ))}
-          <CategoryDivider label={t['others']()} />
 
+          <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem
             icon={<DeleteTemporarilyIcon />}
             currentPath={currentPath}
