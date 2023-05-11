@@ -50,15 +50,16 @@ const RouteMenuLinkItem = ({
   path,
   icon,
   children,
+  ...props
 }: {
   currentPath: string; // todo: pass through useRouter?
   path?: string | null;
   icon: ReactElement;
   children?: ReactElement;
-} & React.HTMLAttributes<HTMLAnchorElement>) => {
+} & React.HTMLAttributes<HTMLDivElement>) => {
   const active = currentPath === path;
   return (
-    <MenuLinkItem active={active} href={path ?? ''} icon={icon}>
+    <MenuLinkItem {...props} active={active} href={path ?? ''} icon={icon}>
       {children}
     </MenuLinkItem>
   );
