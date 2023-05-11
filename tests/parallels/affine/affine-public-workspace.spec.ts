@@ -24,8 +24,6 @@ test('enable public workspace', async ({ page, context }) => {
   await clickPublishPanel(page);
   await page.getByTestId('publish-enable-affine-cloud-button').click();
   await page.getByTestId('confirm-enable-affine-cloud-button').click();
-  await page.waitForSelector('v-line');
-  await clickSideBarSettingButton(page);
   await page.getByTestId('publish-to-web-button').waitFor({
     timeout: 10000,
   });
@@ -56,8 +54,6 @@ test('access public workspace page', async ({ page, browser }) => {
   await clickPublishPanel(page);
   await page.getByTestId('publish-enable-affine-cloud-button').click();
   await page.getByTestId('confirm-enable-affine-cloud-button').click();
-  await page.waitForSelector('v-line');
-  await clickSideBarSettingButton(page);
   await page.getByTestId('publish-to-web-button').waitFor({
     timeout: 10000,
   });

@@ -44,5 +44,7 @@ export async function enableAffineCloudWorkspace(page: Page) {
   await clickCollaborationPanel(page);
   await page.getByTestId('local-workspace-enable-cloud-button').click();
   await page.getByTestId('confirm-enable-cloud-button').click();
-  await page.waitForSelector('v-line');
+  await page.waitForSelector("[data-testid='member-length']", {
+    timeout: 20000,
+  });
 }
