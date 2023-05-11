@@ -51,7 +51,7 @@ const profileTarget = {
   stage: '',
   prod: 'https://app.affine.pro',
   local: '127.0.0.1:3000',
-  docker: '',
+  docker: '127.0.0.1:3000',
 };
 
 const getRedirectConfig = profile => {
