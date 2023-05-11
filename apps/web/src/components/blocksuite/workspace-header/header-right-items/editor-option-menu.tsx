@@ -153,6 +153,7 @@ const PageMenu = () => {
           onConfirm={() => {
             removeToTrash(pageMeta.id);
             toast(t['Moved to Trash']());
+            setOpenConfirm(false);
           }}
           onCancel={() => {
             setOpenConfirm(false);
