@@ -1,3 +1,4 @@
+import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
 import {
   AppContainer,
   MainContainer,
@@ -330,17 +331,18 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
+  const resizing = useAtomValue(appSidebarResizingAtom);
+
   return (
     <>
       <Head>
         <title>{title}</title>
       </Head>
-      <AppContainer>
+      <AppContainer resizing={resizing}>
         <RootAppSidebar
           isPublicWorkspace={isPublicWorkspace}
           onOpenQuickSearchModal={handleOpenQuickSearchModal}
           currentWorkspace={currentWorkspace}
-          currentPageId={currentPageId}
           onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
           openPage={useCallback(
             (pageId: string) => {

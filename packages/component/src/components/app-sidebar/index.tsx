@@ -124,3 +124,4 @@ export { AppSidebarFallback } from './fallback';
 export * from './menu-item';
 export * from './quick-search-input';
 export * from './sidebar-containers';
+export { appSidebarResizingAtom };

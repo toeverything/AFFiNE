@@ -9,8 +9,13 @@ export type WorkspaceRootProps = PropsWithChildren<{
 }>;
 
 export const AppContainer = (props: WorkspaceRootProps): ReactElement => {
+  const noisyBackground = environment.isDesktop && environment.isMacOs;
   return (
-    <div className={appStyle} data-is-resizing={props.resizing}>
+    <div
+      className={appStyle}
+      data-noise-background={noisyBackground}
+      data-is-resizing={props.resizing}
+    >
       {props.children}
     </div>
   );
