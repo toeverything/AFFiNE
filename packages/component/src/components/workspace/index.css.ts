@@ -51,6 +51,14 @@ export const mainContainerStyle = style({
   maxWidth: '100%',
   zIndex: 0,
   backgroundColor: 'var(--affine-background-primary-color)',
+  selectors: {
+    '&[data-is-desktop="true"]': {
+      margin: '8px 8px 8px 8px',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      boxShadow: 'var(--affine-shadow-1)',
+    },
+  },
 });
 
 export const toolStyle = style({

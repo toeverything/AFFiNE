@@ -29,6 +29,7 @@ export const MainContainer = (props: MainContainerProps): ReactElement => {
   return (
     <div
       className={clsx(mainContainerStyle, 'main-container', props.className)}
+      data-is-desktop={environment.isDesktop}
     >
       {props.children}
     </div>

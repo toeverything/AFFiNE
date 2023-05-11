@@ -49,7 +49,7 @@ export const navStyle = style({
   display: 'flex',
   flexDirection: 'column',
   zIndex: parseInt(baseTheme.zIndexModal),
-  borderRight: '1px solid var(--affine-border-color)',
+  borderRight: '1px solid transparent',
 });
 
 export const navHeaderStyle = style({
