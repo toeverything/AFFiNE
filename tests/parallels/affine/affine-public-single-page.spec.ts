@@ -22,7 +22,7 @@ test('public single page', async ({ page, browser }) => {
   expect(page1Id).not.toBe(page2Id);
   const title = 'This is page 2';
   await page.locator('[data-block-is-title="true"]').type(title, {
-    delay: 100,
+    delay: 50,
   });
   await page.getByTestId('share-menu-button').click();
   await page.getByTestId('share-menu-enable-affine-cloud-button').click();
@@ -40,7 +40,6 @@ test('public single page', async ({ page, browser }) => {
   newPage2Url[newPage2Url.length - 1] = page2Id as string;
   await page.goto(newPage2Url.join('/'));
   await page.waitForSelector('v-line');
-  await page.waitForTimeout(1000);
   const currentTitle = await page
     .locator('[data-block-is-title="true"]')
     .textContent();
