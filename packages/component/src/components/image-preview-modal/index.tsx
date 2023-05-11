@@ -6,6 +6,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
+import { useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
@@ -112,6 +113,54 @@ export const ImagePreviewModal = (
   props: ImagePreviewModalProps
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
+
+  const getImageBlocks = useCallback((workspace: Workspace, pageId: string) => {
+    const page = workspace.getPage(pageId);
+    assertExists(page);
+
+    return page
+      .getBlockByFlavour('affine:embed')
+      .filter(block => block.type === 'image')
+      .map(block => block.id);
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setBlockId(null);
+        return;
+      }
+
+      const imageBlocks = getImageBlocks(props.workspace, props.pageId);
+
+      if (event.key === 'ArrowLeft') {
+        const prevBlockId =
+          imageBlocks[imageBlocks.indexOf(blockId as string) - 1];
+        if (prevBlockId) {
+          setBlockId(prevBlockId);
+        }
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        const nextBlockId =
+          imageBlocks[imageBlocks.indexOf(blockId as string) + 1];
+        if (nextBlockId) {
+          setBlockId(nextBlockId);
+        }
+        return;
+      }
+    },
+    [blockId, setBlockId, getImageBlocks, props.workspace, props.pageId]
+  );
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   if (!blockId) {
     return null;
   }
