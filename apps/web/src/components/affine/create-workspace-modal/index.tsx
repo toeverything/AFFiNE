@@ -118,10 +118,7 @@ interface SetDBLocationContentProps {
   onConfirmLocation: (dir?: string) => void;
 }
 
-const SetDBLocationContent = ({
-  onConfirmLocation,
-}: SetDBLocationContentProps) => {
-  const t = useAFFiNEI18N();
+const useDefaultDBLocation = () => {
   const [defaultDBLocation, setDefaultDBLocation] = useState('');
 
   useEffect(() => {
@@ -130,20 +127,40 @@ const SetDBLocationContent = ({
     });
   }, []);
 
+  return defaultDBLocation;
+};
+
+const SetDBLocationContent = ({
+  onConfirmLocation,
+}: SetDBLocationContentProps) => {
+  const t = useAFFiNEI18N();
+  const defaultDBLocation = useDefaultDBLocation();
+  const [opening, setOpening] = useState(false);
+
+  const handleSelectDBFileLocation = async () => {
+    if (opening) {
+      return;
+    }
+    setOpening(true);
+    const result = await window.apis?.dialog.selectDBFileLocation();
+    setOpening(false);
+    if (result?.filePath) {
+      onConfirmLocation(result.filePath);
+    } else if (result?.error) {
+      toast(t[result.error]());
+    }
+  };
+
   return (
     <div className={style.content}>
       <div className={style.contentTitle}>{t['Set database location']()}</div>
       <p>{t['Workspace database storage description']()}</p>
       <div className={style.buttonGroup}>
         <Button
+          disabled={opening}
           data-testid="create-workspace-customize-button"
           type="light"
-          onClick={async () => {
-            const result = await window.apis?.dialog.selectDBFileLocation();
-            if (result) {
-              onConfirmLocation(result.filePath);
-            }
-          }}
+          onClick={handleSelectDBFileLocation}
         >
           {t['Customize']()}
         </Button>

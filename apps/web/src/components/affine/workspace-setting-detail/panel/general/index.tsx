@@ -65,10 +65,15 @@ export const GeneralPanel: React.FC<PanelProps> = ({
     toast(t['Update workspace name success']());
   };
 
+  const [moveToInProgress, setMoveToInProgress] = useState<boolean>(false);
+
   const handleMoveTo = async () => {
+    if (moveToInProgress) {
+      return;
+    }
     try {
+      setMoveToInProgress(true);
       const result = await window.apis?.dialog.moveDBFile(workspace.id);
-      console.log(result);
       if (!result?.error && !result?.canceled) {
         toast(t['Move folder success']());
       } else if (result?.error) {
@@ -76,6 +81,8 @@ export const GeneralPanel: React.FC<PanelProps> = ({
       }
     } catch (err) {
       toast(t['UNKNOWN_ERROR']());
+    } finally {
+      setMoveToInProgress(false);
     }
   };
 
@@ -190,6 +197,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
 
             <div
               data-testid="move-folder"
+              data-disabled={moveToInProgress}
               className={style.storageTypeWrapper}
               onClick={handleMoveTo}
             >

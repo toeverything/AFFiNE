@@ -176,6 +176,10 @@ export const storageTypeWrapper = style({
     '&:not(:last-child)': {
       marginBottom: '12px',
     },
+    '&[data-disabled="true"]': {
+      cursor: 'default',
+      pointerEvents: 'none',
+    },
   },
 });
 
