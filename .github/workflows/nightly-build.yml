@@ -32,6 +32,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Replace Version
+        run: ./scripts/replace-version.sh ${{ env.RELEASE_VERSION }}
       - name: generate-assets
         working-directory: apps/electron
         run: yarn generate-assets
@@ -91,6 +93,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Replace Version
+        run: ./scripts/replace-version.sh ${{ env.RELEASE_VERSION }}
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
