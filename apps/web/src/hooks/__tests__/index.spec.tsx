@@ -202,6 +202,8 @@ describe('useWorkspaces', () => {
     const { result } = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
+    // next tick
+    await new Promise(resolve => setTimeout(resolve, 100));
     {
       const workspaces = await store.get(workspacesAtom);
       expect(workspaces.length).toEqual(1);
