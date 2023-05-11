@@ -1,6 +1,5 @@
 import { styled } from '@affine/component';
 import { AffineLoading } from '@affine/component/affine-loading';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { memo, Suspense } from 'react';
 
 export const Loading = memo(function Loading() {
@@ -35,12 +34,15 @@ const StyledLoadingContainer = styled('div')(() => {
   };
 });
 
-export const PageLoading = ({ text }: { text?: string }) => {
-  const t = useAFFiNEI18N();
+export const PageLoading = () => {
+  // We disable the loading on desktop, because want it looks faster.
+  //  This is a design requirement.
+  if (environment.isDesktop) {
+    return null;
+  }
   return (
     <StyledLoadingContainer>
       <Loading />
-      <h1>{text ? text : t['Loading']()}</h1>
     </StyledLoadingContainer>
   );
 };

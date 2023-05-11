@@ -136,10 +136,8 @@ const BlockSuiteErrorFallback = (
 export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
   return (
     <div className={blockSuiteEditorStyle}>
-      <Skeleton animation="wave" height={60} />
-      {Array.from({ length: 10 }).map((_, index) => (
-        <Skeleton animation="wave" height={30} key={index} />
-      ))}
+      <Skeleton animation="wave" height={130} />
+      <Skeleton animation="wave" height={30} />
       <Skeleton animation="wave" height={30} width="40%" />
     </div>
   );
