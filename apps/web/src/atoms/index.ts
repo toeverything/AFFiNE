@@ -56,7 +56,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
   }, 0);
 
   if (environment.isDesktop) {
-    window.apis.workspace.list().then(workspaceIDs => {
+    window.apis?.workspace.list().then(workspaceIDs => {
       if (abortController.signal.aborted) return;
       const newMetadata = workspaceIDs.map(w => ({
         id: w[0],
