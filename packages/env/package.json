@@ -6,8 +6,8 @@
   "devDependencies": {
     "@blocksuite/global": "0.0.0-20230509150141-055b5702-nightly",
     "next": "^13.4.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506",
     "zod": "^3.21.4"
   },
   "exports": {
