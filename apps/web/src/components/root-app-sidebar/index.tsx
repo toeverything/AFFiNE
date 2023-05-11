@@ -15,11 +15,12 @@ import {
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement, UIEvent } from 'react';
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { historyAtom } from '../../atoms/history';
 import type { AllWorkspace } from '../../shared';
 import ChangeLog from '../pure/workspace-slider-bar/changeLog';
 import Favorite from '../pure/workspace-slider-bar/favorite';
@@ -81,6 +82,18 @@ export const RootAppSidebar = ({
     }
   }, [sidebarOpen]);
   const [ref, setRef] = useState<HTMLElement | null>(null);
+  const [history, setHistory] = useAtom(historyAtom);
+  const router = useMemo(() => {
+    return {
+      forward: () => {
+        setHistory(true);
+      },
+      back: () => {
+        setHistory(false);
+      },
+      history,
+    };
+  }, [history, setHistory]);
 
   const handleQuickSearchButtonKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -95,6 +108,7 @@ export const RootAppSidebar = ({
     <>
       <AppSidebar
         ref={setRef}
+        router={router}
         footer={
           <StyledNewPageButton
             data-testid="new-page-button"

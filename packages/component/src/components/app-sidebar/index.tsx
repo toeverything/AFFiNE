@@ -39,7 +39,17 @@ export { appSidebarOpenAtom };
 
 export type AppSidebarProps = PropsWithChildren<{
   footer?: ReactNode | undefined;
+  router?: {
+    back: () => unknown;
+    forward: () => unknown;
+    history: History;
+  };
 }>;
+
+export type History = {
+  stack: string[];
+  current: number;
+};
 
 export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   function AppSidebar(props, forwardedRef): ReactElement {
@@ -96,7 +106,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
                 <IconButton
                   size="middle"
                   onClick={() => {
-                    window.history.back();
+                    props.router && props.router.back();
                   }}
                 >
                   <ArrowLeftSmallIcon />
@@ -104,7 +114,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
                 <IconButton
                   size="middle"
                   onClick={() => {
-                    window.history.forward();
+                    props.router && props.router.forward();
                   }}
                   style={{ marginLeft: '32px' }}
                 >
