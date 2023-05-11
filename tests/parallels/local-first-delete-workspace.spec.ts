@@ -17,7 +17,8 @@ test('Create new workspace, then delete it', async ({ page }) => {
   await page
     .getByTestId('create-workspace-input')
     .type('Test Workspace', { delay: 50 });
-  await page.getByTestId('create-workspace-button').click();
+  await page.getByTestId('create-workspace-create-button').click();
+
   await page.waitForTimeout(1000);
   await page.waitForSelector('[data-testid="workspace-name"]');
   expect(await page.getByTestId('workspace-name').textContent()).toBe(

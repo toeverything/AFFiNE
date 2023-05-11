@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -38,6 +39,21 @@ export function useAppHelper() {
         }
       },
       [workspaces]
+    ),
+    addLocalWorkspace: useCallback(
+      async (workspaceId: string): Promise<string> => {
+        saveWorkspaceToLocalStorage(workspaceId);
+        set(workspaces => [
+          ...workspaces,
+          {
+            id: workspaceId,
+            flavour: WorkspaceFlavour.LOCAL,
+          },
+        ]);
+        logger.debug('imported local workspace', workspaceId);
+        return workspaceId;
+      },
+      [set]
     ),
     createLocalWorkspace: useCallback(
       async (name: string): Promise<string> => {

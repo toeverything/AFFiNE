@@ -14,7 +14,7 @@ test('should create a page with a local first avatar', async ({ page }) => {
   await page
     .getByTestId('create-workspace-input')
     .type('Test Workspace 1', { delay: 50 });
-  await page.getByTestId('create-workspace-button').click();
+  await page.getByTestId('create-workspace-create-button').click();
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('workspace-card').nth(1).click();
   await page.getByTestId('slider-bar-workspace-setting-button').click();

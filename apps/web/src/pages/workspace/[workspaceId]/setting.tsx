@@ -97,14 +97,15 @@ const SettingPage: NextPageWithLayout = () => {
 
   const helper = useAppHelper();
 
-  const onDeleteWorkspace = useCallback(() => {
+  const onDeleteWorkspace = useCallback(async () => {
     assertExists(currentWorkspace);
     const workspaceId = currentWorkspace.id;
     if (workspaceIds.length === 1 && workspaceId === workspaceIds[0].id) {
       toast(t['You cannot delete the last workspace']());
       throw new Error('You cannot delete the last workspace');
+    } else {
+      return await helper.deleteWorkspace(workspaceId);
     }
-    return helper.deleteWorkspace(workspaceId);
   }, [currentWorkspace, helper, t, workspaceIds]);
   const onTransformWorkspace = useOnTransformWorkspace();
   if (!router.isReady) {

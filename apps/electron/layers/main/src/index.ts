@@ -1,24 +1,21 @@
 import './security-restrictions';
 
 import { app } from 'electron';
-import path from 'path';
 
-import { logger } from '../../logger';
+import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
+import { registerUpdater } from './handlers/updater';
+import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
-import { registerUpdater } from './updater';
 
-if (require('electron-squirrel-startup')) app.exit();
-if (process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('affine', process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
-  }
-} else {
-  app.setAsDefaultProtocolClient('affine');
+// allow tests to overwrite app name through passing args
+if (process.argv.includes('--app-name')) {
+  const appNameIndex = process.argv.indexOf('--app-name');
+  const appName = process.argv[appNameIndex + 1];
+  app.setName(appName);
 }
+
 /**
  * Prevent multiple instances
  */
@@ -58,6 +55,7 @@ app
   .whenReady()
   .then(registerProtocol)
   .then(registerHandlers)
+  .then(registerEvents)
   .then(restoreOrCreateWindow)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));

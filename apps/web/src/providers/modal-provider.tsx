@@ -18,7 +18,7 @@ import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
-import { useAppHelper, useWorkspaces } from '../hooks/use-workspaces';
+import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
 
 const WorkspaceListModal = lazy(() =>
@@ -26,8 +26,9 @@ const WorkspaceListModal = lazy(() =>
     default: module.WorkspaceListModal,
   }))
 );
+
 const CreateWorkspaceModal = lazy(() =>
-  import('../components/pure/create-workspace-modal').then(module => ({
+  import('../components/affine/create-workspace-modal').then(module => ({
     default: module.CreateWorkspaceModal,
   }))
 );
@@ -39,7 +40,8 @@ const TmpDisableAffineCloudModal = lazy(() =>
     })
   )
 );
-const OnboardingModalAtom = lazy(() =>
+
+const OnboardingModal = lazy(() =>
   import('../components/pure/onboarding-modal').then(module => ({
     default: module.OnboardingModal,
   }))
@@ -67,7 +69,6 @@ export function Modals() {
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
-  const { createLocalWorkspace } = useAppHelper();
   const [transitioning, transition] = useTransition();
   const env = getEnvironment();
   const onCloseOnboardingModal = useCallback(() => {
@@ -85,7 +86,7 @@ export function Modals() {
       </Suspense>
       {env.isDesktop && (
         <Suspense>
-          <OnboardingModalAtom
+          <OnboardingModal
             open={openOnboardingModal}
             onClose={onCloseOnboardingModal}
           />
@@ -132,27 +133,28 @@ export function Modals() {
           )}
           onClickLogin={useAffineLogIn()}
           onClickLogout={useAffineLogOut()}
-          onCreateWorkspace={useCallback(() => {
-            setOpenCreateWorkspaceModal(true);
+          onNewWorkspace={useCallback(() => {
+            setOpenCreateWorkspaceModal('new');
+          }, [setOpenCreateWorkspaceModal])}
+          onAddWorkspace={useCallback(async () => {
+            setOpenCreateWorkspaceModal('add');
           }, [setOpenCreateWorkspaceModal])}
         />
       </Suspense>
       <Suspense>
         <CreateWorkspaceModal
-          open={openCreateWorkspaceModal}
+          mode={openCreateWorkspaceModal}
           onClose={useCallback(() => {
             setOpenCreateWorkspaceModal(false);
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
-            async name => {
-              const id = await createLocalWorkspace(name);
+            async id => {
               setOpenCreateWorkspaceModal(false);
               setOpenWorkspacesModal(false);
               setCurrentWorkspace(id);
-              return jumpToSubPath(id, WorkspaceSubPath.ALL);
+              return jumpToSubPath(id, WorkspaceSubPath.SETTING);
             },
             [
-              createLocalWorkspace,
               jumpToSubPath,
               setCurrentWorkspace,
               setOpenCreateWorkspaceModal,

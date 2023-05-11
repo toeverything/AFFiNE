@@ -1,3 +1,4 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -27,6 +28,7 @@ export const EditorModeSwitch = ({
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  const t = useAFFiNEI18N();
   assertExists(pageMeta);
   const { trash } = pageMeta;
 
@@ -41,8 +43,12 @@ export const EditorModeSwitch = ({
         active={currentMode === 'page'}
         hide={trash && currentMode !== 'page'}
         onClick={() => {
-          setMode(mode => ({ ...mode, [pageMeta.id]: 'page' }));
-          toast('Page mode');
+          setMode(mode => {
+            if (mode[pageMeta.id] !== 'page') {
+              toast(t['com.affine.pageMode']());
+            }
+            return { ...mode, [pageMeta.id]: 'page' };
+          });
         }}
       />
       <EdgelessSwitchItem
@@ -50,8 +56,12 @@ export const EditorModeSwitch = ({
         active={currentMode === 'edgeless'}
         hide={trash && currentMode !== 'edgeless'}
         onClick={() => {
-          setMode(mode => ({ ...mode, [pageMeta.id]: 'edgeless' }));
-          toast('Edgeless mode');
+          setMode(mode => {
+            if (mode[pageMeta.id] !== 'edgeless') {
+              toast(t['com.affine.edgelessMode']());
+            }
+            return { ...mode, [pageMeta.id]: 'edgeless' };
+          });
         }}
       />
     </StyledEditorModeSwitch>

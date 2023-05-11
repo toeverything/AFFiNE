@@ -124,7 +124,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
           {clientUpdateAvailable && (
             <Button
               onClick={() => {
-                window.apis?.onClientUpdateInstall();
+                window.apis?.updater.updateClient();
               }}
               noBorder
               className={updaterButtonStyle}
@@ -151,5 +151,6 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   }
 );
 
+export { AppSidebarFallback } from './fallback';
 export type { ResizeIndicatorProps } from './resize-indicator';
 export { ResizeIndicator } from './resize-indicator';

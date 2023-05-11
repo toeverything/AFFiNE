@@ -3,10 +3,6 @@ import 'zx/globals';
 
 import path from 'node:path';
 
-import * as esbuild from 'esbuild';
-
-import { config } from './common.mjs';
-
 const repoRootDir = path.join(__dirname, '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
 const publicDistDir = path.join(electronRootDir, 'resources');
@@ -37,8 +33,7 @@ if (process.platform === 'win32') {
 cd(repoRootDir);
 
 // step 1: build electron resources
-await buildLayers();
-echo('Build layers done');
+await $`yarn workspace @affine/electron build-layers`;
 
 // step 2: build web (nextjs) dist
 if (!process.env.SKIP_WEB_BUILD) {
@@ -74,18 +69,4 @@ async function cleanup() {
   await fs.emptyDir(path.join(electronRootDir, 'layers', 'main', 'dist'));
   await fs.emptyDir(path.join(electronRootDir, 'layers', 'preload', 'dist'));
   await fs.remove(path.join(electronRootDir, 'out'));
-}
-
-async function buildLayers() {
-  const common = config();
-  await esbuild.build(common.preload);
-
-  await esbuild.build({
-    ...common.main,
-    define: {
-      ...common.main.define,
-      'process.env.NODE_ENV': `"production"`,
-      'process.env.BUILD_TYPE': `"${process.env.BUILD_TYPE || 'statble'}"`,
-    },
-  });
 }

@@ -96,6 +96,12 @@ export const linkStyle = style({
   flexDirection: 'row',
   justifyContent: 'flex-start',
   alignItems: 'center',
+  maxWidth: 'calc(100% - 32px)',
+});
+export const linkTextStyle = style({
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+  overflow: 'hidden',
 });
 export const iconStyle = style({
   fontSize: '20px',

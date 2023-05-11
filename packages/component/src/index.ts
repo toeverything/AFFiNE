@@ -3,7 +3,6 @@ export * from './styles';
 export * from './ui/breadcrumbs';
 export * from './ui/button';
 export * from './ui/confirm';
-export * from './ui/divider';
 export * from './ui/empty';
 export * from './ui/input';
 export * from './ui/layout';

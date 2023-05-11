@@ -1,8 +1,13 @@
+import {
+  AppContainer,
+  MainContainer,
+  ToolContainer,
+  WorkspaceFallback,
+} from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
 import { setUpLanguage, useI18N } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
@@ -26,7 +31,6 @@ import {
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
 import { HelpIsland } from '../components/pure/help-island';
-import { PageLoading } from '../components/pure/loading';
 import { RootAppSidebar } from '../components/root-app-sidebar';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
@@ -38,12 +42,6 @@ import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
-import {
-  MainContainer,
-  MainContainerWrapper,
-  StyledPage,
-  StyledToolWrapper,
-} from './styles';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -142,15 +140,14 @@ export const CurrentWorkspaceContext = ({
   useRouterWithWorkspaceIdDefense(router);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
-  const t = useAFFiNEI18N();
   if (!router.isReady) {
-    return <PageLoading text={t['Router is Loading']()} />;
+    return <WorkspaceFallback key="router-is-loading" />;
   }
   if (!workspaceId) {
-    return <PageLoading text={t['Finding Workspace ID']()} />;
+    return <WorkspaceFallback key="finding-workspace-id" />;
   }
   if (!exist) {
-    return <PageLoading text={t['Workspace Not Found']()} />;
+    return <WorkspaceFallback key="workspace-not-found" />;
   }
   return <>{children}</>;
 };
@@ -158,7 +155,6 @@ export const CurrentWorkspaceContext = ({
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     const i18n = useI18N();
-    const t = useAFFiNEI18N();
     useEffect(() => {
       document.documentElement.lang = i18n.language;
       // todo(himself65): this is a hack, we should use a better way to set the language
@@ -234,9 +230,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
           </CurrentWorkspaceContext>
         </AllWorkspaceContext>
         <CurrentWorkspaceContext>
-          <Suspense
-            fallback={<PageLoading text={t['Finding Current Workspace']()} />}
-          >
+          <Suspense fallback={<WorkspaceFallback />}>
             <Provider>
               <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
             </Provider>
@@ -252,7 +246,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
-  const t = useAFFiNEI18N();
 
   //#region init workspace
   if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
@@ -342,7 +335,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       <Head>
         <title>{title}</title>
       </Head>
-      <StyledPage>
+      <AppContainer>
         <RootAppSidebar
           isPublicWorkspace={isPublicWorkspace}
           onOpenQuickSearchModal={handleOpenQuickSearchModal}
@@ -360,27 +353,23 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <MainContainerWrapper>
-          <MainContainer className="main-container">
-            <Suspense fallback={<PageLoading text={t['Page is Loading']()} />}>
-              {children}
-            </Suspense>
-            <StyledToolWrapper>
-              {/* fixme(himself65): remove this */}
-              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-                {/* Slot for block hub */}
-              </div>
-              {!isPublicWorkspace && (
-                <HelpIsland
-                  showList={
-                    router.query.pageId ? undefined : ['whatNew', 'contact']
-                  }
-                />
-              )}
-            </StyledToolWrapper>
-          </MainContainer>
-        </MainContainerWrapper>
-      </StyledPage>
+        <MainContainer>
+          <Suspense fallback={<WorkspaceFallback />}>{children}</Suspense>
+          <ToolContainer>
+            {/* fixme(himself65): remove this */}
+            <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+              {/* Slot for block hub */}
+            </div>
+            {!isPublicWorkspace && (
+              <HelpIsland
+                showList={
+                  router.query.pageId ? undefined : ['whatNew', 'contact']
+                }
+              />
+            )}
+          </ToolContainer>
+        </MainContainer>
+      </AppContainer>
       <QuickSearch />
     </>
   );

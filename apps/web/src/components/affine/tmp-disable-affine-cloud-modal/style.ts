@@ -26,7 +26,7 @@ export const StyleTips = styled('div')(() => {
     userSelect: 'none',
     margin: '20px 0',
     a: {
-      color: 'var(--affine-background-primary-color)',
+      color: 'var(--affine-primary-color)',
     },
   };
 });
