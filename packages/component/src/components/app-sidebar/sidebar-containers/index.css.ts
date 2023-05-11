@@ -1,13 +1,11 @@
 import { globalStyle, style } from '@vanilla-extract/css';
 
-const baseContainer = style({
+export const baseContainer = style({
   padding: '12px 16px',
   display: 'flex',
   flexFlow: 'column nowrap',
   rowGap: '8px',
 });
-
-export const topContainer = style([baseContainer, {}]);
 
 export const scrollableContainerRoot = style({
   flex: '1 1 auto',

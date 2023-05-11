@@ -2,11 +2,13 @@ import {
   AddPageButton,
   AppSidebar,
   appSidebarOpenAtom,
+  AppUpdaterButton,
   CategoryDivider,
   MenuLinkItem,
   QuickSearchInput,
   SidebarContainer,
   SidebarScrollableContainer,
+  updateAvailableAtom,
 } from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -94,6 +96,8 @@ export const RootAppSidebar = ({
     }
   }, [sidebarOpen]);
 
+  const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
+
   return (
     <>
       <AppSidebar>
@@ -159,6 +163,7 @@ export const RootAppSidebar = ({
           </RouteMenuLinkItem>
         </SidebarScrollableContainer>
         <SidebarContainer>
+          {clientUpdateAvailable && <AppUpdaterButton />}
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>
       </AppSidebar>

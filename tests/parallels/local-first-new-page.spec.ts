@@ -25,7 +25,7 @@ test('click btn bew page and find it in all pages', async ({ page }) => {
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page');
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
   const cell = page.getByRole('cell', { name: 'this is a new page' });
   expect(cell).not.toBeUndefined();
   await assertCurrentWorkspaceFlavour('local', page);

@@ -1,7 +1,4 @@
-import { Button } from '@affine/component';
 import { getEnvironment } from '@affine/env';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ResetIcon } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
@@ -9,15 +6,11 @@ import { useEffect, useRef, useState } from 'react';
 
 import {
   floatingMaxWidth,
-  haloStyle,
-  installLabelStyle,
   navBodyStyle,
   navStyle,
   navWidthVar,
   navWrapperStyle,
-  particlesStyle,
   sidebarFloatMaskStyle,
-  updaterButtonStyle,
 } from './index.css';
 import {
   APP_SIDEBAR_OPEN,
@@ -28,8 +21,6 @@ import {
 } from './index.jotai';
 import { ResizeIndicator } from './resize-indicator';
 import { SidebarHeader } from './sidebar-header';
-
-export { appSidebarOpenAtom };
 
 export type AppSidebarProps = PropsWithChildren;
 
@@ -45,8 +36,6 @@ function useEnableAnimation() {
 
 export function AppSidebar(props: AppSidebarProps): ReactElement {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
-  const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
-  const t = useAFFiNEI18N();
   const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
   const initialRender = open === undefined;
 
@@ -90,23 +79,6 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {props.children}
           </div>
-          {clientUpdateAvailable && (
-            <Button
-              onClick={() => {
-                window.apis?.updater.updateClient();
-              }}
-              noBorder
-              className={updaterButtonStyle}
-              type={'light'}
-            >
-              <div className={particlesStyle} aria-hidden="true"></div>
-              <span className={haloStyle} aria-hidden="true"></span>
-              <div className={installLabelStyle}>
-                <ResetIcon />
-                <span>{t['Restart Install Client Update']()}</span>
-              </div>
-            </Button>
-          )}
         </nav>
         <ResizeIndicator targetElement={navRef.current} />
       </div>
@@ -121,9 +93,10 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
 }
 
 export * from './add-page-button';
+export * from './app-updater-button';
 export * from './category-divider';
 export { AppSidebarFallback } from './fallback';
 export * from './menu-item';
 export * from './quick-search-input';
 export * from './sidebar-containers';
-export { appSidebarResizingAtom };
+export { appSidebarOpenAtom, appSidebarResizingAtom, updateAvailableAtom };

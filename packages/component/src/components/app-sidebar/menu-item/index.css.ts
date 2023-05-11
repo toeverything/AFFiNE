@@ -18,6 +18,11 @@ export const root = style({
       color: 'var(--affine-primary-color)',
       background: 'var(--affine-hover-color)',
     },
+    '&[data-disabled="true"]': {
+      cursor: 'default',
+      color: 'var(--affine-text-secondary-color)',
+      pointerEvents: 'none',
+    },
   },
 });
 

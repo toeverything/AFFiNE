@@ -5,7 +5,7 @@ import { type PropsWithChildren, useEffect, useRef, useState } from 'react';
 import * as styles from './index.css';
 
 export function SidebarContainer({ children }: PropsWithChildren) {
-  return <div className={clsx([styles.topContainer])}>{children}</div>;
+  return <div className={clsx([styles.baseContainer])}>{children}</div>;
 }
 
 function useHasScrollTop() {
