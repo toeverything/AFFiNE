@@ -12,16 +12,6 @@ const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
 /** @type 'production' | 'development'' */
 const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
 
-const nativeNodeModulesPlugin = {
-  name: 'native-node-modules',
-  setup(build) {
-    // Mark native Node.js modules as external
-    build.onResolve({ filter: /\.node$/, namespace: 'file' }, args => {
-      return { path: args.path, external: true };
-    });
-  },
-};
-
 // List of env that will be replaced by esbuild
 const ENV_MACROS = ['AFFINE_GOOGLE_CLIENT_ID', 'AFFINE_GOOGLE_CLIENT_SECRET'];
 
@@ -49,10 +39,19 @@ export const config = () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', 'yjs', 'better-sqlite3', 'electron-updater'],
-      plugins: [nativeNodeModulesPlugin],
+      external: [
+        'electron',
+        'yjs',
+        'better-sqlite3',
+        'electron-updater',
+        '@affine/native-*',
+      ],
       define: define,
       format: 'cjs',
+      loader: {
+        '.node': 'copy',
+      },
+      assetNames: '[name]',
     },
     preload: {
       entryPoints: [resolve(root, './layers/preload/src/index.ts')],
@@ -61,7 +60,6 @@ export const config = () => {
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
       external: ['electron', '../main/exposed-meta'],
-      plugins: [nativeNodeModulesPlugin],
       define: define,
     },
   };

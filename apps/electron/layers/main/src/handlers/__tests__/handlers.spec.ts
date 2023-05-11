@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import path from 'node:path';
 
 import fs from 'fs-extra';
+import { v4 } from 'uuid';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import * as Y from 'yjs';
 
@@ -99,6 +100,11 @@ const electronModule = {
       handlers.push(callback);
       registeredHandlers.set(name, handlers);
     },
+    addEventListener: (...args: any[]) => {
+      // @ts-ignore
+      electronModule.app.on(...args);
+    },
+    removeEventListener: () => {},
   },
   BrowserWindow: {
     getAllWindows: () => {
@@ -126,17 +132,18 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  const { cleanupSQLiteDBs } = await import('../db/ensure-db');
-  await cleanupSQLiteDBs();
   await fs.remove(SESSION_DATA_PATH);
 
   // reset registered handlers
   registeredHandlers.get('before-quit')?.forEach(fn => fn());
+
+  const { databaseInput$ } = await import('../db/ensure-db');
+  databaseInput$['_buffer'] = [];
 });
 
-describe('ensureSQLiteDB', () => {
+describe.shuffle('ensureSQLiteDB', () => {
   test('should create db file on connection if it does not exist', async () => {
-    const id = 'test-workspace-id';
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     const workspaceDB = await ensureSQLiteDB(id);
     const file = workspaceDB.path;
@@ -146,9 +153,8 @@ describe('ensureSQLiteDB', () => {
 
   test('when db file is removed', async () => {
     // stub webContents.send
-    const sendStub = vi.fn();
-    browserWindow.webContents.send = sendStub;
-    const id = 'test-workspace-id';
+    const sendSpy = vi.spyOn(browserWindow.webContents, 'send');
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     let workspaceDB = await ensureSQLiteDB(id);
     const file = workspaceDB.path;
@@ -157,63 +163,61 @@ describe('ensureSQLiteDB', () => {
 
     await fs.remove(file);
 
-    // wait for 1000ms for file watcher to detect file removal
+    // wait for 2000ms for file watcher to detect file removal
     await delay(2000);
 
-    expect(sendStub).toBeCalledWith('db:onDBFileMissing', id);
+    expect(sendSpy).toBeCalledWith('db:onDBFileMissing', id);
 
     // ensureSQLiteDB should recreate the db file
     workspaceDB = await ensureSQLiteDB(id);
     const fileExists2 = await fs.pathExists(file);
     expect(fileExists2).toBe(true);
+    sendSpy.mockRestore();
   });
 
   test('when db file is updated', async () => {
-    // stub webContents.send
-    const sendStub = vi.fn();
-    browserWindow.webContents.send = sendStub;
-    const id = 'test-workspace-id';
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { dbSubjects } = await import('../../events/db');
     const workspaceDB = await ensureSQLiteDB(id);
     const file = workspaceDB.path;
     const fileExists = await fs.pathExists(file);
     expect(fileExists).toBe(true);
-
-    // wait to make sure
-    await delay(500);
-
+    const dbUpdateSpy = vi.spyOn(dbSubjects.dbFileUpdate, 'next');
+    await delay(100);
     // writes some data to the db file
     await fs.appendFile(file, 'random-data', { encoding: 'binary' });
     // write again
     await fs.appendFile(file, 'random-data', { encoding: 'binary' });
 
-    // wait for 200ms for file watcher to detect file change
+    // wait for 2000ms for file watcher to detect file change
     await delay(2000);
 
-    expect(sendStub).toBeCalledWith('db:onDBFileUpdate', id);
+    expect(dbUpdateSpy).toBeCalledWith(id);
+    dbUpdateSpy.mockRestore();
   });
 });
 
 describe('workspace handlers', () => {
   test('list all workspace ids', async () => {
-    const ids = ['test-workspace-id', 'test-workspace-id-2'];
+    const ids = [v4(), v4()];
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     await Promise.all(ids.map(id => ensureSQLiteDB(id)));
     const list = await dispatch('workspace', 'list');
-    expect(list.map(([id]) => id)).toEqual(ids);
+    expect(list.map(([id]) => id).sort()).toEqual(ids.sort());
   });
 
   test('delete workspace', async () => {
-    const ids = ['test-workspace-id', 'test-workspace-id-2'];
+    const ids = [v4(), v4()];
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     await Promise.all(ids.map(id => ensureSQLiteDB(id)));
-    await dispatch('workspace', 'delete', 'test-workspace-id-2');
+    await dispatch('workspace', 'delete', ids[1]);
     const list = await dispatch('workspace', 'list');
-    expect(list.map(([id]) => id)).toEqual(['test-workspace-id']);
+    expect(list.map(([id]) => id)).toEqual([ids[0]]);
   });
 });
 
-describe('UI handlers', () => {
+describe.shuffle('UI handlers', () => {
   test('theme-change', async () => {
     await dispatch('ui', 'handleThemeChange', 'dark');
     expect(nativeTheme.themeSource).toBe('dark');
@@ -242,9 +246,9 @@ describe('UI handlers', () => {
   });
 });
 
-describe('db handlers', () => {
+describe.shuffle('db handlers', () => {
   test('apply doc and get doc updates', async () => {
-    const workspaceId = 'test-workspace-id';
+    const workspaceId = v4();
     const bin = await dispatch('db', 'getDocAsUpdates', workspaceId);
     // ? is this a good test?
     expect(bin.every((byte: number) => byte === 0)).toBe(true);
@@ -264,13 +268,13 @@ describe('db handlers', () => {
   });
 
   test('get non existent blob', async () => {
-    const workspaceId = 'test-workspace-id';
+    const workspaceId = v4();
     const bin = await dispatch('db', 'getBlob', workspaceId, 'non-existent-id');
     expect(bin).toBeNull();
   });
 
   test('list blobs (empty)', async () => {
-    const workspaceId = 'test-workspace-id';
+    const workspaceId = v4();
     const list = await dispatch('db', 'getPersistedBlobs', workspaceId);
     expect(list).toEqual([]);
   });
@@ -313,12 +317,12 @@ describe('db handlers', () => {
   });
 });
 
-describe('dialog handlers', () => {
+describe.shuffle('dialog handlers', () => {
   test('revealDBFile', async () => {
     const mockShowItemInFolder = vi.fn();
     electronModule.shell.showItemInFolder = mockShowItemInFolder;
 
-    const id = 'test-workspace-id';
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     const db = await ensureSQLiteDB(id);
 
@@ -334,7 +338,7 @@ describe('dialog handlers', () => {
     electronModule.dialog.showSaveDialog = mockShowSaveDialog;
     electronModule.shell.showItemInFolder = mockShowItemInFolder;
 
-    const id = 'test-workspace-id';
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     await ensureSQLiteDB(id);
 
@@ -352,7 +356,7 @@ describe('dialog handlers', () => {
     electronModule.dialog.showSaveDialog = mockShowSaveDialog;
     electronModule.shell.showItemInFolder = mockShowItemInFolder;
 
-    const id = 'test-workspace-id';
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     await ensureSQLiteDB(id);
 
@@ -407,7 +411,7 @@ describe('dialog handlers', () => {
 
   test('loadDBFile', async () => {
     // we use ensureSQLiteDB to create a valid db file
-    const id = 'test-workspace-id';
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     const db = await ensureSQLiteDB(id);
 
@@ -446,7 +450,7 @@ describe('dialog handlers', () => {
     }) as any;
     electronModule.dialog.showSaveDialog = mockShowSaveDialog;
 
-    const id = 'test-workspace-id';
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     await ensureSQLiteDB(id);
 
@@ -461,7 +465,7 @@ describe('dialog handlers', () => {
     }) as any;
     electronModule.dialog.showSaveDialog = mockShowSaveDialog;
 
-    const id = 'test-workspace-id';
+    const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     await ensureSQLiteDB(id);
 

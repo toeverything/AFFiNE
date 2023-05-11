@@ -38,10 +38,13 @@ interface BlobRow {
 const SQLITE_ORIGIN = Symbol('sqlite-origin');
 
 export class WorkspaceSQLiteDB {
+  static destroyedWorkspaces = new Set<string>();
+
   db: Database;
   ydoc = new Y.Doc();
   firstConnect = false;
   lastUpdateTime = ts();
+  destroyed = false;
 
   constructor(public path: string, public workspaceId: string) {
     this.db = this.reconnectDB();
@@ -51,6 +54,7 @@ export class WorkspaceSQLiteDB {
   destroy = () => {
     this.db?.close();
     this.ydoc.destroy();
+    WorkspaceSQLiteDB.destroyedWorkspaces.add(this.workspaceId);
   };
 
   getWorkspaceName = () => {
