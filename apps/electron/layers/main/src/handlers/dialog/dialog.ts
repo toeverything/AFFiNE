@@ -202,7 +202,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
 
     await fs.ensureDir(path.join(appContext.appDataPath, 'workspaces'));
 
-    await fs.symlink(filePath, linkedFilePath);
+    await fs.symlink(filePath, linkedFilePath, 'file');
     logger.info(`loadDBFile, symlink: ${filePath} -> ${linkedFilePath}`);
 
     return { workspaceId };
@@ -278,7 +278,9 @@ export async function moveDBFile(
       overwrite: true,
     });
 
-    await fs.ensureSymlink(newFilePath, db.path);
+    db.db.close();
+
+    await fs.ensureSymlink(newFilePath, db.path, 'file');
     logger.info(`openMoveDBFileDialog symlink: ${realpath} -> ${newFilePath}`);
     db.reconnectDB();
 
