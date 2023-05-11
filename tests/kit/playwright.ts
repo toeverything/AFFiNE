@@ -15,7 +15,7 @@ export const testResultDir = resolve(rootDir, 'test-results');
 
 const istanbulTempDir = process.env.ISTANBUL_TEMP_DIR
   ? path.resolve(process.env.ISTANBUL_TEMP_DIR)
-  : path.join(process.cwd(), '.nyc_output');
+  : path.join(rootDir, '.nyc_output');
 
 function generateUUID() {
   return crypto.randomUUID();
