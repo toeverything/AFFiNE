@@ -7,7 +7,10 @@ import {
 } from '@affine/component';
 import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { Box } from '@mui/material';
 import type React from 'react';
@@ -26,7 +29,7 @@ export type PublishPanelProps = WorkspaceSettingDetailProps & {
 };
 
 export type PublishPanelAffineProps = WorkspaceSettingDetailProps & {
-  workspace: AffineWorkspace;
+  workspace: AffineLegacyCloudWorkspace;
 };
 
 const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({

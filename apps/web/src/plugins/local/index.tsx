@@ -9,7 +9,11 @@ import {
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
 import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
-import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
+import {
+  LoadPriority,
+  ReleaseType,
+  WorkspaceFlavour,
+} from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import React from 'react';
@@ -18,11 +22,12 @@ import { PageNotFoundError } from '../../components/affine/affine-error-eoundary
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import type { WorkspacePlugin } from '..';
+import type { WorkspaceAdapter } from '..';
 
 const logger = new DebugLogger('use-create-first-workspace');
 
-export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
+export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
+  releaseType: ReleaseType.STABLE,
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   Events: {

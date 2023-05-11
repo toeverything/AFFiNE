@@ -22,7 +22,7 @@ import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-wo
 import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-router-with-current-workspace-id';
 import { useAppHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspacePlugins } from '../../../plugins';
+import { WorkspaceAdapters } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 import { toast } from '../../../utils';
 
@@ -116,7 +116,7 @@ const SettingPage: NextPageWithLayout = () => {
     return <PageLoading />;
   } else if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const Setting =
-      WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
+      WorkspaceAdapters[currentWorkspace.flavour].UI.SettingsDetail;
     return (
       <>
         <Head>
@@ -142,7 +142,7 @@ const SettingPage: NextPageWithLayout = () => {
     );
   } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const Setting =
-      WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
+      WorkspaceAdapters[currentWorkspace.flavour].UI.SettingsDetail;
     return (
       <>
         <Head>

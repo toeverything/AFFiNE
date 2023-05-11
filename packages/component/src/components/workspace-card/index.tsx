@@ -1,6 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PermissionType } from '@affine/workspace/affine/api';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -16,7 +19,7 @@ import {
 } from './styles';
 
 export type WorkspaceTypeProps = {
-  workspace: AffineWorkspace | LocalWorkspace;
+  workspace: AffineLegacyCloudWorkspace | LocalWorkspace;
 };
 
 import {
@@ -78,9 +81,11 @@ const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
 
 export type WorkspaceCardProps = {
   currentWorkspaceId: string | null;
-  workspace: AffineWorkspace | LocalWorkspace;
-  onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
-  onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
+  workspace: AffineLegacyCloudWorkspace | LocalWorkspace;
+  onClick: (workspace: AffineLegacyCloudWorkspace | LocalWorkspace) => void;
+  onSettingClick: (
+    workspace: AffineLegacyCloudWorkspace | LocalWorkspace
+  ) => void;
 };
 
 export const WorkspaceCard: FC<WorkspaceCardProps> = ({
