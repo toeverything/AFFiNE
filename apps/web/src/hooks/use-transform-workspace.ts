@@ -1,7 +1,4 @@
-import {
-  rootCurrentWorkspaceIdAtom,
-  rootWorkspacesMetadataAtom,
-} from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
@@ -15,7 +12,6 @@ import { WorkspaceAdapters } from '../plugins';
  * The logic here is to delete the old workspace and create a new one.
  */
 export function useTransformWorkspace() {
-  const setCurrentWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
   const set = useSetAtom(rootWorkspacesMetadataAtom);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
@@ -35,9 +31,8 @@ export function useTransformWorkspace() {
         });
         return [...workspaces];
       });
-      setCurrentWorkspaceId(newId);
       return newId;
     },
-    [set, setCurrentWorkspaceId]
+    [set]
   );
 }

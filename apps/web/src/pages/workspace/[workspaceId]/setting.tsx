@@ -114,21 +114,7 @@ const SettingPage: NextPageWithLayout = () => {
       return await helper.deleteWorkspace(workspaceId);
     }
   }, [currentWorkspace, helper, t, workspaceIds]);
-  const onTransformWorkspace = useOnTransformWorkspace(
-    useCallback(
-      newId => {
-        void router.push({
-          pathname: router.pathname,
-          query: {
-            ...router.query,
-            workspaceId: newId,
-            currentTab: currentTab,
-          },
-        });
-      },
-      [currentTab, router]
-    )
-  );
+  const onTransformWorkspace = useOnTransformWorkspace();
   if (!router.isReady) {
     return <PageLoading />;
   } else if (currentWorkspace === null) {
