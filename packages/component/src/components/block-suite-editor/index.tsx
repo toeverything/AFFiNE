@@ -12,7 +12,10 @@ import { createPortal } from 'react-dom';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 
-import { blockSuiteEditorStyle } from './index.css';
+import {
+  blockSuiteEditorHeaderStyle,
+  blockSuiteEditorStyle,
+} from './index.css';
 
 export type EditorProps = {
   page: Page;
@@ -136,10 +139,11 @@ const BlockSuiteErrorFallback = (
 export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
   return (
     <div className={blockSuiteEditorStyle}>
-      <Skeleton animation="wave" height={60} />
-      {Array.from({ length: 10 }).map((_, index) => (
-        <Skeleton animation="wave" height={30} key={index} />
-      ))}
+      <Skeleton
+        className={blockSuiteEditorHeaderStyle}
+        animation="wave"
+        height={50}
+      />
       <Skeleton animation="wave" height={30} width="40%" />
     </div>
   );

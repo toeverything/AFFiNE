@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
 import type { PropsWithChildren, ReactElement } from 'react';
 
+import { AppSidebarFallback } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
 export type WorkspaceRootProps = PropsWithChildren<{
@@ -31,4 +32,13 @@ export const MainContainer = (props: MainContainerProps): ReactElement => {
 
 export const ToolContainer = (props: PropsWithChildren): ReactElement => {
   return <div className={toolStyle}>{props.children}</div>;
+};
+
+export const WorkspaceFallback = (): ReactElement => {
+  return (
+    <AppContainer>
+      <AppSidebarFallback />
+      <MainContainer></MainContainer>
+    </AppContainer>
+  );
 };
