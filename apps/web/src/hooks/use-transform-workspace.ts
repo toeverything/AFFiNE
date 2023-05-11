@@ -19,10 +19,11 @@ export function useTransformWorkspace() {
       to: To,
       workspace: WorkspaceRegistry[From]
     ): Promise<string> => {
-      await WorkspaceAdapters[from].CRUD.delete(workspace as any);
+      // create first, then delete, in case of failure
       const newId = await WorkspaceAdapters[to].CRUD.create(
         workspace.blockSuiteWorkspace
       );
+      await WorkspaceAdapters[from].CRUD.delete(workspace as any);
       set(workspaces => {
         const idx = workspaces.findIndex(ws => ws.id === workspace.id);
         workspaces.splice(idx, 1, {
