@@ -118,3 +118,7 @@ export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
     return record[id];
   }
 );
+
+export const historyAtom = atom(['/']);
+export const currentIndexAtom = atom(0);
+export const navigatingAtom = atom(false);

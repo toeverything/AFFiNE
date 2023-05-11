@@ -37,13 +37,23 @@ import {
 
 export { appSidebarOpenAtom };
 
+type navigationProps = {
+  canGoBack: boolean;
+  canGoForward: boolean;
+  goBack: () => void;
+  goForward: () => void;
+};
+
 export type AppSidebarProps = PropsWithChildren<{
   footer?: ReactNode | undefined;
+  navigation: navigationProps;
 }>;
 
 export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
   function AppSidebar(props, forwardedRef): ReactElement {
     const [open, setOpen] = useAtom(appSidebarOpenAtom);
+    const { canGoBack, canGoForward, goBack, goForward } = props.navigation;
+
     const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
     const t = useAFFiNEI18N();
     const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
@@ -74,6 +84,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
       // avoid the UI flash
       return <div />;
     }
+
     return (
       <>
         <nav
@@ -95,17 +106,15 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
               <>
                 <IconButton
                   size="middle"
-                  onClick={() => {
-                    window.history.back();
-                  }}
+                  onClick={goBack}
+                  disabled={!canGoBack}
                 >
                   <ArrowLeftSmallIcon />
                 </IconButton>
                 <IconButton
                   size="middle"
-                  onClick={() => {
-                    window.history.forward();
-                  }}
+                  onClick={goForward}
+                  disabled={!canGoForward}
                   style={{ marginLeft: '32px' }}
                 >
                   <ArrowRightSmallIcon />

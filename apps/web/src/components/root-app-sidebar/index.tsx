@@ -20,6 +20,7 @@ import type { ReactElement, UIEvent } from 'react';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import useNavigation from '../../hooks/use-navigation';
 import type { AllWorkspace } from '../../shared';
 import ChangeLog from '../pure/workspace-slider-bar/changeLog';
 import Favorite from '../pure/workspace-slider-bar/favorite';
@@ -91,6 +92,7 @@ export const RootAppSidebar = ({
     },
     [onOpenQuickSearchModal]
   );
+
   return (
     <>
       <AppSidebar
@@ -103,6 +105,7 @@ export const RootAppSidebar = ({
             <PlusIcon /> {t['New Page']()}
           </StyledNewPageButton>
         }
+        navigation={useNavigation()}
       >
         <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
           <WorkspaceSelector
