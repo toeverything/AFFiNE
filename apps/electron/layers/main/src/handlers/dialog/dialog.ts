@@ -269,6 +269,8 @@ export async function moveDBFile(
       };
     }
 
+    db.db.close();
+
     if (isLink) {
       // remove the old link to unblock new link
       await fs.unlink(db.path);
@@ -277,8 +279,6 @@ export async function moveDBFile(
     await fs.move(realpath, newFilePath, {
       overwrite: true,
     });
-
-    db.db.close();
 
     await fs.ensureSymlink(newFilePath, db.path, 'file');
     logger.info(`openMoveDBFileDialog symlink: ${realpath} -> ${newFilePath}`);
