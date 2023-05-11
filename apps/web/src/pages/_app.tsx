@@ -1,6 +1,7 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 
+import { WorkspaceFallback } from '@affine/component/workspace';
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
 import { rootStore } from '@affine/workspace/atom';
@@ -15,7 +16,6 @@ import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { ProviderComposer } from '../components/provider-composer';
-import { PageLoading } from '../components/pure/loading';
 import { MessageCenter } from '../components/pure/message-center';
 import { ThemeProvider } from '../providers/theme-provider';
 import type { NextPageWithLayout } from '../shared';
@@ -66,7 +66,7 @@ const App = function App({
       <I18nextProvider i18n={i18n}>
         <MessageCenter />
         <AffineErrorBoundary router={useRouter()}>
-          <Suspense fallback={<PageLoading key="RootPageLoading" />}>
+          <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
             <ProviderComposer
               contexts={useMemo(
                 () =>
