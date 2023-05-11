@@ -353,6 +353,8 @@ jobs:
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
         working-directory: apps/electron
+        env:
+          COVERAGE: true
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
