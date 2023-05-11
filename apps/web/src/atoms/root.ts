@@ -13,7 +13,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
-import { WorkspacePlugins } from '../plugins';
+import { WorkspaceAdapters } from '../plugins';
 import type { AllWorkspace } from '../shared';
 
 const logger = new DebugLogger('web:atoms:root');
@@ -22,7 +22,7 @@ const logger = new DebugLogger('web:atoms:root');
  * Fetch all workspaces from the Plugin CRUD
  */
 export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
-  const flavours: string[] = Object.values(WorkspacePlugins).map(
+  const flavours: string[] = Object.values(WorkspaceAdapters).map(
     plugin => plugin.flavour
   );
   const jotaiWorkspaces = get(rootWorkspacesMetadataAtom)
@@ -38,7 +38,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
   const workspaces = await Promise.all(
     jotaiWorkspaces.map(workspace => {
       const plugin =
-        WorkspacePlugins[workspace.flavour as keyof typeof WorkspacePlugins];
+        WorkspaceAdapters[workspace.flavour as keyof typeof WorkspaceAdapters];
       assertExists(plugin);
       const { CRUD } = plugin;
       return CRUD.get(workspace.id).then(workspace => {
@@ -93,7 +93,7 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
     if (!targetWorkspace) {
       throw new Error(`cannot find the workspace with id ${targetId}.`);
     }
-    const workspace = await WorkspacePlugins[targetWorkspace.flavour].CRUD.get(
+    const workspace = await WorkspaceAdapters[targetWorkspace.flavour].CRUD.get(
       targetWorkspace.id
     );
     if (!workspace) {

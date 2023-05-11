@@ -9,7 +9,10 @@ import {
 import { WorkspaceList } from '@affine/component/workspace-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { HelpIcon, ImportIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -109,7 +112,7 @@ export const WorkspaceListModal = ({
             items={
               workspaces.filter(
                 ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
-              ) as (AffineWorkspace | LocalWorkspace)[]
+              ) as (AffineLegacyCloudWorkspace | LocalWorkspace)[]
             }
             currentWorkspaceId={currentWorkspaceId}
             onClick={onClickWorkspace}

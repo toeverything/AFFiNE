@@ -1,5 +1,8 @@
 import { PermissionType, WorkspaceType } from '@affine/workspace/affine/api';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
@@ -50,7 +53,7 @@ const localWorkspace: LocalWorkspace = {
   providers: [],
 };
 
-const affineWorkspace: AffineWorkspace = {
+const affineWorkspace: AffineLegacyCloudWorkspace = {
   id: 'test-workspace',
   flavour: WorkspaceFlavour.AFFINE,
   blockSuiteWorkspace,

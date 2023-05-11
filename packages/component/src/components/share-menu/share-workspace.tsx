@@ -1,5 +1,8 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { FC } from 'react';
 
@@ -26,7 +29,9 @@ const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
   );
 };
 
-const ShareAffineWorkspace: FC<ShareMenuProps<AffineWorkspace>> = props => {
+const ShareAffineWorkspace: FC<
+  ShareMenuProps<AffineLegacyCloudWorkspace>
+> = props => {
   const isPublicWorkspace = props.workspace.public;
   const t = useAFFiNEI18N();
   return (
@@ -55,7 +60,9 @@ export const ShareWorkspace: FC<ShareMenuProps> = props => {
     );
   } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
     return (
-      <ShareAffineWorkspace {...(props as ShareMenuProps<AffineWorkspace>)} />
+      <ShareAffineWorkspace
+        {...(props as ShareMenuProps<AffineLegacyCloudWorkspace>)}
+      />
     );
   }
   throw new Error('Unreachable');

@@ -12,7 +12,7 @@ import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
-import { WorkspacePlugins } from '../plugins';
+import { WorkspaceAdapters } from '../plugins';
 
 const logger = new DebugLogger('web:atoms');
 
@@ -25,7 +25,7 @@ export const currentWorkspaceIdAtom = rootCurrentWorkspaceIdAtom;
 // todo(himself65): move this to the workspace package
 rootWorkspacesMetadataAtom.onMount = setAtom => {
   function createFirst(): RootWorkspaceMetadata[] {
-    const Plugins = Object.values(WorkspacePlugins).sort(
+    const Plugins = Object.values(WorkspaceAdapters).sort(
       (a, b) => a.loadPriority - b.loadPriority
     );
 

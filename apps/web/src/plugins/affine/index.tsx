@@ -11,8 +11,12 @@ import {
   SignMethod,
 } from '@affine/workspace/affine/login';
 import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import type { AffineWorkspace } from '@affine/workspace/type';
-import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
+import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
+import {
+  LoadPriority,
+  ReleaseType,
+  WorkspaceFlavour,
+} from '@affine/workspace/type';
 import {
   cleanupWorkspace,
   createEmptyBlockSuiteWorkspace,
@@ -33,7 +37,7 @@ import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
 import { toast } from '../../utils';
-import type { WorkspacePlugin } from '..';
+import type { WorkspaceAdapter } from '..';
 import { QueryKey } from './fetcher';
 
 const storage = createJSONStorage(() => localStorage);
@@ -46,7 +50,7 @@ const schema = z.object({
 
 const getPersistenceAllWorkspace = () => {
   const items = storage.getItem(AFFINE_STORAGE_KEY, []);
-  const allWorkspaces: AffineWorkspace[] = [];
+  const allWorkspaces: AffineLegacyCloudWorkspace[] = [];
   if (
     Array.isArray(items) &&
     items.every(item => schema.safeParse(item).success)
@@ -60,7 +64,7 @@ const getPersistenceAllWorkspace = () => {
             workspaceApis: affineApis,
           }
         );
-        const affineWorkspace: AffineWorkspace = {
+        const affineWorkspace: AffineLegacyCloudWorkspace = {
           ...item,
           flavour: WorkspaceFlavour.AFFINE,
           blockSuiteWorkspace,
@@ -89,7 +93,8 @@ function AuthContext({ children }: PropsWithChildren): ReactElement {
   return <>{children}</>;
 }
 
-export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
+export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
+  releaseType: ReleaseType.STABLE,
   flavour: WorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
   Events: {
@@ -178,7 +183,8 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           cleanupWorkspace(WorkspaceFlavour.AFFINE);
           return null;
         }
-        const workspaces: AffineWorkspace[] = await AffinePlugin.CRUD.list();
+        const workspaces: AffineLegacyCloudWorkspace[] =
+          await AffinePlugin.CRUD.list();
         return (
           workspaces.find(workspace => workspace.id === workspaceId) ?? null
         );
@@ -239,7 +245,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
               storage.setItem(AFFINE_STORAGE_KEY, [...data]);
             }
 
-            const affineWorkspace: AffineWorkspace = {
+            const affineWorkspace: AffineLegacyCloudWorkspace = {
               ...workspace,
               flavour: WorkspaceFlavour.AFFINE,
               blockSuiteWorkspace,

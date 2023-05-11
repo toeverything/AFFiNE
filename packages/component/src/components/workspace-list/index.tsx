@@ -1,4 +1,7 @@
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -14,15 +17,17 @@ import { WorkspaceCard } from '../workspace-card';
 export type WorkspaceListProps = {
   disabled?: boolean;
   currentWorkspaceId: string | null;
-  items: (AffineWorkspace | LocalWorkspace)[];
-  onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
-  onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
+  items: (AffineLegacyCloudWorkspace | LocalWorkspace)[];
+  onClick: (workspace: AffineLegacyCloudWorkspace | LocalWorkspace) => void;
+  onSettingClick: (
+    workspace: AffineLegacyCloudWorkspace | LocalWorkspace
+  ) => void;
   onDragEnd: (event: DragEndEvent) => void;
 };
 
 const SortableWorkspaceItem: FC<
   Omit<WorkspaceListProps, 'items'> & {
-    item: AffineWorkspace | LocalWorkspace;
+    item: AffineLegacyCloudWorkspace | LocalWorkspace;
   }
 > = props => {
   const { setNodeRef, attributes, listeners, transform } = useSortable({
