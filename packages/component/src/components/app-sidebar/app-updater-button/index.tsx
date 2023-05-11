@@ -24,8 +24,11 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
     >
       <div className={styles.particles} aria-hidden="true"></div>
       <span className={styles.halo} aria-hidden="true"></span>
-      <div className={styles.installLabel}>
-        <ResetIcon />
+      <div className={clsx([styles.installLabelNormal])}>
+        <span>{t['Update Available']()}</span>
+      </div>
+      <div className={clsx([styles.installLabelHover])}>
+        <ResetIcon className={styles.icon} />
         <span>{t['Restart Install Client Update']()}</span>
       </div>
     </button>
