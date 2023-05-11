@@ -11,6 +11,7 @@ import {
   SignMethod,
 } from '@affine/workspace/affine/login';
 import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
 import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
 import {
   LoadPriority,
@@ -28,6 +29,7 @@ import { mutate } from 'swr';
 import { z } from 'zod';
 
 import { createAffineProviders } from '../../blocksuite';
+import { createAffineDownloadProvider } from '../../blocksuite/providers/affine';
 import { PageNotFoundError } from '../../components/affine/affine-error-eoundary';
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
@@ -147,6 +149,27 @@ export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
             blob.type
           );
         }
+      }
+      {
+        const bs = createEmptyBlockSuiteWorkspace(id, WorkspaceFlavour.AFFINE, {
+          workspaceApis: affineApis,
+        });
+        // fixme:
+        //  force to download workspace binary
+        //  to make sure the workspace is synced
+        const provider = createAffineDownloadProvider(bs);
+        const indexedDBProvider = createIndexedDBBackgroundProvider(bs);
+        await new Promise<void>(resolve => {
+          indexedDBProvider.callbacks.add(() => {
+            resolve();
+          });
+          provider.callbacks.add(() => {
+            indexedDBProvider.connect();
+          });
+          provider.connect();
+        });
+        provider.disconnect();
+        indexedDBProvider.disconnect();
       }
 
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
