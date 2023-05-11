@@ -36,13 +36,13 @@ switch (platform) {
     switch (arch) {
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'octobase.android-arm64.node')
+          join(__dirname, 'affine.android-arm64.node')
         );
         try {
           if (localFileExisted) {
-            nativeBinding = require('./octobase.android-arm64.node');
+            nativeBinding = require('./affine.android-arm64.node');
           } else {
-            nativeBinding = require('@affine/octobase-node-android-arm64');
+            nativeBinding = require('@affine/native-android-arm64');
           }
         } catch (e) {
           loadError = e;
@@ -50,13 +50,13 @@ switch (platform) {
         break;
       case 'arm':
         localFileExisted = existsSync(
-          join(__dirname, 'octobase.android-arm-eabi.node')
+          join(__dirname, 'affine.android-arm-eabi.node')
         );
         try {
           if (localFileExisted) {
-            nativeBinding = require('./octobase.android-arm-eabi.node');
+            nativeBinding = require('./affine.android-arm-eabi.node');
           } else {
-            nativeBinding = require('@affine/octobase-node-android-arm-eabi');
+            nativeBinding = require('@affine/native-android-arm-eabi');
           }
         } catch (e) {
           loadError = e;
@@ -70,13 +70,13 @@ switch (platform) {
     switch (arch) {
       case 'x64':
         localFileExisted = existsSync(
-          join(__dirname, 'octobase.win32-x64-msvc.node')
+          join(__dirname, 'affine.win32-x64-msvc.node')
         );
         try {
           if (localFileExisted) {
-            nativeBinding = require('./octobase.win32-x64-msvc.node');
+            nativeBinding = require('./affine.win32-x64-msvc.node');
           } else {
-            nativeBinding = require('@affine/octobase-node-win32-x64-msvc');
+            nativeBinding = require('@affine/native-win32-x64-msvc');
           }
         } catch (e) {
           loadError = e;
@@ -84,13 +84,13 @@ switch (platform) {
         break;
       case 'ia32':
         localFileExisted = existsSync(
-          join(__dirname, 'octobase.win32-ia32-msvc.node')
+          join(__dirname, 'affine.win32-ia32-msvc.node')
         );
         try {
           if (localFileExisted) {
-            nativeBinding = require('./octobase.win32-ia32-msvc.node');
+            nativeBinding = require('./affine.win32-ia32-msvc.node');
           } else {
-            nativeBinding = require('@affine/octobase-node-win32-ia32-msvc');
+            nativeBinding = require('@affine/native-win32-ia32-msvc');
           }
         } catch (e) {
           loadError = e;
@@ -98,13 +98,13 @@ switch (platform) {
         break;
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'octobase.win32-arm64-msvc.node')
+          join(__dirname, 'affine.win32-arm64-msvc.node')
         );
         try {
           if (localFileExisted) {
-            nativeBinding = require('./octobase.win32-arm64-msvc.node');
+            nativeBinding = require('./affine.win32-arm64-msvc.node');
           } else {
-            nativeBinding = require('@affine/octobase-node-win32-arm64-msvc');
+            nativeBinding = require('@affine/native-win32-arm64-msvc');
           }
         } catch (e) {
           loadError = e;
@@ -116,26 +116,26 @@ switch (platform) {
     break;
   case 'darwin':
     localFileExisted = existsSync(
-      join(__dirname, 'octobase.darwin-universal.node')
+      join(__dirname, 'affine.darwin-universal.node')
     );
     try {
       if (localFileExisted) {
-        nativeBinding = require('./octobase.darwin-universal.node');
+        nativeBinding = require('./affine.darwin-universal.node');
       } else {
-        nativeBinding = require('@affine/octobase-node-darwin-universal');
+        nativeBinding = require('@affine/native-darwin-universal');
       }
       break;
     } catch {}
     switch (arch) {
       case 'x64':
         localFileExisted = existsSync(
-          join(__dirname, 'octobase.darwin-x64.node')
+          join(__dirname, 'affine.darwin-x64.node')
         );
         try {
           if (localFileExisted) {
-            nativeBinding = require('./octobase.darwin-x64.node');
+            nativeBinding = require('./affine.darwin-x64.node');
           } else {
-            nativeBinding = require('@affine/octobase-node-darwin-x64');
+            nativeBinding = require('@affine/native-darwin-x64');
           }
         } catch (e) {
           loadError = e;
@@ -143,13 +143,13 @@ switch (platform) {
         break;
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'octobase.darwin-arm64.node')
+          join(__dirname, 'affine.darwin-arm64.node')
         );
         try {
           if (localFileExisted) {
-            nativeBinding = require('./octobase.darwin-arm64.node');
+            nativeBinding = require('./affine.darwin-arm64.node');
           } else {
-            nativeBinding = require('@affine/octobase-node-darwin-arm64');
+            nativeBinding = require('@affine/native-darwin-arm64');
           }
         } catch (e) {
           loadError = e;
@@ -163,12 +163,12 @@ switch (platform) {
     if (arch !== 'x64') {
       throw new Error(`Unsupported architecture on FreeBSD: ${arch}`);
     }
-    localFileExisted = existsSync(join(__dirname, 'octobase.freebsd-x64.node'));
+    localFileExisted = existsSync(join(__dirname, 'affine.freebsd-x64.node'));
     try {
       if (localFileExisted) {
-        nativeBinding = require('./octobase.freebsd-x64.node');
+        nativeBinding = require('./affine.freebsd-x64.node');
       } else {
-        nativeBinding = require('@affine/octobase-node-freebsd-x64');
+        nativeBinding = require('@affine/native-freebsd-x64');
       }
     } catch (e) {
       loadError = e;
@@ -179,26 +179,26 @@ switch (platform) {
       case 'x64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'octobase.linux-x64-musl.node')
+            join(__dirname, 'affine.linux-x64-musl.node')
           );
           try {
             if (localFileExisted) {
-              nativeBinding = require('./octobase.linux-x64-musl.node');
+              nativeBinding = require('./affine.linux-x64-musl.node');
             } else {
-              nativeBinding = require('@affine/octobase-node-linux-x64-musl');
+              nativeBinding = require('@affine/native-linux-x64-musl');
             }
           } catch (e) {
             loadError = e;
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'octobase.linux-x64-gnu.node')
+            join(__dirname, 'affine.linux-x64-gnu.node')
           );
           try {
             if (localFileExisted) {
-              nativeBinding = require('./octobase.linux-x64-gnu.node');
+              nativeBinding = require('./affine.linux-x64-gnu.node');
             } else {
-              nativeBinding = require('@affine/octobase-node-linux-x64-gnu');
+              nativeBinding = require('@affine/native-linux-x64-gnu');
             }
           } catch (e) {
             loadError = e;
@@ -208,26 +208,26 @@ switch (platform) {
       case 'arm64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'octobase.linux-arm64-musl.node')
+            join(__dirname, 'affine.linux-arm64-musl.node')
           );
           try {
             if (localFileExisted) {
-              nativeBinding = require('./octobase.linux-arm64-musl.node');
+              nativeBinding = require('./affine.linux-arm64-musl.node');
             } else {
-              nativeBinding = require('@affine/octobase-node-linux-arm64-musl');
+              nativeBinding = require('@affine/native-linux-arm64-musl');
             }
           } catch (e) {
             loadError = e;
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'octobase.linux-arm64-gnu.node')
+            join(__dirname, 'affine.linux-arm64-gnu.node')
           );
           try {
             if (localFileExisted) {
-              nativeBinding = require('./octobase.linux-arm64-gnu.node');
+              nativeBinding = require('./affine.linux-arm64-gnu.node');
             } else {
-              nativeBinding = require('@affine/octobase-node-linux-arm64-gnu');
+              nativeBinding = require('@affine/native-linux-arm64-gnu');
             }
           } catch (e) {
             loadError = e;
@@ -236,13 +236,13 @@ switch (platform) {
         break;
       case 'arm':
         localFileExisted = existsSync(
-          join(__dirname, 'octobase.linux-arm-gnueabihf.node')
+          join(__dirname, 'affine.linux-arm-gnueabihf.node')
         );
         try {
           if (localFileExisted) {
-            nativeBinding = require('./octobase.linux-arm-gnueabihf.node');
+            nativeBinding = require('./affine.linux-arm-gnueabihf.node');
           } else {
-            nativeBinding = require('@affine/octobase-node-linux-arm-gnueabihf');
+            nativeBinding = require('@affine/native-linux-arm-gnueabihf');
           }
         } catch (e) {
           loadError = e;
@@ -263,7 +263,9 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`);
 }
 
-const { Storage, Workspace } = nativeBinding;
+const { WatcherKind, Subscription, watch, FsWatcher } = nativeBinding;
 
-module.exports.Storage = Storage;
-module.exports.Workspace = Workspace;
+module.exports.WatcherKind = WatcherKind;
+module.exports.Subscription = Subscription;
+module.exports.watch = watch;
+module.exports.FsWatcher = FsWatcher;

@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import * as Y from 'yjs';
 
 import type { AppContext } from '../../context';
+import { dbSubjects } from '../../events/db';
 import { logger } from '../../logger';
 import { ts } from '../../utils';
 
@@ -61,6 +62,18 @@ export class WorkspaceSQLiteDB {
     if (this.db) {
       this.db.close();
     }
+
+    fs.realpath(this.path)
+      .then(realPath => {
+        dbSubjects.dbFilePathChange.next({
+          workspaceId: this.workspaceId,
+          path: this.path,
+          realPath,
+        });
+      })
+      .catch(() => {
+        // skip error
+      });
 
     // use cached version?
     const db = (this.db = sqlite(this.path));
