@@ -360,11 +360,15 @@ jobs:
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
         run: yarn test
         working-directory: apps/electron
+        env:
+          COVERAGE: true
 
       - name: Collect code coverage report
+        if: ${{ matrix.spec.test }}
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
 
       - name: Upload e2e test coverage results
+        if: ${{ matrix.spec.test }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
