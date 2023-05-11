@@ -1,11 +1,16 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+const { z } = require('zod');
+
 const {
   utils: { fromBuildIdentifier },
 } = require('@electron-forge/core');
 
 const path = require('node:path');
 
-const buildType = (process.env.BUILD_TYPE || 'stable').trim().toLowerCase();
+const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
+
+const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+const buildType = ReleaseTypeSchema.parse(envBuildType);
 const stableBuild = buildType === 'stable';
 const productName = !stableBuild ? `AFFiNE-${buildType}` : 'AFFiNE';
 const icoPath = !stableBuild

@@ -38,7 +38,7 @@
     "@types/express": "^4.17.17",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/lodash-es": "^4.17.7",
-    "@types/node": "^18.16.6",
+    "@types/node": "^18.16.7",
     "@types/supertest": "^2.0.12",
     "c8": "^7.13.0",
     "nodemon": "^2.0.22",

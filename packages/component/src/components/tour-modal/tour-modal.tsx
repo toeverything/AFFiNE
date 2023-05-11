@@ -1,13 +1,22 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
+import clsx from 'clsx';
 import type { FC } from 'react';
 import { useState } from 'react';
 
-import { Button, Modal, ModalCloseButton, ModalWrapper } from '../..';
+import { Modal, ModalCloseButton, ModalWrapper } from '../..';
 import {
-  buttonContainerStyle,
-  buttonStyle,
+  arrowStyle,
+  containerStyle,
+  descriptionStyle,
   modalStyle,
+  tabActiveStyle,
+  tabContainerStyle,
+  tabStyle,
   titleStyle,
+  videoActiveStyle,
   videoContainerStyle,
+  videoSlideStyle,
   videoStyle,
 } from './index.css';
 
@@ -17,6 +26,7 @@ type TourModalProps = {
 };
 
 export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
+  const t = useAFFiNEI18N();
   const [step, setStep] = useState(0);
   const handleClose = () => {
     setStep(0);
@@ -27,73 +37,85 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
       open={open}
       onClose={handleClose}
       wrapperPosition={['center', 'center']}
+      hideBackdrop
     >
-      <ModalWrapper width={545} height={442} data-testid="onboarding-modal">
+      <ModalWrapper
+        width={545}
+        style={{ minHeight: '480px' }}
+        data-testid="onboarding-modal"
+      >
         <ModalCloseButton
-          top={10}
+          top={6}
           right={10}
           onClick={handleClose}
           data-testid="onboarding-modal-close-button"
         />
-        {step === 0 && (
-          <div className={modalStyle}>
-            <div className={titleStyle}>Hyper merged whiteboard and docs</div>
-            <div className={videoContainerStyle}>
-              <video
-                autoPlay
-                muted
-                loop
-                className={videoStyle}
-                data-testid="onboarding-modal-switch-video"
-              >
-                <source src="/switchVideo.mp4" type="video/mp4" />
-                <source src="/switchVideo.webm" type="video/webm" />
-                Easily switch between Page mode for structured document creation
-                and Whiteboard mode for the freeform visual expression of
-                creative ideas.
-              </video>
-            </div>
-            <div className={buttonContainerStyle}>
-              <Button
-                className={buttonStyle}
-                onClick={() => setStep(1)}
-                data-testid="onboarding-modal-next-button"
-              >
-                Next
-              </Button>
-            </div>
+        <div className={modalStyle}>
+          <div className={titleStyle}>
+            {step === 1
+              ? t['com.affine.onboarding.title2']()
+              : t['com.affine.onboarding.title1']()}
           </div>
-        )}
-        {step === 1 && (
-          <div className={modalStyle}>
-            <div className={titleStyle}>
-              Intuitive & robust block-based editing
+          <div className={containerStyle}>
+            <div
+              className={arrowStyle}
+              onClick={() => setStep(0)}
+              data-testid="onboarding-modal-pre-button"
+            >
+              <ArrowLeftSmallIcon />
             </div>
             <div className={videoContainerStyle}>
-              <video
-                autoPlay
-                muted
-                loop
-                className={videoStyle}
-                data-testid="onboarding-modal-editing-video"
-              >
-                <source src="/editingVideo.mp4" type="video/mp4" />
-                <source src="/editingVideo.webm" type="video/webm" />
-                Create structured documents with ease, using a modular interface
-                to drag and drop blocks of text, images, and other content.
-              </video>
+              <div className={videoSlideStyle}>
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  className={clsx(videoStyle, {
+                    [videoActiveStyle]: step === 0,
+                  })}
+                  data-testid="onboarding-modal-editing-video"
+                >
+                  <source src="/editingVideo.mp4" type="video/mp4" />
+                  <source src="/editingVideo.webm" type="video/webm" />
+                </video>
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  className={clsx(videoStyle, {
+                    [videoActiveStyle]: step === 1,
+                  })}
+                  data-testid="onboarding-modal-switch-video"
+                >
+                  <source src="/switchVideo.mp4" type="video/mp4" />
+                  <source src="/switchVideo.webm" type="video/webm" />
+                </video>
+              </div>
             </div>
-            <div className={buttonContainerStyle}>
-              <Button
-                className={buttonStyle}
-                onClick={handleClose}
-                data-testid="onboarding-modal-ok-button"
-              >
-                Okay, I Like It !
-              </Button>
+            <div
+              className={arrowStyle}
+              onClick={() => setStep(1)}
+              data-testid="onboarding-modal-next-button"
+            >
+              <ArrowRightSmallIcon />
             </div>
           </div>
-        )}
+          <ul className={tabContainerStyle}>
+            <li
+              className={clsx(tabStyle, { [tabActiveStyle]: step === 0 })}
+              onClick={() => setStep(0)}
+            ></li>
+            <li
+              className={clsx(tabStyle, { [tabActiveStyle]: step === 1 })}
+              onClick={() => setStep(1)}
+            ></li>
+          </ul>
+          <div className={descriptionStyle}>
+            {step === 1
+              ? t['com.affine.onboarding.videoDescription2']()
+              : t['com.affine.onboarding.videoDescription1']()}
+          </div>
+        </div>
       </ModalWrapper>
     </Modal>
   );
