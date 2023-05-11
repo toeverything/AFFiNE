@@ -22,7 +22,7 @@ concurrency:
 
 env:
   BUILD_TYPE: internal
-  RELEASE_VERSION: ${{ github.ref }}-${{ github.sha }}
+  RELEASE_VERSION: ${{ github.ref_name }}-${{ github.sha }}
 
 jobs:
   before-make:
