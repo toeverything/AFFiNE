@@ -13,6 +13,7 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
+  backgroundColor: 'var(--affine-background-secondary-color)',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
@@ -42,7 +43,6 @@ export const navWrapperStyle = style({
 
 export const navStyle = style({
   position: 'relative',
-  backgroundColor: 'var(--affine-background-secondary-color)',
   width: '100%',
   height: '100%',
   display: 'flex',
