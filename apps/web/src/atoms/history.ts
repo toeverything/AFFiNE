@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import router from 'next/router';
+import Router from 'next/router';
 
 export type History = {
   stack: string[];
@@ -24,18 +24,20 @@ historyBaseAtom.onMount = set => {
           skip: false,
         };
       } else {
+        const newStack = prev.stack.slice(0, prev.current);
+        newStack.push(url);
         return {
-          stack: [...prev.stack, url],
-          current: prev.current + 1,
+          stack: newStack,
+          current: newStack.length - 1,
           skip: false,
         };
       }
     });
   };
 
-  router.events.on('routeChangeComplete', callback);
+  Router.events.on('routeChangeComplete', callback);
   return () => {
-    router.events.off('routeChangeComplete', callback);
+    Router.events.off('routeChangeComplete', callback);
   };
 };
 
@@ -48,14 +50,14 @@ export const historyAtom = atom<History, [forward: boolean], void>(
         current: prev.current + 1,
         skip: true,
       }));
-      router.forward();
+      window.history.forward();
     } else {
       set(historyBaseAtom, prev => ({
         ...prev,
         current: prev.current - 1,
         skip: true,
       }));
-      router.back();
+      window.history.back();
     }
   }
 );
