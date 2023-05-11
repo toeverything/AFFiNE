@@ -1,2 +1,2 @@
 export * from './disable-public-link';
-export * from './ShareMenu';
+export * from './share-menu';

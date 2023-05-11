@@ -1,4 +1,3 @@
-import { atomWithSyncStorage } from '@affine/jotai';
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
@@ -13,13 +12,12 @@ export type RootWorkspaceMetadata = {
 // root primitive atom that stores the necessary data for the whole app
 // be careful when you use this atom,
 // it should be used only in the root component
-
 /**
  * root workspaces atom
  * this atom stores the metadata of all workspaces,
  * which is `id` and `flavor`, that is enough to load the real workspace data
  */
-export const rootWorkspacesMetadataAtom = atomWithSyncStorage<
+export const rootWorkspacesMetadataAtom = atomWithStorage<
   RootWorkspaceMetadata[]
 >(
   // don't change this key,
@@ -50,8 +48,7 @@ const getStorage = () => createJSONStorage(() => localStorage);
 
 export const getStoredWorkspaceMeta = () => {
   const storage = getStorage();
-  const data = storage.getItem('jotai-workspaces') as RootWorkspaceMetadata[];
-  return data;
+  return storage.getItem('jotai-workspaces', []) as RootWorkspaceMetadata[];
 };
 
 // global store

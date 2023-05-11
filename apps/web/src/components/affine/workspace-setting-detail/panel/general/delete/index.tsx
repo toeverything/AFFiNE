@@ -37,11 +37,15 @@ export const WorkspaceDeleteModal = ({
   const t = useAFFiNEI18N();
 
   const handleDelete = useCallback(() => {
-    onDeleteWorkspace().then(() => {
-      toast(t['Successfully deleted'](), {
-        portal: document.body,
+    onDeleteWorkspace()
+      .then(() => {
+        toast(t['Successfully deleted'](), {
+          portal: document.body,
+        });
+      })
+      .catch(() => {
+        // ignore error
       });
-    });
   }, [onDeleteWorkspace, t]);
 
   return (

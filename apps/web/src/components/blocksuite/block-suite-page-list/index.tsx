@@ -101,7 +101,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
           record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
         pageId: pageMeta.id,
         title: pageMeta.title,
-        favorite: !!pageMeta.favorite,
         createDate: formatDate(pageMeta.createDate),
         updatedDate: formatDate(pageMeta.updatedDate),
         onClickPage: () => onOpenPage(pageMeta.id),

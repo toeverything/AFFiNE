@@ -1,5 +1,4 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { atomWithSyncStorage } from '@affine/jotai';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { SettingPanel } from '@affine/workspace/type';
 import {
@@ -10,6 +9,7 @@ import {
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
@@ -22,11 +22,11 @@ import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-wo
 import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-router-with-current-workspace-id';
 import { useAppHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspacePlugins } from '../../../plugins';
+import { WorkspaceAdapters } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 import { toast } from '../../../utils';
 
-const settingPanelAtom = atomWithSyncStorage<SettingPanel>(
+const settingPanelAtom = atomWithStorage<SettingPanel>(
   'workspaceId',
   settingPanel.General
 );
@@ -97,14 +97,15 @@ const SettingPage: NextPageWithLayout = () => {
 
   const helper = useAppHelper();
 
-  const onDeleteWorkspace = useCallback(() => {
+  const onDeleteWorkspace = useCallback(async () => {
     assertExists(currentWorkspace);
     const workspaceId = currentWorkspace.id;
     if (workspaceIds.length === 1 && workspaceId === workspaceIds[0].id) {
       toast(t['You cannot delete the last workspace']());
       throw new Error('You cannot delete the last workspace');
+    } else {
+      return await helper.deleteWorkspace(workspaceId);
     }
-    return helper.deleteWorkspace(workspaceId);
   }, [currentWorkspace, helper, t, workspaceIds]);
   const onTransformWorkspace = useOnTransformWorkspace();
   if (!router.isReady) {
@@ -115,7 +116,7 @@ const SettingPage: NextPageWithLayout = () => {
     return <PageLoading />;
   } else if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const Setting =
-      WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
+      WorkspaceAdapters[currentWorkspace.flavour].UI.SettingsDetail;
     return (
       <>
         <Head>
@@ -141,7 +142,7 @@ const SettingPage: NextPageWithLayout = () => {
     );
   } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const Setting =
-      WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
+      WorkspaceAdapters[currentWorkspace.flavour].UI.SettingsDetail;
     return (
       <>
         <Head>

@@ -7,7 +7,7 @@ import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { WorkspacePlugins } from '../plugins';
+import { WorkspaceAdapters } from '../plugins';
 
 /**
  * Transform workspace from one flavour to another
@@ -23,8 +23,8 @@ export function useTransformWorkspace() {
       to: To,
       workspace: WorkspaceRegistry[From]
     ): Promise<string> => {
-      await WorkspacePlugins[from].CRUD.delete(workspace as any);
-      const newId = await WorkspacePlugins[to].CRUD.create(
+      await WorkspaceAdapters[from].CRUD.delete(workspace as any);
+      const newId = await WorkspaceAdapters[to].CRUD.create(
         workspace.blockSuiteWorkspace
       );
       set(workspaces => {

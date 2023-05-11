@@ -33,7 +33,6 @@ export function registerProtocol() {
   protocol.interceptFileProtocol('file', (request, callback) => {
     const url = request.url.replace(/^file:\/\//, '');
     const realpath = toAbsolutePath(url);
-    // console.log('realpath', realpath, 'for', url);
     callback(realpath);
     return true;
   });
@@ -41,7 +40,6 @@ export function registerProtocol() {
   protocol.registerFileProtocol('assets', (request, callback) => {
     const url = request.url.replace(/^assets:\/\//, '');
     const realpath = toAbsolutePath(url);
-    // console.log('realpath', realpath, 'for', url);
     callback(realpath);
     return true;
   });

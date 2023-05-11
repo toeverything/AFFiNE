@@ -54,3 +54,21 @@ test('Click right-bottom corner change log icon', async ({ page }) => {
   );
   expect(await normalRightBottomChangeLog.isVisible()).toEqual(true);
 });
+
+test('Download client tip', async ({ page }) => {
+  await openHomePage(page);
+  const downloadClientTipItem = page.locator(
+    '[data-testid=download-client-tip]'
+  );
+  await expect(downloadClientTipItem).toBeVisible();
+  const closeButton = page.locator(
+    '[data-testid=download-client-tip-close-button]'
+  );
+  await closeButton.click();
+  await expect(downloadClientTipItem).not.toBeVisible();
+  await page.goto('http://localhost:8080');
+  const currentDownloadClientTipItem = page.locator(
+    '[data-testid=download-client-tip]'
+  );
+  await expect(currentDownloadClientTipItem).not.toBeVisible();
+});

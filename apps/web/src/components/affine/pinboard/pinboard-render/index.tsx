@@ -14,9 +14,9 @@ import { useMemo, useState } from 'react';
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import type { PinboardNode } from '../../../../hooks/use-pinboard-data';
 import { StyledCollapsedButton, StyledPinboard } from '../styles';
-import { AddButton } from './AddButton';
-import EmptyItem from './EmptyItem';
-import { OperationButton } from './OperationButton';
+import { AddButton } from './add-button';
+import EmptyItem from './empty-item';
+import { OperationButton } from './operation-button';
 
 const getIcon = (type: 'root' | 'edgeless' | 'page') => {
   switch (type) {

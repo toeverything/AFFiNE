@@ -186,6 +186,7 @@ export const StyledButton = styled('button', {
       border: noBorder ? 'none' : '1px solid',
       WebkitAppRegion: 'no-drag',
       ...displayInlineFlex('center', 'center'),
+      gap: '10px',
       position: 'relative',
       // TODO: disabled color is not decided
       ...(disabled

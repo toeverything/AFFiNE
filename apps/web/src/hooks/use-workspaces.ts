@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -8,7 +9,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 import { workspacesAtom } from '../atoms';
-import { WorkspacePlugins } from '../plugins';
+import { WorkspaceAdapters } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
 import type { AllWorkspace } from '../shared';
 
@@ -38,6 +39,21 @@ export function useAppHelper() {
         }
       },
       [workspaces]
+    ),
+    addLocalWorkspace: useCallback(
+      async (workspaceId: string): Promise<string> => {
+        saveWorkspaceToLocalStorage(workspaceId);
+        set(workspaces => [
+          ...workspaces,
+          {
+            id: workspaceId,
+            flavour: WorkspaceFlavour.LOCAL,
+          },
+        ]);
+        logger.debug('imported local workspace', workspaceId);
+        return workspaceId;
+      },
+      [set]
     ),
     createLocalWorkspace: useCallback(
       async (name: string): Promise<string> => {
@@ -70,7 +86,7 @@ export function useAppHelper() {
         }
 
         // delete workspace from plugin
-        await WorkspacePlugins[targetWorkspace.flavour].CRUD.delete(
+        await WorkspaceAdapters[targetWorkspace.flavour].CRUD.delete(
           // fixme: type casting
           targetWorkspace as any
         );

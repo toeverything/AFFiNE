@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
@@ -63,9 +62,8 @@ const IndexPageInner = () => {
 };
 
 const IndexPage: NextPage = () => {
-  const t = useAFFiNEI18N();
   return (
-    <Suspense fallback={<PageLoading text={t['Loading All Workspaces']()} />}>
+    <Suspense fallback={<PageLoading />}>
       <IndexPageInner />
     </Suspense>
   );

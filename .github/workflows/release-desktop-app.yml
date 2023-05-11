@@ -36,6 +36,10 @@ concurrency:
 
 env:
   BUILD_TYPE: ${{ github.event.inputs.build-type }}
+  CARGO_BUILD_INCREMENTAL: 'false'
+  DEBUG: napi:*
+  APP_NAME: affine
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
   before-make:
@@ -89,10 +93,30 @@ jobs:
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
         spec:
-          - { os: macos-latest, platform: macos, arch: x64 }
-          - { os: macos-latest, platform: macos, arch: arm64 }
-          - { os: ubuntu-latest, platform: linux, arch: x64 }
-          - { os: windows-latest, platform: windows, arch: x64 }
+          - {
+              os: macos-latest,
+              platform: macos,
+              arch: x64,
+              target: x86_64-apple-darwin,
+            }
+          - {
+              os: macos-latest,
+              platform: macos,
+              arch: arm64,
+              target: aarch64-apple-darwin,
+            }
+          - {
+              os: ubuntu-latest,
+              platform: linux,
+              arch: x64,
+              target: x86_64-unknown-linux-gnu,
+            }
+          - {
+              os: windows-latest,
+              platform: windows,
+              arch: x64,
+              target: x86_64-pc-windows-msvc,
+            }
     runs-on: ${{ matrix.spec.os }}
     needs: before-make
     env:
@@ -104,6 +128,10 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.spec.target }}
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static

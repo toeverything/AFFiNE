@@ -81,6 +81,9 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
             startTransition(() => {
               setEditor(editor);
             });
+            page.workspace.setPageMeta(page.id, {
+              updatedDate: Date.now(),
+            });
             onLoad?.(page, editor);
           },
           [onLoad, setEditor]
