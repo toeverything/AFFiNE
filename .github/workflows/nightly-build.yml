@@ -21,7 +21,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BUILD_TYPE: canary
+  BUILD_TYPE: internal
+  RELEASE_VERSION: ${{ github.ref_name }}-${{ github.sha }}
 
 jobs:
   before-make:
@@ -136,3 +137,62 @@ jobs:
         with:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
+
+  release:
+    needs: make-distribution
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Artifacts (macos-x64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-macos-x64-builds
+          path: ./
+      - name: Download Artifacts (macos-arm64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-macos-arm64-builds
+          path: ./
+      - name: Download Artifacts (windows-x64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-windows-x64-builds
+          path: ./
+      - name: Download Artifacts (linux-x64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-linux-x64-builds
+          path: ./
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: release-yml-build-script
+          path: ./
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Generate Release yml
+        run: |
+          node generate-yml.js
+        env:
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+      - name: Create Release Draft
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          repository: 'toeverything/AFFiNE-Releases'
+          name: ${{ env.RELEASE_VERSION }}
+          tag_name: ${{ env.RELEASE_VERSION }}
+          prerelease: true
+          files: |
+            ./VERSION
+            ./*.zip
+            ./*.dmg
+            ./*.exe
+            ./*.nupkg
+            ./RELEASES
+            ./*.AppImage
+            ./*.apk
+            ./*.yml
