@@ -5,7 +5,7 @@ export const root = style({
   height: '16px',
   userSelect: 'none',
   padding: '0 16px',
-  marginTop: '20px',
+  marginTop: '12px',
 });
 
 export const label = style({

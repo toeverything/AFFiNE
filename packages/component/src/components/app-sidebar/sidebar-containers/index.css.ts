@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css';
 
 const baseContainer = style({
-  padding: '0 8px',
+  padding: '12px 8px',
   display: 'flex',
   flexFlow: 'column nowrap',
   rowGap: '8px',
@@ -9,4 +9,60 @@ const baseContainer = style({
 
 export const topContainer = style([baseContainer, {}]);
 
-export const scrollableContainer = style([baseContainer, {}]);
+export const scrollableContainerRoot = style({
+  flex: '1 1 auto',
+  overflowY: 'hidden',
+  vars: {
+    '--scrollbar-width': '10px',
+  },
+  transition: 'box-shadow .15s .15s',
+  selectors: {
+    '&[data-has-scroll-top="true"]': {
+      boxShadow: 'inset 0 8px 8px -8px var(--affine-black-10)',
+    },
+  },
+});
+
+export const scrollableContainer = style([
+  baseContainer,
+  {
+    height: '100%',
+    paddingBottom: '200px',
+  },
+]);
+
+export const scrollbar = style({
+  display: 'flex',
+  flexDirection: 'column',
+  userSelect: 'none',
+  touchAction: 'none',
+  padding: '0 2px',
+  width: 'var(--scrollbar-width)',
+  height: '100%',
+  opacity: 1,
+  transition: 'opacity .15s',
+  selectors: {
+    '&[data-state="hidden"]': {
+      opacity: 0,
+    },
+  },
+});
+
+export const scrollbarThumb = style({
+  position: 'relative',
+  background: 'var(--affine-black-30)',
+  borderRadius: '4px',
+  selectors: {
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '100%',
+      height: '100%',
+      minWidth: '44px',
+      minHeight: '44px',
+    },
+  },
+});
