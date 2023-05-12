@@ -3,8 +3,8 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { compare, hash } from '@node-rs/bcrypt';
 import { User } from '@prisma/client';
-import { compare, hash } from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import { Config } from '../../config';
@@ -69,7 +69,7 @@ export class AuthService {
   }
 
   async register(name: string, email: string, password: string): Promise<User> {
-    const hashedPassword = await hash(password, this.config.auth.salt);
+    const hashedPassword = await hash(password);
 
     const user = await this.prisma.user.findFirst({
       where: {
