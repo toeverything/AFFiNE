@@ -10,7 +10,6 @@ import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
-import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-router-with-current-workspace-id';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
 
@@ -19,7 +18,6 @@ const FavouritePage: NextPageWithLayout = () => {
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();
-  useSyncRouterWithCurrentWorkspaceId(router);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);

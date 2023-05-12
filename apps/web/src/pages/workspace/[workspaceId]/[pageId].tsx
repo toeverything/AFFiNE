@@ -20,7 +20,6 @@ import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
-import { useRouterAndWorkspaceWithPageIdDefense } from '../../../hooks/use-router-and-workspace-with-page-id-defense';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspaceAdapters } from '../../../plugins';
@@ -110,7 +109,6 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  useRouterAndWorkspaceWithPageIdDefense(router);
   const page = useBlockSuiteWorkspacePage(
     currentWorkspace.blockSuiteWorkspace,
     currentPageId

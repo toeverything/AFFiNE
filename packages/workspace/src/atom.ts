@@ -32,11 +32,44 @@ export const rootCurrentWorkspaceIdAtom = atomWithStorage<string | null>(
   null,
   createJSONStorage(() => sessionStorage)
 );
+
+rootCurrentWorkspaceIdAtom.onMount = set => {
+  if (typeof window !== 'undefined') {
+    const callback = () => {
+      const value = window.location.pathname.split('/')[2];
+      if (value) {
+        set(value);
+      }
+    };
+    callback();
+    window.addEventListener('popstate', callback);
+    return () => {
+      window.removeEventListener('popstate', callback);
+    };
+  }
+};
+
 export const rootCurrentPageIdAtom = atomWithStorage<string | null>(
   'root-current-page-id',
   null,
   createJSONStorage(() => sessionStorage)
 );
+
+rootCurrentPageIdAtom.onMount = set => {
+  if (typeof window !== 'undefined') {
+    const callback = () => {
+      const value = window.location.pathname.split('/')[3];
+      if (value) {
+        set(value);
+      }
+    };
+    callback();
+    window.addEventListener('popstate', callback);
+    return () => {
+      window.removeEventListener('popstate', callback);
+    };
+  }
+};
 
 // current editor atom, each app should have only one editor in the same time
 export const rootCurrentEditorAtom = atom<Readonly<EditorContainer> | null>(
