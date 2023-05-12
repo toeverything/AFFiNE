@@ -3,7 +3,6 @@ import { expect } from '@playwright/test';
 
 import { openHomePage, webUrl } from '../libs/load-page';
 import { waitMarkdownImported } from '../libs/page-logic';
-import { clickSideBarAllPageButton } from '../libs/sidebar';
 
 test('goto not found page', async ({ page }) => {
   await openHomePage(page);
@@ -17,9 +16,8 @@ test('goto not found page', async ({ page }) => {
 test('goto not found workspace', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
-  await clickSideBarAllPageButton(page);
   const currentUrl = page.url();
   await page.goto(new URL('/workspace/invalid/all', webUrl).toString());
-  await clickSideBarAllPageButton(page);
+  await page.waitForSelector('v-line');
   expect(page.url()).toEqual(currentUrl);
 });
