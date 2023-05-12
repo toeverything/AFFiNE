@@ -8,6 +8,8 @@ export type History = {
   skip: boolean;
 };
 
+export const MAX_HISTORY = 50;
+
 export const historyBaseAtom = atomWithStorage<History>('history', {
   stack: [],
   current: 0,
@@ -27,6 +29,9 @@ historyBaseAtom.onMount = set => {
         if (prev.current < prev.stack.length - 1) {
           const newStack = prev.stack.slice(0, prev.current);
           newStack.push(url);
+          if (newStack.length > MAX_HISTORY) {
+            newStack.shift();
+          }
           return {
             stack: newStack,
             current: newStack.length - 1,
@@ -34,6 +39,9 @@ historyBaseAtom.onMount = set => {
           };
         } else {
           const newStack = [...prev.stack, url];
+          if (newStack.length > MAX_HISTORY) {
+            newStack.shift();
+          }
           return {
             stack: newStack,
             current: newStack.length - 1,
