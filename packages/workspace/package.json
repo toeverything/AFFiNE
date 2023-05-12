@@ -40,5 +40,5 @@
     "next": "^13.4.1",
     "ws": "^8.13.0"
   },
-  "version": "0.6.0-canary.0"
+  "version": "0.6.0-canary.1"
 }
