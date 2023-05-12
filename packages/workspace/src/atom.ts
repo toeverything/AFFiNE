@@ -1,6 +1,7 @@
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
+import Router from 'next/router';
 
 import type { WorkspaceFlavour } from './type';
 
@@ -32,11 +33,48 @@ export const rootCurrentWorkspaceIdAtom = atomWithStorage<string | null>(
   null,
   createJSONStorage(() => sessionStorage)
 );
+
+rootCurrentWorkspaceIdAtom.onMount = set => {
+  if (typeof window !== 'undefined') {
+    const callback = (url: string) => {
+      const value = url.split('/')[2];
+      if (value) {
+        set(value);
+      } else {
+        set(null);
+      }
+    };
+    callback(window.location.pathname);
+    Router.events.on('routeChangeStart', callback);
+    return () => {
+      Router.events.off('routeChangeStart', callback);
+    };
+  }
+};
+
 export const rootCurrentPageIdAtom = atomWithStorage<string | null>(
   'root-current-page-id',
   null,
   createJSONStorage(() => sessionStorage)
 );
+
+rootCurrentPageIdAtom.onMount = set => {
+  if (typeof window !== 'undefined') {
+    const callback = (url: string) => {
+      const value = url.split('/')[3];
+      if (value) {
+        set(value);
+      } else {
+        set(null);
+      }
+    };
+    callback(window.location.pathname);
+    Router.events.on('routeChangeStart', callback);
+    return () => {
+      Router.events.off('routeChangeStart', callback);
+    };
+  }
+};
 
 // current editor atom, each app should have only one editor in the same time
 export const rootCurrentEditorAtom = atom<Readonly<EditorContainer> | null>(
