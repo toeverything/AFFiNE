@@ -32,7 +32,7 @@ export const Export = ({
                   globalThis.currentEditor!.page
                 );
               }
-              contentParserRef.current.onExportHtml();
+              contentParserRef.current.exportHtml();
               onSelect?.({ type: 'html' });
             }}
             icon={<ExportToHtmlIcon />}
@@ -47,7 +47,7 @@ export const Export = ({
                   globalThis.currentEditor!.page
                 );
               }
-              contentParserRef.current.onExportMarkdown();
+              contentParserRef.current.exportMarkdown();
               onSelect?.({ type: 'markdown' });
             }}
             icon={<ExportToMarkdownIcon />}
