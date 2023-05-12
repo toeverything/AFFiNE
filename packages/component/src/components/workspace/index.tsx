@@ -23,7 +23,6 @@ export const AppContainer = (props: WorkspaceRootProps): ReactElement => {
 
 export type MainContainerProps = PropsWithChildren<{
   className?: string;
-  sidebarOpen?: boolean;
 }>;
 
 export const MainContainer = (props: MainContainerProps): ReactElement => {
@@ -31,7 +30,6 @@ export const MainContainer = (props: MainContainerProps): ReactElement => {
     <div
       className={clsx(mainContainerStyle, 'main-container', props.className)}
       data-is-desktop={environment.isDesktop}
-      data-is-sidebar-open={props.sidebarOpen}
     >
       {props.children}
     </div>

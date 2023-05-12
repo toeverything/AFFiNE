@@ -5,7 +5,7 @@ export const resizerContainer = style({
   right: 0,
   top: '16px',
   bottom: '16px',
-  width: '10px',
+  width: '16px',
   zIndex: 'calc(var(--affine-z-index-modal) + 1)',
   transform: 'translateX(50%)',
   backgroundColor: 'transparent',
@@ -39,7 +39,7 @@ export const resizerInner = style({
   position: 'absolute',
   height: '100%',
   width: '4px',
-  left: '3px',
+  left: '6px',
   borderRadius: '4px',
   backgroundColor: 'var(--affine-primary-color)',
 });

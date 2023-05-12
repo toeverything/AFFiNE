@@ -13,7 +13,7 @@ export const appStyle = style({
     '&[data-is-resizing="true"]': {
       cursor: 'col-resize',
     },
-    '&[data-noise-background="true"]:before': {
+    '&:before': {
       content: '""',
       position: 'absolute',
       inset: 0,
@@ -58,9 +58,6 @@ export const mainContainerStyle = style({
       borderRadius: '8px',
       overflow: 'hidden',
       boxShadow: 'var(--affine-shadow-1)',
-    },
-    '&[data-is-desktop="true"][data-is-sidebar-open="true"]': {
-      marginLeft: '4px',
     },
   },
 });

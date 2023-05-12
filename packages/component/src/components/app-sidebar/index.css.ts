@@ -60,18 +60,9 @@ export const navHeaderStyle = style({
   justifyContent: 'space-between',
   alignItems: 'center',
   gap: '32px',
-  '@media': {
-    [`(max-width: ${floatingMaxWidth}px)`]: {
-      selectors: {
-        '&[data-open="true"]': {
-          WebkitAppRegion: 'no-drag',
-        },
-      },
-    } as ComplexStyleRule,
-  },
+  WebkitAppRegion: 'drag',
   selectors: {
     '&[data-is-macos-electron="true"]': {
-      WebkitAppRegion: 'drag',
       justifyContent: 'flex-end',
     },
   },

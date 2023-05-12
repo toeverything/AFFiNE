@@ -7,11 +7,14 @@ export const headerContainer = style({
   top: 0,
   background: 'var(--affine-background-primary-color)',
   // @ts-ignore
-  WebkitAppRegion: 'drag',
   zIndex: 'var(--affine-z-index-popover)',
   selectors: {
     '&[data-has-warning="true"]': {
       height: '96px',
+    },
+    '&[data-sidebar-floating="false"]': {
+      // @ts-ignore
+      WebkitAppRegion: 'drag',
     },
   },
 });
