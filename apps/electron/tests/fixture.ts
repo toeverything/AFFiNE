@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 import { resolve } from 'node:path';
 
-import { test as base } from '@affine-test/kit/playwright';
+import { test as base, testResultDir } from '@affine-test/kit/playwright';
 import fs from 'fs-extra';
 import type { ElectronApplication, Page } from 'playwright';
 import { _electron as electron } from 'playwright';
@@ -64,6 +64,9 @@ export const test = base.extend<{
         '.bin',
         `electron${ext}`
       ),
+      recordVideo: {
+        dir: testResultDir,
+      },
       colorScheme: 'light',
     });
     await use(electronApp);
