@@ -1,6 +1,7 @@
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
+import Router from 'next/router';
 
 import type { WorkspaceFlavour } from './type';
 
@@ -35,18 +36,18 @@ export const rootCurrentWorkspaceIdAtom = atomWithStorage<string | null>(
 
 rootCurrentWorkspaceIdAtom.onMount = set => {
   if (typeof window !== 'undefined') {
-    const callback = () => {
-      const value = window.location.pathname.split('/')[2];
+    const callback = (url: string) => {
+      const value = url.split('/')[2];
       if (value) {
         set(value);
       } else {
         set(null);
       }
     };
-    callback();
-    window.addEventListener('popstate', callback);
+    callback(window.location.pathname);
+    Router.events.on('routeChangeStart', callback);
     return () => {
-      window.removeEventListener('popstate', callback);
+      Router.events.off('routeChangeStart', callback);
     };
   }
 };
@@ -59,18 +60,18 @@ export const rootCurrentPageIdAtom = atomWithStorage<string | null>(
 
 rootCurrentPageIdAtom.onMount = set => {
   if (typeof window !== 'undefined') {
-    const callback = () => {
-      const value = window.location.pathname.split('/')[3];
+    const callback = (url: string) => {
+      const value = url.split('/')[3];
       if (value) {
         set(value);
       } else {
         set(null);
       }
     };
-    callback();
-    window.addEventListener('popstate', callback);
+    callback(window.location.pathname);
+    Router.events.on('routeChangeStart', callback);
     return () => {
-      window.removeEventListener('popstate', callback);
+      Router.events.off('routeChangeStart', callback);
     };
   }
 };
