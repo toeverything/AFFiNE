@@ -39,6 +39,8 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
       const value = window.location.pathname.split('/')[2];
       if (value) {
         set(value);
+      } else {
+        set(null);
       }
     };
     callback();
@@ -61,6 +63,8 @@ rootCurrentPageIdAtom.onMount = set => {
       const value = window.location.pathname.split('/')[3];
       if (value) {
         set(value);
+      } else {
+        set(null);
       }
     };
     callback();
