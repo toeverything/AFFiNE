@@ -108,6 +108,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
                   onClick={() => {
                     props.router && props.router.back();
                   }}
+                  disabled={props.router?.history.stack.length === 0}
                 >
                   <ArrowLeftSmallIcon />
                 </IconButton>
@@ -116,6 +117,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
                   onClick={() => {
                     props.router && props.router.forward();
                   }}
+                  disabled={props.router?.history.stack.length === 0}
                   style={{ marginLeft: '32px' }}
                 >
                   <ArrowRightSmallIcon />

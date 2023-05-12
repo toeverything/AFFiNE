@@ -43,21 +43,28 @@ historyBaseAtom.onMount = set => {
 
 export const historyAtom = atom<History, [forward: boolean], void>(
   get => get(historyBaseAtom),
-  (_, set, forward) => {
+  (get, set, forward) => {
     if (forward) {
+      const target = Math.min(
+        get(historyBaseAtom).stack.length - 1,
+        get(historyBaseAtom).current + 1
+      );
+      const url = get(historyBaseAtom).stack[target];
       set(historyBaseAtom, prev => ({
         ...prev,
-        current: prev.current + 1,
+        current: target,
         skip: true,
       }));
-      window.history.forward();
+      void Router.push(url);
     } else {
+      const target = Math.max(0, get(historyBaseAtom).current - 1);
+      const url = get(historyBaseAtom).stack[target];
       set(historyBaseAtom, prev => ({
         ...prev,
-        current: prev.current - 1,
+        current: target,
         skip: true,
       }));
-      window.history.back();
+      void Router.push(url);
     }
   }
 );
