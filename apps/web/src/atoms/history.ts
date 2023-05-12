@@ -1,5 +1,4 @@
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 import Router from 'next/router';
 
 export type History = {
@@ -10,7 +9,7 @@ export type History = {
 
 export const MAX_HISTORY = 50;
 
-export const historyBaseAtom = atomWithStorage<History>('history', {
+export const historyBaseAtom = atom<History>({
   stack: [],
   current: 0,
   skip: false,
@@ -19,6 +18,7 @@ export const historyBaseAtom = atomWithStorage<History>('history', {
 historyBaseAtom.onMount = set => {
   const callback = (url: string) => {
     set(prev => {
+      console.log('push', url, prev.stack.length, prev.current);
       if (prev.skip) {
         return {
           stack: [...prev.stack],
@@ -52,9 +52,9 @@ historyBaseAtom.onMount = set => {
     });
   };
 
-  Router.events.on('routeChangeComplete', callback);
+  Router.events.on('routeChangeStart', callback);
   return () => {
-    Router.events.off('routeChangeComplete', callback);
+    Router.events.off('routeChangeStart', callback);
   };
 };
 

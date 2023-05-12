@@ -61,13 +61,21 @@ export function useRouterAndWorkspaceWithPageIdDefense(router: NextRouter) {
   if (currentPageId !== pageId) {
     console.log('set current page id', pageId);
     setCurrentPageId(pageId);
-    void router.push({
-      pathname: '/workspace/[workspaceId]/[pageId]',
-      query: {
-        ...router.query,
-        workspaceId,
-        pageId,
-      },
-    });
+    if (
+      !(
+        router.pathname === '/workspace/[workspaceId]/[pageId]' &&
+        router.query.workspaceId === workspaceId &&
+        router.query.pageId === pageId
+      )
+    ) {
+      void router.push({
+        pathname: '/workspace/[workspaceId]/[pageId]',
+        query: {
+          ...router.query,
+          workspaceId,
+          pageId,
+        },
+      });
+    }
   }
 }
