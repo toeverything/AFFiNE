@@ -56,7 +56,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
     debug: true,
   },
   auth: {
-    salt: '$2b$10$x4VDo2nmlo74yB5jflNhlu',
     accessTokenExpiresIn: '1h',
     refreshTokenExpiresIn: '7d',
     publicKey: examplePublicKey,
