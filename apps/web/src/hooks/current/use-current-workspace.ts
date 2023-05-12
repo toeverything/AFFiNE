@@ -21,6 +21,9 @@ export function useCurrentWorkspace(): [
     currentWorkspace,
     useCallback(
       (id: string | null) => {
+        if (typeof window !== 'undefined' && id) {
+          localStorage.setItem('last_workspace_id', id);
+        }
         setPageId(null);
         setId(id);
       },
