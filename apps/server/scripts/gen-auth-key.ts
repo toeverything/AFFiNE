@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-import { genSalt } from 'bcrypt';
+import { genSalt } from '@node-rs/bcrypt';
 
 const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', {
   namedCurve: 'prime256v1',

@@ -170,10 +170,6 @@ export interface AFFiNEConfig {
    */
   auth: {
     /**
-     * Application sign key secret
-     */
-    readonly salt: string;
-    /**
      * Application access token expiration time
      */
     readonly accessTokenExpiresIn: string;
