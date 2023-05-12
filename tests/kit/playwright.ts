@@ -13,7 +13,7 @@ ok(require(resolve(rootDir, 'package.json')).name.toLowerCase() === 'affine');
 
 export const testResultDir = resolve(rootDir, 'test-results');
 
-const istanbulTempDir = process.env.ISTANBUL_TEMP_DIR
+export const istanbulTempDir = process.env.ISTANBUL_TEMP_DIR
   ? path.resolve(process.env.ISTANBUL_TEMP_DIR)
   : path.join(rootDir, '.nyc_output');
 
@@ -21,7 +21,7 @@ function generateUUID() {
   return crypto.randomUUID();
 }
 
-const enableCoverage = !!process.env.CI || !!process.env.COVERAGE;
+export const enableCoverage = !!process.env.CI || !!process.env.COVERAGE;
 
 export const test = baseTest.extend({
   context: async ({ context }, use) => {
