@@ -141,7 +141,9 @@ export const CurrentWorkspaceContext = ({
   const push = router.push;
   useEffect(() => {
     const id = setTimeout(() => {
-      void push('/');
+      if (!exist) {
+        void push('/');
+      }
     }, 1000);
     return () => {
       clearTimeout(id);
