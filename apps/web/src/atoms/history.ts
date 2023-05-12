@@ -24,13 +24,21 @@ historyBaseAtom.onMount = set => {
           skip: false,
         };
       } else {
-        const newStack = prev.stack.slice(0, prev.current);
-        newStack.push(url);
-        return {
-          stack: newStack,
-          current: newStack.length - 1,
-          skip: false,
-        };
+        if (prev.current < prev.stack.length - 1) {
+          const newStack = prev.stack.slice(0, prev.current);
+          newStack.push(url);
+          return {
+            stack: newStack,
+            current: newStack.length - 1,
+            skip: false,
+          };
+        } else {
+          return {
+            stack: [...prev.stack, url],
+            current: prev.stack.length,
+            skip: false,
+          };
+        }
       }
     });
   };

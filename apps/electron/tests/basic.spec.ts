@@ -11,6 +11,68 @@ test('new page', async ({ page, workspace }) => {
   expect(flavour).toBe('local');
 });
 
+test('app sidebar router forward/back', async ({ page }) => {
+  await page.getByTestId('help-island').click();
+  await page.getByTestId('easy-guide').click();
+  {
+    // create pages
+    await page.getByTestId('new-page-button').click({
+      delay: 100,
+    });
+    await page.waitForSelector('v-line');
+    await page.focus('.affine-default-page-block-title');
+    await page.type('.affine-default-page-block-title', 'test1', {
+      delay: 100,
+    });
+    await page.getByTestId('new-page-button').click({
+      delay: 100,
+    });
+    await page.waitForSelector('v-line');
+    await page.focus('.affine-default-page-block-title');
+    await page.type('.affine-default-page-block-title', 'test2', {
+      delay: 100,
+    });
+    await page.getByTestId('new-page-button').click({
+      delay: 100,
+    });
+    await page.waitForSelector('v-line');
+    await page.focus('.affine-default-page-block-title');
+    await page.type('.affine-default-page-block-title', 'test3', {
+      delay: 100,
+    });
+  }
+  {
+    const title = (await page
+      .locator('.affine-default-page-block-title')
+      .textContent()) as string;
+    expect(title.trim()).toBe('test3');
+  }
+  await page.click('[data-testid="app-sidebar-arrow-button-back"]', {
+    delay: 100,
+  });
+  await page.click('[data-testid="app-sidebar-arrow-button-back"]', {
+    delay: 100,
+  });
+  {
+    const title = (await page
+      .locator('.affine-default-page-block-title')
+      .textContent()) as string;
+    expect(title.trim()).toBe('test1');
+  }
+  await page.click('[data-testid="app-sidebar-arrow-button-forward"]', {
+    delay: 100,
+  });
+  await page.click('[data-testid="app-sidebar-arrow-button-forward"]', {
+    delay: 100,
+  });
+  {
+    const title = (await page
+      .locator('.affine-default-page-block-title')
+      .textContent()) as string;
+    expect(title.trim()).toBe('test3');
+  }
+});
+
 test('app theme', async ({ page, electronApp }) => {
   const root = page.locator('html');
   {

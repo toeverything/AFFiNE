@@ -104,6 +104,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
             {isMacosDesktop && (
               <>
                 <IconButton
+                  data-testid="app-sidebar-arrow-button-back"
                   size="middle"
                   onClick={() => {
                     props.router && props.router.back();
@@ -116,6 +117,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
                   <ArrowLeftSmallIcon />
                 </IconButton>
                 <IconButton
+                  data-testid="app-sidebar-arrow-button-forward"
                   size="middle"
                   onClick={() => {
                     props.router && props.router.forward();
