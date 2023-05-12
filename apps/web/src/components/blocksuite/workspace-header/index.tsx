@@ -51,7 +51,6 @@ export const WorkspaceHeader: FC<
     if (!headerRef.current) {
       return;
     }
-    let dispose: void | (() => void);
     const resizeObserver = new ResizeObserver(() => {
       if (showQuickSearchTips || !popperRef.current) {
         return;
@@ -60,7 +59,6 @@ export const WorkspaceHeader: FC<
     });
     resizeObserver.observe(headerRef.current);
     return () => {
-      dispose?.();
       resizeObserver.disconnect();
     };
   }, [showQuickSearchTips]);
