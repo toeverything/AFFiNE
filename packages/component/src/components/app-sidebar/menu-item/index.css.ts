@@ -15,7 +15,6 @@ export const root = style({
       background: 'var(--affine-hover-color)',
     },
     '&[data-active="true"]': {
-      color: 'var(--affine-primary-color)',
       background: 'var(--affine-hover-color)',
     },
     '&[data-disabled="true"]': {

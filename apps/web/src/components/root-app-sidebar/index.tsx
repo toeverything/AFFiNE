@@ -26,7 +26,6 @@ import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
 import type { AllWorkspace } from '../../shared';
-import ChangeLog from '../pure/workspace-slider-bar/changeLog';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 
@@ -106,7 +105,6 @@ export const RootAppSidebar = ({
             currentWorkspace={currentWorkspace}
             onClick={onOpenWorkspaceListModal}
           />
-          <ChangeLog />
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}

@@ -60,7 +60,7 @@ export const mainContainerStyle = style({
       boxShadow: 'var(--affine-shadow-1)',
     },
     '&[data-is-desktop="true"][data-is-sidebar-open="true"]': {
-      marginLeft: '2px',
+      marginLeft: '4px',
     },
   },
 });
