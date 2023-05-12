@@ -28,7 +28,7 @@
   "dependencies": {
     "@affine/debug": "workspace:*",
     "i18next": "^22.4.15",
-    "react": "^18.2.0",
+    "react": "18.3.0-canary-16d053d59-20230506",
     "react-i18next": "^12.2.2"
   },
   "devDependencies": {
@@ -36,7 +36,7 @@
     "@types/prettier": "^2.7.2",
     "next": "^13.4.1",
     "prettier": "^2.8.8",
-    "react-dom": "^18.2.0",
+    "react-dom": "18.3.0-canary-16d053d59-20230506",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
   },
