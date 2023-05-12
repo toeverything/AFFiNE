@@ -27,7 +27,7 @@ import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { currentWorkspaceIdAtom, workspacesAtom } from '../../atoms';
+import { workspacesAtom } from '../../atoms';
 import { LocalPlugin } from '../../plugins/local';
 import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
 import {
@@ -241,13 +241,14 @@ describe('useRecentlyViewed', () => {
       blockSuiteWorkspace,
       providers: [],
     } satisfies LocalWorkspace);
-    store.set(currentWorkspaceIdAtom, blockSuiteWorkspace.id);
+    store.set(rootCurrentWorkspaceIdAtom, blockSuiteWorkspace.id);
     const workspace = await store.get(currentWorkspaceAtom);
     expect(workspace?.id).toBe(blockSuiteWorkspace.id);
     const currentHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,
     });
     expect(currentHook.result.current[0]?.id).toEqual(workspaceId);
+    store.set(rootCurrentWorkspaceIdAtom, blockSuiteWorkspace.id);
     await store.get(currentWorkspaceAtom);
     const recentlyViewedHook = renderHook(() => useRecentlyViewed(), {
       wrapper: ProviderWrapper,
