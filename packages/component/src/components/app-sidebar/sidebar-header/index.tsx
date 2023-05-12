@@ -7,7 +7,7 @@ import {
 } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
 
-import type { History } from '../index';
+import type { History } from '..';
 import { navHeaderStyle, sidebarButtonStyle } from '../index.css';
 import { appSidebarOpenAtom } from '../index.jotai';
 
