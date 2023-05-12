@@ -93,8 +93,8 @@ __metadata:
     jotai: ^2.1.0
     lit: ^2.7.4
     lottie-web: ^5.11.0
-    react: ^18.2.0
-    react-dom: ^18.2.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
     react-error-boundary: ^4.0.4
     react-is: ^18.2.0
     rxjs: ^7.8.1
@@ -155,7 +155,7 @@ __metadata:
     playwright: ^1.33.0
     rxjs: ^7.8.1
     ts-node: ^10.9.1
-    undici: ^5.22.0
+    undici: ^5.22.1
     yjs: ^13.6.1
     zx: ^7.2.2
   peerDependencies:
@@ -171,8 +171,8 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230509150141-055b5702-nightly
     lit: ^2.7.4
     next: ^13.4.1
-    react: ^18.2.0
-    react-dom: ^18.2.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
     zod: ^3.21.4
   peerDependencies:
     "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
@@ -204,8 +204,8 @@ __metadata:
     i18next: ^22.4.15
     next: ^13.4.1
     prettier: ^2.8.8
-    react: ^18.2.0
-    react-dom: ^18.2.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
     react-i18next: ^12.2.2
     ts-node: ^10.9.1
     typescript: ^5.0.4
@@ -340,7 +340,7 @@ __metadata:
     eslint-plugin-unicorn: ^47.0.0
     graphql: ^16.6.0
     jotai: ^2.1.0
-    jotai-devtools: ^0.5.2
+    jotai-devtools: ^0.5.3
     lit: ^2.7.4
     lottie-web: ^5.11.0
     next: ^13.4.1
@@ -348,8 +348,8 @@ __metadata:
     next-router-mock: ^0.9.3
     next-themes: ^0.2.1
     raw-loader: ^4.0.2
-    react: ^18.2.0
-    react-dom: ^18.2.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
     react-is: ^18.2.0
     redux: ^4.2.1
     rxjs: ^7.8.1
@@ -380,8 +380,8 @@ __metadata:
     ky: ^0.33.3
     lib0: ^0.2.74
     next: ^13.4.1
-    react: ^18.2.0
-    react-dom: ^18.2.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
     ws: ^8.13.0
     y-protocols: ^1.0.5
     yjs: ^13.6.1
@@ -9793,15 +9793,15 @@ __metadata:
     eslint-plugin-unused-imports: ^2.0.0
     fake-indexeddb: 4.0.1
     got: ^12.6.0
-    happy-dom: ^9.10.9
+    happy-dom: ^9.12.0
     husky: ^8.0.3
     lint-staged: ^13.2.2
     msw: ^1.2.1
     nanoid: ^4.0.2
     nyc: ^15.1.0
     prettier: ^2.8.8
-    react: ^18.2.0
-    react-dom: ^18.2.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
     serve: ^14.2.0
     typescript: ^5.0.4
     vite: ^4.3.5
@@ -13315,7 +13315,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"entities@npm:^4.2.0, entities@npm:^4.4.0":
+"entities@npm:^4.2.0, entities@npm:^4.4.0, entities@npm:^4.5.0":
   version: 4.5.0
   resolution: "entities@npm:4.5.0"
   checksum: 853f8ebd5b425d350bffa97dd6958143179a5938352ccae092c62d1267c4e392a039be1bae7d51b6e4ffad25f51f9617531fedf5237f15df302ccfb452cbf2d7
@@ -15748,17 +15748,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^9.10.9":
-  version: 9.10.9
-  resolution: "happy-dom@npm:9.10.9"
+"happy-dom@npm:^9.12.0":
+  version: 9.16.0
+  resolution: "happy-dom@npm:9.16.0"
   dependencies:
     css.escape: ^1.5.1
-    he: ^1.2.0
+    entities: ^4.5.0
     iconv-lite: ^0.6.3
     webidl-conversions: ^7.0.0
     whatwg-encoding: ^2.0.0
     whatwg-mimetype: ^3.0.0
-  checksum: 03c8a8bc0351711f54956403d282e2cca693b7141dcc4dc1d4da0819fe024703f556b9fc8fc61ac454ffc62d30c68ed3144846d04ed0a884df87e929a9f104c9
+  checksum: 2a35f7dda443bd5854de0cce1f9237e7ac15955d9b4e058bca6c5fa7b3b0faef20f95830ddc93b765df541874ad31fe4e90f0c5b51f560e99b47a86dca2ff921
   languageName: node
   linkType: hard
 
@@ -15865,15 +15865,6 @@ __metadata:
     property-information: ^5.0.0
     space-separated-tokens: ^1.0.0
   checksum: 5e50b85af0d2cb7c17979cb1ddca75d6b96b53019dd999b39e7833192c9004201c3cee6445065620ea05d0087d9ae147a4844e582d64868be5bc6b0232dfe52d
-  languageName: node
-  linkType: hard
-
-"he@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "he@npm:1.2.0"
-  bin:
-    he: bin/he
-  checksum: 3d4d6babccccd79c5c5a3f929a68af33360d6445587d628087f39a965079d84f18ce9c3d3f917ee1e3978916fc833bb8b29377c3b403f919426f91bc6965e7a7
   languageName: node
   linkType: hard
 
@@ -17875,9 +17866,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-devtools@npm:^0.5.2":
-  version: 0.5.2
-  resolution: "jotai-devtools@npm:0.5.2"
+"jotai-devtools@npm:^0.5.3":
+  version: 0.5.3
+  resolution: "jotai-devtools@npm:0.5.3"
   dependencies:
     "@mantine/core": ^6.0.9
     "@mantine/hooks": ^6.0.9
@@ -17893,7 +17884,7 @@ __metadata:
     "@emotion/react": ">=11.0.0"
     jotai: ">=1.11.0"
     react: ">=17.0.0"
-  checksum: 5697c7d103d7f5d51cd3660ad63f3be674b224b176d4e8e6fcab491c8795a5d552df8b9fa5114096c6d7cfaf9187bf799d04310f16349dbb4be6917977cbca8b
+  checksum: 596137cd8f228b60be162876983345ac91f9cbf30397a95317a4405c168cb55b8ecacf8c99092844e529f10b42c0a32db056712a4b75bb998e4aa4b34a8320bf
   languageName: node
   linkType: hard
 
@@ -21546,15 +21537,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^18.2.0":
-  version: 18.2.0
-  resolution: "react-dom@npm:18.2.0"
+"react-dom@npm:18.3.0-canary-16d053d59-20230506":
+  version: 18.3.0-canary-16d053d59-20230506
+  resolution: "react-dom@npm:18.3.0-canary-16d053d59-20230506"
   dependencies:
     loose-envify: ^1.1.0
-    scheduler: ^0.23.0
+    scheduler: 0.24.0-canary-16d053d59-20230506
   peerDependencies:
-    react: ^18.2.0
-  checksum: 7d323310bea3a91be2965f9468d552f201b1c27891e45ddc2d6b8f717680c95a75ae0bc1e3f5cf41472446a2589a75aed4483aee8169287909fcd59ad149e8cc
+    react: 18.3.0-canary-16d053d59-20230506
+  checksum: c9a9b2a9233a892d0855b4b64c8bf37f0079d668048d3ed7b35753c45a166b41f859a3648c6ed3084e97abba0c57df32991f6e14e6a1b3197b696e11d8b92588
   languageName: node
   linkType: hard
 
@@ -21794,12 +21785,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^18.2.0":
-  version: 18.2.0
-  resolution: "react@npm:18.2.0"
+"react@npm:18.3.0-canary-16d053d59-20230506":
+  version: 18.3.0-canary-16d053d59-20230506
+  resolution: "react@npm:18.3.0-canary-16d053d59-20230506"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: 88e38092da8839b830cda6feef2e8505dec8ace60579e46aa5490fc3dc9bba0bd50336507dc166f43e3afc1c42939c09fe33b25fae889d6f402721dcd78fca1b
+  checksum: 790f0db8016db27a618b35bf4b2718a3d10d54daba0d7cefb91e76929332443bb600a16c4986558733f12bb094e7644c20f7e75205175caac2abd284a5c6d9b9
   languageName: node
   linkType: hard
 
@@ -22568,12 +22559,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"scheduler@npm:^0.23.0":
-  version: 0.23.0
-  resolution: "scheduler@npm:0.23.0"
+"scheduler@npm:0.24.0-canary-16d053d59-20230506":
+  version: 0.24.0-canary-16d053d59-20230506
+  resolution: "scheduler@npm:0.24.0-canary-16d053d59-20230506"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: d79192eeaa12abef860c195ea45d37cbf2bbf5f66e3c4dcd16f54a7da53b17788a70d109ee3d3dde1a0fd50e6a8fc171f4300356c5aee4fc0171de526bf35f8a
+  checksum: 01e55c532356efff71a74862ea2c6b5a9ea8b03fc231bd10dc196c7a344f738db1ddbc5d17a7f2a4e6cc4074f3c64e7974fb2b5d83bc1f084f7fb2ae0c62feb2
   languageName: node
   linkType: hard
 
@@ -24626,12 +24617,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:^5.22.0":
-  version: 5.22.0
-  resolution: "undici@npm:5.22.0"
+"undici@npm:^5.22.1":
+  version: 5.22.1
+  resolution: "undici@npm:5.22.1"
   dependencies:
     busboy: ^1.6.0
-  checksum: 8dc55240a60ae7680798df344e8f46ad0f872ed0fa434fb94cc4fd2b5b2f8053bdf11994d15902999d3880f9bf7cd875a2e90883d2702bf0f366dacd9cbf3fc6
+  checksum: 048a3365f622be44fb319316cedfaa241c59cf7f3368ae7667a12323447e1822e8cc3d00f6956c852d1478a6fde1cbbe753f49e05f2fdaed229693e716ebaf35
   languageName: node
   linkType: hard
 
