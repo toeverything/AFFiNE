@@ -50,6 +50,6 @@ test('should enable affine workspace successfully', async ({ page }) => {
   await assertCurrentWorkspaceFlavour('affine', page);
   await openWorkspaceListModal(page);
   await page.getByTestId('workspace-list-modal-sign-out').click();
-  await page.waitForTimeout(1000);
+  await waitMarkdownImported(page);
   await assertCurrentWorkspaceFlavour('local', page);
 });
