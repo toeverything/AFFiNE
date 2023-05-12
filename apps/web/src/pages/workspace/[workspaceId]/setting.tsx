@@ -20,7 +20,6 @@ import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-workspace';
-import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-router-with-current-workspace-id';
 import { useAppHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import { WorkspaceAdapters } from '../../../plugins';
@@ -84,7 +83,6 @@ const SettingPage: NextPageWithLayout = () => {
   const workspaceIds = useAtomValue(rootWorkspacesMetadataAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();
-  useSyncRouterWithCurrentWorkspaceId(router);
   const [currentTab, setCurrentTab] = useAtom(settingPanelAtom);
   useEffect(() => {});
   const onChangeTab = useCallback(

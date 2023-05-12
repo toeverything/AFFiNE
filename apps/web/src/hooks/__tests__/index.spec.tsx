@@ -5,11 +5,7 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
-import {
-  rootCurrentWorkspaceIdAtom,
-  rootWorkspacesMetadataAtom,
-} from '@affine/workspace/atom';
-import type { LocalWorkspace } from '@affine/workspace/type';
+import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
@@ -21,23 +17,17 @@ import {
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { createStore, Provider } from 'jotai';
-import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { currentWorkspaceIdAtom, workspacesAtom } from '../../atoms';
-import { LocalPlugin } from '../../plugins/local';
+import { workspacesAtom } from '../../atoms';
 import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
 import {
   currentWorkspaceAtom,
   useCurrentWorkspace,
 } from '../current/use-current-workspace';
-import {
-  useRecentlyViewed,
-  useSyncRecentViewsWithRouter,
-} from '../use-recent-views';
 import { useAppHelper, useWorkspaces } from '../use-workspaces';
 
 vi.mock(
@@ -221,60 +211,5 @@ describe('useWorkspaces', () => {
     expect(firstWorkspace.flavour).toBe('local');
     assert(firstWorkspace.flavour === WorkspaceFlavour.LOCAL);
     expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
-  });
-});
-
-describe('useRecentlyViewed', () => {
-  test('basic', async () => {
-    const { ProviderWrapper, store } = await getJotaiContext();
-    const workspaceId = blockSuiteWorkspace.id;
-    const pageId = 'page0';
-    store.set(rootWorkspacesMetadataAtom, [
-      {
-        id: workspaceId,
-        flavour: WorkspaceFlavour.LOCAL,
-      },
-    ]);
-    LocalPlugin.CRUD.get = vi.fn().mockResolvedValue({
-      id: workspaceId,
-      flavour: WorkspaceFlavour.LOCAL,
-      blockSuiteWorkspace,
-      providers: [],
-    } satisfies LocalWorkspace);
-    store.set(currentWorkspaceIdAtom, blockSuiteWorkspace.id);
-    const workspace = await store.get(currentWorkspaceAtom);
-    expect(workspace?.id).toBe(blockSuiteWorkspace.id);
-    const currentHook = renderHook(() => useCurrentWorkspace(), {
-      wrapper: ProviderWrapper,
-    });
-    expect(currentHook.result.current[0]?.id).toEqual(workspaceId);
-    await store.get(currentWorkspaceAtom);
-    const recentlyViewedHook = renderHook(() => useRecentlyViewed(), {
-      wrapper: ProviderWrapper,
-    });
-    expect(recentlyViewedHook.result.current).toEqual([]);
-    const routerHook = renderHook(() => useRouter());
-    await routerHook.result.current.push({
-      pathname: '/workspace/[workspaceId]/[pageId]',
-      query: {
-        workspaceId,
-        pageId,
-      },
-    });
-    routerHook.rerender();
-    const syncHook = renderHook(
-      router => useSyncRecentViewsWithRouter(router, blockSuiteWorkspace),
-      {
-        wrapper: ProviderWrapper,
-        initialProps: routerHook.result.current,
-      }
-    );
-    syncHook.rerender(routerHook.result.current);
-    expect(recentlyViewedHook.result.current).toEqual([
-      {
-        id: 'page0',
-        mode: 'page',
-      },
-    ]);
   });
 });

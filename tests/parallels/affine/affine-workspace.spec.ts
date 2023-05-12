@@ -46,9 +46,10 @@ test('should enable affine workspace successfully', async ({ page }) => {
   await page.locator('[data-block-is-title="true"]').type('Hello, world!', {
     delay: 50,
   });
+  await page.waitForTimeout(1000);
   await assertCurrentWorkspaceFlavour('affine', page);
   await openWorkspaceListModal(page);
   await page.getByTestId('workspace-list-modal-sign-out').click();
-  await page.waitForTimeout(1000);
+  await waitMarkdownImported(page);
   await assertCurrentWorkspaceFlavour('local', page);
 });

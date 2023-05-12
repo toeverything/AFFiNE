@@ -9,9 +9,7 @@ test('Open last workspace when back to affine', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   await createWorkspace({ name: 'New Workspace 2' }, page);
-  // FIXME: can not get when the new workspace is surely created, hack a timeout to wait
-  // waiting for page loading end
-  await page.waitForTimeout(3000);
+  await waitMarkdownImported(page);
   // show workspace list
   await page.getByTestId('workspace-name').click();
 
