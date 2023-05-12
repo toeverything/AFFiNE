@@ -379,6 +379,7 @@ __metadata:
     js-base64: ^3.7.5
     ky: ^0.33.3
     lib0: ^0.2.74
+    next: ^13.4.1
     react: ^18.2.0
     react-dom: ^18.2.0
     ws: ^8.13.0

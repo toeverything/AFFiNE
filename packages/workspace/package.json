@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@types/ws": "^8.5.4",
+    "next": "^13.4.1",
     "ws": "^8.13.0"
   },
   "version": "0.5.4-canary.31"

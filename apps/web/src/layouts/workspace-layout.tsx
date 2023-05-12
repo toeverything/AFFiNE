@@ -39,9 +39,6 @@ import { RootAppSidebar } from '../components/root-app-sidebar';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { useRouterWithWorkspaceIdDefense } from '../hooks/use-router-with-workspace-id-defense';
-import { useSyncRouterWithCurrentPageId } from '../hooks/use-sync-router-with-current-page-id';
-import { useSyncRouterWithCurrentWorkspaceId } from '../hooks/use-sync-router-with-current-workspace-id';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspaceAdapters } from '../plugins';
 import { ModalProvider } from '../providers/modal-provider';
@@ -137,13 +134,21 @@ export const AllWorkspaceContext = ({
 export const CurrentWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  const router = useRouter();
   const workspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
-  useSyncRouterWithCurrentWorkspaceId(router);
-  useSyncRouterWithCurrentPageId(router);
-  useRouterWithWorkspaceIdDefense(router);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
+  const router = useRouter();
+  const push = router.push;
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (!exist) {
+        void push('/');
+      }
+    }, 1000);
+    return () => {
+      clearTimeout(id);
+    };
+  }, [push, exist]);
   if (!router.isReady) {
     return <WorkspaceFallback key="router-is-loading" />;
   }
