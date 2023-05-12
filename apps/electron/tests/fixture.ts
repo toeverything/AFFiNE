@@ -3,9 +3,13 @@
 
 /* eslint-disable no-empty-pattern */
 import crypto from 'node:crypto';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 
-import { test as base } from '@affine-test/kit/playwright';
+import {
+  enableCoverage,
+  istanbulTempDir,
+  test as base,
+} from '@affine-test/kit/playwright';
 import fs from 'fs-extra';
 import type { ElectronApplication, Page } from 'playwright';
 import { _electron as electron } from 'playwright';
@@ -44,7 +48,29 @@ export const test = base.extend<{
     });
     // wat for blocksuite to be loaded
     await page.waitForSelector('v-line');
+    if (enableCoverage) {
+      await fs.promises.mkdir(istanbulTempDir, { recursive: true });
+      await page.exposeFunction(
+        'collectIstanbulCoverage',
+        (coverageJSON?: string) => {
+          if (coverageJSON)
+            fs.writeFileSync(
+              join(
+                istanbulTempDir,
+                `playwright_coverage_${generateUUID()}.json`
+              ),
+              coverageJSON
+            );
+        }
+      );
+    }
     await use(page);
+    if (enableCoverage) {
+      await page.evaluate(() =>
+        // @ts-expect-error
+        window.collectIstanbulCoverage(JSON.stringify(window.__coverage__))
+      );
+    }
     await page.close();
     if (logFilePath) {
       const logs = await fs.readFile(logFilePath, 'utf-8');
