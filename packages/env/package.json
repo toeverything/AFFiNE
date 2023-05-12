@@ -12,6 +12,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
     "./blocksuite": "./src/blocksuite.ts"
   },

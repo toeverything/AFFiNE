@@ -51,7 +51,7 @@ const slideOut2 = keyframes({
 
 export const changeLogWrapperSlideInStyle = style({
   width: 'calc(100% + 4px)',
-  height: '0px',
+  flexShrink: 0,
   animation: `${slideIn} 1s ease-in-out forwards`,
   display: 'flex',
   justifyContent: 'flex-start',

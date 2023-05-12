@@ -1,12 +1,9 @@
-import type { Page, PageMeta } from '@blocksuite/store';
+import type { Page } from '@blocksuite/store';
 
 import type { AllWorkspace } from '../../../shared';
 
 export type FavoriteListProps = {
-  currentPageId: string | null;
-  openPage: (pageId: string) => void;
-  showList: boolean;
-  pageMeta: PageMeta[];
+  currentWorkspace: AllWorkspace;
 };
 
 export type WorkSpaceSliderBarProps = {

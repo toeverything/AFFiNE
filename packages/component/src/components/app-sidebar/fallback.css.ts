@@ -6,7 +6,6 @@ export const fallbackStyle = style({
 });
 
 export const fallbackHeaderStyle = style({
-  padding: '0 6px',
   height: '58px',
   width: '100%',
   display: 'flex',

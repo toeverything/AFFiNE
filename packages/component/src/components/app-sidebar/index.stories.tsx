@@ -1,17 +1,23 @@
 import { IconButton } from '@affine/component';
-import { SidebarIcon } from '@blocksuite/icons';
+import {
+  DeleteTemporarilyIcon,
+  SettingsIcon,
+  SidebarIcon,
+} from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
 import type { PropsWithChildren } from 'react';
-import { useState } from 'react';
 
-import {
-  AppSidebar,
-  AppSidebarFallback,
-  appSidebarOpenAtom,
-  ResizeIndicator,
-} from '.';
+import { AppSidebar, AppSidebarFallback, appSidebarOpenAtom } from '.';
+import { AddPageButton } from './add-page-button';
+import { CategoryDivider } from './category-divider';
 import { navHeaderStyle, sidebarButtonStyle } from './index.css';
+import { MenuLinkItem } from './menu-item';
+import { QuickSearchInput } from './quick-search-input';
+import {
+  SidebarContainer,
+  SidebarScrollableContainer,
+} from './sidebar-containers';
 
 export default {
   title: 'Components/AppSidebar',
@@ -23,7 +29,7 @@ const Container = ({ children }: PropsWithChildren) => (
     style={{
       position: 'relative',
       width: '100vw',
-      height: '600px',
+      height: 'calc(100vh - 40px)',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'row',
@@ -51,17 +57,12 @@ const Main = () => {
     </div>
   );
 };
-const Footer = () => <div>Add Page</div>;
 
 export const Default: StoryFn = () => {
-  const [ref, setRef] = useState<HTMLElement | null>(null);
   return (
     <>
       <Container>
-        <AppSidebar footer={<Footer />} ref={setRef}>
-          Test
-        </AppSidebar>
-        <ResizeIndicator targetElement={ref} />
+        <AppSidebar />
         <Main />
       </Container>
     </>
@@ -72,6 +73,71 @@ export const Fallback = () => {
   return (
     <Container>
       <AppSidebarFallback />
+      <Main />
+    </Container>
+  );
+};
+
+export const WithItems: StoryFn = () => {
+  return (
+    <Container>
+      <AppSidebar>
+        <SidebarContainer>
+          <QuickSearchInput />
+          <div style={{ height: '20px' }} />
+          <MenuLinkItem
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Settings
+          </MenuLinkItem>
+          <MenuLinkItem
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Settings
+          </MenuLinkItem>
+          <MenuLinkItem
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Settings
+          </MenuLinkItem>
+        </SidebarContainer>
+
+        <SidebarScrollableContainer>
+          <CategoryDivider label="Favorites" />
+          <MenuLinkItem
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Settings
+          </MenuLinkItem>
+          <MenuLinkItem
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Settings
+          </MenuLinkItem>
+
+          <CategoryDivider label="Others" />
+          <MenuLinkItem
+            icon={<DeleteTemporarilyIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Trash
+          </MenuLinkItem>
+        </SidebarScrollableContainer>
+        <SidebarContainer>
+          <AddPageButton />
+        </SidebarContainer>
+      </AppSidebar>
       <Main />
     </Container>
   );
