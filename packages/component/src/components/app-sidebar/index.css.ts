@@ -13,18 +13,16 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  backgroundColor: 'transparent',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
       width: `calc(${navWidthVar})`,
       zIndex: 2,
+      backgroundColor: 'var(--affine-background-primary-color)',
       selectors: {
         '&[data-open="false"]': {
           marginLeft: `calc((10vw + ${navWidthVar}) * -1)`,
-        },
-        '&[data-is-macos-electron="true"]': {
-          backgroundColor: 'var(--affine-background-primary-color)',
         },
       },
     },
