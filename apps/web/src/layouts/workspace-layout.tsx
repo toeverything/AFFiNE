@@ -1,4 +1,7 @@
-import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import {
+  appSidebarOpenAtom,
+  appSidebarResizingAtom,
+} from '@affine/component/app-sidebar';
 import {
   AppContainer,
   MainContainer,
@@ -332,6 +335,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   }, [setOpenQuickSearchModalAtom]);
 
   const resizing = useAtomValue(appSidebarResizingAtom);
+  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
 
   return (
     <>
@@ -355,7 +359,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <MainContainer>
+        <MainContainer sidebarOpen={sidebarOpen}>
           <Suspense fallback={<WorkspaceFallback />}>{children}</Suspense>
           <ToolContainer>
             {/* fixme(himself65): remove this */}
