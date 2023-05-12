@@ -35,7 +35,7 @@ historyBaseAtom.onMount = set => {
         } else {
           return {
             stack: [...prev.stack, url],
-            current: prev.stack.length,
+            current: prev.stack.length - 1,
             skip: false,
           };
         }
