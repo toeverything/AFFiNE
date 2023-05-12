@@ -1,3 +1,4 @@
+import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
 import { atomWithStorage } from 'jotai/utils';
 import { Observable } from 'rxjs';
@@ -7,6 +8,7 @@ export const appSidebarOpenAtom = atomWithStorage(
   APP_SIDEBAR_OPEN,
   undefined as boolean | undefined
 );
+export const appSidebarResizingAtom = atom(false);
 export const appSidebarWidthAtom = atomWithStorage(
   'app-sidebar-width',
   256 /* px */

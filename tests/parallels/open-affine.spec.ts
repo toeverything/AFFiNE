@@ -48,7 +48,7 @@ test('Click right-bottom corner change log icon', async ({ page }) => {
   );
   await page.waitForTimeout(50);
   expect(await editorRightBottomChangeLog.isVisible()).toEqual(true);
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
   const normalRightBottomChangeLog = page.locator(
     '[data-testid=right-bottom-change-log-icon]'
   );

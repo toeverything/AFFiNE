@@ -6,18 +6,9 @@ export const headerContainer = style({
   position: 'sticky',
   top: 0,
   background: 'var(--affine-background-primary-color)',
+  // @ts-ignore
   WebkitAppRegion: 'drag',
   zIndex: 'var(--affine-z-index-popover)',
-  '@media': {
-    '(max-width: 768px)': {
-      selectors: {
-        '&[data-open="true"]': {
-          // @ts-ignore
-          WebkitAppRegion: 'no-drag',
-        },
-      },
-    },
-  },
   selectors: {
     '&[data-has-warning="true"]': {
       height: '96px',
