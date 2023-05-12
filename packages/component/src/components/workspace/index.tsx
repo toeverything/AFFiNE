@@ -9,8 +9,13 @@ export type WorkspaceRootProps = PropsWithChildren<{
 }>;
 
 export const AppContainer = (props: WorkspaceRootProps): ReactElement => {
+  const noisyBackground = environment.isDesktop && environment.isMacOs;
   return (
-    <div className={appStyle} data-is-resizing={props.resizing}>
+    <div
+      className={appStyle}
+      data-noise-background={noisyBackground}
+      data-is-resizing={props.resizing}
+    >
       {props.children}
     </div>
   );
@@ -18,12 +23,15 @@ export const AppContainer = (props: WorkspaceRootProps): ReactElement => {
 
 export type MainContainerProps = PropsWithChildren<{
   className?: string;
+  sidebarOpen?: boolean;
 }>;
 
 export const MainContainer = (props: MainContainerProps): ReactElement => {
   return (
     <div
       className={clsx(mainContainerStyle, 'main-container', props.className)}
+      data-is-desktop={environment.isDesktop}
+      data-is-sidebar-open={props.sidebarOpen}
     >
       {props.children}
     </div>

@@ -1,16 +1,14 @@
 import { style } from '@vanilla-extract/css';
 
-import { navWidthVar } from '../index.css';
-
-export const spacerStyle = style({
+export const resizerContainer = style({
   position: 'absolute',
-  left: navWidthVar,
+  right: 0,
   top: 0,
   bottom: 0,
-  width: '7px',
+  width: '10px',
   height: '100%',
-  borderLeft: '1px solid var(--affine-border-color)',
-  zIndex: 'calc(var(--affine-z-index-modal) - 1)',
+  zIndex: 'calc(var(--affine-z-index-modal) + 1)',
+  transform: 'translateX(50%)',
   backgroundColor: 'transparent',
   opacity: 0,
   cursor: 'col-resize',
@@ -34,5 +32,16 @@ export const spacerStyle = style({
     '&[data-open="open"]': {
       display: 'block',
     },
+  },
+});
+
+export const resizerInner = style({
+  position: 'absolute',
+  height: '100%',
+  width: '2px',
+  left: '3px',
+  backgroundColor: 'var(--affine-border-color)',
+  selectors: {
+    [`${resizerContainer}:hover &`]: {},
   },
 });

@@ -18,7 +18,7 @@ test.skip('New a page ,then open it and export html', async ({ page }) => {
   await page
     .getByPlaceholder('Title')
     .fill('this is a new page to export html content');
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
 
   const cell = page.getByRole('cell', {
     name: 'this is a new page to export html content',
@@ -46,7 +46,7 @@ test.skip('New a page ,then open it and export markdown', async ({ page }) => {
   await page
     .getByPlaceholder('Title')
     .fill('this is a new page to export markdown content');
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
   const cell = page.getByRole('cell', {
     name: 'this is a new page to export markdown content',
   });
