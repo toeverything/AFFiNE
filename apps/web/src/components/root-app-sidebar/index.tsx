@@ -20,7 +20,7 @@ import {
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
@@ -88,12 +88,23 @@ export const RootAppSidebar = ({
     const page = await createPage();
     openPage(page.id);
   }, [createPage, openPage]);
-  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
+  const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
     if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen);
     }
   }, [sidebarOpen]);
+
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if ((e.key === '/' && e.metaKey) || (e.key === '/' && e.ctrlKey)) {
+        setSidebarOpen(!sidebarOpen);
+      }
+    };
+    document.addEventListener('keydown', keydown, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', keydown, { capture: true });
+  }, [sidebarOpen, setSidebarOpen]);
 
   const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
 
