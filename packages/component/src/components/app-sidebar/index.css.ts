@@ -31,9 +31,6 @@ export const navWrapperStyle = style({
     '&[data-open="false"]': {
       marginLeft: `calc(${navWidthVar} * -1)`,
     },
-    '&[data-is-macos-electron="true"]': {
-      backgroundColor: 'transparent',
-    },
     '&[data-enable-animation="true"]': {
       transition: 'margin-left .3s, width .3s',
     },
