@@ -69,7 +69,7 @@ export const toolStyle = style({
   zIndex: 'var(--affine-z-index-popover)',
   '@media': {
     [breakpoints.down('md', true)]: {
-      right: 'calc((100vw - 640px) * 3 / 19 + 5px)',
+      right: 'calc((100vw - 640px) * 3 / 19 + 14px)',
     },
     [breakpoints.down('sm', true)]: {
       right: '5px',
