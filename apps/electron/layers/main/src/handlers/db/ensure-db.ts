@@ -1,4 +1,5 @@
 import { watch } from 'chokidar';
+import { app } from 'electron';
 
 import { appContext } from '../../context';
 import { subjects } from '../../events';
@@ -87,3 +88,7 @@ export async function cleanupSQLiteDBs() {
   dbMapping.clear();
   dbWatchers.clear();
 }
+
+app?.on('before-quit', async () => {
+  await cleanupSQLiteDBs();
+});

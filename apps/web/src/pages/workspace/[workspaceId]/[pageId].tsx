@@ -20,10 +20,9 @@ import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
-import { useRouterAndWorkspaceWithPageIdDefense } from '../../../hooks/use-router-and-workspace-with-page-id-defense';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspacePlugins } from '../../../plugins';
+import { WorkspaceAdapters } from '../../../plugins';
 import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 
 function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
@@ -85,7 +84,8 @@ const WorkspaceDetail: React.FC = () => {
     }
   }, [currentWorkspace]);
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
-    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
+    const PageDetail =
+      WorkspaceAdapters[currentWorkspace.flavour].UI.PageDetail;
     return (
       <PageDetail
         currentWorkspace={currentWorkspace}
@@ -93,7 +93,8 @@ const WorkspaceDetail: React.FC = () => {
       />
     );
   } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
-    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
+    const PageDetail =
+      WorkspaceAdapters[currentWorkspace.flavour].UI.PageDetail;
     return (
       <PageDetail
         currentWorkspace={currentWorkspace}
@@ -108,7 +109,6 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  useRouterAndWorkspaceWithPageIdDefense(router);
   const page = useBlockSuiteWorkspacePage(
     currentWorkspace.blockSuiteWorkspace,
     currentPageId

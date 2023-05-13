@@ -9,9 +9,7 @@ test('Open last workspace when back to affine', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   await createWorkspace({ name: 'New Workspace 2' }, page);
-  // FIXME: can not get when the new workspace is surely created, hack a timeout to wait
-  // waiting for page loading end
-  await page.waitForTimeout(3000);
+  await waitMarkdownImported(page);
   // show workspace list
   await page.getByTestId('workspace-name').click();
 
@@ -48,7 +46,7 @@ test('Click right-bottom corner change log icon', async ({ page }) => {
   );
   await page.waitForTimeout(50);
   expect(await editorRightBottomChangeLog.isVisible()).toEqual(true);
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
   const normalRightBottomChangeLog = page.locator(
     '[data-testid=right-bottom-change-log-icon]'
   );

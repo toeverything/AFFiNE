@@ -1,5 +1,4 @@
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
+import { useAtom, useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 
 import { currentPageIdAtom, currentWorkspaceIdAtom } from '../../atoms';
@@ -11,11 +10,6 @@ import type { AllWorkspace } from '../../shared';
  */
 export const currentWorkspaceAtom = rootCurrentWorkspaceAtom;
 
-export const lastWorkspaceIdAtom = atomWithStorage<string | null>(
-  'last_workspace_id',
-  null
-);
-
 export function useCurrentWorkspace(): [
   AllWorkspace,
   (id: string | null) => void
@@ -23,16 +17,17 @@ export function useCurrentWorkspace(): [
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const [, setId] = useAtom(currentWorkspaceIdAtom);
   const [, setPageId] = useAtom(currentPageIdAtom);
-  const setLast = useSetAtom(lastWorkspaceIdAtom);
   return [
     currentWorkspace,
     useCallback(
       (id: string | null) => {
+        if (typeof window !== 'undefined' && id) {
+          localStorage.setItem('last_workspace_id', id);
+        }
         setPageId(null);
-        setLast(id);
         setId(id);
       },
-      [setId, setLast, setPageId]
+      [setId, setPageId]
     ),
   ];
 }

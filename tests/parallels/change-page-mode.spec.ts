@@ -5,11 +5,26 @@ import { openHomePage } from '../libs/load-page';
 import { clickPageMoreActions, waitMarkdownImported } from '../libs/page-logic';
 
 test('Switch to edgeless by switch edgeless item', async ({ page }) => {
+  async function getCount(): Promise<number> {
+    return page.evaluate(() => {
+      return globalThis.__toastCount;
+    });
+  }
   await openHomePage(page);
   await waitMarkdownImported(page);
   const btn = await page.getByTestId('switch-edgeless-mode-button');
+  await page.evaluate(() => {
+    globalThis.__toastCount = 0;
+    window.addEventListener('affine-toast:emit', () => {
+      globalThis.__toastCount++;
+    });
+  });
   await btn.click();
   await page.waitForTimeout(100);
+  {
+    const count = await getCount();
+    expect(count).toBe(1);
+  }
   const edgeless = page.locator('affine-edgeless-page');
   expect(await edgeless.isVisible()).toBe(true);
 
@@ -19,6 +34,18 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
       return window.getComputedStyle(element).getPropertyValue('padding');
     });
   expect(editorWrapperPadding).toBe('0px');
+  {
+    const count = await getCount();
+    expect(count).toBe(1);
+  }
+  await btn.click();
+  await btn.click();
+  await btn.click();
+  await page.waitForTimeout(100);
+  {
+    const count = await getCount();
+    expect(count).toBe(1);
+  }
 });
 
 test('Convert to edgeless by editor header items', async ({ page }) => {

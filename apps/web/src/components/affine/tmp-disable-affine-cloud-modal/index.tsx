@@ -40,16 +40,16 @@ export const TmpDisableAffineCloudModal: React.FC<
           <ContentTitle>AFFiNE Cloud is upgrading now.</ContentTitle>
           <StyleTips>
             We are upgrading the AFFiNE Cloud service and it is temporarily
-            unavailable on the client side. If you wish to be notified the first
-            time it&apos;s available, please&nbsp;
+            unavailable on the client side. If you wish to stay updated on the
+            progress and be notified on availability, you can join the &nbsp;
             <a
-              href="https://github.com/toeverything/AFFiNE/releases"
+              href="https://community.affine.pro"
               target="_blank"
               style={{
                 color: 'var(--affine-link-color)',
               }}
             >
-              click here
+              AFFiNE Community
             </a>
             .
           </StyleTips>

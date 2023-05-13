@@ -17,6 +17,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, PageMeta } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
+import type {} from '@toeverything/hooks/use-block-suite-page-meta';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { applyUpdate } from 'yjs';

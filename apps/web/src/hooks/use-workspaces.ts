@@ -6,10 +6,10 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 import { workspacesAtom } from '../atoms';
-import { WorkspacePlugins } from '../plugins';
+import { WorkspaceAdapters } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
 import type { AllWorkspace } from '../shared';
 
@@ -86,7 +86,7 @@ export function useAppHelper() {
         }
 
         // delete workspace from plugin
-        await WorkspacePlugins[targetWorkspace.flavour].CRUD.delete(
+        await WorkspaceAdapters[targetWorkspace.flavour].CRUD.delete(
           // fixme: type casting
           targetWorkspace as any
         );
@@ -97,25 +97,3 @@ export function useAppHelper() {
     ),
   };
 }
-
-export const useElementResizeEffect = (
-  element: Element | null,
-  fn: () => void | (() => () => void),
-  // TODO: add throttle
-  _throttle = 0
-) => {
-  useEffect(() => {
-    if (!element) {
-      return;
-    }
-    let dispose: void | (() => void);
-    const resizeObserver = new ResizeObserver(() => {
-      dispose = fn();
-    });
-    resizeObserver.observe(element);
-    return () => {
-      dispose?.();
-      resizeObserver.disconnect();
-    };
-  }, [element, fn]);
-};

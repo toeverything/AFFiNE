@@ -1,5 +1,5 @@
 import { rootStore } from '@affine/workspace/atom';
-import type { AffineWorkspace } from '@affine/workspace/type';
+import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
@@ -70,7 +70,7 @@ export const fetcher = async (
               workspaceApis: affineApis,
             }
           );
-          const remWorkspace: AffineWorkspace = {
+          const remWorkspace: AffineLegacyCloudWorkspace = {
             ...workspace,
             flavour: WorkspaceFlavour.AFFINE,
             blockSuiteWorkspace,

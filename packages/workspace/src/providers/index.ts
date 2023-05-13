@@ -243,7 +243,7 @@ const createSQLiteProvider = (
       blockSuiteWorkspace.doc.on('update', handleUpdate);
 
       let timer = 0;
-      unsubscribe = events.db.onDbFileUpdate(workspaceId => {
+      unsubscribe = events.db.onDBFileUpdate(workspaceId => {
         if (workspaceId === blockSuiteWorkspace.id) {
           // throttle
           logger.debug('on db update', workspaceId);

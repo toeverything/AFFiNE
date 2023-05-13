@@ -1,10 +1,21 @@
 import type { AppUpdater } from 'electron-updater';
+import { z } from 'zod';
 
 import { isMacOS } from '../../../../utils';
 import { updaterSubjects } from '../../events/updater';
 import { logger } from '../../logger';
 
-const buildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+export const ReleaseTypeSchema = z.enum([
+  'stable',
+  'beta',
+  'canary',
+  'internal',
+]);
+
+export const envBuildType = (process.env.BUILD_TYPE || 'canary')
+  .trim()
+  .toLowerCase();
+export const buildType = ReleaseTypeSchema.parse(envBuildType);
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
 
@@ -18,52 +29,44 @@ export const registerUpdater = async () => {
   // require it will cause some side effects and will break generate-main-exposed-meta,
   // so we wrap it in a function
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { autoUpdater } = await import('electron-updater');
+  const { autoUpdater } = require('electron-updater');
 
   _autoUpdater = autoUpdater;
 
-  autoUpdater.autoDownload = false;
-  autoUpdater.allowPrerelease = buildType !== 'stable';
-  autoUpdater.autoInstallOnAppQuit = false;
-  autoUpdater.autoRunAppAfterInstall = true;
-  autoUpdater.setFeedURL({
-    channel: buildType,
-    provider: 'github',
-    repo: 'AFFiNE',
-    owner: 'toeverything',
-    releaseType: buildType === 'stable' ? 'release' : 'prerelease',
-  });
+  if (!_autoUpdater) {
+    return;
+  }
 
-  autoUpdater.autoDownload = false;
-  autoUpdater.allowPrerelease = buildType !== 'stable';
-  autoUpdater.autoInstallOnAppQuit = false;
-  autoUpdater.autoRunAppAfterInstall = true;
-  autoUpdater.setFeedURL({
+  _autoUpdater.autoDownload = false;
+  _autoUpdater.allowPrerelease = buildType !== 'stable';
+  _autoUpdater.autoInstallOnAppQuit = false;
+  _autoUpdater.autoRunAppAfterInstall = true;
+  _autoUpdater.setFeedURL({
     channel: buildType,
     provider: 'github',
-    repo: 'AFFiNE',
+    repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
   });
 
   if (isMacOS()) {
-    autoUpdater.on('update-available', () => {
-      autoUpdater.downloadUpdate();
+    _autoUpdater.on('update-available', () => {
+      _autoUpdater!.downloadUpdate();
       logger.info('Update available, downloading...');
     });
-    autoUpdater.on('download-progress', e => {
+    _autoUpdater.on('download-progress', e => {
       logger.info(`Download progress: ${e.percent}`);
     });
-    autoUpdater.on('update-downloaded', e => {
+    _autoUpdater.on('update-downloaded', e => {
       updaterSubjects.clientUpdateReady.next({
         version: e.version,
       });
       logger.info('Update downloaded, ready to install');
     });
-    autoUpdater.on('error', e => {
+    _autoUpdater.on('error', e => {
       logger.error('Error while updating client', e);
     });
-    autoUpdater.forceDevUpdateConfig = isDev;
-    await autoUpdater.checkForUpdatesAndNotify();
+    _autoUpdater.forceDevUpdateConfig = isDev;
+    await _autoUpdater.checkForUpdatesAndNotify();
   }
 };

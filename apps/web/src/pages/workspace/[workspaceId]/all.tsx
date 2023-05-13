@@ -14,9 +14,8 @@ import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
-import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-router-with-current-workspace-id';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspacePlugins } from '../../../plugins';
+import { WorkspaceAdapters } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
@@ -24,7 +23,6 @@ const AllPage: NextPageWithLayout = () => {
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();
-  useSyncRouterWithCurrentWorkspaceId(router);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
@@ -43,7 +41,7 @@ const AllPage: NextPageWithLayout = () => {
     throw new QueryParamError('workspaceId', router.query.workspaceId);
   }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
-    const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
+    const PageList = WorkspaceAdapters[currentWorkspace.flavour].UI.PageList;
     return (
       <>
         <Head>
@@ -65,7 +63,7 @@ const AllPage: NextPageWithLayout = () => {
       </>
     );
   } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
-    const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
+    const PageList = WorkspaceAdapters[currentWorkspace.flavour].UI.PageList;
     return (
       <>
         <Head>

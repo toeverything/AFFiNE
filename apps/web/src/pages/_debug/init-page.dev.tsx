@@ -1,8 +1,8 @@
+import { AppContainer, MainContainer } from '@affine/component/workspace';
 import { initPage } from '@affine/env/blocksuite';
 import { useRouter } from 'next/router';
 import { lazy, Suspense } from 'react';
 
-import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import type { NextPageWithLayout } from '../../shared';
 
 const Editor = lazy(() =>
@@ -23,14 +23,14 @@ const InitPagePage: NextPageWithLayout = () => {
     testType = 'empty';
   }
   return (
-    <StyledPage>
-      <StyledWrapper>
+    <AppContainer>
+      <MainContainer>
         <Suspense>
           <Editor onInit={initPage} testType={testType} />
         </Suspense>
         <div id="toolWrapper" />
-      </StyledWrapper>
-    </StyledPage>
+      </MainContainer>
+    </AppContainer>
   );
 };
 

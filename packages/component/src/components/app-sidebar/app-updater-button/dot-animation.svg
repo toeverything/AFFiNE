@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 122 116">
+  <path id="b" stroke="#fff" stroke-linecap="round" stroke-width="0" d="M17.9256 115C17.434 111.774 13.1701 104.086 13.4282 95.6465C13.6862 87.207 18.6628 76.0721 17.9256 64.3628C17.1883 52.6535 8.7772 35.9512 9.00452 25.3907C9.23185 14.8302 16.2114 5.06512 17.9256 1"/>
+  <path id="d" stroke="#fff" stroke-linecap="round" stroke-width="0" d="M84.1628 115C85.2376 112.055 94.5618 98.8394 93.9975 91.1338C93.4332 83.4281 82.5505 73.2615 84.1628 62.5704C85.775 51.8793 96.4803 35.4248 95.9832 25.7826C95.4861 16.1404 87.9113 4.71163 84.1628 1"/>
+  <path id="f" stroke="#fff" stroke-linecap="round" stroke-width="0" d="M37.0913 115C37.9604 111.921 44.4347 99.4545 45.3816 92.9773C48.9305 68.7011 35.7877 73.9552 37.0913 62.7781C38.3949 51.6011 47.3889 36.9895 46.9869 26.9091C46.585 16.8286 40.1222 4.88034 37.0913 1"/>
+  <path id="h" stroke="#fff" stroke-linecap="round" stroke-width="0" d="M112.443 115C111.698 112.235 108.25 106.542 107.715 93.7582C107.241 82.4286 107.229 83.9543 112.443 66.1429C116.085 44.0408 100.661 42.5908 101.006 33.539C101.35 24.4871 109.843 4.48439 112.443 1"/>
+  <g>
+    <circle r="1.5" fill="rgba(96, 70, 254, 0.3)">
+      <animateMotion dur="10s" repeatCount="indefinite">
+        <mpath href="#b" />
+      </animateMotion>
+    </circle>
+  </g>
+  <g>
+    <circle r="1" fill="rgba(96, 70, 254, 0.3)" fill-opacity="1" shape-rendering="crispEdges">
+      <animateMotion dur="8s" repeatCount="indefinite">
+        <mpath href="#d" />
+      </animateMotion>
+    </circle>
+  </g>
+  <g>
+    <circle r=".5" fill="rgba(96, 70, 254, 0.3)" fill-opacity="1" shape-rendering="crispEdges">
+      <animateMotion dur="4s" repeatCount="indefinite">
+        <mpath href="#f" />
+      </animateMotion>
+    </circle>
+  </g>
+  <g>
+    <circle r=".8" fill="rgba(96, 70, 254, 0.3)" fill-opacity="1" shape-rendering="crispEdges">
+      <animateMotion dur="6s" repeatCount="indefinite">
+        <mpath href="#h" />
+      </animateMotion>
+    </circle>
+  </g>
+</svg>

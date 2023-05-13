@@ -2,7 +2,10 @@ import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
 import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PermissionType } from '@affine/workspace/affine/api';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
@@ -37,7 +40,7 @@ import {
 
 const AffineRemoteCollaborationPanel: React.FC<
   Omit<PanelProps, 'workspace'> & {
-    workspace: AffineWorkspace;
+    workspace: AffineLegacyCloudWorkspace;
   }
 > = ({ workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
@@ -214,7 +217,7 @@ const LocalCollaborationPanel: React.FC<
 export const CollaborationPanel: React.FC<PanelProps> = props => {
   switch (props.workspace.flavour) {
     case WorkspaceFlavour.AFFINE: {
-      const workspace = props.workspace as AffineWorkspace;
+      const workspace = props.workspace as AffineLegacyCloudWorkspace;
       return (
         <AffineRemoteCollaborationPanel {...props} workspace={workspace} />
       );
