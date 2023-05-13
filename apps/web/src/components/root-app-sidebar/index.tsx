@@ -89,6 +89,14 @@ export const RootAppSidebar = ({
     const page = await createPage();
     openPage(page.id);
   }, [createPage, openPage]);
+
+  // Listen to the "New Page" action from the menu
+  useEffect(() => {
+    if (environment.isDesktop) {
+      return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
+    }
+  }, [onClickNewPage]);
+
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   useEffect(() => {
     if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
