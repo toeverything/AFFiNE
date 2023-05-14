@@ -13,12 +13,12 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
+  zIndex: 2,
   backgroundColor: 'transparent',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
       width: `calc(${navWidthVar})`,
-      zIndex: 2,
       backgroundColor: 'var(--affine-background-primary-color)',
       selectors: {
         '&[data-open="false"]': {
