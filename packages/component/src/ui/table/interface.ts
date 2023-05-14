@@ -4,6 +4,7 @@ export type TableCellProps = {
   align?: 'left' | 'right' | 'center';
   ellipsis?: boolean;
   proportion?: number;
+  active?: boolean;
   style?: CSSProperties;
 } & PropsWithChildren &
   HTMLAttributes<HTMLTableCellElement>;
