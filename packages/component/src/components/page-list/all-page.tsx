@@ -11,7 +11,11 @@ import {
 } from '@affine/component';
 import { OperationCell, TrashOperationCell } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
+import {
+  ArrowDownSmallIcon,
+  FavoritedIcon,
+  FavoriteIcon,
+} from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { forwardRef } from 'react';
 
@@ -21,15 +25,14 @@ import {
   StyledTitleLink,
   StyledTitleWrapper,
 } from './styles';
-
-export type FavoriteTagProps = {
-  active: boolean;
-};
+import { useSorter } from './use-sorter';
 
 // eslint-disable-next-line react/display-name
 const FavoriteTag = forwardRef<
   HTMLButtonElement,
-  FavoriteTagProps & Omit<IconButtonProps, 'children'>
+  {
+    active: boolean;
+  } & Omit<IconButtonProps, 'children'>
 >(({ active, onClick, ...props }, ref) => {
   const t = useAFFiNEI18N();
   return (
@@ -64,6 +67,9 @@ const FavoriteTag = forwardRef<
 export type PageListProps = {
   isPublicWorkspace?: boolean;
   list: ListData[];
+  /**
+   * @deprecated
+   */
   listType: 'all' | 'favorite' | 'shared' | 'public';
   onClickPage: (pageId: string, newTab?: boolean) => void;
 };
@@ -115,35 +121,76 @@ export const PageList: React.FC<PageListProps> = ({
   listType,
 }) => {
   const t = useAFFiNEI18N();
+  const sorter = useSorter<ListData>({
+    data: list,
+    key: 'createDate',
+    order: 'desc',
+  });
 
   const isShared = listType === 'shared';
 
   const theme = useTheme();
   const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
   if (isSmallDevices) {
-    return <PageListMobileView list={list} />;
+    return <PageListMobileView list={sorter.data} />;
   }
 
   const ListHead = () => {
     const t = useAFFiNEI18N();
+    const titleList = [
+      {
+        key: 'title',
+        text: t['Title'](),
+        proportion: 0.5,
+      },
+      {
+        key: 'createDate',
+        text: t['Created'](),
+        proportion: 0.2,
+      },
+      {
+        key: 'updatedDate',
+        text: isShared
+          ? // TODO deprecated
+            'Shared'
+          : t['Updated'](),
+        proportion: 0.2,
+      },
+      { key: 'unsortable_action', sortable: false },
+    ];
+
     return (
       <TableHead>
         <TableRow>
-          <TableCell proportion={0.5}>{t['Title']()}</TableCell>
-          <TableCell proportion={0.2}>{t['Created']()}</TableCell>
-          <TableCell proportion={0.2}>
-            {isShared
-              ? // TODO add i18n
-                'Shared'
-              : t['Updated']()}
-          </TableCell>
-          <TableCell proportion={0.1}></TableCell>
+          {titleList.map(({ key, text, proportion, sortable = true }) => (
+            <TableCell
+              key={key}
+              proportion={proportion}
+              active={sorter.key === key}
+              onClick={
+                sortable
+                  ? () => sorter.shiftOrder(key as keyof ListData)
+                  : undefined
+              }
+            >
+              {text}
+              {sorter.key === key && (
+                <ArrowDownSmallIcon
+                  width={24}
+                  height={24}
+                  style={{
+                    transform: sorter.order === 'asc' ? 'rotateX(180deg)' : '',
+                  }}
+                />
+              )}
+            </TableCell>
+          ))}
         </TableRow>
       </TableHead>
     );
   };
 
-  const ListItems = list.map(
+  const ListItems = sorter.data.map(
     (
       {
         pageId,
@@ -170,13 +217,6 @@ export const PageList: React.FC<PageListProps> = ({
             icon={icon}
             text={title || t['Untitled']()}
             data-testid="title"
-            suffix={
-              <FavoriteTag
-                className={favorite ? '' : 'favorite-button'}
-                onClick={bookmarkPage}
-                active={!!favorite}
-              />
-            }
             onClick={onClickPage}
           />
           <TableCell
@@ -195,9 +235,14 @@ export const PageList: React.FC<PageListProps> = ({
           </TableCell>
           {!isPublicWorkspace && (
             <TableCell
-              style={{ padding: 0 }}
+              style={{ padding: 0, display: 'flex', alignItems: 'center' }}
               data-testid={`more-actions-${pageId}`}
             >
+              <FavoriteTag
+                className={favorite ? '' : 'favorite-button'}
+                onClick={bookmarkPage}
+                active={!!favorite}
+              />
               <OperationCell
                 title={title}
                 favorite={favorite}
