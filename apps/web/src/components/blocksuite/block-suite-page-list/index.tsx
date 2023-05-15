@@ -98,7 +98,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         pageId: pageMeta.id,
         title: pageMeta.title,
         createDate: formatDate(pageMeta.createDate),
-        updatedDate: formatDate(pageMeta.updatedDate),
+        updatedDate: formatDate(pageMeta.updatedDate ?? pageMeta.createDate),
         onClickPage: () => onOpenPage(pageMeta.id),
         onClickRestore: () => {
           restoreFromTrash(pageMeta.id);
@@ -125,7 +125,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       favorite: !!pageMeta.favorite,
       isPublicPage: !!pageMeta.isPublic,
       createDate: formatDate(pageMeta.createDate),
-      updatedDate: formatDate(pageMeta.updatedDate),
+      updatedDate: formatDate(pageMeta.updatedDate ?? pageMeta.createDate),
       onClickPage: () => onOpenPage(pageMeta.id),
       onOpenPageInNewTab: () => onOpenPage(pageMeta.id, true),
       onClickRestore: () => {
