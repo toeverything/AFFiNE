@@ -19,7 +19,7 @@ import { pageListEmptyStyle } from './index.css';
 
 export type BlockSuitePageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  listType: 'all' | 'trash' | 'favorite' | 'shared' | 'public';
+  listType: 'all' | 'trash' | 'shared' | 'public';
   isPublic?: true;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
 };
@@ -31,7 +31,6 @@ const filter = {
     const parentMeta = allMetas.find(m => m.subpageIds?.includes(pageMeta.id));
     return !parentMeta?.trash && pageMeta.trash;
   },
-  favorite: (pageMeta: PageMeta) => pageMeta.favorite && !pageMeta.trash,
   shared: (pageMeta: PageMeta) => pageMeta.isPublic && !pageMeta.trash,
 };
 
@@ -51,9 +50,6 @@ const PageListEmpty = (props: {
   const getEmptyDescription = () => {
     if (listType === 'all') {
       return t['emptyAllPages']();
-    }
-    if (listType === 'favorite') {
-      return t['emptyFavorite']();
     }
     if (listType === 'trash') {
       return t['emptyTrash']();

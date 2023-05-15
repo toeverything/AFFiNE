@@ -40,7 +40,6 @@ export type RootAppSidebarProps = {
   currentPath: string;
   paths: {
     all: (workspaceId: string) => string;
-    favorite: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
     setting: (workspaceId: string) => string;
     shared: (workspaceId: string) => string;
