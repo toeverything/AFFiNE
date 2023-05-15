@@ -90,5 +90,5 @@ export const InternalLottie: FC<CustomLottieProps> = ({
     }
   }, [isStopped, speed]);
 
-  return <div ref={element} style={{ width, height }}></div>;
+  return <div ref={element} style={{ width, height, lineHeight: 1 }}></div>;
 };

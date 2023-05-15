@@ -13,7 +13,7 @@ export const appStyle = style({
     '&[data-is-resizing="true"]': {
       cursor: 'col-resize',
     },
-    '&[data-noise-background="true"]:before': {
+    '&:before': {
       content: '""',
       position: 'absolute',
       inset: 0,
@@ -59,9 +59,6 @@ export const mainContainerStyle = style({
       overflow: 'hidden',
       boxShadow: 'var(--affine-shadow-1)',
     },
-    '&[data-is-desktop="true"][data-is-sidebar-open="true"]': {
-      marginLeft: '2px',
-    },
   },
 });
 
@@ -72,7 +69,7 @@ export const toolStyle = style({
   zIndex: 'var(--affine-z-index-popover)',
   '@media': {
     [breakpoints.down('md', true)]: {
-      right: 'calc((100vw - 640px) * 3 / 19 + 5px)',
+      right: 'calc((100vw - 640px) * 3 / 19 + 14px)',
     },
     [breakpoints.down('sm', true)]: {
       right: '5px',
