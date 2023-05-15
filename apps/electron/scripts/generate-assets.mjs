@@ -59,6 +59,17 @@ if (!process.env.SKIP_WEB_BUILD) {
   await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 }
 
+// step 3: update app-updater.yml content with build type in resources folder
+if (process.env.BUILD_TYPE === 'internal') {
+  const appUpdaterYml = path.join(publicDistDir, 'app-update.yml');
+  const appUpdaterYmlContent = await fs.readFile(appUpdaterYml, 'utf-8');
+  const newAppUpdaterYmlContent = appUpdaterYmlContent.replace(
+    'AFFiNE',
+    'AFFiNE-Releases'
+  );
+  await fs.writeFile(appUpdaterYml, newAppUpdaterYmlContent);
+}
+
 /// --------
 /// --------
 /// --------
