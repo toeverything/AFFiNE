@@ -21,9 +21,10 @@ import {
   updateAvailableAtom,
 } from './index.jotai';
 import { ResizeIndicator } from './resize-indicator';
+import type { SidebarHeaderProps } from './sidebar-header';
 import { SidebarHeader } from './sidebar-header';
 
-export type AppSidebarProps = PropsWithChildren;
+export type AppSidebarProps = PropsWithChildren<SidebarHeaderProps>;
 
 function useEnableAnimation() {
   const [enable, setEnable] = useState(false);
@@ -34,6 +35,11 @@ function useEnableAnimation() {
   }, []);
   return enable;
 }
+
+export type History = {
+  stack: string[];
+  current: number;
+};
 
 export function AppSidebar(props: AppSidebarProps): ReactElement {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
@@ -91,7 +97,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         data-enable-animation={enableAnimation && !isResizing}
       >
         <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
-          <SidebarHeader />
+          <SidebarHeader router={props.router} />
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {props.children}
           </div>

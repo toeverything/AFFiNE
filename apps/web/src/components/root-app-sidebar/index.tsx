@@ -23,8 +23,9 @@ import type { Page } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
 import type React from 'react';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
+import { useHistoryAtom } from '../../atoms/history';
 import type { AllWorkspace } from '../../shared';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
@@ -115,10 +116,22 @@ export const RootAppSidebar = ({
   }, [sidebarOpen, setSidebarOpen]);
 
   const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
+  const [history, setHistory] = useHistoryAtom();
+  const router = useMemo(() => {
+    return {
+      forward: () => {
+        setHistory(true);
+      },
+      back: () => {
+        setHistory(false);
+      },
+      history,
+    };
+  }, [history, setHistory]);
 
   return (
     <>
-      <AppSidebar>
+      <AppSidebar router={router}>
         <SidebarContainer>
           <WorkspaceSelector
             currentWorkspace={currentWorkspace}
