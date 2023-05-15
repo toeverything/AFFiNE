@@ -365,7 +365,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
         <MainContainer sidebarOpen={sidebarOpen}>
-          <Suspense fallback={<WorkspaceFallback />}>{children}</Suspense>
+          {children}
           <ToolContainer>
             {/* fixme(himself65): remove this */}
             <div id="toolWrapper" style={{ marginBottom: '12px' }}>

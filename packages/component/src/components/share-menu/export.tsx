@@ -29,7 +29,7 @@ export const Export: FC<ShareMenuProps> = props => {
             if (!contentParserRef.current) {
               contentParserRef.current = new ContentParser(props.currentPage);
             }
-            return contentParserRef.current.onExportHtml();
+            return contentParserRef.current.exportHtml();
           }}
         >
           <ExportToHtmlIcon className={svgStyle} />
@@ -41,7 +41,7 @@ export const Export: FC<ShareMenuProps> = props => {
             if (!contentParserRef.current) {
               contentParserRef.current = new ContentParser(props.currentPage);
             }
-            return contentParserRef.current.onExportMarkdown();
+            return contentParserRef.current.exportMarkdown();
           }}
         >
           <ExportToMarkdownIcon className={svgStyle} />
