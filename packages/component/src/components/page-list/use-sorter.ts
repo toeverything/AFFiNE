@@ -29,10 +29,11 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
   return 0;
 };
 
-export const useSorter = <T extends Record<keyof any, unknown>>(
-  defaultSorter: Sorter<T> & { order: 'asc' | 'desc' }
-) => {
-  const [sorter, setSorter] = useState<Sorter<T>>({
+export const useSorter = <T extends Record<keyof any, unknown>>({
+  data,
+  ...defaultSorter
+}: Sorter<T> & { order: 'asc' | 'desc' }) => {
+  const [sorter, setSorter] = useState<Omit<Sorter<T>, 'data'>>({
     ...defaultSorter,
     // We should not show sorting icon at first time
     order: 'none',
@@ -48,7 +49,7 @@ export const useSorter = <T extends Record<keyof any, unknown>>(
           order: sorter.order,
         };
   const sortingFn = (a: T, b: T) => defaultSortingFn(sortCtx, a, b);
-  const sortedData = sorter.data.sort(sortingFn);
+  const sortedData = data.sort(sortingFn);
 
   const shiftOrder = (key?: keyof T) => {
     const orders = ['asc', 'desc', 'none'] as const;
@@ -61,7 +62,6 @@ export const useSorter = <T extends Record<keyof any, unknown>>(
       });
       return;
     }
-
     setSorter({
       ...sorter,
       order: orders[(orders.indexOf(sorter.order) + 1) % orders.length],
