@@ -50,7 +50,7 @@ const slideOut2 = keyframes({
 });
 
 export const changeLogWrapperSlideInStyle = style({
-  width: 'calc(100% + 4px)',
+  width: 'calc(100% +32px)',
   flexShrink: 0,
   animation: `${slideIn} 1s ease-in-out forwards`,
   display: 'flex',
@@ -60,7 +60,8 @@ export const changeLogWrapperSlideInStyle = style({
   position: 'relative',
   userSelect: 'none',
   transition: 'all 0.3s',
-  overflow: 'hidden',
+  marginLeft: '-16px',
+  // overflow: 'hidden',
 });
 export const changeLogWrapperSlideOutStyle = style({
   animation: `${slideOut} .3s ease-in-out forwards`,
@@ -68,9 +69,10 @@ export const changeLogWrapperSlideOutStyle = style({
 export const changeLogSlideInStyle = style({
   // fixme: if width is 100% and marginLeft is 0,
   //  the UI will overflow on app sidebar
-  width: '99%',
+  width: '100%',
   height: '32px',
   display: 'flex',
+  marginLeft: '16px',
   justifyContent: 'space-between',
   alignItems: 'center',
   color: 'var(--affine-primary-color)',
@@ -104,11 +106,11 @@ export const linkTextStyle = style({
   overflow: 'hidden',
 });
 export const iconStyle = style({
-  fontSize: '20px',
+  fontSize: '18px',
   marginRight: '12px',
 });
 export const iconButtonStyle = style({
-  fontSize: '20px',
-  marginRight: '0',
+  fontSize: '18px',
+
   color: 'var(--affine-icon-color)',
 });
