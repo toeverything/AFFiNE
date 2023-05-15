@@ -7,8 +7,8 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { registerUpdater } from './handlers/updater';
 import { logger } from './logger';
-import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
+import { getOrCreateAppWindow } from './window';
 
 // allow tests to overwrite app name through passing args
 if (process.argv.includes('--app-name')) {
@@ -28,7 +28,7 @@ if (!isSingleInstance) {
 }
 
 app.on('second-instance', () => {
-  restoreOrCreateWindow();
+  getOrCreateAppWindow();
 });
 
 app.on('open-url', async (_, _url) => {
@@ -47,7 +47,7 @@ app.on('window-all-closed', () => {
 /**
  * @see https://www.electronjs.org/docs/v14-x-y/api/app#event-activate-macos Event: 'activate'
  */
-app.on('activate', restoreOrCreateWindow);
+app.on('activate', getOrCreateAppWindow);
 
 /**
  * Create app window when background process will be ready
@@ -57,18 +57,7 @@ app
   .then(registerProtocol)
   .then(registerHandlers)
   .then(registerEvents)
-  .then(restoreOrCreateWindow)
+  .then(getOrCreateAppWindow)
   .then(createApplicationMenu)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
-/**
- * Check new app version in production mode only
- */
-// FIXME: add me back later
-// if (import.meta.env.PROD) {
-//   app
-//     .whenReady()
-//     .then(() => import('electron-updater'))
-//     .then(({ autoUpdater }) => autoUpdater.checkForUpdatesAndNotify())
-//     .catch(e => console.error('Failed check updates:', e));
-// }

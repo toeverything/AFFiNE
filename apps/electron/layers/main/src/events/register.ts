@@ -3,12 +3,14 @@ import { app, BrowserWindow } from 'electron';
 import { logger } from '../logger';
 import { applicationMenuEvents } from './application-menu';
 import { dbEvents } from './db';
+import { uiEvents } from './ui';
 import { updaterEvents } from './updater';
 
 export const allEvents = {
   db: dbEvents,
   updater: updaterEvents,
   applicationMenu: applicationMenuEvents,
+  ui: uiEvents,
 };
 
 function getActiveWindows() {
@@ -22,7 +24,12 @@ export function registerEvents() {
       const subscription = eventRegister((...args: any) => {
         const chan = `${namespace}:${key}`;
         logger.info('[ipc-event]', chan, args);
-        getActiveWindows().forEach(win => win.webContents.send(chan, ...args));
+        getActiveWindows().forEach(win => {
+          win.webContents.send(chan, ...args);
+          win.getBrowserViews().forEach(view => {
+            view.webContents.send(chan, ...args);
+          });
+        });
       });
       app.on('before-quit', () => {
         subscription();

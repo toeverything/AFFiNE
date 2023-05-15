@@ -1,5 +1,7 @@
 import { app, shell } from 'electron';
 
+import { getOrCreateAppWindow } from './window';
+
 app.on('web-contents-created', (_, contents) => {
   /**
    * Block navigation to origins not on the allowlist.
@@ -23,6 +25,9 @@ app.on('web-contents-created', (_, contents) => {
     shell.openExternal(url).catch(console.error);
   });
 
+  const BASE_RENDERER_URL =
+    process.env.RENDERER_APP_URL || 'file://./index.html';
+
   /**
    * Hyperlinks to allowed sites open in the default browser.
    *
@@ -34,10 +39,11 @@ app.on('web-contents-created', (_, contents) => {
    * @see https://www.electronjs.org/docs/latest/tutorial/security#15-do-not-use-openexternal-with-untrusted-content
    */
   contents.setWindowOpenHandler(({ url }) => {
-    // Open default browser
-    shell.openExternal(url).catch(console.error);
-
-    // Prevent creating new window in application
-    return { action: 'deny' };
+    if (url.startsWith(BASE_RENDERER_URL)) {
+      const window = getOrCreateAppWindow();
+      window.addAppView(url);
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
   });
 });

@@ -47,7 +47,6 @@ export const StyledBreadcrumbs = styled(Link)(() => {
       lineHeight: 'var(--affine-line-height)',
     },
     ':hover': { color: 'var(--affine-primary-color)' },
-    transition: 'all .15s',
     ':visited': {
       ':hover': { color: 'var(--affine-primary-color)' },
     },

@@ -9,7 +9,8 @@ import {
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
+import { atomWithObservable, atomWithStorage } from 'jotai/utils';
+import { map, Observable, of } from 'rxjs';
 
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 import { WorkspaceAdapters } from '../plugins';
@@ -130,3 +131,44 @@ export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
     return record[id];
   }
 );
+
+const activeTabId$ = new Observable<string | null>(subscriber => {
+  if (!environment.isDesktop) {
+    subscriber.next(null);
+    subscriber.complete();
+  }
+  window.apis?.ui.getActiveTab().then(id => {
+    if (id) {
+      subscriber.next(id);
+    }
+  });
+  return window.events?.ui.onActiveTabChanged(id => {
+    subscriber.next(id);
+  });
+});
+
+// const tabs$ = new Observable<string[] | null>(subscriber => {
+//   if (!environment.isDesktop) {
+//     subscriber.next(null);
+//     subscriber.complete();
+//   }
+//   window.apis?.ui.getTabs().then(ids => {
+//     if (ids) {
+//       subscriber.next(ids);
+//     }
+//   });
+//   return window.events?.ui.onTabsUpdated(tabs => {
+//     subscriber.next(tabs);
+//   });
+// });
+
+const currentViewActive$ = activeTabId$.pipe(
+  map(activeId => activeId === window.appInfo?.id)
+);
+
+export const currentViewActiveAtom = atomWithObservable(() => {
+  if (!environment.isDesktop) {
+    return of(true);
+  }
+  return currentViewActive$;
+});

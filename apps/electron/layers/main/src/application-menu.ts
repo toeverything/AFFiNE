@@ -2,9 +2,11 @@ import { app, Menu } from 'electron';
 
 import { isMacOS } from '../../utils';
 import { subjects } from './events';
+import { getOrCreateAppWindow } from './window';
 
 // Unique id for menuitems
 const MENUITEM_NEW_PAGE = 'affine:new-page';
+const MENUITEM_DEVTOOLS = 'affine:devtools';
 
 export function createApplicationMenu() {
   const isMac = isMacOS();
@@ -78,13 +80,25 @@ export function createApplicationMenu() {
       submenu: [
         { role: 'reload' },
         { role: 'forceReload' },
-        { role: 'toggleDevTools' },
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
+        {
+          id: MENUITEM_DEVTOOLS,
+          label: 'Reveal DevTools',
+          accelerator: isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+N',
+          click: () => {
+            const window = getOrCreateAppWindow();
+            console.log('window.activeViewId', window.activeViewId);
+            if (window.activeViewId) {
+              window.revealDevTools(window.activeViewId);
+            }
+            window.revealDevTools('shell');
+          },
+        },
       ],
     },
     // { role: 'windowMenu' }

@@ -6,6 +6,7 @@ import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
 export type WorkspaceRootProps = PropsWithChildren<{
   resizing?: boolean;
+  hidden?: boolean;
 }>;
 
 export const AppContainer = (props: WorkspaceRootProps): ReactElement => {
@@ -15,6 +16,7 @@ export const AppContainer = (props: WorkspaceRootProps): ReactElement => {
       className={appStyle}
       data-noise-background={noisyBackground}
       data-is-resizing={props.resizing}
+      data-is-hidden={props.hidden}
     >
       {props.children}
     </div>

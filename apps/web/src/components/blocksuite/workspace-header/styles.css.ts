@@ -52,7 +52,6 @@ export const titleContainer = style({
 
 export const title = style({
   maxWidth: '620px',
-  transition: 'max-width .15s',
   userSelect: 'none',
   overflow: 'hidden',
   textOverflow: 'ellipsis',

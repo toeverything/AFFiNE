@@ -87,6 +87,7 @@ const events: MainIPCEventMap = (() => {
 
 const appInfo = {
   electron: true,
+  id: process.argv.find(arg => arg.startsWith('--id='))?.split('=')[1],
 };
 
 export { apis, appInfo, events };

@@ -6,8 +6,12 @@ export const root = fileURLToPath(new URL('..', import.meta.url));
 export const NODE_MAJOR_VERSION = 18;
 
 // hard-coded for now:
-// fixme(xp): report error if app is not running on DEV_SERVER_URL
-const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
+// fixme(xp): report error if app is not running on RENDERER_APP_URL
+const RENDERER_APP_URL = (process.env.RENDERER_APP_URL =
+  process.env.RENDERER_APP_URL || 'http://localhost:8080');
+
+const RENDERER_SHELL_URL = (process.env.RENDERER_SHELL_URL =
+  process.env.RENDERER_SHELL_URL || 'http://localhost:5174');
 
 /** @type 'production' | 'development'' */
 const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
@@ -35,8 +39,12 @@ export const config = () => {
     ['process.env.NODE_ENV', `"${mode}"`],
   ]);
 
-  if (DEV_SERVER_URL) {
-    define['process.env.DEV_SERVER_URL'] = `"${DEV_SERVER_URL}"`;
+  if (RENDERER_APP_URL) {
+    define['process.env.RENDERER_APP_URL'] = `"${RENDERER_APP_URL}"`;
+  }
+
+  if (RENDERER_SHELL_URL) {
+    define['process.env.RENDERER_SHELL_URL'] = `"${RENDERER_SHELL_URL}"`;
   }
 
   return {

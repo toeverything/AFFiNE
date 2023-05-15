@@ -126,6 +126,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/electron-shell@workspace:apps/electron-shell":
+  version: 0.0.0-use.local
+  resolution: "@affine/electron-shell@workspace:apps/electron-shell"
+  dependencies:
+    "@types/react": ^18.2.0
+    "@types/react-dom": ^18.2.1
+    "@vanilla-extract/css": ^1.11.0
+    "@vanilla-extract/vite-plugin": ^3.8.1
+    "@vitejs/plugin-react": ^4.0.0
+    jotai: ^2.1.0
+    react: ^18.2.0
+    react-dom: ^18.2.0
+    rxjs: ^7.8.1
+    vite: ^4.3.3
+  languageName: unknown
+  linkType: soft
+
 "@affine/electron@workspace:apps/electron":
   version: 0.0.0-use.local
   resolution: "@affine/electron@workspace:apps/electron"
@@ -9185,7 +9202,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:18.2.4, @types/react-dom@npm:^18.0.0, @types/react-dom@npm:^18.2.4":
+"@types/react-dom@npm:18.2.4, @types/react-dom@npm:^18.0.0, @types/react-dom@npm:^18.2.1, @types/react-dom@npm:^18.2.4":
   version: 18.2.4
   resolution: "@types/react-dom@npm:18.2.4"
   dependencies:
@@ -9212,7 +9229,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*, @types/react@npm:>=16, @types/react@npm:^18.2.6":
+"@types/react@npm:*, @types/react@npm:>=16, @types/react@npm:^18.2.0, @types/react@npm:^18.2.6":
   version: 18.2.6
   resolution: "@types/react@npm:18.2.6"
   dependencies:
@@ -9679,6 +9696,20 @@ __metadata:
   peerDependencies:
     vite: ^2.2.3 || ^3.0.0 || ^4.0.3
   checksum: 475b24ec957ae80d2ada5972b76011969a80094f70dc9ad44f7748b566f87a392923bdc827652b3f6ec2e9d8f9e4b3505c7b60de38d102b090c896ea53db9826
+  languageName: node
+  linkType: hard
+
+"@vanilla-extract/vite-plugin@npm:^3.8.1":
+  version: 3.8.1
+  resolution: "@vanilla-extract/vite-plugin@npm:3.8.1"
+  dependencies:
+    "@vanilla-extract/integration": ^6.0.2
+    outdent: ^0.8.0
+    postcss: ^8.3.6
+    postcss-load-config: ^3.1.0
+  peerDependencies:
+    vite: ^2.2.3 || ^3.0.0 || ^4.0.3
+  checksum: 6c060859bcc4d8131692b1b92c598bee4b636045660e084cc417134bc7638eacbcdbeaebff03b4d1af62851d8957fd943eebd0841ad488535dedb51080c4df41
   languageName: node
   linkType: hard
 
@@ -21879,6 +21910,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-dom@npm:^18.2.0":
+  version: 18.2.0
+  resolution: "react-dom@npm:18.2.0"
+  dependencies:
+    loose-envify: ^1.1.0
+    scheduler: ^0.23.0
+  peerDependencies:
+    react: ^18.2.0
+  checksum: 7d323310bea3a91be2965f9468d552f201b1c27891e45ddc2d6b8f717680c95a75ae0bc1e3f5cf41472446a2589a75aed4483aee8169287909fcd59ad149e8cc
+  languageName: node
+  linkType: hard
+
 "react-element-to-jsx-string@npm:^15.0.0":
   version: 15.0.0
   resolution: "react-element-to-jsx-string@npm:15.0.0"
@@ -22121,6 +22164,15 @@ __metadata:
   dependencies:
     loose-envify: ^1.1.0
   checksum: 790f0db8016db27a618b35bf4b2718a3d10d54daba0d7cefb91e76929332443bb600a16c4986558733f12bb094e7644c20f7e75205175caac2abd284a5c6d9b9
+  languageName: node
+  linkType: hard
+
+"react@npm:^18.2.0":
+  version: 18.2.0
+  resolution: "react@npm:18.2.0"
+  dependencies:
+    loose-envify: ^1.1.0
+  checksum: 88e38092da8839b830cda6feef2e8505dec8ace60579e46aa5490fc3dc9bba0bd50336507dc166f43e3afc1c42939c09fe33b25fae889d6f402721dcd78fca1b
   languageName: node
   linkType: hard
 
@@ -22895,6 +22947,15 @@ __metadata:
   dependencies:
     loose-envify: ^1.1.0
   checksum: 01e55c532356efff71a74862ea2c6b5a9ea8b03fc231bd10dc196c7a344f738db1ddbc5d17a7f2a4e6cc4074f3c64e7974fb2b5d83bc1f084f7fb2ae0c62feb2
+  languageName: node
+  linkType: hard
+
+"scheduler@npm:^0.23.0":
+  version: 0.23.0
+  resolution: "scheduler@npm:0.23.0"
+  dependencies:
+    loose-envify: ^1.1.0
+  checksum: d79192eeaa12abef860c195ea45d37cbf2bbf5f66e3c4dcd16f54a7da53b17788a70d109ee3d3dde1a0fd50e6a8fc171f4300356c5aee4fc0171de526bf35f8a
   languageName: node
   linkType: hard
 
@@ -25450,7 +25511,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^3.0.0 || ^4.0.0, vite@npm:^4.1.4, vite@npm:^4.3.5":
+"vite@npm:^3.0.0 || ^4.0.0, vite@npm:^4.1.4, vite@npm:^4.3.3, vite@npm:^4.3.5":
   version: 4.3.5
   resolution: "vite@npm:4.3.5"
   dependencies:

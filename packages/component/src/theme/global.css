@@ -207,7 +207,6 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 .affine-default-page-block-container {
-  transition: max-width 0.2s;
   min-width: 550px;
 }
 
