@@ -27,6 +27,7 @@ import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
+import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
@@ -166,6 +167,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       // todo(himself65): this is a hack, we should use a better way to set the language
       setUpLanguage(i18n);
     }, [i18n]);
+    useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const meta = useMemo(
