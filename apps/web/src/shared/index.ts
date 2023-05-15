@@ -26,7 +26,6 @@ export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
 
 export const enum WorkspaceSubPath {
   ALL = 'all',
-  // FAVORITE = 'favorite',
   SETTING = 'setting',
   TRASH = 'trash',
   SHARED = 'shared',
