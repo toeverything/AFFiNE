@@ -4,8 +4,8 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230512192655-e61e272b-nightly",
-    "next": "^13.4.1",
+    "@blocksuite/global": "0.0.0-20230514141009-705c0fac-nightly",
+    "next": "^13.4.2",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "zod": "^3.21.4"
