@@ -49,7 +49,7 @@
     "electron-log": "^5.0.0-beta.23",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",
-    "esbuild": "^0.17.18",
+    "esbuild": "^0.17.19",
     "fs-extra": "^11.1.1",
     "playwright": "^1.33.0",
     "ts-node": "^10.9.1",
