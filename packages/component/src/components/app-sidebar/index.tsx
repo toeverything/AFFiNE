@@ -14,6 +14,7 @@ import {
 } from './index.css';
 import {
   APP_SIDEBAR_OPEN,
+  appSidebarFloatingAtom,
   appSidebarOpenAtom,
   appSidebarResizingAtom,
   appSidebarWidthAtom,
@@ -37,21 +38,36 @@ function useEnableAnimation() {
 export function AppSidebar(props: AppSidebarProps): ReactElement {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
+  const [appSidebarFloating, setAppSidebarFloating] = useAtom(
+    appSidebarFloatingAtom
+  );
   const initialRender = open === undefined;
 
   const isResizing = useAtomValue(appSidebarResizingAtom);
   const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open === undefined && localStorage.getItem(APP_SIDEBAR_OPEN) === null) {
-      // give the initial value,
-      // so that the sidebar can be closed on mobile by default
+    function onResize() {
       const { matches } = window.matchMedia(
-        `(min-width: ${floatingMaxWidth}px)`
+        `(max-width: ${floatingMaxWidth}px)`
       );
-      setOpen(matches);
+      if (
+        open === undefined &&
+        localStorage.getItem(APP_SIDEBAR_OPEN) === null
+      ) {
+        // give the initial value,
+        // so that the sidebar can be closed on mobile by default
+        setOpen(!matches);
+      }
+      setAppSidebarFloating(matches && !!open);
     }
-  }, [open, setOpen]);
+
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+    };
+  }, [open, setAppSidebarFloating, setOpen]);
 
   // disable animation to avoid UI flash
   const enableAnimation = useEnableAnimation();
@@ -85,6 +101,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
       <div
         data-testid="app-sidebar-float-mask"
         data-open={open}
+        data-is-floating={appSidebarFloating}
         className={sidebarFloatMaskStyle}
         onClick={() => setOpen(false)}
       />
@@ -99,4 +116,9 @@ export { AppSidebarFallback } from './fallback';
 export * from './menu-item';
 export * from './quick-search-input';
 export * from './sidebar-containers';
-export { appSidebarOpenAtom, appSidebarResizingAtom, updateAvailableAtom };
+export {
+  appSidebarFloatingAtom,
+  appSidebarOpenAtom,
+  appSidebarResizingAtom,
+  updateAvailableAtom,
+};

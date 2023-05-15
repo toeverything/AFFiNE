@@ -3,10 +3,9 @@ import { style } from '@vanilla-extract/css';
 export const resizerContainer = style({
   position: 'absolute',
   right: 0,
-  top: 0,
-  bottom: 0,
-  width: '10px',
-  height: '100%',
+  top: '16px',
+  bottom: '16px',
+  width: '16px',
   zIndex: 'calc(var(--affine-z-index-modal) + 1)',
   transform: 'translateX(50%)',
   backgroundColor: 'transparent',
@@ -24,6 +23,7 @@ export const resizerContainer = style({
       opacity: 1,
     },
     '&[data-resizing="true"]': {
+      opacity: 1,
       transition: 'width .3s, min-width .3s, max-width .3s',
     },
     '&[data-open="false"]': {
@@ -38,10 +38,8 @@ export const resizerContainer = style({
 export const resizerInner = style({
   position: 'absolute',
   height: '100%',
-  width: '2px',
-  left: '3px',
-  backgroundColor: 'var(--affine-border-color)',
-  selectors: {
-    [`${resizerContainer}:hover &`]: {},
-  },
+  width: '4px',
+  left: '6px',
+  borderRadius: '4px',
+  backgroundColor: 'var(--affine-primary-color)',
 });

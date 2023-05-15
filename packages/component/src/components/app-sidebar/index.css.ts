@@ -13,18 +13,16 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  zIndex: 2,
+  backgroundColor: 'transparent',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
       width: `calc(${navWidthVar})`,
-      zIndex: 2,
+      backgroundColor: 'var(--affine-background-primary-color)',
       selectors: {
         '&[data-open="false"]': {
           marginLeft: `calc((10vw + ${navWidthVar}) * -1)`,
-        },
-        '&[data-is-macos-electron="true"]': {
-          backgroundColor: 'var(--affine-background-primary-color)',
         },
       },
     },
@@ -32,9 +30,6 @@ export const navWrapperStyle = style({
   selectors: {
     '&[data-open="false"]': {
       marginLeft: `calc(${navWidthVar} * -1)`,
-    },
-    '&[data-is-macos-electron="true"]': {
-      backgroundColor: 'transparent',
     },
     '&[data-enable-animation="true"]': {
       transition: 'margin-left .3s, width .3s',
@@ -60,18 +55,9 @@ export const navHeaderStyle = style({
   justifyContent: 'space-between',
   alignItems: 'center',
   gap: '32px',
-  '@media': {
-    [`(max-width: ${floatingMaxWidth}px)`]: {
-      selectors: {
-        '&[data-open="true"]': {
-          WebkitAppRegion: 'no-drag',
-        },
-      },
-    } as ComplexStyleRule,
-  },
+  WebkitAppRegion: 'drag',
   selectors: {
     '&[data-is-macos-electron="true"]': {
-      WebkitAppRegion: 'drag',
       justifyContent: 'flex-end',
     },
   },

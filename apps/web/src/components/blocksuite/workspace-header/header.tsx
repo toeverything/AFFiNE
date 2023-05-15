@@ -1,5 +1,8 @@
 import { BrowserWarning } from '@affine/component/affine-banner';
-import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
+import {
+  appSidebarFloatingAtom,
+  appSidebarOpenAtom,
+} from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
@@ -164,6 +167,8 @@ export const Header = forwardRef<
   const open = useAtomValue(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
 
+  const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
+
   const mode = useCurrentMode();
   return (
     <div
@@ -171,6 +176,7 @@ export const Header = forwardRef<
       ref={ref}
       data-has-warning={showWarning}
       data-open={open}
+      data-sidebar-floating={appSidebarFloating}
       {...props}
     >
       {showGuideDownloadClientTip ? (
