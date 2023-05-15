@@ -1,3 +1,4 @@
+import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { style } from '@vanilla-extract/css';
 
 export const root = style({
@@ -15,7 +16,8 @@ export const container = style({
   flexFlow: 'row nowrap',
   minHeight: '40px',
   alignItems: 'center',
-});
+  WebkitAppRegion: 'drag',
+} as ComplexStyleRule);
 
 export const tab = style({
   display: 'flex',
@@ -26,6 +28,8 @@ export const tab = style({
   gap: '8px',
   borderRadius: '4px',
   cursor: 'pointer',
+  userSelect: 'none',
+  WebkitAppRegion: 'no-drag',
   selectors: {
     '&:hover': {
       backgroundColor: 'var(--affine-background-tertiary-color)',
@@ -34,7 +38,7 @@ export const tab = style({
       backgroundColor: 'var(--affine-background-primary-color)',
     },
   },
-});
+} as ComplexStyleRule);
 
 export const closeButton = style({
   width: '16px',
@@ -47,12 +51,13 @@ export const closeButton = style({
   appearance: 'none',
   border: 'none',
   backgroundColor: 'transparent',
+  WebkitAppRegion: 'no-drag',
   selectors: {
     '&:hover': {
       backgroundColor: 'var(--affine-background-primary-color)',
     },
   },
-});
+} as ComplexStyleRule);
 
 export const plusButton = style({
   width: '16px',
@@ -65,9 +70,10 @@ export const plusButton = style({
   appearance: 'none',
   border: 'none',
   backgroundColor: 'transparent',
+  WebkitAppRegion: 'no-drag',
   selectors: {
     '&:hover': {
       backgroundColor: 'var(--affine-background-primary-color)',
     },
   },
-});
+} as ComplexStyleRule);

@@ -39,7 +39,7 @@ app.on('web-contents-created', (_, contents) => {
    * @see https://www.electronjs.org/docs/latest/tutorial/security#15-do-not-use-openexternal-with-untrusted-content
    */
   contents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith(BASE_RENDERER_URL)) {
+    if (url.startsWith(BASE_RENDERER_URL) || url.startsWith('file://')) {
       const window = getOrCreateAppWindow();
       window.addAppView(url);
       return { action: 'deny' };

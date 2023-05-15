@@ -10,8 +10,8 @@
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
-    "dev": "yarn electron-rebuild && yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
-    "watch": "yarn electron-rebuild && yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs --watch",
+    "dev": "yarn electron-rebuild && yarn cross-env RENDERER_APP_URL=http://localhost:8080 RENDERER_SHELL_URL=http://localhost:5174 node scripts/dev.mjs",
+    "watch": "yarn electron-rebuild && yarn cross-env RENDERER_APP_URL=http://localhost:8080 RENDERER_SHELL_URL=http://localhost:5174 node scripts/dev.mjs --watch",
     "prod": "yarn electron-rebuild && yarn node scripts/dev.mjs",
     "build-layers": "zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",

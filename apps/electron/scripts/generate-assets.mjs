@@ -8,6 +8,8 @@ const electronRootDir = path.join(__dirname, '..');
 const publicDistDir = path.join(electronRootDir, 'resources');
 const affineWebDir = path.join(repoRootDir, 'apps', 'web');
 const affineWebOutDir = path.join(affineWebDir, 'out');
+const affineShellDir = path.join(repoRootDir, 'apps', 'electron-shell');
+const affineShellOutDir = path.join(affineShellDir, 'dist');
 const publicAffineOutDir = path.join(publicDistDir, `web-static`);
 
 console.log('build with following dir', {
@@ -58,6 +60,12 @@ if (!process.env.SKIP_WEB_BUILD) {
 
   await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 }
+
+// step 3: build electron-shell
+await $`yarn workspace @affine/electron-shell build`;
+await fs.copy(affineShellOutDir, path.join(publicAffineOutDir, 'shell'), {
+  overwrite: true,
+});
 
 /// --------
 /// --------

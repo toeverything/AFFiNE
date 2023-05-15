@@ -67,6 +67,6 @@ export const registerUpdater = async () => {
       logger.error('Error while updating client', e);
     });
     _autoUpdater.forceDevUpdateConfig = isDev;
-    await _autoUpdater.checkForUpdatesAndNotify();
+    _autoUpdater.checkForUpdatesAndNotify();
   }
 };

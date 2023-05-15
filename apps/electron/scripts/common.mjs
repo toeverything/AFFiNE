@@ -7,11 +7,8 @@ export const NODE_MAJOR_VERSION = 18;
 
 // hard-coded for now:
 // fixme(xp): report error if app is not running on RENDERER_APP_URL
-const RENDERER_APP_URL = (process.env.RENDERER_APP_URL =
-  process.env.RENDERER_APP_URL || 'http://localhost:8080');
-
-const RENDERER_SHELL_URL = (process.env.RENDERER_SHELL_URL =
-  process.env.RENDERER_SHELL_URL || 'http://localhost:5174');
+const RENDERER_APP_URL = process.env.RENDERER_APP_URL;
+const RENDERER_SHELL_URL = process.env.RENDERER_SHELL_URL;
 
 /** @type 'production' | 'development'' */
 const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');

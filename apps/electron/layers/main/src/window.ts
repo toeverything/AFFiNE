@@ -122,7 +122,8 @@ class AppWindow {
   addShellView() {
     logger.info('this.window.getBrowserViews()', this.window.getBrowserViews());
 
-    const pageUrl = process.env.RENDERER_SHELL_URL || 'file://./index.html';
+    const pageUrl =
+      process.env.RENDERER_SHELL_URL || 'file://./shell/index.html';
     const view = new BrowserView({
       webPreferences: {
         webgl: true,

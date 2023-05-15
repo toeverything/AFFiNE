@@ -19,7 +19,19 @@ function toAbsolutePath(url: string) {
   const webStaticDir = join(__dirname, '../../../resources/web-static');
   if (url.startsWith('./')) {
     // if is a file type, load the file in resources
-    if (url.split('/').at(-1)?.includes('.')) {
+    if (url.startsWith('./shell')) {
+      if (url.split('/').at(-1)?.includes('.')) {
+        if (url.split('/').at(-1) === 'index.html') {
+          realpath = join(webStaticDir, decodeURIComponent(url));
+        } else {
+          realpath = join(webStaticDir, 'shell', decodeURIComponent(url));
+        }
+      } else {
+        // else, fallback to load the index.html instead
+        realpath = join(webStaticDir, 'shell', 'index.html');
+      }
+      console.log(url, realpath);
+    } else if (url.split('/').at(-1)?.includes('.')) {
       realpath = join(webStaticDir, decodeURIComponent(url));
     } else {
       // else, fallback to load the index.html instead

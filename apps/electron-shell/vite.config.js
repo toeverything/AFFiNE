@@ -9,6 +9,9 @@ export default {
     port: 5174,
     open: false,
   },
+  build: {
+    assetsDir: 'shell/assets',
+  },
   plugins: [react(), vanillaExtractPlugin()],
   cacheDir: resolve(__dirname, './.vite'),
 };
