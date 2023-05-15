@@ -1,5 +1,6 @@
-import { atom } from 'jotai';
-import Router from 'next/router';
+import { atom, useAtom, useSetAtom } from 'jotai';
+import { useRouter } from 'next/router';
+import { useCallback, useEffect } from 'react';
 
 export type History = {
   stack: string[];
@@ -15,73 +16,84 @@ export const historyBaseAtom = atom<History>({
   skip: false,
 });
 
-historyBaseAtom.onMount = set => {
-  const callback = (url: string) => {
-    set(prev => {
-      console.log('push', url, prev.stack.length, prev.current);
-      if (prev.skip) {
-        return {
-          stack: [...prev.stack],
-          current: prev.current,
-          skip: false,
-        };
-      } else {
-        if (prev.current < prev.stack.length - 1) {
-          const newStack = prev.stack.slice(0, prev.current);
-          newStack.push(url);
-          if (newStack.length > MAX_HISTORY) {
-            newStack.shift();
-          }
+// fixme(himself65): don't use hooks, use atom lifecycle instead
+export function useTrackRouterHistoryEffect() {
+  const setBase = useSetAtom(historyBaseAtom);
+  const router = useRouter();
+  useEffect(() => {
+    const callback = (url: string) => {
+      setBase(prev => {
+        console.log('push', url, prev.skip, prev.stack.length, prev.current);
+        if (prev.skip) {
           return {
-            stack: newStack,
-            current: newStack.length - 1,
+            stack: [...prev.stack],
+            current: prev.current,
             skip: false,
           };
         } else {
-          const newStack = [...prev.stack, url];
-          if (newStack.length > MAX_HISTORY) {
-            newStack.shift();
+          if (prev.current < prev.stack.length - 1) {
+            const newStack = prev.stack.slice(0, prev.current);
+            newStack.push(url);
+            if (newStack.length > MAX_HISTORY) {
+              newStack.shift();
+            }
+            return {
+              stack: newStack,
+              current: newStack.length - 1,
+              skip: false,
+            };
+          } else {
+            const newStack = [...prev.stack, url];
+            if (newStack.length > MAX_HISTORY) {
+              newStack.shift();
+            }
+            return {
+              stack: newStack,
+              current: newStack.length - 1,
+              skip: false,
+            };
           }
-          return {
-            stack: newStack,
-            current: newStack.length - 1,
-            skip: false,
-          };
         }
-      }
-    });
-  };
+      });
+    };
 
-  Router.events.on('routeChangeStart', callback);
-  return () => {
-    Router.events.off('routeChangeStart', callback);
-  };
-};
+    router.events.on('routeChangeComplete', callback);
+    return () => {
+      router.events.off('routeChangeComplete', callback);
+    };
+  }, [router.events, setBase]);
+}
 
-export const historyAtom = atom<History, [forward: boolean], void>(
-  get => get(historyBaseAtom),
-  (get, set, forward) => {
-    if (forward) {
-      const target = Math.min(
-        get(historyBaseAtom).stack.length - 1,
-        get(historyBaseAtom).current + 1
-      );
-      const url = get(historyBaseAtom).stack[target];
-      set(historyBaseAtom, prev => ({
-        ...prev,
-        current: target,
-        skip: true,
-      }));
-      void Router.push(url);
-    } else {
-      const target = Math.max(0, get(historyBaseAtom).current - 1);
-      const url = get(historyBaseAtom).stack[target];
-      set(historyBaseAtom, prev => ({
-        ...prev,
-        current: target,
-        skip: true,
-      }));
-      void Router.push(url);
-    }
-  }
-);
+export function useHistoryAtom() {
+  const router = useRouter();
+  const [base, setBase] = useAtom(historyBaseAtom);
+  return [
+    base,
+    useCallback(
+      (forward: boolean) => {
+        setBase(prev => {
+          if (forward) {
+            const target = Math.min(prev.stack.length - 1, prev.current + 1);
+            const url = prev.stack[target];
+            void router.push(url);
+            return {
+              ...prev,
+              current: target,
+              skip: true,
+            };
+          } else {
+            const target = Math.max(0, prev.current - 1);
+            const url = prev.stack[target];
+            void router.push(url);
+            return {
+              ...prev,
+              current: target,
+              skip: true,
+            };
+          }
+        });
+      },
+      [router, setBase]
+    ),
+  ] as const;
+}

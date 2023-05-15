@@ -20,12 +20,12 @@ import {
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { historyAtom } from '../../atoms/history';
+import { useHistoryAtom } from '../../atoms/history';
 import type { AllWorkspace } from '../../shared';
 import ChangeLog from '../pure/workspace-slider-bar/changeLog';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
@@ -106,7 +106,7 @@ export const RootAppSidebar = ({
   }, [sidebarOpen]);
 
   const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
-  const [history, setHistory] = useAtom(historyAtom);
+  const [history, setHistory] = useHistoryAtom();
   const router = useMemo(() => {
     return {
       forward: () => {
