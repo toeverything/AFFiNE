@@ -33,6 +33,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
         <>
           <IconButton
             size="middle"
+            data-testid="app-sidebar-arrow-button-back"
             disabled={props.router?.history.current === 0}
             onClick={() => {
               props.router?.back();
@@ -42,6 +43,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
           </IconButton>
           <IconButton
             size="middle"
+            data-testid="app-sidebar-arrow-button-forward"
             disabled={
               props.router
                 ? props.router.history.stack.length > 0 &&
