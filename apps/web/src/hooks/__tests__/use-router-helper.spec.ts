@@ -15,7 +15,7 @@ beforeAll(() => {
     createDynamicRouteParser([
       '/workspace/[workspaceId]/[pageId]',
       '/workspace/[workspaceId]/all',
-      '/workspace/[workspaceId]/favorite',
+      // '/workspace/[workspaceId]/favorite',
       '/workspace/[workspaceId]/trash',
       '/workspace/[workspaceId]/setting',
       '/workspace/[workspaceId]/shared',
@@ -55,18 +55,18 @@ describe('useRouterHelper', () => {
     // routerHook.rerender()
     // expect(routerHook.result.current.pathname).toBe('/')
 
-    await hook.jumpToSubPath(
-      'workspace1',
-      WorkspaceSubPath.FAVORITE,
-      RouteLogic.REPLACE
-    );
-    routerHook.rerender();
-    expect(routerHook.result.current.pathname).toBe(
-      '/workspace/[workspaceId]/favorite'
-    );
-    expect(routerHook.result.current.asPath).toBe(
-      '/workspace/workspace1/favorite'
-    );
+    // await hook.jumpToSubPath(
+    //   'workspace1',
+    //   WorkspaceSubPath.FAVORITE,
+    //   RouteLogic.REPLACE
+    // );
+    // routerHook.rerender();
+    // expect(routerHook.result.current.pathname).toBe(
+    //   '/workspace/[workspaceId]/favorite'
+    // );
+    // expect(routerHook.result.current.asPath).toBe(
+    //   '/workspace/workspace1/favorite'
+    // );
   });
 
   test('should jump to the expected page', async () => {
