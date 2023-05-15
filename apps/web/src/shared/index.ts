@@ -34,7 +34,6 @@ export const enum WorkspaceSubPath {
 
 export const WorkspaceSubPathName = {
   [WorkspaceSubPath.ALL]: 'All Pages',
-  // [WorkspaceSubPath.FAVORITE]: 'Favorites',
   [WorkspaceSubPath.SETTING]: 'Settings',
   [WorkspaceSubPath.TRASH]: 'Trash',
   [WorkspaceSubPath.SHARED]: 'Shared',
@@ -44,7 +43,6 @@ export const WorkspaceSubPathName = {
 
 export const pathGenerator = {
   all: workspaceId => `/workspace/${workspaceId}/all`,
-  // favorite: workspaceId => `/workspace/${workspaceId}/favorite`,
   trash: workspaceId => `/workspace/${workspaceId}/trash`,
   setting: workspaceId => `/workspace/${workspaceId}/setting`,
   shared: workspaceId => `/workspace/${workspaceId}/shared`,
@@ -54,7 +52,6 @@ export const pathGenerator = {
 
 export const publicPathGenerator = {
   all: workspaceId => `/public-workspace/${workspaceId}/all`,
-  // favorite: workspaceId => `/public-workspace/${workspaceId}/favorite`,
   trash: workspaceId => `/public-workspace/${workspaceId}/trash`,
   setting: workspaceId => `/public-workspace/${workspaceId}/setting`,
   shared: workspaceId => `/public-workspace/${workspaceId}/shared`,

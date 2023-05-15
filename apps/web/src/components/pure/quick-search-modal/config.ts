@@ -23,11 +23,6 @@ export const useSwitchToConfig = (
         href: pathGenerator.all(workspaceId),
         icon: FolderIcon,
       },
-      // {
-      //   title: t['Favorites'](),
-      //   href: pathGenerator.favorite(workspaceId),
-      //   icon: FavoriteIcon,
-      // },
       {
         title: t['Workspace Settings'](),
         href: pathGenerator.setting(workspaceId),
