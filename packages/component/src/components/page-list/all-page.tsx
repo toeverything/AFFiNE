@@ -12,7 +12,8 @@ import {
 import { OperationCell, TrashOperationCell } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
-  ArrowDownSmallIcon,
+  ArrowDownBigIcon,
+  ArrowUpBigIcon,
   FavoritedIcon,
   FavoriteIcon,
 } from '@blocksuite/icons';
@@ -173,16 +174,17 @@ export const PageList: React.FC<PageListProps> = ({
                   : undefined
               }
             >
-              {text}
-              {sorter.key === key && (
-                <ArrowDownSmallIcon
-                  width={24}
-                  height={24}
-                  style={{
-                    transform: sorter.order === 'asc' ? 'rotateX(180deg)' : '',
-                  }}
-                />
-              )}
+              <div
+                style={{ display: 'flex', alignItems: 'center', width: '100%' }}
+              >
+                {text}
+                {sorter.key === key &&
+                  (sorter.order === 'asc' ? (
+                    <ArrowUpBigIcon width={24} height={24} />
+                  ) : (
+                    <ArrowDownBigIcon width={24} height={24} />
+                  ))}
+              </div>
             </TableCell>
           ))}
         </TableRow>
