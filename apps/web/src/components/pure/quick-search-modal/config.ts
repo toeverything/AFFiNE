@@ -1,7 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
-  FavoriteIcon,
   FolderIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
@@ -24,11 +23,11 @@ export const useSwitchToConfig = (
         href: pathGenerator.all(workspaceId),
         icon: FolderIcon,
       },
-      {
-        title: t['Favorites'](),
-        href: pathGenerator.favorite(workspaceId),
-        icon: FavoriteIcon,
-      },
+      // {
+      //   title: t['Favorites'](),
+      //   href: pathGenerator.favorite(workspaceId),
+      //   icon: FavoriteIcon,
+      // },
       {
         title: t['Workspace Settings'](),
         href: pathGenerator.setting(workspaceId),
