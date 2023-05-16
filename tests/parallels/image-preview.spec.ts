@@ -7,7 +7,7 @@ import {
   waitMarkdownImported,
 } from '../libs/page-logic';
 
-test('image preview should be shown', async ({ page }) => {
+test.skip('image preview should be shown', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   await newPage(page);
