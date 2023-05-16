@@ -3,6 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SearchIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 
+import { Spotlight } from '../spolight';
 import * as styles from './index.css';
 
 interface QuickSearchInputProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -27,6 +28,7 @@ export function QuickSearchInput({ onClick, ...props }: QuickSearchInputProps) {
       <div className={styles.shortcutHint}>
         {isMac ? ' ⌘ + K' : ' Ctrl + K'}
       </div>
+      <Spotlight />
     </div>
   );
 }

@@ -22,6 +22,11 @@ export const root = style({
       color: 'var(--affine-text-secondary-color)',
       pointerEvents: 'none',
     },
+    '&[data-active="true"]:hover': {
+      background:
+        // make this a variable?
+        'linear-gradient(0deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04)), rgba(0, 0, 0, 0.04);',
+    },
   },
 });
 
