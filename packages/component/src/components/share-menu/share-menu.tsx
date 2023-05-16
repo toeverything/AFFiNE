@@ -9,7 +9,7 @@ import type { FC } from 'react';
 import { useRef } from 'react';
 import { useCallback, useState } from 'react';
 
-import { Menu } from '../..';
+import { Menu } from '../../ui/menu/menu';
 import { Export } from './export';
 import { containerStyle, indicatorContainerStyle, tabStyle } from './index.css';
 import { SharePage } from './share-page';

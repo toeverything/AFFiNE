@@ -10,7 +10,7 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import type { FC } from 'react';
 import { useCallback } from 'react';
 
-import { WorkspaceAvatar } from '../workspace-avatar';
+import { WorkspaceAvatar } from '../../workspace-avatar';
 import {
   StyledCard,
   StyledSettingLink,
