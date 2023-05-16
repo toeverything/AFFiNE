@@ -260,18 +260,12 @@
   "Sync across devices with AFFiNE Cloud": "Geräteübergreifende Synchronisierung mit AFFiNE Cloud",
   "Name Your Workspace": "Workspace benennen",
   "Update Available": "Update verfügbar",
-  "com": {
-    "affine": {
-      "edgelessMode": "Edgeless-Modus",
-      "onboarding": {
-        "title2": "Intuitive und robuste, blockbasierte Bearbeitung",
-        "videoDescription1": "Wechsle mühelos zwischen dem Seitenmodus für die strukturierte Dokumentenerstellung und dem Whiteboard-Modus für den Ausdruck kreativer Ideen in freier Form.",
-        "videoDescription2": "Verwende eine modulare Schnittstelle, um strukturierte Dokumente zu erstellen, indem du Textblöcke, Bilder und andere Inhalte einfach per Drag-and-drop anordnen kannst.",
-        "title1": "Hyperfusion von Whiteboard und Dokumenten"
-      },
-      "pageMode": "Seitenmodus"
-    }
-  },
+  "com.affine.edgelessMode": "Edgeless-Modus",
+  "com.affine.onboarding.title2": "Intuitive und robuste, blockbasierte Bearbeitung",
+  "com.affine.onboarding.videoDescription1": "Wechsle mühelos zwischen dem Seitenmodus für die strukturierte Dokumentenerstellung und dem Whiteboard-Modus für den Ausdruck kreativer Ideen in freier Form.",
+  "com.affine.onboarding.videoDescription2": "Verwende eine modulare Schnittstelle, um strukturierte Dokumente zu erstellen, indem du Textblöcke, Bilder und andere Inhalte einfach per Drag-and-drop anordnen kannst.",
+  "com.affine.onboarding.title1": "Hyperfusion von Whiteboard und Dokumenten",
+  "com.affine.pageMode": "Seitenmodus",
   "Update workspace name success": "Update vom Workspace-Namen erfolgreich",
   "Use on current device only": "Nur auf dem aktuellen Gerät verwenden",
   "Workspace database storage description": "Wähle den Ort, an dem du deinen Workspace erstellen möchten. Die Daten vom Workspace werden standardmäßig lokal gespeichert.",

@@ -269,17 +269,11 @@
   "Workspace database storage description": "Sélectionnez l'endroit où vous souhaitez créer votre espace de travail. Les données de l'espace de travail sont enregistrées localement par défaut.",
   "FILE_ALREADY_EXISTS": "Le fichier existe déjà",
   "Update Available": "Mis à jour disponible",
-  "com": {
-    "affine": {
-      "edgelessMode": "Mode sans bords",
-      "onboarding": {
-        "videoDescription2": "Créez facilement des documents structurés, à l'aide d'une interface modulaire où l'on peut faire glisser et déposer des blocs de texte, des images et d'autres contenus.",
-        "title2": "Un mode d'édition intuitif et robuste basé sur des block",
-        "title1": "Tableau blancs et document fusionnés",
-        "videoDescription1": "Basculez facilement entre le mode Page pour de la création de documents structurés et le mode Tableau blanc pour de l'expression visuelle libre d'idées créatives."
-      },
-      "pageMode": "Mode page"
-    }
-  },
+  "com.affine.edgelessMode": "Mode sans bords",
+  "com.affine.onboarding.videoDescription2": "Créez facilement des documents structurés, à l'aide d'une interface modulaire où l'on peut faire glisser et déposer des blocs de texte, des images et d'autres contenus.",
+  "com.affine.onboarding.title2": "Un mode d'édition intuitif et robuste basé sur des block",
+  "com.affine.onboarding.title1": "Tableau blancs et document fusionnés",
+  "com.affine.onboarding.videoDescription1": "Basculez facilement entre le mode Page pour de la création de documents structurés et le mode Tableau blanc pour de l'expression visuelle libre d'idées créatives.",
+  "com.affine.pageMode": "Mode page",
   "others": "Autres"
 }

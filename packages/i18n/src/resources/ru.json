@@ -16,12 +16,8 @@
   "Retain local cached data": "Сохранять локальные кэшированные данные",
   "will delete member": "удалит участника",
   "Download all data": "Скачать все данные",
-  "It takes up little space on your device": {
-    "": "Занимает мало места на вашем устройстве."
-  },
-  "It takes up more space on your device": {
-    "": "Занимает много места на вашем устройстве."
-  },
+  "It takes up little space on your device": "Занимает мало места на вашем устройстве.",
+  "It takes up more space on your device": "Занимает много места на вашем устройстве.",
   "Not now": "Не сейчас",
   "Set a Workspace name": "Задайте имя рабочего пространства",
   "Collaboration Description": "Для совместной работы с другими участниками требуется сервис AFFiNE Cloud.",
@@ -31,9 +27,7 @@
   "All data has been stored in the cloud": "Все данные хранятся в облаке.",
   "Data sync mode": "Режим синхронизации данных",
   "Retain cached cloud data": "Сохраняйте кэшированные облачные данные",
-  "Get in touch! Join our communities": {
-    "": "Свяжитесь с нами! Присоединяйтесь к нашим сообществам."
-  },
+  "Get in touch! Join our communities": "Свяжитесь с нами! Присоединяйтесь к нашим сообществам.",
   "Add to favorites": "Добавить в избранное",
   "Saved then enable AFFiNE Cloud": "Все изменения сохраняются локально, нажмите чтобы включить AFFiNE Cloud.",
   "Enable AFFiNE Cloud Description": "Если этот параметр включен, данные в этом рабочем пространстве будут скопированы и синхронизированы с помощью AFFiNE Cloud.",
@@ -126,9 +120,7 @@
   "Delete Workspace placeholder": "Пожалуйста, введите \"Delete\" для подтверждения",
   "Delete Workspace Description": "Удаление (<1>{{workspace}}</1>) нельзя отменить, пожалуйста, действуйте с осторожностью. Все содержимое будет потеряно.",
   "Delete Workspace Description2": "Удаление (<1>{{workspace}}</1>) приведет к удалению как локальных, так и облачных данных, эта операция не может быть отменена, пожалуйста действуйте с осторожностью.",
-  "Once deleted, you can't undo this action": {
-    "": "После удаления вы не сможете отменить это действие."
-  },
+  "Once deleted, you can't undo this action": "После удаления вы не сможете отменить это действие.",
   "Permanently deleted": "Удалено навсегда",
   "New Keyword Page": "Новая '{{query}}' страница",
   "Restore it": "Восстановить",
