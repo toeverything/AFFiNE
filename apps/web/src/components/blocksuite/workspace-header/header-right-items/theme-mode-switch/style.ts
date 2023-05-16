@@ -30,10 +30,12 @@ export const StyledThemeButton = styled('button')<{
   active: boolean;
 }>(({ active }) => {
   return {
+    padding: '0 8px',
     height: '100%',
     flex: 1,
     cursor: 'pointer',
     color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
+    whiteSpace: 'nowrap',
   };
 });
 export const StyledVerticalDivider = styled('div')(() => {
