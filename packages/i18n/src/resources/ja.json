@@ -61,7 +61,7 @@
   "Enable AFFiNE Cloud Description": "有効にすると、このワークスペース内のデータがAFFiNEクラウド経由でバックアップおよび同期されます",
   "Expand sidebar": "サイドバーを展開",
   "Export": "エクスポート",
-  "Export AFFiNE backup file": "AFFiNEバックアップファイルのエクスポート（近日公開）",
+  "Export AFFiNE backup file": "AFFiNEバックアップファイルのエクスポート",
   "Export Description": "ワークスペースにあるデータ全体をバックアップ用にエクスポートしたり、エクスポートしたデータを再インポートしたりできます",
   "Export success": "エクスポートに成功",
   "Export Shared Pages Description": "ページの静的コピーをダウンロードして、他の人と共有することができます",
