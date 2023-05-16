@@ -280,5 +280,7 @@
   "Update Available": "Update available",
   "dark": "Dark",
   "system": "System",
-  "light": "Light"
+  "light": "Light",
+  "com.affine.cloudTempDisable.title": "AFFiNE Cloud is upgrading now.",
+  "com.affine.cloudTempDisable.description": "We are upgrading the AFFiNE Cloud service and it is temporarily unavailable on the client side. If you wish to stay updated on the progress and be notified on availability, you can join the <1>AFFiNE Community</1>."
 }
