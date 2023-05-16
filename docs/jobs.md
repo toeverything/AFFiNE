@@ -95,7 +95,7 @@
 
   ## Contact us
 
-  Interested? Send us your CV to [contact@toeverything.info].
+  Interested? You can full this [form](https://6dxre9ihosp.typeform.com/to/lnHWRsVS) or send us your CV to [contact@toeverything.info].
 
   Feel free to include any extra information (GitHub link, previous projects, personal blog etc.).
 
