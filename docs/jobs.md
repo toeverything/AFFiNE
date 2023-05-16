@@ -296,3 +296,39 @@
 
 [affine.pro]: http://affine.pro/
 [contact@toeverything.info]: mailto:contact@toeverything.info
+
+- <b>Full stack or intern engineer - Mainly work with TypeScript</b> @[affine.pro]
+
+  <details><summary>TypeScript · BlockSuite · Remote</summary>
+  <p>
+
+  ## What we do
+
+  We **AFFiNE** hold a vision of shaping a world semantically connected through block components in modern applications.
+  We're open for Fullstack Engineer positions across the BlockSuite sub-team. The **BlockSuite** team works on creating
+  the best **block-editor** and **open-block** protocol for use in AFFiNE. Paving the way for a new generation of SaaS
+  software and developers.
+
+  ## Full stack or intern engineer
+
+  ### This position is for
+
+  - Actively participate in Affine's open source work, responsible for implementing Affine's core features and continuously improving the user experience.
+  - Optimise and improve the copy and paste function to increase the efficiency of user copy and paste operations.
+  - Responsible for Affine's import and export work. Familiar with the data structure design of software such as Affine, Markdown, and Notion to ensure the accuracy of imported and exported data.
+
+  ### What we're looking for
+
+  - Proficient in the JavaScript technology stack.
+  - Good English communication and teamwork skills, able to communicate and collaborate effectively with team members both locally and internationally.
+  - Passionate about open source software, familiar with the open source community and experience in open source projects preferred.
+  - Willingness to take on challenging work, agile thinking, strong learning skills and ability to adapt quickly to new technology and job requirements.
+
+  ## Contact us
+
+  Interested? Send us your CV to [contact@toeverything.info].
+
+  Feel free to include any extra information (GitHub link, previous projects, personal blog etc.).
+
+  </p>
+  </details>
