@@ -22,18 +22,30 @@ concurrency:
 
 env:
   BUILD_TYPE: internal
-  RELEASE_VERSION: ${{ github.ref_name }}-${{ github.sha }}
 
 jobs:
+  set-build-version:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      version: 0.0.0-${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: toeverything/set-build-version@latest
+      - id: version
+        run: echo ::set-output name=version::${{ env.BUILD_VERSION }}
+
   before-make:
     runs-on: ubuntu-latest
     environment: production
+    needs:
+      - set-build-version
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Replace Version
-        run: ./scripts/set-version.sh ${{ env.RELEASE_VERSION }}
+        run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - name: generate-assets
         working-directory: apps/electron
         run: yarn generate-assets
@@ -83,7 +95,9 @@ jobs:
           - { os: ubuntu-latest, platform: linux, arch: x64 }
           - { os: windows-latest, platform: windows, arch: x64 }
     runs-on: ${{ matrix.spec.os }}
-    needs: before-make
+    needs:
+      - before-make
+      - set-build-version
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -94,7 +108,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Replace Version
-        run: ./scripts/set-version.sh ${{ env.RELEASE_VERSION }}
+        run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
@@ -143,7 +157,9 @@ jobs:
           path: builds
 
   release:
-    needs: make-distribution
+    needs:
+      - make-distribution
+      - set-build-version
     runs-on: ubuntu-latest
 
     steps:
@@ -180,15 +196,15 @@ jobs:
         run: |
           node generate-yml.js
         env:
-          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+          RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           repository: 'toeverything/AFFiNE-Releases'
-          name: ${{ env.RELEASE_VERSION }}
-          tag_name: ${{ env.RELEASE_VERSION }}
+          name: ${{ needs.set-build-version.outputs.version }}
+          tag_name: ${{ needs.set-build-version.outputs.version }}
           prerelease: true
           files: |
             ./VERSION

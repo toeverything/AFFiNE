@@ -9,6 +9,7 @@ import {
   enableCoverage,
   istanbulTempDir,
   test as base,
+  testResultDir,
 } from '@affine-test/kit/playwright';
 import fs from 'fs-extra';
 import type { ElectronApplication, Page } from 'playwright';
@@ -90,6 +91,9 @@ export const test = base.extend<{
         '.bin',
         `electron${ext}`
       ),
+      recordVideo: {
+        dir: testResultDir,
+      },
       colorScheme: 'light',
     });
     await use(electronApp);

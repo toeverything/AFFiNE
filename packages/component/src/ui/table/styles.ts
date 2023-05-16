@@ -21,25 +21,40 @@ export const StyledTableBody = styled('tbody')(() => {
 });
 
 export const StyledTableCell = styled('td')<
-  Pick<TableCellProps, 'ellipsis' | 'align' | 'proportion'>
->(({ align = 'left', ellipsis = false, proportion }) => {
-  const width = proportion ? `${proportion * 100}%` : 'auto';
-  return {
-    width,
-    height: '52px',
-    lineHeight: '52px',
-    padding: '0 30px',
-    boxSizing: 'border-box',
-    textAlign: align,
-    verticalAlign: 'middle',
-    ...(ellipsis ? textEllipsis(1) : {}),
-    overflowWrap: 'break-word',
-  };
-});
+  Pick<
+    TableCellProps,
+    'ellipsis' | 'align' | 'proportion' | 'active' | 'onClick'
+  >
+>(
+  ({
+    align = 'left',
+    ellipsis = false,
+    proportion,
+    active = false,
+    onClick,
+  }) => {
+    const width = proportion ? `${proportion * 100}%` : 'auto';
+    return {
+      width,
+      height: '52px',
+      lineHeight: '52px',
+      padding: '0 30px',
+      boxSizing: 'border-box',
+      textAlign: align,
+      verticalAlign: 'middle',
+      overflowWrap: 'break-word',
+      userSelect: 'none',
+      ...(active ? { color: 'var(--affine-text-primary-color)' } : {}),
+      ...(ellipsis ? textEllipsis(1) : {}),
+      ...(onClick ? { cursor: 'pointer' } : {}),
+    };
+  }
+);
 
 export const StyledTableHead = styled('thead')(() => {
   return {
     fontWeight: 500,
+    color: 'var(--affine-text-secondary-color)',
     tr: {
       td: {
         whiteSpace: 'nowrap',

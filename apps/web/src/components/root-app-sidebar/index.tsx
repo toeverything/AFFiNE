@@ -23,9 +23,9 @@ import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
-import React from 'react';
-import { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 
+import { useHistoryAtom } from '../../atoms/history';
 import type { AllWorkspace } from '../../shared';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
@@ -40,7 +40,6 @@ export type RootAppSidebarProps = {
   currentPath: string;
   paths: {
     all: (workspaceId: string) => string;
-    favorite: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
     setting: (workspaceId: string) => string;
     shared: (workspaceId: string) => string;
@@ -125,6 +124,18 @@ export const RootAppSidebar = ({
   }, [sidebarOpen, setSidebarOpen]);
 
   const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
+  const [history, setHistory] = useHistoryAtom();
+  const router = useMemo(() => {
+    return {
+      forward: () => {
+        setHistory(true);
+      },
+      back: () => {
+        setHistory(false);
+      },
+      history,
+    };
+  }, [history, setHistory]);
 
   const trashDroppable = useDroppable({
     id: DROPPABLE_SIDEBAR_TRASH,
@@ -132,7 +143,7 @@ export const RootAppSidebar = ({
 
   return (
     <>
-      <AppSidebar>
+      <AppSidebar router={router}>
         <SidebarContainer>
           <WorkspaceSelector
             currentWorkspace={currentWorkspace}
