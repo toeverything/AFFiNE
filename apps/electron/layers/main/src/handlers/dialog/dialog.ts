@@ -6,7 +6,8 @@ import { nanoid } from 'nanoid';
 
 import { appContext } from '../../context';
 import { logger } from '../../logger';
-import { ensureSQLiteDB } from '../db/ensure-db';
+import { ensureSQLiteDB, isRemoveOrMoveEvent } from '../db/ensure-db';
+import type { WorkspaceSQLiteDB } from '../db/sqlite';
 import { getWorkspaceDBPath, isValidDBFile } from '../db/sqlite';
 import { listWorkspaces } from '../workspace/workspace';
 
@@ -232,17 +233,29 @@ export async function moveDBFile(
   workspaceId: string,
   dbFileLocation?: string
 ): Promise<MoveDBFileResult> {
+  let db: WorkspaceSQLiteDB | null = null;
   try {
-    const db = await ensureSQLiteDB(workspaceId);
-
+    const { moveFile, FsWatcher } = await import('@affine/native');
+    db = await ensureSQLiteDB(workspaceId);
     // get the real file path of db
     const realpath = await fs.realpath(db.path);
     const isLink = realpath !== db.path;
-
+    const watcher = FsWatcher.watch(realpath, { recursive: false });
+    const waitForRemove = new Promise<void>(resolve => {
+      const subscription = watcher.subscribe(event => {
+        if (isRemoveOrMoveEvent(event)) {
+          subscription.unsubscribe();
+          // resolve after FSWatcher in `database$` is fired
+          setImmediate(() => {
+            resolve();
+          });
+        }
+      });
+    });
     const newFilePath =
-      dbFileLocation ||
+      dbFileLocation ??
       (
-        getFakedResult() ||
+        getFakedResult() ??
         (await dialog.showSaveDialog({
           properties: ['showOverwriteConfirmation'],
           title: 'Move Workspace Storage',
@@ -263,32 +276,39 @@ export async function moveDBFile(
       };
     }
 
+    db.db.close();
+
     if (await fs.pathExists(newFilePath)) {
       return {
         error: 'FILE_ALREADY_EXISTS',
       };
     }
 
-    db.db.close();
-
     if (isLink) {
       // remove the old link to unblock new link
       await fs.unlink(db.path);
     }
 
-    await fs.move(realpath, newFilePath, {
-      overwrite: true,
-    });
+    logger.info(`[moveDBFile] move ${realpath} -> ${newFilePath}`);
+
+    await moveFile(realpath, newFilePath);
 
     await fs.ensureSymlink(newFilePath, db.path, 'file');
-    logger.info(`openMoveDBFileDialog symlink: ${realpath} -> ${newFilePath}`);
-    db.reconnectDB();
+    logger.info(`[moveDBFile] symlink: ${realpath} -> ${newFilePath}`);
+    // wait for the file move event emits to the FileWatcher in database$ in ensure-db.ts
+    // so that the db will be destroyed and we can call the `ensureSQLiteDB` in the next step
+    // or the FileWatcher will continue listen on the `realpath` and emit file change events
+    // then the database will reload while receiving these events; and the moved database file will be recreated while reloading database
+    await waitForRemove;
+    logger.info(`removed`);
+    await ensureSQLiteDB(workspaceId);
 
     return {
       filePath: newFilePath,
     };
   } catch (err) {
-    logger.error('moveDBFile', err);
+    db?.destroy();
+    logger.error('[moveDBFile]', err);
     return {
       error: 'UNKNOWN_ERROR',
     };

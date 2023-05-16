@@ -38,8 +38,6 @@ interface BlobRow {
 const SQLITE_ORIGIN = Symbol('sqlite-origin');
 
 export class WorkspaceSQLiteDB {
-  static destroyedWorkspaces = new Set<string>();
-
   db: Database;
   ydoc = new Y.Doc();
   firstConnect = false;
@@ -54,7 +52,6 @@ export class WorkspaceSQLiteDB {
   destroy = () => {
     this.db?.close();
     this.ydoc.destroy();
-    WorkspaceSQLiteDB.destroyedWorkspaces.add(this.workspaceId);
   };
 
   getWorkspaceName = () => {
@@ -62,7 +59,7 @@ export class WorkspaceSQLiteDB {
   };
 
   reconnectDB = () => {
-    logger.log('open db', this.workspaceId);
+    logger.log('[WorkspaceSQLiteDB] open db', this.workspaceId);
     if (this.db) {
       this.db.close();
     }
@@ -228,8 +225,9 @@ export async function openWorkspaceDatabase(
 }
 
 export function isValidDBFile(path: string) {
+  let db: Database | null = null;
   try {
-    const db = sqlite(path);
+    db = sqlite(path);
     // check if db has two tables, one for updates and onefor blobs
     const statement = db.prepare(
       `SELECT name FROM sqlite_schema WHERE type='table'`
@@ -243,6 +241,7 @@ export function isValidDBFile(path: string) {
     return true;
   } catch (error) {
     logger.error('isValidDBFile', error);
+    db?.close();
     return false;
   }
 }

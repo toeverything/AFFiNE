@@ -317,7 +317,10 @@ jobs:
           target: ${{ matrix.spec.target }}
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
+        shell: bash
         run: |
+          rm -rf apps/electron/node_modules/better-sqlite3/build
+          yarn --cwd apps/electron/node_modules/better-sqlite3 run install
           yarn test:unit
         env:
           NATIVE_TEST: 'true'
@@ -331,8 +334,10 @@ jobs:
           path: ./apps/electron/resources/web-static
 
       - name: Rebuild Electron dependences
-        run: yarn rebuild:for-electron
-        working-directory: apps/electron
+        shell: bash
+        run: |
+          rm -rf apps/electron/node_modules/better-sqlite3/build
+          yarn workspace @affine/electron rebuild:for-electron
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
@@ -343,8 +348,7 @@ jobs:
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
-        run: yarn test
-        working-directory: apps/electron
+        run: yarn workspace @affine/electron test
         env:
           COVERAGE: true
 

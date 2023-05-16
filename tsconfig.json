@@ -35,7 +35,7 @@
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
-      "@affine/native/event": ["./packages/native/event.d.ts"]
+      "@affine/native/*": ["./packages/native/*"]
     }
   },
   "references": [

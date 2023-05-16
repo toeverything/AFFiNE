@@ -36,6 +36,8 @@ export default defineConfig({
         ],
     exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
     testTimeout: 5000,
+    singleThread: Boolean(process.env.NATIVE_TEST),
+    threads: !process.env.NATIVE_TEST,
     coverage: {
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],

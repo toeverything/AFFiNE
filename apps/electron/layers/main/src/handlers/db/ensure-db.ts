@@ -1,26 +1,27 @@
-import type { watch } from '@affine/native';
 import type { NotifyEvent } from '@affine/native/event';
+import { createFSWatcher } from '@affine/native/fs-watcher';
 import { app } from 'electron';
 import {
+  connectable,
+  defer,
   from,
   fromEvent,
   identity,
   lastValueFrom,
-  NEVER,
   Observable,
   ReplaySubject,
+  Subject,
 } from 'rxjs';
 import {
   debounceTime,
-  distinctUntilChanged,
   exhaustMap,
   filter,
   groupBy,
   ignoreElements,
-  map,
   mergeMap,
   shareReplay,
   startWith,
+  switchMap,
   take,
   takeUntil,
   tap,
@@ -30,49 +31,78 @@ import { appContext } from '../../context';
 import { subjects } from '../../events';
 import { logger } from '../../logger';
 import { ts } from '../../utils';
-import { openWorkspaceDatabase, WorkspaceSQLiteDB } from './sqlite';
+import type { WorkspaceSQLiteDB } from './sqlite';
+import { openWorkspaceDatabase } from './sqlite';
 
-export const databaseInput$ = new ReplaySubject<string>();
-const terminate$ = app ? fromEvent(app, 'before-quit') : NEVER;
+const databaseInput$ = new Subject<string>();
+export const databaseConnector$ = new ReplaySubject<WorkspaceSQLiteDB>();
 
-export const database$ = databaseInput$.pipe(
-  distinctUntilChanged(),
-  filter(
-    workspaceId => !WorkspaceSQLiteDB.destroyedWorkspaces.has(workspaceId)
+const groupedDatabaseInput$ = databaseInput$.pipe(groupBy(identity));
+
+export const database$ = connectable(
+  groupedDatabaseInput$.pipe(
+    mergeMap(workspaceDatabase$ =>
+      workspaceDatabase$.pipe(
+        // only open the first db with the same workspaceId, and emit it to the downstream
+        exhaustMap(workspaceId => {
+          logger.info('[ensureSQLiteDB] open db connection', workspaceId);
+          return from(openWorkspaceDatabase(appContext, workspaceId)).pipe(
+            switchMap(db => {
+              return startWatchingDBFile(db).pipe(
+                // ignore all events and only emit the db to the downstream
+                ignoreElements(),
+                startWith(db)
+              );
+            })
+          );
+        }),
+        shareReplay(1)
+      )
+    ),
+    tap({
+      complete: () => {
+        logger.info('[FSWatcher] close all watchers');
+        createFSWatcher().close();
+      },
+    })
   ),
-  groupBy(identity),
-  mergeMap(workspaceDatabase$ =>
-    workspaceDatabase$.pipe(
-      // only open the first db with the same workspaceId, and emit it to the downstream
-      exhaustMap(workspaceId => {
-        logger.info('[ensureSQLiteDB] open db connection', workspaceId);
-        return from(openWorkspaceDatabase(appContext, workspaceId)).pipe(
-          exhaustMap(db =>
-            startWatchingDBFile(db).pipe(
-              map(() => db),
-              // ignore all events and only emit the db to the downstream
-              ignoreElements(),
-              startWith(db)
-            )
-          )
-        );
-      }),
-      shareReplay(Number.MAX_SAFE_INTEGER)
-    )
-  ),
-  takeUntil(terminate$)
+  {
+    connector: () => databaseConnector$,
+    resetOnDisconnect: true,
+  }
 );
+
+export const databaseConnectableSubscription = database$.connect();
+
+// 1. File delete
+// 2. File move
+//   - on Linux, it's `type: { modify: { kind: 'rename', mode: 'from' } }`
+//   - on Windows, it's `type: { remove: { kind: 'any' } }`
+//   - on macOS, it's `type: { modify: { kind: 'rename', mode: 'any' } }`
+export function isRemoveOrMoveEvent(event: NotifyEvent) {
+  return (
+    typeof event.type === 'object' &&
+    ('remove' in event.type ||
+      ('modify' in event.type &&
+        event.type.modify.kind === 'rename' &&
+        (event.type.modify.mode === 'from' ||
+          event.type.modify.mode === 'any')))
+  );
+}
 
 // if we removed the file, we will stop watching it
 function startWatchingDBFile(db: WorkspaceSQLiteDB) {
-  // require it in the function so that it won't break the `generate-main-exposed-meta.mjs`
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const fsWatch: typeof watch = require('@affine/native').watch;
+  const FSWatcher = createFSWatcher();
   return new Observable<NotifyEvent>(subscriber => {
-    const subscription = fsWatch(db.path).subscribe(
+    logger.info('[FSWatcher] start watching db file', db.workspaceId);
+    const subscription = FSWatcher.watch(db.path, {
+      recursive: false,
+    }).subscribe(
       event => {
+        logger.info('[FSWatcher]', event);
         subscriber.next(event);
-        if (typeof event.type === 'object' && 'remove' in event.type) {
+        // remove file or move file, complete the observable and close db
+        if (isRemoveOrMoveEvent(event)) {
           subscriber.complete();
         }
       },
@@ -81,15 +111,18 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
       }
     );
     return () => {
+      // destroy on unsubscribe
+      logger.info('[FSWatcher] cleanup db file watcher', db.workspaceId);
+      db.destroy();
       subscription.unsubscribe();
     };
   }).pipe(
-    filter(() => ts() - db.lastUpdateTime > 100),
     debounceTime(1000),
+    filter(event => !isRemoveOrMoveEvent(event)),
     tap({
       next: () => {
         logger.info(
-          'db file changed on disk',
+          '[FSWatcher] db file changed on disk',
           db.workspaceId,
           ts() - db.lastUpdateTime,
           'ms'
@@ -101,21 +134,27 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
         // todo: there is still a possibility that the file is deleted
         // but we didn't get the event soon enough and another event tries to
         // access the db
-        logger.info('db file missing', db.workspaceId);
+        logger.info('[FSWatcher] db file missing', db.workspaceId);
         subjects.db.dbFileMissing.next(db.workspaceId);
         db.destroy();
       },
-    })
+    }),
+    takeUntil(defer(() => fromEvent(app, 'before-quit')))
   );
 }
 
 export function ensureSQLiteDB(id: string) {
-  WorkspaceSQLiteDB.destroyedWorkspaces.delete(id);
-  databaseInput$.next(id);
-  return lastValueFrom(
+  const deferValue = lastValueFrom(
     database$.pipe(
       filter(db => db.workspaceId === id && db.db.open),
-      take(1)
+      take(1),
+      tap({
+        error: err => {
+          logger.error('[ensureSQLiteDB] error', err);
+        },
+      })
     )
   );
+  databaseInput$.next(id);
+  return deferValue;
 }
