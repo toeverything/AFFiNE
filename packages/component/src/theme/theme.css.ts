@@ -15,3 +15,9 @@ globalStyle('html', {
 globalStyle('html[data-theme="dark"]', {
   vars: darkCssVariables,
 });
+
+if (process.env.NODE_ENV === 'development') {
+  globalStyle('.undefined', {
+    border: '5px solid red !important',
+  });
+}
