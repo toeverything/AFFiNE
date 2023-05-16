@@ -13,11 +13,13 @@ export const root = style({
   cursor: 'pointer',
   padding: '0 12px',
   position: 'relative',
+  transition: 'all 0.3s ease',
   selectors: {
     '&:hover': {
       background: 'var(--affine-hover-color)',
+      boxShadow: 'var(--affine-shadow-1)',
     },
-    '&:before': {
+    '&[data-has-update="true"]:before': {
       content: "''",
       position: 'absolute',
       top: '-3px',
@@ -42,36 +44,28 @@ export const icon = style({
   fontSize: '24px',
 });
 
-export const particles = style({
-  background: `var(--svg-dot-animation), var(--svg-dot-animation)`,
-  backgroundRepeat: 'no-repeat, repeat',
-  backgroundPosition: 'center, center top 100%',
-  backgroundSize: '100%, 130%',
-  WebkitMaskImage:
-    'linear-gradient(to top, transparent, black, black, transparent)',
-  width: '100%',
-  height: '100%',
+export const closeIcon = style({
   position: 'absolute',
-  left: 0,
-});
-
-export const particlesBefore = style({
-  content: '""',
-  display: 'block',
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  background: `var(--svg-dot-animation), var(--svg-dot-animation), var(--svg-dot-animation)`,
-  backgroundRepeat: 'no-repeat, repeat, repeat',
-  backgroundPosition: 'center, center top 100%, center center',
-  backgroundSize: '100% 120%, 150%, 120%',
-  filter: 'blur(1px)',
-  willChange: 'filter',
+  top: '4px',
+  right: '4px',
+  height: '16px',
+  width: '16px',
+  boxShadow: 'var(--affine-shadow-1)',
+  color: 'var(--affine-text-secondary-color)',
+  backgroundColor: 'var(--affine-background-primary-color)',
+  fontSize: '16px',
+  cursor: 'pointer',
+  transition: '0.1s',
+  borderRadius: '50%',
+  selectors: {
+    '&:hover': {
+      transform: 'scale(1.1)',
+    },
+  },
 });
 
 export const installLabel = style({
   display: 'flex',
-  justifyContent: 'flex-start',
   alignItems: 'center',
   width: '100%',
   height: '100%',
@@ -82,6 +76,7 @@ export const installLabel = style({
 export const installLabelNormal = style([
   installLabel,
   {
+    justifyContent: 'space-between',
     selectors: {
       [`${root}:hover &`]: {
         display: 'none',
@@ -102,6 +97,53 @@ export const installLabelHover = style([
   },
 ]);
 
+export const versionLabel = style({
+  padding: '0 6px',
+  color: 'var(--affine-text-secondary-color)',
+  background: 'var(--affine-background-primary-color)',
+  fontSize: '10px',
+  lineHeight: '18px',
+  borderRadius: '4px',
+});
+
+export const whatsNewLabel = style({
+  display: 'flex',
+  alignItems: 'center',
+  width: '100%',
+  height: '100%',
+  fontSize: 'var(--affine-font-sm)',
+  whiteSpace: 'nowrap',
+});
+
+export const particles = style({
+  background: `var(--svg-dot-animation), var(--svg-dot-animation)`,
+  backgroundRepeat: 'no-repeat, repeat',
+  backgroundPosition: 'center, center top 100%',
+  backgroundSize: '100%, 130%',
+  WebkitMaskImage:
+    'linear-gradient(to top, transparent, black, black, transparent)',
+  width: '100%',
+  height: '100%',
+  position: 'absolute',
+  left: 0,
+  pointerEvents: 'none',
+});
+
+export const particlesBefore = style({
+  content: '""',
+  display: 'block',
+  position: 'absolute',
+  width: '100%',
+  height: '100%',
+  background: `var(--svg-dot-animation), var(--svg-dot-animation), var(--svg-dot-animation)`,
+  backgroundRepeat: 'no-repeat, repeat, repeat',
+  backgroundPosition: 'center, center top 100%, center center',
+  backgroundSize: '100% 120%, 150%, 120%',
+  filter: 'blur(1px)',
+  willChange: 'filter',
+  pointerEvents: 'none',
+});
+
 export const halo = style({
   overflow: 'hidden',
   width: '100%',
@@ -109,6 +151,7 @@ export const halo = style({
   position: 'absolute',
   top: 0,
   left: 0,
+  pointerEvents: 'none',
   ':before': {
     content: '""',
     display: 'block',

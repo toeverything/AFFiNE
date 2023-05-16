@@ -16,14 +16,14 @@ export const appSidebarWidthAtom = atomWithStorage(
   256 /* px */
 );
 
-export const updateAvailableAtom = atomWithObservable<boolean>(() => {
-  return new Observable<boolean>(subscriber => {
-    subscriber.next(false);
+export const updateReadyAtom = atomWithObservable(() => {
+  return new Observable<{ version: string } | null>(subscriber => {
+    subscriber.next(null);
     if (typeof window !== 'undefined') {
       const isMacosDesktop = environment.isDesktop && environment.isMacOs;
       if (isMacosDesktop) {
-        const dispose = window.events?.updater.onClientUpdateReady(() => {
-          subscriber.next(true);
+        const dispose = window.events?.updater.onUpdateReady(info => {
+          subscriber.next(info);
         });
         return () => {
           dispose?.();
@@ -32,3 +32,25 @@ export const updateAvailableAtom = atomWithObservable<boolean>(() => {
     }
   });
 });
+
+export const updateProgressAtom = atomWithObservable<number>(() => {
+  return new Observable<number>(subscriber => {
+    subscriber.next(0);
+    if (typeof window !== 'undefined') {
+      const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+      if (isMacosDesktop) {
+        const dispose = window.events?.updater.onDownloadProgress(progress => {
+          subscriber.next(progress);
+        });
+        return () => {
+          dispose?.();
+        };
+      }
+    }
+  });
+});
+
+export const changelogCheckedAtom = atomWithStorage<Record<string, boolean>>(
+  'affine:client-changelog-checked',
+  {}
+);
