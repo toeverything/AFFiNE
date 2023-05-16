@@ -3,7 +3,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { Workspace } from '@blocksuite/store';
 
-import { WorkspaceCard } from '../components/workspace-card';
+import { WorkspaceCard } from '../components/card/workspace-card';
 import { toast } from '../ui/toast';
 
 export default {
