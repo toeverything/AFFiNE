@@ -34,7 +34,7 @@ export const content = style({
 export const icon = style({
   marginRight: '14px',
   color: 'var(--affine-icon-color)',
-  fontSize: '18px',
+  fontSize: '20px',
 });
 
 export const spacer = style({
