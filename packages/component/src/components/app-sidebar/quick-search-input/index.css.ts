@@ -13,16 +13,13 @@ export const root = style({
   cursor: 'pointer',
   padding: '0 12px',
   margin: '12px 0',
-  selectors: {
-    '&:hover': {
-      background: 'var(--affine-hover-color)',
-    },
-  },
+  position: 'relative',
 });
 
 export const icon = style({
   marginRight: '14px',
   color: 'var(--affine-icon-color)',
+  fontSize: '20px',
 });
 
 export const spacer = style({

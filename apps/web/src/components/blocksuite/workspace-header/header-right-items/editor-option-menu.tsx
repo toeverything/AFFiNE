@@ -40,7 +40,6 @@ const CommonMenu = () => {
   return (
     <FlexWrapper alignItems="center" justifyContent="center">
       <Menu
-        width={276}
         content={content}
         placement="bottom"
         disablePortal={true}
@@ -137,7 +136,6 @@ const PageMenu = () => {
     <>
       <FlexWrapper alignItems="center" justifyContent="center">
         <Menu
-          width={276}
           content={EditMenu}
           placement="bottom-end"
           disablePortal={true}

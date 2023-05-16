@@ -97,6 +97,10 @@ export const Popper = ({
     };
   });
 
+  const mergedClass = [anchorClassName, children.props.className]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <ClickAwayListener
       onClickAway={() => {
@@ -122,9 +126,11 @@ export const Popper = ({
           },
           onPointerEnter: onPointerEnterHandler,
           onPointerLeave: onPointerLeaveHandler,
-          className: `${anchorClassName ? anchorClassName + ' ' : ''}${
-            children.props.className
-          }`,
+          ...(mergedClass
+            ? {
+                className: mergedClass,
+              }
+            : {}),
         })}
         {content && (
           <BasicStyledPopper

@@ -5,6 +5,7 @@ import '@affine/component/theme/theme.css';
 import { useDarkMode } from 'storybook-dark-mode';
 
 export const parameters = {
+  backgrounds: { disable: true },
   actions: { argTypesRegex: '^on[A-Z].*' },
   controls: {
     matchers: {

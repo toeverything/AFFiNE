@@ -1,5 +1,5 @@
-import { displayFlex, styled, textEllipsis } from '../..';
-import { IconButton } from '../..';
+import { displayFlex, styled, textEllipsis } from '../../../styles';
+import { IconButton } from '../../../ui/button/icon-button';
 
 export const StyleWorkspaceInfo = styled('div')(() => {
   return {
@@ -60,6 +60,9 @@ export const StyledCard = styled('div')<{
         opacity: 1,
         pointerEvents: 'auto',
       },
+    },
+    '@media (max-width: 720px)': {
+      width: '100%',
     },
   };
 });

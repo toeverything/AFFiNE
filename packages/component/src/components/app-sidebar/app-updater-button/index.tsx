@@ -15,7 +15,6 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
 
   return (
     <button
-      data-testid="new-page-button"
       style={style}
       className={clsx([styles.root, className])}
       onClick={() => {

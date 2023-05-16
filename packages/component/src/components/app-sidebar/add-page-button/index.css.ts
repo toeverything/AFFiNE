@@ -8,15 +8,11 @@ export const root = style({
   border: '1px solid var(--affine-black-10)',
   fontSize: 'var(--affine-font-sm)',
   width: '100%',
+  position: 'relative',
   height: '52px',
   userSelect: 'none',
   cursor: 'pointer',
   padding: '0 24px',
-  selectors: {
-    '&:hover': {
-      background: 'var(--affine-hover-color)',
-    },
-  },
 });
 
 export const icon = style({

@@ -1,7 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PlusIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
+import type React from 'react';
 
+import { Spotlight } from '../spolight';
 import * as styles from './index.css';
 
 interface AddPageButtonProps {
@@ -26,6 +28,7 @@ export function AddPageButton({
       onClick={onClick}
     >
       <PlusIcon className={styles.icon} /> {t['New Page']()}
+      <Spotlight />
     </button>
   );
 }
