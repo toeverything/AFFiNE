@@ -61,6 +61,9 @@ export const StyledCard = styled('div')<{
         pointerEvents: 'auto',
       },
     },
+    '@media (max-width: 720px)': {
+      width: '100%',
+    },
   };
 });
 
