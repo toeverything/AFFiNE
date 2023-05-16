@@ -13,35 +13,37 @@ interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
 
 interface MenuLinkItemProps extends MenuItemProps, Pick<LinkProps, 'href'> {}
 
-export function MenuItem({
-  onClick,
-  icon,
-  active,
-  children,
-  disabled,
-  ...props
-}: MenuItemProps) {
-  return (
-    <div
-      {...props}
-      className={clsx([styles.root, props.className])}
-      onClick={onClick}
-      data-active={active}
-      data-disabled={disabled}
-    >
-      {icon &&
-        React.cloneElement(icon, {
-          className: clsx([styles.icon, icon.props.className]),
-        })}
-      <div className={styles.content}>{children}</div>
-    </div>
-  );
-}
+export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
+  ({ onClick, icon, active, children, disabled, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        {...props}
+        className={clsx([styles.root, props.className])}
+        onClick={onClick}
+        data-active={active}
+        data-disabled={disabled}
+      >
+        {icon &&
+          React.cloneElement(icon, {
+            className: clsx([styles.icon, icon.props.className]),
+          })}
+        <div className={styles.content}>{children}</div>
+      </div>
+    );
+  }
+);
+MenuItem.displayName = 'MenuItem';
 
-export function MenuLinkItem({ href, ...props }: MenuLinkItemProps) {
-  return (
-    <Link href={href} className={styles.linkItemRoot}>
-      <MenuItem {...props}></MenuItem>
-    </Link>
-  );
-}
+export const MenuLinkItem = React.forwardRef<HTMLDivElement, MenuLinkItemProps>(
+  ({ href, ...props }, ref) => {
+    return (
+      <Link href={href} className={styles.linkItemRoot}>
+        {/* The <a> element rendered by Link does not generate display box due to `display: contents` style */}
+        {/* Thus ref is passed to MenuItem instead of Link */}
+        <MenuItem ref={ref} {...props}></MenuItem>
+      </Link>
+    );
+  }
+);
+MenuLinkItem.displayName = 'MenuLinkItem';

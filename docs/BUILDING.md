@@ -80,10 +80,17 @@ For more details, see [apps/web/README.md](../apps/web/README.md)
 Adding test cases is strongly encouraged when you contribute new features and bug fixes.
 
 We use [Playwright](https://playwright.dev/) for E2E test, and [vitest](https://vitest.dev/) for unit test.
-
-To test locally, please make sure browser binaries are already installed via `npx playwright install`. Then there are multi commands to choose from:
+To test locally, please make sure browser binaries are already installed via `npx playwright install`.
+Also make sure you have built the `@affine/web` workspace before running E2E tests.
 
 ```sh
+yarn  build
 # run tests in headless mode in another terminal window
 yarn test
 ```
+
+## Troubleshooting
+
+> I ran `yarn start -p 8080` after `yarn build` but the index page returned 404.
+
+Try stopping your development server (initialized by `yarn dev:local` or something) and running `yarn build` again.
