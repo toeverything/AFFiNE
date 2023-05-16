@@ -2,7 +2,7 @@ import { style } from '@vanilla-extract/css';
 
 export const blockCard = style({
   display: 'flex',
-  gap: '4px',
+  gap: '12px',
   padding: '8px 12px',
   color: 'var(--affine-text-primary-color)',
   backgroundColor: 'var(--affine-background-primary-color)',
