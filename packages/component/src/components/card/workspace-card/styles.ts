@@ -1,5 +1,5 @@
-import { displayFlex, styled, textEllipsis } from '../..';
-import { IconButton } from '../..';
+import { displayFlex, styled, textEllipsis } from '../../../styles';
+import { IconButton } from '../../../ui/button/icon-button';
 
 export const StyleWorkspaceInfo = styled('div')(() => {
   return {

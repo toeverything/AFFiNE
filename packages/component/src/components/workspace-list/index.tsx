@@ -12,7 +12,7 @@ import {
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import type { FC } from 'react';
 
-import { WorkspaceCard } from '../workspace-card';
+import { WorkspaceCard } from '../../components/card/workspace-card';
 import { workspaceItemStyle } from './index.css';
 
 export type WorkspaceListProps = {
