@@ -62,9 +62,6 @@ export const updateAvailableAtom = atomWithObservable(() => {
 export const downloadProgressAtom = atomWithObservable<number>(() => {
   return rpcToObservable(0, {
     event: window.events?.updater.onDownloadProgress,
-    onSubscribe: () => {
-      window.events?.updater.onDownloadProgress;
-    },
   });
 });
 
