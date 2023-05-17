@@ -43,6 +43,7 @@ function FavoriteMenuItem({
           marginLeft: nestedItem ? '12px' : undefined,
           width: nestedItem ? 'calc(100% - 12px)' : undefined,
         }}
+        data-type="favorite-list-item"
         data-testid={`favorite-list-item-${pageId}`}
         active={active}
         href={`/workspace/${workspace.id}/${pageId}`}

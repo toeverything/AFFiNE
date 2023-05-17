@@ -42,7 +42,6 @@ export const content = style({
 });
 
 export const icon = style({
-  marginRight: '14px',
   color: 'var(--affine-icon-color)',
   fontSize: '20px',
 });
@@ -61,6 +60,18 @@ export const collapsedIconContainer = style({
     },
     '&:hover': {
       background: 'var(--affine-hover-color)',
+    },
+  },
+});
+
+export const iconsContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  width: '28px',
+  selectors: {
+    '&[data-collapsible="true"]': {
+      width: '40px',
     },
   },
 });
