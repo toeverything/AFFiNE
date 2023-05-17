@@ -1,3 +1,4 @@
+import { config } from '@affine/env/config';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
@@ -50,10 +51,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
 
   const onReadOrDismissCurrentChangelog = (visit: boolean) => {
     if (visit) {
-      window.open(
-        `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
-        '_blank'
-      );
+      window.open(config.changelogUrl, '_blank');
     }
 
     startTransition(() =>
@@ -79,10 +77,19 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
       onClick={() => {
         if (updateReady) {
           window.apis?.updater.quitAndInstall();
-        } else if (updateAvailable?.allowAutoUpdate) {
-          // wait for download to finish
-        } else if (updateAvailable || currentChangelogUnread) {
+        } else if (updateAvailable) {
+          if (updateAvailable.allowAutoUpdate) {
+            // wait for download to finish
+          } else {
+            window.open(
+              `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
+              '_blank'
+            );
+          }
+        } else if (currentChangelogUnread) {
           onReadOrDismissCurrentChangelog(true);
+        } else {
+          // do nothing since we will not get here
         }
       }}
     >
