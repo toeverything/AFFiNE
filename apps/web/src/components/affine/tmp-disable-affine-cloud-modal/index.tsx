@@ -47,15 +47,15 @@ export const TmpDisableAffineCloudModal: React.FC<
             <Trans i18nKey="com.affine.cloudTempDisable.description">
               We are upgrading the AFFiNE Cloud service and it is temporarily
               unavailable on the client side. If you wish to stay updated on the
-              progress and be notified on availability, you can join the
+              progress and be notified on availability, you can fill out the
               <a
-                href="https://community.affine.pro"
+                href="https://6dxre9ihosp.typeform.com/to/B8IHwuyy"
                 target="_blank"
                 style={{
                   color: 'var(--affine-link-color)',
                 }}
               >
-                AFFiNE Community
+                AFFiNE Cloud Signup
               </a>
               .
             </Trans>
