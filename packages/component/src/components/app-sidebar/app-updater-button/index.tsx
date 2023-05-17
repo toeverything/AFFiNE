@@ -2,10 +2,14 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
-import { startTransition, useEffect } from 'react';
+import { startTransition } from 'react';
 
-import { changelogCheckedAtom, updateReadyAtom } from '../index.jotai';
 import * as styles from './index.css';
+import {
+  changelogCheckedAtom,
+  updateAvailableAtom,
+  updateReadyAtom,
+} from './index.jotai';
 
 interface AddPageButtonProps {
   className?: string;
@@ -30,14 +34,15 @@ const currentChangelogUnreadAtom = atom(async get => {
 export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   const t = useAFFiNEI18N();
 
-  useEffect(() => {
-    window.apis?.updater.checkForUpdatesAndNotify();
-  }, []);
-
   const currentChangelogUnread = useAtomValue(currentChangelogUnreadAtom);
   const updateReady = useAtomValue(updateReadyAtom);
+  const updateAvailable = useAtomValue(updateAvailableAtom);
   const currentVersion = useAtomValue(currentVersionAtom);
   const onReadOrDismissChangelog = useSetAtom(changelogCheckedAtom);
+
+  console.log('currentChangelogUnread', currentChangelogUnread);
+  console.log('updateReady', updateReady);
+  console.log('updateAvailable', updateAvailable);
 
   const onReadOrDismissCurrentChangelog = (visit: boolean) => {
     if (visit) {
@@ -54,7 +59,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
     );
   };
 
-  if (!updateReady && !currentChangelogUnread) {
+  if (!updateAvailable && !currentChangelogUnread) {
     return null;
   }
 
@@ -71,11 +76,13 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
         }
       }}
     >
-      {updateReady && (
+      {updateAvailable && (
         <>
           <div className={clsx([styles.installLabelNormal])}>
             <span>{t['Update Available']()}</span>
-            <span className={styles.versionLabel}>{updateReady?.version}</span>
+            <span className={styles.versionLabel}>
+              {updateAvailable?.version}
+            </span>
           </div>
           <div className={clsx([styles.installLabelHover])}>
             <ResetIcon className={styles.icon} />
@@ -83,7 +90,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
           </div>
         </>
       )}
-      {!updateReady && currentChangelogUnread && (
+      {!updateAvailable && currentChangelogUnread && (
         <>
           <div className={clsx([styles.whatsNewLabel])}>
             <NewIcon className={styles.icon} />

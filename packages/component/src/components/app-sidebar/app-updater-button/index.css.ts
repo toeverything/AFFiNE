@@ -16,7 +16,7 @@ export const root = style({
   transition: 'all 0.3s ease',
   selectors: {
     '&:hover': {
-      background: 'var(--affine-hover-color)',
+      // background: 'var(--affine-hover-color)',
       boxShadow: 'var(--affine-shadow-1)',
     },
     '&[data-has-update="true"]:before': {
@@ -146,30 +146,35 @@ export const particlesBefore = style({
 
 export const halo = style({
   overflow: 'hidden',
-  width: '100%',
-  height: '100%',
   position: 'absolute',
-  top: 0,
-  left: 0,
-  pointerEvents: 'none',
+  inset: 0,
   ':before': {
     content: '""',
     display: 'block',
-    width: '60%',
-    height: '40%',
+    inset: 0,
     position: 'absolute',
-    top: '80%',
-    left: '50%',
-    background:
-      'linear-gradient(180deg, rgba(50, 26, 206, 0.1) 10%, rgba(50, 26, 206, 0.35) 30%, rgba(84, 56, 255, 1) 50%)',
     filter: 'blur(10px) saturate(1.2)',
-    transform: 'translateX(-50%) translateY(calc(0 * 1%)) scale(0)',
     transition: '0.3s ease',
-    willChange: 'filter',
+    willChange: 'filter, transform',
+    transform: 'translateY(100%)',
+    background:
+      'radial-gradient(ellipse 60% 80% at bottom, rgba(50, 26, 206, 0.35), transparent)',
+  },
+  ':after': {
+    content: '""',
+    display: 'block',
+    inset: 0,
+    position: 'absolute',
+    filter: 'blur(10px) saturate(1.2)',
+    transition: '0.1s ease',
+    willChange: 'filter, transform',
+    transform: 'translateY(100%)',
+    background:
+      'radial-gradient(ellipse 30% 45% at bottom, rgba(50, 26, 206, 0.6), transparent)',
   },
   selectors: {
-    '&:hover:before': {
-      transform: 'translateX(-50%) translateY(calc(-70 * 1%)) scale(1)',
+    '&:hover:before, &:hover:after': {
+      transform: 'translateY(0)',
     },
   },
 });
