@@ -129,6 +129,15 @@ export const AllWorkspaceContext = ({
   return <>{children}</>;
 };
 
+declare global {
+  // eslint-disable-next-line no-var
+  var HALTING_PROBLEM_TIMEOUT: number;
+}
+
+if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
+  globalThis.HALTING_PROBLEM_TIMEOUT = 1000;
+}
+
 export const CurrentWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
@@ -137,12 +146,15 @@ export const CurrentWorkspaceContext = ({
   const exist = metadata.find(m => m.id === workspaceId);
   const router = useRouter();
   const push = router.push;
+  // fixme(himself65): this is not a good way to handle this,
+  //  need a better way to check whether this workspace really exist.
   useEffect(() => {
     const id = setTimeout(() => {
       if (!exist) {
         void push('/');
+        globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
       }
-    }, 1000);
+    }, globalThis.HALTING_PROBLEM_TIMEOUT);
     return () => {
       clearTimeout(id);
     };
