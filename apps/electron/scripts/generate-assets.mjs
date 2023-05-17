@@ -21,14 +21,14 @@ console.log('build with following dir', {
 });
 
 // step 0: check version match
-const electronPackageJson = await fs.readFile(
-  path.join(electronRootDir, 'package.json'),
-  'utf-8'
-);
-const { version } = JSON.parse(electronPackageJson);
-if (releaseVersionEnv && version !== releaseVersionEnv) {
+const electronPackageJson = await import(`${electronRootDir}/package.json`, {
+  assert: {
+    type: 'json',
+  },
+});
+if (releaseVersionEnv && electronPackageJson.version !== releaseVersionEnv) {
   throw new Error(
-    `Version mismatch, expected ${releaseVersionEnv} but got ${version}`
+    `Version mismatch, expected ${releaseVersionEnv} but got ${electronPackageJson.version}`
   );
 }
 // copy web dist files to electron dist
