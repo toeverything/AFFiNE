@@ -32,9 +32,6 @@ if (process.platform === 'win32') {
 
 cd(repoRootDir);
 
-// step 1: build electron resources
-await $`yarn workspace @affine/electron build-layers`;
-
 // step 2: build web (nextjs) dist
 if (!process.env.SKIP_WEB_BUILD) {
   process.env.ENABLE_LEGACY_PROVIDER = 'false';
