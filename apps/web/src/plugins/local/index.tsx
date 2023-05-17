@@ -4,6 +4,7 @@ import {
   DEFAULT_WORKSPACE_NAME,
 } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
+import { PageNotFoundError } from '@affine/env/constant';
 import {
   CRUD,
   saveWorkspaceToLocalStorage,
@@ -18,7 +19,6 @@ import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import React from 'react';
 
-import { PageNotFoundError } from '../../components/affine/affine-error-eoundary';
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
