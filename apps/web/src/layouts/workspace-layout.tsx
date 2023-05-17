@@ -131,11 +131,11 @@ export const AllWorkspaceContext = ({
 
 declare global {
   // eslint-disable-next-line no-var
-  var HALT_PROBLEM_TIMEOUT: number;
+  var HALTING_PROBLEM_TIMEOUT: number;
 }
 
-if (globalThis.HALT_PROBLEM_TIMEOUT === undefined) {
-  globalThis.HALT_PROBLEM_TIMEOUT = 1000;
+if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
+  globalThis.HALTING_PROBLEM_TIMEOUT = 1000;
 }
 
 export const CurrentWorkspaceContext = ({
