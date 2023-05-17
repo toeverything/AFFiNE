@@ -46,7 +46,7 @@ describe('crud', () => {
     const pageBlockId = page.addBlock('affine:page', {
       title: new page.Text(''),
     });
-    page.addBlock('affine:surface', {}, null);
+    page.addBlock('affine:surface', {}, pageBlockId);
     const frameId = page.addBlock('affine:frame', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
 
