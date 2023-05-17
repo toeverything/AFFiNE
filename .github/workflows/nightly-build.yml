@@ -66,6 +66,7 @@ jobs:
           API_SERVER_PROFILE: prod
           ENABLE_TEST_PROPERTIES: false
           ENABLE_IMAGE_PREVIEW_MODAL: false
+          RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
 
       - name: Upload Artifact (web-static)
         uses: actions/upload-artifact@v3
