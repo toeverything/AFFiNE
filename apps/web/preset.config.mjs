@@ -20,7 +20,7 @@ export const blockSuiteFeatureFlags = {
 export const buildFlags = {
   enableImagePreviewModal: process.env.ENABLE_IMAGE_PREVIEW_MODAL
     ? process.env.ENABLE_IMAGE_PREVIEW_MODAL === 'true'
-    : false,
+    : true,
   enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
     ? process.env.ENABLE_TEST_PROPERTIES === 'true'
     : true,
