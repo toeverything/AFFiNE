@@ -8,7 +8,6 @@ import {
   QuickSearchInput,
   SidebarContainer,
   SidebarScrollableContainer,
-  updateAvailableAtom,
 } from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -20,7 +19,7 @@ import {
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -114,7 +113,6 @@ export const RootAppSidebar = ({
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [sidebarOpen, setSidebarOpen]);
 
-  const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
   const [history, setHistory] = useHistoryAtom();
   const router = useMemo(() => {
     return {
@@ -192,7 +190,8 @@ export const RootAppSidebar = ({
           </RouteMenuLinkItem>
         </SidebarScrollableContainer>
         <SidebarContainer>
-          {clientUpdateAvailable && <AppUpdaterButton />}
+          {environment.isDesktop && <AppUpdaterButton />}
+          <div />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>
       </AppSidebar>
