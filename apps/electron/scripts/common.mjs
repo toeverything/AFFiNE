@@ -39,19 +39,14 @@ export const config = () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: [
-        'electron',
-        'yjs',
-        'better-sqlite3',
-        'electron-updater',
-        '@affine/native-*',
-      ],
+      external: ['electron', 'yjs', 'better-sqlite3', 'electron-updater'],
       define: define,
       format: 'cjs',
       loader: {
         '.node': 'copy',
       },
       assetNames: '[name]',
+      treeShaking: true,
     },
     preload: {
       entryPoints: [resolve(root, './layers/preload/src/index.ts')],
