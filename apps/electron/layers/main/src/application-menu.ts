@@ -2,6 +2,7 @@ import { app, Menu } from 'electron';
 
 import { isMacOS } from '../../utils';
 import { subjects } from './events';
+import { checkForUpdatesAndNotify } from './handlers/updater';
 
 // Unique id for menuitems
 const MENUITEM_NEW_PAGE = 'affine:new-page';
@@ -112,6 +113,12 @@ export function createApplicationMenu() {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { shell } = require('electron');
             await shell.openExternal('https://affine.pro/');
+          },
+        },
+        {
+          label: 'Check for Updates',
+          click: async () => {
+            await checkForUpdatesAndNotify(true);
           },
         },
       ],

@@ -13,11 +13,12 @@ export const root = style({
   cursor: 'pointer',
   padding: '0 12px',
   position: 'relative',
+  transition: 'all 0.3s ease',
   selectors: {
     '&:hover': {
-      background: 'var(--affine-hover-color)',
+      background: 'var(--affine-white-60)',
     },
-    '&:before': {
+    '&[data-has-update="true"]:before': {
       content: "''",
       position: 'absolute',
       top: '-3px',
@@ -29,6 +30,9 @@ export const root = style({
       zIndex: 1,
       opacity: 1,
       transition: '0.3s ease',
+    },
+    '&[data-disabled="true"]': {
+      pointerEvents: 'none',
     },
   },
   vars: {
@@ -42,39 +46,35 @@ export const icon = style({
   fontSize: '24px',
 });
 
-export const particles = style({
-  background: `var(--svg-dot-animation), var(--svg-dot-animation)`,
-  backgroundRepeat: 'no-repeat, repeat',
-  backgroundPosition: 'center, center top 100%',
-  backgroundSize: '100%, 130%',
-  WebkitMaskImage:
-    'linear-gradient(to top, transparent, black, black, transparent)',
-  width: '100%',
-  height: '100%',
+export const closeIcon = style({
   position: 'absolute',
-  left: 0,
-});
-
-export const particlesBefore = style({
-  content: '""',
-  display: 'block',
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  background: `var(--svg-dot-animation), var(--svg-dot-animation), var(--svg-dot-animation)`,
-  backgroundRepeat: 'no-repeat, repeat, repeat',
-  backgroundPosition: 'center, center top 100%, center center',
-  backgroundSize: '100% 120%, 150%, 120%',
-  filter: 'blur(1px)',
-  willChange: 'filter',
+  top: '4px',
+  right: '4px',
+  height: '14px',
+  width: '14px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: 'var(--affine-shadow-1)',
+  color: 'var(--affine-text-secondary-color)',
+  backgroundColor: 'var(--affine-background-primary-color)',
+  fontSize: '14px',
+  cursor: 'pointer',
+  transition: '0.1s',
+  borderRadius: '50%',
+  zIndex: 1,
+  selectors: {
+    '&:hover': {
+      transform: 'scale(1.1)',
+    },
+  },
 });
 
 export const installLabel = style({
   display: 'flex',
-  justifyContent: 'flex-start',
   alignItems: 'center',
   width: '100%',
-  height: '100%',
+  flex: 1,
   fontSize: 'var(--affine-font-sm)',
   whiteSpace: 'nowrap',
 });
@@ -82,6 +82,7 @@ export const installLabel = style({
 export const installLabelNormal = style([
   installLabel,
   {
+    justifyContent: 'space-between',
     selectors: {
       [`${root}:hover &`]: {
         display: 'none',
@@ -102,31 +103,111 @@ export const installLabelHover = style([
   },
 ]);
 
-export const halo = style({
-  overflow: 'hidden',
+export const updateAvailableWrapper = style({
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'relative',
   width: '100%',
   height: '100%',
+  padding: '8px 0',
+});
+
+export const versionLabel = style({
+  padding: '0 6px',
+  color: 'var(--affine-text-secondary-color)',
+  background: 'var(--affine-background-primary-color)',
+  fontSize: '10px',
+  lineHeight: '18px',
+  borderRadius: '4px',
+});
+
+export const whatsNewLabel = style({
+  display: 'flex',
+  alignItems: 'center',
+  width: '100%',
+  height: '100%',
+  fontSize: 'var(--affine-font-sm)',
+  whiteSpace: 'nowrap',
+});
+
+export const progress = style({
+  position: 'relative',
+  width: '100%',
+  height: '4px',
+  borderRadius: '12px',
+  background: 'var(--affine-black-10)',
+});
+
+export const progressInner = style({
   position: 'absolute',
   top: 0,
   left: 0,
+  height: '100%',
+  borderRadius: '12px',
+  background: 'var(--affine-primary-color)',
+  transition: '0.1s',
+});
+
+export const particles = style({
+  background: `var(--svg-dot-animation), var(--svg-dot-animation)`,
+  backgroundRepeat: 'no-repeat, repeat',
+  backgroundPosition: 'center, center top 100%',
+  backgroundSize: '100%, 130%',
+  WebkitMaskImage:
+    'linear-gradient(to top, transparent, black, black, transparent)',
+  width: '100%',
+  height: '100%',
+  position: 'absolute',
+  left: 0,
+  pointerEvents: 'none',
+});
+
+export const particlesBefore = style({
+  content: '""',
+  display: 'block',
+  position: 'absolute',
+  width: '100%',
+  height: '100%',
+  background: `var(--svg-dot-animation), var(--svg-dot-animation), var(--svg-dot-animation)`,
+  backgroundRepeat: 'no-repeat, repeat, repeat',
+  backgroundPosition: 'center, center top 100%, center center',
+  backgroundSize: '100% 120%, 150%, 120%',
+  filter: 'blur(1px)',
+  willChange: 'filter',
+  pointerEvents: 'none',
+});
+
+export const halo = style({
+  overflow: 'hidden',
+  position: 'absolute',
+  inset: 0,
   ':before': {
     content: '""',
     display: 'block',
-    width: '60%',
-    height: '40%',
+    inset: 0,
     position: 'absolute',
-    top: '80%',
-    left: '50%',
-    background:
-      'linear-gradient(180deg, rgba(50, 26, 206, 0.1) 10%, rgba(50, 26, 206, 0.35) 30%, rgba(84, 56, 255, 1) 50%)',
     filter: 'blur(10px) saturate(1.2)',
-    transform: 'translateX(-50%) translateY(calc(0 * 1%)) scale(0)',
     transition: '0.3s ease',
-    willChange: 'filter',
+    willChange: 'filter, transform',
+    transform: 'translateY(100%) scale(0.6)',
+    background:
+      'radial-gradient(ellipse 60% 80% at bottom, rgba(50, 26, 206, 0.35), transparent)',
+  },
+  ':after': {
+    content: '""',
+    display: 'block',
+    inset: 0,
+    position: 'absolute',
+    filter: 'blur(10px) saturate(1.2)',
+    transition: '0.1s ease',
+    willChange: 'filter, transform',
+    transform: 'translateY(100%) scale(0.6)',
+    background:
+      'radial-gradient(ellipse 30% 45% at bottom, rgba(50, 26, 206, 0.6), transparent)',
   },
   selectors: {
-    '&:hover:before': {
-      transform: 'translateX(-50%) translateY(calc(-70 * 1%)) scale(1)',
+    '&:hover:before, &:hover:after': {
+      transform: 'translateY(0) scale(1)',
     },
   },
 });

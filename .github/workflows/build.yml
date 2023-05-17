@@ -337,12 +337,11 @@ jobs:
         shell: bash
         run: |
           rm -rf apps/electron/node_modules/better-sqlite3/build
-          yarn workspace @affine/electron rebuild:for-electron
+          yarn workspace @affine/electron rebuild:for-electron --arch=${{ matrix.spec.arch }}
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
-        working-directory: apps/electron
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine/electron test
         env:
           COVERAGE: true
 
