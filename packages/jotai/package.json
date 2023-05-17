@@ -7,11 +7,11 @@
     "jotai": "^2.1.0"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230517071334-40b6a07f-nightly",
-    "@blocksuite/editor": "0.0.0-20230517071334-40b6a07f-nightly",
-    "@blocksuite/global": "0.0.0-20230517071334-40b6a07f-nightly",
-    "@blocksuite/lit": "0.0.0-20230517071334-40b6a07f-nightly",
-    "@blocksuite/store": "0.0.0-20230517071334-40b6a07f-nightly",
+    "@blocksuite/blocks": "0.0.0-20230517102216-36bda4ab-nightly",
+    "@blocksuite/editor": "0.0.0-20230517102216-36bda4ab-nightly",
+    "@blocksuite/global": "0.0.0-20230517102216-36bda4ab-nightly",
+    "@blocksuite/lit": "0.0.0-20230517102216-36bda4ab-nightly",
+    "@blocksuite/store": "0.0.0-20230517102216-36bda4ab-nightly",
     "lottie-web": "^5.11.0"
   },
   "peerDependencies": {
