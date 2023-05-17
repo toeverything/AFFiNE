@@ -152,9 +152,9 @@ export const CurrentWorkspaceContext = ({
     const id = setTimeout(() => {
       if (!exist) {
         void push('/');
-        globalThis.HALT_PROBLEM_TIMEOUT <<= 1;
+        globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
       }
-    }, globalThis.HALT_PROBLEM_TIMEOUT);
+    }, globalThis.HALTING_PROBLEM_TIMEOUT);
     return () => {
       clearTimeout(id);
     };
