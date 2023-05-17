@@ -1,51 +1,18 @@
+import type {
+  QueryParamError,
+  Unreachable,
+  WorkspaceNotFoundError,
+} from '@affine/env/constant';
+import { PageNotFoundError } from '@affine/env/constant';
 import { RequestError } from '@affine/workspace/affine/api';
 import type { NextRouter } from 'next/router';
 import type { ErrorInfo, ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../shared';
-
 export type AffineErrorBoundaryProps = React.PropsWithChildren<{
   router: NextRouter;
 }>;
-
-export class PageNotFoundError extends TypeError {
-  readonly workspace: BlockSuiteWorkspace;
-  readonly pageId: string;
-
-  constructor(workspace: BlockSuiteWorkspace, pageId: string) {
-    super();
-    this.workspace = workspace;
-    this.pageId = pageId;
-  }
-}
-
-export class WorkspaceNotFoundError extends TypeError {
-  readonly workspaceId: string;
-
-  constructor(workspaceId: string) {
-    super();
-    this.workspaceId = workspaceId;
-  }
-}
-
-export class QueryParamError extends TypeError {
-  readonly targetKey: string;
-  readonly query: unknown;
-
-  constructor(targetKey: string, query: unknown) {
-    super();
-    this.targetKey = targetKey;
-    this.query = query;
-  }
-}
-
-export class Unreachable extends Error {
-  constructor(message?: string) {
-    super(message);
-  }
-}
 
 type AffineError =
   | QueryParamError

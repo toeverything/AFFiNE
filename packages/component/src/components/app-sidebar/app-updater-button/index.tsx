@@ -1,4 +1,5 @@
 import { config } from '@affine/env/config';
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
@@ -85,7 +86,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
         } else if (currentChangelogUnread) {
           window.open(config.changelogUrl, '_blank');
         } else {
-          // do nothing since we will not get here
+          throw new Unreachable();
         }
       }}
     >
