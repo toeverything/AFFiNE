@@ -31,9 +31,9 @@
     "@emotion/react": "^11.11.0",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.13.0",
+    "@mui/material": "^5.13.1",
     "@react-hookz/web": "^23.0.0",
-    "@sentry/nextjs": "^7.51.2",
+    "@sentry/nextjs": "^7.52.1",
     "@toeverything/hooks": "workspace:*",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
@@ -76,7 +76,7 @@
     "redux": "^4.2.1",
     "swc-plugin-coverage-instrument": "^0.0.18",
     "typescript": "^5.0.4",
-    "webpack": "^5.82.1"
+    "webpack": "^5.83.1"
   },
   "stableVersion": "0.0.0"
 }
