@@ -138,7 +138,7 @@ describe('ydoc sync', () => {
       const pageBlockId = page1.addBlock('affine:page', {
         title: new page1.Text(''),
       });
-      page1.addBlock('affine:surface', {}, null);
+      page1.addBlock('affine:surface', {}, pageBlockId);
       const frameId = page1.addBlock('affine:frame', {}, pageBlockId);
       const paragraphId = page1.addBlock('affine:paragraph', {}, frameId);
       await new Promise(resolve => setTimeout(resolve, 1000));
