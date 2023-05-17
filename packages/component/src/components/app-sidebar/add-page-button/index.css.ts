@@ -13,6 +13,12 @@ export const root = style({
   userSelect: 'none',
   cursor: 'pointer',
   padding: '0 24px',
+  transition: 'background 0.2s ease',
+  selectors: {
+    '&:active': {
+      background: 'var(--affine-white-40)',
+    },
+  },
 });
 
 export const icon = style({

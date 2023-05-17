@@ -1,3 +1,4 @@
+import { QueryParamError, Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
@@ -6,10 +7,6 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
-import {
-  QueryParamError,
-  Unreachable,
-} from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';

@@ -1,5 +1,6 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
 import { config } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PermissionType } from '@affine/workspace/affine/api';
 import type {
@@ -17,7 +18,6 @@ import { useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../hooks/affine/use-members';
 import { toast } from '../../../../../utils';
-import { Unreachable } from '../../../affine-error-eoundary';
 import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';
 import type { PanelProps } from '../../index';

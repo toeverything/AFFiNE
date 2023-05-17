@@ -1,3 +1,5 @@
+import { config } from '@affine/env/config';
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
@@ -46,18 +48,11 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   const updateAvailable = useAtomValue(updateAvailableAtom);
   const currentVersion = useAtomValue(currentVersionAtom);
   const downloadProgress = useAtomValue(downloadProgressAtom);
-  const onReadOrDismissChangelog = useSetAtom(changelogCheckedAtom);
+  const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
 
-  const onReadOrDismissCurrentChangelog = (visit: boolean) => {
-    if (visit) {
-      window.open(
-        `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
-        '_blank'
-      );
-    }
-
+  const onDismissCurrentChangelog = () => {
     startTransition(() =>
-      onReadOrDismissChangelog(mapping => {
+      setChangelogCheckAtom(mapping => {
         return {
           ...mapping,
           [currentVersion!]: true,
@@ -79,10 +74,19 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
       onClick={() => {
         if (updateReady) {
           window.apis?.updater.quitAndInstall();
-        } else if (updateAvailable?.allowAutoUpdate) {
-          // wait for download to finish
-        } else if (updateAvailable || currentChangelogUnread) {
-          onReadOrDismissCurrentChangelog(true);
+        } else if (updateAvailable) {
+          if (updateAvailable.allowAutoUpdate) {
+            // wait for download to finish
+          } else {
+            window.open(
+              `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
+              '_blank'
+            );
+          }
+        } else if (currentChangelogUnread) {
+          window.open(config.changelogUrl, '_blank');
+        } else {
+          throw new Unreachable();
         }
       }}
     >
@@ -155,7 +159,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
         <div
           className={styles.closeIcon}
           onClick={e => {
-            onReadOrDismissCurrentChangelog(false);
+            onDismissCurrentChangelog();
             e.stopPropagation();
           }}
         >
