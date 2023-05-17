@@ -9,6 +9,7 @@ const publicDistDir = path.join(electronRootDir, 'resources');
 const affineWebDir = path.join(repoRootDir, 'apps', 'web');
 const affineWebOutDir = path.join(affineWebDir, 'out');
 const publicAffineOutDir = path.join(publicDistDir, `web-static`);
+const releaseVersionEnv = process.env.RELEASE_VERSION || '';
 
 console.log('build with following dir', {
   repoRootDir,
@@ -19,9 +20,20 @@ console.log('build with following dir', {
   publicAffineOutDir,
 });
 
+// step 0: check version match
+const electronPackageJson = await import(`${electronRootDir}/package.json`, {
+  assert: {
+    type: 'json',
+  },
+});
+if (releaseVersionEnv && electronPackageJson.version !== releaseVersionEnv) {
+  throw new Error(
+    `Version mismatch, expected ${releaseVersionEnv} but got ${electronPackageJson.version}`
+  );
+}
 // copy web dist files to electron dist
 
-// step 0: clean up
+// step 1: clean up
 await cleanup();
 echo('Clean up done');
 
