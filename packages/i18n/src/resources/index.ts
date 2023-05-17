@@ -4,6 +4,7 @@
 import de from './de.json';
 import en from './en.json';
 import fr from './fr.json';
+import ja from './ja.json';
 import ru from './ru.json';
 import zh_Hans from './zh-Hans.json';
 
@@ -25,7 +26,7 @@ export const LOCALES = [
     originalName: '简体中文',
     flagEmoji: '🇨🇳',
     base: false,
-    completeRate: 0.7651515151515151,
+    completeRate: 1,
     res: zh_Hans,
   },
   {
@@ -35,7 +36,7 @@ export const LOCALES = [
     originalName: 'français',
     flagEmoji: '🇫🇷',
     base: false,
-    completeRate: 0.8787878787878788,
+    completeRate: 0.9857142857142858,
     res: fr,
   },
   {
@@ -45,7 +46,7 @@ export const LOCALES = [
     originalName: 'Deutsch',
     flagEmoji: '🇩🇪',
     base: false,
-    completeRate: 0.8787878787878788,
+    completeRate: 0.9857142857142858,
     res: de,
   },
   {
@@ -55,7 +56,17 @@ export const LOCALES = [
     originalName: 'русский',
     flagEmoji: '🇷🇺',
     base: false,
-    completeRate: 0.7348484848484849,
+    completeRate: 0.6928571428571428,
     res: ru,
+  },
+  {
+    id: 1000040014,
+    name: 'Japanese',
+    tag: 'ja',
+    originalName: '日本語',
+    flagEmoji: '🇯🇵',
+    base: false,
+    completeRate: 1.0107142857142857,
+    res: ja,
   },
 ] as const;
