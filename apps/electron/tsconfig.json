@@ -9,14 +9,16 @@
     "types": ["node"],
     "outDir": "dist",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true
+    "resolveJsonModule": true
   },
   "include": ["**/*.ts", "**/*.tsx", "package.json"],
   "exclude": ["out", "dist", "node_modules"],
   "references": [
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "../../packages/native"
     }
   ],
   "ts-node": {

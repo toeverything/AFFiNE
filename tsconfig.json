@@ -33,7 +33,9 @@
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
-      "@toeverything/hooks/*": ["./packages/hooks/src/*"]
+      "@toeverything/hooks/*": ["./packages/hooks/src/*"],
+      "@affine/native": ["./packages/native/index.d.ts"],
+      "@affine/native/*": ["./packages/native/*"]
     }
   },
   "references": [

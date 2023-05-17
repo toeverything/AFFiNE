@@ -37,5 +37,6 @@
     "apps/electron/layers/**/*.spec.ts",
     "tests/unit/**/*.spec.ts",
     "tests/unit/**/*.spec.tsx"
-  ]
+  ],
+  "deepscan.enable": true
 }

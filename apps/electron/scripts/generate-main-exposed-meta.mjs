@@ -1,7 +1,3 @@
-#!/usr/bin/env zx
-/* eslint-disable @typescript-eslint/no-restricted-imports */
-import 'zx/globals';
-
 const mainDistDir = path.resolve(__dirname, '../dist/layers/main');
 
 // be careful and avoid any side effects in
