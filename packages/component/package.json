@@ -50,12 +50,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230514141009-705c0fac-nightly",
-    "@blocksuite/editor": "0.0.0-20230514141009-705c0fac-nightly",
-    "@blocksuite/global": "0.0.0-20230514141009-705c0fac-nightly",
+    "@blocksuite/blocks": "0.0.0-20230516150657-31efbf21-nightly",
+    "@blocksuite/editor": "0.0.0-20230516150657-31efbf21-nightly",
+    "@blocksuite/global": "0.0.0-20230516150657-31efbf21-nightly",
     "@blocksuite/icons": "^2.1.16",
     "@blocksuite/lit": "0.0.0-20230514141009-705c0fac-nightly",
-    "@blocksuite/store": "0.0.0-20230514141009-705c0fac-nightly",
+    "@blocksuite/store": "0.0.0-20230516150657-31efbf21-nightly",
     "@storybook/addon-actions": "^7.0.11",
     "@storybook/addon-coverage": "^0.0.8",
     "@storybook/addon-essentials": "^7.0.11",
