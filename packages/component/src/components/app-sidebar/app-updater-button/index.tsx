@@ -18,11 +18,17 @@ interface AddPageButtonProps {
 }
 
 const currentVersionAtom = atom(async () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
   const currentVersion = await window.apis?.updater.currentVersion();
   return currentVersion;
 });
 
 const currentChangelogUnreadAtom = atom(async get => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
   const mapping = get(changelogCheckedAtom);
   const currentVersion = await get(currentVersionAtom);
   if (currentVersion) {
