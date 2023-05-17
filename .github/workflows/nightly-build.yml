@@ -66,6 +66,7 @@ jobs:
           API_SERVER_PROFILE: prod
           ENABLE_TEST_PROPERTIES: false
           ENABLE_IMAGE_PREVIEW_MODAL: false
+          RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
 
       - name: Upload Artifact (web-static)
         uses: actions/upload-artifact@v3
@@ -116,6 +117,10 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.spec.target }}
       - name: Replace Version
         run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3
