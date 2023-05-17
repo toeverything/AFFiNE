@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import markdown from '@affine/templates/Welcome-to-AFFiNE.md';
+import markdown from '@affine/templates/AFFiNE-beta-0.5.4.md';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { Page, Workspace } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
