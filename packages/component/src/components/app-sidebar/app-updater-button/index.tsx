@@ -1,9 +1,8 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
-import { assertExists } from '@blocksuite/store';
 import clsx from 'clsx';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
-import { useEffect, useTransition } from 'react';
+import { startTransition, useEffect } from 'react';
 
 import { changelogCheckedAtom, updateReadyAtom } from '../index.jotai';
 import * as styles from './index.css';
@@ -19,7 +18,6 @@ const currentVersionAtom = atom(async () => {
 });
 
 const currentChangelogUnreadAtom = atom(async get => {
-  assertExists(window.appInfo);
   const mapping = get(changelogCheckedAtom);
   const currentVersion = await get(currentVersionAtom);
   if (currentVersion) {
@@ -41,14 +39,12 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   const currentVersion = useAtomValue(currentVersionAtom);
   const onReadOrDismissChangelog = useSetAtom(changelogCheckedAtom);
 
-  const [, transition] = useTransition();
-
   const onReadOrDismissCurrentChangelog = (visit: boolean) => {
     if (visit) {
       window.open('https://github.com/toeverything/AFFiNE/releases', '_blank');
     }
 
-    transition(() =>
+    startTransition(() =>
       onReadOrDismissChangelog(mapping => {
         return {
           ...mapping,
