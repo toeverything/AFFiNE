@@ -1,5 +1,6 @@
 import { AFFINE_STORAGE_KEY, config, prefixUrl } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
+import { PageNotFoundError } from '@affine/env/constant';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
@@ -30,7 +31,6 @@ import { z } from 'zod';
 
 import { createAffineProviders } from '../../blocksuite';
 import { createAffineDownloadProvider } from '../../blocksuite/providers/affine';
-import { PageNotFoundError } from '../../components/affine/affine-error-eoundary';
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';

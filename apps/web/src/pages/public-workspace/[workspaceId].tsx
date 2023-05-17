@@ -1,5 +1,6 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
 import { StyledTableContainer } from '@affine/component/page-list';
+import { QueryParamError } from '@affine/env/constant';
 import { SearchIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -13,7 +14,6 @@ import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../../atoms/public-workspace';
-import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
 import {
