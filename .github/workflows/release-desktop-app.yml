@@ -36,7 +36,6 @@ concurrency:
 
 env:
   BUILD_TYPE: ${{ github.event.inputs.build-type }}
-  CARGO_BUILD_INCREMENTAL: 'false'
   DEBUG: napi:*
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '10.13'

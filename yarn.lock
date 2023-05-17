@@ -131,6 +131,7 @@ __metadata:
   resolution: "@affine/electron@workspace:apps/electron"
   dependencies:
     "@affine-test/kit": "workspace:*"
+    "@affine/native": "workspace:*"
     "@electron-forge/cli": ^6.1.1
     "@electron-forge/core": ^6.1.1
     "@electron-forge/core-utils": ^6.1.1
@@ -143,6 +144,7 @@ __metadata:
     "@electron/remote": 2.0.9
     "@types/better-sqlite3": ^7.6.4
     "@types/fs-extra": ^11.0.1
+    "@types/uuid": ^9.0.1
     better-sqlite3: ^8.3.0
     chokidar: ^3.5.3
     cross-env: 7.0.3
@@ -158,6 +160,7 @@ __metadata:
     rxjs: ^7.8.1
     ts-node: ^10.9.1
     undici: ^5.22.1
+    uuid: ^9.0.0
     yjs: ^13.6.1
     zx: ^7.2.2
   peerDependencies:
@@ -236,7 +239,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/native@workspace:packages/native":
+"@affine/native@workspace:*, @affine/native@workspace:packages/native":
   version: 0.0.0-use.local
   resolution: "@affine/native@workspace:packages/native"
   dependencies:
