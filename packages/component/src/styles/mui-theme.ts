@@ -1,5 +1,3 @@
-import '@emotion/react';
-
 import type {
   Breakpoint,
   BreakpointsOptions,
