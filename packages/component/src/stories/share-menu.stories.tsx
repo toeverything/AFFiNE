@@ -25,7 +25,7 @@ function initPage(page: Page): void {
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text('Hello, world!'),
   });
-  page.addBlock('affine:surface', {}, null);
+  page.addBlock('affine:surface', {}, pageBlockId);
   const frameId = page.addBlock('affine:frame', {}, pageBlockId);
   page.addBlock(
     'affine:paragraph',
