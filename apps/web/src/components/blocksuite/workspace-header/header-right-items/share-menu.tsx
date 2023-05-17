@@ -1,5 +1,6 @@
 import { ShareMenu } from '@affine/component/share-menu';
 import { config } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
@@ -15,7 +16,6 @@ import { useToggleWorkspacePublish } from '../../../../hooks/affine/use-toggle-w
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import { useRouterHelper } from '../../../../hooks/use-router-helper';
 import { WorkspaceSubPath } from '../../../../shared';
-import { Unreachable } from '../../../affine/affine-error-eoundary';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 import type { BaseHeaderProps } from '../header';
 

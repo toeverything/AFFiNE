@@ -1,3 +1,5 @@
+import type { Workspace } from '@blocksuite/store';
+
 export const AFFINE_STORAGE_KEY = 'affine-local-storage-v2';
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';
@@ -76,3 +78,40 @@ export const Messages = {
     message: string;
   };
 };
+
+export class PageNotFoundError extends TypeError {
+  readonly workspace: Workspace;
+  readonly pageId: string;
+
+  constructor(workspace: Workspace, pageId: string) {
+    super();
+    this.workspace = workspace;
+    this.pageId = pageId;
+  }
+}
+
+export class WorkspaceNotFoundError extends TypeError {
+  readonly workspaceId: string;
+
+  constructor(workspaceId: string) {
+    super();
+    this.workspaceId = workspaceId;
+  }
+}
+
+export class QueryParamError extends TypeError {
+  readonly targetKey: string;
+  readonly query: unknown;
+
+  constructor(targetKey: string, query: unknown) {
+    super();
+    this.targetKey = targetKey;
+    this.query = query;
+  }
+}
+
+export class Unreachable extends Error {
+  constructor(message?: string) {
+    super(message);
+  }
+}

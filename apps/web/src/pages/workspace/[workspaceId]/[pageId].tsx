@@ -1,6 +1,7 @@
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { BlockSuiteFeatureFlags } from '@affine/env';
 import { config } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
@@ -15,7 +16,6 @@ import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
-import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';

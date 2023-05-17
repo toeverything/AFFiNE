@@ -1,3 +1,4 @@
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { SettingPanel } from '@affine/workspace/type';
@@ -15,7 +16,6 @@ import type { NextRouter } from 'next/router';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
 
-import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
