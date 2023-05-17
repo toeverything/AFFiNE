@@ -22,21 +22,20 @@ export const enum WatcherKind {
   NullWatcher = 'NullWatcher',
   Unknown = 'Unknown',
 }
-export function watch(
-  p: string,
-  options?: WatchOptions | undefined | null
-): FSWatcher;
+export function moveFile(src: string, dst: string): Promise<void>;
 export class Subscription {
   toString(): string;
   unsubscribe(): void;
 }
 export type FSWatcher = FsWatcher;
 export class FsWatcher {
-  get kind(): WatcherKind;
+  static watch(p: string, options?: WatchOptions | undefined | null): FsWatcher;
+  static kind(): WatcherKind;
   toString(): string;
   subscribe(
     callback: (event: import('./event').NotifyEvent) => void,
     errorCallback?: (err: Error) => void
   ): Subscription;
-  close(): void;
+  static unwatch(p: string): void;
+  static close(): void;
 }

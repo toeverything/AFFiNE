@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::BTreeMap, path::Path, sync::Arc};
 
 use napi::{
   bindgen_prelude::{FromNapiValue, ToNapiValue},
@@ -6,7 +6,30 @@ use napi::{
 };
 use napi_derive::napi;
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
+use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+
+static GLOBAL_WATCHER: Lazy<napi::Result<GlobalWatcher>> = Lazy::new(|| {
+  let event_emitter = Arc::new(Mutex::new(EventEmitter {
+    listeners: Default::default(),
+    error_callbacks: Default::default(),
+  }));
+  let event_emitter_in_handler = event_emitter.clone();
+  let watcher: RecommendedWatcher =
+    notify::recommended_watcher(move |res: notify::Result<Event>| {
+      event_emitter_in_handler.lock().on(res);
+    })
+    .map_err(anyhow::Error::from)?;
+  Ok(GlobalWatcher {
+    inner: Mutex::new(watcher),
+    event_emitter,
+  })
+});
+
+struct GlobalWatcher {
+  inner: Mutex<RecommendedWatcher>,
+  event_emitter: Arc<Mutex<EventEmitter>>,
+}
 
 #[napi(object)]
 #[derive(Default)]
@@ -50,7 +73,6 @@ impl From<notify::WatcherKind> for WatcherKind {
 pub struct Subscription {
   id: uuid::Uuid,
   error_uuid: Option<uuid::Uuid>,
-  event_emitter: Arc<Mutex<EventEmitter>>,
 }
 
 #[napi]
@@ -62,61 +84,52 @@ impl Subscription {
   }
 
   #[napi]
-  pub fn unsubscribe(&mut self) {
-    let mut event_emitter = self.event_emitter.lock();
+  pub fn unsubscribe(&mut self) -> napi::Result<()> {
+    let mut event_emitter = GLOBAL_WATCHER
+      .as_ref()
+      .map_err(|err| err.clone())?
+      .event_emitter
+      .lock();
     event_emitter.listeners.remove(&self.id);
     if let Some(error_uuid) = &self.error_uuid {
       event_emitter.error_callbacks.remove(error_uuid);
-    }
+    };
+    Ok(())
   }
 }
 
 #[napi]
-pub fn watch(p: String, options: Option<WatchOptions>) -> Result<FSWatcher, anyhow::Error> {
-  let event_emitter = Arc::new(Mutex::new(EventEmitter {
-    listeners: Default::default(),
-    error_callbacks: Default::default(),
-  }));
-  let event_emitter_in_handler = event_emitter.clone();
-  let mut watcher: RecommendedWatcher =
-    notify::recommended_watcher(move |res: notify::Result<Event>| {
-      event_emitter_in_handler.lock().on(res);
-    })
-    .map_err(anyhow::Error::from)?;
-
-  let options = options.unwrap_or_default();
-  watcher
-    .watch(
-      Path::new(&p),
-      if options.recursive == Some(false) {
-        RecursiveMode::NonRecursive
-      } else {
-        RecursiveMode::Recursive
-      },
-    )
-    .map_err(anyhow::Error::from)?;
-  Ok(FSWatcher {
-    inner: watcher,
-    event_emitter,
-  })
-}
-
-#[napi]
 pub struct FSWatcher {
-  inner: RecommendedWatcher,
-  event_emitter: Arc<Mutex<EventEmitter>>,
+  path: String,
+  recursive: RecursiveMode,
 }
 
 #[napi]
 impl FSWatcher {
-  #[napi(getter)]
-  pub fn kind(&self) -> WatcherKind {
+  #[napi(factory)]
+  pub fn watch(p: String, options: Option<WatchOptions>) -> Self {
+    let options = options.unwrap_or_default();
+    FSWatcher {
+      path: p,
+      recursive: if options.recursive == Some(false) {
+        RecursiveMode::NonRecursive
+      } else {
+        RecursiveMode::Recursive
+      },
+    }
+  }
+
+  #[napi]
+  pub fn kind() -> WatcherKind {
     RecommendedWatcher::kind().into()
   }
 
   #[napi]
   pub fn to_string(&self) -> napi::Result<String> {
-    Ok(format!("{:?}", self.inner))
+    Ok(format!(
+      "{:?}",
+      GLOBAL_WATCHER.as_ref().map_err(|err| err.clone())?.inner
+    ))
   }
 
   #[napi]
@@ -125,10 +138,23 @@ impl FSWatcher {
     #[napi(ts_arg_type = "(event: import('./event').NotifyEvent) => void")]
     callback: ThreadsafeFunction<serde_json::Value, ErrorStrategy::Fatal>,
     #[napi(ts_arg_type = "(err: Error) => void")] error_callback: Option<ThreadsafeFunction<()>>,
-  ) -> Subscription {
+  ) -> napi::Result<Subscription> {
+    GLOBAL_WATCHER
+      .as_ref()
+      .map_err(|err| err.clone())?
+      .inner
+      .lock()
+      .watch(Path::new(&self.path), self.recursive)
+      .map_err(anyhow::Error::from)?;
     let uuid = uuid::Uuid::new_v4();
-    let mut event_emitter = self.event_emitter.lock();
-    event_emitter.listeners.insert(uuid, callback);
+    let mut event_emitter = GLOBAL_WATCHER
+      .as_ref()
+      .map_err(|err| err.clone())?
+      .event_emitter
+      .lock();
+    event_emitter
+      .listeners
+      .insert(uuid, (self.path.clone(), callback));
     let mut error_uuid = None;
     if let Some(error_callback) = error_callback {
       let uuid = uuid::Uuid::new_v4();
@@ -136,32 +162,51 @@ impl FSWatcher {
       error_uuid = Some(uuid);
     }
     drop(event_emitter);
-    Subscription {
+    Ok(Subscription {
       id: uuid,
       error_uuid,
-      event_emitter: self.event_emitter.clone(),
-    }
+    })
   }
 
   #[napi]
-  pub fn close(&mut self) -> napi::Result<()> {
-    // drop the previous watcher
-    self.inner = notify::recommended_watcher(|_| {}).map_err(anyhow::Error::from)?;
-    self.event_emitter.lock().stop();
+  pub fn unwatch(p: String) -> napi::Result<()> {
+    let mut watcher = GLOBAL_WATCHER
+      .as_ref()
+      .map_err(|err| err.clone())?
+      .inner
+      .lock();
+    watcher
+      .unwatch(Path::new(&p))
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub fn close() -> napi::Result<()> {
+    let global_watcher = GLOBAL_WATCHER.as_ref().map_err(|err| err.clone())?;
+    global_watcher.event_emitter.lock().stop();
+    let mut inner = global_watcher.inner.lock();
+    *inner = notify::recommended_watcher(|_| {}).map_err(anyhow::Error::from)?;
     Ok(())
   }
 }
 
 #[derive(Clone)]
 struct EventEmitter {
-  listeners: HashMap<uuid::Uuid, ThreadsafeFunction<serde_json::Value, ErrorStrategy::Fatal>>,
-  error_callbacks: HashMap<uuid::Uuid, ThreadsafeFunction<()>>,
+  listeners: BTreeMap<
+    uuid::Uuid,
+    (
+      String,
+      ThreadsafeFunction<serde_json::Value, ErrorStrategy::Fatal>,
+    ),
+  >,
+  error_callbacks: BTreeMap<uuid::Uuid, ThreadsafeFunction<()>>,
 }
 
 impl EventEmitter {
   fn on(&self, event: notify::Result<Event>) {
     match event {
-      Ok(e) => match serde_json::value::to_value(e) {
+      Ok(e) => match serde_json::value::to_value(&e) {
         Err(err) => {
           let err: napi::Error = anyhow::Error::from(err).into();
           for on_error in self.error_callbacks.values() {
@@ -169,8 +214,10 @@ impl EventEmitter {
           }
         }
         Ok(v) => {
-          for on_event in self.listeners.values() {
-            on_event.call(v.clone(), ThreadsafeFunctionCallMode::NonBlocking);
+          for (path, on_event) in self.listeners.values() {
+            if e.paths.iter().any(|p| p.to_str() == Some(path)) {
+              on_event.call(v.clone(), ThreadsafeFunctionCallMode::NonBlocking);
+            }
           }
         }
       },
@@ -187,4 +234,10 @@ impl EventEmitter {
     self.listeners.clear();
     self.error_callbacks.clear();
   }
+}
+
+#[napi]
+pub async fn move_file(src: String, dst: String) -> napi::Result<()> {
+  tokio::fs::rename(src, dst).await?;
+  Ok(())
 }
