@@ -232,8 +232,6 @@
   "Synced with AFFiNE Cloud": "Synced with AFFiNE Cloud",
   "Recent": "Recent",
   "Successfully deleted": "Successfully deleted",
-  "Update Available": "Update available",
-  "Restart Install Client Update": "Restart to install update",
   "Add Workspace": "Add Workspace",
   "Add Workspace Hint": "Select where you already have",
   "Export success": "Export success",
@@ -274,5 +272,17 @@
   "com.affine.onboarding.title1": "Hyper merged whiteboard and docs",
   "com.affine.onboarding.title2": "Intuitive & robust block-based editing",
   "com.affine.onboarding.videoDescription1": "Easily switch between Page mode for structured document creation and Whiteboard mode for the freeform visual expression of creative ideas.",
-  "com.affine.onboarding.videoDescription2": "Create structured documents with ease, using a modular interface to drag and drop blocks of text, images, and other content."
+  "com.affine.onboarding.videoDescription2": "Create structured documents with ease, using a modular interface to drag and drop blocks of text, images, and other content.",
+  "FILE_ALREADY_EXISTS": "File already exists",
+  "others": "Others",
+  "com.affine.updater.update-available": "Update available",
+  "com.affine.updater.downloading": "Downloading",
+  "com.affine.updater.restart-to-update": "Restart to install update",
+  "com.affine.updater.open-download-page": "Open download page",
+  "dark": "Dark",
+  "system": "System",
+  "light": "Light",
+  "com.affine.banner.content": "Enjoying the demo? <1>Download the AFFiNE Client</1> for the full experience.",
+  "com.affine.cloudTempDisable.title": "AFFiNE Cloud is upgrading now.",
+  "com.affine.cloudTempDisable.description": "We are upgrading the AFFiNE Cloud service and it is temporarily unavailable on the client side. If you wish to stay updated on the progress and be notified on availability, you can join the <1>AFFiNE Community</1>."
 }

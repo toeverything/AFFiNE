@@ -1,19 +1,34 @@
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 import type { MainEventListener } from './type';
 
 interface UpdateMeta {
   version: string;
+  allowAutoUpdate: boolean;
 }
 
 export const updaterSubjects = {
   // means it is ready for restart and install the new version
-  clientUpdateReady: new Subject<UpdateMeta>(),
+  updateAvailable: new Subject<UpdateMeta>(),
+  updateReady: new Subject<UpdateMeta>(),
+  downloadProgress: new BehaviorSubject<number>(0),
 };
 
 export const updaterEvents = {
-  onClientUpdateReady: (fn: (versionMeta: UpdateMeta) => void) => {
-    const sub = updaterSubjects.clientUpdateReady.subscribe(fn);
+  onUpdateAvailable: (fn: (versionMeta: UpdateMeta) => void) => {
+    const sub = updaterSubjects.updateAvailable.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
+  onUpdateReady: (fn: (versionMeta: UpdateMeta) => void) => {
+    const sub = updaterSubjects.updateReady.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
+  onDownloadProgress: (fn: (progress: number) => void) => {
+    const sub = updaterSubjects.downloadProgress.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };
