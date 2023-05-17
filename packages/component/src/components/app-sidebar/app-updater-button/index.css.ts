@@ -16,8 +16,7 @@ export const root = style({
   transition: 'all 0.3s ease',
   selectors: {
     '&:hover': {
-      // background: 'var(--affine-hover-color)',
-      boxShadow: 'var(--affine-shadow-1)',
+      background: 'var(--affine-white-60)',
     },
     '&[data-has-update="true"]:before': {
       content: "''",
@@ -31,6 +30,9 @@ export const root = style({
       zIndex: 1,
       opacity: 1,
       transition: '0.3s ease',
+    },
+    '&[data-disabled="true"]': {
+      pointerEvents: 'none',
     },
   },
   vars: {
@@ -48,15 +50,19 @@ export const closeIcon = style({
   position: 'absolute',
   top: '4px',
   right: '4px',
-  height: '16px',
-  width: '16px',
+  height: '14px',
+  width: '14px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   boxShadow: 'var(--affine-shadow-1)',
   color: 'var(--affine-text-secondary-color)',
   backgroundColor: 'var(--affine-background-primary-color)',
-  fontSize: '16px',
+  fontSize: '14px',
   cursor: 'pointer',
   transition: '0.1s',
   borderRadius: '50%',
+  zIndex: 1,
   selectors: {
     '&:hover': {
       transform: 'scale(1.1)',
@@ -68,7 +74,7 @@ export const installLabel = style({
   display: 'flex',
   alignItems: 'center',
   width: '100%',
-  height: '100%',
+  flex: 1,
   fontSize: 'var(--affine-font-sm)',
   whiteSpace: 'nowrap',
 });
@@ -97,6 +103,15 @@ export const installLabelHover = style([
   },
 ]);
 
+export const updateAvailableWrapper = style({
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+  padding: '8px 0',
+});
+
 export const versionLabel = style({
   padding: '0 6px',
   color: 'var(--affine-text-secondary-color)',
@@ -113,6 +128,24 @@ export const whatsNewLabel = style({
   height: '100%',
   fontSize: 'var(--affine-font-sm)',
   whiteSpace: 'nowrap',
+});
+
+export const progress = style({
+  position: 'relative',
+  width: '100%',
+  height: '4px',
+  borderRadius: '12px',
+  background: 'var(--affine-black-10)',
+});
+
+export const progressInner = style({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  height: '100%',
+  borderRadius: '12px',
+  background: 'var(--affine-primary-color)',
+  transition: '0.1s',
 });
 
 export const particles = style({
@@ -156,7 +189,7 @@ export const halo = style({
     filter: 'blur(10px) saturate(1.2)',
     transition: '0.3s ease',
     willChange: 'filter, transform',
-    transform: 'translateY(100%)',
+    transform: 'translateY(100%) scale(0.6)',
     background:
       'radial-gradient(ellipse 60% 80% at bottom, rgba(50, 26, 206, 0.35), transparent)',
   },
@@ -168,13 +201,13 @@ export const halo = style({
     filter: 'blur(10px) saturate(1.2)',
     transition: '0.1s ease',
     willChange: 'filter, transform',
-    transform: 'translateY(100%)',
+    transform: 'translateY(100%) scale(0.6)',
     background:
       'radial-gradient(ellipse 30% 45% at bottom, rgba(50, 26, 206, 0.6), transparent)',
   },
   selectors: {
     '&:hover:before, &:hover:after': {
-      transform: 'translateY(0)',
+      transform: 'translateY(0) scale(1)',
     },
   },
 });

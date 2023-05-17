@@ -7,6 +7,7 @@ import { startTransition } from 'react';
 import * as styles from './index.css';
 import {
   changelogCheckedAtom,
+  downloadProgressAtom,
   updateAvailableAtom,
   updateReadyAtom,
 } from './index.jotai';
@@ -38,15 +39,15 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   const updateReady = useAtomValue(updateReadyAtom);
   const updateAvailable = useAtomValue(updateAvailableAtom);
   const currentVersion = useAtomValue(currentVersionAtom);
+  const downloadProgress = useAtomValue(downloadProgressAtom);
   const onReadOrDismissChangelog = useSetAtom(changelogCheckedAtom);
-
-  console.log('currentChangelogUnread', currentChangelogUnread);
-  console.log('updateReady', updateReady);
-  console.log('updateAvailable', updateAvailable);
 
   const onReadOrDismissCurrentChangelog = (visit: boolean) => {
     if (visit) {
-      window.open('https://github.com/toeverything/AFFiNE/releases', '_blank');
+      window.open(
+        `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
+        '_blank'
+      );
     }
 
     startTransition(() =>
@@ -67,48 +68,94 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
     <button
       style={style}
       className={clsx([styles.root, className])}
-      data-has-update={updateReady ? 'true' : 'false'}
+      data-has-update={updateAvailable ? 'true' : 'false'}
+      data-disabled={updateAvailable?.allowAutoUpdate && !updateReady}
       onClick={() => {
         if (updateReady) {
           window.apis?.updater.quitAndInstall();
-        } else if (currentChangelogUnread) {
+        } else if (updateAvailable?.allowAutoUpdate) {
+          // wait for download to finish
+        } else if (updateAvailable || currentChangelogUnread) {
           onReadOrDismissCurrentChangelog(true);
         }
       }}
     >
-      {updateAvailable && (
-        <>
-          <div className={clsx([styles.installLabelNormal])}>
-            <span>{t['Update Available']()}</span>
-            <span className={styles.versionLabel}>
-              {updateAvailable?.version}
-            </span>
-          </div>
-          <div className={clsx([styles.installLabelHover])}>
-            <ResetIcon className={styles.icon} />
-            <span>{t['Restart Install Client Update']()}</span>
-          </div>
-        </>
-      )}
-      {!updateAvailable && currentChangelogUnread && (
-        <>
-          <div className={clsx([styles.whatsNewLabel])}>
-            <NewIcon className={styles.icon} />
-            <span>{t[`Discover what's new!`]()}</span>
-          </div>
-          <div
-            className={styles.closeIcon}
-            onClick={e => {
-              onReadOrDismissCurrentChangelog(false);
-              e.stopPropagation();
-            }}
-          >
-            <CloseIcon />
-          </div>
-        </>
-      )}
+      {updateAvailable &&
+        (updateAvailable.allowAutoUpdate
+          ? renderUpdateAvailableAllowAutoUpdate()
+          : renderUpdateAvailableNotAllowAutoUpdate())}
+
+      {!updateAvailable && currentChangelogUnread && renderWhatsNew()}
       <div className={styles.particles} aria-hidden="true"></div>
       <span className={styles.halo} aria-hidden="true"></span>
     </button>
   );
+
+  function renderUpdateAvailableAllowAutoUpdate() {
+    return (
+      <div className={clsx([styles.updateAvailableWrapper])}>
+        <div className={clsx([styles.installLabelNormal])}>
+          <span>
+            {!updateReady
+              ? t['com.affine.updater.downloading']()
+              : t['com.affine.updater.update-available']()}
+          </span>
+          <span className={styles.versionLabel}>
+            {updateAvailable?.version}
+          </span>
+        </div>
+
+        {updateReady ? (
+          <div className={clsx([styles.installLabelHover])}>
+            <ResetIcon className={styles.icon} />
+            <span>{t['com.affine.updater.restart-to-update']()}</span>
+          </div>
+        ) : (
+          <div className={styles.progress}>
+            <div
+              className={styles.progressInner}
+              style={{ width: `${downloadProgress}%` }}
+            ></div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderUpdateAvailableNotAllowAutoUpdate() {
+    return (
+      <>
+        <div className={clsx([styles.installLabelNormal])}>
+          <span>{t['com.affine.updater.update-available']()}</span>
+          <span className={styles.versionLabel}>
+            {updateAvailable?.version}
+          </span>
+        </div>
+
+        <div className={clsx([styles.installLabelHover])}>
+          <span>{t['com.affine.updater.open-download-page']()}</span>
+        </div>
+      </>
+    );
+  }
+
+  function renderWhatsNew() {
+    return (
+      <>
+        <div className={clsx([styles.whatsNewLabel])}>
+          <NewIcon className={styles.icon} />
+          <span>{t[`Discover what's new!`]()}</span>
+        </div>
+        <div
+          className={styles.closeIcon}
+          onClick={e => {
+            onReadOrDismissCurrentChangelog(false);
+            e.stopPropagation();
+          }}
+        >
+          <CloseIcon />
+        </div>
+      </>
+    );
+  }
 }

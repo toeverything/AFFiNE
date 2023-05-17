@@ -50,10 +50,8 @@ export const registerUpdater = async () => {
     return;
   }
 
-  if (!isMacOS()) {
-    // TODO: support auto update on windows and linux
-    return;
-  }
+  // TODO: support auto update on windows and linux
+  const allowAutoUpdate = isMacOS();
 
   _autoUpdater.autoDownload = false;
   _autoUpdater.allowPrerelease = buildType !== 'stable';
@@ -69,10 +67,13 @@ export const registerUpdater = async () => {
 
   // register events for checkForUpdatesAndNotify
   _autoUpdater.on('update-available', info => {
-    _autoUpdater!.downloadUpdate();
-    logger.info('Update available, downloading...', info);
+    if (allowAutoUpdate) {
+      _autoUpdater!.downloadUpdate();
+      logger.info('Update available, downloading...', info);
+    }
     updaterSubjects.updateAvailable.next({
       version: info.version,
+      allowAutoUpdate,
     });
   });
   _autoUpdater.on('download-progress', e => {
@@ -82,6 +83,7 @@ export const registerUpdater = async () => {
   _autoUpdater.on('update-downloaded', e => {
     updaterSubjects.updateReady.next({
       version: e.version,
+      allowAutoUpdate,
     });
     // I guess we can skip it?
     // updaterSubjects.clientDownloadProgress.next(100);

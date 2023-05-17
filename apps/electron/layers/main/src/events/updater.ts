@@ -4,6 +4,7 @@ import type { MainEventListener } from './type';
 
 interface UpdateMeta {
   version: string;
+  allowAutoUpdate: boolean;
 }
 
 export const updaterSubjects = {
