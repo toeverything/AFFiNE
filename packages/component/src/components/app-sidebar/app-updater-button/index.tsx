@@ -47,15 +47,11 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   const updateAvailable = useAtomValue(updateAvailableAtom);
   const currentVersion = useAtomValue(currentVersionAtom);
   const downloadProgress = useAtomValue(downloadProgressAtom);
-  const onReadOrDismissChangelog = useSetAtom(changelogCheckedAtom);
+  const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
 
-  const onReadOrDismissCurrentChangelog = (visit: boolean) => {
-    if (visit) {
-      window.open(config.changelogUrl, '_blank');
-    }
-
+  const onDismissCurrentChangelog = () => {
     startTransition(() =>
-      onReadOrDismissChangelog(mapping => {
+      setChangelogCheckAtom(mapping => {
         return {
           ...mapping,
           [currentVersion!]: true,
@@ -87,7 +83,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
             );
           }
         } else if (currentChangelogUnread) {
-          onReadOrDismissCurrentChangelog(true);
+          window.open(config.changelogUrl, '_blank');
         } else {
           // do nothing since we will not get here
         }
@@ -162,7 +158,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
         <div
           className={styles.closeIcon}
           onClick={e => {
-            onReadOrDismissCurrentChangelog(false);
+            onDismissCurrentChangelog();
             e.stopPropagation();
           }}
         >
