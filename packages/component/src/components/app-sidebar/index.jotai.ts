@@ -1,3 +1,4 @@
+import { getEnvironment } from '@affine/env/config';
 import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
 import { atomWithStorage } from 'jotai/utils';
@@ -20,6 +21,7 @@ export const updateReadyAtom = atomWithObservable(() => {
   return new Observable<{ version: string } | null>(subscriber => {
     subscriber.next(null);
     if (typeof window !== 'undefined') {
+      const environment = getEnvironment();
       const isMacosDesktop = environment.isDesktop && environment.isMacOs;
       if (isMacosDesktop) {
         const dispose = window.events?.updater.onUpdateReady(info => {
@@ -37,6 +39,7 @@ export const updateProgressAtom = atomWithObservable<number>(() => {
   return new Observable<number>(subscriber => {
     subscriber.next(0);
     if (typeof window !== 'undefined') {
+      const environment = getEnvironment();
       const isMacosDesktop = environment.isDesktop && environment.isMacOs;
       if (isMacosDesktop) {
         const dispose = window.events?.updater.onDownloadProgress(progress => {
