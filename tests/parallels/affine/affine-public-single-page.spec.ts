@@ -36,9 +36,6 @@ test('public single page', async ({ page, browser }) => {
   );
   await page.getByTestId('confirm-enable-cloud-button').click();
   await promise;
-  const newPage2Url = page.url().split('/');
-  newPage2Url[newPage2Url.length - 1] = page2Id as string;
-  await page.goto(newPage2Url.join('/'));
   await page.waitForSelector('v-line');
   const currentTitle = await page
     .locator('[data-block-is-title="true"]')

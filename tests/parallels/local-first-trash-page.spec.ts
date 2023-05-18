@@ -18,7 +18,7 @@ test('New a page , then delete it in all pages, finally find it in trash', async
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
   const newPageId = page.url().split('/').reverse()[0];
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
   const cell = page.getByRole('cell', {
     name: 'this is a new page to delete',
   });
@@ -36,7 +36,7 @@ test('New a page , then delete it in all pages, finally find it in trash', async
 
   await page.getByRole('button', { name: 'Delete' }).click();
 
-  await page.getByRole('link', { name: 'Trash' }).click();
+  await page.getByTestId('trash-page').click();
   expect(
     page.getByRole('cell', { name: 'this is a new page to delete' })
   ).not.toBeUndefined();

@@ -4,9 +4,26 @@ on:
   push:
     branches:
       - master
+      - v[0-9]+.[0-9]+.x-staging
+      - v[0-9]+.[0-9]+.x
+    paths-ignore:
+      - README.md
+      - .github/**
+      - '!.github/workflows/build.yml'
   pull_request:
     branches:
       - master
+      - v[0-9]+.[0-9]+.x-staging
+      - v[0-9]+.[0-9]+.x
+    paths-ignore:
+      - README.md
+      - .github/**
+      - '!.github/workflows/build.yml'
+
+env:
+  DEBUG: napi:*
+  APP_NAME: affine
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
   lint:
@@ -36,23 +53,6 @@ jobs:
           name: storybook
           path: ./packages/component/storybook-static
           if-no-files-found: error
-
-  build-electron:
-    name: Build @affine/electron
-    runs-on: ubuntu-latest
-    environment: development
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-      - name: Build Electron
-        working-directory: apps/electron
-        run: yarn exec ts-node-esm ./scripts/build-ci.mts
-      - name: Upload Ubuntu desktop artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: affine-ubuntu
-          path: ./apps/electron/dist
 
   build:
     name: Build @affine/web
@@ -261,7 +261,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
@@ -269,20 +269,63 @@ jobs:
 
   dekstop-test:
     name: Desktop Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.spec.os }}
     environment: development
-    needs: [build, build-electron]
+    strategy:
+      fail-fast: false
+      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      matrix:
+        spec:
+          - {
+              os: macos-latest,
+              platform: macos,
+              arch: x64,
+              target: x86_64-apple-darwin,
+              test: true,
+            }
+          - {
+              os: macos-latest,
+              platform: macos,
+              arch: arm64,
+              target: aarch64-apple-darwin,
+              test: false,
+            }
+          - {
+              os: ubuntu-latest,
+              platform: linux,
+              arch: x64,
+              target: x86_64-unknown-linux-gnu,
+              test: true,
+            }
+          - {
+              os: windows-latest,
+              platform: windows,
+              arch: x64,
+              target: x86_64-pc-windows-msvc,
+              test: true,
+            }
+    needs: [build]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
-      - name: Download Ubuntu desktop artifact
-        uses: actions/download-artifact@v3
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
         with:
-          name: affine-ubuntu
-          path: ./apps/electron/dist
+          target: ${{ matrix.spec.target }}
+      - name: Run unit tests
+        if: ${{ matrix.spec.test }}
+        shell: bash
+        run: |
+          rm -rf apps/electron/node_modules/better-sqlite3/build
+          yarn --cwd apps/electron/node_modules/better-sqlite3 run install
+          yarn test:unit
+        env:
+          NATIVE_TEST: 'true'
+      - name: Build layers
+        run: yarn workspace @affine/electron build-layers
 
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
@@ -290,15 +333,43 @@ jobs:
           name: next-js-static
           path: ./apps/electron/resources/web-static
 
+      - name: Rebuild Electron dependences
+        shell: bash
+        run: |
+          rm -rf apps/electron/node_modules/better-sqlite3/build
+          yarn workspace @affine/electron rebuild:for-electron --arch=${{ matrix.spec.arch }}
+
       - name: Run desktop tests
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn test
-        working-directory: apps/electron
+        if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine/electron test
+        env:
+          COVERAGE: true
+
+      - name: Run desktop tests
+        if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
+        run: yarn workspace @affine/electron test
+        env:
+          COVERAGE: true
+
+      - name: Collect code coverage report
+        if: ${{ matrix.spec.test }}
+        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
+      - name: Upload e2e test coverage results
+        if: ${{ matrix.spec.test }}
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/lcov.info
+          flags: e2etest-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
+          name: affine
+          fail_ci_if_error: true
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: test-results-e2e-${{ matrix.shard }}
+          name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           path: ./test-results
           if-no-files-found: ignore
 

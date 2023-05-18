@@ -1,5 +1,6 @@
 import { AFFINE_STORAGE_KEY, config, prefixUrl } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
+import { PageNotFoundError } from '@affine/env/constant';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
@@ -11,8 +12,13 @@ import {
   SignMethod,
 } from '@affine/workspace/affine/login';
 import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import type { AffineWorkspace } from '@affine/workspace/type';
-import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
+import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
+import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
+import {
+  LoadPriority,
+  ReleaseType,
+  WorkspaceFlavour,
+} from '@affine/workspace/type';
 import {
   cleanupWorkspace,
   createEmptyBlockSuiteWorkspace,
@@ -24,7 +30,7 @@ import { mutate } from 'swr';
 import { z } from 'zod';
 
 import { createAffineProviders } from '../../blocksuite';
-import { PageNotFoundError } from '../../components/affine/affine-error-eoundary';
+import { createAffineDownloadProvider } from '../../blocksuite/providers/affine';
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
@@ -33,7 +39,7 @@ import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
 import { toast } from '../../utils';
-import type { WorkspacePlugin } from '..';
+import type { WorkspaceAdapter } from '..';
 import { QueryKey } from './fetcher';
 
 const storage = createJSONStorage(() => localStorage);
@@ -46,7 +52,7 @@ const schema = z.object({
 
 const getPersistenceAllWorkspace = () => {
   const items = storage.getItem(AFFINE_STORAGE_KEY, []);
-  const allWorkspaces: AffineWorkspace[] = [];
+  const allWorkspaces: AffineLegacyCloudWorkspace[] = [];
   if (
     Array.isArray(items) &&
     items.every(item => schema.safeParse(item).success)
@@ -60,7 +66,7 @@ const getPersistenceAllWorkspace = () => {
             workspaceApis: affineApis,
           }
         );
-        const affineWorkspace: AffineWorkspace = {
+        const affineWorkspace: AffineLegacyCloudWorkspace = {
           ...item,
           flavour: WorkspaceFlavour.AFFINE,
           blockSuiteWorkspace,
@@ -84,14 +90,13 @@ function AuthContext({ children }: PropsWithChildren): ReactElement {
     }
   }, [login]);
   if (!login) {
-    return (
-      <PageLoading text="No login, redirecting to local workspace page..." />
-    );
+    return <PageLoading />;
   }
   return <>{children}</>;
 }
 
-export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
+export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
+  releaseType: ReleaseType.STABLE,
   flavour: WorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
   Events: {
@@ -145,6 +150,27 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           );
         }
       }
+      {
+        const bs = createEmptyBlockSuiteWorkspace(id, WorkspaceFlavour.AFFINE, {
+          workspaceApis: affineApis,
+        });
+        // fixme:
+        //  force to download workspace binary
+        //  to make sure the workspace is synced
+        const provider = createAffineDownloadProvider(bs);
+        const indexedDBProvider = createIndexedDBBackgroundProvider(bs);
+        await new Promise<void>(resolve => {
+          indexedDBProvider.callbacks.add(() => {
+            resolve();
+          });
+          provider.callbacks.add(() => {
+            indexedDBProvider.connect();
+          });
+          provider.connect();
+        });
+        provider.disconnect();
+        indexedDBProvider.disconnect();
+      }
 
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
       // refresh the local storage
@@ -180,7 +206,8 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           cleanupWorkspace(WorkspaceFlavour.AFFINE);
           return null;
         }
-        const workspaces: AffineWorkspace[] = await AffinePlugin.CRUD.list();
+        const workspaces: AffineLegacyCloudWorkspace[] =
+          await AffinePlugin.CRUD.list();
         return (
           workspaces.find(workspace => workspace.id === workspaceId) ?? null
         );
@@ -241,7 +268,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
               storage.setItem(AFFINE_STORAGE_KEY, [...data]);
             }
 
-            const affineWorkspace: AffineWorkspace = {
+            const affineWorkspace: AffineLegacyCloudWorkspace = {
               ...workspace,
               flavour: WorkspaceFlavour.AFFINE,
               blockSuiteWorkspace,
@@ -278,7 +305,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
   UI: {
     Provider: ({ children }) => {
       return (
-        <Suspense fallback={<PageLoading text="Checking login status..." />}>
+        <Suspense fallback={<PageLoading />}>
           <AuthContext>{children}</AuthContext>
         </Suspense>
       );

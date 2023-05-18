@@ -1,12 +1,12 @@
+import { Unreachable } from '@affine/env/constant';
 import { rootStore } from '@affine/workspace/atom';
-import type { AffineWorkspace } from '@affine/workspace/type';
+import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
 
 import { workspacesAtom } from '../../atoms';
 import { createAffineProviders } from '../../blocksuite';
-import { Unreachable } from '../../components/affine/affine-error-eoundary';
 import { affineApis } from '../../shared/apis';
 
 type Query = (typeof QueryKey)[keyof typeof QueryKey];
@@ -70,7 +70,7 @@ export const fetcher = async (
               workspaceApis: affineApis,
             }
           );
-          const remWorkspace: AffineWorkspace = {
+          const remWorkspace: AffineLegacyCloudWorkspace = {
             ...workspace,
             flavour: WorkspaceFlavour.AFFINE,
             blockSuiteWorkspace,

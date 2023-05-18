@@ -64,6 +64,50 @@ export const StyledCreateWorkspaceCard = styled('div')(() => {
     },
   };
 });
+export const StyledCreateWorkspaceCardPillContainer = styled('div')(() => {
+  return {
+    padding: '12px',
+    borderRadius: '10px',
+    display: 'flex',
+    margin: '-8px -4px',
+    flexFlow: 'column',
+    gap: '12px',
+    background: 'var(--affine-background-overlay-panel-color)',
+  };
+});
+
+export const StyledCreateWorkspaceCardPill = styled('div')(() => {
+  return {
+    borderRadius: '5px',
+    display: 'flex',
+    boxShadow: '0px 0px 6px 0px rgba(0, 0, 0, 0.1)',
+    background: 'var(--affine-background-primary-color)',
+  };
+});
+
+export const StyledCreateWorkspaceCardPillContent = styled('div')(() => {
+  return {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  };
+});
+
+export const StyledCreateWorkspaceCardPillIcon = styled('div')(() => {
+  return {
+    fontSize: '20px',
+    width: '1em',
+    height: '1em',
+  };
+});
+
+export const StyledCreateWorkspaceCardPillTextSecondary = styled('div')(() => {
+  return {
+    fontSize: '12px',
+    color: 'var(--affine-text-secondary-color)',
+  };
+});
 
 export const StyledModalHeaderLeft = styled('div')(() => {
   return { ...displayFlex('flex-start', 'center') };

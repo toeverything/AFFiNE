@@ -51,7 +51,7 @@ const slideOut2 = keyframes({
 
 export const changeLogWrapperSlideInStyle = style({
   width: 'calc(100% + 4px)',
-  height: '0px',
+  flexShrink: 0,
   animation: `${slideIn} 1s ease-in-out forwards`,
   display: 'flex',
   justifyContent: 'flex-start',
@@ -96,6 +96,12 @@ export const linkStyle = style({
   flexDirection: 'row',
   justifyContent: 'flex-start',
   alignItems: 'center',
+  maxWidth: 'calc(100% - 32px)',
+});
+export const linkTextStyle = style({
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+  overflow: 'hidden',
 });
 export const iconStyle = style({
   fontSize: '20px',

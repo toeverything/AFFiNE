@@ -1,3 +1,4 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DarkModeIcon, LightModeIcon } from '@blocksuite/icons';
 import { useTheme } from 'next-themes';
 
@@ -12,6 +13,7 @@ import {
 
 export const MenuThemeModeSwitch = () => {
   const { setTheme, resolvedTheme, theme } = useTheme();
+  const t = useAFFiNEI18N();
   return (
     <StyledThemeModeContainer>
       <StyledThemeModeSwitch data-testid="change-theme-container" inMenu={true}>
@@ -30,7 +32,7 @@ export const MenuThemeModeSwitch = () => {
             setTheme('light');
           }}
         >
-          light
+          {t['light']()}
         </StyledThemeButton>
         <StyledVerticalDivider />
         <StyledThemeButton
@@ -40,7 +42,7 @@ export const MenuThemeModeSwitch = () => {
             setTheme('dark');
           }}
         >
-          dark
+          {t['dark']()}
         </StyledThemeButton>
         <StyledVerticalDivider />
         <StyledThemeButton
@@ -49,7 +51,7 @@ export const MenuThemeModeSwitch = () => {
             setTheme('system');
           }}
         >
-          system
+          {t['system']()}
         </StyledThemeButton>
       </StyledThemeButtonContainer>
     </StyledThemeModeContainer>

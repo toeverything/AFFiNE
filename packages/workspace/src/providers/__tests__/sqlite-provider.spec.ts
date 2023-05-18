@@ -21,7 +21,7 @@ const mockedAddBlob = vi.fn();
 vi.stubGlobal('window', {
   apis: {
     db: {
-      getDoc: async () => {
+      getDocAsUpdates: async () => {
         return Y.encodeStateAsUpdate(offlineYdoc);
       },
       applyDocUpdate: async (id: string, update: Uint8Array) => {
@@ -31,15 +31,27 @@ vi.stubGlobal('window', {
         // todo: may need to hack the way to get hash keys of blobs
         return [];
       },
-      onDBUpdate: (fn: (id: string) => void) => {
+      addBlob: mockedAddBlob,
+    } satisfies Partial<NonNullable<typeof window.apis>['db']>,
+  },
+  events: {
+    db: {
+      onDBFileUpdate: (fn: (id: string) => void) => {
         triggerDBUpdate = fn;
         return () => {
           triggerDBUpdate = null;
         };
       },
-      addBlob: mockedAddBlob,
-    } satisfies Partial<typeof window.apis.db>,
-  },
+
+      // not used in this test
+      onDBFileMissing: () => {
+        return () => {};
+      },
+      onDBFilePathChange: () => {
+        return () => {};
+      },
+    },
+  } satisfies Partial<NonNullable<typeof window.events>>,
 });
 
 vi.stubGlobal('environment', {

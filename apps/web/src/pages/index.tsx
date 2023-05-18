@@ -1,11 +1,9 @@
 import { DebugLogger } from '@affine/debug';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
 
 import { PageLoading } from '../components/pure/loading';
-import { useLastWorkspaceId } from '../hooks/affine/use-last-leave-workspace-id';
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
 import { useAppHelper, useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
@@ -16,16 +14,15 @@ const IndexPageInner = () => {
   const router = useRouter();
   const { jumpToPage, jumpToSubPath } = useRouterHelper(router);
   const workspaces = useWorkspaces();
-  const lastWorkspaceId = useLastWorkspaceId();
   const helper = useAppHelper();
 
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
+    const lastId = localStorage.getItem('last_workspace_id');
     const targetWorkspace =
-      (lastWorkspaceId &&
-        workspaces.find(({ id }) => id === lastWorkspaceId)) ||
+      (lastId && workspaces.find(({ id }) => id === lastId)) ||
       workspaces.at(0);
 
     if (targetWorkspace) {
@@ -57,15 +54,14 @@ const IndexPageInner = () => {
     } else {
       console.warn('No target workspace. This should not happen in production');
     }
-  }, [helper, jumpToPage, jumpToSubPath, lastWorkspaceId, router, workspaces]);
+  }, [helper, jumpToPage, jumpToSubPath, router, workspaces]);
 
   return <PageLoading key="IndexPageInfinitePageLoading" />;
 };
 
 const IndexPage: NextPage = () => {
-  const t = useAFFiNEI18N();
   return (
-    <Suspense fallback={<PageLoading text={t['Loading All Workspaces']()} />}>
+    <Suspense fallback={<PageLoading />}>
       <IndexPageInner />
     </Suspense>
   );

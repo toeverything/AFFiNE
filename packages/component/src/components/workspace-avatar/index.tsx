@@ -1,6 +1,6 @@
 import type {
+  AffineLegacyCloudWorkspace,
   AffinePublicWorkspace,
-  AffineWorkspace,
   LocalWorkspace,
 } from '@affine/workspace/type';
 import type { Workspace } from '@blocksuite/store';
@@ -10,12 +10,16 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import clsx from 'clsx';
 import type React from 'react';
 
-import { DefaultAvatar } from './DefaultAvatar';
+import { DefaultAvatar } from './default-avatar';
 import { avatarImageStyle, avatarStyle } from './index.css';
 
 export type WorkspaceAvatarProps = {
   size?: number;
-  workspace: AffineWorkspace | LocalWorkspace | AffinePublicWorkspace | null;
+  workspace:
+    | AffineLegacyCloudWorkspace
+    | LocalWorkspace
+    | AffinePublicWorkspace
+    | null;
   className?: string;
 };
 

@@ -19,7 +19,7 @@ import type { Page } from '@blocksuite/store';
 import { createStore } from 'jotai';
 import { describe, expect, test } from 'vitest';
 
-import { WorkspacePlugins } from '../../plugins';
+import { WorkspaceAdapters } from '../../plugins';
 import { rootCurrentWorkspaceAtom } from '../root';
 
 describe('currentWorkspace atom', () => {
@@ -45,7 +45,7 @@ describe('currentWorkspace atom', () => {
       const provider = createIndexedDBDownloadProvider(workspace);
       provider.sync();
       await provider.whenReady;
-      const workspaceId = await WorkspacePlugins[
+      const workspaceId = await WorkspaceAdapters[
         WorkspaceFlavour.LOCAL
       ].CRUD.create(workspace);
       store.set(rootWorkspacesMetadataAtom, [

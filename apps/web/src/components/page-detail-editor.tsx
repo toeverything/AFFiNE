@@ -1,3 +1,4 @@
+import { PageNotFoundError } from '@affine/env/constant';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -11,7 +12,6 @@ import { startTransition, useCallback } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import type { AffineOfficialWorkspace } from '../shared';
-import { PageNotFoundError } from './affine/affine-error-eoundary';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import { WorkspaceHeader } from './blocksuite/workspace-header';
 
@@ -80,6 +80,9 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
           (page: Page, editor: EditorContainer) => {
             startTransition(() => {
               setEditor(editor);
+            });
+            page.workspace.setPageMeta(page.id, {
+              updatedDate: Date.now(),
             });
             onLoad?.(page, editor);
           },

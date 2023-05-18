@@ -16,7 +16,7 @@ test('New a page ,then open it and show delete modal', async ({ page }) => {
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
   const cell = page.getByRole('cell', {
     name: 'this is a new page to delete',
   });
@@ -40,7 +40,7 @@ test('New a page ,then go to all pages and show delete modal', async ({
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
   const newPageId = page.url().split('/').reverse()[0];
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
   const cell = page.getByRole('cell', {
     name: 'this is a new page to delete',
   });

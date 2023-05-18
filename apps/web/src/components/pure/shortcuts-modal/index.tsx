@@ -13,7 +13,7 @@ import {
   useWindowsKeyboardShortcuts,
   useWinMarkdownShortcuts,
 } from './config';
-import { KeyboardIcon } from './Icons';
+import { KeyboardIcon } from './icons';
 import {
   StyledListItem,
   StyledModalHeader,

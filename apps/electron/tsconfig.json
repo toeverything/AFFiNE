@@ -1,23 +1,24 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "composite": true,
+    "skipLibCheck": true,
     "target": "ESNext",
     "module": "ESNext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "moduleResolution": "bundler",
-    "isolatedModules": false,
-    "resolveJsonModule": true,
     "types": ["node"],
     "outDir": "dist",
-    "noEmit": false
+    "moduleResolution": "node",
+    "resolveJsonModule": true
   },
-  "include": ["layers", "types", "package.json"],
+  "include": ["**/*.ts", "**/*.tsx", "package.json"],
   "exclude": ["out", "dist", "node_modules"],
   "references": [
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "../../packages/native"
     }
   ],
   "ts-node": {

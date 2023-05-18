@@ -16,7 +16,6 @@ function getAtom(w: Workspace, pageId: string): Atom<string> {
     baseAtom.onMount = set => {
       const disposable = w.meta.pageMetasUpdated.on(() => {
         const page = w.getPage(pageId);
-        assertExists(page);
         set(page?.meta.title || 'Untitled');
       });
       return () => {

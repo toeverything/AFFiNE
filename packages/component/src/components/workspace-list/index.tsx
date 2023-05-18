@@ -1,4 +1,7 @@
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -9,20 +12,23 @@ import {
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import type { FC } from 'react';
 
-import { WorkspaceCard } from '../workspace-card';
+import { WorkspaceCard } from '../../components/card/workspace-card';
+import { workspaceItemStyle } from './index.css';
 
 export type WorkspaceListProps = {
   disabled?: boolean;
   currentWorkspaceId: string | null;
-  items: (AffineWorkspace | LocalWorkspace)[];
-  onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
-  onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
+  items: (AffineLegacyCloudWorkspace | LocalWorkspace)[];
+  onClick: (workspace: AffineLegacyCloudWorkspace | LocalWorkspace) => void;
+  onSettingClick: (
+    workspace: AffineLegacyCloudWorkspace | LocalWorkspace
+  ) => void;
   onDragEnd: (event: DragEndEvent) => void;
 };
 
 const SortableWorkspaceItem: FC<
   Omit<WorkspaceListProps, 'items'> & {
-    item: AffineWorkspace | LocalWorkspace;
+    item: AffineLegacyCloudWorkspace | LocalWorkspace;
   }
 > = props => {
   const { setNodeRef, attributes, listeners, transform } = useSortable({
@@ -37,6 +43,7 @@ const SortableWorkspaceItem: FC<
   };
   return (
     <div
+      className={workspaceItemStyle}
       data-testid="draggable-item"
       style={style}
       ref={setNodeRef}

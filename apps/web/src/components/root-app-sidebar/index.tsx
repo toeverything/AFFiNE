@@ -1,7 +1,13 @@
 import {
+  AddPageButton,
   AppSidebar,
   appSidebarOpenAtom,
-  ResizeIndicator,
+  AppUpdaterButton,
+  CategoryDivider,
+  MenuLinkItem,
+  QuickSearchInput,
+  SidebarContainer,
+  SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -9,26 +15,18 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
-  PlusIcon,
-  SearchIcon,
   SettingsIcon,
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { useAtomValue } from 'jotai';
-import type { ReactElement, UIEvent } from 'react';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useAtom } from 'jotai';
+import type { ReactElement } from 'react';
+import type React from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
+import { useHistoryAtom } from '../../atoms/history';
 import type { AllWorkspace } from '../../shared';
-import ChangeLog from '../pure/workspace-slider-bar/changeLog';
-import Favorite from '../pure/workspace-slider-bar/favorite';
-import { StyledListItem } from '../pure/workspace-slider-bar/shared-styles';
-import {
-  StyledLink,
-  StyledNewPageButton,
-  StyledScrollWrapper,
-  StyledSliderBarInnerWrapper,
-} from '../pure/workspace-slider-bar/style';
+import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 
 export type RootAppSidebarProps = {
@@ -36,17 +34,35 @@ export type RootAppSidebarProps = {
   onOpenQuickSearchModal: () => void;
   onOpenWorkspaceListModal: () => void;
   currentWorkspace: AllWorkspace | null;
-  currentPageId: string | null;
   openPage: (pageId: string) => void;
   createPage: () => Page;
   currentPath: string;
   paths: {
     all: (workspaceId: string) => string;
-    favorite: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
     setting: (workspaceId: string) => string;
     shared: (workspaceId: string) => string;
   };
+};
+
+const RouteMenuLinkItem = ({
+  currentPath,
+  path,
+  icon,
+  children,
+  ...props
+}: {
+  currentPath: string; // todo: pass through useRouter?
+  path?: string | null;
+  icon: ReactElement;
+  children?: ReactElement;
+} & React.HTMLAttributes<HTMLDivElement>) => {
+  const active = currentPath === path;
+  return (
+    <MenuLinkItem {...props} active={active} href={path ?? ''} icon={icon}>
+      {children}
+    </MenuLinkItem>
+  );
 };
 
 /**
@@ -57,7 +73,6 @@ export type RootAppSidebarProps = {
  */
 export const RootAppSidebar = ({
   currentWorkspace,
-  currentPageId,
   openPage,
   createPage,
   currentPath,
@@ -68,158 +83,118 @@ export const RootAppSidebar = ({
   const currentWorkspaceId = currentWorkspace?.id || null;
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
-  const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const onClickNewPage = useCallback(async () => {
     const page = await createPage();
     openPage(page.id);
   }, [createPage, openPage]);
-  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
+
+  // Listen to the "New Page" action from the menu
+  useEffect(() => {
+    if (environment.isDesktop) {
+      return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
+    }
+  }, [onClickNewPage]);
+
+  const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
     if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
-      window.apis?.onSidebarVisibilityChange(sidebarOpen);
+      window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen);
     }
   }, [sidebarOpen]);
-  const [ref, setRef] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if ((e.key === '/' && e.metaKey) || (e.key === '/' && e.ctrlKey)) {
+        setSidebarOpen(!sidebarOpen);
+      }
+    };
+    document.addEventListener('keydown', keydown, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', keydown, { capture: true });
+  }, [sidebarOpen, setSidebarOpen]);
+
+  const [history, setHistory] = useHistoryAtom();
+  const router = useMemo(() => {
+    return {
+      forward: () => {
+        setHistory(true);
+      },
+      back: () => {
+        setHistory(false);
+      },
+      history,
+    };
+  }, [history, setHistory]);
+
   return (
     <>
-      <AppSidebar
-        ref={setRef}
-        footer={
-          <StyledNewPageButton
-            data-testid="new-page-button"
-            onClick={onClickNewPage}
-          >
-            <PlusIcon /> {t['New Page']()}
-          </StyledNewPageButton>
-        }
-      >
-        <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
+      <AppSidebar router={router}>
+        <SidebarContainer>
           <WorkspaceSelector
             currentWorkspace={currentWorkspace}
             onClick={onOpenWorkspaceListModal}
           />
-          <ChangeLog />
-          <StyledListItem
+          <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
-            onClick={useCallback(() => {
-              onOpenQuickSearchModal();
-            }, [onOpenQuickSearchModal])}
+            onClick={onOpenQuickSearchModal}
+          />
+          <RouteMenuLinkItem
+            icon={<FolderIcon />}
+            currentPath={currentPath}
+            path={currentWorkspaceId && paths.all(currentWorkspaceId)}
           >
-            <div
-              style={{
-                display: 'flex',
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-              }}
-            >
-              <SearchIcon />
-              {t['Quick search']()}
-            </div>
-          </StyledListItem>
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.setting(currentWorkspaceId))
-            }
+            <span data-testid="all-pages">{t['All pages']()}</span>
+          </RouteMenuLinkItem>
+          <RouteMenuLinkItem
             data-testid="slider-bar-workspace-setting-button"
-            style={{
-              marginBottom: '16px',
-            }}
+            icon={<SettingsIcon />}
+            currentPath={currentPath}
+            path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
           >
-            <StyledLink
-              href={{
-                pathname:
-                  currentWorkspaceId && paths.setting(currentWorkspaceId),
-              }}
-            >
-              <SettingsIcon />
-              <div>{t['Workspace Settings']()}</div>
-            </StyledLink>
-          </StyledListItem>
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.all(currentWorkspaceId))
-            }
-          >
-            <StyledLink
-              href={{
-                pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
-              }}
-            >
-              <FolderIcon />
-              <span data-testid="all-pages">{t['All pages']()}</span>
-            </StyledLink>
-          </StyledListItem>
-          <StyledScrollWrapper
-            showTopBorder={!isScrollAtTop}
-            onScroll={(e: UIEvent<HTMLDivElement>) => {
-              (e.target as HTMLDivElement).scrollTop === 0
-                ? setIsScrollAtTop(true)
-                : setIsScrollAtTop(false);
-            }}
-          >
-            {blockSuiteWorkspace && (
-              <Favorite
-                currentPath={currentPath}
-                paths={paths}
-                currentPageId={currentPageId}
-                openPage={openPage}
-                currentWorkspace={currentWorkspace}
-              />
-            )}
-          </StyledScrollWrapper>
-          <div style={{ height: 16 }}></div>
+            <span data-testid="settings">{t['Settings']()}</span>
+          </RouteMenuLinkItem>
+        </SidebarContainer>
+
+        <SidebarScrollableContainer>
+          <CategoryDivider label={t['Favorites']()} />
+          {blockSuiteWorkspace && (
+            <FavoriteList currentWorkspace={currentWorkspace} />
+          )}
           {config.enableLegacyCloud &&
             (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
             currentWorkspace.public ? (
-              <StyledListItem>
-                <StyledLink
-                  href={{
-                    pathname:
-                      currentWorkspaceId && paths.setting(currentWorkspaceId),
-                  }}
-                >
-                  <ShareIcon />
-                  <span data-testid="Published-to-web">Published to web</span>
-                </StyledLink>
-              </StyledListItem>
-            ) : (
-              <StyledListItem
-                active={
-                  currentPath ===
-                  (currentWorkspaceId && paths.shared(currentWorkspaceId))
-                }
+              <RouteMenuLinkItem
+                icon={<ShareIcon />}
+                currentPath={currentPath}
+                path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
               >
-                <StyledLink
-                  href={{
-                    pathname:
-                      currentWorkspaceId && paths.shared(currentWorkspaceId),
-                  }}
-                >
-                  <ShareIcon />
-                  <span data-testid="shared-pages">{t['Shared Pages']()}</span>
-                </StyledLink>
-              </StyledListItem>
+                <span data-testid="Published-to-web">Published to web</span>
+              </RouteMenuLinkItem>
+            ) : (
+              <RouteMenuLinkItem
+                icon={<ShareIcon />}
+                currentPath={currentPath}
+                path={currentWorkspaceId && paths.shared(currentWorkspaceId)}
+              >
+                <span data-testid="shared-pages">{t['Shared Pages']()}</span>
+              </RouteMenuLinkItem>
             ))}
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.trash(currentWorkspaceId))
-            }
+
+          <CategoryDivider label={t['others']()} />
+          <RouteMenuLinkItem
+            icon={<DeleteTemporarilyIcon />}
+            currentPath={currentPath}
+            path={currentWorkspaceId && paths.trash(currentWorkspaceId)}
           >
-            <StyledLink
-              href={{
-                pathname: currentWorkspaceId && paths.trash(currentWorkspaceId),
-              }}
-            >
-              <DeleteTemporarilyIcon /> {t['Trash']()}
-            </StyledLink>
-          </StyledListItem>
-        </StyledSliderBarInnerWrapper>
+            <span data-testid="trash-page">{t['Trash']()}</span>
+          </RouteMenuLinkItem>
+        </SidebarScrollableContainer>
+        <SidebarContainer>
+          {environment.isDesktop && <AppUpdaterButton />}
+          <div />
+          <AddPageButton onClick={onClickNewPage} />
+        </SidebarContainer>
       </AppSidebar>
-      <ResizeIndicator targetElement={ref} />
     </>
   );
 };

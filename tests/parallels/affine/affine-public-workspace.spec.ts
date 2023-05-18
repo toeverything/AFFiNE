@@ -38,7 +38,7 @@ test('enable public workspace', async ({ page, context }) => {
   await page2.waitForSelector('thead', {
     timeout: 10000,
   });
-  await page2.getByText('Welcome to AFFiNE').click();
+  await page2.getByText('AFFiNE - not just a note taking app').click();
 });
 
 test('access public workspace page', async ({ page, browser }) => {
