@@ -4,6 +4,7 @@ import { isMacOS } from '../../utils';
 import { subjects } from './events';
 import { checkForUpdatesAndNotify } from './handlers/updater';
 import { revealLogFile } from './logger';
+import { restoreOrCreateWindow } from './main-window';
 
 // Unique id for menuitems
 const MENUITEM_NEW_PAGE = 'affine:new-page';
@@ -42,7 +43,10 @@ export function createApplicationMenu() {
           id: MENUITEM_NEW_PAGE,
           label: 'New Page',
           accelerator: isMac ? 'Cmd+N' : 'Ctrl+N',
-          click: () => {
+          click: async () => {
+            if (process.platform === 'darwin') {
+              await restoreOrCreateWindow();
+            }
             subjects.applicationMenu.newPageAction.next();
           },
         },

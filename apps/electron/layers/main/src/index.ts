@@ -3,6 +3,7 @@ import './security-restrictions';
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu';
+import { registerDock } from './dock';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { registerUpdater } from './handlers/updater';
@@ -60,6 +61,7 @@ app
   .then(restoreOrCreateWindow)
   .then(createApplicationMenu)
   .then(registerUpdater)
+  .then(registerDock)
   .catch(e => console.error('Failed create window:', e));
 /**
  * Check new app version in production mode only
