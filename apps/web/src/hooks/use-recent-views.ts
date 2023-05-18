@@ -1,6 +1,6 @@
-import type { Workspace } from '@blocksuite/store';
+import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
@@ -10,6 +10,19 @@ import {
   workspaceRecentViresWriteAtom,
 } from '../atoms';
 import { useCurrentWorkspace } from './current/use-current-workspace';
+
+export const useWorkspacePreferredMode = () => {
+  const [record, setPreferred] = useAtom(workspacePreferredModeAtom);
+  return {
+    getPreferredMode: (pageId: Page['id']) => record[pageId] ?? 'page',
+    setPreferredMode: (pageId: Page['id'], mode: 'page' | 'edgeless') => {
+      setPreferred(record => ({
+        ...record,
+        [pageId]: mode,
+      }));
+    },
+  };
+};
 
 export function useRecentlyViewed() {
   const [workspace] = useCurrentWorkspace();
@@ -30,15 +43,19 @@ export function useSyncRecentViewsWithRouter(
   const meta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const currentMode = useAtomValue(workspacePreferredModeAtom)[
-    pageId as string
-  ];
+  const { getPreferredMode } = useWorkspacePreferredMode();
+
+  const currentMode =
+    typeof pageId === 'string' ? getPreferredMode(pageId) : 'page';
   useEffect(() => {
     if (!workspaceId) return;
     if (pageId && meta) {
       set(workspaceId, {
         id: pageId as string,
-        mode: currentMode ?? 'page',
+        /**
+         * @deprecated No necessary update `mode` at here, use `mode` from {@link useWorkspacePreferredMode} directly.
+         */
+        mode: currentMode,
       });
     }
   }, [pageId, meta, workspaceId, set, currentMode]);
