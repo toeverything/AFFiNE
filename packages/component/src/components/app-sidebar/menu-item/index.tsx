@@ -39,28 +39,29 @@ export function MenuItem({
       data-disabled={disabled}
       data-collapsible={collapsible}
     >
-      <div className={styles.iconsContainer} data-collapsible={collapsible}>
-        {collapsible && (
-          <div
-            onClick={e => {
-              e.stopPropagation();
-              e.preventDefault(); // for links
-              onCollapsedChange?.(!collapsed);
-            }}
-            data-testid="fav-collapsed-button"
-            className={styles.collapsedIconContainer}
-          >
-            <ArrowDownSmallIcon
-              className={styles.collapsedIcon}
-              data-collapsed={collapsed}
-            />
-          </div>
-        )}
-        {icon &&
-          React.cloneElement(icon, {
+      {icon && (
+        <div className={styles.iconsContainer} data-collapsible={collapsible}>
+          {collapsible && (
+            <div
+              onClick={e => {
+                e.stopPropagation();
+                e.preventDefault(); // for links
+                onCollapsedChange?.(!collapsed);
+              }}
+              data-testid="fav-collapsed-button"
+              className={styles.collapsedIconContainer}
+            >
+              <ArrowDownSmallIcon
+                className={styles.collapsedIcon}
+                data-collapsed={collapsed}
+              />
+            </div>
+          )}
+          {React.cloneElement(icon, {
             className: clsx([styles.icon, icon.props.className]),
           })}
-      </div>
+        </div>
+      )}
 
       <div className={styles.content}>{children}</div>
     </div>

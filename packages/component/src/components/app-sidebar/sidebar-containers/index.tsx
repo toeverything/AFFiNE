@@ -39,10 +39,11 @@ function useHasScrollTop() {
 export function SidebarScrollableContainer({ children }: PropsWithChildren) {
   const [hasScrollTop, ref] = useHasScrollTop();
   return (
-    <ScrollArea.Root
-      data-has-scroll-top={hasScrollTop}
-      className={styles.scrollableContainerRoot}
-    >
+    <ScrollArea.Root className={styles.scrollableContainerRoot}>
+      <div
+        data-has-scroll-top={hasScrollTop}
+        className={styles.scrollTopBorder}
+      />
       <ScrollArea.Viewport
         className={clsx([styles.scrollableViewport])}
         ref={ref}

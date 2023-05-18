@@ -14,6 +14,7 @@ export const navWrapperStyle = style({
   minWidth: navWidthVar,
   height: '100%',
   zIndex: 2,
+  paddingBottom: '8px',
   backgroundColor: 'transparent',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
