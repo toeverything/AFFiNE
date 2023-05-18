@@ -1,5 +1,7 @@
 import { PageIcon } from '@blocksuite/icons';
+import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
+import { userEvent } from '@storybook/testing-library';
 
 import { AffineLoading } from '../components/affine-loading';
 import type {
@@ -8,6 +10,7 @@ import type {
 } from '../components/page-list/all-page';
 import { PageListTrashView } from '../components/page-list/all-page';
 import PageList from '../components/page-list/all-page';
+import { NewPageButton } from '../components/page-list/new-page-buttton';
 import type { OperationCellProps } from '../components/page-list/operation-cell';
 import { OperationCell } from '../components/page-list/operation-cell';
 import { toast } from '../ui/toast';
@@ -19,11 +22,7 @@ export default {
 
 export const AffineOperationCell: StoryFn<OperationCellProps> = ({
   ...props
-}) => (
-  <div>
-    <OperationCell {...props} />
-  </div>
-);
+}) => <OperationCell {...props} />;
 
 AffineOperationCell.args = {
   title: 'Example Page',
@@ -34,16 +33,40 @@ AffineOperationCell.args = {
   onOpenPageInNewTab: () => toast('Open page in new tab'),
   onRemoveToTrash: () => toast('Remove to trash'),
 };
+AffineOperationCell.play = async ({ canvasElement }) => {
+  {
+    const button = canvasElement.querySelector(
+      '[data-testid="page-list-operation-button"]'
+    ) as HTMLButtonElement;
+    expect(button).not.toBeNull();
+    userEvent.click(button);
+  }
+};
+
+export const AffineNewPageButton: StoryFn<typeof NewPageButton> = ({
+  ...props
+}) => <NewPageButton {...props} />;
+AffineNewPageButton.args = {
+  createNewPage: () => toast('Create new page'),
+  createNewEdgeless: () => toast('Create new edgeless'),
+};
+
+AffineNewPageButton.play = async ({ canvasElement }) => {
+  const button = canvasElement.querySelector('button') as HTMLButtonElement;
+  expect(button).not.toBeNull();
+  const dropdown = button.querySelector('svg') as SVGSVGElement;
+  expect(dropdown).not.toBeNull();
+  userEvent.click(dropdown);
+};
 
 export const AffineAllPageList: StoryFn<PageListProps> = ({ ...props }) => (
-  <div>
-    <PageList {...props} />
-  </div>
+  <PageList {...props} />
 );
 
 AffineAllPageList.args = {
   isPublicWorkspace: false,
-  listType: 'all',
+  onCreateNewPage: () => toast('Create new page'),
+  onCreateNewEdgeless: () => toast('Create new edgeless'),
   list: [
     {
       pageId: '1',
@@ -76,13 +99,20 @@ AffineAllPageList.args = {
   ],
 };
 
+export const AffineAllPageMobileList: StoryFn<PageListProps> = ({
+  ...props
+}) => <PageList {...props} />;
+
+AffineAllPageMobileList.args = AffineAllPageList.args;
+AffineAllPageMobileList.parameters = {
+  viewport: {
+    defaultViewport: 'mobile2',
+  },
+};
+
 export const AffineTrashPageList: StoryFn<{
   list: TrashListData[];
-}> = ({ ...props }) => (
-  <div>
-    <PageListTrashView {...props} />
-  </div>
-);
+}> = ({ ...props }) => <PageListTrashView {...props} />;
 
 AffineTrashPageList.args = {
   list: [
