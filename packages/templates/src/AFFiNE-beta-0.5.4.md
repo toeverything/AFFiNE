@@ -36,7 +36,7 @@ Our Edgeless Mode can be utilised as a whiteboard, allowing you to create conten
 
 ![](https://cdn.affine.pro/cf5d44d36ec3167519e6d6518914d28acaf426f001da717c1e98e760.gif)
 
-**Plan Effectively and Efficiently**
+### Plan Effectively and Efficiently
 
 With powerful databases you can create your content inside of tables but leverage powerful features. From adding due dates, tracking progress, adding tags and status labels.
 
