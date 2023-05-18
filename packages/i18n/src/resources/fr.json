@@ -275,5 +275,13 @@
   "com.affine.onboarding.title1": "Tableau blancs et document fusionnés",
   "com.affine.onboarding.videoDescription1": "Basculez facilement entre le mode Page pour de la création de documents structurés et le mode Tableau blanc pour de l'expression visuelle libre d'idées créatives.",
   "com.affine.pageMode": "Mode page",
+  "com.affine.banner.content": "La démo vous plait ? <1> Télécharger le client AFFiNE </1> pour une expérience complète.",
+  "com.affine.cloudTempDisable.title": "AFFiNE Cloud est actuellement en cours de mise à jour.",
+  "com.affine.cloudTempDisable.description": "Nous mettons à jour le service AFFiNE Cloud et il est temporairement indisponible côté client. Si vous souhaitez rester informé des avancements et être informé de la disponibilité du projet, vous pouvez remplir l'<1>inscription au AFFiNE Cloud</1>.",
+  "com.affine.helpIsland.gettingStarted": "Commencer",
+  "com.affine.updater.downloading": "Téléchargement en cours",
+  "com.affine.updater.open-download-page": "Ouvrir la page de Téléchargement",
+  "com.affine.updater.restart-to-update": "Redémarrez pour installer la mise à jour",
+  "com.affine.updater.update-available": "Mis à jour disponible",
   "others": "Autres"
 }
