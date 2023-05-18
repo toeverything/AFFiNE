@@ -17,7 +17,7 @@ export const root = style({
 });
 
 export const icon = style({
-  marginRight: '14px',
+  marginRight: '8px',
   color: 'var(--affine-icon-color)',
   fontSize: '20px',
 });
