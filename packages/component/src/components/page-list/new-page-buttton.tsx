@@ -27,13 +27,13 @@ export const CreateNewPagePopup = ({
     >
       <BlockCard
         title={t['New Page']()}
-        desc={t['Write with a blank page']()}
+        desc={t['com.affine.write_with_a_blank_page']()}
         right={<PageIcon width={20} height={20} />}
         onClick={createNewPage}
       />
       <BlockCard
-        title={t['New Edgeless']()}
-        desc={t['Draw with a blank whiteboard']()}
+        title={t['com.affine.new_edgeless']()}
+        desc={t['com.affine.draw_with_a_blank_whiteboard']()}
         right={<EdgelessIcon width={20} height={20} />}
         onClick={createNewEdgeless}
       />
