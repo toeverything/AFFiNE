@@ -12,6 +12,8 @@ export type Notification = {
 
 const notificationsBaseAtom = atom<Notification[]>([]);
 
+export const expandNotificationCenterAtom = atom(false);
+
 export const notificationsAtom = atom<
   Notification[],
   [Notification],
@@ -35,11 +37,12 @@ export const notificationsAtom = atom<
       : undefined;
 
     set(notificationsBaseAtom, notifications => [
-      ...notifications,
+      // push to the top
       { ...newNotification, undo },
+      ...notifications,
     ]);
     return setTimeout(() => {
-      removeNotification();
+      // removeNotification();
     }, newNotification.timeout);
   }
 );
