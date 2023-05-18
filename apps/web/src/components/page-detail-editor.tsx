@@ -84,6 +84,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
             page.workspace.setPageMeta(page.id, {
               updatedDate: Date.now(),
             });
+            localStorage.setItem('last_page_id', page.id);
             onLoad?.(page, editor);
           },
           [onLoad, setEditor]
