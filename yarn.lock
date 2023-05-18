@@ -345,7 +345,7 @@ __metadata:
     eslint: ^8.40.0
     eslint-config-next: ^13.4.2
     eslint-plugin-unicorn: ^47.0.0
-    forgetti: ^0.4.7
+    forgetti: ^0.5.1
     forgetti-loader: ^0.2.0
     graphql: ^16.6.0
     jotai: ^2.1.0
@@ -15192,16 +15192,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"forgetti@npm:^0.4.7":
-  version: 0.4.7
-  resolution: "forgetti@npm:0.4.7"
+"forgetti@npm:^0.5.1":
+  version: 0.5.1
+  resolution: "forgetti@npm:0.5.1"
   dependencies:
     "@babel/helper-module-imports": ^7.18.6
     "@babel/traverse": ^7.21.3
     "@babel/types": ^7.21.3
   peerDependencies:
     "@babel/core": ^7
-  checksum: 0762889b579e949e778b7d1671b9122b17daac5fda5d60b1bd7ba0051a5d1dbdbd1a1573b2130a2a916f17f746cac2097d09479369765424d9db116282819735
+  checksum: d7cd61fe95c783d868677d5e665f7143b1e7316c5ef0594b805c0ea967b61355045503e2847a75164320b3460e4947bbc71c2e9fc0822680d3f03c23da327a15
   languageName: node
   linkType: hard
 
