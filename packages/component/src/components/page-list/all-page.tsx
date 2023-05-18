@@ -18,8 +18,10 @@ import {
   FavoriteIcon,
 } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
+import type { CSSProperties } from 'react';
 import { forwardRef } from 'react';
 
+import { NewPageButton } from './new-page-buttton';
 import {
   StyledTableContainer,
   StyledTableRow,
@@ -68,11 +70,8 @@ const FavoriteTag = forwardRef<
 export type PageListProps = {
   isPublicWorkspace?: boolean;
   list: ListData[];
-  /**
-   * @deprecated
-   */
-  listType: 'all' | 'favorite' | 'shared' | 'public';
-  onClickPage: (pageId: string, newTab?: boolean) => void;
+  onCreateNewPage: () => void;
+  onCreateNewEdgeless: () => void;
 };
 
 const TitleCell = ({
@@ -100,6 +99,80 @@ const TitleCell = ({
   );
 };
 
+const AllPagesHead = ({
+  sorter,
+  createNewPage,
+  createNewEdgeless,
+}: {
+  sorter: ReturnType<typeof useSorter<ListData>>;
+  createNewPage: () => void;
+  createNewEdgeless: () => void;
+}) => {
+  const t = useAFFiNEI18N();
+  const titleList = [
+    {
+      key: 'title',
+      content: t['Title'](),
+      proportion: 0.5,
+    },
+    {
+      key: 'createDate',
+      content: t['Created'](),
+      proportion: 0.2,
+    },
+    {
+      key: 'updatedDate',
+      content: t['Updated'](),
+      proportion: 0.2,
+    },
+    {
+      key: 'unsortable_action',
+      content: (
+        <NewPageButton
+          createNewPage={createNewPage}
+          createNewEdgeless={createNewEdgeless}
+        />
+      ),
+      sortable: false,
+      styles: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      } satisfies CSSProperties,
+    },
+  ];
+
+  return (
+    <TableHead>
+      <TableRow>
+        {titleList.map(
+          ({ key, content, proportion, sortable = true, styles }) => (
+            <TableCell
+              key={key}
+              proportion={proportion}
+              active={sorter.key === key}
+              onClick={
+                sortable
+                  ? () => sorter.shiftOrder(key as keyof ListData)
+                  : undefined
+              }
+              style={styles}
+            >
+              {content}
+              {sorter.key === key &&
+                (sorter.order === 'asc' ? (
+                  <ArrowUpBigIcon width={24} height={24} />
+                ) : (
+                  <ArrowDownBigIcon width={24} height={24} />
+                ))}
+            </TableCell>
+          )
+        )}
+      </TableRow>
+    </TableHead>
+  );
+};
+
 export type ListData = {
   pageId: string;
   icon: JSX.Element;
@@ -119,7 +192,8 @@ export type ListData = {
 export const PageList: React.FC<PageListProps> = ({
   isPublicWorkspace = false,
   list,
-  listType,
+  onCreateNewPage,
+  onCreateNewEdgeless,
 }) => {
   const t = useAFFiNEI18N();
   const sorter = useSorter<ListData>({
@@ -128,69 +202,11 @@ export const PageList: React.FC<PageListProps> = ({
     order: 'desc',
   });
 
-  const isShared = listType === 'shared';
-
   const theme = useTheme();
   const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
   if (isSmallDevices) {
     return <PageListMobileView list={sorter.data} />;
   }
-
-  const ListHead = () => {
-    const t = useAFFiNEI18N();
-    const titleList = [
-      {
-        key: 'title',
-        text: t['Title'](),
-        proportion: 0.5,
-      },
-      {
-        key: 'createDate',
-        text: t['Created'](),
-        proportion: 0.2,
-      },
-      {
-        key: 'updatedDate',
-        text: isShared
-          ? // TODO deprecated
-            'Shared'
-          : t['Updated'](),
-        proportion: 0.2,
-      },
-      { key: 'unsortable_action', sortable: false },
-    ];
-
-    return (
-      <TableHead>
-        <TableRow>
-          {titleList.map(({ key, text, proportion, sortable = true }) => (
-            <TableCell
-              key={key}
-              proportion={proportion}
-              active={sorter.key === key}
-              onClick={
-                sortable
-                  ? () => sorter.shiftOrder(key as keyof ListData)
-                  : undefined
-              }
-            >
-              <div
-                style={{ display: 'flex', alignItems: 'center', width: '100%' }}
-              >
-                {text}
-                {sorter.key === key &&
-                  (sorter.order === 'asc' ? (
-                    <ArrowUpBigIcon width={24} height={24} />
-                  ) : (
-                    <ArrowDownBigIcon width={24} height={24} />
-                  ))}
-              </div>
-            </TableCell>
-          ))}
-        </TableRow>
-      </TableHead>
-    );
-  };
 
   const ListItems = sorter.data.map(
     (
@@ -237,7 +253,13 @@ export const PageList: React.FC<PageListProps> = ({
           </TableCell>
           {!isPublicWorkspace && (
             <TableCell
-              style={{ padding: 0, display: 'flex', alignItems: 'center' }}
+              style={{
+                padding: 0,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '10px',
+              }}
               data-testid={`more-actions-${pageId}`}
             >
               <FavoriteTag
@@ -264,7 +286,11 @@ export const PageList: React.FC<PageListProps> = ({
   return (
     <StyledTableContainer>
       <Table>
-        <ListHead />
+        <AllPagesHead
+          sorter={sorter}
+          createNewPage={onCreateNewPage}
+          createNewEdgeless={onCreateNewEdgeless}
+        />
         <TableBody>{ListItems}</TableBody>
       </Table>
     </StyledTableContainer>
