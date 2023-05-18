@@ -22,7 +22,7 @@
     "@blocksuite/blocks": "0.0.0-20230518051344-45970a96-nightly",
     "@blocksuite/editor": "0.0.0-20230518051344-45970a96-nightly",
     "@blocksuite/global": "0.0.0-20230518051344-45970a96-nightly",
-    "@blocksuite/icons": "^2.1.16",
+    "@blocksuite/icons": "^2.1.18",
     "@blocksuite/lit": "0.0.0-20230518051344-45970a96-nightly",
     "@blocksuite/store": "0.0.0-20230518051344-45970a96-nightly",
     "@dnd-kit/core": "^6.0.8",

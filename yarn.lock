@@ -53,7 +53,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230518051344-45970a96-nightly
     "@blocksuite/editor": 0.0.0-20230518051344-45970a96-nightly
     "@blocksuite/global": 0.0.0-20230518051344-45970a96-nightly
-    "@blocksuite/icons": ^2.1.16
+    "@blocksuite/icons": ^2.1.18
     "@blocksuite/lit": 0.0.0-20230518051344-45970a96-nightly
     "@blocksuite/store": 0.0.0-20230518051344-45970a96-nightly
     "@dnd-kit/core": ^6.0.8
@@ -314,7 +314,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230518051344-45970a96-nightly
     "@blocksuite/editor": 0.0.0-20230518051344-45970a96-nightly
     "@blocksuite/global": 0.0.0-20230518051344-45970a96-nightly
-    "@blocksuite/icons": ^2.1.16
+    "@blocksuite/icons": ^2.1.18
     "@blocksuite/lit": 0.0.0-20230518051344-45970a96-nightly
     "@blocksuite/store": 0.0.0-20230518051344-45970a96-nightly
     "@dnd-kit/core": ^6.0.8
@@ -2208,13 +2208,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:^2.1.16":
-  version: 2.1.16
-  resolution: "@blocksuite/icons@npm:2.1.16"
+"@blocksuite/icons@npm:^2.1.18":
+  version: 2.1.18
+  resolution: "@blocksuite/icons@npm:2.1.18"
   peerDependencies:
     "@types/react": ^18.0.25
     react: ^18.2.0
-  checksum: dc0d0880381cddda17c91d8f351f2f20603b14089ac59828c44df608e5fd8b3794235662f9b349263e4e7ddef9a81974321316dd6418365eaa20de60fc6d3dea
+  checksum: 6e0022c51a1c5e0df32ebef299b1b87f6e3dc1ca4bdd4beb247ee8346eebd194227462bd47379e2e84a73a1d47e73e9bde8172a69ed53eb96dd02a90252e63fa
   languageName: node
   linkType: hard
 
