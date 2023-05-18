@@ -22,5 +22,5 @@
     "@blocksuite/store": "*",
     "lottie-web": "*"
   },
-  "version": "0.5.4-canary.31"
+  "version": "0.5.4-beta.1"
 }
