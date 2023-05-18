@@ -1,7 +1,10 @@
 #!/usr/bin/env zx
 import 'zx/globals';
 
+import { createRequire } from 'node:module';
 import path from 'node:path';
+
+const require = createRequire(import.meta.url);
 
 const repoRootDir = path.join(__dirname, '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
@@ -21,11 +24,7 @@ console.log('build with following dir', {
 });
 
 // step 0: check version match
-const electronPackageJson = await import(`${electronRootDir}/package.json`, {
-  assert: {
-    type: 'json',
-  },
-});
+const electronPackageJson = require(`${electronRootDir}/package.json`);
 if (releaseVersionEnv && electronPackageJson.version !== releaseVersionEnv) {
   throw new Error(
     `Version mismatch, expected ${releaseVersionEnv} but got ${electronPackageJson.version}`
