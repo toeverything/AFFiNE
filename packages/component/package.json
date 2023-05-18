@@ -80,7 +80,7 @@
     "storybook": "^7.0.12",
     "storybook-dark-mode": "^3.0.0",
     "typescript": "^5.0.4",
-    "vite": "^4.3.7",
+    "vite": "^4.3.8",
     "wait-on": "^7.0.1",
     "yjs": "^13.6.1"
   },

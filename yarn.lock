@@ -103,7 +103,7 @@ __metadata:
     storybook: ^7.0.12
     storybook-dark-mode: ^3.0.0
     typescript: ^5.0.4
-    vite: ^4.3.7
+    vite: ^4.3.8
     wait-on: ^7.0.1
     yjs: ^13.6.1
   peerDependencies:
@@ -204,14 +204,14 @@ __metadata:
   resolution: "@affine/i18n@workspace:packages/i18n"
   dependencies:
     "@affine/debug": "workspace:*"
-    "@types/node": ^18.16.12
+    "@types/node": ^18.16.13
     "@types/prettier": ^2.7.2
     i18next: ^22.4.15
     next: ^13.4.2
     prettier: ^2.8.8
     react: 18.3.0-canary-16d053d59-20230506
     react-dom: 18.3.0-canary-16d053d59-20230506
-    react-i18next: ^12.2.2
+    react-i18next: ^12.3.0
     ts-node: ^10.9.1
     typescript: ^5.0.4
   languageName: unknown
@@ -244,7 +244,7 @@ __metadata:
   resolution: "@affine/native@workspace:packages/native"
   dependencies:
     "@napi-rs/cli": ^2.15.2
-    "@types/node": ^18.16.12
+    "@types/node": ^18.16.13
     "@types/uuid": ^9.0.1
     cross-env: ^7.0.3
     rxjs: ^7.8.1
@@ -270,7 +270,7 @@ __metadata:
     "@types/express": ^4.17.17
     "@types/jsonwebtoken": ^9.0.2
     "@types/lodash-es": ^4.17.7
-    "@types/node": ^18.16.12
+    "@types/node": ^18.16.13
     "@types/supertest": ^2.0.12
     c8: ^7.13.0
     dotenv: ^16.0.3
@@ -8550,7 +8550,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230518051344-45970a96-nightly
     "@blocksuite/store": 0.0.0-20230518051344-45970a96-nightly
     idb: ^7.1.1
-    vite: ^4.3.7
+    vite: ^4.3.8
     vite-plugin-dts: ^2.3.0
     y-indexeddb: ^9.0.11
   peerDependencies:
@@ -9110,10 +9110,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.16.12":
-  version: 18.16.12
-  resolution: "@types/node@npm:18.16.12"
-  checksum: 90b316c097a059534870bc8e358c7996d99e3bb4395c88a91b893b925ad34e32ff1177009ec6c16a6467266414dca64ec9613e9e6bb3f91b6de0ab629d3bb3b9
+"@types/node@npm:^18.16.13":
+  version: 18.16.13
+  resolution: "@types/node@npm:18.16.13"
+  checksum: ec1ffb814750fc7f7c6c7cb138ed56f24cb23a2ffe50d264a265be52b5cafca37b94b8fb3b5b420f5674baa677b0e011160aeaa1a0edd862aa4cfa11f4467918
   languageName: node
   linkType: hard
 
@@ -10051,7 +10051,7 @@ __metadata:
     "@taplo/cli": ^0.5.2
     "@testing-library/react": ^14.0.0
     "@types/eslint": ^8.37.0
-    "@types/node": ^18.16.12
+    "@types/node": ^18.16.13
     "@typescript-eslint/eslint-plugin": ^5.59.6
     "@typescript-eslint/parser": ^5.59.6
     "@vanilla-extract/vite-plugin": ^3.8.1
@@ -10080,7 +10080,7 @@ __metadata:
     react-dom: 18.3.0-canary-16d053d59-20230506
     serve: ^14.2.0
     typescript: ^5.0.4
-    vite: ^4.3.7
+    vite: ^4.3.8
     vite-plugin-istanbul: ^4.0.1
     vite-tsconfig-paths: ^4.2.0
     vitest: ^0.31.1
@@ -21932,9 +21932,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-i18next@npm:^12.2.2":
-  version: 12.2.2
-  resolution: "react-i18next@npm:12.2.2"
+"react-i18next@npm:^12.3.0":
+  version: 12.3.0
+  resolution: "react-i18next@npm:12.3.0"
   dependencies:
     "@babel/runtime": ^7.20.6
     html-parse-stringify: ^3.0.1
@@ -21946,7 +21946,7 @@ __metadata:
       optional: true
     react-native:
       optional: true
-  checksum: 460e32779f6abba287d63be6054f855202c2e365cbceca36673c8f37a497c2ac5a21a8577d20fcc0b3fcd4825f89427dc4fdf00136365963d27dac7d997c3c74
+  checksum: cc89b6b6cbad304635855ade9f659e36d21cd4ce653936e244e9e15085a42a71902c39c61174a9cb63a42afc467a6ff975e8a6bc8f58150ea71e6457f314bfd9
   languageName: node
   linkType: hard
 
@@ -25515,9 +25515,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^4.3.7":
-  version: 4.3.7
-  resolution: "vite@npm:4.3.7"
+"vite@npm:^4.3.8":
+  version: 4.3.8
+  resolution: "vite@npm:4.3.8"
   dependencies:
     esbuild: ^0.17.5
     fsevents: ~2.3.2
@@ -25548,7 +25548,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: cda8c86fd9f9ab984f2ab8ae09f89bfef7dc636142f0b1ed30d37b8155516729cf91d95eab7ba43d43bb51d8068f0d938ac85dc80d3f53497fbd35f50d27ec25
+  checksum: 454a7c0c1bd1fd5611c9df28c62e3adbe75f48e87fc787179c5af60c4ab9a87aa0eda44be446d898851a135766d36f65f8e7d56317556aa807d30e561de369c4
   languageName: node
   linkType: hard
 
