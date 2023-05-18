@@ -4,7 +4,7 @@ There are lots of apps out there, so why chose AFFiNE?
 
 AFFiNE is **feature-rich** - offering a wide-range of _blocks_ that _empower_ your docs
 
-AFFiNE is **privacy focussed** - with a local-first approach, keep control of your data
+AFFiNE is **privacy focused** - with a local-first approach, keep control of your data
 
 AFFiNE is **open**\-**source** - you can check us out on[GitHub: toeverything/AFFiNE](https://github.com/toeverything/affine)
 
@@ -36,7 +36,7 @@ Our Edgeless Mode can be utilised as a whiteboard, allowing you to create conten
 
 ![](https://cdn.affine.pro/cf5d44d36ec3167519e6d6518914d28acaf426f001da717c1e98e760.gif)
 
-**Plan Effecively and Efficiently**
+**Plan Effectively and Efficiently**
 
 With powerful databases you can create your content inside of tables but leverage powerful features. From adding due dates, tracking progress, adding tags and status labels.
 
