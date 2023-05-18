@@ -62,10 +62,16 @@ export const closeIcon = style({
   cursor: 'pointer',
   transition: '0.1s',
   borderRadius: '50%',
+  transform: 'scale(0.6)',
   zIndex: 1,
+  opacity: 0,
   selectors: {
     '&:hover': {
       transform: 'scale(1.1)',
+    },
+    [`${root}:hover &`]: {
+      opacity: 1,
+      transform: 'scale(1)',
     },
   },
 });

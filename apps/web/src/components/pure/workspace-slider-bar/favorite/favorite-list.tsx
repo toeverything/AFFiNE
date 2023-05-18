@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react';
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import type { FavoriteListProps } from '../index';
 import EmptyItem from './empty-item';
+import * as styles from './styles.css';
 
 interface FavoriteMenuItemProps {
   workspace: Workspace;
@@ -33,16 +34,13 @@ function FavoriteMenuItem({
     return [...new Set(references.filter(ref => !parentIds.has(ref)))];
   }, [references, parentIds]);
   const [collapsed, setCollapsed] = useState(true);
-  const collapsible = referencesToShow.length > 0 && parentIds.size === 0;
+  const collapsible = referencesToShow.length > 0;
   const showReferences = collapsible ? !collapsed : referencesToShow.length > 0;
   const nestedItem = parentIds.size > 0;
+  const untitled = !metaMapping[pageId]?.title;
   return (
-    <>
+    <div className={styles.favItemWrapper} data-nested={nestedItem}>
       <MenuLinkItem
-        style={{
-          marginLeft: nestedItem ? '12px' : undefined,
-          width: nestedItem ? 'calc(100% - 12px)' : undefined,
-        }}
         data-type="favorite-list-item"
         data-testid={`favorite-list-item-${pageId}`}
         active={active}
@@ -51,7 +49,9 @@ function FavoriteMenuItem({
         collapsed={collapsible ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
       >
-        <span>{metaMapping[pageId]?.title || 'Untitled'}</span>
+        <span className={styles.label} data-untitled={untitled}>
+          {metaMapping[pageId]?.title || 'Untitled'}
+        </span>
       </MenuLinkItem>
       {showReferences &&
         referencesToShow.map(ref => {
@@ -65,7 +65,7 @@ function FavoriteMenuItem({
             />
           );
         })}
-    </>
+    </div>
   );
 }
 
