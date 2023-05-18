@@ -21,13 +21,19 @@ const IndexPageInner = () => {
       return;
     }
     const lastId = localStorage.getItem('last_workspace_id');
+    const lastPageId = localStorage.getItem('last_page_id');
     const targetWorkspace =
       (lastId && workspaces.find(({ id }) => id === lastId)) ||
       workspaces.at(0);
 
     if (targetWorkspace) {
+      const nonTrashPages =
+        targetWorkspace.blockSuiteWorkspace.meta.pageMetas.filter(
+          ({ trash }) => !trash
+        );
       const pageId =
-        targetWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
+        nonTrashPages.find(({ id }) => id === lastPageId)?.id ??
+        nonTrashPages.at(0)?.id;
       if (pageId) {
         logger.debug('Found target workspace. Jump to page', pageId);
         void jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
