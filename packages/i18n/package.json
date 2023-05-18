@@ -29,10 +29,10 @@
     "@affine/debug": "workspace:*",
     "i18next": "^22.4.15",
     "react": "18.3.0-canary-16d053d59-20230506",
-    "react-i18next": "^12.2.2"
+    "react-i18next": "^12.3.0"
   },
   "devDependencies": {
-    "@types/node": "^18.16.12",
+    "@types/node": "^18.16.13",
     "@types/prettier": "^2.7.2",
     "next": "^13.4.2",
     "prettier": "^2.8.8",
