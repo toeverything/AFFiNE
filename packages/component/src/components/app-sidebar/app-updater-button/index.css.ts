@@ -159,28 +159,32 @@ export const particles = style({
   backgroundRepeat: 'no-repeat, repeat',
   backgroundPosition: 'center, center top 100%',
   backgroundSize: '100%, 130%',
-  WebkitMaskImage:
-    'linear-gradient(to top, transparent, black, black, transparent)',
+  maskImage: 'linear-gradient(to top, transparent, black, black, transparent)',
   width: '100%',
   height: '100%',
   position: 'absolute',
   left: 0,
   pointerEvents: 'none',
-});
-
-export const particlesBefore = style({
-  content: '""',
-  display: 'block',
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  background: `var(--svg-dot-animation), var(--svg-dot-animation), var(--svg-dot-animation)`,
-  backgroundRepeat: 'no-repeat, repeat, repeat',
-  backgroundPosition: 'center, center top 100%, center center',
-  backgroundSize: '100% 120%, 150%, 120%',
-  filter: 'blur(1px)',
-  willChange: 'filter',
-  pointerEvents: 'none',
+  display: 'none',
+  selectors: {
+    [`${root}:hover &`]: {
+      display: 'block',
+    },
+    '&:before': {
+      content: '""',
+      display: 'block',
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+      background: `var(--svg-dot-animation), var(--svg-dot-animation), var(--svg-dot-animation)`,
+      backgroundRepeat: 'no-repeat, repeat, repeat',
+      backgroundPosition: 'center, center top 100%, center center',
+      backgroundSize: '100% 120%, 150%, 120%',
+      filter: 'blur(1px)',
+      willChange: 'filter',
+      pointerEvents: 'none',
+    },
+  },
 });
 
 export const halo = style({
