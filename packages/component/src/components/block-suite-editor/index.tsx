@@ -17,12 +17,19 @@ import {
   blockSuiteEditorStyle,
 } from './index.css';
 
+export type EditorPlugin = {
+  flavour: string;
+  onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => void;
+  render?: (props: { page: Page }) => ReactElement | null;
+};
 export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
   style?: CSSProperties;
+  plugins?: EditorPlugin[];
 };
 
 export type ErrorBoundaryProps = {
@@ -66,10 +73,24 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       editor.page = props.page;
       if (page.root === null) {
         props.onInit(page, editor);
+        props.plugins?.forEach(plugin => {
+          plugin.onInit?.(page, editor);
+        });
       }
       props.onLoad?.(page, editor);
+      props.plugins?.forEach(plugin => {
+        plugin.onLoad?.(page, editor);
+      });
     }
-  }, [props.page, props.onInit, props.onLoad, editor, props, page]);
+  }, [
+    props.plugins,
+    props.page,
+    props.onInit,
+    props.onLoad,
+    editor,
+    props,
+    page,
+  ]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -152,6 +173,7 @@ export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
 export const BlockSuiteEditor = memo(function BlockSuiteEditor(
   props: EditorProps & ErrorBoundaryProps
 ): ReactElement {
+  const { plugins } = props;
   return (
     <ErrorBoundary
       fallbackRender={useCallback(
@@ -175,6 +197,12 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
           )}
         </Suspense>
       )}
+      {plugins?.map(plugin => {
+        const Renderer = plugin.render;
+        return Renderer ? (
+          <Renderer page={props.page} key={plugin.flavour} />
+        ) : null;
+      })}
     </ErrorBoundary>
   );
 });
