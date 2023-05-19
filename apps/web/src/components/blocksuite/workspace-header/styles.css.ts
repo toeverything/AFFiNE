@@ -191,10 +191,11 @@ export const windowAppControl = style({
   WebkitAppRegion: 'no-drag',
   cursor: 'pointer',
   display: 'inline-flex',
-  width: '32px',
+  width: '42px',
+  height: '32px',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: '2px',
+  borderRadius: '4px',
   selectors: {
     '&[data-type="close"]:hover': {
       background: 'var(--affine-error-color)',
