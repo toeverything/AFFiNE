@@ -1,3 +1,4 @@
+import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import type { LinkProps } from 'next/link';
 import Link from 'next/link';
@@ -9,12 +10,32 @@ interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactElement;
   active?: boolean;
   disabled?: boolean;
+  collapsed?: boolean; // true, false, undefined. undefined means no collapse
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 interface MenuLinkItemProps extends MenuItemProps, Pick<LinkProps, 'href'> {}
 
 export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
-  ({ onClick, icon, active, children, disabled, ...props }, ref) => {
+  (
+    {
+      onClick,
+      icon,
+      active,
+      children,
+      disabled,
+      collapsed,
+      onCollapsedChange,
+      ...props
+    },
+    ref
+  ) => {
+    const collapsible = collapsed !== undefined;
+    if (collapsible && !onCollapsedChange) {
+      throw new Error(
+        'onCollapsedChange is required when collapsed is defined'
+      );
+    }
     return (
       <div
         ref={ref}
@@ -23,11 +44,32 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
         onClick={onClick}
         data-active={active}
         data-disabled={disabled}
+        data-collapsible={collapsible}
       >
-        {icon &&
-          React.cloneElement(icon, {
-            className: clsx([styles.icon, icon.props.className]),
-          })}
+        {icon && (
+          <div className={styles.iconsContainer} data-collapsible={collapsible}>
+            {collapsible && (
+              <div
+                onClick={e => {
+                  e.stopPropagation();
+                  e.preventDefault(); // for links
+                  onCollapsedChange?.(!collapsed);
+                }}
+                data-testid="fav-collapsed-button"
+                className={styles.collapsedIconContainer}
+              >
+                <ArrowDownSmallIcon
+                  className={styles.collapsedIcon}
+                  data-collapsed={collapsed}
+                />
+              </div>
+            )}
+            {React.cloneElement(icon, {
+              className: clsx([styles.icon, icon.props.className]),
+            })}
+          </div>
+        )}
+
         <div className={styles.content}>{children}</div>
       </div>
     );

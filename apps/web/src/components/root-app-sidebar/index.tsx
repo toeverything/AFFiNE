@@ -8,7 +8,6 @@ import {
   QuickSearchInput,
   SidebarContainer,
   SidebarScrollableContainer,
-  updateAvailableAtom,
 } from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -21,7 +20,7 @@ import {
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import React, { useCallback, useEffect, useMemo } from 'react';
 
@@ -94,7 +93,7 @@ export const RootAppSidebar = ({
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
-    const page = await createPage();
+    const page = createPage();
     openPage(page.id);
   }, [createPage, openPage]);
 
@@ -123,7 +122,6 @@ export const RootAppSidebar = ({
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [sidebarOpen, setSidebarOpen]);
 
-  const clientUpdateAvailable = useAtomValue(updateAvailableAtom);
   const [history, setHistory] = useHistoryAtom();
   const router = useMemo(() => {
     return {
@@ -207,7 +205,8 @@ export const RootAppSidebar = ({
           </RouteMenuLinkItem>
         </SidebarScrollableContainer>
         <SidebarContainer>
-          {clientUpdateAvailable && <AppUpdaterButton />}
+          {environment.isDesktop && <AppUpdaterButton />}
+          <div />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>
       </AppSidebar>

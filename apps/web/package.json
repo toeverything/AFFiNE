@@ -1,7 +1,7 @@
 {
   "name": "@affine/web",
   "private": true,
-  "version": "0.6.0-canary.2",
+  "version": "0.6.0-canary.5",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -19,21 +19,21 @@
     "@affine/jotai": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/workspace": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230514141009-705c0fac-nightly",
-    "@blocksuite/editor": "0.0.0-20230514141009-705c0fac-nightly",
-    "@blocksuite/global": "0.0.0-20230514141009-705c0fac-nightly",
-    "@blocksuite/icons": "^2.1.16",
-    "@blocksuite/lit": "0.0.0-20230514141009-705c0fac-nightly",
-    "@blocksuite/store": "0.0.0-20230514141009-705c0fac-nightly",
+    "@blocksuite/blocks": "0.0.0-20230518051344-45970a96-nightly",
+    "@blocksuite/editor": "0.0.0-20230518051344-45970a96-nightly",
+    "@blocksuite/global": "0.0.0-20230518051344-45970a96-nightly",
+    "@blocksuite/icons": "^2.1.18",
+    "@blocksuite/lit": "0.0.0-20230518051344-45970a96-nightly",
+    "@blocksuite/store": "0.0.0-20230518051344-45970a96-nightly",
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.11.0",
     "@emotion/react": "^11.11.0",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.13.0",
+    "@mui/material": "^5.13.1",
     "@react-hookz/web": "^23.0.0",
-    "@sentry/nextjs": "^7.51.2",
+    "@sentry/nextjs": "^7.52.1",
     "@toeverything/hooks": "workspace:*",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
@@ -76,7 +76,7 @@
     "redux": "^4.2.1",
     "swc-plugin-coverage-instrument": "^0.0.18",
     "typescript": "^5.0.4",
-    "webpack": "^5.82.1"
+    "webpack": "^5.83.1"
   },
   "stableVersion": "0.0.0"
 }

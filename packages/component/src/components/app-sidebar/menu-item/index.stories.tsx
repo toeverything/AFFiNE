@@ -1,5 +1,6 @@
 import { SettingsIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
+import { useState } from 'react';
 
 import { MenuItem, MenuLinkItem } from '.';
 
@@ -9,6 +10,7 @@ export default {
 } satisfies Meta;
 
 export const Default: StoryFn = () => {
+  const [collapsed, setCollapsed] = useState(false);
   return (
     <main style={{ width: '240px' }}>
       <MenuItem icon={<SettingsIcon />} onClick={() => alert('opened')}>
@@ -29,6 +31,14 @@ export const Default: StoryFn = () => {
       >
         Primary Item
       </MenuLinkItem>
+      <MenuItem
+        collapsed={collapsed}
+        onCollapsedChange={setCollapsed}
+        icon={<SettingsIcon />}
+        onClick={() => alert('opened')}
+      >
+        Collapsible Item
+      </MenuItem>
     </main>
   );
 };

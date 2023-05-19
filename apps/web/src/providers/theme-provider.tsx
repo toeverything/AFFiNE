@@ -1,4 +1,3 @@
-import type { ThemeProviderProps } from '@affine/component';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
 import { memo, useRef } from 'react';
@@ -21,12 +20,9 @@ const DesktopThemeSync = memo(function DesktopThemeSync() {
   return null;
 });
 
-export const ThemeProvider = ({
-  children,
-  ...props
-}: PropsWithChildren<ThemeProviderProps>) => {
+export const ThemeProvider = ({ children }: PropsWithChildren) => {
   return (
-    <NextThemeProvider themes={themes} enableSystem={true} {...props}>
+    <NextThemeProvider themes={themes} enableSystem={true}>
       {children}
       <DesktopThemeSync />
     </NextThemeProvider>

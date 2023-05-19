@@ -6,7 +6,7 @@ import {
 } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
-import type { PropsWithChildren } from 'react';
+import { type PropsWithChildren, useState } from 'react';
 
 import { AppSidebar, AppSidebarFallback, appSidebarOpenAtom } from '.';
 import { AddPageButton } from './add-page-button';
@@ -79,6 +79,7 @@ export const Fallback = () => {
 };
 
 export const WithItems: StoryFn = () => {
+  const [collapsed, setCollapsed] = useState(false);
   return (
     <Container>
       <AppSidebar>
@@ -111,11 +112,22 @@ export const WithItems: StoryFn = () => {
         <SidebarScrollableContainer>
           <CategoryDivider label="Favorites" />
           <MenuLinkItem
+            collapsed={collapsed}
+            onCollapsedChange={setCollapsed}
             icon={<SettingsIcon />}
             href="/test"
             onClick={() => alert('opened')}
           >
-            Settings
+            Collapsible Item
+          </MenuLinkItem>
+          <MenuLinkItem
+            collapsed={!collapsed}
+            onCollapsedChange={setCollapsed}
+            icon={<SettingsIcon />}
+            href="/test"
+            onClick={() => alert('opened')}
+          >
+            Collapsible Item
           </MenuLinkItem>
           <MenuLinkItem
             icon={<SettingsIcon />}

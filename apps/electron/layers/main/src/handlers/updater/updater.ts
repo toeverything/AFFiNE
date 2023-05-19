@@ -1,3 +1,4 @@
+import { app } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 import { z } from 'zod';
 
@@ -21,8 +22,20 @@ const isDev = mode === 'development';
 
 let _autoUpdater: AppUpdater | null = null;
 
-export const updateClient = async () => {
+export const quitAndInstall = async () => {
   _autoUpdater?.quitAndInstall();
+};
+
+let lastCheckTime = 0;
+export const checkForUpdatesAndNotify = async (force = true) => {
+  if (!_autoUpdater) {
+    return; // ?
+  }
+  // check every 30 minutes (1800 seconds) at most
+  if (force || lastCheckTime + 1000 * 1800 < Date.now()) {
+    lastCheckTime = Date.now();
+    return _autoUpdater.checkForUpdatesAndNotify();
+  }
 };
 
 export const registerUpdater = async () => {
@@ -37,6 +50,9 @@ export const registerUpdater = async () => {
     return;
   }
 
+  // TODO: support auto update on windows and linux
+  const allowAutoUpdate = isMacOS();
+
   _autoUpdater.autoDownload = false;
   _autoUpdater.allowPrerelease = buildType !== 'stable';
   _autoUpdater.autoInstallOnAppQuit = false;
@@ -49,24 +65,36 @@ export const registerUpdater = async () => {
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
   });
 
-  if (isMacOS()) {
-    _autoUpdater.on('update-available', () => {
+  // register events for checkForUpdatesAndNotify
+  _autoUpdater.on('update-available', info => {
+    if (allowAutoUpdate) {
       _autoUpdater!.downloadUpdate();
-      logger.info('Update available, downloading...');
+      logger.info('Update available, downloading...', info);
+    }
+    updaterSubjects.updateAvailable.next({
+      version: info.version,
+      allowAutoUpdate,
     });
-    _autoUpdater.on('download-progress', e => {
-      logger.info(`Download progress: ${e.percent}`);
+  });
+  _autoUpdater.on('download-progress', e => {
+    logger.info(`Download progress: ${e.percent}`);
+    updaterSubjects.downloadProgress.next(e.percent);
+  });
+  _autoUpdater.on('update-downloaded', e => {
+    updaterSubjects.updateReady.next({
+      version: e.version,
+      allowAutoUpdate,
     });
-    _autoUpdater.on('update-downloaded', e => {
-      updaterSubjects.clientUpdateReady.next({
-        version: e.version,
-      });
-      logger.info('Update downloaded, ready to install');
-    });
-    _autoUpdater.on('error', e => {
-      logger.error('Error while updating client', e);
-    });
-    _autoUpdater.forceDevUpdateConfig = isDev;
-    await _autoUpdater.checkForUpdatesAndNotify();
-  }
+    // I guess we can skip it?
+    // updaterSubjects.clientDownloadProgress.next(100);
+    logger.info('Update downloaded, ready to install');
+  });
+  _autoUpdater.on('error', e => {
+    logger.error('Error while updating client', e);
+  });
+  _autoUpdater.forceDevUpdateConfig = isDev;
+
+  app.on('activate', async () => {
+    await checkForUpdatesAndNotify(false);
+  });
 };

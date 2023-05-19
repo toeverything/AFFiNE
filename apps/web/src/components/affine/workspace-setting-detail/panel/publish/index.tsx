@@ -6,6 +6,7 @@ import {
   Wrapper,
 } from '@affine/component';
 import { config } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type {
   AffineLegacyCloudWorkspace,
@@ -19,7 +20,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
 import type { AffineOfficialWorkspace } from '../../../../../shared';
 import { toast } from '../../../../../utils';
-import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
 import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from '../../index';

@@ -16,7 +16,7 @@ export const spotlight = style({
   background: `radial-gradient(${spotlightSize} circle at ${spotlightX} ${spotlightY}, var(--affine-text-primary-color), transparent)`,
   inset: '0px',
   pointerEvents: 'none',
-  willChange: 'background',
+  willChange: 'background, opacity',
   opacity: spotlightOpacity,
   zIndex: 1,
   transition: 'all 0.2s',

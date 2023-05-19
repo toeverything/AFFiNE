@@ -18,7 +18,6 @@ import {
   appSidebarOpenAtom,
   appSidebarResizingAtom,
   appSidebarWidthAtom,
-  updateAvailableAtom,
 } from './index.jotai';
 import { ResizeIndicator } from './resize-indicator';
 import type { SidebarHeaderProps } from './sidebar-header';
@@ -122,9 +121,4 @@ export { AppSidebarFallback } from './fallback';
 export * from './menu-item';
 export * from './quick-search-input';
 export * from './sidebar-containers';
-export {
-  appSidebarFloatingAtom,
-  appSidebarOpenAtom,
-  appSidebarResizingAtom,
-  updateAvailableAtom,
-};
+export { appSidebarFloatingAtom, appSidebarOpenAtom, appSidebarResizingAtom };

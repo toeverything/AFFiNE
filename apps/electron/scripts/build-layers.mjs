@@ -8,6 +8,11 @@ import { config } from './common.mjs';
 const NODE_ENV =
   process.env.NODE_ENV === 'development' ? 'development' : 'production';
 
+if (process.platform === 'win32') {
+  $.shell = true;
+  $.prefix = '';
+}
+
 async function buildLayers() {
   const common = config();
   await esbuild.build(common.preload);

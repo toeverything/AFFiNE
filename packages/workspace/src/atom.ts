@@ -28,11 +28,7 @@ export const rootWorkspacesMetadataAtom = atomWithStorage<
 );
 
 // two more atoms to store the current workspace and page
-export const rootCurrentWorkspaceIdAtom = atomWithStorage<string | null>(
-  'root-current-workspace-id',
-  null,
-  createJSONStorage(() => sessionStorage)
-);
+export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
 
 rootCurrentWorkspaceIdAtom.onMount = set => {
   if (typeof window !== 'undefined') {
@@ -52,11 +48,7 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
   }
 };
 
-export const rootCurrentPageIdAtom = atomWithStorage<string | null>(
-  'root-current-page-id',
-  null,
-  createJSONStorage(() => sessionStorage)
-);
+export const rootCurrentPageIdAtom = atom<string | null>(null);
 
 rootCurrentPageIdAtom.onMount = set => {
   if (typeof window !== 'undefined') {
