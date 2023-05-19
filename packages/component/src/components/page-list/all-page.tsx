@@ -1,102 +1,28 @@
-import type { IconButtonProps, TableCellProps } from '@affine/component';
 import {
-  Content,
-  IconButton,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
-  Tooltip,
 } from '@affine/component';
 import { OperationCell, TrashOperationCell } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  ArrowDownBigIcon,
-  ArrowUpBigIcon,
-  FavoritedIcon,
-  FavoriteIcon,
-} from '@blocksuite/icons';
+import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import type { CSSProperties } from 'react';
-import { forwardRef } from 'react';
 
+import { FavoriteTag } from './favorite-tag';
+import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { NewPageButton } from './new-page-buttton';
-import {
-  StyledTableContainer,
-  StyledTableRow,
-  StyledTitleLink,
-  StyledTitleWrapper,
-} from './styles';
+import { StyledTableContainer, StyledTableRow } from './styles';
+import { TitleCell } from './title-cell';
 import { useSorter } from './use-sorter';
-
-// eslint-disable-next-line react/display-name
-const FavoriteTag = forwardRef<
-  HTMLButtonElement,
-  {
-    active: boolean;
-  } & Omit<IconButtonProps, 'children'>
->(({ active, onClick, ...props }, ref) => {
-  const t = useAFFiNEI18N();
-  return (
-    <Tooltip
-      content={active ? t['Favorited']() : t['Favorite']()}
-      placement="top-start"
-    >
-      <IconButton
-        ref={ref}
-        iconSize={[20, 20]}
-        style={{
-          color: active
-            ? 'var(--affine-primary-color)'
-            : 'var(--affine-icon-color)',
-        }}
-        onClick={e => {
-          e.stopPropagation();
-          onClick?.(e);
-        }}
-        {...props}
-      >
-        {active ? (
-          <FavoritedIcon data-testid="favorited-icon" />
-        ) : (
-          <FavoriteIcon />
-        )}
-      </IconButton>
-    </Tooltip>
-  );
-});
 
 export type PageListProps = {
   isPublicWorkspace?: boolean;
   list: ListData[];
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
-};
-
-const TitleCell = ({
-  icon,
-  text,
-  suffix,
-  ...props
-}: {
-  icon: JSX.Element;
-  text: string;
-  suffix?: JSX.Element;
-} & TableCellProps) => {
-  return (
-    <TableCell {...props}>
-      <StyledTitleWrapper>
-        <StyledTitleLink>
-          {icon}
-          <Content ellipsis={true} color="inherit">
-            {text}
-          </Content>
-        </StyledTitleLink>
-        {suffix}
-      </StyledTitleWrapper>
-    </TableCell>
-  );
 };
 
 const AllPagesHead = ({
@@ -205,7 +131,12 @@ export const PageList: React.FC<PageListProps> = ({
   const theme = useTheme();
   const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
   if (isSmallDevices) {
-    return <PageListMobileView list={sorter.data} />;
+    return (
+      <AllPageListMobileView
+        isPublicWorkspace={isPublicWorkspace}
+        list={sorter.data}
+      />
+    );
   }
 
   const ListItems = sorter.data.map(
@@ -338,7 +269,7 @@ export const PageListTrashView: React.FC<{
       pageId,
       onClickPage,
     }));
-    return <PageListMobileView list={mobileList} />;
+    return <TrashListMobileView list={mobileList} />;
   }
   const ListItems = list.map(
     (
@@ -389,45 +320,6 @@ export const PageListTrashView: React.FC<{
     <StyledTableContainer>
       <Table>
         <TrashListHead />
-        <TableBody>{ListItems}</TableBody>
-      </Table>
-    </StyledTableContainer>
-  );
-};
-
-const PageListMobileView: React.FC<{
-  list: {
-    pageId: string;
-    title: string;
-    icon: JSX.Element;
-    onClickPage: () => void;
-  }[];
-}> = ({ list }) => {
-  const t = useAFFiNEI18N();
-
-  const ListItems = list.map(({ pageId, title, icon, onClickPage }, index) => {
-    return (
-      <StyledTableRow
-        data-testid={`page-list-item-${pageId}`}
-        key={`${pageId}-${index}`}
-      >
-        <TableCell onClick={onClickPage}>
-          <StyledTitleWrapper>
-            <StyledTitleLink>
-              {icon}
-              <Content ellipsis={true} color="inherit">
-                {title || t['Untitled']()}
-              </Content>
-            </StyledTitleLink>
-          </StyledTitleWrapper>
-        </TableCell>
-      </StyledTableRow>
-    );
-  });
-
-  return (
-    <StyledTableContainer>
-      <Table>
         <TableBody>{ListItems}</TableBody>
       </Table>
     </StyledTableContainer>
