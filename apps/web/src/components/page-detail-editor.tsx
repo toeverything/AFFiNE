@@ -11,6 +11,7 @@ import type React from 'react';
 import { startTransition, useCallback } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
+import { bookmarkPlugin } from '../blocksuite/plugins/affine/bookmark';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import { WorkspaceHeader } from './blocksuite/workspace-header';
@@ -89,6 +90,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
           },
           [onLoad, setEditor]
         )}
+        plugins={[bookmarkPlugin]}
       />
     </>
   );
