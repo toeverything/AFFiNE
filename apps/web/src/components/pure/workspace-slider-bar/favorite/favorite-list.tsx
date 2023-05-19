@@ -1,6 +1,7 @@
 import { MenuLinkItem } from '@affine/component/app-sidebar';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
+import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
 import { useAtomValue } from 'jotai';
@@ -35,11 +36,14 @@ function FavoriteMenuItem({
   }, [references, parentIds]);
   const [collapsed, setCollapsed] = useState(true);
   const collapsible = referencesToShow.length > 0;
-  const showReferences = collapsible ? !collapsed : referencesToShow.length > 0;
   const nestedItem = parentIds.size > 0;
   const untitled = !metaMapping[pageId]?.title;
   return (
-    <div className={styles.favItemWrapper} data-nested={nestedItem}>
+    <Collapsible.Root
+      className={styles.favItemWrapper}
+      data-nested={nestedItem}
+      open={!collapsed}
+    >
       <MenuLinkItem
         data-type="favorite-list-item"
         data-testid={`favorite-list-item-${pageId}`}
@@ -53,19 +57,22 @@ function FavoriteMenuItem({
           {metaMapping[pageId]?.title || 'Untitled'}
         </span>
       </MenuLinkItem>
-      {showReferences &&
-        referencesToShow.map(ref => {
-          return (
-            <FavoriteMenuItem
-              key={ref}
-              workspace={workspace}
-              pageId={ref}
-              metaMapping={metaMapping}
-              parentIds={new Set([...parentIds, pageId])}
-            />
-          );
-        })}
-    </div>
+      {collapsible && (
+        <Collapsible.Content className={styles.collapsibleContent}>
+          {referencesToShow.map(ref => {
+            return (
+              <FavoriteMenuItem
+                key={ref}
+                workspace={workspace}
+                pageId={ref}
+                metaMapping={metaMapping}
+                parentIds={new Set([...parentIds, pageId])}
+              />
+            );
+          })}
+        </Collapsible.Content>
+      )}
+    </Collapsible.Root>
   );
 }
 
