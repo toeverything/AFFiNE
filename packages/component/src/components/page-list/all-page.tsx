@@ -82,15 +82,22 @@ const AllPagesHead = ({
                   ? () => sorter.shiftOrder(key as keyof ListData)
                   : undefined
               }
-              style={styles}
             >
-              {content}
-              {sorter.key === key &&
-                (sorter.order === 'asc' ? (
-                  <ArrowUpBigIcon width={24} height={24} />
-                ) : (
-                  <ArrowDownBigIcon width={24} height={24} />
-                ))}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  ...styles,
+                }}
+              >
+                {content}
+                {sorter.key === key &&
+                  (sorter.order === 'asc' ? (
+                    <ArrowUpBigIcon width={24} height={24} />
+                  ) : (
+                    <ArrowDownBigIcon width={24} height={24} />
+                  ))}
+              </div>
             </TableCell>
           )
         )}

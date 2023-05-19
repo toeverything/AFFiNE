@@ -4,7 +4,7 @@ import { TableRow } from '@affine/component';
 export const StyledTableContainer = styled('div')(() => {
   return {
     height: 'calc(100vh - 52px)',
-    padding: '78px 72px',
+    padding: '52px 32px',
     maxWidth: '100%',
     overflowY: 'auto',
   };
@@ -25,8 +25,6 @@ export const StyledTitleWrapper = styled('div')(() => {
 });
 export const StyledTitleLink = styled('div')(() => {
   return {
-    maxWidth: '80%',
-    marginRight: '18px',
     ...displayFlex('flex-start', 'center'),
     color: 'var(--affine-text-primary-color)',
     '>svg': {
