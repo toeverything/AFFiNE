@@ -67,6 +67,7 @@ __metadata:
     "@mui/material": ^5.13.1
     "@popperjs/core": ^2.11.7
     "@radix-ui/react-avatar": ^1.0.2
+    "@radix-ui/react-collapsible": ^1.0.2
     "@storybook/addon-actions": ^7.0.12
     "@storybook/addon-coverage": ^0.0.8
     "@storybook/addon-essentials": ^7.0.12
@@ -6414,6 +6415,26 @@ __metadata:
     react: ^16.8 || ^17.0 || ^18.0
     react-dom: ^16.8 || ^17.0 || ^18.0
   checksum: 5351bd8763b1d0f2450e79a443b8525a652c89921321c25b93afad666b56a7eb00fcedfc801d5f284c78a7cbebea658f04e4fee6d305d7def57a562d9518dbdb
+  languageName: node
+  linkType: hard
+
+"@radix-ui/react-collapsible@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "@radix-ui/react-collapsible@npm:1.0.2"
+  dependencies:
+    "@babel/runtime": ^7.13.10
+    "@radix-ui/primitive": 1.0.0
+    "@radix-ui/react-compose-refs": 1.0.0
+    "@radix-ui/react-context": 1.0.0
+    "@radix-ui/react-id": 1.0.0
+    "@radix-ui/react-presence": 1.0.0
+    "@radix-ui/react-primitive": 1.0.2
+    "@radix-ui/react-use-controllable-state": 1.0.0
+    "@radix-ui/react-use-layout-effect": 1.0.0
+  peerDependencies:
+    react: ^16.8 || ^17.0 || ^18.0
+    react-dom: ^16.8 || ^17.0 || ^18.0
+  checksum: a0fcfd3aad5159e1fb6fc54fd09210d7de9c1ee1e19739a5a82af81d3f2233e4e5eb204da326f32e2f2a4740aa4c3b42530b61e36b7ced9f857801809d1d3527
   languageName: node
   linkType: hard
 

@@ -36,6 +36,7 @@
     "@mui/material": "^5.13.1",
     "@popperjs/core": "^2.11.7",
     "@radix-ui/react-avatar": "^1.0.2",
+    "@radix-ui/react-collapsible": "^1.0.2",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/theme": "^0.5.8",
     "@vanilla-extract/dynamic": "^2.0.3",
