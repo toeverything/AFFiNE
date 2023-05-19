@@ -65,7 +65,7 @@ const AllPagesHead = ({
       showWhen: () => !isPublicWorkspace,
       sortable: false,
       styles: {
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
       } satisfies CSSProperties,
     },
   ];
