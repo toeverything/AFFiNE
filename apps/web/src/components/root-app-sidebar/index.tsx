@@ -84,7 +84,7 @@ export const RootAppSidebar = ({
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
-    const page = await createPage();
+    const page = createPage();
     openPage(page.id);
   }, [createPage, openPage]);
 

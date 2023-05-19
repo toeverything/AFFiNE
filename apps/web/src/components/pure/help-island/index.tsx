@@ -108,7 +108,10 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('guide') && (
-            <Tooltip content={'Easy Guide'} placement="left-end">
+            <Tooltip
+              content={t['com.affine.helpIsland.gettingStarted']()}
+              placement="left-end"
+            >
               <StyledIconWrapper
                 data-testid="easy-guide"
                 onClick={() => {

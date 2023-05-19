@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-type Sorter<T> = {
+type SorterConfig<T> = {
   data: T[];
   key: keyof T;
   order: 'asc' | 'desc' | 'none';
@@ -32,8 +32,8 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
 export const useSorter = <T extends Record<keyof any, unknown>>({
   data,
   ...defaultSorter
-}: Sorter<T> & { order: 'asc' | 'desc' }) => {
-  const [sorter, setSorter] = useState<Omit<Sorter<T>, 'data'>>({
+}: SorterConfig<T> & { order: 'asc' | 'desc' }) => {
+  const [sorter, setSorter] = useState<Omit<SorterConfig<T>, 'data'>>({
     ...defaultSorter,
     // We should not show sorting icon at first time
     order: 'none',
@@ -74,7 +74,7 @@ export const useSorter = <T extends Record<keyof any, unknown>>({
     /**
      * @deprecated In most cases, we no necessary use `setSorter` directly.
      */
-    updateSorter: (newVal: Partial<Sorter<T>>) =>
+    updateSorter: (newVal: Partial<SorterConfig<T>>) =>
       setSorter({ ...sorter, ...newVal }),
     shiftOrder,
     resetSorter: () => setSorter(defaultSorter),

@@ -4,6 +4,7 @@ import { expect } from '@playwright/test';
 import { openHomePage } from '../libs/load-page';
 import {
   clickPageMoreActions,
+  createLinkedPage,
   getBlockSuiteEditorTitle,
   newPage,
   waitMarkdownImported,
@@ -34,28 +35,39 @@ test('Show favorite items in sidebar', async ({ page }) => {
   );
 });
 
-test('Show favorite items in favorite list', async ({ page }) => {
+test('Show favorite reference in sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
-  await page.getByTestId('all-pages').click();
-  const cell = page.getByRole('cell', {
-    name: 'this is a new page to favorite',
-  });
-  expect(cell).not.toBeUndefined();
-  await cell.click();
+
+  // goes to main content
+  await page.keyboard.press('Enter', { delay: 50 });
+
+  await createLinkedPage(page, 'Another page');
+
+  const newPageId = page.url().split('/').reverse()[0];
+
   await clickPageMoreActions(page);
 
   const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
   await favoriteBtn.click();
 
-  await page.getByTestId('all-pages').click();
+  const favItemTestId = 'favorite-list-item-' + newPageId;
 
-  expect(
-    page.getByRole('cell', { name: 'this is a new page to favorite' })
-  ).not.toBeUndefined();
+  const favoriteListItemInSidebar = page.getByTestId(favItemTestId);
+  expect(await favoriteListItemInSidebar.textContent()).toBe(
+    'this is a new page to favorite'
+  );
 
-  await page.getByRole('cell').getByRole('button').nth(0).click();
+  const collapseButton = favoriteListItemInSidebar.locator(
+    '[data-testid="fav-collapsed-button"]'
+  );
+
+  await expect(collapseButton).toBeVisible();
+  await collapseButton.click();
+  await expect(
+    page.locator('[data-type="favorite-list-item"] >> text=Another page')
+  ).toBeVisible();
 });
