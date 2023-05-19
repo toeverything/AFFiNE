@@ -97,16 +97,14 @@ export const FavoriteList = ({ currentWorkspace }: FavoriteListProps) => {
     <>
       {favoriteList.map((pageMeta, index) => {
         return (
-          <>
-            <FavoriteMenuItem
-              key={`${pageMeta}-${index}`}
-              metaMapping={metaMapping}
-              pageId={pageMeta.id}
-              // memo?
-              parentIds={new Set()}
-              workspace={currentWorkspace.blockSuiteWorkspace}
-            />
-          </>
+          <FavoriteMenuItem
+            key={`${pageMeta}-${index}`}
+            metaMapping={metaMapping}
+            pageId={pageMeta.id}
+            // memo?
+            parentIds={new Set()}
+            workspace={currentWorkspace.blockSuiteWorkspace}
+          />
         );
       })}
       {favoriteList.length === 0 && <EmptyItem />}
