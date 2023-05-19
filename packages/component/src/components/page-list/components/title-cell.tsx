@@ -1,7 +1,7 @@
 import type { TableCellProps } from '@affine/component';
 import { Content, TableCell } from '@affine/component';
 
-import { StyledTitleLink } from './styles';
+import { StyledTitleLink } from '../styles';
 
 export const TitleCell = ({
   icon,

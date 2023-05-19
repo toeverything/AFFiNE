@@ -2,7 +2,8 @@ import { Content, Table, TableBody, TableCell } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import type { ListData } from './all-page';
-import { FavoriteTag } from './favorite-tag';
+import { FavoriteTag } from './components/favorite-tag';
+import { TitleCell } from './components/title-cell';
 import { OperationCell } from './operation-cell';
 import {
   StyledTableContainer,
@@ -10,7 +11,6 @@ import {
   StyledTitleLink,
   StyledTitleWrapper,
 } from './styles';
-import { TitleCell } from './title-cell';
 
 export const AllPageListMobileView = ({
   isPublicWorkspace,

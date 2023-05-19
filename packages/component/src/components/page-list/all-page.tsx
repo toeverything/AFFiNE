@@ -11,11 +11,11 @@ import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import type { CSSProperties } from 'react';
 
-import { FavoriteTag } from './favorite-tag';
+import { FavoriteTag } from './components/favorite-tag';
+import { NewPageButton } from './components/new-page-buttton';
+import { TitleCell } from './components/title-cell';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
-import { NewPageButton } from './new-page-buttton';
 import { StyledTableContainer, StyledTableRow } from './styles';
-import { TitleCell } from './title-cell';
 import { useSorter } from './use-sorter';
 
 export type PageListProps = {
