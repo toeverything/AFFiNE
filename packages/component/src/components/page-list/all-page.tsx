@@ -5,13 +5,13 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
-import { OperationCell, TrashOperationCell } from '@affine/component/page-list';
+import { TrashOperationCell } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import type { CSSProperties } from 'react';
 
-import { FavoriteTag } from './components/favorite-tag';
+import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import { TitleCell } from './components/title-cell';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
@@ -65,9 +65,7 @@ const AllPagesHead = ({
       showWhen: () => !isPublicWorkspace,
       sortable: false,
       styles: {
-        display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center',
       } satisfies CSSProperties,
     },
   ];
@@ -126,13 +124,12 @@ export type ListData = {
   onDisablePublicSharing: () => void;
 };
 
-export const PageList: React.FC<PageListProps> = ({
+export const PageList = ({
   isPublicWorkspace = false,
   list,
   onCreateNewPage,
   onCreateNewEdgeless,
-}) => {
-  const t = useAFFiNEI18N();
+}: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
     key: 'createDate',
@@ -145,85 +142,12 @@ export const PageList: React.FC<PageListProps> = ({
     return (
       <AllPageListMobileView
         isPublicWorkspace={isPublicWorkspace}
+        createNewPage={onCreateNewPage}
+        createNewEdgeless={onCreateNewEdgeless}
         list={sorter.data}
       />
     );
   }
-
-  const ListItems = sorter.data.map(
-    (
-      {
-        pageId,
-        title,
-        icon,
-        isPublicPage,
-        favorite,
-        createDate,
-        updatedDate,
-        onClickPage,
-        bookmarkPage,
-        onOpenPageInNewTab,
-        removeToTrash,
-        onDisablePublicSharing,
-      },
-      index
-    ) => {
-      return (
-        <StyledTableRow
-          data-testid={`page-list-item-${pageId}`}
-          key={`${pageId}-${index}`}
-        >
-          <TitleCell
-            icon={icon}
-            text={title || t['Untitled']()}
-            data-testid="title"
-            onClick={onClickPage}
-          />
-          <TableCell
-            data-testid="created-date"
-            ellipsis={true}
-            onClick={onClickPage}
-          >
-            {createDate}
-          </TableCell>
-          <TableCell
-            data-testid="updated-date"
-            ellipsis={true}
-            onClick={onClickPage}
-          >
-            {updatedDate ?? createDate}
-          </TableCell>
-          {!isPublicWorkspace && (
-            <TableCell
-              style={{
-                padding: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '10px',
-              }}
-              data-testid={`more-actions-${pageId}`}
-            >
-              <FavoriteTag
-                className={favorite ? '' : 'favorite-button'}
-                onClick={bookmarkPage}
-                active={!!favorite}
-              />
-              <OperationCell
-                title={title}
-                favorite={favorite}
-                isPublic={isPublicPage}
-                onOpenPageInNewTab={onOpenPageInNewTab}
-                onToggleFavoritePage={bookmarkPage}
-                onRemoveToTrash={removeToTrash}
-                onDisablePublicSharing={onDisablePublicSharing}
-              />
-            </TableCell>
-          )}
-        </StyledTableRow>
-      );
-    }
-  );
 
   return (
     <StyledTableContainer>
@@ -234,7 +158,10 @@ export const PageList: React.FC<PageListProps> = ({
           createNewPage={onCreateNewPage}
           createNewEdgeless={onCreateNewEdgeless}
         />
-        <TableBody>{ListItems}</TableBody>
+        <AllPagesBody
+          isPublicWorkspace={isPublicWorkspace}
+          data={sorter.data}
+        />
       </Table>
     </StyledTableContainer>
   );

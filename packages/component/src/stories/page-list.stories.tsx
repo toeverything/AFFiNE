@@ -99,6 +99,14 @@ AffineAllPageList.args = {
   ],
 };
 
+export const AffinePublicPageList: StoryFn<PageListProps> = ({ ...props }) => (
+  <PageList {...props} />
+);
+AffinePublicPageList.args = {
+  ...AffineAllPageList.args,
+  isPublicWorkspace: true,
+};
+
 export const AffineAllPageMobileList: StoryFn<PageListProps> = ({
   ...props
 }) => <PageList {...props} />;
