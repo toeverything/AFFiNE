@@ -31,7 +31,7 @@ const AllPagesHead = ({
   createNewPage,
   createNewEdgeless,
 }: {
-  isPublicWorkspace?: boolean;
+  isPublicWorkspace: boolean;
   sorter: ReturnType<typeof useSorter<ListData>>;
   createNewPage: () => void;
   createNewEdgeless: () => void;
@@ -53,32 +53,31 @@ const AllPagesHead = ({
       content: t['Updated'](),
       proportion: 0.2,
     },
-    ...(isPublicWorkspace
-      ? [
-          {
-            key: 'unsortable_action',
-            content: (
-              <NewPageButton
-                createNewPage={createNewPage}
-                createNewEdgeless={createNewEdgeless}
-              />
-            ),
-            sortable: false,
-            styles: {
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-            } satisfies CSSProperties,
-          },
-        ]
-      : []),
+
+    {
+      key: 'unsortable_action',
+      content: (
+        <NewPageButton
+          createNewPage={createNewPage}
+          createNewEdgeless={createNewEdgeless}
+        />
+      ),
+      showWhen: () => !isPublicWorkspace,
+      sortable: false,
+      styles: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      } satisfies CSSProperties,
+    },
   ];
 
   return (
     <TableHead>
       <TableRow>
-        {titleList.map(
-          ({ key, content, proportion, sortable = true, styles }) => (
+        {titleList
+          .filter(({ showWhen = () => true }) => showWhen())
+          .map(({ key, content, proportion, sortable = true, styles }) => (
             <TableCell
               key={key}
               proportion={proportion}
@@ -105,8 +104,7 @@ const AllPagesHead = ({
                   ))}
               </div>
             </TableCell>
-          )
-        )}
+          ))}
       </TableRow>
     </TableHead>
   );
@@ -231,6 +229,7 @@ export const PageList: React.FC<PageListProps> = ({
     <StyledTableContainer>
       <Table>
         <AllPagesHead
+          isPublicWorkspace={isPublicWorkspace}
           sorter={sorter}
           createNewPage={onCreateNewPage}
           createNewEdgeless={onCreateNewEdgeless}
