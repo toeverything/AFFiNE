@@ -26,10 +26,12 @@ export type PageListProps = {
 };
 
 const AllPagesHead = ({
+  isPublicWorkspace,
   sorter,
   createNewPage,
   createNewEdgeless,
 }: {
+  isPublicWorkspace?: boolean;
   sorter: ReturnType<typeof useSorter<ListData>>;
   createNewPage: () => void;
   createNewEdgeless: () => void;
@@ -51,21 +53,25 @@ const AllPagesHead = ({
       content: t['Updated'](),
       proportion: 0.2,
     },
-    {
-      key: 'unsortable_action',
-      content: (
-        <NewPageButton
-          createNewPage={createNewPage}
-          createNewEdgeless={createNewEdgeless}
-        />
-      ),
-      sortable: false,
-      styles: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-      } satisfies CSSProperties,
-    },
+    ...(isPublicWorkspace
+      ? [
+          {
+            key: 'unsortable_action',
+            content: (
+              <NewPageButton
+                createNewPage={createNewPage}
+                createNewEdgeless={createNewEdgeless}
+              />
+            ),
+            sortable: false,
+            styles: {
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            } satisfies CSSProperties,
+          },
+        ]
+      : []),
   ];
 
   return (
