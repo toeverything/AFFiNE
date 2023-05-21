@@ -2,9 +2,9 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { useState } from 'react';
 
-import { DropdownButton } from '../../ui/button/dropdown';
-import { Menu } from '../../ui/menu/menu';
-import { BlockCard } from '../card/block-card';
+import { DropdownButton } from '../../../ui/button/dropdown';
+import { Menu } from '../../../ui/menu/menu';
+import { BlockCard } from '../../card/block-card';
 
 type NewPageButtonProps = {
   createNewPage: () => void;
