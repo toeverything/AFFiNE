@@ -10,6 +10,7 @@ import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 
+if (require('electron-squirrel-startup')) app.quit();
 // allow tests to overwrite app name through passing args
 if (process.argv.includes('--app-name')) {
   const appNameIndex = process.argv.indexOf('--app-name');
