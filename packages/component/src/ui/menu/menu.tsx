@@ -16,10 +16,12 @@ export const Menu = (props: MenuProps) => {
     content,
     placement = 'bottom-start',
     children,
+    ...popperProps
   } = props;
   return content ? (
     <Popper
-      {...props}
+      placement={placement}
+      {...popperProps}
       showArrow={false}
       content={
         <StyledMenuWrapper

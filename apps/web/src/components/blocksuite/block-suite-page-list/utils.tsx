@@ -10,7 +10,7 @@ import type { BlockSuiteWorkspace } from '../../../shared';
 dayjs.extend(localizedFormat);
 export const formatDate = (date?: number | unknown) => {
   const dateStr =
-    typeof date === 'number' ? dayjs(date).format('YYYY-MM-DD HH:mm') : '--';
+    typeof date === 'number' ? dayjs(date).format('MM-DD HH:mm') : '--';
   return dateStr;
 };
 
