@@ -94,7 +94,7 @@ module.exports = {
       config: {
         name: 'AFFiNE',
         setupIcon: icoPath,
-        // loadingGif: './resources/icons/loading.gif',
+        loadingGif: './resources/icons/affine_installing.gif',
       },
     },
   ],
