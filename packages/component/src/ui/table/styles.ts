@@ -1,18 +1,16 @@
 import { styled, textEllipsis } from '../../styles';
 import type { TableCellProps } from './interface';
 
-export const StyledTable = styled('table')<{ tableLayout: 'auto' | 'fixed' }>(
-  ({ tableLayout }) => {
-    return {
-      fontSize: 'var(--affine-font-base)',
-      color: 'var(--affine-text-primary-color)',
-      tableLayout,
-      width: '100%',
-      borderCollapse: 'separate',
-      borderSpacing: '0',
-    };
-  }
-);
+export const StyledTable = styled('table')(() => {
+  return {
+    fontSize: 'var(--affine-font-base)',
+    color: 'var(--affine-text-primary-color)',
+    tableLayout: 'fixed',
+    width: '100%',
+    borderCollapse: 'separate',
+    borderSpacing: '0',
+  };
+});
 
 export const StyledTableBody = styled('tbody')(() => {
   return {
@@ -37,7 +35,7 @@ export const StyledTableCell = styled('td')<
     return {
       width,
       height: '52px',
-      padding: '0 30px',
+      paddingLeft: '16px',
       boxSizing: 'border-box',
       textAlign: align,
       verticalAlign: 'middle',
