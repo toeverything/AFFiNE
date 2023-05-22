@@ -16,6 +16,7 @@ import { NewPageButton } from './components/new-page-buttton';
 import { TitleCell } from './components/title-cell';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { StyledTableContainer, StyledTableRow } from './styles';
+import type { ListData } from './type';
 import { useSorter } from './use-sorter';
 
 export type PageListProps = {
@@ -106,22 +107,6 @@ const AllPagesHead = ({
       </TableRow>
     </TableHead>
   );
-};
-
-export type ListData = {
-  pageId: string;
-  icon: JSX.Element;
-  title: string;
-  favorite: boolean;
-  createDate: string;
-  updatedDate?: string;
-  trashDate?: string;
-  isPublicPage: boolean;
-  onClickPage: () => void;
-  onOpenPageInNewTab: () => void;
-  bookmarkPage: () => void;
-  removeToTrash: () => void;
-  onDisablePublicSharing: () => void;
 };
 
 export const PageList = ({

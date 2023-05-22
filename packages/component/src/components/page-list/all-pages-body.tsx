@@ -3,10 +3,10 @@ import { OperationCell } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMediaQuery, useTheme } from '@mui/material';
 
-import type { ListData } from './all-page';
 import { FavoriteTag } from './components/favorite-tag';
 import { TitleCell } from './components/title-cell';
 import { StyledTableRow } from './styles';
+import type { ListData } from './type';
 
 export const AllPagesBody = ({
   isPublicWorkspace,
