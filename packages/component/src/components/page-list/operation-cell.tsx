@@ -47,7 +47,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
     <>
       {isPublic && (
         <DisablePublicSharing
-          testId="disable-public-sharing"
+          data-testid="disable-public-sharing"
           onItemClick={() => {
             setOpenDisableShared(true);
           }}
