@@ -16,7 +16,7 @@ napi = { version = "2", default-features = false, features = [
   "error_anyhow",
 ] }
 napi-derive = "2"
-notify = { version = "5", features = ["serde"] }
+notify = { version = "6", features = ["serde"] }
 once_cell = "1"
 parking_lot = "0.12"
 serde = "1"
