@@ -14,6 +14,7 @@ import { useCallback, useEffect } from 'react';
 
 import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
+import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
@@ -39,6 +40,7 @@ const WorkspaceDetail: React.FC = () => {
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const helper = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
 
   useReferenceLinkEffect({
@@ -51,9 +53,9 @@ const WorkspaceDetail: React.FC = () => {
     ),
     subpageUnlinked: useCallback(
       ({ pageId }: { pageId: string }) => {
-        deletePin(pageId);
+        helper.removeToTrash(pageId);
       },
-      [deletePin]
+      [helper]
     ),
     subpageLinked: useCallback(
       ({ pageId }: { pageId: string }) => {
