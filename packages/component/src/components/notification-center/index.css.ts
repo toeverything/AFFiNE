@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { style, styleVariants } from '@vanilla-extract/css';
 
 export const notificationCenterViewportStyle = style({
   position: 'fixed',
@@ -10,16 +10,12 @@ export const notificationCenterViewportStyle = style({
   margin: 0,
   zIndex: 2147483647,
   outline: 'none',
-  borderRadius: '8px',
 });
 
 export const notificationStyle = style({
   position: 'relative',
   display: 'flex',
-  backgroundColor: 'var(--affine-white)',
-  border: '1px solid var(--affine-border-color)',
-  borderRadius: '8px',
-  boxShadow: 'var(--affine-shadow-1)',
+  borderRadius: '10px',
 });
 export const notificationIconStyle = style({
   fontSize: '24px',
@@ -36,6 +32,10 @@ export const notificationContentStyle = style({
   justifyContent: 'center',
   padding: '16px 0',
   width: '100%',
+  borderRadius: '8px',
+  boxShadow: 'var(--affine-shadow-1)',
+  border: '1px solid var(--affine-border-color)',
+  background: 'var(--affine-white)',
 });
 export const notificationTitleContactStyle = style({
   marginRight: '22px',
@@ -132,4 +132,12 @@ export const darkColorStyle = style({
 });
 export const lightInfoIconStyle = style({
   color: 'var(--affine-processing-color)',
+});
+export const mixBlendStyle = styleVariants({
+  secondary: {
+    mixBlendMode: 'darken',
+  },
+  tertiary: {
+    mixBlendMode: 'overlay',
+  },
 });

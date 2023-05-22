@@ -88,7 +88,12 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         transform: expand
           ? 'translateY(0) scale(1)'
           : `translateY(${index * 75}px) scale(${1 - index * 0.02})`,
-        opacity: expand ? '1' : hidden ? '0' : 1 - index * 0.1,
+        opacity: hidden ? '0' : 1,
+        display: !expand && index >= 3 ? 'none' : 'flex',
+        backgroundColor:
+          !expand && index === 2
+            ? 'var(--affine-black-30)'
+            : 'var(--affine-black-10)',
       }}
       open={true}
       onClick={onClickExpand}
@@ -96,6 +101,8 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       <div
         className={clsx(styles.notificationContentStyle, {
           [typeStyle]: notification.theme,
+          [styles.mixBlendStyle[index === 1 ? 'secondary' : 'tertiary']]:
+            !expand && index !== 0 && index,
         })}
       >
         <Toast.Title
