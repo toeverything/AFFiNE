@@ -21,7 +21,7 @@ export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
-  onLoad?: (page: Page, editor: EditorContainer) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
 };
 
@@ -67,7 +67,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       if (page.root === null) {
         props.onInit(page, editor);
       }
-      props.onLoad?.(page, editor);
+      return props.onLoad?.(page, editor);
     }
   }, [props.page, props.onInit, props.onLoad, editor, props, page]);
 
