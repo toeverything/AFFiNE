@@ -71,7 +71,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         </MenuItem>
       )}
       <MoveToTrash
-        testId="move-to-trash"
+        data-testid="move-to-trash"
         onItemClick={() => {
           setOpen(true);
         }}
