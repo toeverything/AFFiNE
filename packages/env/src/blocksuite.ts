@@ -1,8 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import markdown from '@affine/templates/AFFiNE-beta-0.5.4.md';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
-import type { Page, Workspace } from '@blocksuite/store';
-import { nanoid } from '@blocksuite/store';
+import type { Page } from '@blocksuite/store';
 
 declare global {
   interface Window {
@@ -56,26 +55,4 @@ export function _initPageWithDemoMarkdown(page: Page): void {
   const contentParser = new ContentParser(page);
   contentParser.importMarkdown(demoText, frameId);
   page.workspace.setPageMeta(page.id, { title: demoTitle });
-}
-
-export function ensureRootPinboard(blockSuiteWorkspace: Workspace) {
-  const metas = blockSuiteWorkspace.meta.pageMetas;
-  const rootMeta = metas.find(m => m.isRootPinboard);
-
-  if (rootMeta) {
-    return rootMeta.id;
-  }
-
-  const rootPinboardPage = blockSuiteWorkspace.createPage(nanoid());
-
-  const title = `${blockSuiteWorkspace.meta.name}'s Pinboard`;
-
-  _initEmptyPage(rootPinboardPage, title);
-
-  blockSuiteWorkspace.meta.setPageMeta(rootPinboardPage.id, {
-    isRootPinboard: true,
-    title,
-  });
-
-  return rootPinboardPage.id;
 }

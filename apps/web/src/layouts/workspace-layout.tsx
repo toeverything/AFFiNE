@@ -287,11 +287,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       void jumpToPage(currentWorkspace.id, pageId);
     }
   }
-
-  // fixme: pinboard has been removed,
-  //  the related code should be removed in the future.
-  // no matter the workspace is empty, ensure the root pinboard exists
-  // ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
   //#endregion
 
   useEffect(() => {
