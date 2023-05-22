@@ -5,7 +5,7 @@ export type Notification = {
   title: string;
   message: string;
   type: 'success' | 'error' | 'warning' | 'info';
-  timeout: number;
+  timeout?: number;
   // actions
   undo?: () => Promise<void>;
 };
@@ -17,7 +17,7 @@ export const expandNotificationCenterAtom = atom(false);
 export const notificationsAtom = atom<
   Notification[],
   [Notification],
-  ReturnType<typeof setTimeout>
+  ReturnType<typeof setTimeout> | undefined
 >(
   get => get(notificationsBaseAtom),
   (get, set, newNotification) => {
@@ -41,9 +41,11 @@ export const notificationsAtom = atom<
       { ...newNotification, undo },
       ...notifications,
     ]);
-    return setTimeout(() => {
-      removeNotification();
-    }, newNotification.timeout);
+    if (newNotification.timeout) {
+      return setTimeout(() => {
+        removeNotification();
+      }, newNotification.timeout);
+    }
   }
 );
 

@@ -73,7 +73,16 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           <div className={notificationTitleContactStyle}>
             {notification.title}
           </div>
-          <div className={undoButtonStyle}>UNDO</div>
+          {notification.undo && (
+            <div
+              className={undoButtonStyle}
+              onClick={() => {
+                return notification.undo?.();
+              }}
+            >
+              UNDO
+            </div>
+          )}
           <IconButton className={closeButtonStyle}>
             <CloseIcon
               onClick={useCallback(() => {
@@ -85,33 +94,35 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         <Toast.Description className={messageStyle}>
           {notification.message}
         </Toast.Description>
-        <div className={progressBarStyle}>
-          <svg width="100%" height="4">
-            <rect
-              width="100%"
-              height="4"
-              fill="var(--affine-hover-color)"
-              rx="2"
-              ry="2"
-            />
-            <rect
-              width="0%"
-              height="4"
-              fill="var(--affine-primary-color)"
-              rx="2"
-              ry="2"
-            >
-              <animate
-                ref={animateRef}
-                attributeName="width"
-                from="0%"
-                to="100%"
-                dur={`${(notification.timeout - 100) / 1000}s`}
-                fill="freeze"
+        {notification.timeout && (
+          <div className={progressBarStyle}>
+            <svg width="100%" height="4">
+              <rect
+                width="100%"
+                height="4"
+                fill="var(--affine-hover-color)"
+                rx="2"
+                ry="2"
               />
-            </rect>
-          </svg>
-        </div>
+              <rect
+                width="0%"
+                height="4"
+                fill="var(--affine-primary-color)"
+                rx="2"
+                ry="2"
+              >
+                <animate
+                  ref={animateRef}
+                  attributeName="width"
+                  from="0%"
+                  to="100%"
+                  dur={`${(notification.timeout - 100) / 1000}s`}
+                  fill="freeze"
+                />
+              </rect>
+            </svg>
+          </div>
+        )}
       </div>
     </Toast.Root>
   );
