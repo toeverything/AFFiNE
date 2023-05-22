@@ -49,3 +49,9 @@ export const collapsibleContent = style({
     },
   },
 });
+
+export const collapsibleContentInner = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+});
