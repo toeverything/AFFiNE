@@ -1,3 +1,7 @@
+/**
+ * This file has deprecated because we do not maintain legacy affine cloud,
+ *  please use new affine cloud instead.
+ */
 import { AFFINE_STORAGE_KEY, config } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
