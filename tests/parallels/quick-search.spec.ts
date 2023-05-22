@@ -2,12 +2,8 @@ import { test } from '@affine-test/kit/playwright';
 import { expect, type Page } from '@playwright/test';
 
 import { withCtrlOrMeta } from '../libs/keyboard';
-import { initHomePageWithPinboard, openHomePage } from '../libs/load-page';
-import {
-  createPinboardPage,
-  newPage,
-  waitMarkdownImported,
-} from '../libs/page-logic';
+import { openHomePage } from '../libs/load-page';
+import { newPage, waitMarkdownImported } from '../libs/page-logic';
 
 const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
@@ -171,12 +167,6 @@ test('Focus title after creating a new page', async ({ page }) => {
   await titleIsFocused(page);
 });
 
-test.skip('Show navigation path if page is a subpage', async ({ page }) => {
-  const rootPinboardMeta = await initHomePageWithPinboard(page);
-  await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
-  await openQuickSearchByShortcut(page);
-  expect(await page.getByTestId('navigation-path').count()).toBe(1);
-});
 test('Not show navigation path if page is not a subpage or current page is not in editor', async ({
   page,
 }) => {
@@ -184,39 +174,4 @@ test('Not show navigation path if page is not a subpage or current page is not i
   await waitMarkdownImported(page);
   await openQuickSearchByShortcut(page);
   expect(await page.getByTestId('navigation-path').count()).toBe(0);
-});
-test.skip('Navigation path item click will jump to page, but not current active item', async ({
-  page,
-}) => {
-  const rootPinboardMeta = await initHomePageWithPinboard(page);
-  await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
-  await openQuickSearchByShortcut(page);
-  const oldUrl = page.url();
-  expect(
-    await page.locator('[data-testid="navigation-path-link"]').count()
-  ).toBe(2);
-  await page.locator('[data-testid="navigation-path-link"]').nth(1).click();
-  expect(page.url()).toBe(oldUrl);
-  await page.locator('[data-testid="navigation-path-link"]').nth(0).click();
-  expect(page.url()).not.toBe(oldUrl);
-});
-test.skip('Navigation path expand', async ({ page }) => {
-  //
-  const rootPinboardMeta = await initHomePageWithPinboard(page);
-  await createPinboardPage(page, rootPinboardMeta?.id ?? '', 'test1');
-  await openQuickSearchByShortcut(page);
-  const top = await page
-    .getByTestId('navigation-path-expand-panel')
-    .evaluate(el => {
-      return window.getComputedStyle(el).getPropertyValue('top');
-    });
-  expect(parseInt(top)).toBeLessThan(0);
-  await page.getByTestId('navigation-path-expand-btn').click();
-  await page.waitForTimeout(500);
-  const expandTop = await page
-    .getByTestId('navigation-path-expand-panel')
-    .evaluate(el => {
-      return window.getComputedStyle(el).getPropertyValue('top');
-    });
-  expect(expandTop).toBe('0px');
 });
