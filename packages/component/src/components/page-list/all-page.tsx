@@ -5,7 +5,6 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
-import { TrashOperationCell } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -15,6 +14,7 @@ import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import { TitleCell } from './components/title-cell';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
+import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer, StyledTableRow } from './styles';
 import type { ListData } from './type';
 import { useSorter } from './use-sorter';
@@ -249,5 +249,3 @@ export const PageListTrashView: React.FC<{
     </StyledTableContainer>
   );
 };
-
-export default PageList;
