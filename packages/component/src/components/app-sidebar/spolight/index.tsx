@@ -12,10 +12,10 @@ function useMouseOffset() {
   useEffect(() => {
     if (ref.current && ref.current.parentElement) {
       const el = ref.current.parentElement;
-      const bound = el.getBoundingClientRect();
 
       // debounce?
       const onMouseMove = (e: MouseEvent) => {
+        const bound = el.getBoundingClientRect();
         setOffset({ x: e.clientX - bound.x, y: e.clientY - bound.y });
         setOutside(false);
       };

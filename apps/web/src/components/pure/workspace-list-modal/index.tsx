@@ -148,7 +148,7 @@ export const WorkspaceListModal = ({
           {environment.isDesktop && (
             <Menu
               placement="auto"
-              trigger={['click', 'hover']}
+              trigger={['click']}
               zIndex={1000}
               content={
                 <StyledCreateWorkspaceCardPillContainer>

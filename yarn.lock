@@ -50,12 +50,12 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@affine/jotai": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/editor": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/icons": ^2.1.19
-    "@blocksuite/lit": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/store": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/blocks": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/editor": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/icons": ^2.1.18
+    "@blocksuite/lit": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/store": 0.0.0-20230519102837-01acd96b-nightly
     "@dnd-kit/core": ^6.0.8
     "@dnd-kit/sortable": ^7.0.2
     "@emotion/cache": ^11.11.0
@@ -67,7 +67,7 @@ __metadata:
     "@mui/material": ^5.13.1
     "@popperjs/core": ^2.11.7
     "@radix-ui/react-avatar": ^1.0.2
-    "@radix-ui/react-toast": ^1.1.3
+    "@radix-ui/react-collapsible": ^1.0.2
     "@storybook/addon-actions": ^7.0.12
     "@storybook/addon-coverage": ^0.0.8
     "@storybook/addon-essentials": ^7.0.12
@@ -104,7 +104,7 @@ __metadata:
     storybook: ^7.0.12
     storybook-dark-mode: ^3.0.0
     typescript: ^5.0.4
-    vite: ^4.3.7
+    vite: ^4.3.8
     wait-on: ^7.0.1
     yjs: ^13.6.1
   peerDependencies:
@@ -174,7 +174,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
     lit: ^2.7.4
     next: ^13.4.2
     react: 18.3.0-canary-16d053d59-20230506
@@ -205,14 +205,14 @@ __metadata:
   resolution: "@affine/i18n@workspace:packages/i18n"
   dependencies:
     "@affine/debug": "workspace:*"
-    "@types/node": ^18.16.12
+    "@types/node": ^18.16.13
     "@types/prettier": ^2.7.2
     i18next: ^22.4.15
     next: ^13.4.2
     prettier: ^2.8.8
     react: 18.3.0-canary-16d053d59-20230506
     react-dom: 18.3.0-canary-16d053d59-20230506
-    react-i18next: ^12.2.2
+    react-i18next: ^12.3.0
     ts-node: ^10.9.1
     typescript: ^5.0.4
   languageName: unknown
@@ -223,11 +223,11 @@ __metadata:
   resolution: "@affine/jotai@workspace:packages/jotai"
   dependencies:
     "@affine/env": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/editor": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/lit": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/store": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/blocks": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/editor": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/lit": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/store": 0.0.0-20230519102837-01acd96b-nightly
     jotai: ^2.1.0
     lottie-web: ^5.11.0
   peerDependencies:
@@ -245,7 +245,7 @@ __metadata:
   resolution: "@affine/native@workspace:packages/native"
   dependencies:
     "@napi-rs/cli": ^2.15.2
-    "@types/node": ^18.16.12
+    "@types/node": ^18.16.13
     "@types/uuid": ^9.0.1
     cross-env: ^7.0.3
     rxjs: ^7.8.1
@@ -271,7 +271,7 @@ __metadata:
     "@types/express": ^4.17.17
     "@types/jsonwebtoken": ^9.0.2
     "@types/lodash-es": ^4.17.7
-    "@types/node": ^18.16.12
+    "@types/node": ^18.16.13
     "@types/supertest": ^2.0.12
     c8: ^7.13.0
     dotenv: ^16.0.3
@@ -312,12 +312,12 @@ __metadata:
     "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/editor": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/icons": ^2.1.19
-    "@blocksuite/lit": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/store": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/blocks": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/editor": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/icons": ^2.1.18
+    "@blocksuite/lit": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/store": 0.0.0-20230519102837-01acd96b-nightly
     "@dnd-kit/core": ^6.0.8
     "@dnd-kit/sortable": ^7.0.2
     "@emotion/cache": ^11.11.0
@@ -2147,14 +2147,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/blocks@npm:0.0.0-20230517102216-36bda4ab-nightly":
-  version: 0.0.0-20230517102216-36bda4ab-nightly
-  resolution: "@blocksuite/blocks@npm:0.0.0-20230517102216-36bda4ab-nightly"
+"@blocksuite/blocks@npm:0.0.0-20230519102837-01acd96b-nightly":
+  version: 0.0.0-20230519102837-01acd96b-nightly
+  resolution: "@blocksuite/blocks@npm:0.0.0-20230519102837-01acd96b-nightly"
   dependencies:
-    "@blocksuite/connector": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/phasor": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/virgo": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/connector": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/phasor": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/virgo": 0.0.0-20230519102837-01acd96b-nightly
     "@popperjs/core": ^2.11.6
     hotkeys-js: ^3.10.1
     lit: ^2.7.3
@@ -2163,40 +2163,40 @@ __metadata:
     turndown: ^7.1.1
     zod: ^3.21.4
   peerDependencies:
-    "@blocksuite/lit": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/store": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/lit": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/store": 0.0.0-20230519102837-01acd96b-nightly
     yjs: ^13
-  checksum: 42b2070b8a58f1c1220a0b74e364218983b71e18868f85a88af9e71bd66765740af3b122ebd7490703968893d76128de1999184f852455f9c0fb760e471ce98e
+  checksum: 84672effa243e93a57b667cb44c9b520dc55b0377d5d40376c84e7a6c55c27278d52aba63c2c9c2c2fa6ff53c54b3369c50d59fe479b3a317a7bb08589036fff
   languageName: node
   linkType: hard
 
-"@blocksuite/connector@npm:0.0.0-20230517102216-36bda4ab-nightly":
-  version: 0.0.0-20230517102216-36bda4ab-nightly
-  resolution: "@blocksuite/connector@npm:0.0.0-20230517102216-36bda4ab-nightly"
-  checksum: a4dc3c9581542531dd95e817ce3fa18e894b24fa44e0454674d607d48fea0cc1e67fd59978e1e5f8a33c94f677165b03672d1ee4c344c5b107d531afb3e32052
+"@blocksuite/connector@npm:0.0.0-20230519102837-01acd96b-nightly":
+  version: 0.0.0-20230519102837-01acd96b-nightly
+  resolution: "@blocksuite/connector@npm:0.0.0-20230519102837-01acd96b-nightly"
+  checksum: 9504ea5eee6fa2d4b8100fc6fd56dbc0d3e9c6ac9f1cac7767c186f9a114bd80a4e7c518bb0a38163f0bafef984c658e2c23bbc9082a5fa3e142ff35ef92bc73
   languageName: node
   linkType: hard
 
-"@blocksuite/editor@npm:0.0.0-20230517102216-36bda4ab-nightly":
-  version: 0.0.0-20230517102216-36bda4ab-nightly
-  resolution: "@blocksuite/editor@npm:0.0.0-20230517102216-36bda4ab-nightly"
+"@blocksuite/editor@npm:0.0.0-20230519102837-01acd96b-nightly":
+  version: 0.0.0-20230519102837-01acd96b-nightly
+  resolution: "@blocksuite/editor@npm:0.0.0-20230519102837-01acd96b-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
     "@toeverything/theme": 0.5.8
     lit: ^2.7.3
     marked: ^4.2.12
     turndown: ^7.1.1
   peerDependencies:
-    "@blocksuite/blocks": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/lit": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/store": 0.0.0-20230517102216-36bda4ab-nightly
-  checksum: b7fa728d82ea3fa4769318565b98b870f74422948c58468dc5d2ab13790846e56271aef7953d82fef0d2617ed870903b6bc5653509ac56c0c8d1399f422b4188
+    "@blocksuite/blocks": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/lit": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/store": 0.0.0-20230519102837-01acd96b-nightly
+  checksum: 744a99a788e49fd72dcea42e9fca8521f73b3092497689d3958c06b8d4fbabd57df868b5fbd20343d7e0127d14b2ac45a373fb42851145ae1fc92ec10dd6d0e6
   languageName: node
   linkType: hard
 
-"@blocksuite/global@npm:0.0.0-20230517102216-36bda4ab-nightly":
-  version: 0.0.0-20230517102216-36bda4ab-nightly
-  resolution: "@blocksuite/global@npm:0.0.0-20230517102216-36bda4ab-nightly"
+"@blocksuite/global@npm:0.0.0-20230519102837-01acd96b-nightly":
+  version: 0.0.0-20230519102837-01acd96b-nightly
+  resolution: "@blocksuite/global@npm:0.0.0-20230519102837-01acd96b-nightly"
   dependencies:
     ansi-colors: ^4.1.3
     zod: ^3.21.4
@@ -2205,52 +2205,52 @@ __metadata:
   peerDependenciesMeta:
     lit:
       optional: true
-  checksum: 73bd0d5c4f73608612a9f4ea3282636842a526eaf37ef9cf3129b15dce06e36a37098b68d8952440b1b0cc50d776d493a35d798d00d48f15c8a82f75b03c8cad
+  checksum: 90b73cf7e06170273631987a9a212039d8cdc41f1fa35c0ba3ad95ea700dcaf211f800e81d80194c78718555986e229a75654d4a8ae837d976fb0947c924b962
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:^2.1.19":
-  version: 2.1.19
-  resolution: "@blocksuite/icons@npm:2.1.19"
+"@blocksuite/icons@npm:^2.1.18":
+  version: 2.1.18
+  resolution: "@blocksuite/icons@npm:2.1.18"
   peerDependencies:
     "@types/react": ^18.0.25
     react: ^18.2.0
-  checksum: 6b4abbac571324241a1ada723553f8e7fd2e91c0efd57fda68ea24ffc301e4ebb2691ba59744593109b153039dc94299b139f674fc656be48037d0e29454f71b
+  checksum: 6e0022c51a1c5e0df32ebef299b1b87f6e3dc1ca4bdd4beb247ee8346eebd194227462bd47379e2e84a73a1d47e73e9bde8172a69ed53eb96dd02a90252e63fa
   languageName: node
   linkType: hard
 
-"@blocksuite/lit@npm:0.0.0-20230517102216-36bda4ab-nightly":
-  version: 0.0.0-20230517102216-36bda4ab-nightly
-  resolution: "@blocksuite/lit@npm:0.0.0-20230517102216-36bda4ab-nightly"
+"@blocksuite/lit@npm:0.0.0-20230519102837-01acd96b-nightly":
+  version: 0.0.0-20230519102837-01acd96b-nightly
+  resolution: "@blocksuite/lit@npm:0.0.0-20230519102837-01acd96b-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
     lit: ^2.7.3
   peerDependencies:
-    "@blocksuite/store": 0.0.0-20230517102216-36bda4ab-nightly
-  checksum: 8b1ca38dabc2644dde01ae92dad63a372203b36dd83d524d56c02197bf52e26b74dc5b7fbbef0531f3a6eb6ca8fd1879c2e9c62383968f57fd9a3df9944feee4
+    "@blocksuite/store": 0.0.0-20230519102837-01acd96b-nightly
+  checksum: 89412c872a118547f32b634614d9c461506a228d22867f74b689fbd3aa0ea442320811d384258a49ff3ae9416756fc445ed09a70161b118b71d625ccedf2b1d8
   languageName: node
   linkType: hard
 
-"@blocksuite/phasor@npm:0.0.0-20230517102216-36bda4ab-nightly":
-  version: 0.0.0-20230517102216-36bda4ab-nightly
-  resolution: "@blocksuite/phasor@npm:0.0.0-20230517102216-36bda4ab-nightly"
+"@blocksuite/phasor@npm:0.0.0-20230519102837-01acd96b-nightly":
+  version: 0.0.0-20230519102837-01acd96b-nightly
+  resolution: "@blocksuite/phasor@npm:0.0.0-20230519102837-01acd96b-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
     fractional-indexing: ^3.2.0
     roughjs: ^4.5.2
   peerDependencies:
     nanoid: ^4
     yjs: ^13
-  checksum: f74aa2e42b5985564a8e6e037dd61938ca1eb413405e849a55ddffbe4e43fb4f598f2f3db44f287f70bf58f1662a1c81dd5403c7811b546d754d9bda6f5552b0
+  checksum: c9d1e81b35aaebc7c3569980e3a542885136ecf1cccecdbb6cce6d9e1c78ed08161e814b2a0f85051528d2c6aa9b6d16488362f6cbdbf7b4bc52d50d8dd0105b
   languageName: node
   linkType: hard
 
-"@blocksuite/store@npm:0.0.0-20230517102216-36bda4ab-nightly":
-  version: 0.0.0-20230517102216-36bda4ab-nightly
-  resolution: "@blocksuite/store@npm:0.0.0-20230517102216-36bda4ab-nightly"
+"@blocksuite/store@npm:0.0.0-20230519102837-01acd96b-nightly":
+  version: 0.0.0-20230519102837-01acd96b-nightly
+  resolution: "@blocksuite/store@npm:0.0.0-20230519102837-01acd96b-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/virgo": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/virgo": 0.0.0-20230519102837-01acd96b-nightly
     "@types/flexsearch": ^0.7.3
     buffer: ^6.0.3
     flexsearch: 0.7.21
@@ -2265,20 +2265,20 @@ __metadata:
     zod: ^3.21.4
   peerDependencies:
     yjs: ^13
-  checksum: 736e2372e494468f048f6a991caecc44ca685ea435e45015d01468c81641283fcb437ac22574bbe9582d7333e43edea02baa719d835ee6e892a29518186ea8de
+  checksum: 08788a47c173e30a96060090375693bf45dac453536cdbff9be0efbd1431f78edc4b37a7f88d23891e8ccb1c6f28e9d3a1d29ed76161f04e7d9244ddc25ec446
   languageName: node
   linkType: hard
 
-"@blocksuite/virgo@npm:0.0.0-20230517102216-36bda4ab-nightly":
-  version: 0.0.0-20230517102216-36bda4ab-nightly
-  resolution: "@blocksuite/virgo@npm:0.0.0-20230517102216-36bda4ab-nightly"
+"@blocksuite/virgo@npm:0.0.0-20230519102837-01acd96b-nightly":
+  version: 0.0.0-20230519102837-01acd96b-nightly
+  resolution: "@blocksuite/virgo@npm:0.0.0-20230519102837-01acd96b-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/global": 0.0.0-20230519102837-01acd96b-nightly
     zod: ^3.21.4
   peerDependencies:
     lit: ^2.7
     yjs: ^13
-  checksum: fd95fe6a333ed2aa1856a84de9bc637b4adeba41f2b1b31c6d22702be9f30b75a7884d163daac3561adb88b0edf775c729783b737601713e23102df1bc035b22
+  checksum: 608c91138e04abbcd3690c10f61c17dbbd857b8cfff194ce36d432d8b991d2f3fe11c502c33e47c86d64c0c03de55faf3cdd2c9c2f1b13d205cd2f6e446b4c6b
   languageName: node
   linkType: hard
 
@@ -6418,19 +6418,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-collection@npm:1.0.2":
+"@radix-ui/react-collapsible@npm:^1.0.2":
   version: 1.0.2
-  resolution: "@radix-ui/react-collection@npm:1.0.2"
+  resolution: "@radix-ui/react-collapsible@npm:1.0.2"
   dependencies:
     "@babel/runtime": ^7.13.10
+    "@radix-ui/primitive": 1.0.0
     "@radix-ui/react-compose-refs": 1.0.0
     "@radix-ui/react-context": 1.0.0
+    "@radix-ui/react-id": 1.0.0
+    "@radix-ui/react-presence": 1.0.0
     "@radix-ui/react-primitive": 1.0.2
-    "@radix-ui/react-slot": 1.0.1
+    "@radix-ui/react-use-controllable-state": 1.0.0
+    "@radix-ui/react-use-layout-effect": 1.0.0
   peerDependencies:
     react: ^16.8 || ^17.0 || ^18.0
     react-dom: ^16.8 || ^17.0 || ^18.0
-  checksum: f7d92f52c7f92b53c055370a5cbf077eea54366706eec9100973737577d841c0cc76a2a577fec67dd85b2853d03c20c4810058f0f511821052358439017e9e5d
+  checksum: a0fcfd3aad5159e1fb6fc54fd09210d7de9c1ee1e19739a5a82af81d3f2233e4e5eb204da326f32e2f2a4740aa4c3b42530b61e36b7ced9f857801809d1d3527
   languageName: node
   linkType: hard
 
@@ -6510,23 +6514,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-dismissable-layer@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@radix-ui/react-dismissable-layer@npm:1.0.3"
-  dependencies:
-    "@babel/runtime": ^7.13.10
-    "@radix-ui/primitive": 1.0.0
-    "@radix-ui/react-compose-refs": 1.0.0
-    "@radix-ui/react-primitive": 1.0.2
-    "@radix-ui/react-use-callback-ref": 1.0.0
-    "@radix-ui/react-use-escape-keydown": 1.0.2
-  peerDependencies:
-    react: ^16.8 || ^17.0 || ^18.0
-    react-dom: ^16.8 || ^17.0 || ^18.0
-  checksum: cb2a38a65dd129d1fd58436bedee765f46f6a6edc2ec15d534a1499c10f768ae06ad874704e030c85869b3ee4b61103076a116dfdb7e0c761a8c8cdc30a5c951
-  languageName: node
-  linkType: hard
-
 "@radix-ui/react-focus-guards@npm:1.0.0":
   version: 1.0.0
   resolution: "@radix-ui/react-focus-guards@npm:1.0.0"
@@ -6575,19 +6562,6 @@ __metadata:
     react: ^16.8 || ^17.0 || ^18.0
     react-dom: ^16.8 || ^17.0 || ^18.0
   checksum: dfb194b2df32830db2daf01569176c6e4cf3af2c6e393ece60532543902acf13a6629f9a45003902c99df195c2249bc56d4f4425a5fed2897555df9bdf01efa0
-  languageName: node
-  linkType: hard
-
-"@radix-ui/react-portal@npm:1.0.2":
-  version: 1.0.2
-  resolution: "@radix-ui/react-portal@npm:1.0.2"
-  dependencies:
-    "@babel/runtime": ^7.13.10
-    "@radix-ui/react-primitive": 1.0.2
-  peerDependencies:
-    react: ^16.8 || ^17.0 || ^18.0
-    react-dom: ^16.8 || ^17.0 || ^18.0
-  checksum: 1165b4bced8057021ea9ac4f568c6e0ea6f190936f07dc96780d67488b9222021444bbb8e04e506eea84d9219a5caacae8d0974e745182d4f398aa903b982e19
   languageName: node
   linkType: hard
 
@@ -6689,30 +6663,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-toast@npm:^1.1.3":
-  version: 1.1.3
-  resolution: "@radix-ui/react-toast@npm:1.1.3"
-  dependencies:
-    "@babel/runtime": ^7.13.10
-    "@radix-ui/primitive": 1.0.0
-    "@radix-ui/react-collection": 1.0.2
-    "@radix-ui/react-compose-refs": 1.0.0
-    "@radix-ui/react-context": 1.0.0
-    "@radix-ui/react-dismissable-layer": 1.0.3
-    "@radix-ui/react-portal": 1.0.2
-    "@radix-ui/react-presence": 1.0.0
-    "@radix-ui/react-primitive": 1.0.2
-    "@radix-ui/react-use-callback-ref": 1.0.0
-    "@radix-ui/react-use-controllable-state": 1.0.0
-    "@radix-ui/react-use-layout-effect": 1.0.0
-    "@radix-ui/react-visually-hidden": 1.0.2
-  peerDependencies:
-    react: ^16.8 || ^17.0 || ^18.0
-    react-dom: ^16.8 || ^17.0 || ^18.0
-  checksum: b95baa857eea69b92a019ad511ac3da2fa2c8d6689593d6db576fe9aec2408c36f27b7ea4deda4c9b12b695103ece963fe4a270909b640416a11c0ab8115de95
-  languageName: node
-  linkType: hard
-
 "@radix-ui/react-use-callback-ref@npm:1.0.0":
   version: 1.0.0
   resolution: "@radix-ui/react-use-callback-ref@npm:1.0.0"
@@ -6748,18 +6698,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-use-escape-keydown@npm:1.0.2":
-  version: 1.0.2
-  resolution: "@radix-ui/react-use-escape-keydown@npm:1.0.2"
-  dependencies:
-    "@babel/runtime": ^7.13.10
-    "@radix-ui/react-use-callback-ref": 1.0.0
-  peerDependencies:
-    react: ^16.8 || ^17.0 || ^18.0
-  checksum: 5bec1b73ed6c38139bf1db3c626c0474ca6221ae55f154ef83f1c6429ea866280b2a0ba9436b807334d0215bb4389f0b492c65471cf565635957a8ee77cce98a
-  languageName: node
-  linkType: hard
-
 "@radix-ui/react-use-layout-effect@npm:1.0.0":
   version: 1.0.0
   resolution: "@radix-ui/react-use-layout-effect@npm:1.0.0"
@@ -6768,19 +6706,6 @@ __metadata:
   peerDependencies:
     react: ^16.8 || ^17.0 || ^18.0
   checksum: fcdc8cfa79bd45766ebe3de11039c58abe3fed968cb39c12b2efce5d88013c76fe096ea4cee464d42576d02fe7697779b682b4268459bca3c4e48644f5b4ac5e
-  languageName: node
-  linkType: hard
-
-"@radix-ui/react-visually-hidden@npm:1.0.2":
-  version: 1.0.2
-  resolution: "@radix-ui/react-visually-hidden@npm:1.0.2"
-  dependencies:
-    "@babel/runtime": ^7.13.10
-    "@radix-ui/react-primitive": 1.0.2
-  peerDependencies:
-    react: ^16.8 || ^17.0 || ^18.0
-    react-dom: ^16.8 || ^17.0 || ^18.0
-  checksum: 67c4a55cfad9a8ff519a9b4ce24d2cc9d78c34d08a128a85de1a0a41228fdeb961eaeb4e50ca0d2080c5e31cef6f6e703cb06786579b44e5c66af161b941adb6
   languageName: node
   linkType: hard
 
@@ -8643,10 +8568,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
   dependencies:
-    "@blocksuite/blocks": 0.0.0-20230517102216-36bda4ab-nightly
-    "@blocksuite/store": 0.0.0-20230517102216-36bda4ab-nightly
+    "@blocksuite/blocks": 0.0.0-20230519102837-01acd96b-nightly
+    "@blocksuite/store": 0.0.0-20230519102837-01acd96b-nightly
     idb: ^7.1.1
-    vite: ^4.3.7
+    vite: ^4.3.8
     vite-plugin-dts: ^2.3.0
     y-indexeddb: ^9.0.11
   peerDependencies:
@@ -9206,10 +9131,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.16.12":
-  version: 18.16.12
-  resolution: "@types/node@npm:18.16.12"
-  checksum: 90b316c097a059534870bc8e358c7996d99e3bb4395c88a91b893b925ad34e32ff1177009ec6c16a6467266414dca64ec9613e9e6bb3f91b6de0ab629d3bb3b9
+"@types/node@npm:^18.16.13":
+  version: 18.16.13
+  resolution: "@types/node@npm:18.16.13"
+  checksum: ec1ffb814750fc7f7c6c7cb138ed56f24cb23a2ffe50d264a265be52b5cafca37b94b8fb3b5b420f5674baa677b0e011160aeaa1a0edd862aa4cfa11f4467918
   languageName: node
   linkType: hard
 
@@ -10147,7 +10072,7 @@ __metadata:
     "@taplo/cli": ^0.5.2
     "@testing-library/react": ^14.0.0
     "@types/eslint": ^8.37.0
-    "@types/node": ^18.16.12
+    "@types/node": ^18.16.13
     "@typescript-eslint/eslint-plugin": ^5.59.6
     "@typescript-eslint/parser": ^5.59.6
     "@vanilla-extract/vite-plugin": ^3.8.1
@@ -10176,7 +10101,7 @@ __metadata:
     react-dom: 18.3.0-canary-16d053d59-20230506
     serve: ^14.2.0
     typescript: ^5.0.4
-    vite: ^4.3.7
+    vite: ^4.3.8
     vite-plugin-istanbul: ^4.0.1
     vite-tsconfig-paths: ^4.2.0
     vitest: ^0.31.1
@@ -22028,9 +21953,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-i18next@npm:^12.2.2":
-  version: 12.2.2
-  resolution: "react-i18next@npm:12.2.2"
+"react-i18next@npm:^12.3.0":
+  version: 12.3.0
+  resolution: "react-i18next@npm:12.3.0"
   dependencies:
     "@babel/runtime": ^7.20.6
     html-parse-stringify: ^3.0.1
@@ -22042,7 +21967,7 @@ __metadata:
       optional: true
     react-native:
       optional: true
-  checksum: 460e32779f6abba287d63be6054f855202c2e365cbceca36673c8f37a497c2ac5a21a8577d20fcc0b3fcd4825f89427dc4fdf00136365963d27dac7d997c3c74
+  checksum: cc89b6b6cbad304635855ade9f659e36d21cd4ce653936e244e9e15085a42a71902c39c61174a9cb63a42afc467a6ff975e8a6bc8f58150ea71e6457f314bfd9
   languageName: node
   linkType: hard
 
@@ -25611,9 +25536,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^4.3.7":
-  version: 4.3.7
-  resolution: "vite@npm:4.3.7"
+"vite@npm:^4.3.8":
+  version: 4.3.8
+  resolution: "vite@npm:4.3.8"
   dependencies:
     esbuild: ^0.17.5
     fsevents: ~2.3.2
@@ -25644,7 +25569,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: cda8c86fd9f9ab984f2ab8ae09f89bfef7dc636142f0b1ed30d37b8155516729cf91d95eab7ba43d43bb51d8068f0d938ac85dc80d3f53497fbd35f50d27ec25
+  checksum: 454a7c0c1bd1fd5611c9df28c62e3adbe75f48e87fc787179c5af60c4ab9a87aa0eda44be446d898851a135766d36f65f8e7d56317556aa807d30e561de369c4
   languageName: node
   linkType: hard
 

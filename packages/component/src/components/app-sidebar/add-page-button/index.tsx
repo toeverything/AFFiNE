@@ -12,7 +12,6 @@ interface AddPageButtonProps {
   style?: React.CSSProperties;
 }
 
-// Although it is called an input, it is actually a button.
 export function AddPageButton({
   onClick,
   className,
