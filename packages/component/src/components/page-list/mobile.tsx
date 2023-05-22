@@ -8,7 +8,6 @@ import {
 } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
-import type { ListData } from './all-page';
 import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import {
@@ -16,6 +15,7 @@ import {
   StyledTableRow,
   StyledTitleLink,
 } from './styles';
+import type { ListData } from './type';
 
 const MobileHead = ({
   isPublicWorkspace,
