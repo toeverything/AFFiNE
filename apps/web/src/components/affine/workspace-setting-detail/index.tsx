@@ -6,8 +6,8 @@ import type React from 'react';
 import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { preload } from 'swr';
 
+import { fetcher, QueryKey } from '../../../adapters/affine/fetcher';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
-import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import * as style from './index.css';
 import { CollaborationPanel } from './panel/collaboration';

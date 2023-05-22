@@ -8,14 +8,14 @@ import type { CommonMenuItemProps } from './types';
 export const MoveToTrash = ({
   onSelect,
   onItemClick,
-  testId,
+  ...props
 }: CommonMenuItemProps) => {
   const t = useAFFiNEI18N();
 
   return (
     <>
       <MenuItem
-        data-testid={testId}
+        {...props}
         onClick={() => {
           onItemClick?.();
           onSelect?.();
