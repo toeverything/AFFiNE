@@ -31,8 +31,8 @@ import { appContext } from '../../context';
 import { subjects } from '../../events';
 import { logger } from '../../logger';
 import { ts } from '../../utils';
-import type { WorkspaceSQLiteDB } from './sqlite';
-import { openWorkspaceDatabase } from './sqlite';
+import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
+import { openWorkspaceDatabase } from './workspace-db-adapter';
 
 const databaseInput$ = new Subject<string>();
 export const databaseConnector$ = new ReplaySubject<WorkspaceSQLiteDB>();
@@ -90,6 +90,9 @@ export function isRemoveOrMoveEvent(event: NotifyEvent) {
   );
 }
 
+// TODO: handle meta.json file
+function startPullingSecondaryDBFile() {}
+
 // if we removed the file, we will stop watching it
 function startWatchingDBFile(db: WorkspaceSQLiteDB) {
   const FSWatcher = createFSWatcher();
@@ -127,7 +130,7 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
           ts() - db.lastUpdateTime,
           'ms'
         );
-        db.reconnectDB();
+        db.connect();
         subjects.db.dbFileUpdate.next(db.workspaceId);
       },
       complete: () => {
@@ -146,7 +149,7 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
 export function ensureSQLiteDB(id: string) {
   const deferValue = lastValueFrom(
     database$.pipe(
-      filter(db => db.workspaceId === id && db.db.open),
+      filter(db => db.db !== null && db.workspaceId === id && db.db.open),
       take(1),
       tap({
         error: err => {

@@ -27,7 +27,7 @@ vi.stubGlobal('window', {
       applyDocUpdate: async (id: string, update: Uint8Array) => {
         Y.applyUpdate(offlineYdoc, update, 'sqlite');
       },
-      getPersistedBlobs: async () => {
+      getBlobKeys: async () => {
         // todo: may need to hack the way to get hash keys of blobs
         return [];
       },

@@ -12,7 +12,7 @@ export const dbSubjects = {
   // emit workspace ids
   dbFileMissing: new Subject<string>(),
   // emit workspace ids
-  dbFileUpdate: new Subject<string>(),
+  dbFileUpdate: new Subject<{ workspaceId: string; update: Uint8Array }>(),
   dbFilePathChange: new Subject<DBFilePathMeta>(),
 };
 
@@ -23,7 +23,9 @@ export const dbEvents = {
       sub.unsubscribe();
     };
   },
-  onDBFileUpdate: (fn: (workspaceId: string) => void) => {
+  onDBFileUpdate: (
+    fn: (update: { workspaceId: string; update: Uint8Array }) => void
+  ) => {
     const sub = dbSubjects.dbFileUpdate.subscribe(fn);
     return () => {
       sub.unsubscribe();

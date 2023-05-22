@@ -25,9 +25,9 @@ export const dbHandlers = {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.deleteBlob(key);
   },
-  getPersistedBlobs: async (_, workspaceId: string) => {
+  getBlobKeys: async (_, workspaceId: string) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.getPersistentBlobKeys();
+    return workspaceDB.getBlobKeys();
   },
   getDefaultStorageLocation: async () => {
     return appContext.appDataPath;
