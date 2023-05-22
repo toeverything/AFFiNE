@@ -42,7 +42,13 @@ export const notificationsAtom = atom<
       ...notifications,
     ]);
     return setTimeout(() => {
-      // removeNotification();
+      removeNotification();
     }, newNotification.timeout);
   }
 );
+
+export const removeNotificationAtom = atom(null, (get, set, key: string) => {
+  set(notificationsBaseAtom, notifications =>
+    notifications.filter(notification => notification.key !== key)
+  );
+});
