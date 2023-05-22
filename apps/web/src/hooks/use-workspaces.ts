@@ -8,9 +8,9 @@ import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
+import { LocalPlugin } from '../adapters/local';
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { workspacesAtom } from '../atoms';
-import { WorkspaceAdapters } from '../plugins';
-import { LocalPlugin } from '../plugins/local';
 import type { AllWorkspace } from '../shared';
 
 export function useWorkspaces(): AllWorkspace[] {

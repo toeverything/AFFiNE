@@ -3,7 +3,7 @@ import { memo } from 'react';
 import type { SWRConfiguration } from 'swr';
 import { SWRConfig } from 'swr';
 
-import { fetcher } from '../plugins/affine/fetcher';
+import { fetcher } from '../adapters/affine/fetcher';
 
 const config: SWRConfiguration = {
   suspense: true,

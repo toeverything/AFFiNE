@@ -17,12 +17,31 @@ import {
 } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
-import React from 'react';
+import { lazy } from 'react';
 
-import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
-import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
-import { PageDetailEditor } from '../../components/page-detail-editor';
-import type { WorkspaceAdapter } from '..';
+import type { WorkspaceAdapter } from '../type';
+
+const WorkspaceSettingDetail = lazy(() =>
+  import('../../components/affine/workspace-setting-detail').then(
+    ({ WorkspaceSettingDetail }) => ({
+      default: WorkspaceSettingDetail,
+    })
+  )
+);
+const BlockSuitePageList = lazy(() =>
+  import('../../components/blocksuite/block-suite-page-list').then(
+    ({ BlockSuitePageList }) => ({
+      default: BlockSuitePageList,
+    })
+  )
+);
+const PageDetailEditor = lazy(() =>
+  import('../../components/page-detail-editor').then(
+    ({ PageDetailEditor }) => ({
+      default: PageDetailEditor,
+    })
+  )
+);
 
 const logger = new DebugLogger('use-create-first-workspace');
 

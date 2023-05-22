@@ -26,6 +26,7 @@ import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {
@@ -38,7 +39,6 @@ import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspaceAdapters } from '../plugins';
 import { ModalProvider } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 

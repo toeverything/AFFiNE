@@ -2,7 +2,7 @@ import type { Member } from '@affine/workspace/affine/api';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 
-import { QueryKey } from '../../plugins/affine/fetcher';
+import { QueryKey } from '../../adapters/affine/fetcher';
 import { affineApis } from '../../shared/apis';
 
 export function useMembers(workspaceId: string) {
