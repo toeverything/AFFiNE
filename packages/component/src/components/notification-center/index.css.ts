@@ -10,6 +10,7 @@ export const notificationCenterViewportStyle = style({
   margin: 0,
   zIndex: 2147483647,
   outline: 'none',
+  borderRadius: '8px',
 });
 
 export const notificationStyle = style({
@@ -48,7 +49,7 @@ export const notificationTitleStyle = style({
   display: 'flex',
   alignItems: 'center',
   width: '100%',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
 });
 export const notificationDescriptionStyle = style({
   fontSize: 'var(--affine-font-sm)',
@@ -62,12 +63,15 @@ export const notificationTimeStyle = style({
 });
 export const closeButtonStyle = style({
   fontSize: '22px',
-  color: 'var(--affine-icon-color)',
+  color: 'var(--affine-icon-color) !important',
   marginRight: '19px',
   marginLeft: '16px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
+});
+export const closeButtonWithoutUndoStyle = style({
+  marginLeft: '92px',
 });
 export const undoButtonStyle = style({
   fontSize: 'var(--affine-font-sm)',
@@ -91,4 +95,39 @@ export const progressBarStyle = style({
   padding: '0 16px',
   borderRadius: '2px',
   marginBottom: '16px',
+});
+export const darkSuccessStyle = style({
+  background: 'var(--affine-success-color)',
+  borderRadius: '8px',
+});
+export const darkInfoStyle = style({
+  background: 'var(--affine-processing-color)',
+  borderRadius: '8px',
+});
+export const darkErrorStyle = style({
+  background: 'var(--affine-error-color)',
+  borderRadius: '8px',
+});
+export const darkWarningStyle = style({
+  background: 'var(--affine-warning-color)',
+  borderRadius: '8px',
+});
+export const lightSuccessStyle = style({
+  background: 'var(--affine-background-success-color)',
+  borderRadius: '8px',
+});
+export const lightInfoStyle = style({
+  background: 'var(--affine-background-processing-color)',
+  borderRadius: '8px',
+});
+export const lightErrorStyle = style({
+  background: 'var(--affine-background-error-color)',
+  borderRadius: '8px',
+});
+export const lightWarningStyle = style({
+  background: 'var(--affine-background-warning-color)',
+  borderRadius: '8px',
+});
+export const darkIconStyle = style({
+  color: 'var(--affine-white) !important',
 });

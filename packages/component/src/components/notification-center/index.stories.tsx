@@ -57,12 +57,44 @@ export const Basic = () => {
             push({
               key: `${key}`,
               title: `${key} title`,
-              message: `${key} message`,
+              message: ``,
               type: 'info',
             });
           }}
         >
-          Push notification with nothing
+          Push notification with no message
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: ``,
+              type: 'success',
+              theme: 'light',
+            });
+          }}
+        >
+          light success
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: ``,
+              type: 'success',
+              theme: 'dark',
+            });
+          }}
+        >
+          dark success
         </button>
       </div>
       <NotificationCenter />

@@ -5,6 +5,7 @@ export type Notification = {
   title: string;
   message: string;
   type: 'success' | 'error' | 'warning' | 'info';
+  theme?: 'light' | 'dark';
   timeout?: number;
   // actions
   undo?: () => Promise<void>;
