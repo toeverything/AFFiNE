@@ -109,7 +109,7 @@ const PageMenu = () => {
         </MenuItem>
         <Export />
         <MoveToTrash
-          testId="editor-option-menu-delete"
+          data-testid="editor-option-menu-delete"
           onItemClick={() => {
             setOpenConfirm(true);
           }}
