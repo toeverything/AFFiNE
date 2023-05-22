@@ -1,7 +1,7 @@
 import { CloseIcon, InformationFillIcon } from '@blocksuite/icons';
 import * as Toast from '@radix-ui/react-toast';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { ReactElement } from 'react';
+import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { IconButton } from '../..';
@@ -50,17 +50,28 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     }
   }, []);
 
+  const onClickRemove = useCallback(() => {
+    removeNotification(notification.key);
+  }, [notification.key, removeNotification]);
+
   const onClickUndo = useCallback(() => {
     if (notification.undo) {
       return notification.undo();
     }
   }, [notification]);
 
+  const onClickExpand = useCallback(
+    (e: MouseEvent) => {
+      if (e.target instanceof SVGElement) {
+        return;
+      }
+      setExpand(expand => !expand);
+    },
+    [setExpand]
+  );
+
   return (
     <Toast.Root
-      onClick={() => {
-        setExpand(!expand);
-      }}
       className={notificationStyle}
       style={{
         transition: 'transform 0.3s, opacity 0.3s, margin-bottom 0.3s',
@@ -71,6 +82,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         opacity: expand ? '1' : hidden ? '0' : 1 - index * 0.1,
       }}
       open={true}
+      onClick={onClickExpand}
     >
       <div className={notificationContentStyle}>
         <Toast.Title className={notificationTitleStyle}>
@@ -86,11 +98,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
             </div>
           )}
           <IconButton className={closeButtonStyle}>
-            <CloseIcon
-              onClick={useCallback(() => {
-                removeNotification(notification.key);
-              }, [notification.key, removeNotification])}
-            />
+            <CloseIcon onClick={onClickRemove} />
           </IconButton>
         </Toast.Title>
         <Toast.Description className={messageStyle}>

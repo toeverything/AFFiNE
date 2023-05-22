@@ -16,20 +16,55 @@ export const Basic = () => {
   return (
     <>
       <div>{expand ? 'expanded' : 'collapsed'}</div>
-      <button
-        onClick={() => {
-          const key = id++;
-          push({
-            key: `${key}`,
-            title: `${key} title`,
-            message: `${key} message`,
-            timeout: 2000,
-            type: 'info',
-          });
-        }}
-      >
-        Push
-      </button>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: `${key} message`,
+              timeout: 2000,
+              undo: async () => {
+                console.log('undo');
+              },
+              type: 'info',
+            });
+          }}
+        >
+          Push timeout notification
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: `${key} message`,
+              type: 'info',
+            });
+          }}
+        >
+          Push notification with no timeout
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: `${key} message`,
+              type: 'info',
+            });
+          }}
+        >
+          Push notification with nothing
+        </button>
+      </div>
       <NotificationCenter />
     </>
   );
