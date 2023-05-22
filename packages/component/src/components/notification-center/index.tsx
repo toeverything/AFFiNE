@@ -1,10 +1,20 @@
+import { CloseIcon, InformationFillIcon } from '@blocksuite/icons';
 import * as Toast from '@radix-ui/react-toast';
 import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
 
+import { IconButton } from '../..';
 import {
+  closeButtonStyle,
+  messageStyle,
   notificationCenterViewportStyle,
+  notificationContentStyle,
+  notificationIconStyle,
   notificationStyle,
+  notificationTitleContactStyle,
+  notificationTitleStyle,
+  progressBarStyle,
+  undoButtonStyle,
 } from './index.css';
 import { expandNotificationCenterAtom, notificationsAtom } from './index.jotai';
 
@@ -41,7 +51,49 @@ export const NotificationCenter = (): ReactElement => {
             }}
             open={true}
           >
-            <Toast.Title>{notification.title}</Toast.Title>
+            <div className={notificationContentStyle}>
+              <Toast.Title className={notificationTitleStyle}>
+                <div className={notificationIconStyle}>
+                  <InformationFillIcon />
+                </div>
+                <div className={notificationTitleContactStyle}>
+                  {notification.title}
+                </div>
+                <div className={undoButtonStyle}>UNDO</div>
+                <IconButton className={closeButtonStyle}>
+                  <CloseIcon />
+                </IconButton>
+              </Toast.Title>
+              <Toast.Description className={messageStyle}>
+                {notification.message}
+              </Toast.Description>
+              <div className={progressBarStyle}>
+                <svg width="100%" height="4">
+                  <rect
+                    width="100%"
+                    height="4"
+                    fill="var(--affine-hover-color)"
+                    rx="4"
+                    ry="4"
+                  />
+                  <rect
+                    width="0%"
+                    height="4"
+                    fill="var(--affine-primary-color)"
+                    rx="4"
+                    ry="4"
+                  >
+                    <animate
+                      attributeName="width"
+                      from="0%"
+                      to="100%"
+                      dur="3s"
+                      fill="freeze"
+                    />
+                  </rect>
+                </svg>
+              </div>
+            </div>
           </Toast.Root>
         );
       })}
