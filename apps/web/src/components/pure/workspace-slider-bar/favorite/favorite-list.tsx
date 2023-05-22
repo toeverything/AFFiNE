@@ -59,17 +59,19 @@ function FavoriteMenuItem({
       </MenuLinkItem>
       {collapsible && (
         <Collapsible.Content className={styles.collapsibleContent}>
-          {referencesToShow.map(ref => {
-            return (
-              <FavoriteMenuItem
-                key={ref}
-                workspace={workspace}
-                pageId={ref}
-                metaMapping={metaMapping}
-                parentIds={new Set([...parentIds, pageId])}
-              />
-            );
-          })}
+          <div className={styles.collapsibleContentInner}>
+            {referencesToShow.map(ref => {
+              return (
+                <FavoriteMenuItem
+                  key={ref}
+                  workspace={workspace}
+                  pageId={ref}
+                  metaMapping={metaMapping}
+                  parentIds={new Set([...parentIds, pageId])}
+                />
+              );
+            })}
+          </div>
         </Collapsible.Content>
       )}
     </Collapsible.Root>
