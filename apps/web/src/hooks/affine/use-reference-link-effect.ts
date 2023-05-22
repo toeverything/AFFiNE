@@ -1,15 +1,12 @@
+import { rootCurrentEditorAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
 import { useEffect } from 'react';
 
-import { currentEditorAtom } from '../../atoms';
-
-export function useReferenceLinkEffect(props?: {
+export function useReferenceLinkEffect(props: {
   pageLinkClicked?: (params: { pageId: string }) => void;
-  subpageLinked?: (params: { pageId: string }) => void;
-  subpageUnlinked?: (params: { pageId: string }) => void;
-}) {
-  const { pageLinkClicked, subpageLinked, subpageUnlinked } = props ?? {};
-  const editor = useAtomValue(currentEditorAtom);
+}): void {
+  const { pageLinkClicked } = props;
+  const editor = useAtomValue(rootCurrentEditorAtom);
 
   useEffect(() => {
     if (!editor) {
@@ -22,21 +19,8 @@ export function useReferenceLinkEffect(props?: {
       }
     );
 
-    // const subpageLinkedDisposable = editor.slots.subpageLinked.on(
-    //   ({ pageId }) => {
-    //     subpageLinked?.({ pageId });
-    //   }
-    // );
-    // const subpageUnlinkedDisposable = editor.slots.subpageUnlinked.on(
-    //   ({ pageId }) => {
-    //     subpageUnlinked?.({ pageId });
-    //   }
-    // );
-
     return () => {
       linkClickedDisposable.dispose();
-      // subpageLinkedDisposable.dispose();
-      // subpageUnlinkedDisposable.dispose();
     };
-  }, [editor, pageLinkClicked, subpageLinked, subpageUnlinked]);
+  }, [editor, pageLinkClicked]);
 }

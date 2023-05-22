@@ -5,7 +5,6 @@ import { Unreachable } from '@affine/env/constant';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
-import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
@@ -14,7 +13,6 @@ import { useCallback, useEffect } from 'react';
 
 import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
-import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
@@ -39,8 +37,6 @@ const WorkspaceDetail: React.FC = () => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-  const helper = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
 
   useReferenceLinkEffect({
@@ -50,24 +46,6 @@ const WorkspaceDetail: React.FC = () => {
         return openPage(currentWorkspace.id, pageId);
       },
       [currentWorkspace, openPage]
-    ),
-    subpageUnlinked: useCallback(
-      ({ pageId }: { pageId: string }) => {
-        helper.removeToTrash(pageId);
-      },
-      [helper]
-    ),
-    subpageLinked: useCallback(
-      ({ pageId }: { pageId: string }) => {
-        const meta = currentPageId && getPageMeta(currentPageId);
-        if (!meta || meta.subpageIds?.includes(pageId)) {
-          return;
-        }
-        setPageMeta(currentPageId, {
-          subpageIds: [...(meta.subpageIds ?? []), pageId],
-        });
-      },
-      [currentPageId, getPageMeta, setPageMeta]
     ),
   });
 
