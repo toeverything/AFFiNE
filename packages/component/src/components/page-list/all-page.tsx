@@ -5,7 +5,6 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
-import { TrashOperationCell } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -15,7 +14,9 @@ import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import { TitleCell } from './components/title-cell';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
+import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer, StyledTableRow } from './styles';
+import type { ListData } from './type';
 import { useSorter } from './use-sorter';
 
 export type PageListProps = {
@@ -106,22 +107,6 @@ const AllPagesHead = ({
       </TableRow>
     </TableHead>
   );
-};
-
-export type ListData = {
-  pageId: string;
-  icon: JSX.Element;
-  title: string;
-  favorite: boolean;
-  createDate: string;
-  updatedDate?: string;
-  trashDate?: string;
-  isPublicPage: boolean;
-  onClickPage: () => void;
-  onOpenPageInNewTab: () => void;
-  bookmarkPage: () => void;
-  removeToTrash: () => void;
-  onDisablePublicSharing: () => void;
 };
 
 export const PageList = ({
@@ -264,5 +249,3 @@ export const PageListTrashView: React.FC<{
     </StyledTableContainer>
   );
 };
-
-export default PageList;

@@ -9,7 +9,7 @@ import type {
   TrashListData,
 } from '../components/page-list/all-page';
 import { PageListTrashView } from '../components/page-list/all-page';
-import PageList from '../components/page-list/all-page';
+import { PageList } from '../components/page-list/all-page';
 import { NewPageButton } from '../components/page-list/components/new-page-buttton';
 import type { OperationCellProps } from '../components/page-list/operation-cell';
 import { OperationCell } from '../components/page-list/operation-cell';
