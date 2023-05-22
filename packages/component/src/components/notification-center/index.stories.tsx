@@ -97,6 +97,102 @@ export const Basic = () => {
           dark success
         </button>
       </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: ``,
+              type: 'info',
+              theme: 'light',
+            });
+          }}
+        >
+          light info
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: ``,
+              type: 'info',
+              theme: 'dark',
+            });
+          }}
+        >
+          dark info
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: ``,
+              type: 'warning',
+              theme: 'light',
+            });
+          }}
+        >
+          light warning
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: ``,
+              type: 'warning',
+              theme: 'dark',
+            });
+          }}
+        >
+          dark warning
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: ``,
+              type: 'error',
+              theme: 'light',
+            });
+          }}
+        >
+          light error
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: ``,
+              type: 'error',
+              theme: 'dark',
+            });
+          }}
+        >
+          dark error
+        </button>
+      </div>
       <NotificationCenter />
     </>
   );
