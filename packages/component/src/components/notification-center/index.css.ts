@@ -89,6 +89,6 @@ export const progressBarStyle = style({
   height: '10px',
   marginTop: '10px',
   padding: '0 16px',
-  borderRadius: '19px',
+  borderRadius: '2px',
   marginBottom: '16px',
 });

@@ -73,15 +73,15 @@ export const NotificationCenter = (): ReactElement => {
                     width="100%"
                     height="4"
                     fill="var(--affine-hover-color)"
-                    rx="4"
-                    ry="4"
+                    rx="2"
+                    ry="2"
                   />
                   <rect
                     width="0%"
                     height="4"
                     fill="var(--affine-primary-color)"
-                    rx="4"
-                    ry="4"
+                    rx="2"
+                    ry="2"
                   >
                     <animate
                       attributeName="width"
