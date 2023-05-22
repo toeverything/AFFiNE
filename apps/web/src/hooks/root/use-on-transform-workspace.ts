@@ -12,7 +12,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { affineAuth } from '../../plugins/affine';
+import { affineAuth } from '../../adapters/affine';
 import { useTransformWorkspace } from '../use-transform-workspace';
 
 export function useOnTransformWorkspace() {

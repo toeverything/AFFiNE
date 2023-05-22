@@ -17,8 +17,8 @@ import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { LocalPlugin } from '../../adapters/local';
 import { workspacesAtom } from '../../atoms';
-import { LocalPlugin } from '../../plugins/local';
 import { BlockSuiteWorkspace } from '../../shared';
 import { WorkspaceSubPath } from '../../shared';
 import {
