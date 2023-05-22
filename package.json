@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "dev-web",
     "dev:ac": "API_SERVER_PROFILE=ac yarn workspace @affine/web dev",
-    "dev:local": "API_SERVER_PROFILE=local yarn workspace @affine/web dev",
+    "dev:local": "PORT=8080 API_SERVER_PROFILE=local yarn workspace @affine/web dev",
     "dev:app": "yarn workspace @affine/electron dev:app",
     "build": "yarn workspace @affine/web build",
     "build:client": "yarn workspace @affine/client-app build:app",
