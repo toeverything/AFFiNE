@@ -11,14 +11,15 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
-import { createStore, Provider } from 'jotai/index';
+import { createStore, Provider } from 'jotai';
 import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
+import type { FC, PropsWithChildren } from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { LocalPlugin } from '../../adapters/local';
 import { workspacesAtom } from '../../atoms';
-import { LocalPlugin } from '../../plugins/local';
 import { BlockSuiteWorkspace } from '../../shared';
 import { WorkspaceSubPath } from '../../shared';
 import {
@@ -37,7 +38,6 @@ beforeAll(() => {
       `/workspace/[workspaceId/${WorkspaceSubPath.ALL}`,
       `/workspace/[workspaceId/${WorkspaceSubPath.SETTING}`,
       `/workspace/[workspaceId/${WorkspaceSubPath.TRASH}`,
-      `/workspace/[workspaceId/${WorkspaceSubPath.FAVORITE}`,
       '/workspace/[workspaceId]/[pageId]',
     ])
   );
@@ -45,10 +45,11 @@ beforeAll(() => {
 
 async function getJotaiContext() {
   const store = createStore();
-  const ProviderWrapper: React.FC<React.PropsWithChildren> =
-    function ProviderWrapper({ children }) {
-      return <Provider store={store}>{children}</Provider>;
-    };
+  const ProviderWrapper: FC<PropsWithChildren> = function ProviderWrapper({
+    children,
+  }) {
+    return <Provider store={store}>{children}</Provider>;
+  };
   const workspaces = await store.get(workspacesAtom);
   expect(workspaces.length).toBe(0);
   return {

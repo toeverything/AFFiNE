@@ -11,9 +11,9 @@ import { useRouter } from 'next/router';
 import { Suspense } from 'react';
 import useSWR from 'swr';
 
+import { QueryKey } from '../../adapters/affine/fetcher';
 import { PageLoading } from '../../components/pure/loading';
 import { RouteLogic, useRouterHelper } from '../../hooks/use-router-helper';
-import { QueryKey } from '../../plugins/affine/fetcher';
 import type { NextPageWithLayout } from '../../shared';
 import { WorkspaceSubPath } from '../../shared';
 

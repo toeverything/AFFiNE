@@ -1,8 +1,4 @@
-import type {
-  AppEvents,
-  WorkspaceCRUD,
-  WorkspaceUISchema,
-} from '@affine/workspace/type';
+import type { AppEvents } from '@affine/workspace/type';
 import {
   LoadPriority,
   ReleaseType,
@@ -11,17 +7,7 @@ import {
 
 import { AffinePlugin } from './affine';
 import { LocalPlugin } from './local';
-
-export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
-  releaseType: ReleaseType;
-  flavour: Flavour;
-  // Plugin will be loaded according to the priority
-  loadPriority: LoadPriority;
-  Events: Partial<AppEvents>;
-  // Fetch necessary data for the first render
-  CRUD: WorkspaceCRUD<Flavour>;
-  UI: WorkspaceUISchema<Flavour>;
-}
+import type { WorkspaceAdapter } from './type';
 
 const unimplemented = () => {
   throw new Error('Not implemented');

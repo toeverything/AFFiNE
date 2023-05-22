@@ -15,6 +15,7 @@ import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
+import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
@@ -22,7 +23,6 @@ import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspaceAdapters } from '../../../plugins';
 import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 
 function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
