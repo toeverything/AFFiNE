@@ -6,6 +6,12 @@
       "name": "Run Dev",
       "request": "launch",
       "type": "node-terminal"
+    },
+    {
+      "command": "yarn run dev:local",
+      "name": "Run Dev Locally",
+      "request": "launch",
+      "type": "node-terminal"
     }
   ]
 }
