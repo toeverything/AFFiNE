@@ -19,7 +19,7 @@ import type { Page } from '@blocksuite/store';
 import { createStore } from 'jotai';
 import { describe, expect, test } from 'vitest';
 
-import { WorkspaceAdapters } from '../../adapters';
+import { WorkspaceAdapters } from '../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../root';
 
 describe('currentWorkspace atom', () => {

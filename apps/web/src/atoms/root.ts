@@ -13,7 +13,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
-import { WorkspaceAdapters } from '../adapters';
+import { WorkspaceAdapters } from '../adapters/workspace';
 import type { AllWorkspace } from '../shared';
 
 const logger = new DebugLogger('web:atoms:root');

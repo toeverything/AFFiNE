@@ -11,7 +11,7 @@ import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-import { WorkspaceAdapters } from '../adapters';
+import { WorkspaceAdapters } from '../adapters/workspace';
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 
 const logger = new DebugLogger('web:atoms');

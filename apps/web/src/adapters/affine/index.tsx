@@ -1,10 +1,9 @@
-import { AFFINE_STORAGE_KEY, config, prefixUrl } from '@affine/env';
+import { AFFINE_STORAGE_KEY, config } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
-  createAffineAuth,
   getLoginStorage,
   isExpired,
   parseIdToken,
@@ -37,9 +36,9 @@ import { PageDetailEditor } from '../../components/page-detail-editor';
 import { PageLoading } from '../../components/pure/loading';
 import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh-auth-token';
 import { BlockSuiteWorkspace } from '../../shared';
-import { affineApis } from '../../shared/apis';
+import { affineApis, affineAuth } from '../../shared/apis';
 import { toast } from '../../utils';
-import type { WorkspaceAdapter } from '..';
+import type { WorkspaceAdapter } from '../type';
 import { QueryKey } from './fetcher';
 
 const storage = createJSONStorage(() => localStorage);
@@ -78,8 +77,6 @@ const getPersistenceAllWorkspace = () => {
   }
   return allWorkspaces;
 };
-
-export const affineAuth = createAffineAuth(prefixUrl);
 
 function AuthContext({ children }: PropsWithChildren): ReactElement {
   const login = useAffineRefreshAuthToken();

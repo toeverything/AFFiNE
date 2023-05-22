@@ -17,10 +17,10 @@ import { assertEquals, assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
-import { affineAuth } from '../../../../adapters/affine';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useTransformWorkspace } from '../../../../hooks/use-transform-workspace';
 import type { AffineOfficialWorkspace } from '../../../../shared';
+import { affineAuth } from '../../../../shared/apis';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
 const IconWrapper = styled('div')(() => {

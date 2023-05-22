@@ -17,12 +17,11 @@ import {
 } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
-import React from 'react';
 
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import type { WorkspaceAdapter } from '..';
+import type { WorkspaceAdapter } from '../type';
 
 const logger = new DebugLogger('use-create-first-workspace');
 

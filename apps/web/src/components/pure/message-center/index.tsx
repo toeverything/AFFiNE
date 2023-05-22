@@ -3,8 +3,8 @@ import { setLoginStorage, SignMethod } from '@affine/workspace/affine/login';
 import type React from 'react';
 import { memo, useEffect, useState } from 'react';
 
-import { affineAuth } from '../../../adapters/affine';
 import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
+import { affineAuth } from '../../../shared/apis';
 import { toast } from '../../../utils';
 
 declare global {

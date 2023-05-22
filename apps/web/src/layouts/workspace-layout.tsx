@@ -26,7 +26,7 @@ import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
-import { WorkspaceAdapters } from '../adapters';
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {

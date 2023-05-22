@@ -7,7 +7,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
-import { WorkspaceAdapters } from '../../../adapters';
+import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
