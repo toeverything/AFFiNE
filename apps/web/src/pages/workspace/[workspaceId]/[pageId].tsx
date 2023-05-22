@@ -4,6 +4,8 @@ import { config } from '@affine/env';
 import { Unreachable } from '@affine/env/constant';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { EditorContainer } from '@blocksuite/editor';
+import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtomValue } from 'jotai';
@@ -13,7 +15,6 @@ import { useCallback, useEffect } from 'react';
 
 import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
-import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
@@ -39,15 +40,17 @@ const WorkspaceDetail: React.FC = () => {
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
 
-  useReferenceLinkEffect({
-    pageLinkClicked: useCallback(
-      ({ pageId }: { pageId: string }) => {
-        assertExists(currentWorkspace);
-        return openPage(currentWorkspace.id, pageId);
-      },
-      [currentWorkspace, openPage]
-    ),
-  });
+  const onLoad = useCallback(
+    (page: Page, editor: EditorContainer) => {
+      const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
+        return openPage(blockSuiteWorkspace.id, pageId);
+      });
+      return () => {
+        dispose.dispose();
+      };
+    },
+    [blockSuiteWorkspace.id, openPage]
+  );
 
   useEffect(() => {
     if (currentWorkspace) {
@@ -61,6 +64,7 @@ const WorkspaceDetail: React.FC = () => {
       <PageDetail
         currentWorkspace={currentWorkspace}
         currentPageId={currentPageId}
+        onLoadEditor={onLoad}
       />
     );
   } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
@@ -70,6 +74,7 @@ const WorkspaceDetail: React.FC = () => {
       <PageDetail
         currentWorkspace={currentWorkspace}
         currentPageId={currentPageId}
+        onLoadEditor={onLoad}
       />
     );
   }

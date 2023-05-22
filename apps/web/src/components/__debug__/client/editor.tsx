@@ -36,6 +36,7 @@ const Editor: React.FC<{
     globalThis.page = page;
     // @ts-ignore
     globalThis.editor = editor;
+    return () => void 0;
   }, []);
 
   if (!page) {
