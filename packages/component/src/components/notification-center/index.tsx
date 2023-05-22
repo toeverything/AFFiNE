@@ -49,6 +49,13 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       };
     }
   }, []);
+
+  const onClickUndo = useCallback(() => {
+    if (notification.undo) {
+      return notification.undo();
+    }
+  }, [notification]);
+
   return (
     <Toast.Root
       onClick={() => {
@@ -74,12 +81,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
             {notification.title}
           </div>
           {notification.undo && (
-            <div
-              className={undoButtonStyle}
-              onClick={() => {
-                return notification.undo?.();
-              }}
-            >
+            <div className={undoButtonStyle} onClick={onClickUndo}>
               UNDO
             </div>
           )}
