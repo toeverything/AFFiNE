@@ -103,9 +103,6 @@ export const toast = (
     easing: 'cubic-bezier(0.21, 1.02, 0.73, 1)',
     fill: 'forwards' as const,
   }; // satisfies KeyframeAnimationOptions;
-  // FIXME: Vitest not support element.animate,
-  //  can try it in `apps/web/src/components/__tests__/PinBoard.spec.tsx` `delete pivot`
-  typeof element.animate === 'function' && element.animate(fadeIn, options);
 
   setTimeout(async () => {
     if (typeof element.animate !== 'function') return;
