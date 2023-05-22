@@ -81,7 +81,7 @@ export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
     Provider: ({ children }) => {
       return <>{children}</>;
     },
-    PageDetail: ({ currentWorkspace, currentPageId }) => {
+    PageDetail: ({ currentWorkspace, currentPageId, onLoadEditor }) => {
       const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
       if (!page) {
         throw new PageNotFoundError(
@@ -94,6 +94,7 @@ export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           <PageDetailEditor
             pageId={currentPageId}
             onInit={initPage}
+            onLoad={onLoadEditor}
             workspace={currentWorkspace}
           />
         </>
