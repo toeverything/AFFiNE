@@ -108,6 +108,12 @@ const PageMenu = () => {
           {mode === 'page' ? t['Edgeless']() : t['Page']()}
         </MenuItem>
         <Export />
+        <MoveToTrash
+          testId="editor-option-menu-delete"
+          onItemClick={() => {
+            setOpenConfirm(true);
+          }}
+        />
         <div className={styles.horizontalDividerContainer}>
           <div className={styles.horizontalDivider} />
         </div>
