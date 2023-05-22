@@ -63,7 +63,6 @@ export const notificationTimeStyle = style({
 });
 export const closeButtonStyle = style({
   fontSize: '22px',
-  color: 'var(--affine-icon-color) !important',
   marginRight: '19px',
   marginLeft: '16px',
   display: 'flex',
@@ -128,6 +127,9 @@ export const lightWarningStyle = style({
   background: 'var(--affine-background-warning-color)',
   borderRadius: '8px',
 });
-export const darkIconStyle = style({
-  color: 'var(--affine-white) !important',
+export const darkColorStyle = style({
+  color: 'var(--affine-white)',
+});
+export const lightInfoIconStyle = style({
+  color: 'var(--affine-processing-color)',
 });

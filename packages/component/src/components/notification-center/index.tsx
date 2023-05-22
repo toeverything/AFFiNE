@@ -6,28 +6,7 @@ import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { IconButton } from '../..';
-import {
-  closeButtonStyle,
-  closeButtonWithoutUndoStyle,
-  darkErrorStyle,
-  darkIconStyle,
-  darkInfoStyle,
-  darkSuccessStyle,
-  darkWarningStyle,
-  lightErrorStyle,
-  lightInfoStyle,
-  lightSuccessStyle,
-  lightWarningStyle,
-  messageStyle,
-  notificationCenterViewportStyle,
-  notificationContentStyle,
-  notificationIconStyle,
-  notificationStyle,
-  notificationTitleContactStyle,
-  notificationTitleStyle,
-  progressBarStyle,
-  undoButtonStyle,
-} from './index.css';
+import * as styles from './index.css';
 import type { Notification } from './index.jotai';
 import {
   expandNotificationCenterAtom,
@@ -43,20 +22,20 @@ export type NotificationCardProps = {
 };
 const typeColorMap = {
   info: {
-    light: lightInfoStyle,
-    dark: darkInfoStyle,
+    light: styles.lightInfoStyle,
+    dark: styles.darkInfoStyle,
   },
   success: {
-    light: lightSuccessStyle,
-    dark: darkSuccessStyle,
+    light: styles.lightSuccessStyle,
+    dark: styles.darkSuccessStyle,
   },
   warning: {
-    light: lightWarningStyle,
-    dark: darkWarningStyle,
+    light: styles.lightWarningStyle,
+    dark: styles.darkWarningStyle,
   },
   error: {
-    light: lightErrorStyle,
-    dark: darkErrorStyle,
+    light: styles.lightErrorStyle,
+    dark: styles.darkErrorStyle,
   },
 };
 function NotificationCard(props: NotificationCardProps): ReactElement {
@@ -102,7 +81,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
 
   return (
     <Toast.Root
-      className={notificationStyle}
+      className={styles.notificationStyle}
       style={{
         transition: 'transform 0.3s, opacity 0.3s, margin-bottom 0.3s',
         marginBottom: !expand ? '0' : '1rem',
@@ -115,29 +94,30 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       onClick={onClickExpand}
     >
       <div
-        className={clsx(notificationContentStyle, {
+        className={clsx(styles.notificationContentStyle, {
           [typeStyle]: notification.theme,
         })}
       >
         <Toast.Title
-          className={clsx(notificationTitleStyle, {
-            [darkIconStyle]: notification.theme === 'dark',
+          className={clsx(styles.notificationTitleStyle, {
+            [styles.darkColorStyle]: notification.theme === 'dark',
           })}
         >
           <div
-            className={clsx(notificationIconStyle, {
-              [darkIconStyle]: notification.theme === 'dark',
+            className={clsx(styles.notificationIconStyle, {
+              [styles.darkColorStyle]: notification.theme === 'dark',
+              [styles.lightInfoIconStyle]: notification.theme !== 'dark',
             })}
           >
             <InformationFillIcon />
           </div>
-          <div className={notificationTitleContactStyle}>
+          <div className={styles.notificationTitleContactStyle}>
             {notification.title}
           </div>
           {notification.undo && (
             <div
-              className={clsx(undoButtonStyle, {
-                [darkIconStyle]: notification.theme === 'dark',
+              className={clsx(styles.undoButtonStyle, {
+                [styles.darkColorStyle]: notification.theme === 'dark',
               })}
               onClick={onClickUndo}
             >
@@ -145,23 +125,28 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
             </div>
           )}
           <IconButton
-            className={clsx(closeButtonStyle, {
-              [closeButtonWithoutUndoStyle]: !notification.undo,
-              [darkIconStyle]: notification.theme === 'dark',
+            className={clsx(styles.closeButtonStyle, {
+              [styles.closeButtonWithoutUndoStyle]: !notification.undo,
             })}
+            style={{
+              color:
+                notification.theme === 'dark'
+                  ? 'var(--affine-white)'
+                  : 'var(--affine-icon-color)',
+            }}
           >
             <CloseIcon onClick={onClickRemove} />
           </IconButton>
         </Toast.Title>
         <Toast.Description
-          className={clsx(messageStyle, {
-            [darkIconStyle]: notification.theme === 'dark',
+          className={clsx(styles.messageStyle, {
+            [styles.darkColorStyle]: notification.theme === 'dark',
           })}
         >
           {notification.message}
         </Toast.Description>
         {notification.timeout && (
-          <div className={progressBarStyle}>
+          <div className={styles.progressBarStyle}>
             <svg width="100%" height="4">
               <rect
                 width="100%"
@@ -210,7 +195,7 @@ export function NotificationCenter(): ReactElement {
           key={notification.key}
         />
       ))}
-      <Toast.Viewport className={notificationCenterViewportStyle} />
+      <Toast.Viewport className={styles.notificationCenterViewportStyle} />
     </Toast.Provider>
   );
 }
