@@ -243,12 +243,15 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
     return (
       <>
-        {/* fixme(himself65): don't re-render whole modals */}
-        <AllWorkspaceContext>
-          <CurrentWorkspaceContext>
-            <ModalProvider key={currentWorkspaceId} />
-          </CurrentWorkspaceContext>
-        </AllWorkspaceContext>
+        {/* load all workspaces is costly, do not block the whole UI */}
+        <Suspense fallback={null}>
+          <AllWorkspaceContext>
+            <CurrentWorkspaceContext>
+              {/* fixme(himself65): don't re-render whole modals */}
+              <ModalProvider key={currentWorkspaceId} />
+            </CurrentWorkspaceContext>
+          </AllWorkspaceContext>
+        </Suspense>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
             <Provider>
