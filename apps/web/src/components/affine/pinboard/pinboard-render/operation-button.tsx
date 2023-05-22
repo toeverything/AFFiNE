@@ -129,7 +129,7 @@ export const OperationButton = ({
           )}
           {!isRoot && (
             <MoveToTrash
-              testId="pinboard-operation-move-to-trash"
+              data-testid="pinboard-operation-move-to-trash"
               onItemClick={() => {
                 setOperationMenuOpen(false);
                 setConfirmModalOpen(true);
