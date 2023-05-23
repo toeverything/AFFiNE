@@ -138,7 +138,7 @@ export const ImagePreviewModal = (
       if (event.key === 'ArrowLeft') {
         const prevBlock = page
           .getPreviousSiblings(block)
-          .find(
+          .findLast(
             (block): block is EmbedBlockModel =>
               block.flavour === 'affine:embed'
           );
