@@ -13,6 +13,7 @@ import useSWR from 'swr';
 import {
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
+  imagePreviewModalGoStyle,
   imagePreviewModalImageStyle,
   imagePreviewModalStyle,
 } from './index.css';
@@ -29,6 +30,7 @@ const ImagePreviewModalImpl = (
     onClose: () => void;
   }
 ): ReactElement | null => {
+  const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
   const [caption, setCaption] = useState(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
@@ -97,6 +99,32 @@ const ImagePreviewModalImpl = (
           />
         </svg>
       </button>
+      <span
+        className={imagePreviewModalGoStyle}
+        style={{
+          left: 0,
+        }}
+        onClick={() => {
+          assertExists(blockId);
+          const workspace = props.workspace;
+
+          const page = workspace.getPage(props.pageId);
+          assertExists(page);
+          const block = page.getBlockById(blockId);
+          assertExists(block);
+          const prevBlock = page
+            .getPreviousSiblings(block)
+            .findLast(
+              (block): block is EmbedBlockModel =>
+                block.flavour === 'affine:embed'
+            );
+          if (prevBlock) {
+            setBlockId(prevBlock.id);
+          }
+        }}
+      >
+        ❮
+      </span>
       <div className={imagePreviewModalContainerStyle}>
         <img
           data-blob-id={props.blockId}
@@ -106,6 +134,32 @@ const ImagePreviewModalImpl = (
           src={url}
         />
       </div>
+      <span
+        className={imagePreviewModalGoStyle}
+        style={{
+          right: 0,
+        }}
+        onClick={() => {
+          assertExists(blockId);
+          const workspace = props.workspace;
+
+          const page = workspace.getPage(props.pageId);
+          assertExists(page);
+          const block = page.getBlockById(blockId);
+          assertExists(block);
+          const nextBlock = page
+            .getNextSiblings(block)
+            .find(
+              (block): block is EmbedBlockModel =>
+                block.flavour === 'affine:embed'
+            );
+          if (nextBlock) {
+            setBlockId(nextBlock.id);
+          }
+        }}
+      >
+        ❯
+      </span>
     </div>
   );
 };
