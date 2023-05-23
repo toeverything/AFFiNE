@@ -42,7 +42,7 @@ export const notificationCenterViewportStyle = style({
 export const notificationStyle = style({
   position: 'relative',
   display: 'flex',
-  borderRadius: '10px',
+  borderRadius: '8px',
 });
 export const notificationIconStyle = style({
   fontSize: '24px',
@@ -63,6 +63,15 @@ export const notificationContentStyle = style({
   boxShadow: 'var(--affine-shadow-1)',
   border: '1px solid var(--affine-border-color)',
   background: 'var(--affine-white)',
+  '::after': {
+    content: '""',
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    left: '0',
+    borderRadius: '8px',
+    pointerEvents: 'none',
+  },
 });
 export const notificationTitleContactStyle = style({
   marginRight: '22px',
@@ -160,11 +169,39 @@ export const darkColorStyle = style({
 export const lightInfoIconStyle = style({
   color: 'var(--affine-processing-color)',
 });
-export const mixBlendStyle = styleVariants({
+export const defaultCollapseStyle = styleVariants({
   secondary: {
-    mixBlendMode: 'darken',
+    '::after': {
+      background: 'rgba(0,0,0,0.02)',
+    },
   },
   tertiary: {
-    mixBlendMode: 'overlay',
+    '::after': {
+      background: 'rgba(0,0,0,0.04)',
+    },
+  },
+});
+export const lightCollapseStyle = styleVariants({
+  secondary: {
+    '::after': {
+      background: 'rgba(0,0,0,0.04)',
+    },
+  },
+  tertiary: {
+    '::after': {
+      background: 'rgba(0,0,0,0.08)',
+    },
+  },
+});
+export const darkCollapseStyle = styleVariants({
+  secondary: {
+    '::after': {
+      background: 'rgba(0,0,0,0.08)',
+    },
+  },
+  tertiary: {
+    '::after': {
+      background: 'rgba(0,0,0,0.16)',
+    },
   },
 });
