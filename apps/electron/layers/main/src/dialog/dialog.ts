@@ -318,6 +318,6 @@ export async function moveDBFile(
 async function dbFileAlreadyLoaded(path: string) {
   const meta = await listWorkspaces(appContext);
   const realpath = await fs.realpath(path);
-  const paths = meta.map(m => m[1].realpath);
+  const paths = meta.map(m => m[1].secondaryDBPath);
   return paths.includes(realpath);
 }

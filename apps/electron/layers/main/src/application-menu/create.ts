@@ -117,7 +117,7 @@ export function createApplicationMenu() {
           },
         },
         {
-          label: 'Open logs folder',
+          label: 'Open log file',
           click: async () => {
             revealLogFile();
           },

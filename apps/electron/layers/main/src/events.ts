@@ -1,14 +1,16 @@
-import { app,BrowserWindow } from "electron";
+import { app, BrowserWindow } from 'electron';
 
-import { applicationMenuEvents } from "./application-menu";
-import { dbEvents } from "./db";
-import { logger } from "./logger";
-import { updaterEvents } from "./updater/event";
+import { applicationMenuEvents } from './application-menu';
+import { dbEvents } from './db';
+import { logger } from './logger';
+import { updaterEvents } from './updater/event';
+import { workspaceEvents } from './workspace';
 
 export const allEvents = {
+  applicationMenu: applicationMenuEvents,
   db: dbEvents,
   updater: updaterEvents,
-  applicationMenu: applicationMenuEvents,
+  workspace: workspaceEvents,
 };
 
 function getActiveWindows() {

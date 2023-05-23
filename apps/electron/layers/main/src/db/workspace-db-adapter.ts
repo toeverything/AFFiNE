@@ -18,12 +18,14 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   constructor(public override path: string, public workspaceId: string) {
     super(path);
-    this.connect();
   }
 
   override async destroy() {
     this.db?.close();
     this.yDoc.destroy();
+
+    // when db is closed, we can safely remove it from ensure-db list
+    this.update$.complete();
   }
 
   getWorkspaceName = () => {
@@ -106,5 +108,7 @@ export async function openWorkspaceDatabase(
   workspaceId: string
 ) {
   const meta = await getWorkspaceMeta(context, workspaceId);
-  return new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
+  const db = new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
+  await db.connect();
+  return db;
 }

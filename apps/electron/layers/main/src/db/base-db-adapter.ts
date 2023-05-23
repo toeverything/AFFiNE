@@ -48,7 +48,7 @@ export class BaseSQLiteAdapter {
       this.db.close();
     }
     logger.log('[SQLiteAdapter] open db', this.path);
-    const db = sqlite(this.path);
+    const db = (this.db = sqlite(this.path));
     this.ensureTables();
     return db;
   }

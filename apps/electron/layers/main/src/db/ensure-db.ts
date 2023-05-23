@@ -6,18 +6,26 @@ import {
   from,
   fromEvent,
   identity,
+  interval,
   lastValueFrom,
-  Observable,
+  merge,
+  race,
   ReplaySubject,
   Subject,
 } from 'rxjs';
 import {
   debounceTime,
+  distinctUntilChanged,
   exhaustMap,
   filter,
   groupBy,
+  ignoreElements,
+  last,
+  map,
   mergeMap,
   shareReplay,
+  startWith,
+  switchMap,
   take,
   takeUntil,
   tap,
@@ -25,29 +33,36 @@ import {
 
 import { appContext } from '../context';
 import { logger } from '../logger';
-import { getTime } from '../utils';
-import { dbSubjects } from './subject';
+import { getWorkspaceMeta$ } from '../workspace';
+import { SecondaryWorkspaceSQLiteDB } from './secondary-db';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 import { openWorkspaceDatabase } from './workspace-db-adapter';
 
 const databaseInput$ = new Subject<string>();
 export const databaseConnector$ = new ReplaySubject<WorkspaceSQLiteDB>();
 
-const groupedDatabaseInput$ = databaseInput$.pipe(groupBy(identity));
+const groupedIDs$ = databaseInput$.pipe(groupBy(identity));
 
 export const database$ = connectable(
-  groupedDatabaseInput$.pipe(
-    mergeMap(workspaceDatabase$ =>
-      workspaceDatabase$.pipe(
+  groupedIDs$.pipe(
+    mergeMap(id$ =>
+      id$.pipe(
         // only open the first db with the same workspaceId, and emit it to the downstream
         exhaustMap(workspaceId => {
           logger.info('[ensureSQLiteDB] open db connection', workspaceId);
-          return from(openWorkspaceDatabase(appContext, workspaceId)).pipe()
+          return from(openWorkspaceDatabase(appContext, workspaceId)).pipe(
+            switchMap(db => {
+              return startPollingSecondaryDB(db).pipe(
+                ignoreElements(),
+                startWith(db)
+              );
+            })
+          );
         }),
         // close DB when app-quit
         shareReplay(1)
       )
-    ),
+    )
   ),
   {
     connector: () => databaseConnector$,
@@ -73,59 +88,34 @@ export function isRemoveOrMoveEvent(event: NotifyEvent) {
   );
 }
 
-// TODO: handle meta.json file
-function startPullingSecondaryDBFile() {}
+function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
+  const meta$ = getWorkspaceMeta$(db.workspaceId);
+  const secondaryDB$ = meta$.pipe(
+    map(meta => meta?.secondaryDBPath),
+    distinctUntilChanged(),
+    filter((p): p is string => !!p),
+    map(path => new SecondaryWorkspaceSQLiteDB(path, db)),
+    shareReplay(1)
+  );
 
-// if we removed the file, we will stop watching it
-function startWatchingDBFile(db: WorkspaceSQLiteDB) {
-  const FSWatcher = createFSWatcher();
-  return new Observable<NotifyEvent>(subscriber => {
-    logger.info('[FSWatcher] start watching db file', db.workspaceId);
-    const subscription = FSWatcher.watch(db.path, {
-      recursive: false,
-    }).subscribe(
-      event => {
-        logger.info('[FSWatcher]', event);
-        subscriber.next(event);
-        // remove file or move file, complete the observable and close db
-        if (isRemoveOrMoveEvent(event)) {
-          subscriber.complete();
-        }
-      },
-      err => {
-        subscriber.error(err);
-      }
-    );
-    return () => {
-      // destroy on unsubscribe
-      logger.info('[FSWatcher] cleanup db file watcher', db.workspaceId);
-      db.destroy();
-      subscription.unsubscribe();
-    };
-  }).pipe(
-    debounceTime(1000),
-    filter(event => !isRemoveOrMoveEvent(event)),
-    tap({
-      next: () => {
-        logger.info(
-          '[FSWatcher] db file changed on disk',
-          db.workspaceId,
-          getTime() - db.lastUpdateTime,
-          'ms'
-        );
-        db.connect();
-        dbSubjects.externalUpdate.next(db.workspaceId);
-      },
-      complete: () => {
-        // todo: there is still a possibility that the file is deleted
-        // but we didn't get the event soon enough and another event tries to
-        // access the db
-        logger.info('[FSWatcher] db file missing', db.workspaceId);
-        dbSubjects.fileMissing.next(db.workspaceId);
-        db.destroy();
-      },
-    }),
-    takeUntil(defer(() => fromEvent(app, 'before-quit')))
+  // push every 5 seconds (debounce db.update$)
+  const push$ = db.update$.pipe(debounceTime(5000)).pipe(
+    switchMap(() => secondaryDB$),
+    switchMap(db => from(db.push()))
+  );
+
+  // pull every 10 seconds
+  const pull$ = interval(10000)
+    .pipe(switchMap(() => secondaryDB$))
+    .pipe(switchMap(db => from(db.pull())));
+
+  return merge(push$, pull$).pipe(
+    takeUntil(
+      race(
+        db.update$.pipe(last()),
+        defer(() => fromEvent(app, 'before-quit'))
+      )
+    )
   );
 }
 

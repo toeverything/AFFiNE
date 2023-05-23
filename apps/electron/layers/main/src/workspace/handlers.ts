@@ -9,7 +9,7 @@ import type { WorkspaceMeta } from '../type';
 export async function listWorkspaces(
   context: AppContext
 ): Promise<[workspaceId: string, meta: WorkspaceMeta][]> {
-  const basePath = path.join(context.appDataPath, 'workspaces');
+  const basePath = getWorkspacesBasePath(context);
   try {
     await fs.ensureDir(basePath);
     const dirs = await fs.readdir(basePath, {
@@ -18,6 +18,7 @@ export async function listWorkspaces(
     const metaList = (
       await Promise.all(
         dirs.map(async dir => {
+          // ? shall we put all meta in a single file instead of one file per workspace?
           return await getWorkspaceMeta(context, dir.name);
         })
       )
@@ -30,19 +31,24 @@ export async function listWorkspaces(
 }
 
 export async function deleteWorkspace(context: AppContext, id: string) {
-  const basePath = path.join(context.appDataPath, 'workspaces', id);
+  const basePath = getWorkspaceBasePath(context, id);
   const movedPath = path.join(
     context.appDataPath,
     'delete-workspaces',
     `${id}`
   );
   try {
+    // TODO: should remove DB connection first
     return await fs.move(basePath, movedPath, {
       overwrite: true,
     });
   } catch (error) {
     logger.error('deleteWorkspace', error);
   }
+}
+
+export function getWorkspacesBasePath(context: AppContext) {
+  return path.join(context.appDataPath, 'workspaces');
 }
 
 export function getWorkspaceBasePath(context: AppContext, workspaceId: string) {
@@ -59,6 +65,10 @@ export function getWorkspaceMetaPath(context: AppContext, workspaceId: string) {
   return path.join(basePath, 'meta.json');
 }
 
+/**
+ * Get workspace meta, create one if not exists
+ * This function will also migrate the workspace if needed
+ */
 export async function getWorkspaceMeta(
   context: AppContext,
   workspaceId: string
@@ -67,11 +77,21 @@ export async function getWorkspaceMeta(
     const basePath = getWorkspaceBasePath(context, workspaceId);
     const metaPath = getWorkspaceMetaPath(context, workspaceId);
     if (!(await fs.exists(metaPath))) {
+      // since not meta is found, we will migrate symlinked db file if needed
       await fs.ensureDir(basePath);
+      const dbPath = getWorkspaceDBPath(context, workspaceId);
+
+      // todo: remove this after migration (in stable version)
+      const realDBPath = await fs.realpath(dbPath);
+      const isLink = realDBPath !== dbPath;
+      if (isLink) {
+        await fs.copy(realDBPath, dbPath);
+      }
       // create one if not exists
       const meta = {
         id: workspaceId,
-        mainDBPath: getWorkspaceDBPath(context, workspaceId),
+        mainDBPath: dbPath,
+        secondaryDBPath: isLink ? realDBPath : undefined,
       };
       await fs.writeJSON(metaPath, meta);
       return meta;
