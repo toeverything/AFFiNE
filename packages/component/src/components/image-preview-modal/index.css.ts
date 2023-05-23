@@ -35,6 +35,20 @@ export const imagePreviewModalCloseButtonStyle = style({
   transition: 'background 0.2s ease-in-out',
 });
 
+export const imagePreviewModalGoStyle = style({
+  height: '50%',
+  color: 'var(--affine-white)',
+  position: 'absolute',
+  fontSize: '60px',
+  lineHeight: '60px',
+  fontWeight: 'bold',
+  display: 'flex',
+  alignItems: 'center',
+  opacity: '0.2',
+  padding: '0 15px',
+  cursor: 'pointer',
+});
+
 export const imagePreviewModalContainerStyle = style({
   position: 'absolute',
   top: '20%',
