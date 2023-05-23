@@ -118,6 +118,8 @@ export const ImagePreviewModal = (
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
         setBlockId(null);
         return;
       }
@@ -134,20 +136,30 @@ export const ImagePreviewModal = (
       assertExists(block);
 
       if (event.key === 'ArrowLeft') {
-        const prevBlock = page.getPreviousSibling(block);
+        const prevBlock = page
+          .getPreviousSiblings(block)
+          .find(
+            (block): block is EmbedBlockModel =>
+              block.flavour === 'affine:embed'
+          );
         if (prevBlock) {
           setBlockId(prevBlock.id);
         }
-        return;
-      }
-
-      if (event.key === 'ArrowRight') {
-        const nextBlock = page.getNextSibling(block);
+      } else if (event.key === 'ArrowRight') {
+        const nextBlock = page
+          .getNextSiblings(block)
+          .find(
+            (block): block is EmbedBlockModel =>
+              block.flavour === 'affine:embed'
+          );
         if (nextBlock) {
           setBlockId(nextBlock.id);
         }
+      } else {
         return;
       }
+      event.preventDefault();
+      event.stopPropagation();
     },
     [blockId, setBlockId, props.workspace, props.pageId]
   );
