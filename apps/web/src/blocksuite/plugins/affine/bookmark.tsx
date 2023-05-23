@@ -10,6 +10,7 @@ import {
   hasNativeSelection,
 } from '@blocksuite/blocks/dist/__internal__/utils/selection.js';
 import type { Page } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const isCursorInLink = (page: Page) => {
@@ -71,15 +72,24 @@ const handleEnter = ({
   if (!linkInfo) {
     return;
   }
-  const [{ insert }, { index, length }] = linkInfo;
+  const [, { index, length }] = linkInfo;
   const link = linkInfo[0]?.attributes?.link as string;
+
+  const model = blockRange.models[0];
+  const parent = page.getParent(model);
+  assertExists(parent);
+  const currentBlockIndex = parent.children.indexOf(model);
+  page.addBlock(
+    'affine:bookmark',
+    { url: link },
+    parent,
+    currentBlockIndex + 1
+  );
 
   vEditor!.deleteText({
     index,
     length,
   });
-  console.log('linkInfo', { insert, link, index, length });
-  // TODO: After delete link text in current block, will insert bookmark block after current block
   return callback();
 };
 

@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^8.3.0",
+    "cheerio": "^1.0.0-rc.12",
     "chokidar": "^3.5.3",
     "electron-updater": "^5.3.0",
     "nanoid": "^4.0.2",
