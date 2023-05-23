@@ -4,7 +4,7 @@ import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { WorkspaceAdapters } from '../plugins';
+import { WorkspaceAdapters } from '../adapters/workspace';
 
 /**
  * Transform workspace from one flavour to another

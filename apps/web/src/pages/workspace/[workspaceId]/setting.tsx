@@ -16,13 +16,13 @@ import type { NextRouter } from 'next/router';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
 
+import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-workspace';
 import { useAppHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspaceAdapters } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 import { toast } from '../../../utils';
 

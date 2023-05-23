@@ -44,7 +44,6 @@ beforeAll(() => {
       `/workspace/[workspaceId/${WorkspaceSubPath.ALL}`,
       `/workspace/[workspaceId/${WorkspaceSubPath.SETTING}`,
       `/workspace/[workspaceId/${WorkspaceSubPath.TRASH}`,
-      `/workspace/[workspaceId/${WorkspaceSubPath.FAVORITE}`,
       '/workspace/[workspaceId]/[pageId]',
     ])
   );

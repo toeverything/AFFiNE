@@ -23,7 +23,7 @@ export const appStyle = style({
     },
   },
   vars: {
-    '--affine-editor-width': '686px',
+    '--affine-editor-width': '800px',
   },
   '@media': {
     [breakpoints.down('sm', true)]: {
