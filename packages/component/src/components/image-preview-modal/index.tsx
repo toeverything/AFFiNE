@@ -169,7 +169,7 @@ export const ImagePreviewModal = (
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
 
-  const handleKeyDown = useCallback(
+  const handleKeyUp = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -219,11 +219,11 @@ export const ImagePreviewModal = (
   );
 
   useEffect(() => {
-    document.addEventListener('keypress', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
     return () => {
-      document.removeEventListener('keypress', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleKeyDown]);
+  }, [handleKeyUp]);
 
   if (!blockId) {
     return null;
