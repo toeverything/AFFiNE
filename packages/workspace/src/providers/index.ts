@@ -240,7 +240,7 @@ const createSQLiteProvider = (
 
       blockSuiteWorkspace.doc.on('update', handleUpdate);
 
-      unsubscribe = events.db.onDBFileUpdate(({ update, workspaceId }) => {
+      unsubscribe = events.db.onExternalUpdate(({ update, workspaceId }) => {
         if (workspaceId === blockSuiteWorkspace.id) {
           Y.applyUpdate(blockSuiteWorkspace.doc, update, sqliteOrigin);
         }

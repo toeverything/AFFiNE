@@ -1,13 +1,12 @@
-import path from 'node:path';
 
-import fs from 'fs-extra';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
-import type { AppContext } from '../../context';
-import { dbSubjects } from '../../events/db';
-import { logger } from '../../logger';
+import type { AppContext } from '../context';
+import { logger } from '../logger';
+import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
+import { dbSubjects } from './subject';
 
 type Origin = 'self' | 'external' | 'renderer';
 
@@ -18,22 +17,21 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   update$ = new Subject<void>();
 
-  constructor(public path: string, public workspaceId: string) {
+  constructor(public override path: string, public workspaceId: string) {
     super(path);
     this.connect();
   }
 
-  // release resources
-  destroy = () => {
+  override async destroy() {
     this.db?.close();
     this.yDoc.destroy();
-  };
+  }
 
   getWorkspaceName = () => {
     return this.yDoc.getMap('space:meta').get('name') as string;
   };
 
-  connect = () => {
+  override async connect() {
     const db = super.connect();
 
     if (!this.firstConnect) {
@@ -43,7 +41,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
         }
         if (origin === 'external') {
           logger.debug('external update', this.workspaceId);
-          dbSubjects.dbFileUpdate.next({
+          dbSubjects.externalUpdate.next({
             workspaceId: this.workspaceId,
             update,
           });
@@ -51,8 +49,8 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
       });
     }
 
-    Y.transact(this.yDoc, () => {
-      const updates = this.getUpdates();
+    Y.transact(this.yDoc, async () => {
+      const updates = await this.getUpdates();
       updates.forEach(update => {
         // give SQLITE_ORIGIN to skip self update
         Y.applyUpdate(this.yDoc, update.data, 'self');
@@ -69,7 +67,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     this.update$.next();
 
     return db;
-  };
+  }
 
   getDocAsUpdates = () => {
     return Y.encodeStateAsUpdate(this.yDoc);
@@ -87,36 +85,29 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     logger.debug('applyUpdate', this.workspaceId);
   };
 
-  addBlob = (key: string, value: Uint8Array) => {
+  override async addBlob(key: string, value: Uint8Array) {
     const res = super.addBlob(key, value);
     this.update$.next();
     return res;
-  };
+  }
 
-  deleteBlob = (key: string) => {
+  override async deleteBlob(key: string) {
     super.deleteBlob(key);
     this.update$.next();
-  };
+  }
 
-  addUpdateToSQLite = (data: Uint8Array) => {
+  override async addUpdateToSQLite(data: Uint8Array) {
     super.addUpdateToSQLite(data);
     this.update$.next();
-  };
-}
-
-export async function getWorkspaceDBPath(
-  context: AppContext,
-  workspaceId: string
-) {
-  const basePath = path.join(context.appDataPath, 'workspaces', workspaceId);
-  await fs.ensureDir(basePath);
-  return path.join(basePath, 'storage.db');
+  }
 }
 
 export async function openWorkspaceDatabase(
   context: AppContext,
   workspaceId: string
 ) {
-  const dbPath = await getWorkspaceDBPath(context, workspaceId);
-  return new WorkspaceSQLiteDB(dbPath, workspaceId);
+  const meta = await getWorkspaceMeta(context, workspaceId);
+  if (meta) {
+    return new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
+  }
 }

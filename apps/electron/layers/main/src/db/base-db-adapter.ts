@@ -2,7 +2,7 @@ import assert from 'assert';
 import type { Database } from 'better-sqlite3';
 import sqlite from 'better-sqlite3';
 
-import { logger } from '../../logger';
+import { logger } from '../logger';
 
 const schemas = [
   `CREATE TABLE IF NOT EXISTS "updates" (
@@ -37,13 +37,13 @@ export class BaseSQLiteAdapter {
 
   constructor(public path: string) {}
 
-  ensureTables() {
+  async ensureTables() {
     assert(this.db, 'db is not connected');
     this.db.exec(schemas.join(';'));
   }
 
   // todo: what if SQLite DB wrapper later is not sync?
-  connect() {
+  async connect() {
     if (this.db) {
       this.db.close();
     }
@@ -53,11 +53,11 @@ export class BaseSQLiteAdapter {
     return db;
   }
 
-  destroy = () => {
+  async destroy() {
     this.db?.close();
-  };
+  }
 
-  addBlob = (key: string, data: Uint8Array) => {
+  async addBlob(key: string, data: Uint8Array) {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare(
@@ -68,9 +68,9 @@ export class BaseSQLiteAdapter {
     } catch (error) {
       logger.error('addBlob', error);
     }
-  };
+  }
 
-  getBlob = (key: string) => {
+  async getBlob(key: string) {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare('SELECT data FROM blobs WHERE key = ?');
@@ -83,9 +83,9 @@ export class BaseSQLiteAdapter {
       logger.error('getBlob', error);
       return null;
     }
-  };
+  }
 
-  deleteBlob = (key: string) => {
+  async deleteBlob(key: string) {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare('DELETE FROM blobs WHERE key = ?');
@@ -93,9 +93,9 @@ export class BaseSQLiteAdapter {
     } catch (error) {
       logger.error('deleteBlob', error);
     }
-  };
+  }
 
-  getBlobKeys = () => {
+  async getBlobKeys() {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare('SELECT key FROM blobs');
@@ -105,9 +105,9 @@ export class BaseSQLiteAdapter {
       logger.error('getBlobKeys', error);
       return [];
     }
-  };
+  }
 
-  getUpdates = () => {
+  async getUpdates() {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare('SELECT * FROM updates');
@@ -117,10 +117,10 @@ export class BaseSQLiteAdapter {
       logger.error('getUpdates', error);
       return [];
     }
-  };
+  }
 
   // add a single update to SQLite
-  addUpdateToSQLite = (data: Uint8Array) => {
+  async addUpdateToSQLite(data: Uint8Array) {
     // batch write instead write per key stroke?
     try {
       assert(this.db, 'db is not connected');
@@ -139,5 +139,5 @@ export class BaseSQLiteAdapter {
     } catch (error) {
       logger.error('addUpdateToSQLite', error);
     }
-  };
+  }
 }

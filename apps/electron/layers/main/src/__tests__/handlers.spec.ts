@@ -7,7 +7,7 @@ import { v4 } from 'uuid';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import * as Y from 'yjs';
 
-import type { MainIPCHandlerMap } from '../../../../constraints';
+import type { MainIPCHandlerMap } from '../../../constraints';
 
 const registeredHandlers = new Map<
   string,
@@ -126,14 +126,14 @@ vi.doMock('electron', () => {
 let connectableSubscription: Subscription;
 
 beforeEach(async () => {
-  const { registerHandlers } = await import('../register');
+  const { registerHandlers } = await import('../handlers/register');
   registerHandlers();
 
   // should also register events
-  const { registerEvents } = await import('../../events');
+  const { registerEvents } = await import('../events');
   registerEvents();
   await fs.mkdirp(SESSION_DATA_PATH);
-  const { database$ } = await import('../db/ensure-db');
+  const { database$ } = await import('../handlers/db/ensure-db');
 
   connectableSubscription = database$.connect();
 });
@@ -150,7 +150,7 @@ afterEach(async () => {
 describe('ensureSQLiteDB', () => {
   test('should create db file on connection if it does not exist', async () => {
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     const workspaceDB = await ensureSQLiteDB(id);
     const file = workspaceDB.path;
     const fileExists = await fs.pathExists(file);
@@ -161,7 +161,7 @@ describe('ensureSQLiteDB', () => {
     // stub webContents.send
     const sendSpy = vi.spyOn(browserWindow.webContents, 'send');
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     let workspaceDB = await ensureSQLiteDB(id);
     const file = workspaceDB.path;
     const fileExists = await fs.pathExists(file);
@@ -188,13 +188,13 @@ describe('ensureSQLiteDB', () => {
 
   test('when db file is updated', async () => {
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
-    const { dbSubjects } = await import('../../events/db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
+    const { dbSubjects } = await import('../events/db');
     const workspaceDB = await ensureSQLiteDB(id);
     const file = workspaceDB.path;
     const fileExists = await fs.pathExists(file);
     expect(fileExists).toBe(true);
-    const dbUpdateSpy = vi.spyOn(dbSubjects.dbFileUpdate, 'next');
+    const dbUpdateSpy = vi.spyOn(dbSubjects.externalUpdate, 'next');
     await delay(100);
     // writes some data to the db file
     await fs.appendFile(file, 'random-data', { encoding: 'binary' });
@@ -212,7 +212,7 @@ describe('ensureSQLiteDB', () => {
 describe('workspace handlers', () => {
   test('list all workspace ids', async () => {
     const ids = [v4(), v4()];
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     await Promise.all(ids.map(id => ensureSQLiteDB(id)));
     const list = await dispatch('workspace', 'list');
     expect(list.map(([id]) => id).sort()).toEqual(ids.sort());
@@ -224,7 +224,7 @@ describe('workspace handlers', () => {
       return;
     }
     const ids = [v4(), v4()];
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     await Promise.all(ids.map(id => ensureSQLiteDB(id)));
     await dispatch('workspace', 'delete', ids[1]);
     const list = await dispatch('workspace', 'list');
@@ -338,7 +338,7 @@ describe('dialog handlers', () => {
     electronModule.shell.showItemInFolder = mockShowItemInFolder;
 
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     const db = await ensureSQLiteDB(id);
 
     await dispatch('dialog', 'revealDBFile', id);
@@ -354,7 +354,7 @@ describe('dialog handlers', () => {
     electronModule.shell.showItemInFolder = mockShowItemInFolder;
 
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     await ensureSQLiteDB(id);
 
     await dispatch('dialog', 'saveDBFileAs', id);
@@ -374,7 +374,7 @@ describe('dialog handlers', () => {
     electronModule.shell.showItemInFolder = mockShowItemInFolder;
 
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     await ensureSQLiteDB(id);
 
     await dispatch('dialog', 'saveDBFileAs', id);
@@ -431,7 +431,7 @@ describe('dialog handlers', () => {
   test('loadDBFile', async () => {
     // we use ensureSQLiteDB to create a valid db file
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     const db = await ensureSQLiteDB(id);
 
     // copy db file to dbPath
@@ -475,7 +475,7 @@ describe('dialog handlers', () => {
     electronModule.dialog.showSaveDialog = mockShowSaveDialog;
 
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     await ensureSQLiteDB(id);
     const res = await dispatch('dialog', 'moveDBFile', id);
     expect(mockShowSaveDialog).toBeCalled();
@@ -490,7 +490,7 @@ describe('dialog handlers', () => {
     electronModule.dialog.showSaveDialog = mockShowSaveDialog;
 
     const id = v4();
-    const { ensureSQLiteDB } = await import('../db/ensure-db');
+    const { ensureSQLiteDB } = await import('../handlers/db/ensure-db');
     await ensureSQLiteDB(id);
 
     const res = await dispatch('dialog', 'moveDBFile', id);

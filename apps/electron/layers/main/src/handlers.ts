@@ -1,20 +1,12 @@
 import { ipcMain } from 'electron';
 
-import { getLogFilePath, logger, revealLogFile } from '../logger';
 import { dbHandlers } from './db';
 import { dialogHandlers } from './dialog';
+import { getLogFilePath, logger, revealLogFile } from './logger';
+import type { NamespaceHandlers } from './type';
 import { uiHandlers } from './ui';
 import { updaterHandlers } from './updater';
 import { workspaceHandlers } from './workspace';
-
-type IsomorphicHandler = (
-  e: Electron.IpcMainInvokeEvent,
-  ...args: any[]
-) => Promise<any>;
-
-type NamespaceHandlers = {
-  [key: string]: IsomorphicHandler;
-};
 
 export const debugHandlers = {
   revealLogFile: async () => {
@@ -27,12 +19,12 @@ export const debugHandlers = {
 
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
 export const allHandlers = {
-  workspace: workspaceHandlers,
-  ui: uiHandlers,
   db: dbHandlers,
-  dialog: dialogHandlers,
   debug: debugHandlers,
+  dialog: dialogHandlers,
+  ui: uiHandlers,
   updater: updaterHandlers,
+  workspace: workspaceHandlers,
 } satisfies Record<string, NamespaceHandlers>;
 
 export const registerHandlers = () => {

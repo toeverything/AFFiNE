@@ -1,8 +1,7 @@
-import fs from 'fs-extra';
-
-import { appContext } from '../../context';
-import type { NamespaceHandlers } from '../type';
+import { appContext } from '../context';
+import type { MainEventListener, NamespaceHandlers } from '../type';
 import { ensureSQLiteDB } from './ensure-db';
+import { dbSubjects } from './subject';
 
 export const dbHandlers = {
   getDocAsUpdates: async (_, id: string) => {
@@ -32,11 +31,21 @@ export const dbHandlers = {
   getDefaultStorageLocation: async () => {
     return appContext.appDataPath;
   },
-  getDBFilePath: async (_, workspaceId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return {
-      path: workspaceDB.path,
-      realPath: await fs.realpath(workspaceDB.path),
+} satisfies NamespaceHandlers;
+
+export const dbEvents = {
+  onDBFileMissing: (fn: (workspaceId: string) => void) => {
+    const sub = dbSubjects.fileMissing.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
     };
   },
-} satisfies NamespaceHandlers;
+  onExternalUpdate: (
+    fn: (update: { workspaceId: string; update: Uint8Array }) => void
+  ) => {
+    const sub = dbSubjects.externalUpdate.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
+} satisfies Record<string, MainEventListener>;

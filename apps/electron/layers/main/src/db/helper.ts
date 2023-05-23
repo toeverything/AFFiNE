@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import sqlite from 'better-sqlite3';
 
-import { logger } from '../../logger';
+import { logger } from '../logger';
 
 export function isValidateDB(db: Database) {
   // check if db has two tables, one for updates and one for blobs

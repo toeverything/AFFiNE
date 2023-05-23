@@ -1,6 +1,6 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
-import { isMacOS } from '../../../../utils';
+import { isMacOS } from '../../../utils';
 import type { NamespaceHandlers } from '../type';
 import { getGoogleOauthCode } from './google-auth';
 

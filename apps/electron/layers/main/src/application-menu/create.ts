@@ -1,9 +1,9 @@
 import { app, Menu } from 'electron';
 
-import { isMacOS } from '../../utils';
-import { subjects } from './events';
-import { checkForUpdatesAndNotify } from './handlers/updater';
-import { revealLogFile } from './logger';
+import { isMacOS } from '../../../utils';
+import { revealLogFile } from '../logger';
+import { checkForUpdatesAndNotify } from '../updater';
+import { applicationMenuSubjects } from './subject';
 
 // Unique id for menuitems
 const MENUITEM_NEW_PAGE = 'affine:new-page';
@@ -43,7 +43,7 @@ export function createApplicationMenu() {
           label: 'New Page',
           accelerator: isMac ? 'Cmd+N' : 'Ctrl+N',
           click: () => {
-            subjects.applicationMenu.newPageAction.next();
+            applicationMenuSubjects.newPageAction.next();
           },
         },
         { type: 'separator' },

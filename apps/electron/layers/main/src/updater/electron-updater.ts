@@ -2,9 +2,9 @@ import { app } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 import { z } from 'zod';
 
-import { isMacOS } from '../../../../utils';
-import { updaterSubjects } from '../../events/updater';
-import { logger } from '../../logger';
+import { isMacOS } from '../../../utils';
+import { logger } from '../logger';
+import { updaterSubjects } from './event';
 
 export const ReleaseTypeSchema = z.enum([
   'stable',
@@ -34,7 +34,7 @@ export const checkForUpdatesAndNotify = async (force = true) => {
   // check every 30 minutes (1800 seconds) at most
   if (force || lastCheckTime + 1000 * 1800 < Date.now()) {
     lastCheckTime = Date.now();
-    return _autoUpdater.checkForUpdatesAndNotify();
+    return await _autoUpdater.checkForUpdatesAndNotify();
   }
 };
 

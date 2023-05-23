@@ -1,10 +1,8 @@
-import { Subject } from 'rxjs';
+import type { MainEventListener } from '../type';
+import { applicationMenuSubjects } from './subject';
 
-import type { MainEventListener } from './type';
-
-export const applicationMenuSubjects = {
-  newPageAction: new Subject<void>(),
-};
+export * from './create';
+export * from './subject';
 
 /**
  * Events triggered by application menu

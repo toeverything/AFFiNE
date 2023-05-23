@@ -14,6 +14,6 @@ export function debounce<T extends (...args: any[]) => void>(
   };
 }
 
-export function ts() {
+export function getTime() {
   return new Date().getTime();
 }

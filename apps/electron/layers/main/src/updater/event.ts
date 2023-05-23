@@ -1,6 +1,6 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 
-import type { MainEventListener } from './type';
+import type { MainEventListener } from '../type';
 
 interface UpdateMeta {
   version: string;

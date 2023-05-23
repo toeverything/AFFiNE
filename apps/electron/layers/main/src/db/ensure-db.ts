@@ -27,10 +27,9 @@ import {
   tap,
 } from 'rxjs/operators';
 
-import { appContext } from '../../context';
-import { subjects } from '../../events';
-import { logger } from '../../logger';
-import { ts } from '../../utils';
+import { logger } from '../logger';
+import { getTime } from '../utils';
+import { dbSubjects } from './subject';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 import { openWorkspaceDatabase } from './workspace-db-adapter';
 
@@ -127,18 +126,18 @@ function startWatchingDBFile(db: WorkspaceSQLiteDB) {
         logger.info(
           '[FSWatcher] db file changed on disk',
           db.workspaceId,
-          ts() - db.lastUpdateTime,
+          getTime() - db.lastUpdateTime,
           'ms'
         );
         db.connect();
-        subjects.db.dbFileUpdate.next(db.workspaceId);
+        dbSubjects.externalUpdate.next(db.workspaceId);
       },
       complete: () => {
         // todo: there is still a possibility that the file is deleted
         // but we didn't get the event soon enough and another event tries to
         // access the db
         logger.info('[FSWatcher] db file missing', db.workspaceId);
-        subjects.db.dbFileMissing.next(db.workspaceId);
+        dbSubjects.fileMissing.next(db.workspaceId);
         db.destroy();
       },
     }),

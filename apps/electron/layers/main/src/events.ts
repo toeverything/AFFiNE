@@ -1,9 +1,9 @@
-import { app, BrowserWindow } from 'electron';
+import { app,BrowserWindow } from "electron";
 
-import { logger } from '../logger';
-import { applicationMenuEvents } from './application-menu';
-import { dbEvents } from './db';
-import { updaterEvents } from './updater';
+import { applicationMenuEvents } from "./application-menu";
+import { dbEvents } from "./db";
+import { logger } from "./logger";
+import { updaterEvents } from "./updater/event";
 
 export const allEvents = {
   db: dbEvents,

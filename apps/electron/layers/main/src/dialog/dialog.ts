@@ -4,12 +4,12 @@ import { dialog, shell } from 'electron';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
-import { appContext } from '../../context';
-import { logger } from '../../logger';
+import { appContext } from '../context';
 import { ensureSQLiteDB, isRemoveOrMoveEvent } from '../db/ensure-db';
-import type { WorkspaceSQLiteDB } from '../db/sqlite';
-import { getWorkspaceDBPath, isValidDBFile } from '../db/sqlite';
-import { listWorkspaces } from '../workspace/workspace';
+import { isValidDBFile } from '../db/helper';
+import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
+import { logger } from '../logger';
+import { getWorkspaceDBPath, listWorkspaces } from '../workspace';
 
 // NOTE:
 // we are using native dialogs because HTML dialogs do not give full file paths
@@ -276,7 +276,7 @@ export async function moveDBFile(
       };
     }
 
-    db.db.close();
+    db.db?.close();
 
     if (await fs.pathExists(newFilePath)) {
       return {
