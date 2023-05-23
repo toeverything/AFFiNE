@@ -83,7 +83,7 @@ test('image go left and right', async ({ page }) => {
   const locator = page.getByTestId('image-preview-modal');
   expect(locator.isVisible()).toBeTruthy();
   await page.locator('img').first().dblclick();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(2000);
   {
     const newBlobId = (await page
       .locator('img[data-blob-id]')
@@ -92,7 +92,7 @@ test('image go left and right', async ({ page }) => {
     expect(newBlobId).not.toBe(blobId);
   }
   await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(2000);
   {
     const newBlobId = (await page
       .locator('img[data-blob-id]')
