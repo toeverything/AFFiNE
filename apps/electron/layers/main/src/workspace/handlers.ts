@@ -41,7 +41,7 @@ export async function deleteWorkspace(context: AppContext, id: string) {
   );
   try {
     const db = await ensureSQLiteDB(id);
-    db.destroy();
+    await db.destroy();
     return await fs.move(basePath, movedPath, {
       overwrite: true,
     });
