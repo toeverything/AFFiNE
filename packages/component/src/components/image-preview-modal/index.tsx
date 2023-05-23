@@ -99,6 +99,7 @@ const ImagePreviewModalImpl = (
       </button>
       <div className={imagePreviewModalContainerStyle}>
         <img
+          data-blob-id={props.blockId}
           alt={caption}
           className={imagePreviewModalImageStyle}
           ref={imageRef}
@@ -114,16 +115,6 @@ export const ImagePreviewModal = (
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
 
-  const getImageBlocks = useCallback((workspace: Workspace, pageId: string) => {
-    const page = workspace.getPage(pageId);
-    assertExists(page);
-
-    return page
-      .getBlockByFlavour('affine:embed')
-      .filter(block => block.type === 'image')
-      .map(block => block.id);
-  }, []);
-
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -131,27 +122,34 @@ export const ImagePreviewModal = (
         return;
       }
 
-      const imageBlocks = getImageBlocks(props.workspace, props.pageId);
+      if (!blockId) {
+        return;
+      }
+
+      const workspace = props.workspace;
+
+      const page = workspace.getPage(props.pageId);
+      assertExists(page);
+      const block = page.getBlockById(blockId);
+      assertExists(block);
 
       if (event.key === 'ArrowLeft') {
-        const prevBlockId =
-          imageBlocks[imageBlocks.indexOf(blockId as string) - 1];
-        if (prevBlockId) {
-          setBlockId(prevBlockId);
+        const prevBlock = page.getPreviousSibling(block);
+        if (prevBlock) {
+          setBlockId(prevBlock.id);
         }
         return;
       }
 
       if (event.key === 'ArrowRight') {
-        const nextBlockId =
-          imageBlocks[imageBlocks.indexOf(blockId as string) + 1];
-        if (nextBlockId) {
-          setBlockId(nextBlockId);
+        const nextBlock = page.getNextSibling(block);
+        if (nextBlock) {
+          setBlockId(nextBlock.id);
         }
         return;
       }
     },
-    [blockId, setBlockId, getImageBlocks, props.workspace, props.pageId]
+    [blockId, setBlockId, props.workspace, props.pageId]
   );
 
   useEffect(() => {
