@@ -44,8 +44,18 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const removeNotification = useSetAtom(removeNotificationAtom);
   const { notification, index } = props;
   const [hidden, setHidden] = useState<boolean>(() => !expand && index >= 3);
+  const [notificationHeight, setNotificationHeight] = useState<number>(0);
   const typeStyle =
     typeColorMap[notification.type][notification.theme || 'light'];
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (cardRef.current) {
+      const height = cardRef.current.getBoundingClientRect().height;
+
+      setNotificationHeight(height);
+    }
+  }, [setNotificationHeight]);
+
   useEffect(() => {
     if (animateRef.current) {
       const animate = animateRef.current;
@@ -87,7 +97,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         marginBottom: !expand ? '0' : '1rem',
         transform: expand
           ? 'translateY(0) scale(1)'
-          : `translateY(${index * 75}px) scale(${1 - index * 0.02})`,
+          : `translateY(${index * notificationHeight - index * 10}px) scale(${
+              1 - index * 0.02
+            })`,
         opacity: hidden ? '0' : 1,
         display: !expand && index >= 3 ? 'none' : 'flex',
         backgroundColor:
@@ -99,6 +111,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       onClick={onClickExpand}
     >
       <div
+        ref={cardRef}
         className={clsx(styles.notificationContentStyle, {
           [typeStyle]: notification.theme,
           [styles.mixBlendStyle[index === 1 ? 'secondary' : 'tertiary']]:
