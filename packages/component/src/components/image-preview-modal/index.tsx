@@ -6,7 +6,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
@@ -176,10 +176,12 @@ export const ImagePreviewModal = (
   }
 
   return (
-    <ImagePreviewModalImpl
-      {...props}
-      blockId={blockId}
-      onClose={() => setBlockId(null)}
-    />
+    <Suspense fallback={<div className={imagePreviewModalStyle} />}>
+      <ImagePreviewModalImpl
+        {...props}
+        blockId={blockId}
+        onClose={() => setBlockId(null)}
+      />
+    </Suspense>
   );
 };
