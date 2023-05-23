@@ -95,9 +95,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     <Toast.Root
       className={styles.notificationStyle}
       style={{
-        transition: `${
-          expand ? 'transform 0.3s,' : null
-        } opacity 0.3s, margin-bottom 0.3s`,
+        transition: 'opacity 0.3s, margin-bottom 0.3s',
         marginBottom: !expand ? '0' : '1rem',
         transform: expand
           ? 'translateY(0) scale(1)'
