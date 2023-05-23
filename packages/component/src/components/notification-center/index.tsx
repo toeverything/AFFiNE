@@ -48,17 +48,8 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const [hidden, setHidden] = useState<boolean>(() => !expand && index >= 3);
   const [showCloseAnimate, setShowCloseAnimate] = useState<boolean>(false);
   const [showSlideInAnimate, setSlideInAnimate] = useState<boolean>(true);
-  const [notificationHeight, setNotificationHeight] = useState<number>(0);
   const typeStyle =
     typeColorMap[notification.type][notification.theme || 'light'];
-  const cardRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (cardRef.current) {
-      const height = cardRef.current.getBoundingClientRect().height;
-
-      setNotificationHeight(height);
-    }
-  }, [setNotificationHeight]);
   useEffect(() => {
     setTimeout(() => {
       setSlideInAnimate(false);
@@ -105,30 +96,25 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       className={clsx(styles.notificationStyle, {
         [styles.formSlideToLeftStyle]: showSlideInAnimate && index === 0,
         [styles.formSlideToRightStyle]: showCloseAnimate,
+        [styles.defaultCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
+          !expand && index !== 0 && index && !notification.theme,
+        [styles.lightCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
+          !expand && index !== 0 && index && notification.theme === 'light',
+        [styles.darkCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
+          !expand && index !== 0 && index && notification.theme === 'dark',
       })}
       style={{
-        transition: `opacity 0.3s, margin-bottom 0.3s`,
-        marginBottom: '10px',
         transform: expand
           ? 'translateY(0) scale(1)'
-          : `translateY(${index * notificationHeight}px) scale(${
-              1 - index * 0.02
-            })`,
+          : `translateY(${index * 100}%) scale(${1 - index * 0.02})`,
         opacity: hidden ? 0 : !expand && index > 2 ? 0 : 1,
       }}
       open={true}
       onClick={onClickExpand}
     >
       <div
-        ref={cardRef}
         className={clsx(styles.notificationContentStyle, {
           [typeStyle]: notification.theme,
-          [styles.defaultCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
-            !expand && index !== 0 && index && !notification.theme,
-          [styles.lightCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
-            !expand && index !== 0 && index && notification.theme === 'light',
-          [styles.darkCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
-            !expand && index !== 0 && index && notification.theme === 'dark',
         })}
       >
         <Toast.Title

@@ -2,21 +2,21 @@ import { keyframes, style, styleVariants } from '@vanilla-extract/css';
 
 const slideToLeft = keyframes({
   '0%': {
-    transform: 'translateX(300px)',
+    transform: 'translateY(100%)',
     opacity: 0,
   },
   '100%': {
-    transform: 'translateX(0px)',
+    transform: 'translateY(0)',
     opacity: 1,
   },
 });
 const slideToRight = keyframes({
   '0%': {
-    transform: 'translateX(0px)',
+    transform: 'translateY(0)',
     opacity: 1,
   },
   '100%': {
-    transform: 'translateX(300px)',
+    transform: 'translateY(100%)',
     opacity: 0,
   },
 });
@@ -31,8 +31,6 @@ export const notificationCenterViewportStyle = style({
   position: 'fixed',
   bottom: '18px',
   right: '20px',
-  display: 'flex',
-  flexDirection: 'column',
   width: '380px',
   margin: 0,
   zIndex: 2147483647,
@@ -41,8 +39,19 @@ export const notificationCenterViewportStyle = style({
 
 export const notificationStyle = style({
   position: 'relative',
-  display: 'flex',
   borderRadius: '8px',
+  transition: 'transform 0.3s,opacity 0.3s, margin-bottom 0.3s',
+  marginBottom: '10px',
+  '::after': {
+    content: '""',
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    left: '0',
+    top: '0',
+    borderRadius: '8px',
+    pointerEvents: 'none',
+  },
 });
 export const notificationIconStyle = style({
   fontSize: '24px',
@@ -63,15 +72,7 @@ export const notificationContentStyle = style({
   boxShadow: 'var(--affine-shadow-1)',
   border: '1px solid var(--affine-border-color)',
   background: 'var(--affine-white)',
-  '::after': {
-    content: '""',
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    left: '0',
-    borderRadius: '8px',
-    pointerEvents: 'none',
-  },
+  transition: 'all 0.3s',
 });
 export const notificationTitleContactStyle = style({
   marginRight: '22px',
