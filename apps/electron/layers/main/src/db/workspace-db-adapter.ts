@@ -1,4 +1,3 @@
-
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
@@ -107,7 +106,5 @@ export async function openWorkspaceDatabase(
   workspaceId: string
 ) {
   const meta = await getWorkspaceMeta(context, workspaceId);
-  if (meta) {
-    return new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
-  }
+  return new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
 }

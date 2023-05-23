@@ -1,5 +1,4 @@
 import type { NotifyEvent } from '@affine/native/event';
-import { createFSWatcher } from '@affine/native/fs-watcher';
 import { app } from 'electron';
 import {
   connectable,
@@ -17,16 +16,14 @@ import {
   exhaustMap,
   filter,
   groupBy,
-  ignoreElements,
   mergeMap,
   shareReplay,
-  startWith,
-  switchMap,
   take,
   takeUntil,
   tap,
 } from 'rxjs/operators';
 
+import { appContext } from '../context';
 import { logger } from '../logger';
 import { getTime } from '../utils';
 import { dbSubjects } from './subject';
@@ -45,25 +42,12 @@ export const database$ = connectable(
         // only open the first db with the same workspaceId, and emit it to the downstream
         exhaustMap(workspaceId => {
           logger.info('[ensureSQLiteDB] open db connection', workspaceId);
-          return from(openWorkspaceDatabase(appContext, workspaceId)).pipe(
-            switchMap(db => {
-              return startWatchingDBFile(db).pipe(
-                // ignore all events and only emit the db to the downstream
-                ignoreElements(),
-                startWith(db)
-              );
-            })
-          );
+          return from(openWorkspaceDatabase(appContext, workspaceId)).pipe()
         }),
+        // close DB when app-quit
         shareReplay(1)
       )
     ),
-    tap({
-      complete: () => {
-        logger.info('[FSWatcher] close all watchers');
-        createFSWatcher().close();
-      },
-    })
   ),
   {
     connector: () => databaseConnector$,

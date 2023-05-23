@@ -5,3 +5,28 @@ import { allHandlers as handlers } from './handlers';
 // - register in exposeInMainWorld in preload
 // - provide type hints
 export { events, handlers };
+
+export const getExposedMeta = () => {
+  const handlersMeta = Object.entries(handlers).map(
+    ([namespace, namespaceHandlers]) => {
+      return [
+        namespace,
+        Object.keys(namespaceHandlers).map(handlerName => handlerName),
+      ];
+    }
+  );
+
+  const eventsMeta = Object.entries(events).map(
+    ([namespace, namespaceHandlers]) => {
+      return [
+        namespace,
+        Object.keys(namespaceHandlers).map(handlerName => handlerName),
+      ];
+    }
+  );
+
+  return {
+    handlers: handlersMeta,
+    events: eventsMeta,
+  };
+};

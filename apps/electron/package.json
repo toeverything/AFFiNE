@@ -15,7 +15,6 @@
     "prod": "yarn electron-rebuild && yarn node scripts/dev.mjs",
     "build-layers": "zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
-    "generate-main-exposed-meta": "zx scripts/generate-main-exposed-meta.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "rebuild:for-unit-test": "yarn rebuild better-sqlite3",

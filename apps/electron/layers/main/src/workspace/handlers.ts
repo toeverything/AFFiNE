@@ -62,7 +62,7 @@ export function getWorkspaceMetaPath(context: AppContext, workspaceId: string) {
 export async function getWorkspaceMeta(
   context: AppContext,
   workspaceId: string
-): Promise<WorkspaceMeta | null> {
+): Promise<WorkspaceMeta> {
   try {
     const basePath = getWorkspaceBasePath(context, workspaceId);
     const metaPath = getWorkspaceMetaPath(context, workspaceId);
@@ -81,7 +81,7 @@ export async function getWorkspaceMeta(
     }
   } catch (err) {
     logger.error('getWorkspaceMeta failed', err);
-    return null;
+    throw err;
   }
 }
 
