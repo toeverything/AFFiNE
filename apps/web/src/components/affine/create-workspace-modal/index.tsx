@@ -74,7 +74,7 @@ const NameWorkspaceContent = ({
         data-testid="create-workspace-input"
         onKeyDown={handleKeyDown}
         placeholder={t['Set a Workspace name']()}
-        maxLength={15} // TODO: the max workspace name length?
+        maxLength={64}
         minLength={0}
         onChange={value => {
           setWorkspaceName(value);

@@ -152,7 +152,7 @@ export function Modals() {
               setOpenCreateWorkspaceModal(false);
               setOpenWorkspacesModal(false);
               setCurrentWorkspace(id);
-              return jumpToSubPath(id, WorkspaceSubPath.SETTING);
+              return jumpToSubPath(id, WorkspaceSubPath.ALL);
             },
             [
               jumpToSubPath,

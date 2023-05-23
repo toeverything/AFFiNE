@@ -18,7 +18,7 @@ test('click btn bew page and open in tab', async ({ page }) => {
   const newPageUrl = page.url();
   const newPageId = page.url().split('/').reverse()[0];
 
-  await page.getByRole('link', { name: 'All pages' }).click();
+  await page.getByTestId('all-pages').click();
 
   await page
     .getByTestId('more-actions-' + newPageId)

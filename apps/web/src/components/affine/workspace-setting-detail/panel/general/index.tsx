@@ -137,7 +137,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
             value={input}
             data-testid="workspace-name-input"
             placeholder={t['Workspace Name']()}
-            maxLength={50}
+            maxLength={64}
             minLength={0}
             onChange={newName => {
               setInput(newName);

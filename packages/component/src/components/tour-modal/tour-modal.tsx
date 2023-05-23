@@ -8,13 +8,18 @@ import { Modal, ModalCloseButton, ModalWrapper } from '../..';
 import {
   arrowStyle,
   containerStyle,
+  descriptionContainerStyle,
   descriptionStyle,
+  formSlideToLeftStyle,
+  formSlideToRightStyle,
   modalStyle,
+  slideToLeftStyle,
+  slideToRightStyle,
   tabActiveStyle,
   tabContainerStyle,
   tabStyle,
+  titleContainerStyle,
   titleStyle,
-  videoActiveStyle,
   videoContainerStyle,
   videoSlideStyle,
   videoStyle,
@@ -27,9 +32,9 @@ type TourModalProps = {
 
 export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
   const t = useAFFiNEI18N();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const handleClose = () => {
-    setStep(0);
+    setStep(-1);
     onClose();
   };
   return (
@@ -51,39 +56,59 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
           data-testid="onboarding-modal-close-button"
         />
         <div className={modalStyle}>
-          <div className={titleStyle}>
-            {step === 1
-              ? t['com.affine.onboarding.title2']()
-              : t['com.affine.onboarding.title1']()}
+          <div className={titleContainerStyle}>
+            {step !== -1 && (
+              <div
+                className={clsx(titleStyle, {
+                  [slideToLeftStyle]: step === 0,
+                  [formSlideToRightStyle]: step === 1,
+                })}
+              >
+                {t['com.affine.onboarding.title2']()}
+              </div>
+            )}
+            <div
+              className={clsx(titleStyle, {
+                [slideToRightStyle]: step === 1,
+                [formSlideToLeftStyle]: step === 0,
+              })}
+            >
+              {t['com.affine.onboarding.title1']()}
+            </div>
           </div>
+
           <div className={containerStyle}>
             <div
               className={arrowStyle}
-              onClick={() => setStep(0)}
+              onClick={() => step === 1 && setStep(0)}
               data-testid="onboarding-modal-pre-button"
             >
               <ArrowLeftSmallIcon />
             </div>
             <div className={videoContainerStyle}>
               <div className={videoSlideStyle}>
+                {step !== -1 && (
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    className={clsx(videoStyle, {
+                      [slideToLeftStyle]: step === 0,
+                      [formSlideToRightStyle]: step === 1,
+                    })}
+                    data-testid="onboarding-modal-editing-video"
+                  >
+                    <source src="/editingVideo.mp4" type="video/mp4" />
+                    <source src="/editingVideo.webm" type="video/webm" />
+                  </video>
+                )}
                 <video
                   autoPlay
                   muted
                   loop
                   className={clsx(videoStyle, {
-                    [videoActiveStyle]: step === 0,
-                  })}
-                  data-testid="onboarding-modal-editing-video"
-                >
-                  <source src="/editingVideo.mp4" type="video/mp4" />
-                  <source src="/editingVideo.webm" type="video/webm" />
-                </video>
-                <video
-                  autoPlay
-                  muted
-                  loop
-                  className={clsx(videoStyle, {
-                    [videoActiveStyle]: step === 1,
+                    [slideToRightStyle]: step === 1,
+                    [formSlideToLeftStyle]: step === 0,
                   })}
                   data-testid="onboarding-modal-switch-video"
                 >
@@ -102,7 +127,9 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
           </div>
           <ul className={tabContainerStyle}>
             <li
-              className={clsx(tabStyle, { [tabActiveStyle]: step === 0 })}
+              className={clsx(tabStyle, {
+                [tabActiveStyle]: step !== 1,
+              })}
               onClick={() => setStep(0)}
             ></li>
             <li
@@ -110,10 +137,25 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
               onClick={() => setStep(1)}
             ></li>
           </ul>
-          <div className={descriptionStyle}>
-            {step === 1
-              ? t['com.affine.onboarding.videoDescription2']()
-              : t['com.affine.onboarding.videoDescription1']()}
+          <div className={descriptionContainerStyle}>
+            {step !== -1 && (
+              <div
+                className={clsx(descriptionStyle, {
+                  [slideToLeftStyle]: step === 0,
+                  [formSlideToRightStyle]: step === 1,
+                })}
+              >
+                {t['com.affine.onboarding.videoDescription2']()}
+              </div>
+            )}
+            <div
+              className={clsx(descriptionStyle, {
+                [slideToRightStyle]: step === 1,
+                [formSlideToLeftStyle]: step === 0,
+              })}
+            >
+              {t['com.affine.onboarding.videoDescription1']()}
+            </div>
           </div>
         </div>
       </ModalWrapper>

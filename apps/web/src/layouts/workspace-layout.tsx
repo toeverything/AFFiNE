@@ -1,3 +1,4 @@
+import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
 import {
   AppContainer,
   MainContainer,
@@ -25,7 +26,9 @@ import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
+import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
@@ -35,11 +38,7 @@ import { RootAppSidebar } from '../components/root-app-sidebar';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { useRouterWithWorkspaceIdDefense } from '../hooks/use-router-with-workspace-id-defense';
-import { useSyncRouterWithCurrentPageId } from '../hooks/use-sync-router-with-current-page-id';
-import { useSyncRouterWithCurrentWorkspaceId } from '../hooks/use-sync-router-with-current-workspace-id';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspaceAdapters } from '../plugins';
 import { ModalProvider } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 
@@ -130,16 +129,36 @@ export const AllWorkspaceContext = ({
   return <>{children}</>;
 };
 
+declare global {
+  // eslint-disable-next-line no-var
+  var HALTING_PROBLEM_TIMEOUT: number;
+}
+
+if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
+  globalThis.HALTING_PROBLEM_TIMEOUT = 1000;
+}
+
 export const CurrentWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  const router = useRouter();
   const workspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
-  useSyncRouterWithCurrentWorkspaceId(router);
-  useSyncRouterWithCurrentPageId(router);
-  useRouterWithWorkspaceIdDefense(router);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
+  const router = useRouter();
+  const push = router.push;
+  // fixme(himself65): this is not a good way to handle this,
+  //  need a better way to check whether this workspace really exist.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (!exist) {
+        void push('/');
+        globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
+      }
+    }, globalThis.HALTING_PROBLEM_TIMEOUT);
+    return () => {
+      clearTimeout(id);
+    };
+  }, [push, exist]);
   if (!router.isReady) {
     return <WorkspaceFallback key="router-is-loading" />;
   }
@@ -160,6 +179,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       // todo(himself65): this is a hack, we should use a better way to set the language
       setUpLanguage(i18n);
     }, [i18n]);
+    useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const meta = useMemo(
@@ -223,12 +243,15 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
     return (
       <>
-        {/* fixme(himself65): don't re-render whole modals */}
-        <AllWorkspaceContext>
-          <CurrentWorkspaceContext>
-            <ModalProvider key={currentWorkspaceId} />
-          </CurrentWorkspaceContext>
-        </AllWorkspaceContext>
+        {/* load all workspaces is costly, do not block the whole UI */}
+        <Suspense fallback={null}>
+          <AllWorkspaceContext>
+            <CurrentWorkspaceContext>
+              {/* fixme(himself65): don't re-render whole modals */}
+              <ModalProvider key={currentWorkspaceId} />
+            </CurrentWorkspaceContext>
+          </AllWorkspaceContext>
+        </Suspense>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
             <Provider>
@@ -264,11 +287,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       void jumpToPage(currentWorkspace.id, pageId);
     }
   }
-
-  // fixme: pinboard has been removed,
-  //  the related code should be removed in the future.
-  // no matter the workspace is empty, ensure the root pinboard exists
-  // ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
   //#endregion
 
   useEffect(() => {
@@ -330,17 +348,18 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
+  const resizing = useAtomValue(appSidebarResizingAtom);
+
   return (
     <>
       <Head>
         <title>{title}</title>
       </Head>
-      <AppContainer>
+      <AppContainer resizing={resizing}>
         <RootAppSidebar
           isPublicWorkspace={isPublicWorkspace}
           onOpenQuickSearchModal={handleOpenQuickSearchModal}
           currentWorkspace={currentWorkspace}
-          currentPageId={currentPageId}
           onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
           openPage={useCallback(
             (pageId: string) => {
@@ -354,7 +373,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
         <MainContainer>
-          <Suspense fallback={<WorkspaceFallback />}>{children}</Suspense>
+          {children}
           <ToolContainer>
             {/* fixme(himself65): remove this */}
             <div id="toolWrapper" style={{ marginBottom: '12px' }}>

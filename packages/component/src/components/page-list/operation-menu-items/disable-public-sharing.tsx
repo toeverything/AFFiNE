@@ -26,13 +26,13 @@ const StyledMenuItem = styled(MenuItem)(({ theme }) => {
 export const DisablePublicSharing = ({
   onSelect,
   onItemClick,
-  testId,
+  ...props
 }: CommonMenuItemProps) => {
   const t = useAFFiNEI18N();
   return (
     <>
       <StyledMenuItem
-        data-testid={testId}
+        {...props}
         onClick={() => {
           onItemClick?.();
           onSelect?.();

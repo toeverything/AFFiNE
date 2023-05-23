@@ -1,56 +1,38 @@
-import type { Instance } from '@popperjs/core';
-import { createPopper } from '@popperjs/core';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
+
 import {
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+  appSidebarOpenAtom,
+  appSidebarResizingAtom,
+  appSidebarWidthAtom,
+} from '../index.jotai';
+import * as styles from './index.css';
 
-import { appSidebarOpenAtom, appSidebarWidthAtom } from '../index.jotai';
-import { spacerStyle } from './index.css';
-
-export type ResizeIndicatorProps = {
+type ResizeIndicatorProps = {
   targetElement: HTMLElement | null;
 };
 
 export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
-  const ref = useRef<HTMLDivElement>(null);
-  const popperRef = useRef<Instance | null>(null);
   const setWidth = useSetAtom(appSidebarWidthAtom);
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
-  const [isResizing, setIsResizing] = useState(false);
-  useEffect(() => {
-    if (ref.current) {
-      if (props.targetElement) {
-        const popper = createPopper(props.targetElement, ref.current, {
-          placement: 'right',
-        });
-        popperRef.current = popper;
-        return () => {
-          popper.destroy();
-          popperRef.current = null;
-        };
-      }
-    }
-  }, [props.targetElement]);
+  const [isResizing, setIsResizing] = useAtom(appSidebarResizingAtom);
 
-  const sidebarWidth = useDeferredValue(useAtomValue(appSidebarWidthAtom));
-  useEffect(() => {
-    if (popperRef.current) {
-      popperRef.current.update();
-    }
-  }, [sidebarWidth]);
+  const [anchorLeft, setAnchorLeft] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!props.targetElement) return;
+    const { left } = props.targetElement.getBoundingClientRect();
+    setAnchorLeft(left);
+  }, [props.targetElement]);
 
   const onResizeStart = useCallback(() => {
     let resized = false;
 
     function onMouseMove(e: MouseEvent) {
       e.preventDefault();
-      const newWidth = Math.min(480, Math.max(e.clientX, 256));
+      if (!props.targetElement) return;
+      const newWidth = Math.min(480, Math.max(e.clientX - anchorLeft, 256));
       setWidth(newWidth);
       setIsResizing(true);
       resized = true;
@@ -64,24 +46,28 @@ export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
         if (!resized) {
           setSidebarOpen(o => !o);
         }
-        if (popperRef.current) {
-          popperRef.current.update();
-        }
         setIsResizing(false);
         document.removeEventListener('mousemove', onMouseMove);
       },
       { once: true }
     );
-  }, [setSidebarOpen, setWidth]);
+  }, [
+    anchorLeft,
+    props.targetElement,
+    setIsResizing,
+    setSidebarOpen,
+    setWidth,
+  ]);
 
   return (
     <div
-      ref={ref}
-      className={spacerStyle}
+      className={styles.resizerContainer}
       data-testid="app-sidebar-resizer"
       data-resizing={isResizing}
       data-open={sidebarOpen}
       onMouseDown={onResizeStart}
-    />
+    >
+      <div className={styles.resizerInner} />
+    </div>
   );
 };

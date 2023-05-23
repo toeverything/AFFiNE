@@ -18,7 +18,7 @@ export const dialogHandlers = {
   saveDBFileAs: async (_, workspaceId: string) => {
     return saveDBFileAs(workspaceId);
   },
-  moveDBFile: async (_, workspaceId: string, dbFileLocation?: string) => {
+  moveDBFile: (_, workspaceId: string, dbFileLocation?: string) => {
     return moveDBFile(workspaceId, dbFileLocation);
   },
   selectDBFileLocation: async () => {

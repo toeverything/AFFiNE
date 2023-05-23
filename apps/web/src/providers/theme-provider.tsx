@@ -1,32 +1,26 @@
-import type { ThemeProviderProps } from '@affine/component';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
 import { memo, useRef } from 'react';
 
 const themes = ['dark', 'light'];
 
-// a workaround to sync theme to electron
-let firstRender = true;
-
 const DesktopThemeSync = memo(function DesktopThemeSync() {
   const { theme } = useTheme();
   const lastThemeRef = useRef(theme);
-  if (lastThemeRef.current !== theme || firstRender) {
+  const onceRef = useRef(false);
+  if (lastThemeRef.current !== theme || !onceRef.current) {
     if (environment.isDesktop && theme) {
       window.apis?.ui.handleThemeChange(theme as 'dark' | 'light' | 'system');
     }
     lastThemeRef.current = theme;
-    firstRender = false;
+    onceRef.current = true;
   }
   return null;
 });
 
-export const ThemeProvider = ({
-  children,
-  ...props
-}: PropsWithChildren<ThemeProviderProps>) => {
+export const ThemeProvider = ({ children }: PropsWithChildren) => {
   return (
-    <NextThemeProvider themes={themes} enableSystem={true} {...props}>
+    <NextThemeProvider themes={themes} enableSystem={true}>
       {children}
       <DesktopThemeSync />
     </NextThemeProvider>

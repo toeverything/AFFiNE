@@ -1,3 +1,4 @@
+import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { style } from '@vanilla-extract/css';
 
 export const headerContainer = style({
@@ -6,24 +7,16 @@ export const headerContainer = style({
   position: 'sticky',
   top: 0,
   background: 'var(--affine-background-primary-color)',
-  WebkitAppRegion: 'drag',
   zIndex: 'var(--affine-z-index-popover)',
-  '@media': {
-    '(max-width: 768px)': {
-      selectors: {
-        '&[data-open="true"]': {
-          // @ts-ignore
-          WebkitAppRegion: 'no-drag',
-        },
-      },
-    },
-  },
   selectors: {
     '&[data-has-warning="true"]': {
       height: '96px',
     },
+    '&[data-sidebar-floating="false"]': {
+      WebkitAppRegion: 'drag',
+    },
   },
-});
+} as ComplexStyleRule);
 
 export const header = style({
   flexShrink: 0,
@@ -68,13 +61,12 @@ export const title = style({
     '(max-width: 768px)': {
       selectors: {
         '&[data-open="true"]': {
-          // @ts-ignore
           WebkitAppRegion: 'no-drag',
         },
       },
     },
   },
-});
+} as ComplexStyleRule);
 
 export const titleWrapper = style({
   height: '100%',
@@ -196,14 +188,14 @@ export const windowAppControlsWrapper = style({
 });
 
 export const windowAppControl = style({
-  // @ts-ignore
   WebkitAppRegion: 'no-drag',
   cursor: 'pointer',
   display: 'inline-flex',
-  width: '32px',
+  width: '42px',
+  height: '32px',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: '2px',
+  borderRadius: '4px',
   selectors: {
     '&[data-type="close"]:hover': {
       background: 'var(--affine-error-color)',
@@ -213,4 +205,4 @@ export const windowAppControl = style({
       background: 'var(--affine-background-tertiary-color)',
     },
   },
-});
+} as ComplexStyleRule);

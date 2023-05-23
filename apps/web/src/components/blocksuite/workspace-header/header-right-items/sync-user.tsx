@@ -19,8 +19,8 @@ import React, { useEffect, useState } from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useTransformWorkspace } from '../../../../hooks/use-transform-workspace';
-import { affineAuth } from '../../../../plugins/affine';
 import type { AffineOfficialWorkspace } from '../../../../shared';
+import { affineAuth } from '../../../../shared/apis';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
 const IconWrapper = styled('div')(() => {

@@ -1,3 +1,4 @@
+import { QueryParamError, Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
@@ -6,17 +7,12 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
-import {
-  QueryParamError,
-  Unreachable,
-} from '../../../components/affine/affine-error-eoundary';
+import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
-import { useSyncRouterWithCurrentWorkspaceId } from '../../../hooks/use-sync-router-with-current-workspace-id';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspaceAdapters } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
@@ -24,7 +20,6 @@ const AllPage: NextPageWithLayout = () => {
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();
-  useSyncRouterWithCurrentWorkspaceId(router);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);

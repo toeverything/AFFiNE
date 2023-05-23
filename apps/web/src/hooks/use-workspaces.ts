@@ -6,11 +6,11 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
+import { LocalPlugin } from '../adapters/local';
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { workspacesAtom } from '../atoms';
-import { WorkspaceAdapters } from '../plugins';
-import { LocalPlugin } from '../plugins/local';
 import type { AllWorkspace } from '../shared';
 
 export function useWorkspaces(): AllWorkspace[] {
@@ -97,25 +97,3 @@ export function useAppHelper() {
     ),
   };
 }
-
-export const useElementResizeEffect = (
-  element: Element | null,
-  fn: () => void | (() => () => void),
-  // TODO: add throttle
-  _throttle = 0
-) => {
-  useEffect(() => {
-    if (!element) {
-      return;
-    }
-    let dispose: void | (() => void);
-    const resizeObserver = new ResizeObserver(() => {
-      dispose = fn();
-    });
-    resizeObserver.observe(element);
-    return () => {
-      dispose?.();
-      resizeObserver.disconnect();
-    };
-  }, [element, fn]);
-};

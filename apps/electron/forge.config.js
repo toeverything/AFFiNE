@@ -33,6 +33,7 @@ module.exports = {
   packagerConfig: {
     name: productName,
     appBundleId: fromBuildIdentifier({
+      internal: 'pro.affine.internal',
       canary: 'pro.affine.canary',
       beta: 'pro.affine.beta',
       stable: 'pro.affine.app',
@@ -93,7 +94,7 @@ module.exports = {
       config: {
         name: 'AFFiNE',
         setupIcon: icoPath,
-        // loadingGif: './resources/icons/loading.gif',
+        loadingGif: './resources/icons/affine_installing.gif',
       },
     },
   ],

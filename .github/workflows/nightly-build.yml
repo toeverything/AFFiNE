@@ -22,18 +22,30 @@ concurrency:
 
 env:
   BUILD_TYPE: internal
-  RELEASE_VERSION: ${{ github.ref_name }}-${{ github.sha }}
 
 jobs:
+  set-build-version:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      version: 0.0.0-${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: toeverything/set-build-version@latest
+      - id: version
+        run: echo ::set-output name=version::${{ env.BUILD_VERSION }}
+
   before-make:
     runs-on: ubuntu-latest
     environment: production
+    needs:
+      - set-build-version
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Replace Version
-        run: ./scripts/set-version.sh ${{ env.RELEASE_VERSION }}
+        run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - name: generate-assets
         working-directory: apps/electron
         run: yarn generate-assets
@@ -53,6 +65,8 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           API_SERVER_PROFILE: prod
           ENABLE_TEST_PROPERTIES: false
+          ENABLE_IMAGE_PREVIEW_MODAL: false
+          RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
 
       - name: Upload Artifact (web-static)
         uses: actions/upload-artifact@v3
@@ -60,30 +74,40 @@ jobs:
           name: before-make-web-static
           path: apps/electron/resources/web-static
 
-      - name: Upload Artifact (electron dist)
-        uses: actions/upload-artifact@v3
-        with:
-          name: before-make-electron-dist
-          path: apps/electron/dist
-
-      - name: Upload YML Build Script
-        uses: actions/upload-artifact@v3
-        with:
-          name: release-yml-build-script
-          path: apps/electron/scripts/generate-yml.js
-
   make-distribution:
     environment: production
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
         spec:
-          - { os: macos-latest, platform: macos, arch: x64 }
-          - { os: macos-latest, platform: macos, arch: arm64 }
-          - { os: ubuntu-latest, platform: linux, arch: x64 }
-          - { os: windows-latest, platform: windows, arch: x64 }
+          - {
+              os: macos-latest,
+              platform: darwin,
+              arch: x64,
+              target: x86_64-apple-darwin,
+            }
+          - {
+              os: macos-latest,
+              platform: darwin,
+              arch: arm64,
+              target: aarch64-apple-darwin,
+            }
+          - {
+              os: ubuntu-latest,
+              platform: linux,
+              arch: x64,
+              target: x86_64-unknown-linux-gnu,
+            }
+          - {
+              os: windows-latest,
+              platform: win32,
+              arch: x64,
+              target: x86_64-pc-windows-msvc,
+            }
     runs-on: ${{ matrix.spec.os }}
-    needs: before-make
+    needs:
+      - before-make
+      - set-build-version
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -93,36 +117,43 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.spec.target }}
       - name: Replace Version
-        run: ./scripts/set-version.sh ${{ env.RELEASE_VERSION }}
+        run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
           path: apps/electron/resources/web-static
-      - uses: actions/download-artifact@v3
-        with:
-          name: before-make-electron-dist
-          path: apps/electron/dist
+      - name: Rebuild Electron dependences
+        shell: bash
+        run: |
+          rm -rf apps/electron/node_modules/better-sqlite3/build
+          yarn workspace @affine/electron rebuild:for-electron --arch=${{ matrix.spec.arch }}
+
+      - name: Build layers
+        run: yarn workspace @affine/electron build-layers
 
       - name: Signing By Apple Developer ID
-        if: ${{ matrix.spec.platform == 'macos' }}
+        if: ${{ matrix.spec.platform == 'darwin' }}
         uses: apple-actions/import-codesign-certs@v2
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
       - name: make
-        run: yarn make-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-        working-directory: apps/electron
+        run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
       - name: Save artifacts (mac)
-        if: ${{ matrix.spec.platform == 'macos' }}
+        if: ${{ matrix.spec.platform == 'darwin' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
           mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
       - name: Save artifacts (windows)
-        if: ${{ matrix.spec.platform == 'windows' }}
+        if: ${{ matrix.spec.platform == 'win32' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
@@ -143,34 +174,32 @@ jobs:
           path: builds
 
   release:
-    needs: make-distribution
+    needs:
+      - make-distribution
+      - set-build-version
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v3
       - name: Download Artifacts (macos-x64)
         uses: actions/download-artifact@v3
         with:
-          name: affine-macos-x64-builds
+          name: affine-darwin-x64-builds
           path: ./
       - name: Download Artifacts (macos-arm64)
         uses: actions/download-artifact@v3
         with:
-          name: affine-macos-arm64-builds
+          name: affine-darwin-arm64-builds
           path: ./
       - name: Download Artifacts (windows-x64)
         uses: actions/download-artifact@v3
         with:
-          name: affine-windows-x64-builds
+          name: affine-win32-x64-builds
           path: ./
       - name: Download Artifacts (linux-x64)
         uses: actions/download-artifact@v3
         with:
           name: affine-linux-x64-builds
-          path: ./
-      - name: Download Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: release-yml-build-script
           path: ./
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -178,17 +207,18 @@ jobs:
           node-version: 18
       - name: Generate Release yml
         run: |
+          cp ./apps/electron/scripts/generate-yml.js .
           node generate-yml.js
         env:
-          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+          RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           repository: 'toeverything/AFFiNE-Releases'
-          name: ${{ env.RELEASE_VERSION }}
-          tag_name: ${{ env.RELEASE_VERSION }}
+          name: ${{ needs.set-build-version.outputs.version }}
+          tag_name: ${{ needs.set-build-version.outputs.version }}
           prerelease: true
           files: |
             ./VERSION

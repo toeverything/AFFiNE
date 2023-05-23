@@ -2,6 +2,7 @@ import './security-restrictions';
 
 import { app } from 'electron';
 
+import { createApplicationMenu } from './application-menu';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { registerUpdater } from './handlers/updater';
@@ -9,6 +10,7 @@ import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 
+if (require('electron-squirrel-startup')) app.quit();
 // allow tests to overwrite app name through passing args
 if (process.argv.includes('--app-name')) {
   const appNameIndex = process.argv.indexOf('--app-name');
@@ -57,6 +59,7 @@ app
   .then(registerHandlers)
   .then(registerEvents)
   .then(restoreOrCreateWindow)
+  .then(createApplicationMenu)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
 /**

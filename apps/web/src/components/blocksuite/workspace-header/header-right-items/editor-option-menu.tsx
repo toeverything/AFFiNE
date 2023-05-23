@@ -40,7 +40,6 @@ const CommonMenu = () => {
   return (
     <FlexWrapper alignItems="center" justifyContent="center">
       <Menu
-        width={276}
         content={content}
         placement="bottom"
         disablePortal={true}
@@ -109,14 +108,12 @@ const PageMenu = () => {
           {mode === 'page' ? t['Edgeless']() : t['Page']()}
         </MenuItem>
         <Export />
-        {!pageMeta.isRootPinboard && (
-          <MoveToTrash
-            testId="editor-option-menu-delete"
-            onItemClick={() => {
-              setOpenConfirm(true);
-            }}
-          />
-        )}
+        <MoveToTrash
+          data-testid="editor-option-menu-delete"
+          onItemClick={() => {
+            setOpenConfirm(true);
+          }}
+        />
         <div className={styles.horizontalDividerContainer}>
           <div className={styles.horizontalDivider} />
         </div>
@@ -137,7 +134,6 @@ const PageMenu = () => {
     <>
       <FlexWrapper alignItems="center" justifyContent="center">
         <Menu
-          width={276}
           content={EditMenu}
           placement="bottom-end"
           disablePortal={true}

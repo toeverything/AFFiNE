@@ -62,6 +62,9 @@ export const StyledCreateWorkspaceCard = styled('div')(() => {
         color: 'var(--affine-primary-color)',
       },
     },
+    '@media (max-width: 720px)': {
+      width: '100%',
+    },
   };
 });
 export const StyledCreateWorkspaceCardPillContainer = styled('div')(() => {

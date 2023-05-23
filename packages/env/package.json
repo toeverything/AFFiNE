@@ -4,14 +4,15 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230509150141-055b5702-nightly",
-    "next": "^13.4.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@blocksuite/global": "0.0.0-20230519102837-01acd96b-nightly",
+    "next": "^13.4.2",
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506",
     "zod": "^3.21.4"
   },
   "exports": {
     ".": "./src/index.ts",
+    "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
     "./blocksuite": "./src/blocksuite.ts"
   },
@@ -21,5 +22,5 @@
   "dependencies": {
     "lit": "^2.7.4"
   },
-  "version": "0.6.0-canary.0"
+  "version": "0.6.0-canary.6"
 }
