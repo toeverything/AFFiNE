@@ -165,9 +165,9 @@ export const ImagePreviewModal = (
   );
 
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keypress', handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keypress', handleKeyDown);
     };
   }, [handleKeyDown]);
 
