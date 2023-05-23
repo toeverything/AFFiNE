@@ -1,7 +1,7 @@
 import type { Meta } from '@storybook/react';
 import { useAtomValue, useSetAtom } from 'jotai';
 
-import { NotificationCenter, notificationsAtom } from './index';
+import { NotificationCenter, pushNotificationAtom } from '.';
 import { expandNotificationCenterAtom } from './index.jotai';
 
 export default {
@@ -11,7 +11,7 @@ export default {
 
 let id = 0;
 export const Basic = () => {
-  const push = useSetAtom(notificationsAtom);
+  const push = useSetAtom(pushNotificationAtom);
   const expand = useAtomValue(expandNotificationCenterAtom);
   return (
     <>

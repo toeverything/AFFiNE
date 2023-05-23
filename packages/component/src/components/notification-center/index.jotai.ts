@@ -15,43 +15,44 @@ const notificationsBaseAtom = atom<Notification[]>([]);
 
 export const expandNotificationCenterAtom = atom(false);
 
-export const notificationsAtom = atom<
-  Notification[],
-  [Notification],
-  ReturnType<typeof setTimeout> | undefined
->(
-  get => get(notificationsBaseAtom),
-  (get, set, newNotification) => {
-    const key = newNotification.key;
-    const removeNotification = () =>
-      set(notificationsBaseAtom, notifications =>
-        notifications.filter(notification => notification.key !== key)
-      );
-    const undo: (() => Promise<void>) | undefined = newNotification.undo
-      ? (() => {
-          const undo: () => Promise<void> = newNotification.undo;
-          return async function undoNotificationWrapper() {
-            removeNotification();
-            return undo();
-          };
-        })()
-      : undefined;
-
-    set(notificationsBaseAtom, notifications => [
-      // push to the top
-      { ...newNotification, undo },
-      ...notifications,
-    ]);
-    if (newNotification.timeout) {
-      return setTimeout(() => {
-        removeNotification();
-      }, newNotification.timeout);
-    }
-  }
+export const notificationsAtom = atom<Notification[]>(get =>
+  get(notificationsBaseAtom)
 );
 
 export const removeNotificationAtom = atom(null, (get, set, key: string) => {
   set(notificationsBaseAtom, notifications =>
     notifications.filter(notification => notification.key !== key)
   );
+});
+
+export const pushNotificationAtom = atom<
+  null,
+  [Notification],
+  ReturnType<typeof setTimeout> | undefined
+>(null, (get, set, newNotification) => {
+  const key = newNotification.key;
+  const removeNotification = () =>
+    set(notificationsBaseAtom, notifications =>
+      notifications.filter(notification => notification.key !== key)
+    );
+  const undo: (() => Promise<void>) | undefined = newNotification.undo
+    ? (() => {
+        const undo: () => Promise<void> = newNotification.undo;
+        return async function undoNotificationWrapper() {
+          removeNotification();
+          return undo();
+        };
+      })()
+    : undefined;
+
+  set(notificationsBaseAtom, notifications => [
+    // push to the top
+    { ...newNotification, undo },
+    ...notifications,
+  ]);
+  if (newNotification.timeout) {
+    return setTimeout(() => {
+      removeNotification();
+    }, newNotification.timeout);
+  }
 });

@@ -5,16 +5,18 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { IconButton } from '../..';
+import { IconButton } from '../../ui/button';
 import * as styles from './index.css';
 import type { Notification } from './index.jotai';
 import {
   expandNotificationCenterAtom,
   notificationsAtom,
+  pushNotificationAtom,
   removeNotificationAtom,
 } from './index.jotai';
 
-export { notificationsAtom };
+// only expose necessary function atom to avoid misuse
+export { pushNotificationAtom, removeNotificationAtom };
 
 export type NotificationCardProps = {
   notification: Notification;
