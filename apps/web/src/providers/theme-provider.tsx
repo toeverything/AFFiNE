@@ -4,18 +4,16 @@ import { memo, useRef } from 'react';
 
 const themes = ['dark', 'light'];
 
-// a workaround to sync theme to electron
-let firstRender = true;
-
 const DesktopThemeSync = memo(function DesktopThemeSync() {
   const { theme } = useTheme();
   const lastThemeRef = useRef(theme);
-  if (lastThemeRef.current !== theme || firstRender) {
+  const onceRef = useRef(false);
+  if (lastThemeRef.current !== theme || !onceRef.current) {
     if (environment.isDesktop && theme) {
       window.apis?.ui.handleThemeChange(theme as 'dark' | 'light' | 'system');
     }
     lastThemeRef.current = theme;
-    firstRender = false;
+    onceRef.current = true;
   }
   return null;
 });

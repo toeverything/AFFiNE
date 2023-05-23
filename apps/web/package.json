@@ -1,13 +1,12 @@
 {
   "name": "@affine/web",
   "private": true,
-  "version": "0.6.0-canary.5",
+  "version": "0.6.0-canary.6",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "export": "next export",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
@@ -19,12 +18,12 @@
     "@affine/jotai": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/workspace": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230518051344-45970a96-nightly",
-    "@blocksuite/editor": "0.0.0-20230518051344-45970a96-nightly",
-    "@blocksuite/global": "0.0.0-20230518051344-45970a96-nightly",
+    "@blocksuite/blocks": "0.0.0-20230519102837-01acd96b-nightly",
+    "@blocksuite/editor": "0.0.0-20230519102837-01acd96b-nightly",
+    "@blocksuite/global": "0.0.0-20230519102837-01acd96b-nightly",
     "@blocksuite/icons": "^2.1.18",
-    "@blocksuite/lit": "0.0.0-20230518051344-45970a96-nightly",
-    "@blocksuite/store": "0.0.0-20230518051344-45970a96-nightly",
+    "@blocksuite/lit": "0.0.0-20230519102837-01acd96b-nightly",
+    "@blocksuite/store": "0.0.0-20230519102837-01acd96b-nightly",
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.11.0",

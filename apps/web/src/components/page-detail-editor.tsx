@@ -21,7 +21,7 @@ export type PageDetailEditorProps = {
   workspace: AffineOfficialWorkspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
-  onLoad?: (page: Page, editor: EditorContainer) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => () => void;
   header?: React.ReactNode;
 };
 
@@ -85,7 +85,10 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
               updatedDate: Date.now(),
             });
             localStorage.setItem('last_page_id', page.id);
-            onLoad?.(page, editor);
+            if (onLoad) {
+              return onLoad(page, editor);
+            }
+            return () => {};
           },
           [onLoad, setEditor]
         )}

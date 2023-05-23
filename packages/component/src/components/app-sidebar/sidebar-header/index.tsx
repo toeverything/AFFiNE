@@ -22,15 +22,11 @@ export type SidebarHeaderProps = {
 export const SidebarHeader = (props: SidebarHeaderProps) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const environment = getEnvironment();
-  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
   return (
-    <div
-      className={navHeaderStyle}
-      data-is-macos-electron={isMacosDesktop}
-      data-open={open}
-    >
-      {isMacosDesktop && (
+    <div className={navHeaderStyle} data-open={open}>
+      {environment.isDesktop && (
         <>
+          {environment.isMacOs && <div style={{ flex: 1 }} />}
           <IconButton
             size="middle"
             data-testid="app-sidebar-arrow-button-back"
@@ -57,6 +53,8 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
           >
             <ArrowRightSmallIcon />
           </IconButton>
+
+          {!environment.isMacOs && <div style={{ flex: 1 }} />}
         </>
       )}
       <IconButton

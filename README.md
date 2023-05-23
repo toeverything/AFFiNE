@@ -70,7 +70,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities across [official social platforms](https://community.affine.pro/c/start-here/)! Once you’re familiar with using the software, maybe you will share your wisdom with others and even consider joining the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador) to help spread AFFiNE to the world.
 
-## Getting started & Stay tunned with us.
+## Getting started & staying tuned with us.
 
 ⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
 
