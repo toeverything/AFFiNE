@@ -68,7 +68,14 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
     switchMap(path => {
       return new Observable<SecondaryWorkspaceSQLiteDB>(observer => {
         const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
-        observer.next(secondaryDB);
+        secondaryDB
+          .connect()
+          .then(() => {
+            observer.next(secondaryDB);
+          })
+          .catch(err => {
+            observer.error(err);
+          });
         return () => {
           logger.info(
             '[ensureSQLiteDB] close secondary db connection',

@@ -318,8 +318,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-        with:
-          playwright-install: true
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
@@ -327,10 +325,7 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: |
-          rm -rf apps/electron/node_modules/better-sqlite3/build
-          yarn --cwd apps/electron/node_modules/better-sqlite3 run install
-          yarn test:unit
+        run: yarn test:unit
         env:
           NATIVE_TEST: 'true'
       - name: Build layers
@@ -341,12 +336,6 @@ jobs:
         with:
           name: next-js-static
           path: ./apps/electron/resources/web-static
-
-      - name: Rebuild Electron dependences
-        shell: bash
-        run: |
-          rm -rf apps/electron/node_modules/better-sqlite3/build
-          yarn workspace @affine/electron rebuild:for-electron --arch=${{ matrix.spec.arch }}
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}

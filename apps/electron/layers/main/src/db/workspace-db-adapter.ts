@@ -1,4 +1,3 @@
-import type { Database } from 'better-sqlite3';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
@@ -21,9 +20,8 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     super(path);
   }
 
-  override destroy() {
-    this.db?.close();
-    this.db = null;
+  override async destroy() {
+    await super.destroy();
     this.yDoc.destroy();
 
     // when db is closed, we can safely remove it from ensure-db list
@@ -34,15 +32,15 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     return this.yDoc.getMap('space:meta').get('name') as string;
   };
 
-  async init(): Promise<Database | undefined> {
-    const db = super.connect();
+  async init() {
+    const db = await super.connect();
 
     if (!this.firstConnected) {
-      this.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
+      this.yDoc.on('update', async (update: Uint8Array, origin: YOrigin) => {
         if (origin === 'renderer') {
-          this.addUpdateToSQLite([update]);
+          await this.addUpdateToSQLite([update]);
         } else if (origin === 'external') {
-          this.addUpdateToSQLite([update]);
+          await this.addUpdateToSQLite([update]);
           logger.debug('external update', this.workspaceId);
           dbSubjects.externalUpdate.next({
             workspaceId: this.workspaceId,
@@ -52,7 +50,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
       });
     }
 
-    const updates = this.getUpdates();
+    const updates = await this.getUpdates();
     const merged = await mergeUpdateWorker(updates.map(update => update.data));
 
     // to initialize the yDoc, we need to apply all updates from the db
@@ -84,12 +82,12 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     return res;
   }
 
-  override deleteBlob(key: string) {
+  override async deleteBlob(key: string) {
     super.deleteBlob(key);
     this.update$.next();
   }
 
-  override addUpdateToSQLite(data: Uint8Array[]) {
+  override async addUpdateToSQLite(data: Uint8Array[]) {
     super.addUpdateToSQLite(data);
     this.update$.next();
   }

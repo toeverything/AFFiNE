@@ -7,7 +7,6 @@ import { nanoid } from 'nanoid';
 
 import { appContext } from '../context';
 import { ensureSQLiteDB } from '../db/ensure-db';
-import { isValidDBFile } from '../db/helper';
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
 import {
@@ -208,7 +207,9 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       return { error: 'DB_FILE_ALREADY_LOADED' };
     }
 
-    if (!isValidDBFile(filePath)) {
+    const { SqliteConnection } = await import('@affine/native');
+
+    if (!(await SqliteConnection.validate(filePath))) {
       // TODO: report invalid db file error?
       return { error: 'DB_FILE_INVALID' }; // invalid db file
     }
