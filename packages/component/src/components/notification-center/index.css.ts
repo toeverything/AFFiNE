@@ -1,4 +1,31 @@
-import { style, styleVariants } from '@vanilla-extract/css';
+import { keyframes, style, styleVariants } from '@vanilla-extract/css';
+
+const slideToLeft = keyframes({
+  '0%': {
+    transform: 'translateX(300px)',
+    opacity: 0,
+  },
+  '100%': {
+    transform: 'translateX(0px)',
+    opacity: 1,
+  },
+});
+const slideToRight = keyframes({
+  '0%': {
+    transform: 'translateX(0px)',
+    opacity: 1,
+  },
+  '100%': {
+    transform: 'translateX(300px)',
+    opacity: 0,
+  },
+});
+export const formSlideToLeftStyle = style({
+  animation: `${slideToLeft} 0.3s ease-in-out forwards`,
+});
+export const formSlideToRightStyle = style({
+  animation: `${slideToRight} 0.3s ease-in-out forwards`,
+});
 
 export const notificationCenterViewportStyle = style({
   position: 'fixed',

@@ -46,6 +46,8 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const removeNotification = useSetAtom(removeNotificationAtom);
   const { notification, index } = props;
   const [hidden, setHidden] = useState<boolean>(() => !expand && index >= 3);
+  const [showCloseAnimate, setShowCloseAnimate] = useState<boolean>(false);
+  const [showSlideInAnimate, setSlideInAnimate] = useState<boolean>(true);
   const [notificationHeight, setNotificationHeight] = useState<number>(0);
   const typeStyle =
     typeColorMap[notification.type][notification.theme || 'light'];
@@ -57,7 +59,11 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       setNotificationHeight(height);
     }
   }, [setNotificationHeight]);
-
+  useEffect(() => {
+    setTimeout(() => {
+      setSlideInAnimate(false);
+    }, 300);
+  }, []);
   useEffect(() => {
     if (animateRef.current) {
       const animate = animateRef.current;
@@ -72,7 +78,10 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   }, []);
 
   const onClickRemove = useCallback(() => {
-    removeNotification(notification.key);
+    setShowCloseAnimate(true);
+    setTimeout(() => {
+      removeNotification(notification.key);
+    }, 300);
   }, [notification.key, removeNotification]);
 
   const onClickUndo = useCallback(() => {
@@ -93,7 +102,10 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
 
   return (
     <Toast.Root
-      className={styles.notificationStyle}
+      className={clsx(styles.notificationStyle, {
+        [styles.formSlideToLeftStyle]: showSlideInAnimate && index === 0,
+        [styles.formSlideToRightStyle]: showCloseAnimate,
+      })}
       style={{
         transition: 'opacity 0.3s, margin-bottom 0.3s',
         marginBottom: !expand ? '0' : '1rem',
@@ -103,10 +115,6 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
               1 - index * 0.02
             })`,
         opacity: hidden ? 0 : !expand && index > 2 ? 0 : 1,
-        backgroundColor:
-          !expand && index === 2
-            ? 'var(--affine-black-30)'
-            : 'var(--affine-black-10)',
       }}
       open={true}
       onClick={onClickExpand}
