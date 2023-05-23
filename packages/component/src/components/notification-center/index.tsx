@@ -93,15 +93,16 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     <Toast.Root
       className={styles.notificationStyle}
       style={{
-        transition: 'transform 0.3s, opacity 0.3s, margin-bottom 0.3s',
+        transition: `${
+          expand ? 'transform 0.3s,' : null
+        } opacity 0.3s, margin-bottom 0.3s`,
         marginBottom: !expand ? '0' : '1rem',
         transform: expand
           ? 'translateY(0) scale(1)'
           : `translateY(${index * notificationHeight - index * 10}px) scale(${
               1 - index * 0.02
             })`,
-        opacity: hidden ? '0' : 1,
-        display: !expand && index >= 3 ? 'none' : 'flex',
+        opacity: hidden ? 0 : !expand && index > 2 ? 0 : 1,
         backgroundColor:
           !expand && index === 2
             ? 'var(--affine-black-30)'
