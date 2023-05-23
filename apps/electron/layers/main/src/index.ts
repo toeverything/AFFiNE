@@ -3,8 +3,9 @@ import './security-restrictions';
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu';
+import { registerCommandInterface } from './cmd';
 import { registerEvents } from './events';
-import { registerHandlers } from './handlers';
+import { registerArgsHandler, registerHandlers } from './handlers';
 import { registerUpdater } from './handlers/updater';
 import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
@@ -17,6 +18,8 @@ if (process.argv.includes('--app-name')) {
   const appName = process.argv[appNameIndex + 1];
   app.setName(appName);
 }
+
+registerCommandInterface();
 
 /**
  * Prevent multiple instances
@@ -61,6 +64,7 @@ app
   .then(restoreOrCreateWindow)
   .then(createApplicationMenu)
   .then(registerUpdater)
+  .then(registerArgsHandler)
   .catch(e => console.error('Failed create window:', e));
 /**
  * Check new app version in production mode only

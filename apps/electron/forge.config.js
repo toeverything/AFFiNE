@@ -38,6 +38,7 @@ module.exports = {
       beta: 'pro.affine.beta',
       stable: 'pro.affine.app',
     }),
+    executableName: productName.toLowerCase(),
     icon: icnsPath,
     osxSign: {
       identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',

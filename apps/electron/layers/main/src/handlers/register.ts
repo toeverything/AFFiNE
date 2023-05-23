@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { ipcMain } from 'electron';
 
 import { getLogFilePath, logger, revealLogFile } from '../logger';
@@ -60,6 +62,17 @@ export const registerHandlers = () => {
           logger.error('[ipc]', chan, error);
         }
       });
+    }
+  }
+};
+
+export const registerArgsHandler = () => {
+  const args = process.argv.slice(2);
+  if (args.length > 0) {
+    const command = args[0];
+    if (command === 'affine') {
+      const filePath = path.resolve(args[1]);
+      console.log(filePath);
     }
   }
 };
