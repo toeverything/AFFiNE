@@ -53,7 +53,7 @@ const runRule = function (ruleSet: RuleSet, $: CheerioAPI, context: Context) {
     return value;
   }
 
-  if ((!value || value.length < 1) && ruleSet.defaultValue) {
+  if (ruleSet.defaultValue) {
     return ruleSet.defaultValue(context);
   }
 
@@ -114,7 +114,7 @@ const getMetaData = async function (
   // console.log('html');
   // console.log(doc);
 
-  Object.keys(rules).map((key: string) => {
+  Object.keys(rules).forEach((key: string) => {
     const ruleSet = rules[key];
     metadata[key] = runRule(ruleSet, $, context) || undefined;
   });
