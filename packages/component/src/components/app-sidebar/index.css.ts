@@ -27,6 +27,10 @@ export const navWrapperStyle = style({
         },
       },
     },
+    print: {
+      display: 'none',
+      zIndex: -1,
+    },
   },
   selectors: {
     '&[data-open="false"]': {
@@ -97,6 +101,9 @@ export const sidebarFloatMaskStyle = style({
           right: '0',
         },
       },
+    },
+    print: {
+      display: 'none',
     },
   },
 });
