@@ -7,6 +7,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
+import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
 import {
@@ -15,6 +17,7 @@ import {
   Suspense,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -170,6 +173,35 @@ export const Header = forwardRef<
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
   const mode = useCurrentMode();
+  const rightDivRef = useRef<HTMLDivElement>(null);
+
+  const affinePluginsMap = useAtomValue(affinePluginsAtom);
+  const plugins = useMemo(
+    () => Object.values(affinePluginsMap),
+    [affinePluginsMap]
+  );
+  useEffect(() => {
+    const div = rightDivRef.current;
+    if (div) {
+      const items: HTMLElement[] = [];
+      plugins
+        .filter(plugin => plugin.uiAdapter.headerItem != null)
+        .map(plugin => {
+          const headerItem = plugin.uiAdapter
+            .headerItem as PluginUIAdapter['headerItem'];
+          items.push(headerItem({}));
+        });
+      items.forEach(item => {
+        div.prepend(item);
+      });
+      return () => {
+        items.forEach(item => {
+          div.removeChild(item);
+        });
+      };
+    }
+  }, [plugins]);
+
   return (
     <div
       className={styles.headerContainer}
@@ -206,7 +238,7 @@ export const Header = forwardRef<
         </Suspense>
 
         {props.children}
-        <div className={styles.headerRightSide}>
+        <div className={styles.headerRightSide} ref={rightDivRef}>
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
               ([name, { availableWhen, Component }]) => {

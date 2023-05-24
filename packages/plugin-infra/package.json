@@ -23,6 +23,8 @@
     }
   },
   "dependencies": {
-    "@affine/env": "workspace:*"
+    "@affine/env": "workspace:*",
+    "@affine/workspace": "workspace:*",
+    "jotai": "^2.1.0"
   }
 }
