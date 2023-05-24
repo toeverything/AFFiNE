@@ -123,7 +123,7 @@ export type AffinePluginContext = {
 export type PluginUIAdapter = {
   sidebarItem: Adapter<Record<string, unknown>>;
   headerItem: Adapter<Record<string, unknown>>;
-  content: Adapter<Record<string, unknown>>;
+  detailContent: Adapter<Record<string, unknown>>;
 };
 
 export type PluginAdapterCreator = (

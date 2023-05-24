@@ -124,6 +124,7 @@ __metadata:
     "@toeverything/plugin-infra": "workspace:*"
     "@types/react": ^18.2.6
     "@types/react-dom": ^18.2.4
+    jotai: ^2.1.0
     react: ^18.2.0
     react-dom: ^18.2.0
   languageName: unknown
