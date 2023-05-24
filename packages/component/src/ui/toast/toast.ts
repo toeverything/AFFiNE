@@ -101,10 +101,10 @@ export const toast = (
   );
 
   const fadeIn = [
-    { opacity: 1 },
     {
       opacity: 0,
     },
+    { opacity: 1 },
   ];
 
   const options = {
