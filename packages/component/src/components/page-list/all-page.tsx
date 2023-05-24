@@ -117,7 +117,7 @@ export const PageList = ({
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
-    key: 'createDate',
+    key: 'updatedDate',
     order: 'desc',
   });
 
