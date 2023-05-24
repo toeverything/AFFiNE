@@ -40,6 +40,10 @@ export function useTipsDisplayStatus() {
       permanentlyHidden: permanentlyHiddenTips.changeLog || true,
       hiddenUntilNextUpdate: hiddenUntilNextUpdateTips.changeLog || true,
     },
+    downloadTip: {
+      permanentlyHidden: permanentlyHiddenTips.downloadTip || true,
+      hiddenUntilNextUpdate: hiddenUntilNextUpdateTips.downloadTip || true,
+    },
   };
 }
 

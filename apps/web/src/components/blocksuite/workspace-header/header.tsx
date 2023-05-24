@@ -1,3 +1,4 @@
+import { DownloadTips } from '@affine/component/affine-banner';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon } from '@blocksuite/icons';
@@ -12,6 +13,7 @@ import {
   useState,
 } from 'react';
 
+import { useGuideHidden } from '../../../hooks/use-is-first-load';
 import {
   useSidebarFloating,
   useSidebarStatus,
@@ -138,6 +140,7 @@ export const Header = forwardRef<
   HTMLDivElement,
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
+  const [isTipsHidden, setTipsHidden] = useGuideHidden();
   const [showWarning, setShowWarning] = useState(false);
   useEffect(() => {
     setShowWarning(shouldShowWarning());
@@ -153,12 +156,20 @@ export const Header = forwardRef<
       hasWarning={showWarning}
       {...props}
     >
-      <BrowserWarning
-        show={showWarning}
-        onClose={() => {
-          setShowWarning(false);
-        }}
-      />
+      {!isTipsHidden.downloadTip ? (
+        <DownloadTips
+          onClose={() => {
+            setTipsHidden({ ...isTipsHidden, downloadTip: true });
+          }}
+        />
+      ) : (
+        <BrowserWarning
+          show={showWarning}
+          onClose={() => {
+            setShowWarning(false);
+          }}
+        />
+      )}
       <StyledHeader
         hasWarning={showWarning}
         data-testid="editor-header-items"

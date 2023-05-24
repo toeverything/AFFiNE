@@ -23,6 +23,9 @@ export async function clickPageMoreActions(page: Page) {
     .click();
 }
 
+/**
+ * @deprecated
+ */
 export async function createPinboardPage(
   page: Page,
   parentId: string,

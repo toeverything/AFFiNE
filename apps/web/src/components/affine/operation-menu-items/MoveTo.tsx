@@ -17,6 +17,9 @@ export type MoveToProps = CommonMenuItemProps<{
   blockSuiteWorkspace: BlockSuiteWorkspace;
 };
 
+/**
+ * @deprecated
+ */
 export const MoveTo = ({
   metas,
   currentMeta,
