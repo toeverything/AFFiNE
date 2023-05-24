@@ -16,6 +16,11 @@ export const headerContainer = style({
       WebkitAppRegion: 'drag',
     },
   },
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
 } as ComplexStyleRule);
 
 export const header = style({
