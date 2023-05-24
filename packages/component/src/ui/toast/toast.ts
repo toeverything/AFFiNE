@@ -1,6 +1,9 @@
 // Copyright: https://github.com/toeverything/blocksuite/commit/8032ef3ab97aefce01664b36502fc392c5db8b78#diff-bf5b41be21936f9165a8400c7f20e24d3dbc49644ba57b9258e0943f0dc1c464
+import { DebugLogger } from '@affine/debug';
 import type { TemplateResult } from 'lit';
 import { css, html } from 'lit';
+
+const logger = new DebugLogger('toast');
 
 export const sleep = (ms = 0) =>
   new Promise(resolve => setTimeout(resolve, ms));
@@ -91,6 +94,11 @@ export const toast = (
   // message is not trusted
   element.textContent = message;
   ToastContainer.appendChild(element);
+
+  logger.debug(`toast with message: "${message}"`);
+  window.dispatchEvent(
+    new CustomEvent('affine-toast:emit', { detail: message })
+  );
 
   const fadeIn = [
     {
