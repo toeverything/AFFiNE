@@ -101,10 +101,10 @@ export const toast = (
   );
 
   const fadeIn = [
+    { opacity: 1 },
     {
       opacity: 0,
     },
-    { opacity: 1 },
   ];
   const options = {
     duration: 230,
@@ -114,8 +114,7 @@ export const toast = (
 
   setTimeout(async () => {
     if (typeof element.animate !== 'function') return;
-    const fadeOut = fadeIn.reverse();
-    const animation = element.animate(fadeOut, options);
+    const animation = element.animate(fadeIn, options);
     await animation.finished;
     element.style.maxHeight = '0';
     element.style.margin = '0';
