@@ -1,14 +1,9 @@
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { createElement } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createPortal } from 'react-dom';
 
 import { HeaderItem } from './header-item';
 
 export default {
-  headerItem: () => {
-    const div = document.createElement('div');
-    const root = createRoot(div);
-    root.render(createElement(HeaderItem));
-    return div;
-  },
+  headerItem: element => createPortal(createElement(HeaderItem), element),
 } satisfies Partial<PluginUIAdapter>;

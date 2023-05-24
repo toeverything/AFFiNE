@@ -5,6 +5,8 @@
  * AFFiNE Plugin System Types
  */
 
+import type { ReactPortal } from 'react';
+
 /**
  * A code loader interface of the plugin API.
  *
@@ -110,8 +112,9 @@ export type Definition<ID extends string> = {
 };
 
 export type Adapter<Options extends Record<string, unknown>> = (
+  element: HTMLDivElement,
   options: Options
-) => HTMLElement;
+) => ReactPortal;
 
 export type AffinePluginContext = {
   toast: (text: string) => void;

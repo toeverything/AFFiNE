@@ -8,6 +8,7 @@ import type { Loader, PluginUIAdapter } from './type';
 
 // todo: for now every plugin is enabled by default
 export const affinePluginsAtom = atom<Record<string, AffinePlugin<string>>>({});
+export const affineRightItemsAtom = atom<HTMLElement[]>([]);
 
 const pluginLogger = new DebugLogger('affine:plugin');
 
@@ -55,3 +56,13 @@ export function definePlugin<ID extends string>(
     }
   }
 }
+
+// rootStore.sub(affinePluginsAtom, () => {
+//   const plugins = Object.values(rootStore.get(affinePluginsAtom))
+//   const items = plugins.filter(plugin => plugin.uiAdapter.headerItem != null).map(plugin => {
+//     const headerItem = plugin.uiAdapter
+//       .headerItem as PluginUIAdapter['headerItem'];
+//     return headerItem()
+//   });
+//   rootStore.set(affineRightItemsAtom, [])
+// })

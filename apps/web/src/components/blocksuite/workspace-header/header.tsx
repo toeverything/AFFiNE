@@ -153,6 +153,29 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
 
 export type HeaderProps = BaseHeaderProps;
 
+const PluginHeader = () => {
+  const divRef = useRef<HTMLDivElement>(null);
+
+  const affinePluginsMap = useAtomValue(affinePluginsAtom);
+  const plugins = useMemo(
+    () => Object.values(affinePluginsMap),
+    [affinePluginsMap]
+  );
+
+  return (
+    <div ref={divRef}>
+      {divRef.current &&
+        plugins
+          .filter(plugin => plugin.uiAdapter.headerItem != null)
+          .map(plugin => {
+            const headerItem = plugin.uiAdapter
+              .headerItem as PluginUIAdapter['headerItem'];
+            return headerItem(divRef.current as HTMLDivElement, {});
+          })}
+    </div>
+  );
+};
+
 export const Header = forwardRef<
   HTMLDivElement,
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
@@ -173,34 +196,6 @@ export const Header = forwardRef<
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
   const mode = useCurrentMode();
-  const rightDivRef = useRef<HTMLDivElement>(null);
-
-  const affinePluginsMap = useAtomValue(affinePluginsAtom);
-  const plugins = useMemo(
-    () => Object.values(affinePluginsMap),
-    [affinePluginsMap]
-  );
-  useEffect(() => {
-    const div = rightDivRef.current;
-    if (div) {
-      const items: HTMLElement[] = [];
-      plugins
-        .filter(plugin => plugin.uiAdapter.headerItem != null)
-        .map(plugin => {
-          const headerItem = plugin.uiAdapter
-            .headerItem as PluginUIAdapter['headerItem'];
-          items.push(headerItem({}));
-        });
-      items.forEach(item => {
-        div.prepend(item);
-      });
-      return () => {
-        items.forEach(item => {
-          div.removeChild(item);
-        });
-      };
-    }
-  }, [plugins]);
 
   return (
     <div
@@ -238,7 +233,8 @@ export const Header = forwardRef<
         </Suspense>
 
         {props.children}
-        <div className={styles.headerRightSide} ref={rightDivRef}>
+        <div className={styles.headerRightSide}>
+          <PluginHeader />
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
               ([name, { availableWhen, Component }]) => {
