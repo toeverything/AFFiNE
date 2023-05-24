@@ -3,6 +3,7 @@ import '@affine/component/theme/theme.css';
 // bootstrap code before everything
 import '@affine/env/bootstrap';
 
+import { ProviderComposer } from '@affine/component/provider-composer';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
@@ -17,7 +18,6 @@ import type { PropsWithChildren, ReactElement } from 'react';
 import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
-import { ProviderComposer } from '../components/provider-composer';
 import { MessageCenter } from '../components/pure/message-center';
 import { ThemeProvider } from '../providers/theme-provider';
 import type { NextPageWithLayout } from '../shared';
