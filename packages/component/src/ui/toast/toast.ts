@@ -21,7 +21,7 @@ const htmlToElement = <T extends ChildNode>(html: string | TemplateResult) => {
     template.innerHTML = html;
   } else {
     const { strings, values } = html;
-    const v = [...values, '']; // + last emtpty part
+    const v = [...values, '']; // + last empty part
     template.innerHTML = strings.reduce((acc, cur, i) => acc + cur + v[i], '');
   }
   return template.content.firstChild as T;
@@ -106,11 +106,12 @@ export const toast = (
       opacity: 0,
     },
   ];
+
   const options = {
     duration: 230,
     easing: 'cubic-bezier(0.21, 1.02, 0.73, 1)',
     fill: 'forwards' as const,
-  }; // satisfies KeyframeAnimationOptions;
+  } satisfies KeyframeAnimationOptions;
 
   setTimeout(async () => {
     if (typeof element.animate !== 'function') return;
