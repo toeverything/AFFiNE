@@ -92,7 +92,7 @@ export type Definition<ID extends string> = {
   description?: I18NStringField;
   /**
    * Publisher of this plugin.
-   * @example { link: "https://github.com/Dimensiondev", name: { fallback: "Mask Network", i18nKey: "org_name" } }
+   * @example { link: "https://affine.pro", name: { fallback: "AFFiNE", i18nKey: "org_name" } }
    */
   publisher?: Publisher;
 
