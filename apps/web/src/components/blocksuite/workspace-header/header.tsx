@@ -170,7 +170,9 @@ const PluginHeader = () => {
           .map(plugin => {
             const headerItem = plugin.uiAdapter
               .headerItem as PluginUIAdapter['headerItem'];
-            return headerItem(divRef.current as HTMLDivElement, {});
+            const item = headerItem(divRef.current as HTMLDivElement, {});
+            item.key = plugin.definition.id;
+            return item;
           })}
     </div>
   );
