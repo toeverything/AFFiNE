@@ -34,6 +34,7 @@
     "@react-hookz/web": "^23.0.0",
     "@sentry/nextjs": "^7.52.1",
     "@toeverything/hooks": "workspace:*",
+    "@toeverything/plugin-infra": "workspace:*",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",

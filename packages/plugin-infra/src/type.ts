@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./webpack-hmr.d.ts" />
+
 /**
  * AFFiNE Plugin System Types
  */
@@ -66,7 +69,7 @@ export interface Publisher {
 
 /** For what stage the plugin */
 export enum ReleaseStage {
-  STAGE = 'stage',
+  NIGHTLY = 'nightly',
   PROD = 'prod',
   DEV = 'dev',
 }
@@ -106,17 +109,15 @@ export type Definition<ID extends string> = {
   stage: ReleaseStage;
 };
 
-export type DOMRender = () => HTMLElement;
-export type Adapter<Options extends Record<string, unknown>> = {
-  render: DOMRender;
-  options: Options;
-};
+export type Adapter<Options extends Record<string, unknown>> = (
+  options: Options
+) => HTMLElement;
 
 export type AffinePluginContext = {
   toast: (text: string) => void;
 };
 
-export type PluginAdapter = {
+export type PluginUIAdapter = {
   sidebarItem: Adapter<Record<string, unknown>>;
   headerItem: Adapter<Record<string, unknown>>;
   content: Adapter<Record<string, unknown>>;
@@ -124,9 +125,9 @@ export type PluginAdapter = {
 
 export type PluginAdapterCreator = (
   context: AffinePluginContext
-) => PluginAdapter;
+) => PluginUIAdapter;
 
 export type AffinePlugin<ID extends string> = {
   definition: Definition<ID>;
-  adapter: Partial<PluginAdapter>;
+  uiAdapter: Partial<PluginUIAdapter>;
 };

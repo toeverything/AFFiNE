@@ -1,0 +1,1 @@
+import '@affine/copilot';

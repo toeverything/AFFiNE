@@ -13,8 +13,10 @@ export default defineConfig({
     },
     sourcemap: true,
     lib: {
-      entry: resolve(__dirname, 'src/type.ts'),
-      fileName: 'type',
+      entry: {
+        type: resolve(__dirname, 'src/type.ts'),
+        manager: resolve(__dirname, 'src/manager.ts'),
+      },
       name: 'ToEverythingPluginInfra',
     },
   },

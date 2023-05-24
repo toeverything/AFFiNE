@@ -1,8 +1,9 @@
 import type { AffinePlugin, Definition } from './type';
-import type { PluginAdapterCreator } from './type';
 import type { AffinePluginContext } from './type';
+import type { Loader, PluginUIAdapter } from './type';
 
-export const plugins = new Map<string, AffinePlugin<string>>();
+// todo: for now every plugin is enabled by default
+export const affinePlugins = new Map<string, AffinePlugin<string>>();
 
 function createPluginContext(): AffinePluginContext {
   return {
@@ -14,12 +15,12 @@ function createPluginContext(): AffinePluginContext {
 
 export function definePlugin<ID extends string>(
   definition: Definition<ID>,
-  adapter?: PluginAdapterCreator
+  _uiAdapterLoader?: Loader<Partial<PluginUIAdapter>>
 ) {
-  const context = createPluginContext();
-
-  plugins.set(definition.id, {
+  const _context = createPluginContext();
+  affinePlugins.set(definition.id, {
     definition,
-    adapter: adapter ? adapter(context) : {},
+    // todo: finish this
+    uiAdapter: null!,
   });
 }

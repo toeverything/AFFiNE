@@ -4,12 +4,21 @@
   "scripts": {
     "build": "vite build"
   },
+  "exports": {
+    "./manager": "./src/manager.ts",
+    "./type": "./src/type.ts"
+  },
   "publishConfig": {
     "exports": {
+      "./manager": {
+        "types": "./dist/manager.d.ts",
+        "import": "./dist/manager.js",
+        "require": "./dist/manager.js"
+      },
       "./type": {
         "types": "./dist/type.d.ts",
         "import": "./dist/type.js",
-        "require": "./dist/type.umd.js"
+        "require": "./dist/type.js"
       }
     }
   },

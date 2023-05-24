@@ -1,5 +1,7 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+// bootstrap code before everything
+import '@affine/env/bootstrap';
 
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { config, setupGlobal } from '@affine/env';

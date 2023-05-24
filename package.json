@@ -6,6 +6,7 @@
   "license": "MPL-2.0",
   "workspaces": [
     "apps/*",
+    "plugins/*",
     "packages/*",
     "tests/fixtures",
     "tests/kit"
