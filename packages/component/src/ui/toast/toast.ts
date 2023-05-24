@@ -113,9 +113,14 @@ export const toast = (
     fill: 'forwards' as const,
   } satisfies KeyframeAnimationOptions;
 
+  element.animate(fadeIn, options);
+
   setTimeout(async () => {
-    if (typeof element.animate !== 'function') return;
-    const animation = element.animate(fadeIn, options);
+    const animation = element.animate(
+      // fade out
+      fadeIn.reverse(),
+      options
+    );
     await animation.finished;
     element.style.maxHeight = '0';
     element.style.margin = '0';
