@@ -147,7 +147,7 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
       };
     }
     // the same db file cannot be loaded twice
-    if (await dbFileAlreadyLoaded(filePath)) {
+    if ((await fs.exists(filePath)) && (await dbFileAlreadyLoaded(filePath))) {
       return {
         error: 'DB_FILE_ALREADY_LOADED',
       };
@@ -338,7 +338,6 @@ export async function moveDBFile(
 
 async function dbFileAlreadyLoaded(path: string) {
   const meta = await listWorkspaces(appContext);
-  const realpath = await fs.realpath(path);
   const paths = meta.map(m => m[1].secondaryDBPath);
-  return paths.includes(realpath);
+  return paths.includes(path);
 }

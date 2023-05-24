@@ -5,6 +5,7 @@ import fs from 'fs-extra';
 import { type AppContext } from '../context';
 import { logger } from '../logger';
 import type { WorkspaceMeta } from '../type';
+import { workspaceSubjects } from './subjects';
 
 export async function listWorkspaces(
   context: AppContext
@@ -82,7 +83,9 @@ export async function getWorkspaceMeta(
       const dbPath = getWorkspaceDBPath(context, workspaceId);
 
       // todo: remove this after migration (in stable version)
-      const realDBPath = await fs.realpath(dbPath);
+      const realDBPath = (await fs.exists(dbPath))
+        ? await fs.realpath(dbPath)
+        : dbPath;
       const isLink = realDBPath !== dbPath;
       if (isLink) {
         await fs.copy(realDBPath, dbPath);
@@ -115,9 +118,14 @@ export async function storeWorkspaceMeta(
     await fs.ensureDir(basePath);
     const metaPath = path.join(basePath, 'meta.json');
     const currentMeta = await getWorkspaceMeta(context, workspaceId);
-    await fs.writeJSON(metaPath, {
+    const newMeta = {
       ...currentMeta,
       ...meta,
+    };
+    await fs.writeJSON(metaPath, newMeta);
+    workspaceSubjects.meta.next({
+      workspaceId,
+      meta: newMeta,
     });
   } catch (err) {
     logger.error('storeWorkspaceMeta failed', err);

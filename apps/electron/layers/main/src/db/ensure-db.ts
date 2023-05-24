@@ -69,6 +69,7 @@ export const database$ = connectable(
 
 export const databaseConnectableSubscription = database$.connect();
 
+// fixme: this function has issue on registering multiple times...
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
   const meta$ = getWorkspaceMeta$(db.workspaceId);
   const secondaryDB$ = meta$.pipe(
