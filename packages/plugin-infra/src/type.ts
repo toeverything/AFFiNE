@@ -76,9 +76,9 @@ export type Definition<ID extends string> = {
    * ID of the plugin. It should be unique.
    * @example "com.affine.pro"
    */
-  ID: ID;
+  id: ID;
   /**
-   * The human readable name of the plugin.
+   * The human-readable name of the plugin.
    * @example { i18nKey: "name", fallback: "Never gonna give you up" }
    */
   name: I18NStringField;
@@ -106,6 +106,27 @@ export type Definition<ID extends string> = {
   stage: ReleaseStage;
 };
 
-export type Plugin<ID extends string> = {
+export type DOMRender = () => HTMLElement;
+export type Adapter<Options extends Record<string, unknown>> = {
+  render: DOMRender;
+  options: Options;
+};
+
+export type AffinePluginContext = {
+  toast: (text: string) => void;
+};
+
+export type PluginAdapter = {
+  sidebarItem: Adapter<Record<string, unknown>>;
+  headerItem: Adapter<Record<string, unknown>>;
+  content: Adapter<Record<string, unknown>>;
+};
+
+export type PluginAdapterCreator = (
+  context: AffinePluginContext
+) => PluginAdapter;
+
+export type AffinePlugin<ID extends string> = {
   definition: Definition<ID>;
+  adapter: Partial<PluginAdapter>;
 };

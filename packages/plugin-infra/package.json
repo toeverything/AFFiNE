@@ -1,0 +1,19 @@
+{
+  "name": "@toeverything/plugin-infra",
+  "private": true,
+  "scripts": {
+    "build": "vite build"
+  },
+  "publishConfig": {
+    "exports": {
+      "./type": {
+        "types": "./dist/type.d.ts",
+        "import": "./dist/type.js",
+        "require": "./dist/type.umd.js"
+      }
+    }
+  },
+  "dependencies": {
+    "@affine/env": "workspace:*"
+  }
+}

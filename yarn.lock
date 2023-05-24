@@ -8564,6 +8564,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@toeverything/plugin-infra@workspace:packages/plugin-infra":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/plugin-infra@workspace:packages/plugin-infra"
+  dependencies:
+    "@affine/env": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@toeverything/theme@npm:0.5.8, @toeverything/theme@npm:^0.5.8":
   version: 0.5.8
   resolution: "@toeverything/theme@npm:0.5.8"

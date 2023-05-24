@@ -76,6 +76,9 @@
       "path": "./packages/y-indexeddb"
     },
     {
+      "path": "./packages/plugin-infra"
+    },
+    {
       "path": "./tests/fixtures"
     },
     {
