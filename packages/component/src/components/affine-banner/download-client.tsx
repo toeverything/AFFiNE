@@ -1,4 +1,4 @@
-import { AffineLogoSimSBlue1_1Icon, CloseIcon } from '@blocksuite/icons';
+import { AffineLogoSimCBlue1_1Icon, CloseIcon } from '@blocksuite/icons';
 
 import {
   downloadCloseButtonStyle,
@@ -16,12 +16,12 @@ export const DownloadTips = ({ onClose }: { onClose: () => void }) => {
       data-testid="download-client-tip"
     >
       <div className={downloadTipStyle}>
-        <AffineLogoSimSBlue1_1Icon className={downloadTipIconStyle} />
+        <AffineLogoSimCBlue1_1Icon className={downloadTipIconStyle} />
         <div className={downloadMessageStyle}>
           Enjoying the demo? &nbsp;
           <a
             className={linkStyle}
-            href="https://github.com/toeverything/AFFiNE/releases"
+            href="https://affine.pro/download"
             target="_blank"
             rel="noreferrer"
           >
