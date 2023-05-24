@@ -14,3 +14,5 @@ export interface WorkspaceMeta {
   mainDBPath: string;
   secondaryDBPath?: string; // assume there will be only one
 }
+
+export type YOrigin = 'self' | 'external' | 'upstream' | 'renderer';

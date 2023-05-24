@@ -37,15 +37,15 @@ export class BaseSQLiteAdapter {
 
   constructor(public path: string) {}
 
-  async ensureTables() {
+  ensureTables() {
     assert(this.db, 'db is not connected');
     this.db.exec(schemas.join(';'));
   }
 
   // todo: what if SQLite DB wrapper later is not sync?
-  async connect() {
+  connect() {
     if (this.db) {
-      this.db.close();
+      return;
     }
     logger.log('[SQLiteAdapter] open db', this.path);
     const db = (this.db = sqlite(this.path));
@@ -53,11 +53,12 @@ export class BaseSQLiteAdapter {
     return db;
   }
 
-  async destroy() {
+  destroy() {
     this.db?.close();
+    this.db = null;
   }
 
-  async addBlob(key: string, data: Uint8Array) {
+  addBlob(key: string, data: Uint8Array) {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare(
@@ -70,7 +71,7 @@ export class BaseSQLiteAdapter {
     }
   }
 
-  async getBlob(key: string) {
+  getBlob(key: string) {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare('SELECT data FROM blobs WHERE key = ?');
@@ -85,7 +86,7 @@ export class BaseSQLiteAdapter {
     }
   }
 
-  async deleteBlob(key: string) {
+  deleteBlob(key: string) {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare('DELETE FROM blobs WHERE key = ?');
@@ -95,7 +96,7 @@ export class BaseSQLiteAdapter {
     }
   }
 
-  async getBlobKeys() {
+  getBlobKeys() {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare('SELECT key FROM blobs');
@@ -107,7 +108,7 @@ export class BaseSQLiteAdapter {
     }
   }
 
-  async getUpdates() {
+  getUpdates() {
     try {
       assert(this.db, 'db is not connected');
       const statement = this.db.prepare('SELECT * FROM updates');
@@ -120,7 +121,7 @@ export class BaseSQLiteAdapter {
   }
 
   // add a single update to SQLite
-  async addUpdateToSQLite(data: Uint8Array) {
+  addUpdateToSQLite(data: Uint8Array[]) {
     // batch write instead write per key stroke?
     try {
       assert(this.db, 'db is not connected');
@@ -128,7 +129,12 @@ export class BaseSQLiteAdapter {
       const statement = this.db.prepare(
         'INSERT INTO updates (data) VALUES (?)'
       );
-      statement.run(data);
+      this.db.transaction(() => {
+        for (const d of data) {
+          statement.run(d);
+        }
+      });
+
       logger.debug(
         'addUpdateToSQLite',
         'length:',

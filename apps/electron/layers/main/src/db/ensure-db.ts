@@ -1,4 +1,3 @@
-import type { NotifyEvent } from '@affine/native/event';
 import { app } from 'electron';
 import {
   connectable,
@@ -8,13 +7,11 @@ import {
   identity,
   interval,
   lastValueFrom,
-  merge,
   race,
   ReplaySubject,
   Subject,
 } from 'rxjs';
 import {
-  debounceTime,
   distinctUntilChanged,
   exhaustMap,
   filter,
@@ -72,22 +69,6 @@ export const database$ = connectable(
 
 export const databaseConnectableSubscription = database$.connect();
 
-// 1. File delete
-// 2. File move
-//   - on Linux, it's `type: { modify: { kind: 'rename', mode: 'from' } }`
-//   - on Windows, it's `type: { remove: { kind: 'any' } }`
-//   - on macOS, it's `type: { modify: { kind: 'rename', mode: 'any' } }`
-export function isRemoveOrMoveEvent(event: NotifyEvent) {
-  return (
-    typeof event.type === 'object' &&
-    ('remove' in event.type ||
-      ('modify' in event.type &&
-        event.type.modify.kind === 'rename' &&
-        (event.type.modify.mode === 'from' ||
-          event.type.modify.mode === 'any')))
-  );
-}
-
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
   const meta$ = getWorkspaceMeta$(db.workspaceId);
   const secondaryDB$ = meta$.pipe(
@@ -98,18 +79,20 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
     shareReplay(1)
   );
 
-  // push every 5 seconds (debounce db.update$)
-  const push$ = db.update$.pipe(debounceTime(5000)).pipe(
+  // pull every 30 seconds
+  const poll$ = interval(30000).pipe(
+    startWith(0),
     switchMap(() => secondaryDB$),
-    switchMap(db => from(db.push()))
+    tap({
+      next: secondaryDB => {
+        secondaryDB.pull();
+      },
+    }),
+    shareReplay(1)
   );
 
-  // pull every 10 seconds
-  const pull$ = interval(10000)
-    .pipe(switchMap(() => secondaryDB$))
-    .pipe(switchMap(db => from(db.pull())));
-
-  return merge(push$, pull$).pipe(
+  // note: both push and pull have side effects
+  return poll$.pipe(
     takeUntil(
       race(
         db.update$.pipe(last()),

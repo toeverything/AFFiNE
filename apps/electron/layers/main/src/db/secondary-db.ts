@@ -1,77 +1,172 @@
-import path from 'node:path';
-
-import fs from 'fs-extra';
+import { debounce } from 'lodash-es';
 import * as Y from 'yjs';
 
 import type { AppContext } from '../context';
 import { logger } from '../logger';
-import { getTime } from '../utils';
+import type { YOrigin } from '../type';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 
+const FLUSH_WAIT_TIME = 5000;
+const FLUSH_MAX_WAIT_TIME = 10000;
+
 export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
-  // timestamp of last push/pull
-  lastPull = 0;
-  lastPush = 0;
+  yDoc = new Y.Doc();
+  firstConnected = false;
+
+  updateQueue: Uint8Array[] = [];
 
   constructor(
     public override path: string,
     public upstream: WorkspaceSQLiteDB
   ) {
     super(path);
+    this.setupAndListen();
   }
 
-  /**
-   * push changes from upstream to external DB file
-   */
-  async push() {
-    // just copy the upstream db file to destination
-    const dir = path.dirname(this.path);
-    await fs.ensureDir(dir);
-    // copy to this.path
-    // todo: maybe we can open-write-close instead of copy or even rsync to save disk IO?
-    await fs.copyFile(this.upstream.path, this.path); // will overwrite if exists
-    this.lastPush = getTime();
+  close() {
+    this.db?.close();
+    this.db = null;
+  }
+
+  override destroy() {
+    this.db?.close();
+    this.yDoc.destroy();
+    this.close();
+  }
+
+  get workspaceId() {
+    return this.upstream.workspaceId;
+  }
+
+  // do not update db immediately, instead, push to a queue
+  // and flush the queue in a future time
+  addUpdateToUpdateQueue(update: Uint8Array) {
+    this.updateQueue.push(update);
+    this.debouncedFlush();
+  }
+
+  flushUpdateQueue() {
     logger.debug(
-      `[secondary] pushed ${this.upstream.workspaceId} changes to ${this.path}`
+      'flushUpdateQueue',
+      this.workspaceId,
+      'queue',
+      this.updateQueue.length
     );
+    const updates = [...this.updateQueue];
+    this.updateQueue = [];
+    this.connect();
+    this.addUpdateToSQLite(updates);
+    this.close();
   }
 
-  /**
-   * pull changes from external DB file and apply to upstream
-   */
-  async pull() {
+  // flush after 5s, but will not wait for more than 10s
+  debouncedFlush = debounce(this.flushUpdateQueue, FLUSH_WAIT_TIME, {
+    maxWait: FLUSH_MAX_WAIT_TIME,
+  });
+
+  runCounter = 0;
+
+  // wrap the fn with connect and close
+  // it only works for sync functions
+  run = (fn: () => void) => {
     try {
-      // check if db file exists
-      if (!(await fs.pathExists(this.path))) {
-        // no db file, do nothing
-        return;
+      if (this.runCounter === 0) {
+        this.connect();
       }
-      this.connect();
-      const updates = (await this.getUpdates()).map(update => update.data);
+      this.runCounter++;
+      fn();
+    } catch (err) {
+      logger.error(err);
+    } finally {
+      this.runCounter--;
+      if (this.runCounter === 0) {
+        this.close();
+      }
+    }
+  };
 
-      Y.transact(this.upstream.yDoc, () => {
-        updates.forEach(update => {
-          this.upstream.applyUpdate(update);
-        });
-      });
+  setupAndListen() {
+    if (this.firstConnected) {
+      return;
+    }
+    this.firstConnected = true;
 
+    // listen to upstream update
+    this.upstream.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
+      if (origin === 'renderer') {
+        // update to upstream yDoc should be replicated to self yDoc
+        this.applyUpdate(update, 'upstream');
+      }
+    });
+
+    this.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
+      // for self update from upstream, we need to push it to external DB
+      if (origin === 'upstream') {
+        this.addUpdateToUpdateQueue(update);
+      }
+
+      if (origin === 'self') {
+        this.upstream.applyUpdate(update, 'external');
+      }
+    });
+
+    this.run(() => {
+      // apply all updates from upstream
+      const upstreamUpdate = this.upstream.getDocAsUpdates();
+      // to initialize the yDoc, we need to apply all updates from the db
+      this.applyUpdate(upstreamUpdate, 'upstream');
+
+      this.pull();
+    });
+  }
+
+  applyUpdate = (data: Uint8Array, origin: YOrigin = 'upstream') => {
+    Y.applyUpdate(this.yDoc, data, origin);
+  };
+
+  // TODO: have a better solution to handle blobs
+  syncBlobs() {
+    this.run(() => {
       // pull blobs
-      const blobsKeys = await this.getBlobKeys();
-      const upstreamBlobsKeys = await this.upstream.getBlobKeys();
+      const blobsKeys = this.getBlobKeys();
+      const upstreamBlobsKeys = this.upstream.getBlobKeys();
       // put every missing blob to upstream
       for (const key of blobsKeys) {
         if (!upstreamBlobsKeys.includes(key)) {
-          const blob = await this.getBlob(key);
+          const blob = this.getBlob(key);
           if (blob) {
             this.upstream.addBlob(key, blob);
+            logger.debug('syncBlobs', this.workspaceId, key);
           }
         }
       }
-    } finally {
-      this.destroy(); // do not keep connection
-    }
+    });
+  }
+
+  /**
+   * pull from external DB file and apply to embedded yDoc
+   * workflow:
+   * - connect to external db
+   * - get updates
+   * - apply updates to local yDoc
+   * - get blobs and put new blobs to upstream
+   * - disconnect
+   */
+  pull() {
+    this.run(() => {
+      // TODO: no need to get all updates, just get the latest ones (using a cursor, etc)?
+      const updates = this.getUpdates().map(update => update.data);
+      Y.transact(this.yDoc, () => {
+        updates.forEach(update => {
+          this.applyUpdate(update, 'self');
+        });
+      });
+      logger.debug('pull external updates', this.workspaceId, updates.length);
+
+      this.syncBlobs();
+    });
   }
 }
 

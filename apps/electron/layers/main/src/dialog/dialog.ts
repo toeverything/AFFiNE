@@ -1,22 +1,31 @@
 import path from 'node:path';
 
+import { app } from 'electron';
 import { dialog, shell } from 'electron';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
 import { appContext } from '../context';
-import { ensureSQLiteDB, isRemoveOrMoveEvent } from '../db/ensure-db';
+import { ensureSQLiteDB } from '../db/ensure-db';
 import { isValidDBFile } from '../db/helper';
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
-import { getWorkspaceDBPath, listWorkspaces } from '../workspace';
+import {
+  getWorkspaceDBPath,
+  getWorkspaceMeta,
+  listWorkspaces,
+  storeWorkspaceMeta,
+} from '../workspace';
 
 // NOTE:
 // we are using native dialogs because HTML dialogs do not give full file paths
 
 export async function revealDBFile(workspaceId: string) {
-  const workspaceDB = await ensureSQLiteDB(workspaceId);
-  shell.showItemInFolder(await fs.realpath(workspaceDB.path));
+  const meta = await getWorkspaceMeta(appContext, workspaceId);
+  if (!meta) {
+    return;
+  }
+  shell.showItemInFolder(meta.secondaryDBPath ?? meta.mainDBPath);
 }
 
 // provide a backdoor to set dialog path for testing in playwright
@@ -60,6 +69,14 @@ interface SaveDBFileResult {
   error?: ErrorMessage;
 }
 
+const extension = 'affine';
+
+function getDefaultDBFileName(name: string, id: string) {
+  const fileName = `${name}_${id}.${extension}`;
+  // make sure fileName is a valid file name
+  return fileName.replace(/[/\\?%*:|"<>]/g, '-');
+}
+
 /**
  * This function is called when the user clicks the "Save" button in the "Save Workspace" dialog.
  *
@@ -77,7 +94,13 @@ export async function saveDBFileAs(
         title: 'Save Workspace',
         showsTagField: false,
         buttonLabel: 'Save',
-        defaultPath: `${db.getWorkspaceName()}_${workspaceId}.db`,
+        filters: [
+          {
+            extensions: [extension],
+            name: '',
+          },
+        ],
+        defaultPath: getDefaultDBFileName(db.getWorkspaceName(), workspaceId),
         message: 'Save Workspace as a SQLite Database file',
       }));
     const filePath = ret.filePath;
@@ -114,7 +137,7 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
         title: 'Set database location',
         showsTagField: false,
         buttonLabel: 'Select',
-        defaultPath: `workspace-storage.db`,
+        defaultPath: `workspace-storage.${extension}`,
         message: "Select a location to store the workspace's database file",
       }));
     const filePath = ret.filePath;
@@ -170,10 +193,10 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
           {
             name: 'SQLite Database',
             // do we want to support other file format?
-            extensions: ['db'],
+            extensions: ['db', 'affine'],
           },
         ],
-        message: 'Load Workspace from a SQLite Database file',
+        message: 'Load Workspace from a AFFiNE file',
       }));
     const filePath = ret.filePaths?.[0];
     if (ret.canceled || !filePath) {
@@ -197,14 +220,22 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       return { error: 'DB_FILE_INVALID' }; // invalid db file
     }
 
-    // symlink the db file to a new workspace id
+    const externalFilePath = await fs.realpath(filePath);
+
+    // copy the db file to a new workspace id
     const workspaceId = nanoid(10);
-    const linkedFilePath = await getWorkspaceDBPath(appContext, workspaceId);
+    const internalFilePath = getWorkspaceDBPath(appContext, workspaceId);
 
     await fs.ensureDir(path.join(appContext.appDataPath, 'workspaces'));
 
-    await fs.symlink(filePath, linkedFilePath, 'file');
-    logger.info(`loadDBFile, symlink: ${filePath} -> ${linkedFilePath}`);
+    await fs.copy(externalFilePath, internalFilePath);
+    logger.info(`loadDBFile, copy: ${externalFilePath} -> ${internalFilePath}`);
+
+    await storeWorkspaceMeta(appContext, workspaceId, {
+      id: workspaceId,
+      mainDBPath: internalFilePath,
+      secondaryDBPath: externalFilePath,
+    });
 
     return { workspaceId };
   } catch (err) {
@@ -225,58 +256,53 @@ interface MoveDBFileResult {
  * This function is called when the user clicks the "Move" button in the "Move Workspace Storage" setting.
  *
  * It will
- * - move the source db file to a new location
- * - symlink the new location to the old db file
+ * - copy the source db file to a new location
+ * - remove the old db external file
+ * - update the external db file path in the workspace meta
  * - return the new file path
  */
 export async function moveDBFile(
   workspaceId: string,
-  dbFileLocation?: string
+  dbFileDir?: string
 ): Promise<MoveDBFileResult> {
   let db: WorkspaceSQLiteDB | null = null;
   try {
-    const { moveFile, FsWatcher } = await import('@affine/native');
     db = await ensureSQLiteDB(workspaceId);
-    // get the real file path of db
-    const realpath = await fs.realpath(db.path);
-    const isLink = realpath !== db.path;
-    const watcher = FsWatcher.watch(realpath, { recursive: false });
-    const waitForRemove = new Promise<void>(resolve => {
-      const subscription = watcher.subscribe(event => {
-        if (isRemoveOrMoveEvent(event)) {
-          subscription.unsubscribe();
-          // resolve after FSWatcher in `database$` is fired
-          setImmediate(() => {
-            resolve();
-          });
-        }
-      });
-    });
-    const newFilePath =
-      dbFileLocation ??
+
+    const meta = await getWorkspaceMeta(appContext, workspaceId);
+
+    const oldDir = meta.secondaryDBPath
+      ? path.dirname(meta.secondaryDBPath)
+      : null;
+    const defaultDir = oldDir ?? app.getPath('documents');
+
+    const newName = meta.secondaryDBPath
+      ? path.basename(meta.secondaryDBPath, extension)
+      : getDefaultDBFileName(db.getWorkspaceName(), workspaceId);
+
+    const newDirPath =
+      dbFileDir ??
       (
         getFakedResult() ??
-        (await dialog.showSaveDialog({
-          properties: ['showOverwriteConfirmation'],
+        (await dialog.showOpenDialog({
+          properties: ['openDirectory'],
           title: 'Move Workspace Storage',
-          showsTagField: false,
-          buttonLabel: 'Save',
-          defaultPath: realpath,
+          buttonLabel: 'Move',
+          defaultPath: defaultDir,
           message: 'Move Workspace storage file',
         }))
-      ).filePath;
+      ).filePaths?.[0];
 
     // skips if
     // - user canceled the dialog
-    // - user selected the same file
-    // - user selected the same file in the link file in app data dir
-    if (!newFilePath || newFilePath === realpath || db.path === newFilePath) {
+    // - user selected the same dir
+    if (!newDirPath || newDirPath === oldDir) {
       return {
         canceled: true,
       };
     }
 
-    db.db?.close();
+    const newFilePath = path.join(newDirPath, newName);
 
     if (await fs.pathExists(newFilePath)) {
       return {
@@ -284,24 +310,19 @@ export async function moveDBFile(
       };
     }
 
-    if (isLink) {
-      // remove the old link to unblock new link
-      await fs.unlink(db.path);
+    logger.info(`[moveDBFile] copy ${meta.mainDBPath} -> ${newFilePath}`);
+
+    await fs.copy(meta.mainDBPath, newFilePath);
+
+    // remove the old db file, but we don't care if it fails
+    if (meta.secondaryDBPath) {
+      fs.remove(meta.secondaryDBPath);
     }
 
-    logger.info(`[moveDBFile] move ${realpath} -> ${newFilePath}`);
-
-    await moveFile(realpath, newFilePath);
-
-    await fs.ensureSymlink(newFilePath, db.path, 'file');
-    logger.info(`[moveDBFile] symlink: ${realpath} -> ${newFilePath}`);
-    // wait for the file move event emits to the FileWatcher in database$ in ensure-db.ts
-    // so that the db will be destroyed and we can call the `ensureSQLiteDB` in the next step
-    // or the FileWatcher will continue listen on the `realpath` and emit file change events
-    // then the database will reload while receiving these events; and the moved database file will be recreated while reloading database
-    await waitForRemove;
-    logger.info(`removed`);
-    await ensureSQLiteDB(workspaceId);
+    // update meta
+    await storeWorkspaceMeta(appContext, workspaceId, {
+      secondaryDBPath: newFilePath,
+    });
 
     return {
       filePath: newFilePath,

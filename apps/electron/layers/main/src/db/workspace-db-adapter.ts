@@ -3,15 +3,14 @@ import * as Y from 'yjs';
 
 import type { AppContext } from '../context';
 import { logger } from '../logger';
+import type { YOrigin } from '../type';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import { dbSubjects } from './subject';
 
-type Origin = 'self' | 'external' | 'renderer';
-
 export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   yDoc = new Y.Doc();
-  firstConnect = false;
+  firstConnected = false;
   destroyed = false;
 
   update$ = new Subject<void>();
@@ -20,7 +19,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     super(path);
   }
 
-  override async destroy() {
+  override destroy() {
     this.db?.close();
     this.yDoc.destroy();
 
@@ -32,13 +31,13 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     return this.yDoc.getMap('space:meta').get('name') as string;
   };
 
-  override async connect() {
+  override connect() {
     const db = super.connect();
 
-    if (!this.firstConnect) {
-      this.yDoc.on('update', (update: Uint8Array, origin: Origin) => {
+    if (!this.firstConnected) {
+      this.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
         if (origin !== 'self') {
-          this.addUpdateToSQLite(update);
+          this.addUpdateToSQLite([update]);
         }
         if (origin === 'external') {
           logger.debug('external update', this.workspaceId);
@@ -50,21 +49,21 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
       });
     }
 
-    Y.transact(this.yDoc, async () => {
-      const updates = await this.getUpdates();
+    const updates = this.getUpdates();
+    // to initialize the yDoc, we need to apply all updates from the db
+    Y.transact(this.yDoc, () => {
       updates.forEach(update => {
-        // give SQLITE_ORIGIN to skip self update
-        Y.applyUpdate(this.yDoc, update.data, 'self');
+        this.applyUpdate(update.data, 'self');
       });
     });
 
-    if (this.firstConnect) {
+    if (this.firstConnected) {
       logger.info('db reconnected', this.workspaceId);
     } else {
       logger.info('db connected', this.workspaceId);
     }
 
-    this.firstConnect = true;
+    this.firstConnected = true;
     this.update$.next();
 
     return db;
@@ -76,28 +75,26 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   // non-blocking and use yDoc to validate the update
   // after that, the update is added to the db
-  applyUpdate = (data: Uint8Array, origin: Origin = 'renderer') => {
-    Y.applyUpdate(this.yDoc, data, origin);
-
+  applyUpdate = (data: Uint8Array, origin: YOrigin = 'renderer') => {
     // todo: trim the updates when the number of records is too large
     // 1. store the current ydoc state in the db
     // 2. then delete the old updates
     // yjs-idb will always trim the db for the first time after DB is loaded
-    logger.debug('applyUpdate', this.workspaceId);
+    Y.applyUpdate(this.yDoc, data, origin);
   };
 
-  override async addBlob(key: string, value: Uint8Array) {
+  override addBlob(key: string, value: Uint8Array) {
     const res = super.addBlob(key, value);
     this.update$.next();
     return res;
   }
 
-  override async deleteBlob(key: string) {
+  override deleteBlob(key: string) {
     super.deleteBlob(key);
     this.update$.next();
   }
 
-  override async addUpdateToSQLite(data: Uint8Array) {
+  override addUpdateToSQLite(data: Uint8Array[]) {
     super.addUpdateToSQLite(data);
     this.update$.next();
   }
