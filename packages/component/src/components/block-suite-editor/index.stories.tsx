@@ -20,7 +20,7 @@ function initPage(page: Page): void {
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text('Hello, world!'),
   });
-  page.addBlock('affine:surface', {}, null);
+  page.addBlock('affine:surface', {}, pageBlockId);
   const frameId = page.addBlock('affine:frame', {}, pageBlockId);
   page.addBlock(
     'affine:paragraph',
@@ -48,6 +48,7 @@ const Template: StoryFn<EditorProps> = (props: Partial<EditorProps>) => {
       style={{
         height: '100vh',
         width: '100vw',
+        overflow: 'auto',
       }}
     >
       <BlockSuiteEditor onInit={initPage} page={page} mode="page" {...props} />

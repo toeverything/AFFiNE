@@ -1,0 +1,232 @@
+name: Build Canary Desktop App on Staging Branch
+
+on:
+  push:
+    branches:
+      - v[0-9]+.[0-9]+.x-staging
+    paths-ignore:
+      - README.md
+      - .github/**
+      - '!.github/workflows/nightly-build.yml'
+
+permissions:
+  actions: write
+  contents: write
+  security-events: write
+
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for
+  # pull requests or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+env:
+  BUILD_TYPE: internal
+
+jobs:
+  set-build-version:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      version: 0.0.0-${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: toeverything/set-build-version@latest
+      - id: version
+        run: echo ::set-output name=version::${{ env.BUILD_VERSION }}
+
+  before-make:
+    runs-on: ubuntu-latest
+    environment: production
+    needs:
+      - set-build-version
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Replace Version
+        run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
+      - name: generate-assets
+        working-directory: apps/electron
+        run: yarn generate-assets
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
+          AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          API_SERVER_PROFILE: prod
+          ENABLE_TEST_PROPERTIES: false
+          ENABLE_IMAGE_PREVIEW_MODAL: false
+          RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
+
+      - name: Upload Artifact (web-static)
+        uses: actions/upload-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+
+  make-distribution:
+    environment: production
+    strategy:
+      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      matrix:
+        spec:
+          - {
+              os: macos-latest,
+              platform: darwin,
+              arch: x64,
+              target: x86_64-apple-darwin,
+            }
+          - {
+              os: macos-latest,
+              platform: darwin,
+              arch: arm64,
+              target: aarch64-apple-darwin,
+            }
+          - {
+              os: ubuntu-latest,
+              platform: linux,
+              arch: x64,
+              target: x86_64-unknown-linux-gnu,
+            }
+          - {
+              os: windows-latest,
+              platform: win32,
+              arch: x64,
+              target: x86_64-pc-windows-msvc,
+            }
+    runs-on: ${{ matrix.spec.os }}
+    needs:
+      - before-make
+      - set-build-version
+    env:
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      SKIP_GENERATE_ASSETS: 1
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.spec.target }}
+      - name: Replace Version
+        run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+      - name: Rebuild Electron dependences
+        shell: bash
+        run: |
+          rm -rf apps/electron/node_modules/better-sqlite3/build
+          yarn workspace @affine/electron rebuild:for-electron --arch=${{ matrix.spec.arch }}
+
+      - name: Build layers
+        run: yarn workspace @affine/electron build-layers
+
+      - name: Signing By Apple Developer ID
+        if: ${{ matrix.spec.platform == 'darwin' }}
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
+      - name: make
+        run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+
+      - name: Save artifacts (mac)
+        if: ${{ matrix.spec.platform == 'darwin' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+          mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+      - name: Save artifacts (windows)
+        if: ${{ matrix.spec.platform == 'win32' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
+
+      - name: Save artifacts (linux)
+        if: ${{ matrix.spec.platform == 'linux' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
+          path: builds
+
+  release:
+    needs:
+      - make-distribution
+      - set-build-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download Artifacts (macos-x64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-darwin-x64-builds
+          path: ./
+      - name: Download Artifacts (macos-arm64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-darwin-arm64-builds
+          path: ./
+      - name: Download Artifacts (windows-x64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-win32-x64-builds
+          path: ./
+      - name: Download Artifacts (linux-x64)
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-linux-x64-builds
+          path: ./
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Generate Release yml
+        run: |
+          cp ./apps/electron/scripts/generate-yml.js .
+          node generate-yml.js
+        env:
+          RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
+      - name: Create Release Draft
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          repository: 'toeverything/AFFiNE-Releases'
+          name: ${{ needs.set-build-version.outputs.version }}
+          tag_name: ${{ needs.set-build-version.outputs.version }}
+          prerelease: true
+          files: |
+            ./VERSION
+            ./*.zip
+            ./*.dmg
+            ./*.exe
+            ./*.nupkg
+            ./RELEASES
+            ./*.AppImage
+            ./*.apk
+            ./*.yml

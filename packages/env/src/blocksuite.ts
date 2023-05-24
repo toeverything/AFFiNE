@@ -1,8 +1,7 @@
 import { DebugLogger } from '@affine/debug';
-import markdown from '@affine/templates/Welcome-to-AFFiNE.md';
+import markdown from '@affine/templates/AFFiNE-beta-0.5.4.md';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
-import type { Page, Workspace } from '@blocksuite/store';
-import { nanoid } from '@blocksuite/store';
+import type { Page } from '@blocksuite/store';
 
 declare global {
   interface Window {
@@ -40,7 +39,7 @@ export function _initEmptyPage(page: Page, title?: string): void {
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(title ?? ''),
   });
-  page.addBlock('affine:surface', {}, null);
+  page.addBlock('affine:surface', {}, pageBlockId);
   const frameId = page.addBlock('affine:frame', {}, pageBlockId);
   page.addBlock('affine:paragraph', {}, frameId);
 }
@@ -50,32 +49,10 @@ export function _initPageWithDemoMarkdown(page: Page): void {
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(demoTitle),
   });
-  page.addBlock('affine:surface', {}, null);
+  page.addBlock('affine:surface', {}, pageBlockId);
   const frameId = page.addBlock('affine:frame', {}, pageBlockId);
   page.addBlock('affine:paragraph', {}, frameId);
   const contentParser = new ContentParser(page);
   contentParser.importMarkdown(demoText, frameId);
   page.workspace.setPageMeta(page.id, { title: demoTitle });
-}
-
-export function ensureRootPinboard(blockSuiteWorkspace: Workspace) {
-  const metas = blockSuiteWorkspace.meta.pageMetas;
-  const rootMeta = metas.find(m => m.isRootPinboard);
-
-  if (rootMeta) {
-    return rootMeta.id;
-  }
-
-  const rootPinboardPage = blockSuiteWorkspace.createPage(nanoid());
-
-  const title = `${blockSuiteWorkspace.meta.name}'s Pinboard`;
-
-  _initEmptyPage(rootPinboardPage, title);
-
-  blockSuiteWorkspace.meta.setPageMeta(rootPinboardPage.id, {
-    isRootPinboard: true,
-    title,
-  });
-
-  return rootPinboardPage.id;
 }

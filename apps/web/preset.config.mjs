@@ -18,6 +18,9 @@ export const blockSuiteFeatureFlags = {
  * @type {import('@affine/env').BuildFlags}
  */
 export const buildFlags = {
+  enableImagePreviewModal: process.env.ENABLE_IMAGE_PREVIEW_MODAL
+    ? process.env.ENABLE_IMAGE_PREVIEW_MODAL === 'true'
+    : true,
   enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
     ? process.env.ENABLE_TEST_PROPERTIES === 'true'
     : true,
@@ -30,4 +33,7 @@ export const buildFlags = {
   enableDebugPage: Boolean(
     process.env.ENABLE_DEBUG_PAGE ?? process.env.NODE_ENV === 'development'
   ),
+  changelogUrl:
+    process.env.CHANGELOG_URL ??
+    'https://affine.pro/blog/whats-new-affine-0518',
 };

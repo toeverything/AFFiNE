@@ -1,9 +1,12 @@
 import type { CSSProperties } from 'react';
 
 import { displayFlex, styled, textEllipsis } from '../../styles';
-import StyledPopperContainer from '../shared/Container';
+import StyledPopperContainer from '../shared/container';
 
-export const StyledMenuWrapper = styled(StyledPopperContainer)<{
+export const StyledMenuWrapper = styled(StyledPopperContainer, {
+  shouldForwardProp: propName =>
+    !['width', 'height'].includes(propName as string),
+})<{
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
 }>(({ width, height }) => {
@@ -21,6 +24,7 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)<{
 
 export const StyledStartIconWrapper = styled('div')(() => {
   return {
+    display: 'flex',
     marginRight: '12px',
     fontSize: '20px',
     color: 'var(--affine-icon-color)',
@@ -28,6 +32,7 @@ export const StyledStartIconWrapper = styled('div')(() => {
 });
 export const StyledEndIconWrapper = styled('div')(() => {
   return {
+    display: 'flex',
     marginLeft: '12px',
     fontSize: '20px',
     color: 'var(--affine-icon-color)',

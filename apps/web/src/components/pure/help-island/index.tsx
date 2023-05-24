@@ -1,5 +1,5 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { getEnvironment } from '@affine/env';
+import { config, getEnvironment } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
@@ -8,7 +8,7 @@ import { lazy, Suspense, useState } from 'react';
 import { openOnboardingModalAtom } from '../../../atoms';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import { ShortcutsModal } from '../shortcuts-modal';
-import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
+import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import {
   StyledAnimateWrapper,
   StyledIconWrapper,
@@ -74,10 +74,7 @@ export const HelpIsland = ({
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
-                  window.open(
-                    'https://github.com/toeverything/AFFiNE/releases',
-                    '_blank'
-                  );
+                  window.open(config.changelogUrl, '_blank');
                 }}
               >
                 <NewIcon />
@@ -111,7 +108,10 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('guide') && (
-            <Tooltip content={'Easy Guide'} placement="left-end">
+            <Tooltip
+              content={t['com.affine.helpIsland.gettingStarted']()}
+              placement="left-end"
+            >
               <StyledIconWrapper
                 data-testid="easy-guide"
                 onClick={() => {

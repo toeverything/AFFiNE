@@ -1,30 +1,24 @@
+import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { BlockSuiteFeatureFlags } from '@affine/env';
 import { config } from '@affine/env';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Unreachable } from '@affine/env/constant';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { EditorContainer } from '@blocksuite/editor';
+import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import {
-  useBlockSuitePageMeta,
-  usePageMetaHelper,
-} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
+import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
-import { Unreachable } from '../../../components/affine/affine-error-eoundary';
-import { PageLoading } from '../../../components/pure/loading';
-import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { usePinboardHandler } from '../../../hooks/use-pinboard-handler';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
-import { useRouterAndWorkspaceWithPageIdDefense } from '../../../hooks/use-router-and-workspace-with-page-id-defense';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspacePlugins } from '../../../plugins';
 import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 
 function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
@@ -41,67 +35,46 @@ const WorkspaceDetail: React.FC = () => {
   const { openPage } = useRouterHelper(router);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
-  const t = useAFFiNEI18N();
   assertExists(currentWorkspace);
+  assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-  const { deletePin } = usePinboardHandler({
-    blockSuiteWorkspace,
-    metas: useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace),
-  });
-
   useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
 
-  useReferenceLinkEffect({
-    pageLinkClicked: useCallback(
-      ({ pageId }: { pageId: string }) => {
-        assertExists(currentWorkspace);
-        return openPage(currentWorkspace.id, pageId);
-      },
-      [currentWorkspace, openPage]
-    ),
-    subpageUnlinked: useCallback(
-      ({ pageId }: { pageId: string }) => {
-        deletePin(pageId);
-      },
-      [deletePin]
-    ),
-    subpageLinked: useCallback(
-      ({ pageId }: { pageId: string }) => {
-        const meta = currentPageId && getPageMeta(currentPageId);
-        if (!meta || meta.subpageIds?.includes(pageId)) {
-          return;
-        }
-        setPageMeta(currentPageId, {
-          subpageIds: [...(meta.subpageIds ?? []), pageId],
-        });
-      },
-      [currentPageId, getPageMeta, setPageMeta]
-    ),
-  });
+  const onLoad = useCallback(
+    (page: Page, editor: EditorContainer) => {
+      const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
+        return openPage(blockSuiteWorkspace.id, pageId);
+      });
+      return () => {
+        dispose.dispose();
+      };
+    },
+    [blockSuiteWorkspace.id, openPage]
+  );
 
   useEffect(() => {
     if (currentWorkspace) {
       setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     }
   }, [currentWorkspace]);
-  if (!currentPageId) {
-    return <PageLoading text={t['Loading Page']()} />;
-  }
   if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
-    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
+    const PageDetail =
+      WorkspaceAdapters[currentWorkspace.flavour].UI.PageDetail;
     return (
       <PageDetail
         currentWorkspace={currentWorkspace}
         currentPageId={currentPageId}
+        onLoadEditor={onLoad}
       />
     );
   } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
-    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
+    const PageDetail =
+      WorkspaceAdapters[currentWorkspace.flavour].UI.PageDetail;
     return (
       <PageDetail
         currentWorkspace={currentWorkspace}
         currentPageId={currentPageId}
+        onLoadEditor={onLoad}
       />
     );
   }
@@ -112,16 +85,14 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  const t = useAFFiNEI18N();
-  useRouterAndWorkspaceWithPageIdDefense(router);
   const page = useBlockSuiteWorkspacePage(
     currentWorkspace.blockSuiteWorkspace,
     currentPageId
   );
   if (!router.isReady) {
-    return <PageLoading text={t['Router is Loading']()} />;
+    return <PageDetailSkeleton key="router-not-ready" />;
   } else if (!currentPageId || !page) {
-    return <PageLoading text={t['Page is Loading']()} />;
+    return <PageDetailSkeleton key="current-page-is-null" />;
   }
   return <WorkspaceDetail />;
 };

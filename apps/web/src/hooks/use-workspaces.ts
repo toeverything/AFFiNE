@@ -1,15 +1,16 @@
 import { DebugLogger } from '@affine/debug';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
+import { LocalPlugin } from '../adapters/local';
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { workspacesAtom } from '../atoms';
-import { WorkspacePlugins } from '../plugins';
-import { LocalPlugin } from '../plugins/local';
 import type { AllWorkspace } from '../shared';
 
 export function useWorkspaces(): AllWorkspace[] {
@@ -38,6 +39,21 @@ export function useAppHelper() {
         }
       },
       [workspaces]
+    ),
+    addLocalWorkspace: useCallback(
+      async (workspaceId: string): Promise<string> => {
+        saveWorkspaceToLocalStorage(workspaceId);
+        set(workspaces => [
+          ...workspaces,
+          {
+            id: workspaceId,
+            flavour: WorkspaceFlavour.LOCAL,
+          },
+        ]);
+        logger.debug('imported local workspace', workspaceId);
+        return workspaceId;
+      },
+      [set]
     ),
     createLocalWorkspace: useCallback(
       async (name: string): Promise<string> => {
@@ -70,7 +86,7 @@ export function useAppHelper() {
         }
 
         // delete workspace from plugin
-        await WorkspacePlugins[targetWorkspace.flavour].CRUD.delete(
+        await WorkspaceAdapters[targetWorkspace.flavour].CRUD.delete(
           // fixme: type casting
           targetWorkspace as any
         );
@@ -81,25 +97,3 @@ export function useAppHelper() {
     ),
   };
 }
-
-export const useElementResizeEffect = (
-  element: Element | null,
-  fn: () => void | (() => () => void),
-  // TODO: add throttle
-  _throttle = 0
-) => {
-  useEffect(() => {
-    if (!element) {
-      return;
-    }
-    let dispose: void | (() => void);
-    const resizeObserver = new ResizeObserver(() => {
-      dispose = fn();
-    });
-    resizeObserver.observe(element);
-    return () => {
-      dispose?.();
-      resizeObserver.disconnect();
-    };
-  }, [element, fn]);
-};

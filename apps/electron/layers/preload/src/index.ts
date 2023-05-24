@@ -14,4 +14,5 @@ import * as affineApis from './affine-apis';
  */
 
 contextBridge.exposeInMainWorld('apis', affineApis.apis);
+contextBridge.exposeInMainWorld('events', affineApis.events);
 contextBridge.exposeInMainWorld('appInfo', affineApis.appInfo);

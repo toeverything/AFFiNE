@@ -6,17 +6,19 @@ import {
   SignMethod,
   storageChangeSlot,
 } from '@affine/workspace/affine/login';
+import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { affineAuth } from '../../plugins/affine';
+import { affineAuth } from '../../shared/apis';
 import { useTransformWorkspace } from '../use-transform-workspace';
 
 export function useOnTransformWorkspace() {
   const transformWorkspace = useTransformWorkspace();
   const setUser = useSetAtom(currentAffineUserAtom);
+  const setWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -43,7 +45,20 @@ export function useOnTransformWorkspace() {
           },
         })
       );
+      setWorkspaceId(workspaceId);
     },
-    [setUser, transformWorkspace]
+    [setUser, setWorkspaceId, transformWorkspace]
   );
+}
+
+declare global {
+  // global Events
+  interface WindowEventMap {
+    'affine-workspace:transform': CustomEvent<{
+      from: WorkspaceFlavour;
+      to: WorkspaceFlavour;
+      oldId: string;
+      newId: string;
+    }>;
+  }
 }

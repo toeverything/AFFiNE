@@ -1,9 +1,13 @@
-import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
+import { BrowserWarning } from '@affine/component/affine-banner';
+import {
+  appSidebarFloatingAtom,
+  appSidebarOpenAtom,
+} from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { CloseIcon } from '@blocksuite/icons';
+import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
 import {
   forwardRef,
@@ -14,21 +18,17 @@ import {
   useState,
 } from 'react';
 
+import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
-import EditPage from './header-right-items/EditPage';
-import { HeaderShareMenu } from './header-right-items/ShareMenu';
-import SyncUser from './header-right-items/SyncUser';
-import TrashButtonGroup from './header-right-items/TrashButtonGroup';
-import UserAvatar from './header-right-items/UserAvatar';
-import {
-  StyledBrowserWarning,
-  StyledCloseButton,
-  StyledHeader,
-  StyledHeaderContainer,
-  StyledHeaderRightSide,
-} from './styles';
+import { DownloadClientTip } from './download-tips';
+import EditPage from './header-right-items/edit-page';
+import { EditorOptionMenu } from './header-right-items/editor-option-menu';
+import { HeaderShareMenu } from './header-right-items/share-menu';
+import SyncUser from './header-right-items/sync-user';
+import TrashButtonGroup from './header-right-items/trash-button-group';
+import UserAvatar from './header-right-items/user-avatar';
+import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
 
 const SidebarSwitch = lazy(() =>
@@ -36,23 +36,6 @@ const SidebarSwitch = lazy(() =>
     default: module.SidebarSwitch,
   }))
 );
-
-const BrowserWarning = ({
-  show,
-  onClose,
-}: {
-  show: boolean;
-  onClose: () => void;
-}) => {
-  return (
-    <StyledBrowserWarning show={show}>
-      <OSWarningMessage />
-      <StyledCloseButton onClick={onClose}>
-        <CloseIcon />
-      </StyledCloseButton>
-    </StyledBrowserWarning>
-  );
-};
 
 export type BaseHeaderProps<
   Workspace extends AffineOfficialWorkspace = AffineOfficialWorkspace
@@ -70,6 +53,9 @@ export const enum HeaderRightItemName {
   ShareMenu = 'shareMenu',
   EditPage = 'editPage',
   UserAvatar = 'userAvatar',
+
+  // some windows only items
+  WindowsAppControls = 'windowsAppControls',
 }
 
 type HeaderItem = {
@@ -84,6 +70,7 @@ type HeaderItem = {
     }
   ) => boolean;
 };
+
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.TrashButtonGroup]: {
     Component: TrashButtonGroup,
@@ -121,6 +108,44 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       return !isPublic && !isPreview;
     },
   },
+  [HeaderRightItemName.WindowsAppControls]: {
+    Component: () => {
+      return (
+        <div className={styles.windowAppControlsWrapper}>
+          <button
+            data-type="minimize"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleMinimizeApp();
+            }}
+          >
+            <MinusIcon />
+          </button>
+          <button
+            data-type="maximize"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleMaximizeApp();
+            }}
+          >
+            <RoundedRectangleIcon />
+          </button>
+          <button
+            data-type="close"
+            className={styles.windowAppControl}
+            onClick={() => {
+              window.apis?.ui.handleCloseApp();
+            }}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      );
+    },
+    availableWhen: () => {
+      return environment.isDesktop && environment.isWindows;
+    },
+  },
 };
 
 export type HeaderProps = BaseHeaderProps;
@@ -130,31 +155,47 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
+  const [showGuideDownloadClientTip, setShowGuideDownloadClientTip] =
+    useState(false);
+  const [shouldShowGuideDownloadClientTip] = useAtom(
+    guideDownloadClientTipAtom
+  );
   useEffect(() => {
     setShowWarning(shouldShowWarning());
-  }, []);
-  const [open] = useAtom(appSidebarOpenAtom);
+    setShowGuideDownloadClientTip(shouldShowGuideDownloadClientTip);
+  }, [shouldShowGuideDownloadClientTip]);
+  const open = useAtomValue(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
+
+  const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
   const mode = useCurrentMode();
   return (
-    <StyledHeaderContainer
+    <div
+      className={styles.headerContainer}
       ref={ref}
-      hasWarning={showWarning}
+      data-has-warning={showWarning}
       data-open={open}
+      data-sidebar-floating={appSidebarFloating}
       {...props}
     >
-      <BrowserWarning
-        show={showWarning}
-        onClose={() => {
-          setShowWarning(false);
-        }}
-      />
-      <StyledHeader
-        hasWarning={showWarning}
+      {showGuideDownloadClientTip ? (
+        <DownloadClientTip />
+      ) : (
+        <BrowserWarning
+          show={showWarning}
+          message={<OSWarningMessage />}
+          onClose={() => {
+            setShowWarning(false);
+          }}
+        />
+      )}
+
+      <div
+        className={styles.header}
+        data-has-warning={showWarning}
         data-testid="editor-header-items"
-        data-tauri-drag-region
-        isEdgeless={mode === 'edgeless'}
+        data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>
           <SidebarSwitch
@@ -165,7 +206,7 @@ export const Header = forwardRef<
         </Suspense>
 
         {props.children}
-        <StyledHeaderRightSide>
+        <div className={styles.headerRightSide}>
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
               ([name, { availableWhen, Component }]) => {
@@ -189,10 +230,9 @@ export const Header = forwardRef<
               }
             );
           }, [props])}
-          {/*<ShareMenu />*/}
-        </StyledHeaderRightSide>
-      </StyledHeader>
-    </StyledHeaderContainer>
+        </div>
+      </div>
+    </div>
   );
 });
 

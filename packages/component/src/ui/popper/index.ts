@@ -1,3 +1,3 @@
 export * from './interface';
-export * from './Popper';
-export * from './PurePopper';
+export * from './popper';
+export * from './pure-popper';

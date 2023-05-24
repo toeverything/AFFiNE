@@ -28,9 +28,9 @@ node_modules
 
 # IDE - VSCode
 .vscode/*
-!.vscode/settings.json
 !.vscode/tasks.json
-!.vscode/launch.json
+!.vscode/settings.template.json
+!.vscode/launch.template.json
 !.vscode/extensions.json
 
 # misc
@@ -57,7 +57,7 @@ Thumbs.db
 .next
 out/
 storybook-static
-i18n_generated.ts
+i18n-generated.ts
 
 /test-results/
 /playwright-report/
@@ -66,3 +66,7 @@ i18n_generated.ts
 # Cache
 .eslintcache
 next-env.d.ts
+
+# Rust
+target
+*.node

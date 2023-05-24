@@ -1,19 +1,27 @@
+import { config } from '@affine/env';
 import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
+import { Skeleton } from '@mui/material';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
+
+import {
+  blockSuiteEditorHeaderStyle,
+  blockSuiteEditorStyle,
+} from './index.css';
 
 export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
-  onLoad?: (page: Page, editor: EditorContainer) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
 };
 
@@ -27,6 +35,12 @@ declare global {
   // eslint-disable-next-line no-var
   var currentEditor: EditorContainer | undefined;
 }
+
+const ImagePreviewModal = lazy(() =>
+  import('../image-preview-modal').then(module => ({
+    default: module.ImagePreviewModal,
+  }))
+);
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const JotaiEditorContainer = useAtomValue(
@@ -53,7 +67,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       if (page.root === null) {
         props.onInit(page, editor);
       }
-      props.onLoad?.(page, editor);
+      return props.onLoad?.(page, editor);
     }
   }, [props.page, props.onInit, props.onLoad, editor, props, page]);
 
@@ -122,6 +136,19 @@ const BlockSuiteErrorFallback = (
   );
 };
 
+export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
+  return (
+    <div className={blockSuiteEditorStyle}>
+      <Skeleton
+        className={blockSuiteEditorHeaderStyle}
+        animation="wave"
+        height={50}
+      />
+      <Skeleton animation="wave" height={30} width="40%" />
+    </div>
+  );
+});
+
 export const BlockSuiteEditor = memo(function BlockSuiteEditor(
   props: EditorProps & ErrorBoundaryProps
 ): ReactElement {
@@ -134,9 +161,20 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
         [props.onReset]
       )}
     >
-      <Suspense fallback={null}>
+      <Suspense fallback={<BlockSuiteFallback />}>
         <BlockSuiteEditorImpl {...props} />
       </Suspense>
+      {config.enableImagePreviewModal && props.page && (
+        <Suspense fallback={null}>
+          {createPortal(
+            <ImagePreviewModal
+              workspace={props.page.workspace}
+              pageId={props.page.id}
+            />,
+            document.body
+          )}
+        </Suspense>
+      )}
     </ErrorBoundary>
   );
 });

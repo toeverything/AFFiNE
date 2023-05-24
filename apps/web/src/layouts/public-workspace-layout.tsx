@@ -1,3 +1,4 @@
+import { AppContainer, MainContainer } from '@affine/component/workspace';
 import type { AffinePublicWorkspace } from '@affine/workspace/type';
 import { useAtom } from 'jotai';
 import Head from 'next/head';
@@ -7,7 +8,6 @@ import { lazy, Suspense } from 'react';
 
 import { openQuickSearchModalAtom } from '../atoms';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { MainContainer, StyledPage } from './styles';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -46,11 +46,9 @@ const PublicWorkspaceLayoutInner: React.FC<React.PropsWithChildren> = props => {
       <Head>
         <title>{title}</title>
       </Head>
-      <StyledPage>
-        <MainContainer className="main-container">
-          {props.children}
-        </MainContainer>
-      </StyledPage>
+      <AppContainer>
+        <MainContainer>{props.children}</MainContainer>
+      </AppContainer>
     </>
   );
 };

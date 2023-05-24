@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { atomWithSyncStorage } from '@affine/jotai';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   rootCurrentEditorAtom,
@@ -10,8 +9,10 @@ import {
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
-import { WorkspacePlugins } from '../plugins';
+import { WorkspaceAdapters } from '../adapters/workspace';
+import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 
 const logger = new DebugLogger('web:atoms');
 
@@ -24,7 +25,7 @@ export const currentWorkspaceIdAtom = rootCurrentWorkspaceIdAtom;
 // todo(himself65): move this to the workspace package
 rootWorkspacesMetadataAtom.onMount = setAtom => {
   function createFirst(): RootWorkspaceMetadata[] {
-    const Plugins = Object.values(WorkspacePlugins).sort(
+    const Plugins = Object.values(WorkspaceAdapters).sort(
       (a, b) => a.loadPriority - b.loadPriority
     );
 
@@ -39,19 +40,26 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
     }).filter((ids): ids is RootWorkspaceMetadata => !!ids);
   }
 
-  setAtom(metadata => {
-    if (metadata.length === 0) {
-      const newMetadata = createFirst();
-      logger.info('create first workspace', newMetadata);
-      return newMetadata;
-    }
-    return metadata;
-  });
+  const abortController = new AbortController();
+
+  // next tick to make sure the hydration is correct
+  const id = setTimeout(() => {
+    setAtom(metadata => {
+      if (abortController.signal.aborted) return metadata;
+      if (metadata.length === 0) {
+        const newMetadata = createFirst();
+        logger.info('create first workspace', newMetadata);
+        return newMetadata;
+      }
+      return metadata;
+    });
+  }, 0);
 
   if (environment.isDesktop) {
-    window.apis.workspace.list().then(workspaceIDs => {
+    window.apis?.workspace.list().then(workspaceIDs => {
+      if (abortController.signal.aborted) return;
       const newMetadata = workspaceIDs.map(w => ({
-        id: w,
+        id: w[0],
         flavour: WorkspaceFlavour.LOCAL,
       }));
       setAtom(metadata => {
@@ -62,6 +70,11 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
       });
     });
   }
+
+  return () => {
+    clearTimeout(id);
+    abortController.abort();
+  };
 };
 
 /**
@@ -75,7 +88,7 @@ export const currentEditorAtom = rootCurrentEditorAtom;
 
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
-export const openCreateWorkspaceModalAtom = atom(false);
+export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
 export const openQuickSearchModalAtom = atom(false);
 export const openOnboardingModalAtom = atom(false);
 
@@ -83,16 +96,29 @@ export const openDisableCloudAlertModalAtom = atom(false);
 
 export { workspacesAtom } from './root';
 
-type View = { id: string; mode: 'page' | 'edgeless' };
+type View = {
+  id: string;
+  /**
+   * @deprecated Use `mode` from `useWorkspacePreferredMode` instead.
+   */
+  mode: 'page' | 'edgeless';
+};
 
 export type WorkspaceRecentViews = Record<string, View[]>;
 
-export const workspaceRecentViewsAtom =
-  atomWithSyncStorage<WorkspaceRecentViews>('recentViews', {});
+export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
+  'recentViews',
+  {}
+);
 
 export type PreferredModeRecord = Record<Page['id'], 'page' | 'edgeless'>;
-export const workspacePreferredModeAtom =
-  atomWithSyncStorage<PreferredModeRecord>('preferredMode', {});
+/**
+ * @deprecated Use `useWorkspacePreferredMode` instead.
+ */
+export const workspacePreferredModeAtom = atomWithStorage<PreferredModeRecord>(
+  'preferredMode',
+  {}
+);
 
 export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
   null,

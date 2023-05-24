@@ -34,6 +34,7 @@ const config = {
     'simple-import-sort',
     'import',
     'unused-imports',
+    'unicorn',
   ],
   rules: {
     'no-undef': 'off',
@@ -72,6 +73,13 @@ const config = {
             allowTypeImports: false,
           },
         ],
+      },
+    ],
+    'unicorn/filename-case': [
+      'error',
+      {
+        case: 'kebabCase',
+        ignore: ['^\\[[a-zA-Z0-9-_]+\\]\\.tsx$'],
       },
     ],
   },

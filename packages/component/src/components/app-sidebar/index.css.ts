@@ -5,27 +5,25 @@ import { createVar, style } from '@vanilla-extract/css';
 export const floatingMaxWidth = 768;
 export const navWidthVar = createVar('nav-width');
 
-export const navStyle = style({
+export const navWrapperStyle = style({
+  vars: {
+    [navWidthVar]: '256px',
+  },
   position: 'relative',
-  backgroundColor: 'var(--affine-background-secondary-color)',
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  transition: 'margin-left .3s, width .3s',
-  zIndex: parseInt(baseTheme.zIndexModal),
-  borderRight: '1px solid var(--affine-border-color)',
+  zIndex: 2,
+  paddingBottom: '8px',
+  backgroundColor: 'transparent',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
-      width: `calc(10vw + ${navWidthVar})`,
+      width: `calc(${navWidthVar})`,
+      backgroundColor: 'var(--affine-background-primary-color)',
       selectors: {
         '&[data-open="false"]': {
           marginLeft: `calc((10vw + ${navWidthVar}) * -1)`,
-        },
-        '&[data-is-macos-electron="true"]': {
-          backgroundColor: 'var(--affine-background-secondary-color)',
         },
       },
     },
@@ -34,34 +32,33 @@ export const navStyle = style({
     '&[data-open="false"]': {
       marginLeft: `calc(${navWidthVar} * -1)`,
     },
-    '&[data-is-macos-electron="true"]': {
-      backgroundColor: 'transparent',
+    '&[data-enable-animation="true"]': {
+      transition: 'margin-left .3s, width .3s',
     },
   },
-  vars: {
-    [navWidthVar]: '256px',
-  },
+});
+
+export const navStyle = style({
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  zIndex: parseInt(baseTheme.zIndexModal),
+  borderRight: '1px solid transparent',
 });
 
 export const navHeaderStyle = style({
   flex: '0 0 auto',
   height: '52px',
-  padding: '0px 16px 0px 10px',
+  padding: '0px 16px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  '@media': {
-    [`(max-width: ${floatingMaxWidth}px)`]: {
-      selectors: {
-        '&[data-open="true"]': {
-          WebkitAppRegion: 'no-drag',
-        },
-      },
-    } as ComplexStyleRule,
-  },
+  gap: '32px',
+  WebkitAppRegion: 'drag',
   selectors: {
     '&[data-is-macos-electron="true"]': {
-      WebkitAppRegion: 'drag',
       justifyContent: 'flex-end',
     },
   },
@@ -69,15 +66,13 @@ export const navHeaderStyle = style({
 
 export const navBodyStyle = style({
   flex: '1 1 auto',
-});
-
-export const navFooterStyle = style({
-  flex: '0 0 auto',
-  borderTop: '1px solid var(--affine-border-color)',
+  height: 'calc(100% - 52px)',
+  display: 'flex',
+  flexDirection: 'column',
 });
 
 export const sidebarButtonStyle = style({
-  width: '32px',
+  width: 'auto',
   height: '32px',
   color: 'var(--affine-icon-color)',
 });
@@ -91,7 +86,7 @@ export const sidebarFloatMaskStyle = style({
   left: 0,
   right: '100%',
   bottom: 0,
-  zIndex: parseInt(baseTheme.zIndexModal) - 1,
+  zIndex: 1,
   background: 'var(--affine-background-modal-color)',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {

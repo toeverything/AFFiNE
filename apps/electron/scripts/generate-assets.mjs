@@ -1,11 +1,10 @@
 #!/usr/bin/env zx
 import 'zx/globals';
 
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
-import * as esbuild from 'esbuild';
-
-import { config } from './common.mjs';
+const require = createRequire(import.meta.url);
 
 const repoRootDir = path.join(__dirname, '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
@@ -13,6 +12,7 @@ const publicDistDir = path.join(electronRootDir, 'resources');
 const affineWebDir = path.join(repoRootDir, 'apps', 'web');
 const affineWebOutDir = path.join(affineWebDir, 'out');
 const publicAffineOutDir = path.join(publicDistDir, `web-static`);
+const releaseVersionEnv = process.env.RELEASE_VERSION || '';
 
 console.log('build with following dir', {
   repoRootDir,
@@ -23,9 +23,16 @@ console.log('build with following dir', {
   publicAffineOutDir,
 });
 
+// step 0: check version match
+const electronPackageJson = require(`${electronRootDir}/package.json`);
+if (releaseVersionEnv && electronPackageJson.version !== releaseVersionEnv) {
+  throw new Error(
+    `Version mismatch, expected ${releaseVersionEnv} but got ${electronPackageJson.version}`
+  );
+}
 // copy web dist files to electron dist
 
-// step 0: clean up
+// step 1: clean up
 await cleanup();
 echo('Clean up done');
 
@@ -35,10 +42,6 @@ if (process.platform === 'win32') {
 }
 
 cd(repoRootDir);
-
-// step 1: build electron resources
-await buildLayers();
-echo('Build layers done');
 
 // step 2: build web (nextjs) dist
 if (!process.env.SKIP_WEB_BUILD) {
@@ -64,6 +67,17 @@ if (!process.env.SKIP_WEB_BUILD) {
   await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 }
 
+// step 3: update app-updater.yml content with build type in resources folder
+if (process.env.BUILD_TYPE === 'internal') {
+  const appUpdaterYml = path.join(publicDistDir, 'app-update.yml');
+  const appUpdaterYmlContent = await fs.readFile(appUpdaterYml, 'utf-8');
+  const newAppUpdaterYmlContent = appUpdaterYmlContent.replace(
+    'AFFiNE',
+    'AFFiNE-Releases'
+  );
+  await fs.writeFile(appUpdaterYml, newAppUpdaterYmlContent);
+}
+
 /// --------
 /// --------
 /// --------
@@ -74,17 +88,4 @@ async function cleanup() {
   await fs.emptyDir(path.join(electronRootDir, 'layers', 'main', 'dist'));
   await fs.emptyDir(path.join(electronRootDir, 'layers', 'preload', 'dist'));
   await fs.remove(path.join(electronRootDir, 'out'));
-}
-
-async function buildLayers() {
-  const common = config();
-  await esbuild.build(common.preload);
-
-  await esbuild.build({
-    ...common.main,
-    define: {
-      ...common.main.define,
-      'process.env.NODE_ENV': `"production"`,
-    },
-  });
 }

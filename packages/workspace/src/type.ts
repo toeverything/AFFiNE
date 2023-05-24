@@ -1,6 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path='../../../apps/electron/layers/preload/preload.d.ts' />
 import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
+import type { EditorContainer } from '@blocksuite/editor';
+import type { Page } from '@blocksuite/store';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { createStore } from 'jotai';
 import type { FC, PropsWithChildren } from 'react';
@@ -80,12 +82,15 @@ export interface AffineWebSocketProvider extends BackgroundProvider {
 
 export type Provider = BackgroundProvider | NecessaryProvider;
 
-export interface AffineWorkspace extends RemoteWorkspace {
+export interface AffineLegacyCloudWorkspace extends RemoteWorkspace {
   flavour: WorkspaceFlavour.AFFINE;
   // empty
   blockSuiteWorkspace: BlockSuiteWorkspace;
   providers: Provider[];
 }
+
+// todo: update type with nest.js
+export type AffineCloudWorkspace = LocalWorkspace;
 
 export interface LocalWorkspace {
   flavour: WorkspaceFlavour.LOCAL;
@@ -101,6 +106,12 @@ export interface AffinePublicWorkspace {
   providers: Provider[];
 }
 
+export const enum ReleaseType {
+  // if workspace is not released yet, we will not show it in the workspace list
+  UNRELEASED = 'unreleased',
+  STABLE = 'stable',
+}
+
 export const enum LoadPriority {
   HIGH = 1,
   MEDIUM = 2,
@@ -108,7 +119,18 @@ export const enum LoadPriority {
 }
 
 export const enum WorkspaceFlavour {
+  /**
+   * AFFiNE Workspace is the workspace
+   * that hosted on the Legacy AFFiNE Cloud Server.
+   *
+   * @deprecated
+   *  We no longer maintain this kind of workspace, please use AFFiNE-Cloud instead.
+   */
   AFFINE = 'affine',
+  /**
+   * New AFFiNE Cloud Workspace using Nest.js Server.
+   */
+  AFFINE_CLOUD = 'affine-cloud',
   LOCAL = 'local',
   PUBLIC = 'affine-public',
 }
@@ -125,9 +147,11 @@ export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 
 // built-in workspaces
 export interface WorkspaceRegistry {
-  [WorkspaceFlavour.AFFINE]: AffineWorkspace;
+  [WorkspaceFlavour.AFFINE]: AffineLegacyCloudWorkspace;
   [WorkspaceFlavour.LOCAL]: LocalWorkspace;
   [WorkspaceFlavour.PUBLIC]: AffinePublicWorkspace;
+  // todo: update workspace type to new
+  [WorkspaceFlavour.AFFINE_CLOUD]: AffineCloudWorkspace;
 }
 
 export interface WorkspaceCRUD<Flavour extends keyof WorkspaceRegistry> {
@@ -161,6 +185,7 @@ type SettingProps<Flavour extends keyof WorkspaceRegistry> =
 type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
     currentPageId: string;
+    onLoadEditor: (page: Page, editor: EditorContainer) => () => void;
   };
 
 type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {

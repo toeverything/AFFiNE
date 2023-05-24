@@ -6,8 +6,12 @@ import {
   Wrapper,
 } from '@affine/component';
 import { config } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { Box } from '@mui/material';
 import type React from 'react';
@@ -16,7 +20,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
 import type { AffineOfficialWorkspace } from '../../../../../shared';
 import { toast } from '../../../../../utils';
-import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
 import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from '../../index';
@@ -26,7 +29,7 @@ export type PublishPanelProps = WorkspaceSettingDetailProps & {
 };
 
 export type PublishPanelAffineProps = WorkspaceSettingDetailProps & {
-  workspace: AffineWorkspace;
+  workspace: AffineLegacyCloudWorkspace;
 };
 
 const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({

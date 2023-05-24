@@ -1,8 +1,12 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
 import { config } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PermissionType } from '@affine/workspace/affine/api';
-import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type {
+  AffineLegacyCloudWorkspace,
+  LocalWorkspace,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
@@ -14,7 +18,6 @@ import { useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../hooks/affine/use-members';
 import { toast } from '../../../../../utils';
-import { Unreachable } from '../../../affine-error-eoundary';
 import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';
 import type { PanelProps } from '../../index';
@@ -37,7 +40,7 @@ import {
 
 const AffineRemoteCollaborationPanel: React.FC<
   Omit<PanelProps, 'workspace'> & {
-    workspace: AffineWorkspace;
+    workspace: AffineLegacyCloudWorkspace;
   }
 > = ({ workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
@@ -214,7 +217,7 @@ const LocalCollaborationPanel: React.FC<
 export const CollaborationPanel: React.FC<PanelProps> = props => {
   switch (props.workspace.flavour) {
     case WorkspaceFlavour.AFFINE: {
-      const workspace = props.workspace as AffineWorkspace;
+      const workspace = props.workspace as AffineLegacyCloudWorkspace;
       return (
         <AffineRemoteCollaborationPanel {...props} workspace={workspace} />
       );

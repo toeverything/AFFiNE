@@ -16,5 +16,5 @@ test('Open shortcuts modal', async ({ page }) => {
   await shortcutsIcon.click();
   await page.waitForTimeout(1000);
   const shortcutsModal = page.locator('[data-testid=shortcuts-modal]');
-  await expect(shortcutsModal).toContainText('Keyboard Shortcuts');
+  await expect(shortcutsModal).toContainText('Keyboard shortcuts');
 });

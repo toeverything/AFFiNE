@@ -1,7 +1,7 @@
-import { atomWithSyncStorage } from '@affine/jotai';
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
+import Router from 'next/router';
 
 import type { WorkspaceFlavour } from './type';
 
@@ -13,13 +13,12 @@ export type RootWorkspaceMetadata = {
 // root primitive atom that stores the necessary data for the whole app
 // be careful when you use this atom,
 // it should be used only in the root component
-
 /**
  * root workspaces atom
  * this atom stores the metadata of all workspaces,
  * which is `id` and `flavor`, that is enough to load the real workspace data
  */
-export const rootWorkspacesMetadataAtom = atomWithSyncStorage<
+export const rootWorkspacesMetadataAtom = atomWithStorage<
   RootWorkspaceMetadata[]
 >(
   // don't change this key,
@@ -29,16 +28,45 @@ export const rootWorkspacesMetadataAtom = atomWithSyncStorage<
 );
 
 // two more atoms to store the current workspace and page
-export const rootCurrentWorkspaceIdAtom = atomWithStorage<string | null>(
-  'root-current-workspace-id',
-  null,
-  createJSONStorage(() => sessionStorage)
-);
-export const rootCurrentPageIdAtom = atomWithStorage<string | null>(
-  'root-current-page-id',
-  null,
-  createJSONStorage(() => sessionStorage)
-);
+export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
+
+rootCurrentWorkspaceIdAtom.onMount = set => {
+  if (typeof window !== 'undefined') {
+    const callback = (url: string) => {
+      const value = url.split('/')[2];
+      if (value) {
+        set(value);
+      } else {
+        set(null);
+      }
+    };
+    callback(window.location.pathname);
+    Router.events.on('routeChangeStart', callback);
+    return () => {
+      Router.events.off('routeChangeStart', callback);
+    };
+  }
+};
+
+export const rootCurrentPageIdAtom = atom<string | null>(null);
+
+rootCurrentPageIdAtom.onMount = set => {
+  if (typeof window !== 'undefined') {
+    const callback = (url: string) => {
+      const value = url.split('/')[3];
+      if (value) {
+        set(value);
+      } else {
+        set(null);
+      }
+    };
+    callback(window.location.pathname);
+    Router.events.on('routeChangeStart', callback);
+    return () => {
+      Router.events.off('routeChangeStart', callback);
+    };
+  }
+};
 
 // current editor atom, each app should have only one editor in the same time
 export const rootCurrentEditorAtom = atom<Readonly<EditorContainer> | null>(
