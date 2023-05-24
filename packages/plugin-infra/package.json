@@ -6,7 +6,8 @@
   },
   "exports": {
     "./manager": "./src/manager.ts",
-    "./type": "./src/type.ts"
+    "./type": "./src/type.ts",
+    "./react/*": "./src/react/*.ts"
   },
   "publishConfig": {
     "exports": {

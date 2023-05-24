@@ -3,14 +3,12 @@ import '@affine/component/theme/theme.css';
 // bootstrap code before everything
 import '@affine/env/bootstrap';
 
-import { ProviderComposer } from '@affine/component/provider-composer';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
-import { rootStore } from '@affine/workspace/atom';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
-import { Provider } from 'jotai';
+import { AffinePluginContext } from '@toeverything/plugin-infra/react/context';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -19,7 +17,6 @@ import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { MessageCenter } from '../components/pure/message-center';
-import { ThemeProvider } from '../providers/theme-provider';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
 
@@ -69,17 +66,7 @@ const App = function App({
         <MessageCenter />
         <AffineErrorBoundary router={useRouter()}>
           <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
-            <ProviderComposer
-              contexts={useMemo(
-                () =>
-                  [
-                    <Provider key="JotaiProvider" store={rootStore} />,
-                    <DebugProvider key="DebugProvider" />,
-                    <ThemeProvider key="ThemeProvider" />,
-                  ].filter(Boolean),
-                []
-              )}
-            >
+            <AffinePluginContext>
               <Head>
                 <title>AFFiNE</title>
                 <meta
@@ -87,8 +74,10 @@ const App = function App({
                   content="initial-scale=1, width=device-width"
                 />
               </Head>
-              {getLayout(<Component {...pageProps} />)}
-            </ProviderComposer>
+              <DebugProvider>
+                {getLayout(<Component {...pageProps} />)}
+              </DebugProvider>
+            </AffinePluginContext>
           </Suspense>
         </AffineErrorBoundary>
       </I18nextProvider>
