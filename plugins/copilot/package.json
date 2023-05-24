@@ -1,6 +1,8 @@
 {
   "name": "@affine/copilot",
   "private": true,
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
   },

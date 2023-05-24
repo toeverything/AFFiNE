@@ -1,1 +1,1 @@
-import '@affine/copilot';
+import('@affine/copilot');
