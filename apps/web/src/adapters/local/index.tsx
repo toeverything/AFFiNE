@@ -35,10 +35,10 @@ const BlockSuitePageList = lazy(() =>
     })
   )
 );
-const PageDetailEditor = lazy(() =>
-  import('../../components/page-detail-editor').then(
-    ({ PageDetailEditor }) => ({
-      default: PageDetailEditor,
+const PageDetailContent = lazy(() =>
+  import('../../components/page-detail-content').then(
+    ({ PageDetailContent }) => ({
+      default: PageDetailContent,
     })
   )
 );
@@ -91,7 +91,7 @@ export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       }
       return (
         <>
-          <PageDetailEditor
+          <PageDetailContent
             pageId={currentPageId}
             onInit={initPage}
             onLoad={onLoadEditor}

@@ -36,7 +36,7 @@ import { createAffineProviders } from '../../blocksuite';
 import { createAffineDownloadProvider } from '../../blocksuite/providers/affine';
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
-import { PageDetailEditor } from '../../components/page-detail-editor';
+import { PageDetailContent } from '../../components/page-detail-content';
 import { PageLoading } from '../../components/pure/loading';
 import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh-auth-token';
 import { BlockSuiteWorkspace } from '../../shared';
@@ -321,7 +321,7 @@ export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
       }
       return (
         <>
-          <PageDetailEditor
+          <PageDetailContent
             pageId={currentPageId}
             workspace={currentWorkspace}
             onInit={initPage}

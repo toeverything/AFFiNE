@@ -7,13 +7,17 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@toeverything/plugin-infra": "workspace:*",
-    "jotai": "^2.1.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "@toeverything/plugin-infra": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^18.2.6",
-    "@types/react-dom": "^18.2.4"
+    "@types/react-dom": "^18.2.4",
+    "jotai": "^2.1.0",
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-dom": "*"
   }
 }

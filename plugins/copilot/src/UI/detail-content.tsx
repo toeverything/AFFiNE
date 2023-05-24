@@ -7,5 +7,13 @@ export function DetailContent() {
   if (!expand) {
     return null;
   }
-  return <div>Hello, world!</div>;
+  return (
+    <div
+      style={{
+        width: '300px',
+      }}
+    >
+      Hello, world!
+    </div>
+  );
 }

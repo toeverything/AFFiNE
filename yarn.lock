@@ -125,8 +125,11 @@ __metadata:
     "@types/react": ^18.2.6
     "@types/react-dom": ^18.2.4
     jotai: ^2.1.0
-    react: ^18.2.0
-    react-dom: ^18.2.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
+  peerDependencies:
+    react: "*"
+    react-dom: "*"
   languageName: unknown
   linkType: soft
 
@@ -22527,18 +22530,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^18.2.0":
-  version: 18.2.0
-  resolution: "react-dom@npm:18.2.0"
-  dependencies:
-    loose-envify: ^1.1.0
-    scheduler: ^0.23.0
-  peerDependencies:
-    react: ^18.2.0
-  checksum: 7d323310bea3a91be2965f9468d552f201b1c27891e45ddc2d6b8f717680c95a75ae0bc1e3f5cf41472446a2589a75aed4483aee8169287909fcd59ad149e8cc
-  languageName: node
-  linkType: hard
-
 "react-element-to-jsx-string@npm:^15.0.0":
   version: 15.0.0
   resolution: "react-element-to-jsx-string@npm:15.0.0"
@@ -22781,15 +22772,6 @@ __metadata:
   dependencies:
     loose-envify: ^1.1.0
   checksum: 790f0db8016db27a618b35bf4b2718a3d10d54daba0d7cefb91e76929332443bb600a16c4986558733f12bb094e7644c20f7e75205175caac2abd284a5c6d9b9
-  languageName: node
-  linkType: hard
-
-"react@npm:^18.2.0":
-  version: 18.2.0
-  resolution: "react@npm:18.2.0"
-  dependencies:
-    loose-envify: ^1.1.0
-  checksum: 88e38092da8839b830cda6feef2e8505dec8ace60579e46aa5490fc3dc9bba0bd50336507dc166f43e3afc1c42939c09fe33b25fae889d6f402721dcd78fca1b
   languageName: node
   linkType: hard
 
@@ -23613,15 +23595,6 @@ __metadata:
   dependencies:
     loose-envify: ^1.1.0
   checksum: 01e55c532356efff71a74862ea2c6b5a9ea8b03fc231bd10dc196c7a344f738db1ddbc5d17a7f2a4e6cc4074f3c64e7974fb2b5d83bc1f084f7fb2ae0c62feb2
-  languageName: node
-  linkType: hard
-
-"scheduler@npm:^0.23.0":
-  version: 0.23.0
-  resolution: "scheduler@npm:0.23.0"
-  dependencies:
-    loose-envify: ^1.1.0
-  checksum: d79192eeaa12abef860c195ea45d37cbf2bbf5f66e3c4dcd16f54a7da53b17788a70d109ee3d3dde1a0fd50e6a8fc171f4300356c5aee4fc0171de526bf35f8a
   languageName: node
   linkType: hard
 

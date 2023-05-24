@@ -16,7 +16,7 @@ import {
   publicWorkspaceIdAtom,
   publicWorkspacePageIdAtom,
 } from '../../../atoms/public-workspace';
-import { PageDetailEditor } from '../../../components/page-detail-editor';
+import { PageDetailContent } from '../../../components/page-detail-content';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
@@ -70,7 +70,7 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
   return (
     <>
       <PublicQuickSearch workspace={publicWorkspace} />
-      <PageDetailEditor
+      <PageDetailContent
         isPublic={true}
         pageId={pageId}
         workspace={publicWorkspace}
