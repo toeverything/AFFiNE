@@ -92,7 +92,9 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         pageId: pageMeta.id,
         title: pageMeta.title,
         createDate: new Date(pageMeta.createDate),
-        updatedDate: new Date(pageMeta.updatedDate ?? pageMeta.createDate),
+        trashDate: pageMeta.trashDate
+          ? new Date(pageMeta.trashDate)
+          : undefined,
         onClickPage: () => onOpenPage(pageMeta.id),
         onClickRestore: () => {
           restoreFromTrash(pageMeta.id);

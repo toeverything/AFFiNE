@@ -4,7 +4,7 @@ export type ListData = {
   title: string;
   favorite: boolean;
   createDate: Date;
-  updatedDate?: Date;
+  updatedDate: Date;
   isPublicPage: boolean;
   onClickPage: () => void;
   onOpenPageInNewTab: () => void;
@@ -18,6 +18,7 @@ export type TrashListData = {
   icon: JSX.Element;
   title: string;
   createDate: Date;
+  // TODO remove optional after assert that trashDate is always set
   trashDate?: Date;
   onClickPage: () => void;
   onRestorePage: () => void;
