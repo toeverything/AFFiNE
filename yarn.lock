@@ -149,7 +149,7 @@ __metadata:
     better-sqlite3: ^8.3.0
     chokidar: ^3.5.3
     cross-env: 7.0.3
-    electron: 24.3.1
+    electron: 24.4.0
     electron-log: ^5.0.0-beta.24
     electron-squirrel-startup: 1.0.0
     electron-updater: ^5.3.0
@@ -13773,16 +13773,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron@npm:24.3.1":
-  version: 24.3.1
-  resolution: "electron@npm:24.3.1"
+"electron@npm:24.4.0":
+  version: 24.4.0
+  resolution: "electron@npm:24.4.0"
   dependencies:
     "@electron/get": ^2.0.0
     "@types/node": ^18.11.18
     extract-zip: ^2.0.1
   bin:
     electron: cli.js
-  checksum: 502f822c9f9de381dcb0668436813f3552159b86dfd0563d8cda923bc7d26949f25231a5a008ea4564a0ec4bd70da6d01f95e343ba422a6b3614e93bb219ffd0
+  checksum: 352a1f80c30b3c44a6224df2690984b6fa8cb6bccfce54f530f58fe3b26540d8c98064e57644ecd9cfca3e0c7bd316d09ddfbce24f77b0f56397b1f20029aeb6
   languageName: node
   linkType: hard
 
