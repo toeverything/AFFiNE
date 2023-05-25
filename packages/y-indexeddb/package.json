@@ -28,8 +28,8 @@
     "idb": "^7.1.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230519102837-01acd96b-nightly",
-    "@blocksuite/store": "0.0.0-20230519102837-01acd96b-nightly",
+    "@blocksuite/blocks": "0.0.0-20230525011821-20259c76-nightly",
+    "@blocksuite/store": "0.0.0-20230525011821-20259c76-nightly",
     "vite": "^4.3.8",
     "vite-plugin-dts": "^2.3.0",
     "y-indexeddb": "^9.0.11"
