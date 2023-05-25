@@ -311,7 +311,7 @@ export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
         </Suspense>
       );
     },
-    PageDetail: ({ currentWorkspace, currentPageId }) => {
+    PageDetail: ({ currentWorkspace, currentPageId, onLoadEditor }) => {
       const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
       if (!page) {
         throw new PageNotFoundError(
@@ -325,6 +325,7 @@ export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
             pageId={currentPageId}
             workspace={currentWorkspace}
             onInit={initPage}
+            onLoad={onLoadEditor}
           />
         </>
       );
