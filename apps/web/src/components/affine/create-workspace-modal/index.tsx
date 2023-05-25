@@ -130,7 +130,6 @@ const useDefaultDBLocation = () => {
   return defaultDBLocation;
 };
 
-// TODO: this should let the user select a folder, not a file
 const SetDBLocationContent = ({
   onConfirmLocation,
 }: SetDBLocationContentProps) => {

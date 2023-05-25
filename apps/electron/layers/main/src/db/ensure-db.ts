@@ -7,6 +7,7 @@ import {
   identity,
   interval,
   lastValueFrom,
+  Observable,
   race,
   ReplaySubject,
   Subject,
@@ -76,7 +77,15 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
     map(meta => meta?.secondaryDBPath),
     distinctUntilChanged(),
     filter((p): p is string => !!p),
-    map(path => new SecondaryWorkspaceSQLiteDB(path, db)),
+    switchMap(path => {
+      return new Observable<SecondaryWorkspaceSQLiteDB>(observer => {
+        const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
+        observer.next(secondaryDB);
+        return () => {
+          secondaryDB.destroy();
+        };
+      });
+    }),
     shareReplay(1)
   );
 

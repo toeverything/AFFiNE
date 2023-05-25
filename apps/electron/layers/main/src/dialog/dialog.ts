@@ -132,27 +132,20 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
   try {
     const ret =
       getFakedResult() ??
-      (await dialog.showSaveDialog({
-        properties: ['showOverwriteConfirmation'],
-        title: 'Set database location',
-        showsTagField: false,
+      (await dialog.showOpenDialog({
+        properties: ['openDirectory'],
+        title: 'Move Workspace Storage',
         buttonLabel: 'Select',
-        defaultPath: `workspace-storage.${extension}`,
+        defaultPath: app.getPath('documents'),
         message: "Select a location to store the workspace's database file",
       }));
-    const filePath = ret.filePath;
-    if (ret.canceled || !filePath) {
+    const dir = ret.filePaths?.[0];
+    if (ret.canceled || !dir) {
       return {
         canceled: true,
       };
     }
-    // the same db file cannot be loaded twice
-    if ((await fs.exists(filePath)) && (await dbFileAlreadyLoaded(filePath))) {
-      return {
-        error: 'DB_FILE_ALREADY_LOADED',
-      };
-    }
-    return { filePath };
+    return { filePath: dir };
   } catch (err) {
     logger.error('selectDBFileLocation', err);
     return {
@@ -276,9 +269,7 @@ export async function moveDBFile(
       : null;
     const defaultDir = oldDir ?? app.getPath('documents');
 
-    const newName = meta.secondaryDBPath
-      ? path.basename(meta.secondaryDBPath, extension)
-      : getDefaultDBFileName(db.getWorkspaceName(), workspaceId);
+    const newName = getDefaultDBFileName(db.getWorkspaceName(), workspaceId);
 
     const newDirPath =
       dbFileDir ??

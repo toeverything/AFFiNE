@@ -17,6 +17,8 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   updateQueue: Uint8Array[] = [];
 
+  unsubscribers = new Set<() => void>();
+
   constructor(
     public override path: string,
     public upstream: WorkspaceSQLiteDB
@@ -31,6 +33,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   override destroy() {
+    this.unsubscribers.forEach(unsub => unsub());
     this.db?.close();
     this.yDoc.destroy();
     this.close();
@@ -93,15 +96,14 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     }
     this.firstConnected = true;
 
-    // listen to upstream update
-    this.upstream.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
+    const onUpstreamUpdate = (update: Uint8Array, origin: YOrigin) => {
       if (origin === 'renderer') {
         // update to upstream yDoc should be replicated to self yDoc
         this.applyUpdate(update, 'upstream');
       }
-    });
+    };
 
-    this.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
+    const onSelfUpdate = (update: Uint8Array, origin: YOrigin) => {
       // for self update from upstream, we need to push it to external DB
       if (origin === 'upstream') {
         this.addUpdateToUpdateQueue(update);
@@ -110,6 +112,15 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       if (origin === 'self') {
         this.upstream.applyUpdate(update, 'external');
       }
+    };
+
+    // listen to upstream update
+    this.upstream.yDoc.on('update', onUpstreamUpdate);
+    this.yDoc.on('update', onSelfUpdate);
+
+    this.unsubscribers.add(() => {
+      this.upstream.yDoc.off('update', onUpstreamUpdate);
+      this.yDoc.off('update', onSelfUpdate);
     });
 
     this.run(() => {
@@ -163,7 +174,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
           this.applyUpdate(update, 'self');
         });
       });
-      logger.debug('pull external updates', this.workspaceId, updates.length);
+      logger.debug('pull external updates', this.path, updates.length);
 
       this.syncBlobs();
     });
