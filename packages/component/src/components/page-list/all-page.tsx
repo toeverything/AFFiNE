@@ -103,6 +103,8 @@ const AllPagesHead = ({
   );
 };
 
+const DEFAULT_SORT_KEY = 'updatedDate';
+
 export const PageList = ({
   isPublicWorkspace = false,
   list,
@@ -111,7 +113,7 @@ export const PageList = ({
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
-    key: 'updatedDate',
+    key: DEFAULT_SORT_KEY,
     order: 'desc',
   });
 
@@ -128,6 +130,14 @@ export const PageList = ({
     );
   }
 
+  const groupKey =
+    sorter.key === 'createDate' || sorter.key === 'updatedDate'
+      ? sorter.key
+      : // default sort
+      !sorter.key
+      ? DEFAULT_SORT_KEY
+      : undefined;
+
   return (
     <StyledTableContainer>
       <Table>
@@ -139,6 +149,7 @@ export const PageList = ({
         />
         <AllPagesBody
           isPublicWorkspace={isPublicWorkspace}
+          groupKey={groupKey}
           data={sorter.data}
         />
       </Table>
