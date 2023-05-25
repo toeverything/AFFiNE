@@ -16,15 +16,9 @@ import { TitleCell } from './components/title-cell';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer, StyledTableRow } from './styles';
-import type { ListData } from './type';
+import type { ListData, PageListProps, TrashListData } from './type';
 import { useSorter } from './use-sorter';
-
-export type PageListProps = {
-  isPublicWorkspace?: boolean;
-  list: ListData[];
-  onCreateNewPage: () => void;
-  onCreateNewEdgeless: () => void;
-};
+import { formatDate } from './utils';
 
 const AllPagesHead = ({
   isPublicWorkspace,
@@ -166,19 +160,6 @@ const TrashListHead = () => {
   );
 };
 
-export type TrashListData = {
-  pageId: string;
-  icon: JSX.Element;
-  title: string;
-  createDate: string;
-  updatedDate?: string;
-  trashDate?: string;
-  // isPublic: boolean;
-  onClickPage: () => void;
-  onRestorePage: () => void;
-  onPermanentlyDeletePage: () => void;
-};
-
 export const PageListTrashView: React.FC<{
   list: TrashListData[];
 }> = ({ list }) => {
@@ -220,10 +201,10 @@ export const PageListTrashView: React.FC<{
             onClick={onClickPage}
           />
           <TableCell ellipsis={true} onClick={onClickPage}>
-            {createDate}
+            {formatDate(createDate)}
           </TableCell>
           <TableCell ellipsis={true} onClick={onClickPage}>
-            {trashDate}
+            {trashDate ? formatDate(trashDate) : '--'}
           </TableCell>
           <TableCell
             style={{ padding: 0 }}

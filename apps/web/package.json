@@ -36,7 +36,6 @@
     "@toeverything/hooks": "workspace:*",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
-    "dayjs": "^1.11.7",
     "graphql": "^16.6.0",
     "jotai": "^2.1.0",
     "jotai-devtools": "^0.5.3",
