@@ -17,14 +17,21 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
   const valA = a[ctx.key];
   const valB = b[ctx.key];
   const revert = ctx.order === 'desc';
+  const revertSymbol = revert ? -1 : 1;
   if (typeof valA === 'string' && typeof valB === 'string') {
-    return valA.localeCompare(valB) * (revert ? -1 : 1);
+    return valA.localeCompare(valB) * revertSymbol;
   }
   if (typeof valA === 'number' && typeof valB === 'number') {
-    return valA - valB * (revert ? -1 : 1);
+    return valA - valB * revertSymbol;
   }
   if (valA instanceof Date && valB instanceof Date) {
-    return valA.getTime() - valB.getTime() * (revert ? -1 : 1);
+    return (valA.getTime() - valB.getTime()) * revertSymbol;
+  }
+  if (!valA) {
+    return -1 * revertSymbol;
+  }
+  if (!valB) {
+    return 1 * revertSymbol;
   }
   console.warn(
     'Unsupported sorting type! Please use custom sorting function.',
