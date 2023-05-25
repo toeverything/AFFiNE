@@ -32,10 +32,8 @@ export type NotificationCardProps = {
   notification: Notification;
   notifications: Notification[];
   index: number;
-  expand: boolean;
   heights: Height[];
   setHeights: React.Dispatch<React.SetStateAction<Height[]>>;
-  setExpand: React.Dispatch<React.SetStateAction<boolean>>;
 };
 const typeColorMap = {
   info: {
@@ -58,15 +56,9 @@ const typeColorMap = {
 
 function NotificationCard(props: NotificationCardProps): ReactElement {
   const removeNotification = useSetAtom(removeNotificationAtom);
-  const {
-    notification,
-    notifications,
-    setHeights,
-    heights,
-    expand,
-    index,
-    setExpand,
-  } = props;
+  const { notification, notifications, setHeights, heights, index } = props;
+  const [expand, setExpand] = useAtom(expandNotificationCenterAtom);
+  // const setNotificationRemoveAnimation = useSetAtom(notificationRemoveAnimationAtom);
   const [mounted, setMounted] = useState<boolean>(false);
   const [removed, setRemoved] = useState<boolean>(false);
   const [swiping, setSwiping] = useState<boolean>(false);
@@ -74,6 +66,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const [offsetBeforeRemove, setOffsetBeforeRemove] = useState<number>(0);
   const [initialHeight, setInitialHeight] = useState<number>(0);
   const notificationRef = useRef<HTMLLIElement>(null);
+  const timerIdRef = useRef<NodeJS.Timeout>();
   const isFront = index === 0;
   const isVisible = index + 1 <= 3;
   const heightIndex = useMemo(
@@ -83,6 +76,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       ) || 0,
     [heights, notification.key]
   );
+  const duration = notification.timeout || 3000;
   const offset = useRef(0);
   const pointerStartYRef = useRef<number | null>(null);
   const notificationsHeightBefore = useMemo(() => {
@@ -146,11 +140,26 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     setHeights(h =>
       h.filter(height => height.notificationKey !== notification.key)
     );
-
     setTimeout(() => {
       removeNotification(notification.key);
     }, 200);
   }, [setHeights, notification.key, removeNotification, offset]);
+
+  useEffect(() => {
+    if (timerIdRef.current) {
+      clearTimeout(timerIdRef.current);
+    }
+    if (!expand) {
+      timerIdRef.current = setTimeout(() => {
+        onClickRemove();
+      }, duration);
+    }
+    return () => {
+      if (timerIdRef.current) {
+        clearTimeout(timerIdRef.current);
+      }
+    };
+  }, [duration, expand, onClickRemove]);
 
   const onClickUndo = useCallback(() => {
     if (notification.undo) {
@@ -375,8 +384,6 @@ export function NotificationCenter(): ReactElement {
           notifications={notifications}
           heights={heights}
           setHeights={setHeights}
-          expand={expand}
-          setExpand={setExpand}
         />
       ))}
       <Toast.Viewport
