@@ -24,7 +24,7 @@ export const Basic = () => {
               key: `${key}`,
               title: `${key} title`,
               message: `${key} message`,
-              timeout: 3000,
+              timeout: 100000,
               progressingBar: true,
               undo: async () => {
                 console.log('undo');

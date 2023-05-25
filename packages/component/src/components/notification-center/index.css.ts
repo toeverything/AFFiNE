@@ -1,36 +1,22 @@
 import { keyframes, style, styleVariants } from '@vanilla-extract/css';
 
-const slideToLeft = keyframes({
+const swipeOut = keyframes({
   '0%': {
-    transform: 'translateY(100%)',
-    opacity: 0,
-  },
-  '100%': {
-    transform: 'translateY(0)',
-    opacity: 1,
-  },
-});
-const slideToRight = keyframes({
-  '0%': {
-    transform: 'translateY(0)',
+    transform:
+      'translateY(calc(var(--lift) * var(--offset) + var(--swipe-amount)))',
     opacity: 1,
   },
   '100%': {
-    transform: 'translateY(100%)',
+    transform:
+      'translateY(calc(var(--lift) * var(--offset) + var(--swipe-amount) + var(--lift) * -100%))',
     opacity: 0,
   },
-});
-export const formSlideToLeftStyle = style({
-  animation: `${slideToLeft} 0.3s ease-in-out forwards`,
-});
-export const formSlideToRightStyle = style({
-  animation: `${slideToRight} 0.3s ease-in-out forwards`,
 });
 
 export const notificationCenterViewportStyle = style({
   position: 'fixed',
-  bottom: '18px',
-  right: '20px',
+  bottom: '200px',
+  right: '60px',
   width: '380px',
   margin: 0,
   zIndex: 2147483647,
@@ -38,18 +24,92 @@ export const notificationCenterViewportStyle = style({
 });
 
 export const notificationStyle = style({
-  position: 'relative',
+  position: 'absolute',
   borderRadius: '8px',
-  transition: 'transform 0.3s,opacity 0.3s, margin-bottom 0.3s',
-  marginBottom: '10px',
+  transition: 'transform 0.3s,opacity 0.3s, height 0.3s',
   transform: 'var(--y)',
+  zIndex: 'var(--z-index)',
+  opacity: 0,
+  touchAction: 'none',
+  willChange: 'transform, opacity, height',
   selectors: {
-    '&[data-]': {
-      bottom: '',
+    '&[data-visible=false]': {
+      opacity: '0 !important',
+      pointerEvents: 'none',
+    },
+    '&[data-swiping=true]::before': {
+      content: '""',
+      position: 'absolute',
+      left: '0',
+      right: '0',
+      top: '50%',
+      height: '100%',
+      transform: 'scaleY(3) translateY(-50%)',
+    },
+    '&[data-swiping=false][data-removed=true]::before': {
+      content: '""',
+      position: 'absolute',
+      inset: '0',
+      transform: 'scaleY(2)',
+    },
+    '&[data-mounted=true]': {
+      opacity: 1,
+      vars: {
+        '--y': 'translateY(0)',
+      },
+    },
+    '&[data-expanded=false][data-front=false]': {
+      opacity: 1,
+      height: 'var(--front-toast-height)',
+      vars: {
+        '--scale': 'var(--toasts-before)* 0.05 + 1',
+        '--y':
+          'translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)))',
+      },
+    },
+    '&[data-mounted=true][data-expanded=true]': {
+      height: 'var(--initial-height)',
+      vars: {
+        '--y': 'translateY(calc(var(--lift) * var(--offset)))',
+      },
+    },
+    '&[data-removed=true][data-front=true][data-swipe-out=false]': {
+      opacity: 0,
+      vars: {
+        '--y': 'translateY(calc(var(--lift) * -100%))',
+      },
+    },
+    '&[data-removed=true][data-front=false][data-swipe-out=false][data-expanded=true]':
+      {
+        opacity: 0,
+        vars: {
+          '--y':
+            'translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%))',
+        },
+      },
+    '&[data-removed=true][data-front=false][data-swipe-out=false][data-expanded=false] ':
+      {
+        transition: 'transform 500ms, opacity 200ms',
+        opacity: 0,
+        vars: {
+          '--y': 'translateY(40%)',
+        },
+      },
+    '&[data-removed=true][data-front=false]::before ': {
+      height: 'calc(var(--initial-height) + 20%)',
+    },
+    '&[data-swiping=true]': {
+      transform: 'var(--y) translateY(var(--swipe-amount, 0px))',
+      transition: 'none',
+    },
+    '&[data-swipe-out=true]': {
+      animation: `${swipeOut} 0.3s ease-in-out forwards`,
     },
   },
   vars: {
-    '--xxx': '1px',
+    '--y': 'translateY(100%)',
+    '--lift': '-1',
+    '--lift-amount': 'calc(var(--lift) * 14px)',
   },
   '::after': {
     content: '""',
@@ -57,9 +117,8 @@ export const notificationStyle = style({
     width: '100%',
     height: '100%',
     left: '0',
-    top: '0',
+    bottom: '100%',
     borderRadius: '8px',
-    pointerEvents: 'none',
   },
 });
 export const notificationIconStyle = style({
@@ -183,11 +242,15 @@ export const defaultCollapseStyle = styleVariants({
   secondary: {
     '::after': {
       background: 'rgba(0,0,0,0.02)',
+      top: '0px',
+      transition: 'background-color 0.3s',
     },
   },
   tertiary: {
     '::after': {
       background: 'rgba(0,0,0,0.04)',
+      top: '0px',
+      transition: 'background-color 0.3s',
     },
   },
 });
@@ -195,11 +258,15 @@ export const lightCollapseStyle = styleVariants({
   secondary: {
     '::after': {
       background: 'rgba(0,0,0,0.04)',
+      top: '0px',
+      transition: 'background-color 0.3s',
     },
   },
   tertiary: {
     '::after': {
       background: 'rgba(0,0,0,0.08)',
+      top: '0px',
+      transition: 'background-color 0.3s',
     },
   },
 });
@@ -207,11 +274,15 @@ export const darkCollapseStyle = styleVariants({
   secondary: {
     '::after': {
       background: 'rgba(0,0,0,0.08)',
+      top: '0px',
+      transition: 'background-color 0.3s',
     },
   },
   tertiary: {
     '::after': {
       background: 'rgba(0,0,0,0.16)',
+      top: '0px',
+      transition: 'background-color 0.3s',
     },
   },
 });

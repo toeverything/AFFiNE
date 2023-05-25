@@ -35,6 +35,7 @@ export type NotificationCardProps = {
   expand: boolean;
   heights: Height[];
   setHeights: React.Dispatch<React.SetStateAction<Height[]>>;
+  setExpand: React.Dispatch<React.SetStateAction<boolean>>;
 };
 const typeColorMap = {
   info: {
@@ -57,8 +58,15 @@ const typeColorMap = {
 
 function NotificationCard(props: NotificationCardProps): ReactElement {
   const removeNotification = useSetAtom(removeNotificationAtom);
-  const { notification, notifications, setHeights, heights, expand, index } =
-    props;
+  const {
+    notification,
+    notifications,
+    setHeights,
+    heights,
+    expand,
+    index,
+    setExpand,
+  } = props;
   const [mounted, setMounted] = useState<boolean>(false);
   const [removed, setRemoved] = useState<boolean>(false);
   const [swiping, setSwiping] = useState<boolean>(false);
@@ -166,18 +174,15 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         );
     }
   }, [notification.key, setHeights]);
-
-  console.log(1);
-
   return (
     <Toast.Root
       className={clsx(styles.notificationStyle, {
-        [styles.defaultCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
-          !expand && index !== 0 && index && !notification.theme,
         [styles.lightCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
-          !expand && index !== 0 && index && notification.theme === 'light',
+          !isFront && !expand && notification.theme === 'light',
         [styles.darkCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
-          !expand && index !== 0 && index && notification.theme === 'dark',
+          !isFront && !expand && notification.theme === 'dark',
+        [styles.defaultCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
+          !isFront && !expand && !notification.theme,
       })}
       duration={Infinity}
       aria-live="polite"
@@ -193,6 +198,15 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       data-swiping={swiping}
       data-swipe-out={swipeOut}
       data-expanded={expand}
+      onMouseEnter={() => {
+        setExpand(true);
+      }}
+      onMouseMove={() => {
+        setExpand(true);
+      }}
+      onMouseLeave={() => {
+        setExpand(false);
+      }}
       style={
         {
           '--index': index,
@@ -341,7 +355,6 @@ export function NotificationCenter(): ReactElement {
     setExpand(false);
   }
   const [heights, setHeights] = useState<Height[]>([]);
-  const [interacting, setInteracting] = useState(false);
   const listRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
@@ -363,6 +376,7 @@ export function NotificationCenter(): ReactElement {
           heights={heights}
           setHeights={setHeights}
           expand={expand}
+          setExpand={setExpand}
         />
       ))}
       <Toast.Viewport
@@ -371,21 +385,8 @@ export function NotificationCenter(): ReactElement {
         style={
           {
             '--front-toast-height': `${heights[0]?.height}px`,
-            '--offset': '32px',
           } as React.CSSProperties
         }
-        onMouseEnter={() => setExpand(true)}
-        onMouseMove={() => setExpand(true)}
-        onMouseLeave={() => {
-          // Avoid setting expanded to false when interacting with a toast, e.g. swiping
-          if (!interacting) {
-            setExpand(false);
-          }
-        }}
-        onPointerDown={() => {
-          setInteracting(true);
-        }}
-        onPointerUp={() => setInteracting(false)}
         className={styles.notificationCenterViewportStyle}
       />
     </Toast.Provider>
