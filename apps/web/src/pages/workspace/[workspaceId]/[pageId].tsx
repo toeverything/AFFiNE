@@ -42,10 +42,12 @@ const WorkspaceDetail: React.FC = () => {
 
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
+      console.log('register');
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });
       return () => {
+        console.log('unregister');
         dispose.dispose();
       };
     },
