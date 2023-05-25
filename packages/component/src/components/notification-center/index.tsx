@@ -2,8 +2,15 @@ import { CloseIcon, InformationFillIcon } from '@blocksuite/icons';
 import * as Toast from '@radix-ui/react-toast';
 import clsx from 'clsx';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { MouseEvent, ReactElement } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { IconButton } from '../../ui/button';
 import * as styles from './index.css';
@@ -17,10 +24,17 @@ import {
 
 // only expose necessary function atom to avoid misuse
 export { pushNotificationAtom, removeNotificationAtom };
-
+type Height = {
+  height: number;
+  notificationKey: number | string;
+};
 export type NotificationCardProps = {
   notification: Notification;
+  notifications: Notification[];
   index: number;
+  expand: boolean;
+  heights: Height[];
+  setHeights: React.Dispatch<React.SetStateAction<Height[]>>;
 };
 const typeColorMap = {
   info: {
@@ -40,40 +54,95 @@ const typeColorMap = {
     dark: styles.darkErrorStyle,
   },
 };
+
 function NotificationCard(props: NotificationCardProps): ReactElement {
-  const animateRef = useRef<SVGAnimateElement>(null);
-  const [expand, setExpand] = useAtom(expandNotificationCenterAtom);
   const removeNotification = useSetAtom(removeNotificationAtom);
-  const { notification, index } = props;
-  const [hidden, setHidden] = useState<boolean>(() => !expand && index >= 3);
-  const [showCloseAnimate, setShowCloseAnimate] = useState<boolean>(false);
-  const [showSlideInAnimate, setSlideInAnimate] = useState<boolean>(true);
-  const typeStyle =
-    typeColorMap[notification.type][notification.theme || 'light'];
+  const { notification, notifications, setHeights, heights, expand, index } =
+    props;
+  const [mounted, setMounted] = useState<boolean>(false);
+  const [removed, setRemoved] = useState<boolean>(false);
+  const [swiping, setSwiping] = useState<boolean>(false);
+  const [swipeOut, setSwipeOut] = useState<boolean>(false);
+  const [offsetBeforeRemove, setOffsetBeforeRemove] = useState<number>(0);
+  const [initialHeight, setInitialHeight] = useState<number>(0);
+  const notificationRef = useRef<HTMLLIElement>(null);
+  const isFront = index === 0;
+  const isVisible = index + 1 <= 3;
+  const heightIndex = useMemo(
+    () =>
+      heights.findIndex(
+        height => height.notificationKey === notification.key
+      ) || 0,
+    [heights, notification.key]
+  );
+  const offset = useRef(0);
+  const pointerStartYRef = useRef<number | null>(null);
+  const notificationsHeightBefore = useMemo(() => {
+    return heights.reduce((prev, curr, reducerIndex) => {
+      // Calculate offset up untill current  notification
+      if (reducerIndex >= heightIndex) {
+        return prev;
+      }
+
+      return prev + curr.height;
+    }, 0);
+  }, [heights, heightIndex]);
+
+  offset.current = useMemo(
+    () => heightIndex * 14 + notificationsHeightBefore,
+    [heightIndex, notificationsHeightBefore]
+  );
+
   useEffect(() => {
-    setTimeout(() => {
-      setSlideInAnimate(false);
-    }, 300);
-  }, []);
-  useEffect(() => {
-    if (animateRef.current) {
-      const animate = animateRef.current;
-      const callback = () => {
-        setHidden(true);
-      };
-      animate.addEventListener('endEvent', callback, { once: true });
-      return () => {
-        animate.removeEventListener('endEvent', callback);
-      };
-    }
+    // Trigger enter animation without using CSS animation
+    setMounted(true);
   }, []);
 
+  useLayoutEffect(() => {
+    if (!mounted) return;
+    if (!notificationRef.current) return;
+    const notificationNode = notificationRef.current;
+    const originalHeight = notificationNode.style.height;
+    notificationNode.style.height = 'auto';
+    const newHeight = notificationNode.getBoundingClientRect().height;
+    notificationNode.style.height = originalHeight;
+
+    setInitialHeight(newHeight);
+
+    setHeights(heights => {
+      const alreadyExists = heights.find(
+        height => height.notificationKey === notification.key
+      );
+      if (!alreadyExists) {
+        return [
+          { notificationKey: notification.key, height: newHeight },
+          ...heights,
+        ];
+      } else {
+        return heights.map(height =>
+          height.notificationKey === notification.key
+            ? { ...height, height: newHeight }
+            : height
+        );
+      }
+    });
+  }, [notification.title, notification.key, mounted, setHeights]);
+
+  const typeStyle =
+    typeColorMap[notification.type][notification.theme || 'light'];
+
   const onClickRemove = useCallback(() => {
-    setShowCloseAnimate(true);
+    // Save the offset for the exit swipe animation
+    setRemoved(true);
+    setOffsetBeforeRemove(offset.current);
+    setHeights(h =>
+      h.filter(height => height.notificationKey !== notification.key)
+    );
+
     setTimeout(() => {
       removeNotification(notification.key);
-    }, 300);
-  }, [notification.key, removeNotification]);
+    }, 200);
+  }, [setHeights, notification.key, removeNotification, offset]);
 
   const onClickUndo = useCallback(() => {
     if (notification.undo) {
@@ -81,21 +150,28 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     }
   }, [notification]);
 
-  const onClickExpand = useCallback(
-    (e: MouseEvent) => {
-      if (e.target instanceof SVGElement) {
-        return;
-      }
-      setExpand(expand => !expand);
-    },
-    [setExpand]
-  );
+  useEffect(() => {
+    const notificationNode = notificationRef.current;
+
+    if (notificationNode) {
+      const height = notificationNode.getBoundingClientRect().height;
+
+      // Add toast height tot heights array after the toast is mounted
+      setInitialHeight(height);
+      setHeights(h => [{ notificationKey: notification.key, height }, ...h]);
+
+      return () =>
+        setHeights(h =>
+          h.filter(height => height.notificationKey !== notification.key)
+        );
+    }
+  }, [notification.key, setHeights]);
+
+  console.log(1);
 
   return (
     <Toast.Root
       className={clsx(styles.notificationStyle, {
-        [styles.formSlideToLeftStyle]: showSlideInAnimate && index === 0,
-        [styles.formSlideToRightStyle]: showCloseAnimate,
         [styles.defaultCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
           !expand && index !== 0 && index && !notification.theme,
         [styles.lightCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
@@ -103,14 +179,70 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         [styles.darkCollapseStyle[index === 1 ? 'secondary' : 'tertiary']]:
           !expand && index !== 0 && index && notification.theme === 'dark',
       })}
-      style={{
-        transform: expand
-          ? 'translateY(0) scale(1)'
-          : `translateY(${index * 100}%) scale(${1 - index * 0.02})`,
-        opacity: hidden ? 0 : !expand && index > 2 ? 0 : 1,
+      duration={Infinity}
+      aria-live="polite"
+      aria-atomic="true"
+      role="status"
+      tabIndex={0}
+      ref={notificationRef}
+      data-mounted={mounted}
+      data-removed={removed}
+      data-visible={isVisible}
+      data-index={index}
+      data-front={isFront}
+      data-swiping={swiping}
+      data-swipe-out={swipeOut}
+      data-expanded={expand}
+      style={
+        {
+          '--index': index,
+          '--toasts-before': index,
+          '--z-index': notifications.length - index,
+          '--offset': `${removed ? offsetBeforeRemove : offset.current}px`,
+          '--initial-height': `${initialHeight}px`,
+        } as React.CSSProperties
+      }
+      onPointerDown={event => {
+        setOffsetBeforeRemove(offset.current);
+        (event.target as HTMLElement).setPointerCapture(event.pointerId);
+        if ((event.target as HTMLElement).tagName === 'BUTTON') return;
+        setSwiping(true);
+        pointerStartYRef.current = event.clientY;
       }}
-      open={true}
-      onClick={onClickExpand}
+      onPointerUp={() => {
+        if (swipeOut) return;
+        const swipeAmount = Number(
+          notificationRef.current?.style
+            .getPropertyValue('--swipe-amount')
+            .replace('px', '') || 0
+        );
+        if (Math.abs(swipeAmount) >= 20) {
+          setOffsetBeforeRemove(offset.current);
+          onClickRemove();
+          setSwipeOut(true);
+          return;
+        }
+
+        notificationRef.current?.style.setProperty('--swipe-amount', '0px');
+        pointerStartYRef.current = null;
+        setSwiping(false);
+      }}
+      onPointerMove={event => {
+        if (!pointerStartYRef.current) return;
+        const yPosition = event.clientY - pointerStartYRef.current;
+
+        const isAllowedToSwipe = yPosition > 0;
+
+        if (!isAllowedToSwipe) {
+          notificationRef.current?.style.setProperty('--swipe-amount', '0px');
+          return;
+        }
+
+        notificationRef.current?.style.setProperty(
+          '--swipe-amount',
+          `${yPosition}px`
+        );
+      }}
     >
       <div
         className={clsx(styles.notificationContentStyle, {
@@ -164,7 +296,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         >
           {notification.message}
         </Toast.Description>
-        {notification.timeout && (
+        {notification.progressingBar && (
           <div className={styles.progressBarStyle}>
             <svg width="100%" height="4">
               <rect
@@ -182,11 +314,14 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
                 ry="2"
               >
                 <animate
-                  ref={animateRef}
                   attributeName="width"
                   from="0%"
                   to="100%"
-                  dur={`${(notification.timeout - 100) / 1000}s`}
+                  dur={
+                    notification.timeout
+                      ? (notification.timeout - 100) / 1000
+                      : 10
+                  }
                   fill="freeze"
                 />
               </rect>
@@ -205,6 +340,18 @@ export function NotificationCenter(): ReactElement {
   if (notifications.length === 0 && expand) {
     setExpand(false);
   }
+  const [heights, setHeights] = useState<Height[]>([]);
+  const [interacting, setInteracting] = useState(false);
+  const listRef = useRef<HTMLOListElement>(null);
+
+  useEffect(() => {
+    // Ensure expanded is always false when no toasts are present / only one left
+    if (notifications.length <= 1) {
+      setExpand(false);
+    }
+  }, [notifications, setExpand]);
+
+  if (!notifications.length) return <></>;
   return (
     <Toast.Provider swipeDirection="right">
       {notifications.map((notification, index) => (
@@ -212,9 +359,35 @@ export function NotificationCenter(): ReactElement {
           notification={notification}
           index={index}
           key={notification.key}
+          notifications={notifications}
+          heights={heights}
+          setHeights={setHeights}
+          expand={expand}
         />
       ))}
-      <Toast.Viewport className={styles.notificationCenterViewportStyle} />
+      <Toast.Viewport
+        tabIndex={-1}
+        ref={listRef}
+        style={
+          {
+            '--front-toast-height': `${heights[0]?.height}px`,
+            '--offset': '32px',
+          } as React.CSSProperties
+        }
+        onMouseEnter={() => setExpand(true)}
+        onMouseMove={() => setExpand(true)}
+        onMouseLeave={() => {
+          // Avoid setting expanded to false when interacting with a toast, e.g. swiping
+          if (!interacting) {
+            setExpand(false);
+          }
+        }}
+        onPointerDown={() => {
+          setInteracting(true);
+        }}
+        onPointerUp={() => setInteracting(false)}
+        className={styles.notificationCenterViewportStyle}
+      />
     </Toast.Provider>
   );
 }

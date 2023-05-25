@@ -42,6 +42,15 @@ export const notificationStyle = style({
   borderRadius: '8px',
   transition: 'transform 0.3s,opacity 0.3s, margin-bottom 0.3s',
   marginBottom: '10px',
+  transform: 'var(--y)',
+  selectors: {
+    '&[data-]': {
+      bottom: '',
+    },
+  },
+  vars: {
+    '--xxx': '1px',
+  },
   '::after': {
     content: '""',
     position: 'absolute',

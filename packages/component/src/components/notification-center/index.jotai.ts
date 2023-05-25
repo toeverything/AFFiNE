@@ -7,6 +7,7 @@ export type Notification = {
   type: 'success' | 'error' | 'warning' | 'info';
   theme?: 'light' | 'dark';
   timeout?: number;
+  progressingBar?: boolean;
   // actions
   undo?: () => Promise<void>;
 };
@@ -50,9 +51,7 @@ export const pushNotificationAtom = atom<
     { ...newNotification, undo },
     ...notifications,
   ]);
-  if (newNotification.timeout) {
-    return setTimeout(() => {
-      removeNotification();
-    }, newNotification.timeout);
-  }
+  return setTimeout(() => {
+    removeNotification();
+  }, newNotification.timeout ?? 5000);
 });
