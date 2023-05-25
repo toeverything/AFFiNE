@@ -7,6 +7,7 @@ import { TitleCell } from './components/title-cell';
 import { OperationCell } from './operation-cell';
 import { StyledTableRow } from './styles';
 import type { ListData } from './type';
+import { formatDate } from './utils';
 
 export const AllPagesBody = ({
   isPublicWorkspace,
@@ -55,7 +56,7 @@ export const AllPagesBody = ({
                 hidden={isSmallDevices}
                 onClick={onClickPage}
               >
-                {createDate}
+                {formatDate(createDate)}
               </TableCell>
               <TableCell
                 data-testid="updated-date"
@@ -63,7 +64,7 @@ export const AllPagesBody = ({
                 hidden={isSmallDevices}
                 onClick={onClickPage}
               >
-                {updatedDate ?? createDate}
+                {formatDate(updatedDate ?? createDate)}
               </TableCell>
               {!isPublicWorkspace && (
                 <TableCell

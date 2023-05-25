@@ -338,7 +338,6 @@ __metadata:
     "@vanilla-extract/next-plugin": ^2.1.2
     cmdk: ^0.2.0
     css-spring: ^4.1.0
-    dayjs: ^1.11.7
     dotenv: ^16.0.3
     eslint: ^8.40.0
     eslint-config-next: ^13.4.2
@@ -12782,13 +12781,6 @@ __metadata:
   dependencies:
     time-zone: ^1.0.0
   checksum: f9cfcd1b15dfeabab15c0b9d18eb9e4e2d9d4371713564178d46a8f91ad577a290b5178b80050718d02d9c0cf646f8a875011e12d1ed05871e9f72c72c8a8fe6
-  languageName: node
-  linkType: hard
-
-"dayjs@npm:^1.11.7":
-  version: 1.11.7
-  resolution: "dayjs@npm:1.11.7"
-  checksum: 5003a7c1dd9ed51385beb658231c3548700b82d3548c0cfbe549d85f2d08e90e972510282b7506941452c58d32136d6362f009c77ca55381a09c704e9f177ebb
   languageName: node
   linkType: hard
 
