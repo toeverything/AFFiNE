@@ -46,4 +46,8 @@ With powerful databases you can create your content inside of tables but leverag
 
 ## More support?
 
+There are some useful resources in the Help and Feedback section.
+
+![](https://cdn.affine.pro/601da8e8231a9845f03215ffe63ae71f0bc58c1cdeb5af3d47b770ed.gif)
+
 If you are looking for more support, you can come and join the awesome [AFFiNE Community](https://community.affine.pro) . Whether you want to share new ideas or interact with other like minded individuals - we look forward to having you.
