@@ -9,7 +9,7 @@ type SorterConfig<T> = {
 const defaultSortingFn = <T extends Record<keyof any, unknown>>(
   ctx: {
     key: keyof T;
-    order: 'asc' | 'desc' | 'none';
+    order: 'asc' | 'desc';
   },
   a: T,
   b: T
@@ -21,10 +21,10 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
     return 0;
   }
   if (typeof valA === 'string') {
-    return valA.localeCompare(valB as string) * (revert ? 1 : -1);
+    return valA.localeCompare(valB as string) * (revert ? -1 : 1);
   }
   if (typeof valA === 'number') {
-    return valA - (valB as number) * (revert ? 1 : -1);
+    return valA - (valB as number) * (revert ? -1 : 1);
   }
   return 0;
 };
