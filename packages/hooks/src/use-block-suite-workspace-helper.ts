@@ -10,7 +10,7 @@ import { useMemo } from 'react';
 export function useBlockSuiteWorkspaceHelper(blockSuiteWorkspace: Workspace) {
   return useMemo(
     () => ({
-      createPage: (pageId: string): Page => {
+      createPage: (pageId?: string): Page => {
         assertExists(blockSuiteWorkspace);
         return blockSuiteWorkspace.createPage({ id: pageId });
       },

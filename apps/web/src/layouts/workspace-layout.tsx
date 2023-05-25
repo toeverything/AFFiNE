@@ -26,6 +26,7 @@ import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {
@@ -38,7 +39,6 @@ import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspaceAdapters } from '../plugins';
 import { ModalProvider } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 
@@ -243,12 +243,15 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
     return (
       <>
-        {/* fixme(himself65): don't re-render whole modals */}
-        <AllWorkspaceContext>
-          <CurrentWorkspaceContext>
-            <ModalProvider key={currentWorkspaceId} />
-          </CurrentWorkspaceContext>
-        </AllWorkspaceContext>
+        {/* load all workspaces is costly, do not block the whole UI */}
+        <Suspense fallback={null}>
+          <AllWorkspaceContext>
+            <CurrentWorkspaceContext>
+              {/* fixme(himself65): don't re-render whole modals */}
+              <ModalProvider key={currentWorkspaceId} />
+            </CurrentWorkspaceContext>
+          </AllWorkspaceContext>
+        </Suspense>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
             <Provider>
@@ -284,11 +287,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       void jumpToPage(currentWorkspace.id, pageId);
     }
   }
-
-  // fixme: pinboard has been removed,
-  //  the related code should be removed in the future.
-  // no matter the workspace is empty, ensure the root pinboard exists
-  // ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
   //#endregion
 
   useEffect(() => {

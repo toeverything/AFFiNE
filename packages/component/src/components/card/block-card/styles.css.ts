@@ -9,6 +9,7 @@ export const blockCard = style({
   borderRadius: '4px',
   userSelect: 'none',
   cursor: 'pointer',
+  textAlign: 'start',
   selectors: {
     '&:hover': {
       boxShadow: 'var(--affine-shadow-1)',

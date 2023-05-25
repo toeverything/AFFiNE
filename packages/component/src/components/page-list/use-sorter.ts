@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-type Sorter<T> = {
+type SorterConfig<T> = {
   data: T[];
   key: keyof T;
   order: 'asc' | 'desc' | 'none';
@@ -9,7 +9,7 @@ type Sorter<T> = {
 const defaultSortingFn = <T extends Record<keyof any, unknown>>(
   ctx: {
     key: keyof T;
-    order: 'asc' | 'desc' | 'none';
+    order: 'asc' | 'desc';
   },
   a: T,
   b: T
@@ -17,23 +17,35 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
   const valA = a[ctx.key];
   const valB = b[ctx.key];
   const revert = ctx.order === 'desc';
-  if (typeof valA !== typeof valB) {
-    return 0;
+  const revertSymbol = revert ? -1 : 1;
+  if (typeof valA === 'string' && typeof valB === 'string') {
+    return valA.localeCompare(valB) * revertSymbol;
   }
-  if (typeof valA === 'string') {
-    return valA.localeCompare(valB as string) * (revert ? 1 : -1);
+  if (typeof valA === 'number' && typeof valB === 'number') {
+    return valA - valB * revertSymbol;
   }
-  if (typeof valA === 'number') {
-    return valA - (valB as number) * (revert ? 1 : -1);
+  if (valA instanceof Date && valB instanceof Date) {
+    return (valA.getTime() - valB.getTime()) * revertSymbol;
   }
+  if (!valA) {
+    return -1 * revertSymbol;
+  }
+  if (!valB) {
+    return 1 * revertSymbol;
+  }
+  console.warn(
+    'Unsupported sorting type! Please use custom sorting function.',
+    valA,
+    valB
+  );
   return 0;
 };
 
 export const useSorter = <T extends Record<keyof any, unknown>>({
   data,
   ...defaultSorter
-}: Sorter<T> & { order: 'asc' | 'desc' }) => {
-  const [sorter, setSorter] = useState<Omit<Sorter<T>, 'data'>>({
+}: SorterConfig<T> & { order: 'asc' | 'desc' }) => {
+  const [sorter, setSorter] = useState<Omit<SorterConfig<T>, 'data'>>({
     ...defaultSorter,
     // We should not show sorting icon at first time
     order: 'none',
@@ -48,6 +60,7 @@ export const useSorter = <T extends Record<keyof any, unknown>>({
           key: sorter.key,
           order: sorter.order,
         };
+  // TODO supports custom sorting function
   const sortingFn = (a: T, b: T) => defaultSortingFn(sortCtx, a, b);
   const sortedData = data.sort(sortingFn);
 
@@ -72,9 +85,9 @@ export const useSorter = <T extends Record<keyof any, unknown>>({
     order: sorter.order,
     key: sorter.order !== 'none' ? sorter.key : null,
     /**
-     * @deprecated In most cases, we no necessary use `setSorter` directly.
+     * @deprecated In most cases, we no necessary use `updateSorter` directly.
      */
-    updateSorter: (newVal: Partial<Sorter<T>>) =>
+    updateSorter: (newVal: Partial<SorterConfig<T>>) =>
       setSorter({ ...sorter, ...newVal }),
     shiftOrder,
     resetSorter: () => setSorter(defaultSorter),

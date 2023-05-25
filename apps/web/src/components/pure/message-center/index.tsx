@@ -4,7 +4,7 @@ import type React from 'react';
 import { memo, useEffect, useState } from 'react';
 
 import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
-import { affineAuth } from '../../../plugins/affine';
+import { affineAuth } from '../../../shared/apis';
 import { toast } from '../../../utils';
 
 declare global {

@@ -3,7 +3,10 @@ import type { CSSProperties } from 'react';
 import { displayFlex, styled, textEllipsis } from '../../styles';
 import StyledPopperContainer from '../shared/container';
 
-export const StyledMenuWrapper = styled(StyledPopperContainer)<{
+export const StyledMenuWrapper = styled(StyledPopperContainer, {
+  shouldForwardProp: propName =>
+    !['width', 'height'].includes(propName as string),
+})<{
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
 }>(({ width, height }) => {

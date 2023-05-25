@@ -6,9 +6,14 @@ import {
 } from '@affine/workspace/affine/api';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import type { LoginResponse } from '@affine/workspace/affine/login';
-import { parseIdToken, setLoginStorage } from '@affine/workspace/affine/login';
+import {
+  createAffineAuth,
+  parseIdToken,
+  setLoginStorage,
+} from '@affine/workspace/affine/login';
 import { rootStore } from '@affine/workspace/atom';
 
+export const affineAuth = createAffineAuth(prefixUrl);
 const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;
 Object.assign(affineApis, createUserApis(prefixUrl));

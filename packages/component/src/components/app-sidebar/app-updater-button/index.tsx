@@ -85,6 +85,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
           }
         } else if (currentChangelogUnread) {
           window.open(config.changelogUrl, '_blank');
+          onDismissCurrentChangelog();
         } else {
           throw new Unreachable();
         }

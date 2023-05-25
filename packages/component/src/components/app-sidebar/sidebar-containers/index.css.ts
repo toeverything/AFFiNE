@@ -1,7 +1,7 @@
 import { globalStyle, style } from '@vanilla-extract/css';
 
 export const baseContainer = style({
-  padding: '12px 16px',
+  padding: '4px 16px',
   display: 'flex',
   flexFlow: 'column nowrap',
   rowGap: '4px',
@@ -13,17 +13,27 @@ export const scrollableContainerRoot = style({
   vars: {
     '--scrollbar-width': '10px',
   },
-  transition: 'all .3s .2s',
-  borderTop: '1px solid transparent',
+});
+
+export const scrollTopBorder = style({
+  position: 'absolute',
+  top: 0,
+  left: '16px',
+  right: '16px',
+  height: '1px',
+  transition: 'opacity .3s .2s',
+  opacity: 0,
+  background: 'var(--affine-black-10)',
   selectors: {
     '&[data-has-scroll-top="true"]': {
-      boxShadow: 'inset 0 8px 8px -8px var(--affine-black-10)',
+      opacity: 1,
     },
   },
 });
 
 export const scrollableViewport = style({
   height: '100%',
+  marginTop: '4px',
 });
 
 globalStyle(`${scrollableViewport} > div`, {

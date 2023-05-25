@@ -57,7 +57,7 @@ export const StyledButtonContent = styled('div')(() => {
 
 export const StyledWorkspaceName = styled('span')(() => {
   return {
-    color: '#E8178A',
+    fontWeight: '600',
   };
 });
 

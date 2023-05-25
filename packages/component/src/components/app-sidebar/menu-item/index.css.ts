@@ -69,6 +69,7 @@ export const iconsContainer = style({
   alignItems: 'center',
   justifyContent: 'flex-start',
   width: '28px',
+  flexShrink: 0,
   selectors: {
     '&[data-collapsible="true"]': {
       width: '40px',
