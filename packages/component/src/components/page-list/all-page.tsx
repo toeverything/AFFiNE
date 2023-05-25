@@ -220,10 +220,10 @@ export const PageListTrashView: React.FC<{
             onClick={onClickPage}
           />
           <TableCell ellipsis={true} onClick={onClickPage}>
-            {createDate}
+            {formatDate(createDate)}
           </TableCell>
           <TableCell ellipsis={true} onClick={onClickPage}>
-            {trashDate}
+            {trashDate ? formatDate(trashDate) : '-'}
           </TableCell>
           <TableCell
             style={{ padding: 0 }}

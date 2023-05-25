@@ -17,15 +17,20 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
   const valA = a[ctx.key];
   const valB = b[ctx.key];
   const revert = ctx.order === 'desc';
-  if (typeof valA !== typeof valB) {
-    return 0;
+  if (typeof valA === 'string' && typeof valB === 'string') {
+    return valA.localeCompare(valB) * (revert ? -1 : 1);
   }
-  if (typeof valA === 'string') {
-    return valA.localeCompare(valB as string) * (revert ? -1 : 1);
+  if (typeof valA === 'number' && typeof valB === 'number') {
+    return valA - valB * (revert ? -1 : 1);
   }
-  if (typeof valA === 'number') {
-    return valA - (valB as number) * (revert ? -1 : 1);
+  if (valA instanceof Date && valB instanceof Date) {
+    return valA.getTime() - valB.getTime() * (revert ? -1 : 1);
   }
+  console.warn(
+    'Unsupported sorting type! Please use custom sorting function.',
+    valA,
+    valB
+  );
   return 0;
 };
 
@@ -48,6 +53,7 @@ export const useSorter = <T extends Record<keyof any, unknown>>({
           key: sorter.key,
           order: sorter.order,
         };
+  // TODO supports custom sorting function
   const sortingFn = (a: T, b: T) => defaultSortingFn(sortCtx, a, b);
   const sortedData = data.sort(sortingFn);
 
@@ -72,7 +78,7 @@ export const useSorter = <T extends Record<keyof any, unknown>>({
     order: sorter.order,
     key: sorter.order !== 'none' ? sorter.key : null,
     /**
-     * @deprecated In most cases, we no necessary use `setSorter` directly.
+     * @deprecated In most cases, we no necessary use `updateSorter` directly.
      */
     updateSorter: (newVal: Partial<SorterConfig<T>>) =>
       setSorter({ ...sorter, ...newVal }),
