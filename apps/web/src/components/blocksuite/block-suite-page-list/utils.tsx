@@ -24,15 +24,8 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     openPage(blockSuiteWorkspace.id, page.id);
   };
   const importFileAndOpen = async () => {
-    const onSuccess = (pageIds: string[]) => {
-      if (pageIds.length === 0) {
-        return;
-      }
-      const pageId = pageIds[0];
-      openPage(blockSuiteWorkspace.id, pageId);
-    };
     const { showImportModal } = await import('@blocksuite/blocks');
-    showImportModal({ workspace: blockSuiteWorkspace, onSuccess });
+    showImportModal({ workspace: blockSuiteWorkspace });
   };
   return {
     createPage: createPageAndOpen,
