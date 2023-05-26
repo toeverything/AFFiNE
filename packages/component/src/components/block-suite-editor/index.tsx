@@ -82,7 +82,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
         });
       }
     }
-  }, [onLoad, editor, props, page, onInit]);
+  }, [editor, page, onInit]);
 
   useEffect(() => {
     if (editor.page && onLoad) {
