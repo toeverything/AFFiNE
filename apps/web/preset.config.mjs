@@ -18,6 +18,7 @@ export const blockSuiteFeatureFlags = {
  * @type {import('@affine/env').BuildFlags}
  */
 export const buildFlags = {
+  enablePlugin: process.env.ENABLE_PLUGIN === 'true',
   enableImagePreviewModal: process.env.ENABLE_IMAGE_PREVIEW_MODAL
     ? process.env.ENABLE_IMAGE_PREVIEW_MODAL === 'true'
     : true,
