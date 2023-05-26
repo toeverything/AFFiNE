@@ -56,7 +56,7 @@
     "zx": "^7.2.2"
   },
   "dependencies": {
-    "better-sqlite3": "^8.3.0",
+    "better-sqlite3": "^8.4.0",
     "cheerio": "^1.0.0-rc.12",
     "chokidar": "^3.5.3",
     "electron-updater": "^5.3.0",

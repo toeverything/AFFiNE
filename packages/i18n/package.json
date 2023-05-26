@@ -27,8 +27,8 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "i18next": "^22.4.15",
-    "react-i18next": "^12.3.0"
+    "i18next": "^22.5.0",
+    "react-i18next": "^12.3.1"
   },
   "devDependencies": {
     "@types/node": "^18.16.13",
