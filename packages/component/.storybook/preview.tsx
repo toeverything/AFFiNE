@@ -3,7 +3,7 @@ import { ThemeProvider, useTheme } from 'next-themes';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import { useDarkMode } from 'storybook-dark-mode';
-import { createI18n, I18nextProvider } from '@affine/i18n';
+import { createI18n, I18nextProvider, LOCALES } from '@affine/i18n';
 
 export const parameters = {
   backgrounds: { disable: true },
@@ -14,6 +14,34 @@ export const parameters = {
       date: /Date$/,
     },
   },
+};
+
+export const globalTypes = {
+  locale: {
+    name: 'Locale',
+    description: 'Internationalization locale',
+    defaultValue: 'en',
+    toolbar: {
+      icon: 'globe',
+      items: LOCALES.map(locale => ({
+        title: locale.originalName,
+        value: locale.tag,
+        right: locale.flagEmoji,
+      })),
+    },
+  },
+};
+
+const createI18nDecorator = ({ options } = { options: {} }) => {
+  const i18n = createI18n(options);
+  const withI18n = (Story, context) => {
+    const locale = context.globals.locale;
+    useEffect(() => {
+      i18n.changeLanguage(locale);
+    }, [locale]);
+    return <Story {...context} />;
+  };
+  return withI18n;
 };
 
 const Component = () => {
@@ -27,14 +55,12 @@ const Component = () => {
 
 export const decorators = [
   (Story: ComponentType) => {
-    const i18n = useMemo(() => createI18n(), []);
     return (
-      <I18nextProvider i18n={i18n}>
-        <ThemeProvider>
-          <Component />
-          <Story />
-        </ThemeProvider>
-      </I18nextProvider>
+      <ThemeProvider>
+        <Component />
+        <Story />
+      </ThemeProvider>
     );
   },
+  createI18nDecorator(),
 ];
