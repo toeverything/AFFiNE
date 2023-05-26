@@ -30,4 +30,5 @@ export type PageListProps = {
   list: ListData[];
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
+  onImportFile: () => void;
 };

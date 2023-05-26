@@ -25,11 +25,13 @@ const AllPagesHead = ({
   sorter,
   createNewPage,
   createNewEdgeless,
+  importFile,
 }: {
   isPublicWorkspace: boolean;
   sorter: ReturnType<typeof useSorter<ListData>>;
   createNewPage: () => void;
   createNewEdgeless: () => void;
+  importFile: () => void;
 }) => {
   const t = useAFFiNEI18N();
   const titleList = [
@@ -55,6 +57,7 @@ const AllPagesHead = ({
         <NewPageButton
           createNewPage={createNewPage}
           createNewEdgeless={createNewEdgeless}
+          importFile={importFile}
         />
       ),
       showWhen: () => !isPublicWorkspace,
@@ -108,6 +111,7 @@ export const PageList = ({
   list,
   onCreateNewPage,
   onCreateNewEdgeless,
+  onImportFile,
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
@@ -123,6 +127,7 @@ export const PageList = ({
         isPublicWorkspace={isPublicWorkspace}
         createNewPage={onCreateNewPage}
         createNewEdgeless={onCreateNewEdgeless}
+        importFile={onImportFile}
         list={sorter.data}
       />
     );
@@ -136,6 +141,7 @@ export const PageList = ({
           sorter={sorter}
           createNewPage={onCreateNewPage}
           createNewEdgeless={onCreateNewEdgeless}
+          importFile={onImportFile}
         />
         <AllPagesBody
           isPublicWorkspace={isPublicWorkspace}

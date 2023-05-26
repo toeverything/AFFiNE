@@ -63,6 +63,7 @@ AffineAllPageList.args = {
   isPublicWorkspace: false,
   onCreateNewPage: () => toast('Create new page'),
   onCreateNewEdgeless: () => toast('Create new edgeless'),
+  onImportFile: () => toast('Import file'),
   list: [
     {
       pageId: '1',
