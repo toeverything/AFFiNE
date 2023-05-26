@@ -27,9 +27,24 @@ export const header = style({
   flexShrink: 0,
   height: '52px',
   width: '100%',
-  padding: '0 20px',
+  padding: '0 20px 0 20px',
   display: 'flex',
   justifyContent: 'space-between',
+  alignItems: 'center',
+  background: 'var(--affine-background-primary-color)',
+  zIndex: 99,
+  position: 'relative',
+  selectors: {
+    '&[data-is-edgeless="true"]': {
+      borderBottom: `1px solid var(--affine-border-color)`,
+    },
+  },
+});
+
+export const rightBarContainer = style({
+  flexShrink: 0,
+  height: '52px',
+  display: 'flex',
   alignItems: 'center',
   background: 'var(--affine-background-primary-color)',
   zIndex: 99,
@@ -115,6 +130,12 @@ export const closeButton = style({
   position: 'absolute',
   right: '15px',
   top: 0,
+});
+
+export const filterButton = style({
+  borderRadius: '8px',
+  padding: '2px 8px 2px 4px',
+  margin: '20px',
 });
 
 export const switchWrapper = style({

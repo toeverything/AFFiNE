@@ -1,3 +1,4 @@
+import { Button } from '@affine/component';
 import { BrowserWarning } from '@affine/component/affine-banner';
 import {
   appSidebarFloatingAtom,
@@ -5,11 +6,16 @@ import {
 } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
+import {
+  CloseIcon,
+  FilteredIcon,
+  MinusIcon,
+  RoundedRectangleIcon,
+} from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
-import {
+import React, {
   forwardRef,
   lazy,
   Suspense,
@@ -198,14 +204,22 @@ export const Header = forwardRef<
         data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>
-          <SidebarSwitch
-            visible={!open}
-            tooltipContent={t['Expand sidebar']()}
-            data-testid="sliderBar-arrowButton-expand"
-          />
-        </Suspense>
+          <div className={styles.rightBarContainer}>
+            {!open ? (
+              <SidebarSwitch
+                visible={!open}
+                tooltipContent={t['Expand sidebar']()}
+                data-testid="sliderBar-arrowButton-expand"
+              />
+            ) : null}
 
+            <Button icon={<FilteredIcon />} className={styles.filterButton}>
+              Filter
+            </Button>
+          </div>
+        </Suspense>
         {props.children}
+
         <div className={styles.headerRightSide}>
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
