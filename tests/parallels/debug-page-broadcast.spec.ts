@@ -11,9 +11,9 @@ test('should broadcast a message to all debug pages', async ({
   await page.waitForSelector('#__next');
   await page2.waitForSelector('#__next');
   await page.click('[data-testid="create-page"]');
-  expect(await page.locator('tr').count()).toBe(2);
-  expect(await page2.locator('tr').count()).toBe(2);
-  await page2.click('[data-testid="create-page"]');
   expect(await page.locator('tr').count()).toBe(3);
   expect(await page2.locator('tr').count()).toBe(3);
+  await page2.click('[data-testid="create-page"]');
+  expect(await page.locator('tr').count()).toBe(4);
+  expect(await page2.locator('tr').count()).toBe(4);
 });
