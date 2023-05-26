@@ -1,6 +1,7 @@
 import { Button, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
   ArrowRightSmallIcon,
   DeleteIcon,
@@ -11,6 +12,7 @@ import {
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
+import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 
@@ -89,6 +91,8 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
     workspace.blockSuiteWorkspace
   );
+
+  const isLastWorkspace = useAtomValue(rootWorkspacesMetadataAtom).length === 1;
   return (
     <>
       <div data-testid="avatar-row" className={style.row}>
@@ -225,6 +229,14 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           <div className={style.settingItemLabelHint}>
             {t['Delete Workspace Label Hint']()}
           </div>
+          {isOwner && isLastWorkspace && (
+            <div
+              className={style.settingsCannotDelete}
+              data-testid="warn-cannot-delete-last-workspace"
+            >
+              {t['com.affine.workspace.cannot-delete']()}
+            </div>
+          )}
         </div>
 
         <div className={style.col}></div>
@@ -235,6 +247,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                 type="warning"
                 data-testid="delete-workspace-button"
                 size="middle"
+                disabled={isLastWorkspace}
                 icon={<DeleteIcon />}
                 onClick={() => {
                   setShowDelete(true);
