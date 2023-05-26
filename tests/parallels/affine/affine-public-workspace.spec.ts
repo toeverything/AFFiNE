@@ -62,7 +62,7 @@ test('access public workspace page', async ({ page, browser }) => {
     timeout: 10000,
   });
   await clickSideBarAllPageButton(page);
-  await page.locator('tr').nth(1).click();
+  await page.locator('tr').nth(2).click();
   const url = page.url();
   const context = await browser.newContext();
   const page2 = await context.newPage();
