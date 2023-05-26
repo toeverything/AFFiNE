@@ -52,7 +52,11 @@ export const AllPagesBody = ({
                   dataWithGroup[index - 1].groupName !== groupName) && (
                   <StyledTableRow>
                     <TableCell
-                      style={{ color: 'var(--affine-text-secondary-color)' }}
+                      style={{
+                        color: 'var(--affine-text-secondary-color)',
+                        background: 'initial',
+                        cursor: 'default',
+                      }}
                     >
                       {groupName}
                     </TableCell>
