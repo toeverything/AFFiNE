@@ -6,12 +6,14 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
 import {
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
+  imagePreviewModalGoStyle,
   imagePreviewModalImageStyle,
   imagePreviewModalStyle,
 } from './index.css';
@@ -28,6 +30,7 @@ const ImagePreviewModalImpl = (
     onClose: () => void;
   }
 ): ReactElement | null => {
+  const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
   const [caption, setCaption] = useState(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
@@ -96,14 +99,67 @@ const ImagePreviewModalImpl = (
           />
         </svg>
       </button>
+      <span
+        className={imagePreviewModalGoStyle}
+        style={{
+          left: 0,
+        }}
+        onClick={() => {
+          assertExists(blockId);
+          const workspace = props.workspace;
+
+          const page = workspace.getPage(props.pageId);
+          assertExists(page);
+          const block = page.getBlockById(blockId);
+          assertExists(block);
+          const prevBlock = page
+            .getPreviousSiblings(block)
+            .findLast(
+              (block): block is EmbedBlockModel =>
+                block.flavour === 'affine:embed'
+            );
+          if (prevBlock) {
+            setBlockId(prevBlock.id);
+          }
+        }}
+      >
+        ❮
+      </span>
       <div className={imagePreviewModalContainerStyle}>
         <img
+          data-blob-id={props.blockId}
           alt={caption}
           className={imagePreviewModalImageStyle}
           ref={imageRef}
           src={url}
         />
       </div>
+      <span
+        className={imagePreviewModalGoStyle}
+        style={{
+          right: 0,
+        }}
+        onClick={() => {
+          assertExists(blockId);
+          const workspace = props.workspace;
+
+          const page = workspace.getPage(props.pageId);
+          assertExists(page);
+          const block = page.getBlockById(blockId);
+          assertExists(block);
+          const nextBlock = page
+            .getNextSiblings(block)
+            .find(
+              (block): block is EmbedBlockModel =>
+                block.flavour === 'affine:embed'
+            );
+          if (nextBlock) {
+            setBlockId(nextBlock.id);
+          }
+        }}
+      >
+        ❯
+      </span>
     </div>
   );
 };
@@ -112,15 +168,74 @@ export const ImagePreviewModal = (
   props: ImagePreviewModalProps
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
+
+  const handleKeyUp = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setBlockId(null);
+        return;
+      }
+
+      if (!blockId) {
+        return;
+      }
+
+      const workspace = props.workspace;
+
+      const page = workspace.getPage(props.pageId);
+      assertExists(page);
+      const block = page.getBlockById(blockId);
+      assertExists(block);
+
+      if (event.key === 'ArrowLeft') {
+        const prevBlock = page
+          .getPreviousSiblings(block)
+          .findLast(
+            (block): block is EmbedBlockModel =>
+              block.flavour === 'affine:embed'
+          );
+        if (prevBlock) {
+          setBlockId(prevBlock.id);
+        }
+      } else if (event.key === 'ArrowRight') {
+        const nextBlock = page
+          .getNextSiblings(block)
+          .find(
+            (block): block is EmbedBlockModel =>
+              block.flavour === 'affine:embed'
+          );
+        if (nextBlock) {
+          setBlockId(nextBlock.id);
+        }
+      } else {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    [blockId, setBlockId, props.workspace, props.pageId]
+  );
+
+  useEffect(() => {
+    document.addEventListener('keyup', handleKeyUp);
+    return () => {
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleKeyUp]);
+
   if (!blockId) {
     return null;
   }
 
   return (
-    <ImagePreviewModalImpl
-      {...props}
-      blockId={blockId}
-      onClose={() => setBlockId(null)}
-    />
+    <Suspense fallback={<div className={imagePreviewModalStyle} />}>
+      <ImagePreviewModalImpl
+        {...props}
+        blockId={blockId}
+        onClose={() => setBlockId(null)}
+      />
+    </Suspense>
   );
 };

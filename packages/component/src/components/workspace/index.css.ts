@@ -75,5 +75,8 @@ export const toolStyle = style({
       right: '5px',
       bottom: '5px',
     },
+    print: {
+      display: 'none',
+    },
   },
 });

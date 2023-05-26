@@ -4,10 +4,6 @@ import type { StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
 
 import { AffineLoading } from '../components/affine-loading';
-import type {
-  PageListProps,
-  TrashListData,
-} from '../components/page-list/all-page';
 import { PageListTrashView } from '../components/page-list/all-page';
 import { PageList } from '../components/page-list/all-page';
 import { NewPageButton } from '../components/page-list/components/new-page-buttton';
@@ -59,7 +55,7 @@ AffineNewPageButton.play = async ({ canvasElement }) => {
   userEvent.click(dropdown);
 };
 
-export const AffineAllPageList: StoryFn<PageListProps> = ({ ...props }) => (
+export const AffineAllPageList: StoryFn<typeof PageList> = ({ ...props }) => (
   <PageList {...props} />
 );
 
@@ -73,9 +69,23 @@ AffineAllPageList.args = {
       favorite: false,
       icon: <PageIcon />,
       isPublicPage: true,
+      title: 'Today Page',
+      createDate: new Date(),
+      updatedDate: new Date(),
+      bookmarkPage: () => toast('Bookmark page'),
+      onClickPage: () => toast('Click page'),
+      onDisablePublicSharing: () => toast('Disable public sharing'),
+      onOpenPageInNewTab: () => toast('Open page in new tab'),
+      removeToTrash: () => toast('Remove to trash'),
+    },
+    {
+      pageId: '1',
+      favorite: false,
+      icon: <PageIcon />,
+      isPublicPage: true,
       title: '1 Example Public Page with long title that will be truncated',
-      createDate: '2021-01-01',
-      updatedDate: '2021-01-02',
+      createDate: new Date('2021-01-01'),
+      updatedDate: new Date('2021-01-02'),
       bookmarkPage: () => toast('Bookmark page'),
       onClickPage: () => toast('Click page'),
       onDisablePublicSharing: () => toast('Disable public sharing'),
@@ -88,8 +98,8 @@ AffineAllPageList.args = {
       isPublicPage: false,
       icon: <PageIcon />,
       title: '2 Favorited Page',
-      createDate: '2021-01-02',
-      updatedDate: '2021-01-01',
+      createDate: new Date('2021-01-02'),
+      updatedDate: new Date('2021-01-01'),
       bookmarkPage: () => toast('Bookmark page'),
       onClickPage: () => toast('Click page'),
       onDisablePublicSharing: () => toast('Disable public sharing'),
@@ -99,15 +109,15 @@ AffineAllPageList.args = {
   ],
 };
 
-export const AffinePublicPageList: StoryFn<PageListProps> = ({ ...props }) => (
-  <PageList {...props} />
-);
+export const AffinePublicPageList: StoryFn<typeof PageList> = ({
+  ...props
+}) => <PageList {...props} />;
 AffinePublicPageList.args = {
   ...AffineAllPageList.args,
   isPublicWorkspace: true,
 };
 
-export const AffineAllPageMobileList: StoryFn<PageListProps> = ({
+export const AffineAllPageMobileList: StoryFn<typeof PageList> = ({
   ...props
 }) => <PageList {...props} />;
 
@@ -118,9 +128,9 @@ AffineAllPageMobileList.parameters = {
   },
 };
 
-export const AffineTrashPageList: StoryFn<{
-  list: TrashListData[];
-}> = ({ ...props }) => <PageListTrashView {...props} />;
+export const AffineTrashPageList: StoryFn<typeof PageListTrashView> = ({
+  ...props
+}) => <PageListTrashView {...props} />;
 
 AffineTrashPageList.args = {
   list: [
@@ -128,9 +138,8 @@ AffineTrashPageList.args = {
       pageId: '1',
       icon: <PageIcon />,
       title: 'Example Page',
-      updatedDate: '2021-02-01',
-      createDate: '2021-01-01',
-      trashDate: '2021-01-01',
+      createDate: new Date('2021-01-01'),
+      trashDate: new Date('2021-01-01'),
       onClickPage: () => toast('Click page'),
       onPermanentlyDeletePage: () => toast('Permanently delete page'),
       onRestorePage: () => toast('Restore page'),
@@ -139,9 +148,7 @@ AffineTrashPageList.args = {
       pageId: '2',
       icon: <PageIcon />,
       title: 'Example Page with long title that will be truncated',
-      updatedDate: '2021-01-01',
-      createDate: '2021-01-01',
-      trashDate: '2021-01-01',
+      createDate: new Date('2021-01-01'),
       onClickPage: () => toast('Click page'),
       onPermanentlyDeletePage: () => toast('Permanently delete page'),
       onRestorePage: () => toast('Restore page'),

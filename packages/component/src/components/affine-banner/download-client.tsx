@@ -23,7 +23,7 @@ export const DownloadTips = ({ onClose }: { onClose: () => void }) => {
             Enjoying the demo?
             <a
               className={linkStyle}
-              href="https://github.com/toeverything/AFFiNE/releases"
+              href="https://affine.pro/download"
               target="_blank"
               rel="noreferrer"
             >
