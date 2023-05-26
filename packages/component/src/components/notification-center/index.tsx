@@ -69,10 +69,13 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const [swipeOut, setSwipeOut] = useState<boolean>(false);
   const [offsetBeforeRemove, setOffsetBeforeRemove] = useState<number>(0);
   const [initialHeight, setInitialHeight] = useState<number>(0);
+  const [animationKey, setAnimationKey] = useState(0);
+  const animationRef = useRef<SVGAnimateElement>(null);
   const notificationRef = useRef<HTMLLIElement>(null);
   const timerIdRef = useRef<NodeJS.Timeout>();
   const isFront = index === 0;
   const isVisible = index + 1 <= 3;
+  const progressDuration = notification.timeout || 3000;
   const heightIndex = useMemo(
     () =>
       heights.findIndex(
@@ -103,7 +106,15 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     // Trigger enter animation without using CSS animation
     setMounted(true);
   }, []);
+  useEffect(() => {
+    if (!expand) {
+      animationRef.current?.beginElement();
+    }
+  }, [expand]);
 
+  const resetAnimation = () => {
+    setAnimationKey(prevKey => prevKey + 1);
+  };
   useLayoutEffect(() => {
     if (!mounted) return;
     if (!notificationRef.current) return;
@@ -341,15 +352,14 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
                 ry="2"
               >
                 <animate
+                  key={animationKey}
+                  ref={animationRef}
                   attributeName="width"
                   from="0%"
                   to="100%"
-                  dur={
-                    notification.timeout
-                      ? (notification.timeout - 100) / 1000
-                      : 10
-                  }
+                  dur={(progressDuration - 200) / 1000}
                   fill="freeze"
+                  onAnimationEnd={resetAnimation}
                 />
               </rect>
             </svg>
