@@ -16,6 +16,7 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
+import { bookmarkPlugin } from './plugins/bookmark';
 
 export type EditorPlugin = {
   flavour: string;
@@ -23,13 +24,13 @@ export type EditorPlugin = {
   onLoad?: (page: Page, editor: EditorContainer) => void;
   render?: (props: { page: Page }) => ReactElement | null;
 };
+
 export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
-  plugins?: EditorPlugin[];
 };
 
 export type ErrorBoundaryProps = {
@@ -168,10 +169,11 @@ export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
   );
 });
 
+const plugins = [bookmarkPlugin];
+
 export const BlockSuiteEditor = memo(function BlockSuiteEditor(
   props: EditorProps & ErrorBoundaryProps
 ): ReactElement {
-  const { plugins } = props;
   return (
     <ErrorBoundary
       fallbackRender={useCallback(
@@ -195,7 +197,7 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
           )}
         </Suspense>
       )}
-      {plugins?.map(plugin => {
+      {plugins.map(plugin => {
         const Renderer = plugin.render;
         return Renderer ? (
           <Renderer page={props.page} key={plugin.flavour} />
