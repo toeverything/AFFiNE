@@ -22,8 +22,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine-test/kit@workspace:tests/kit"
   dependencies:
-    "@playwright/test": ^1.34.3
-    playwright: ^1.34.3
+    "@playwright/test": =1.33.0
+    playwright: =1.33.0
   peerDependencies:
     "@playwright/test": "*"
     playwright: "*"
@@ -6269,19 +6269,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:^1.34.3":
-  version: 1.34.3
-  resolution: "@playwright/test@npm:1.34.3"
+"@playwright/test@npm:=1.33.0":
+  version: 1.33.0
+  resolution: "@playwright/test@npm:1.33.0"
   dependencies:
     "@types/node": "*"
     fsevents: 2.3.2
-    playwright-core: 1.34.3
+    playwright-core: 1.33.0
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     playwright: cli.js
-  checksum: b387d85f09d275ed49aac4f600c0657205b4c20979108a52e7072ef0c43ea9b2d3d6d7206869230634680ab1f8e7b03373c63555899da4293cae700320bd31e1
+  checksum: cec3215fc92c1cb9f5bfba357ea1cbe97b54979ab82f9d34a2287b1687cda5e0966b8ea7290dcd35416e18668e56d5781b6b8c4cec64baf12f3ae8dde0f68f5e
   languageName: node
   linkType: hard
 
@@ -10363,7 +10363,7 @@ __metadata:
     "@istanbuljs/schema": ^0.1.3
     "@magic-works/i18n-codegen": ^0.5.0
     "@perfsee/sdk": ^1.6.0
-    "@playwright/test": ^1.34.3
+    "@playwright/test": =1.33.0
     "@taplo/cli": ^0.5.2
     "@testing-library/react": ^14.0.0
     "@types/eslint": ^8.40.0
@@ -21959,16 +21959,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.34.3":
-  version: 1.34.3
-  resolution: "playwright-core@npm:1.34.3"
-  bin:
-    playwright-core: cli.js
-  checksum: eaf9e9b2d77b9726867dcbc641a1c72b0e8f680cdd71ff904366deea1c96141ff7563f6c6fb29f9975309d1b87dead97ea93f6f44953b59946882fb785b34867
-  languageName: node
-  linkType: hard
-
-"playwright@npm:^1.14.0":
+"playwright@npm:=1.33.0, playwright@npm:^1.14.0":
   version: 1.33.0
   resolution: "playwright@npm:1.33.0"
   dependencies:
@@ -21976,17 +21967,6 @@ __metadata:
   bin:
     playwright: cli.js
   checksum: fb3934c56ed749cf412ea35b82052f013872d7f7b7747ab7042580af473dfc1b038956a31c132ee8c0098f74150c75e2073e9c737fd4c1ed54700a23fffc079f
-  languageName: node
-  linkType: hard
-
-"playwright@npm:^1.34.3":
-  version: 1.34.3
-  resolution: "playwright@npm:1.34.3"
-  dependencies:
-    playwright-core: 1.34.3
-  bin:
-    playwright: cli.js
-  checksum: 4495b23eacc673c03fd4706ce5914dd4855d46657e63411e54bb928e796d7ca59a6101379000ec73e2731437d04a441242cebbb6d4e069e050255db9eff65f7d
   languageName: node
   linkType: hard
 
