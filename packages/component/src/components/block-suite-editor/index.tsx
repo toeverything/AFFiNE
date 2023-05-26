@@ -86,7 +86,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       disposes.push(...plugins.map(plugin => plugin.onLoad?.(page, editor)));
       return () => {
         disposes
-          .filter((dispose): dispose is () => void => dispose)
+          .filter((dispose): dispose is () => void => !!dispose)
           .forEach(dispose => dispose());
       };
     }
