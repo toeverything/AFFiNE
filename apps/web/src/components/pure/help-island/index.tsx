@@ -1,7 +1,7 @@
 import { MuiFade, Tooltip } from '@affine/component';
 import { config, getEnvironment } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon, NewIcon } from '@blocksuite/icons';
+import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
 import { lazy, Suspense, useState } from 'react';
 
@@ -119,7 +119,7 @@ export const HelpIsland = ({
                   setOpenOnboarding(true);
                 }}
               >
-                <HelpIcon />
+                <UserGuideIcon />
               </StyledIconWrapper>
             </Tooltip>
           )}
