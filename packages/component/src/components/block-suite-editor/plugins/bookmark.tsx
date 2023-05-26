@@ -1,14 +1,11 @@
 import { MenuItem, MuiClickAwayListener, PureMenu } from '@affine/component';
 import type { EditorPlugin } from '@affine/component/block-suite-editor';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { getCurrentBlockRange } from '@blocksuite/blocks/dist/__internal__/utils/block-range.js';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { getVirgoByModel } from '@blocksuite/blocks/dist/__internal__/utils/query.js';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+  getCurrentBlockRange,
   getCurrentNativeRange,
+  getVirgoByModel,
   hasNativeSelection,
-} from '@blocksuite/blocks/dist/__internal__/utils/selection.js';
+} from '@blocksuite/blocks/std';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
