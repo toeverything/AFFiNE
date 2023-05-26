@@ -7,7 +7,7 @@
     "debug": "^4.3.4"
   },
   "devDependencies": {
-    "@types/debug": "^4.1.7"
+    "@types/debug": "^4.1.8"
   },
   "version": "0.5.4-beta.2"
 }
