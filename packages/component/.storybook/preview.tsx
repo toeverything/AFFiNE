@@ -1,8 +1,9 @@
-import { useEffect, ComponentType } from 'react';
+import { useEffect, ComponentType, useMemo } from 'react';
 import { ThemeProvider, useTheme } from 'next-themes';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import { useDarkMode } from 'storybook-dark-mode';
+import { createI18n, I18nextProvider } from '@affine/i18n';
 
 export const parameters = {
   backgrounds: { disable: true },
@@ -26,11 +27,14 @@ const Component = () => {
 
 export const decorators = [
   (Story: ComponentType) => {
+    const i18n = useMemo(() => createI18n(), []);
     return (
-      <ThemeProvider>
-        <Component />
-        <Story />
-      </ThemeProvider>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider>
+          <Component />
+          <Story />
+        </ThemeProvider>
+      </I18nextProvider>
     );
   },
 ];
