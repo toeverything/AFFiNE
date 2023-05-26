@@ -349,7 +349,7 @@ jobs:
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
-        run: yarn workspace @affine/electron test
+        run: yarn test:desktop
         env:
           COVERAGE: true
 
