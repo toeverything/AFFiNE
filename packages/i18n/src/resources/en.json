@@ -284,6 +284,7 @@
   "com.affine.updater.update-available": "Update available",
   "com.affine.updater.open-download-page": "Open download page",
   "com.affine.updater.restart-to-update": "Restart to install update",
+  "com.affine.workspace.cannot-delete": "You cannot delete the last workspace",
   "FILE_ALREADY_EXISTS": "File already exists",
   "others": "Others",
   "Update Available": "Update available",
