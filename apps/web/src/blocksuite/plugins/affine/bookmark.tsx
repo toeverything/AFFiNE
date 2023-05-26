@@ -202,7 +202,12 @@ const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
   ) : null;
 };
 
+const Defender: EditorPlugin['render'] = props => {
+  const flag = props.page.awarenessStore.getFlag('enable_bookmark_operation');
+  return flag ? <BookMarkMenu {...props} /> : null;
+};
+
 export const bookmarkPlugin: EditorPlugin = {
   flavour: 'bookmark',
-  render: BookMarkMenu,
+  render: Defender,
 };
