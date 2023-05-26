@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Modal, ModalCloseButton, ModalWrapper } from '../..';
 import {
   arrowStyle,
+  buttonDisableStyle,
   containerStyle,
   descriptionContainerStyle,
   descriptionStyle,
@@ -79,7 +80,7 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
 
           <div className={containerStyle}>
             <div
-              className={arrowStyle}
+              className={clsx(arrowStyle, { [buttonDisableStyle]: step !== 1 })}
               onClick={() => step === 1 && setStep(0)}
               data-testid="onboarding-modal-pre-button"
             >
@@ -118,7 +119,7 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
               </div>
             </div>
             <div
-              className={arrowStyle}
+              className={clsx(arrowStyle, { [buttonDisableStyle]: step === 1 })}
               onClick={() => setStep(1)}
               data-testid="onboarding-modal-next-button"
             >

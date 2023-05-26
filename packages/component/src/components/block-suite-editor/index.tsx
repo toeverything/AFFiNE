@@ -43,10 +43,10 @@ const ImagePreviewModal = lazy(() =>
 );
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
+  const { onLoad, page, mode, style, onInit } = props;
   const JotaiEditorContainer = useAtomValue(
     editorContainerModuleAtom
   ) as typeof EditorContainer;
-  const page = props.page;
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
@@ -57,19 +57,24 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   }
   const editor = editorRef.current;
   assertExists(editorRef, 'editorRef.current should not be null');
-  if (editor.mode !== props.mode) {
-    editor.mode = props.mode;
+  if (editor.mode !== mode) {
+    editor.mode = mode;
   }
 
   useEffect(() => {
-    if (editor.page !== props.page) {
-      editor.page = props.page;
+    if (editor.page !== page) {
+      editor.page = page;
       if (page.root === null) {
-        props.onInit(page, editor);
+        onInit(page, editor);
       }
-      return props.onLoad?.(page, editor);
     }
-  }, [props.page, props.onInit, props.onLoad, editor, props, page]);
+  }, [onInit, editor, props, page]);
+
+  useEffect(() => {
+    if (editor.page && onLoad) {
+      return onLoad(page, editor);
+    }
+  }, [editor, editor.page, page, onLoad]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -108,9 +113,9 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const className = `editor-wrapper ${editor.mode}-mode`;
   return (
     <div
-      data-testid={`editor-${props.page.id}`}
+      data-testid={`editor-${page.id}`}
       className={className}
-      style={props.style}
+      style={style}
       ref={ref}
     />
   );
