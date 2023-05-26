@@ -51,7 +51,8 @@ export const StyledContent = styled('div')(() => {
 export const StyledMenuItem = styled('button')<{
   isDir?: boolean;
   disabled?: boolean;
-}>(({ isDir = false, disabled = false }) => {
+  active?: boolean;
+}>(({ isDir = false, disabled = false, active = false }) => {
   return {
     width: '100%',
     borderRadius: '5px',
@@ -82,5 +83,11 @@ export const StyledMenuItem = styled('button')<{
       : {
           backgroundColor: 'var(--affine-hover-color)',
         },
+
+    ...(active && !disabled
+      ? {
+          backgroundColor: 'var(--affine-hover-color)',
+        }
+      : {}),
   };
 });

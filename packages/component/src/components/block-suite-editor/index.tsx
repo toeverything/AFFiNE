@@ -16,6 +16,14 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
+import { bookmarkPlugin } from './plugins/bookmark';
+
+export type EditorPlugin = {
+  flavour: string;
+  onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => () => void;
+  render?: (props: { page: Page }) => ReactElement | null;
+};
 
 export type EditorProps = {
   page: Page;
@@ -42,6 +50,9 @@ const ImagePreviewModal = lazy(() =>
   }))
 );
 
+// todo(himself65): plugin-infra should support this
+const plugins = [bookmarkPlugin];
+
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const { onLoad, page, mode, style, onInit } = props;
   const JotaiEditorContainer = useAtomValue(
@@ -66,13 +77,23 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       editor.page = page;
       if (page.root === null) {
         onInit(page, editor);
+        plugins.forEach(plugin => {
+          plugin.onInit?.(page, editor);
+        });
       }
     }
-  }, [onInit, editor, props, page]);
+  }, [editor, page, onInit]);
 
   useEffect(() => {
     if (editor.page && onLoad) {
-      return onLoad(page, editor);
+      const disposes = [] as ((() => void) | undefined)[];
+      disposes.push(onLoad?.(page, editor));
+      disposes.push(...plugins.map(plugin => plugin.onLoad?.(page, editor)));
+      return () => {
+        disposes
+          .filter((dispose): dispose is () => void => !!dispose)
+          .forEach(dispose => dispose());
+      };
     }
   }, [editor, editor.page, page, onLoad]);
 
@@ -180,6 +201,12 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
           )}
         </Suspense>
       )}
+      {plugins.map(plugin => {
+        const Renderer = plugin.render;
+        return Renderer ? (
+          <Renderer page={props.page} key={plugin.flavour} />
+        ) : null;
+      })}
     </ErrorBoundary>
   );
 });

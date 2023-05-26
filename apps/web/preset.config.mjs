@@ -1,6 +1,5 @@
 // @ts-check
 import 'dotenv/config';
-
 /**
  * @type {import('@affine/env').BlockSuiteFeatureFlags}
  */
@@ -12,6 +11,7 @@ export const blockSuiteFeatureFlags = {
   enable_drag_handle: true,
   enable_surface: true,
   enable_linked_page: true,
+  enable_bookmark_operation: process.env.ENABLE_BOOKMARK_OPERATION === 'true',
 };
 
 /**
