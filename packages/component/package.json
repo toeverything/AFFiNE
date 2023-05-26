@@ -73,7 +73,7 @@
     "@storybook/testing-library": "^0.1.0",
     "@types/react": "=18.2.6",
     "@types/react-dnd": "^3.0.2",
-    "@types/react-dom": "18.2.4",
+    "@types/react-dom": "=18.2.4",
     "@vanilla-extract/css": "^1.11.0",
     "@vitejs/plugin-react": "^4.0.0",
     "concurrently": "^8.0.1",

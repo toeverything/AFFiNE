@@ -59,7 +59,7 @@
     "@swc-jotai/debug-label": "^0.0.10",
     "@swc-jotai/react-refresh": "^0.0.8",
     "@types/react": "=18.2.6",
-    "@types/react-dom": "^18.2.4",
+    "@types/react-dom": "=18.2.4",
     "@types/webpack-env": "^1.18.1",
     "@vanilla-extract/css": "^1.11.0",
     "@vanilla-extract/next-plugin": "^2.1.2",
