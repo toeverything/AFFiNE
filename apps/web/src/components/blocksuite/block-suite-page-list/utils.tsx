@@ -1,4 +1,3 @@
-import { showImportModal } from '@blocksuite/blocks';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useRouter } from 'next/router';
 
@@ -24,7 +23,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     setPreferredMode(page.id, 'edgeless');
     openPage(blockSuiteWorkspace.id, page.id);
   };
-  const importFileAndOpen = () => {
+  const importFileAndOpen = async () => {
     const onSuccess = (pageIds: string[]) => {
       if (pageIds.length === 0) {
         return;
@@ -32,6 +31,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
       const pageId = pageIds[0];
       openPage(blockSuiteWorkspace.id, pageId);
     };
+    const { showImportModal } = await import('@blocksuite/blocks');
     showImportModal({ workspace: blockSuiteWorkspace, onSuccess });
   };
   return {
