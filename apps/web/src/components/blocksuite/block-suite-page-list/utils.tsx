@@ -23,9 +23,14 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     setPreferredMode(page.id, 'edgeless');
     openPage(blockSuiteWorkspace.id, page.id);
   };
+  const importFileAndOpen = async () => {
+    const { showImportModal } = await import('@blocksuite/blocks');
+    showImportModal({ workspace: blockSuiteWorkspace });
+  };
   return {
     createPage: createPageAndOpen,
     createEdgeless: createEdgelessAndOpen,
+    importFile: importFileAndOpen,
     isPreferredEdgeless: isPreferredEdgeless,
   };
 };

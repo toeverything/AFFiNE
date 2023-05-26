@@ -21,10 +21,12 @@ const MobileHead = ({
   isPublicWorkspace,
   createNewPage,
   createNewEdgeless,
+  importFile,
 }: {
   isPublicWorkspace: boolean;
   createNewPage: () => void;
   createNewEdgeless: () => void;
+  importFile: () => void;
 }) => {
   const t = useAFFiNEI18N();
   return (
@@ -43,6 +45,7 @@ const MobileHead = ({
               <NewPageButton
                 createNewPage={createNewPage}
                 createNewEdgeless={createNewEdgeless}
+                importFile={importFile}
               />
             </div>
           </TableCell>
@@ -57,11 +60,13 @@ export const AllPageListMobileView = ({
   isPublicWorkspace,
   createNewPage,
   createNewEdgeless,
+  importFile,
 }: {
   isPublicWorkspace: boolean;
   list: ListData[];
   createNewPage: () => void;
   createNewEdgeless: () => void;
+  importFile: () => void;
 }) => {
   return (
     <StyledTableContainer>
@@ -70,6 +75,7 @@ export const AllPageListMobileView = ({
           isPublicWorkspace={isPublicWorkspace}
           createNewPage={createNewPage}
           createNewEdgeless={createNewEdgeless}
+          importFile={importFile}
         />
         <AllPagesBody
           isPublicWorkspace={isPublicWorkspace}

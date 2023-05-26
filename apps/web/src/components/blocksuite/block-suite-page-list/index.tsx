@@ -70,7 +70,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     permanentlyDeletePage,
     cancelPublicPage,
   } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const { createPage, createEdgeless, isPreferredEdgeless } =
+  const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const list = useMemo(
@@ -155,6 +155,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     <PageList
       onCreateNewPage={createPage}
       onCreateNewEdgeless={createEdgeless}
+      onImportFile={importFile}
       isPublicWorkspace={isPublic}
       list={pageList}
     />
