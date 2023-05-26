@@ -164,6 +164,9 @@ __metadata:
     uuid: ^9.0.0
     yjs: ^13.6.1
     zx: ^7.2.2
+  peerDependencies:
+    playwright: "*"
+    ts-node: "*"
   languageName: unknown
   linkType: soft
 
