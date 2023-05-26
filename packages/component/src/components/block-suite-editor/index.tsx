@@ -50,6 +50,9 @@ const ImagePreviewModal = lazy(() =>
   }))
 );
 
+// todo(himself65): plugin-infra should support this
+const plugins = [bookmarkPlugin];
+
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const { onLoad, page, mode, style, onInit } = props;
   const JotaiEditorContainer = useAtomValue(
@@ -74,16 +77,20 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       editor.page = page;
       if (page.root === null) {
         onInit(page, editor);
-        props.plugins?.forEach(plugin => {
+        plugins.forEach(plugin => {
           plugin.onInit?.(page, editor);
         });
       }
-      props.onLoad?.(page, editor);
-      props.plugins?.forEach(plugin => {
-        plugin.onLoad?.(page, editor);
-      });
+      const disposes = [] as ((() => void) | undefined)[];
+      disposes.push(props.onLoad?.(page, editor));
+      disposes.push(...plugins.map(plugin => plugin.onLoad?.(page, editor)));
+      return () => {
+        disposes
+          .filter((dispose): dispose is () => void => dispose)
+          .forEach(dispose => dispose());
+      };
     }
-  }, [props.plugins, props.page, props.onLoad, editor, props, page, onInit]);
+  }, [props.page, props.onLoad, editor, props, page, onInit]);
 
   useEffect(() => {
     if (editor.page && onLoad) {
@@ -168,8 +175,6 @@ export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
     </div>
   );
 });
-
-const plugins = [bookmarkPlugin];
 
 export const BlockSuiteEditor = memo(function BlockSuiteEditor(
   props: EditorProps & ErrorBoundaryProps
