@@ -1,6 +1,7 @@
 import { TableBody, TableCell } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMediaQuery, useTheme } from '@mui/material';
+import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 
 import { FavoriteTag } from './components/favorite-tag';
@@ -10,6 +11,23 @@ import { StyledTableRow } from './styles';
 import type { DateKey, ListData } from './type';
 import { useDateGroup } from './use-date-group';
 import { formatDate } from './utils';
+
+export const GroupRow = ({ children }: { children: ReactNode }) => {
+  return (
+    <StyledTableRow>
+      <TableCell
+        style={{
+          color: 'var(--affine-text-secondary-color)',
+          fontSize: 'var(--affine-font-sm)',
+          background: 'initial',
+          cursor: 'default',
+        }}
+      >
+        {children}
+      </TableCell>
+    </StyledTableRow>
+  );
+};
 
 export const AllPagesBody = ({
   isPublicWorkspace,
@@ -50,17 +68,7 @@ export const AllPagesBody = ({
               {groupName &&
                 (index === 0 ||
                   dataWithGroup[index - 1].groupName !== groupName) && (
-                  <StyledTableRow>
-                    <TableCell
-                      style={{
-                        color: 'var(--affine-text-secondary-color)',
-                        background: 'initial',
-                        cursor: 'default',
-                      }}
-                    >
-                      {groupName}
-                    </TableCell>
-                  </StyledTableRow>
+                  <GroupRow>{groupName}</GroupRow>
                 )}
               <StyledTableRow data-testid={`page-list-item-${pageId}`}>
                 <TitleCell
@@ -74,6 +82,7 @@ export const AllPagesBody = ({
                   ellipsis={true}
                   hidden={isSmallDevices}
                   onClick={onClickPage}
+                  style={{ fontSize: 'var(--affine-font-xs)' }}
                 >
                   {formatDate(createDate)}
                 </TableCell>
@@ -82,6 +91,7 @@ export const AllPagesBody = ({
                   ellipsis={true}
                   hidden={isSmallDevices}
                   onClick={onClickPage}
+                  style={{ fontSize: 'var(--affine-font-xs)' }}
                 >
                   {formatDate(updatedDate ?? createDate)}
                 </TableCell>
