@@ -63,6 +63,7 @@ AffineAllPageList.args = {
   isPublicWorkspace: false,
   onCreateNewPage: () => toast('Create new page'),
   onCreateNewEdgeless: () => toast('Create new edgeless'),
+  onImportFile: () => toast('Import file'),
   list: [
     {
       pageId: '1',
@@ -79,7 +80,7 @@ AffineAllPageList.args = {
       removeToTrash: () => toast('Remove to trash'),
     },
     {
-      pageId: '1',
+      pageId: '3',
       favorite: false,
       icon: <PageIcon />,
       isPublicPage: true,

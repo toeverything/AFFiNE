@@ -5,6 +5,7 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
+import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -25,11 +26,13 @@ const AllPagesHead = ({
   sorter,
   createNewPage,
   createNewEdgeless,
+  importFile,
 }: {
   isPublicWorkspace: boolean;
   sorter: ReturnType<typeof useSorter<ListData>>;
   createNewPage: () => void;
   createNewEdgeless: () => void;
+  importFile: () => void;
 }) => {
   const t = useAFFiNEI18N();
   const titleList = [
@@ -55,6 +58,7 @@ const AllPagesHead = ({
         <NewPageButton
           createNewPage={createNewPage}
           createNewEdgeless={createNewEdgeless}
+          importFile={importFile}
         />
       ),
       showWhen: () => !isPublicWorkspace,
@@ -108,10 +112,11 @@ export const PageList = ({
   list,
   onCreateNewPage,
   onCreateNewEdgeless,
+  onImportFile,
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
-    key: 'updatedDate',
+    key: DEFAULT_SORT_KEY,
     order: 'desc',
   });
 
@@ -123,10 +128,19 @@ export const PageList = ({
         isPublicWorkspace={isPublicWorkspace}
         createNewPage={onCreateNewPage}
         createNewEdgeless={onCreateNewEdgeless}
+        importFile={onImportFile}
         list={sorter.data}
       />
     );
   }
+
+  const groupKey =
+    sorter.key === 'createDate' || sorter.key === 'updatedDate'
+      ? sorter.key
+      : // default sort
+      !sorter.key
+      ? DEFAULT_SORT_KEY
+      : undefined;
 
   return (
     <StyledTableContainer>
@@ -136,9 +150,11 @@ export const PageList = ({
           sorter={sorter}
           createNewPage={onCreateNewPage}
           createNewEdgeless={onCreateNewEdgeless}
+          importFile={onImportFile}
         />
         <AllPagesBody
           isPublicWorkspace={isPublicWorkspace}
+          groupKey={groupKey}
           data={sorter.data}
         />
       </Table>
