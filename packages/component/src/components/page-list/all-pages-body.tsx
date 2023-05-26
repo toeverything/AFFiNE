@@ -1,29 +1,35 @@
 import { TableBody, TableCell } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMediaQuery, useTheme } from '@mui/material';
+import { Fragment } from 'react';
 
 import { FavoriteTag } from './components/favorite-tag';
 import { TitleCell } from './components/title-cell';
 import { OperationCell } from './operation-cell';
 import { StyledTableRow } from './styles';
-import type { ListData } from './type';
+import type { DateKey, ListData } from './type';
+import { useDateGroup } from './use-date-group';
 import { formatDate } from './utils';
 
 export const AllPagesBody = ({
   isPublicWorkspace,
   data,
+  groupKey,
 }: {
   isPublicWorkspace: boolean;
   data: ListData[];
+  groupKey?: DateKey;
 }) => {
   const t = useAFFiNEI18N();
   const theme = useTheme();
   const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
+  const dataWithGroup = useDateGroup({ data, key: groupKey });
   return (
     <TableBody>
-      {data.map(
+      {dataWithGroup.map(
         (
           {
+            groupName,
             pageId,
             title,
             icon,
@@ -40,60 +46,74 @@ export const AllPagesBody = ({
           index
         ) => {
           return (
-            <StyledTableRow
-              data-testid={`page-list-item-${pageId}`}
-              key={`${pageId}-${index}`}
-            >
-              <TitleCell
-                icon={icon}
-                text={title || t['Untitled']()}
-                data-testid="title"
-                onClick={onClickPage}
-              />
-              <TableCell
-                data-testid="created-date"
-                ellipsis={true}
-                hidden={isSmallDevices}
-                onClick={onClickPage}
-              >
-                {formatDate(createDate)}
-              </TableCell>
-              <TableCell
-                data-testid="updated-date"
-                ellipsis={true}
-                hidden={isSmallDevices}
-                onClick={onClickPage}
-              >
-                {formatDate(updatedDate ?? createDate)}
-              </TableCell>
-              {!isPublicWorkspace && (
+            <Fragment key={pageId}>
+              {groupName &&
+                (index === 0 ||
+                  dataWithGroup[index - 1].groupName !== groupName) && (
+                  <StyledTableRow>
+                    <TableCell
+                      style={{
+                        color: 'var(--affine-text-secondary-color)',
+                        background: 'initial',
+                        cursor: 'default',
+                      }}
+                    >
+                      {groupName}
+                    </TableCell>
+                  </StyledTableRow>
+                )}
+              <StyledTableRow data-testid={`page-list-item-${pageId}`}>
+                <TitleCell
+                  icon={icon}
+                  text={title || t['Untitled']()}
+                  data-testid="title"
+                  onClick={onClickPage}
+                />
                 <TableCell
-                  style={{
-                    padding: 0,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '10px',
-                  }}
-                  data-testid={`more-actions-${pageId}`}
+                  data-testid="created-date"
+                  ellipsis={true}
+                  hidden={isSmallDevices}
+                  onClick={onClickPage}
                 >
-                  <FavoriteTag
-                    className={favorite ? '' : 'favorite-button'}
-                    onClick={bookmarkPage}
-                    active={!!favorite}
-                  />
-                  <OperationCell
-                    title={title}
-                    favorite={favorite}
-                    isPublic={isPublicPage}
-                    onOpenPageInNewTab={onOpenPageInNewTab}
-                    onToggleFavoritePage={bookmarkPage}
-                    onRemoveToTrash={removeToTrash}
-                    onDisablePublicSharing={onDisablePublicSharing}
-                  />
+                  {formatDate(createDate)}
                 </TableCell>
-              )}
-            </StyledTableRow>
+                <TableCell
+                  data-testid="updated-date"
+                  ellipsis={true}
+                  hidden={isSmallDevices}
+                  onClick={onClickPage}
+                >
+                  {formatDate(updatedDate ?? createDate)}
+                </TableCell>
+                {!isPublicWorkspace && (
+                  <TableCell
+                    style={{
+                      padding: 0,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}
+                    data-testid={`more-actions-${pageId}`}
+                  >
+                    <FavoriteTag
+                      className={favorite ? '' : 'favorite-button'}
+                      onClick={bookmarkPage}
+                      active={!!favorite}
+                    />
+                    <OperationCell
+                      title={title}
+                      favorite={favorite}
+                      isPublic={isPublicPage}
+                      onOpenPageInNewTab={onOpenPageInNewTab}
+                      onToggleFavoritePage={bookmarkPage}
+                      onRemoveToTrash={removeToTrash}
+                      onDisablePublicSharing={onDisablePublicSharing}
+                    />
+                  </TableCell>
+                )}
+              </StyledTableRow>
+            </Fragment>
           );
         }
       )}

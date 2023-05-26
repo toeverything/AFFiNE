@@ -79,7 +79,7 @@ AffineAllPageList.args = {
       removeToTrash: () => toast('Remove to trash'),
     },
     {
-      pageId: '1',
+      pageId: '3',
       favorite: false,
       icon: <PageIcon />,
       isPublicPage: true,
