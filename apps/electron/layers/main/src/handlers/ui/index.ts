@@ -1,7 +1,8 @@
-import { app, BrowserWindow, nativeTheme } from 'electron';
+import { app, BrowserWindow, nativeTheme, session } from 'electron';
 
 import { isMacOS } from '../../../../utils';
 import type { NamespaceHandlers } from '../type';
+import getMetaData from './getMetaData';
 import { getGoogleOauthCode } from './google-auth';
 
 export const uiHandlers = {
@@ -38,5 +39,10 @@ export const uiHandlers = {
   },
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
+  },
+  getBookmarkDataByLink: async (_, url: string) => {
+    return getMetaData(url, {
+      ua: session.defaultSession.getUserAgent(),
+    });
   },
 } satisfies NamespaceHandlers;
