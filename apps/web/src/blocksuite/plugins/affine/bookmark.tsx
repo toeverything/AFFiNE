@@ -90,6 +90,10 @@ const handleEnter = ({
     index,
     length,
   });
+
+  if (model.isEmpty()) {
+    page.deleteBlock(model);
+  }
   return callback();
 };
 
@@ -139,7 +143,7 @@ const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
     // const disposer = page.slots.textUpdated.on(() => {
     //   console.log('text Updated', page);
     // });
-    const disposer1 = page.slots.historyUpdated.on(() => {
+    const disposer = page.slots.historyUpdated.on(() => {
       if (!isCursorInLink(page)) {
         return;
       }
@@ -149,7 +153,7 @@ const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
 
     return () => {
       // disposer.dispose();
-      disposer1.dispose();
+      disposer.dispose();
     };
   }, [page, shortcutMap]);
 
@@ -180,7 +184,7 @@ const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
       }}
     >
       <div>
-        <PureMenu open={!!anchor} anchorEl={anchor}>
+        <PureMenu open={!!anchor} anchorEl={anchor} placement="bottom-start">
           {menuOptions.map(({ id, label }) => {
             return (
               <MenuItem
