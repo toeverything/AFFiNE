@@ -81,20 +81,19 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
           plugin.onInit?.(page, editor);
         });
       }
+    }
+  }, [onLoad, editor, props, page, onInit]);
+
+  useEffect(() => {
+    if (editor.page && onLoad) {
       const disposes = [] as ((() => void) | undefined)[];
-      disposes.push(props.onLoad?.(page, editor));
+      disposes.push(onLoad?.(page, editor));
       disposes.push(...plugins.map(plugin => plugin.onLoad?.(page, editor)));
       return () => {
         disposes
           .filter((dispose): dispose is () => void => !!dispose)
           .forEach(dispose => dispose());
       };
-    }
-  }, [props.page, props.onLoad, editor, props, page, onInit]);
-
-  useEffect(() => {
-    if (editor.page && onLoad) {
-      return onLoad(page, editor);
     }
   }, [editor, editor.page, page, onLoad]);
 
