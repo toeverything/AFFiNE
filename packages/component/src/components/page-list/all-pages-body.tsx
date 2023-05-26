@@ -1,6 +1,7 @@
 import { TableBody, TableCell } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMediaQuery, useTheme } from '@mui/material';
+import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 
 import { FavoriteTag } from './components/favorite-tag';
@@ -11,7 +12,7 @@ import type { DateKey, ListData } from './type';
 import { useDateGroup } from './use-date-group';
 import { formatDate } from './utils';
 
-export const GroupRow = ({ children }) => {
+export const GroupRow = ({ children }: { children: ReactNode }) => {
   return (
     <StyledTableRow>
       <TableCell
