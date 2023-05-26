@@ -1,9 +1,9 @@
-import { useEffect, ComponentType, useMemo } from 'react';
-import { ThemeProvider, useTheme } from 'next-themes';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+import { LOCALES, createI18n } from '@affine/i18n';
+import { ThemeProvider, useTheme } from 'next-themes';
+import { ComponentType, useEffect } from 'react';
 import { useDarkMode } from 'storybook-dark-mode';
-import { createI18n, I18nextProvider, LOCALES } from '@affine/i18n';
 
 export const parameters = {
   backgrounds: { disable: true },
