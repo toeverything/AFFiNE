@@ -5,6 +5,7 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
+import { DEFAULT_SORT_KEY } from "@affine/env/constant";
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -102,8 +103,6 @@ const AllPagesHead = ({
     </TableHead>
   );
 };
-
-const DEFAULT_SORT_KEY = 'updatedDate';
 
 export const PageList = ({
   isPublicWorkspace = false,
