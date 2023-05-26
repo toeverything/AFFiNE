@@ -21,7 +21,7 @@ import { bookmarkPlugin } from './plugins/bookmark';
 export type EditorPlugin = {
   flavour: string;
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
-  onLoad?: (page: Page, editor: EditorContainer) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => () => void;
   render?: (props: { page: Page }) => ReactElement | null;
 };
 
