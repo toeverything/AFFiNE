@@ -17,7 +17,7 @@ export const TitleCell = ({
     <TableCell {...props}>
       <StyledTitleLink>
         {icon}
-        <Content ellipsis={true} color="inherit">
+        <Content ellipsis={true} color="inherit" weight={500}>
           {text}
         </Content>
       </StyledTitleLink>
