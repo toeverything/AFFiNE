@@ -5,6 +5,7 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
+import { DEFAULT_SORT_KEY } from "@affine/env/constant";
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -115,7 +116,7 @@ export const PageList = ({
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
-    key: 'updatedDate',
+    key: DEFAULT_SORT_KEY,
     order: 'desc',
   });
 
@@ -133,6 +134,14 @@ export const PageList = ({
     );
   }
 
+  const groupKey =
+    sorter.key === 'createDate' || sorter.key === 'updatedDate'
+      ? sorter.key
+      : // default sort
+      !sorter.key
+      ? DEFAULT_SORT_KEY
+      : undefined;
+
   return (
     <StyledTableContainer>
       <Table>
@@ -145,6 +154,7 @@ export const PageList = ({
         />
         <AllPagesBody
           isPublicWorkspace={isPublicWorkspace}
+          groupKey={groupKey}
           data={sorter.data}
         />
       </Table>

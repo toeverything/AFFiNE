@@ -77,7 +77,12 @@ export const AllPageListMobileView = ({
           createNewEdgeless={createNewEdgeless}
           importFile={importFile}
         />
-        <AllPagesBody isPublicWorkspace={isPublicWorkspace} data={list} />
+        <AllPagesBody
+          isPublicWorkspace={isPublicWorkspace}
+          data={list}
+          // update groupKey after support sort by create date
+          groupKey="updatedDate"
+        />
       </Table>
     </StyledTableContainer>
   );

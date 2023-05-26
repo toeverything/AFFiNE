@@ -1,7 +1,8 @@
-import { useEffect, ComponentType } from 'react';
-import { ThemeProvider, useTheme } from 'next-themes';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+import { LOCALES, createI18n } from '@affine/i18n';
+import { ThemeProvider, useTheme } from 'next-themes';
+import { ComponentType, useEffect } from 'react';
 import { useDarkMode } from 'storybook-dark-mode';
 
 export const parameters = {
@@ -13,6 +14,34 @@ export const parameters = {
       date: /Date$/,
     },
   },
+};
+
+export const globalTypes = {
+  locale: {
+    name: 'Locale',
+    description: 'Internationalization locale',
+    defaultValue: 'en',
+    toolbar: {
+      icon: 'globe',
+      items: LOCALES.map(locale => ({
+        title: locale.originalName,
+        value: locale.tag,
+        right: locale.flagEmoji,
+      })),
+    },
+  },
+};
+
+const createI18nDecorator = ({ options } = { options: {} }) => {
+  const i18n = createI18n(options);
+  const withI18n = (Story, context) => {
+    const locale = context.globals.locale;
+    useEffect(() => {
+      i18n.changeLanguage(locale);
+    }, [locale]);
+    return <Story {...context} />;
+  };
+  return withI18n;
 };
 
 const Component = () => {
@@ -33,4 +62,5 @@ export const decorators = [
       </ThemeProvider>
     );
   },
+  createI18nDecorator(),
 ];
