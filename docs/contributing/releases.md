@@ -1,5 +1,7 @@
 ## AFFiNE Release Process
 
+> In order to make a stable/beta release, you need to get authorization from the AFFiNE test team.
+
 ## Who can make a release?
 
 The AFFiNE core team gives release authorization. And also have the following requirements.

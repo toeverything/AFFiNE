@@ -108,6 +108,13 @@ export const settingItemLabelHint = style({
   marginTop: '4px',
 });
 
+export const settingsCannotDelete = style([
+  settingItemLabelHint,
+  {
+    color: 'var(--affine-warning-color)',
+  },
+]);
+
 export const row = style({
   padding: '40px 0',
   display: 'flex',
