@@ -30,7 +30,7 @@
   "devDependencies": {
     "@blocksuite/blocks": "0.0.0-20230526024755-74df4d56-nightly",
     "@blocksuite/store": "0.0.0-20230526024755-74df4d56-nightly",
-    "vite": "^4.3.8",
+    "vite": "^4.3.9",
     "vite-plugin-dts": "^2.3.0",
     "y-indexeddb": "^9.0.11"
   },
