@@ -337,7 +337,7 @@ __metadata:
     "@types/react-dom": ^18.2.4
     "@types/webpack-env": ^1.18.0
     "@vanilla-extract/css": ^1.11.0
-    "@vanilla-extract/next-plugin": ^2.1.3
+    "@vanilla-extract/next-plugin": =2.1.2
     cmdk: ^0.2.0
     css-spring: ^4.1.0
     dotenv: ^16.0.3
@@ -10076,15 +10076,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vanilla-extract/next-plugin@npm:^2.1.3":
-  version: 2.1.3
-  resolution: "@vanilla-extract/next-plugin@npm:2.1.3"
+"@vanilla-extract/next-plugin@npm:=2.1.2":
+  version: 2.1.2
+  resolution: "@vanilla-extract/next-plugin@npm:2.1.2"
   dependencies:
     "@vanilla-extract/webpack-plugin": ^2.2.0
     browserslist: ^4.19.1
   peerDependencies:
     next: ">=12.0.5"
-  checksum: 8589961f15eca67caf060d1e3830f09623a51b7f22705611dd3d332f640a19ae110bdb9dd394ccf9ffb27967704b090ce5de1fe45a40b1996fc2c6c40bbc0c9e
+  checksum: 230a70ca899f090d6ea3c035bd4282acac1de7108e28ca4db39c60f4e0e1e92a7feb99570cd7bf300604a132ec67fe763e2300d17c4ecc6ebe692c5e1cbbc5c8
   languageName: node
   linkType: hard
 
