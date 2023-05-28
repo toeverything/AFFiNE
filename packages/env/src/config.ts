@@ -6,6 +6,12 @@ import { z } from 'zod';
 import { getUaHelper } from './ua-helper';
 
 export const buildFlagsSchema = z.object({
+  /**
+   * todo: remove this build flag when filter feature is ready.
+   *
+   * filter feature in the all pages.
+   */
+  enableAllPageFilter: z.boolean(),
   enableImagePreviewModal: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadCastChannelProvider: z.boolean(),
