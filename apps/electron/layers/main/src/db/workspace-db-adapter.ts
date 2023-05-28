@@ -9,6 +9,7 @@ import { BaseSQLiteAdapter } from './base-db-adapter';
 import { dbSubjects } from './subjects';
 
 export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
+  role = 'primary';
   yDoc = new Y.Doc();
   firstConnected = false;
 
@@ -55,12 +56,6 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
         this.applyUpdate(update.data, 'self');
       });
     });
-
-    if (this.firstConnected) {
-      logger.info('db reconnected', this.workspaceId);
-    } else {
-      logger.info('db connected', this.workspaceId);
-    }
 
     this.firstConnected = true;
     this.update$.next();

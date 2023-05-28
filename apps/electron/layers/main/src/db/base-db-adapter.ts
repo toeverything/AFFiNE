@@ -34,6 +34,7 @@ interface BlobRow {
  */
 export abstract class BaseSQLiteAdapter {
   db: Database | null = null;
+  abstract role: string;
 
   constructor(public path: string) {}
 
@@ -47,7 +48,7 @@ export abstract class BaseSQLiteAdapter {
     if (this.db) {
       return;
     }
-    logger.log('[SQLiteAdapter] open db', this.path);
+    logger.log(`[SQLiteAdapter][${this.role}] open db`, this.path);
     const db = (this.db = sqlite(this.path));
     this.ensureTables();
     return db;
@@ -138,7 +139,7 @@ export abstract class BaseSQLiteAdapter {
       insertMany(updates);
 
       logger.debug(
-        'addUpdateToSQLite',
+        `[SQLiteAdapter][${this.role}] addUpdateToSQLite`,
         'length:',
         updates.length,
         performance.now() - start,

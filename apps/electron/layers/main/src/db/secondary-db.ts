@@ -12,6 +12,7 @@ const FLUSH_WAIT_TIME = 5000;
 const FLUSH_MAX_WAIT_TIME = 10000;
 
 export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
+  role = 'secondary';
   yDoc = new Y.Doc();
   firstConnected = false;
 
@@ -187,16 +188,4 @@ export async function getSecondaryWorkspaceDBPath(
 ) {
   const meta = await getWorkspaceMeta(context, workspaceId);
   return meta?.secondaryDBPath;
-}
-
-export async function getSecondaryWorkspaceDB(
-  context: AppContext,
-  workspaceId: string,
-  upstream: WorkspaceSQLiteDB
-) {
-  const path = await getSecondaryWorkspaceDBPath(context, workspaceId);
-  if (!path) {
-    return;
-  }
-  return new SecondaryWorkspaceSQLiteDB(path, upstream);
 }
