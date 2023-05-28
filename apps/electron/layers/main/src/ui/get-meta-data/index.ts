@@ -122,4 +122,4 @@ const getMetaData = async function (
   return metadata;
 };
 
-export default getMetaData;
+export { getMetaData };
