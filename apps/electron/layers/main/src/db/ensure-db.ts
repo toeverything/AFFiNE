@@ -43,7 +43,7 @@ const database$ = connectable(
   groupedIDs$.pipe(
     mergeMap(id$ =>
       id$.pipe(
-        mergeMap(workspaceId => {
+        switchMap(workspaceId => {
           logger.info('[ensureSQLiteDB] open db connection', workspaceId);
           return from(openWorkspaceDatabase(appContext, workspaceId)).pipe(
             switchMap(db => {
@@ -62,12 +62,7 @@ const database$ = connectable(
         }),
         shareReplay(1)
       )
-    ),
-    tap({
-      next: id => {
-        console.log(id);
-      },
-    })
+    )
   ),
   {
     connector: () => databaseConnector$,
