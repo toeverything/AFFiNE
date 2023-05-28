@@ -213,21 +213,19 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       return { error: 'DB_FILE_INVALID' }; // invalid db file
     }
 
-    const externalFilePath = await fs.realpath(filePath);
-
     // copy the db file to a new workspace id
     const workspaceId = nanoid(10);
     const internalFilePath = getWorkspaceDBPath(appContext, workspaceId);
 
     await fs.ensureDir(path.join(appContext.appDataPath, 'workspaces'));
 
-    await fs.copy(externalFilePath, internalFilePath);
-    logger.info(`loadDBFile, copy: ${externalFilePath} -> ${internalFilePath}`);
+    await fs.copy(filePath, internalFilePath);
+    logger.info(`loadDBFile, copy: ${filePath} -> ${internalFilePath}`);
 
     await storeWorkspaceMeta(appContext, workspaceId, {
       id: workspaceId,
       mainDBPath: internalFilePath,
-      secondaryDBPath: externalFilePath,
+      secondaryDBPath: filePath,
     });
 
     return { workspaceId };

@@ -41,6 +41,7 @@ ReturnType<MainIPCHandlerMap[T][F]> {
 }
 
 const SESSION_DATA_PATH = path.join(__dirname, './tmp', 'affine-test');
+const DOCUMENTS_PATH = path.join(__dirname, './tmp', 'affine-test-documents');
 
 const browserWindow = {
   isDestroyed: () => {
@@ -91,8 +92,12 @@ function compareBuffer(a: Uint8Array | null, b: Uint8Array | null) {
 const electronModule = {
   app: {
     getPath: (name: string) => {
-      assert(name === 'sessionData');
-      return SESSION_DATA_PATH;
+      if (name === 'sessionData') {
+        return SESSION_DATA_PATH;
+      } else if (name === 'documents') {
+        return DOCUMENTS_PATH;
+      }
+      throw new Error('not implemented');
     },
     name: 'affine-test',
     on: (name: string, callback: (...args: any[]) => any) => {
@@ -152,54 +157,26 @@ describe('ensureSQLiteDB', () => {
     expect(fileExists).toBe(true);
   });
 
-  test('when db file is removed', async () => {
-    // stub webContents.send
-    const sendSpy = vi.spyOn(browserWindow.webContents, 'send');
-    const id = v4();
+  test('should emit the same db instance for the same id', async () => {
+    const [id1, id2] = [v4(), v4()];
     const { ensureSQLiteDB } = await import('../db/ensure-db');
-    let workspaceDB = await ensureSQLiteDB(id);
-    const file = workspaceDB.path;
-    const fileExists = await fs.pathExists(file);
-    expect(fileExists).toBe(true);
-
-    // Can't remove file on Windows, because the sqlite is still holding the file handle
-    if (process.platform === 'win32') {
-      return;
-    }
-
-    await fs.remove(file);
-
-    // wait for 2000ms for file watcher to detect file removal
-    await delay(2000);
-
-    expect(sendSpy).toBeCalledWith('db:onDBFileMissing', id);
-
-    // ensureSQLiteDB should recreate the db file
-    workspaceDB = await ensureSQLiteDB(id);
-    const fileExists2 = await fs.pathExists(file);
-    expect(fileExists2).toBe(true);
-    sendSpy.mockRestore();
+    const workspaceDB1 = await ensureSQLiteDB(id1);
+    const workspaceDB2 = await ensureSQLiteDB(id2);
+    const workspaceDB3 = await ensureSQLiteDB(id1);
+    expect(workspaceDB1).toBe(workspaceDB3);
+    expect(workspaceDB1).not.toBe(workspaceDB2);
   });
 
-  test('when db file is updated', async () => {
+  test('when app quit, db should be closed', async () => {
     const id = v4();
-    const { ensureSQLiteDB, dbSubjects } = await import('../db');
+    const { ensureSQLiteDB } = await import('../db/ensure-db');
     const workspaceDB = await ensureSQLiteDB(id);
     const file = workspaceDB.path;
     const fileExists = await fs.pathExists(file);
     expect(fileExists).toBe(true);
-    const dbUpdateSpy = vi.spyOn(dbSubjects.externalUpdate, 'next');
+    registeredHandlers.get('before-quit')?.forEach(fn => fn());
     await delay(100);
-    // writes some data to the db file
-    await fs.appendFile(file, 'random-data', { encoding: 'binary' });
-    // write again
-    await fs.appendFile(file, 'random-data', { encoding: 'binary' });
-
-    // wait for 2000ms for file watcher to detect file change
-    await delay(2000);
-
-    expect(dbUpdateSpy).toBeCalledWith(id);
-    dbUpdateSpy.mockRestore();
+    expect(workspaceDB.db?.open).toBe(false);
   });
 });
 
@@ -213,16 +190,14 @@ describe('workspace handlers', () => {
   });
 
   test('delete workspace', async () => {
-    // @TODO dispatch is hanging on Windows
-    if (process.platform === 'win32') {
-      return;
-    }
     const ids = [v4(), v4()];
     const { ensureSQLiteDB } = await import('../db/ensure-db');
-    await Promise.all(ids.map(id => ensureSQLiteDB(id)));
+    const dbs = await Promise.all(ids.map(id => ensureSQLiteDB(id)));
     await dispatch('workspace', 'delete', ids[1]);
     const list = await dispatch('workspace', 'list');
     expect(list.map(([id]) => id)).toEqual([ids[0]]);
+    // deleted db should be closed
+    expect(dbs[1].db?.open).toBe(false);
   });
 });
 
@@ -403,10 +378,10 @@ describe('dialog handlers', () => {
     expect(res.error).toBe('DB_FILE_PATH_INVALID');
   });
 
-  test('loadDBFile (error, not a valid db file)', async () => {
+  test('loadDBFile (error, not a valid affine file)', async () => {
     // create a random db file
     const basePath = path.join(SESSION_DATA_PATH, 'random-path');
-    const dbPath = path.join(basePath, 'xxx.db');
+    const dbPath = path.join(basePath, 'xxx.affine');
     await fs.ensureDir(basePath);
     await fs.writeFile(dbPath, 'hello world');
 
@@ -422,7 +397,7 @@ describe('dialog handlers', () => {
     electronModule.dialog = {};
   });
 
-  test('loadDBFile', async () => {
+  test('loadDBFile (correct)', async () => {
     // we use ensureSQLiteDB to create a valid db file
     const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
@@ -430,65 +405,66 @@ describe('dialog handlers', () => {
 
     // copy db file to dbPath
     const basePath = path.join(SESSION_DATA_PATH, 'random-path');
-    const originDBFilePath = path.join(basePath, 'xxx.db');
+    const clonedDBPath = path.join(basePath, 'xxx.affine');
     await fs.ensureDir(basePath);
-    await fs.copyFile(db.path, originDBFilePath);
+    await fs.copyFile(db.path, clonedDBPath);
 
-    // on Windows, we skip this test because we can't delete the db file
-    if (process.platform === 'win32') {
-      return;
-    }
-
-    // remove db
-    await fs.remove(db.path);
+    // delete workspace
+    await dispatch('workspace', 'delete', id);
 
     // try load originDBFilePath
     const mockShowOpenDialog = vi.fn(() => {
-      return { filePaths: [originDBFilePath] };
+      return { filePaths: [clonedDBPath] };
     }) as any;
     electronModule.dialog.showOpenDialog = mockShowOpenDialog;
 
     const res = await dispatch('dialog', 'loadDBFile');
     expect(mockShowOpenDialog).toBeCalled();
-    expect(res.workspaceId).not.toBeUndefined();
+    const newId = res.workspaceId;
 
-    const importedDb = await ensureSQLiteDB(res.workspaceId!);
-    expect(await fs.realpath(importedDb.path)).toBe(originDBFilePath);
-    expect(importedDb.path).not.toBe(originDBFilePath);
+    expect(newId).not.toBeUndefined();
+
+    assert(newId);
+
+    const meta = await dispatch('workspace', 'getMeta', newId);
+
+    expect(meta.secondaryDBPath).toBe(clonedDBPath);
 
     // try load it again, will trigger error (db file already loaded)
     const res2 = await dispatch('dialog', 'loadDBFile');
     expect(res2.error).toBe('DB_FILE_ALREADY_LOADED');
   });
 
-  test('moveDBFile', async () => {
+  test('moveDBFile (valid)', async () => {
     const newPath = path.join(SESSION_DATA_PATH, 'xxx');
-    const mockShowSaveDialog = vi.fn(() => {
-      return { filePath: newPath };
+    const showOpenDialog = vi.fn(() => {
+      return { filePaths: [newPath] };
     }) as any;
-    electronModule.dialog.showSaveDialog = mockShowSaveDialog;
+    electronModule.dialog.showOpenDialog = showOpenDialog;
 
     const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     await ensureSQLiteDB(id);
     const res = await dispatch('dialog', 'moveDBFile', id);
-    expect(mockShowSaveDialog).toBeCalled();
-    expect(res.filePath).toBe(newPath);
+    expect(showOpenDialog).toBeCalled();
+    assert(res.filePath);
+    expect(path.dirname(res.filePath)).toBe(newPath);
+    expect(res.filePath.endsWith('.affine')).toBe(true);
     electronModule.dialog = {};
   });
 
-  test('moveDBFile (skipped)', async () => {
-    const mockShowSaveDialog = vi.fn(() => {
-      return { filePath: null };
+  test('moveDBFile (canceled)', async () => {
+    const showOpenDialog = vi.fn(() => {
+      return { filePaths: null };
     }) as any;
-    electronModule.dialog.showSaveDialog = mockShowSaveDialog;
+    electronModule.dialog.showOpenDialog = showOpenDialog;
 
     const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
     await ensureSQLiteDB(id);
 
     const res = await dispatch('dialog', 'moveDBFile', id);
-    expect(mockShowSaveDialog).toBeCalled();
+    expect(showOpenDialog).toBeCalled();
     expect(res.filePath).toBe(undefined);
     electronModule.dialog = {};
   });

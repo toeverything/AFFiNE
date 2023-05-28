@@ -14,7 +14,6 @@ import {
 } from 'rxjs';
 import {
   distinctUntilChanged,
-  exhaustMap,
   filter,
   groupBy,
   ignoreElements,
@@ -44,22 +43,31 @@ const database$ = connectable(
   groupedIDs$.pipe(
     mergeMap(id$ =>
       id$.pipe(
-        // only open the first db with the same workspaceId, and emit it to the downstream
-        exhaustMap(workspaceId => {
+        mergeMap(workspaceId => {
           logger.info('[ensureSQLiteDB] open db connection', workspaceId);
           return from(openWorkspaceDatabase(appContext, workspaceId)).pipe(
             switchMap(db => {
               return startPollingSecondaryDB(db).pipe(
                 ignoreElements(),
-                startWith(db)
+                startWith(db),
+                tap({
+                  complete: () => {
+                    logger.info('[ensureSQLiteDB] close db connection');
+                    db.destroy();
+                  },
+                })
               );
             })
           );
         }),
-        // close DB when app-quit
         shareReplay(1)
       )
-    )
+    ),
+    tap({
+      next: id => {
+        console.log(id);
+      },
+    })
   ),
   {
     connector: () => databaseConnector$,
@@ -119,7 +127,10 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
 export function ensureSQLiteDB(id: string) {
   const deferValue = lastValueFrom(
     database$.pipe(
-      filter(db => db.db !== null && db.workspaceId === id && db.db.open),
+      // only open the first db with the same workspaceId, and emit it to the downstream
+      filter(db => {
+        return db.db !== null && db.workspaceId === id && db.db.open;
+      }),
       take(1),
       tap({
         error: err => {

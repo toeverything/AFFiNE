@@ -11,7 +11,6 @@ import { dbSubjects } from './subjects';
 export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   yDoc = new Y.Doc();
   firstConnected = false;
-  destroyed = false;
 
   update$ = new Subject<void>();
 

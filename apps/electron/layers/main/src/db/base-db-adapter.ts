@@ -32,7 +32,7 @@ interface BlobRow {
 /**
  * A base class for SQLite DB adapter that provides basic methods around updates & blobs
  */
-export class BaseSQLiteAdapter {
+export abstract class BaseSQLiteAdapter {
   db: Database | null = null;
 
   constructor(public path: string) {}
