@@ -121,7 +121,7 @@ export class BaseSQLiteAdapter {
   }
 
   // add a single update to SQLite
-  addUpdateToSQLite(data: Uint8Array[]) {
+  addUpdateToSQLite(updates: Uint8Array[]) {
     // batch write instead write per key stroke?
     try {
       assert(this.db, 'db is not connected');
@@ -129,16 +129,18 @@ export class BaseSQLiteAdapter {
       const statement = this.db.prepare(
         'INSERT INTO updates (data) VALUES (?)'
       );
-      this.db.transaction(() => {
-        for (const d of data) {
+      const insertMany = this.db.transaction(updates => {
+        for (const d of updates) {
           statement.run(d);
         }
       });
 
+      insertMany(updates);
+
       logger.debug(
         'addUpdateToSQLite',
         'length:',
-        data.length,
+        updates.length,
         performance.now() - start,
         'ms'
       );

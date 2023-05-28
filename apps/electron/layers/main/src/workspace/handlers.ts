@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'fs-extra';
 
 import { type AppContext } from '../context';
+import { ensureSQLiteDB } from '../db/ensure-db';
 import { logger } from '../logger';
 import type { WorkspaceMeta } from '../type';
 import { workspaceSubjects } from './subjects';
@@ -39,6 +40,8 @@ export async function deleteWorkspace(context: AppContext, id: string) {
     `${id}`
   );
   try {
+    const db = await ensureSQLiteDB(id);
+    db.destroy();
     // TODO: should remove DB connection first
     return await fs.move(basePath, movedPath, {
       overwrite: true,

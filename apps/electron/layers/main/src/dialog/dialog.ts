@@ -134,7 +134,7 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
       getFakedResult() ??
       (await dialog.showOpenDialog({
         properties: ['openDirectory'],
-        title: 'Move Workspace Storage',
+        title: 'Set Workspace Storage Location',
         buttonLabel: 'Select',
         defaultPath: app.getPath('documents'),
         message: "Select a location to store the workspace's database file",
