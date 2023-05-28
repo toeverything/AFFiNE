@@ -4,8 +4,6 @@ export const dropdownBtn = style({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: '0 10px',
-  gap: '4px',
   color: 'var(--affine-text-primary-color)',
   fontWeight: 600,
   background: 'var(--affine-button-gray-color)',
@@ -24,10 +22,24 @@ export const dropdownBtn = style({
   },
 });
 
+export const children = style({
+  paddingLeft: '10px',
+  paddingRight: '4px',
+});
+
 export const divider = style({
   width: '0.5px',
   height: '16px',
   background: 'var(--affine-border-color)',
+});
+
+export const ArrowDownBox = style({
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingLeft: '4px',
+  paddingRight: '10px',
 });
 
 export const icon = style({
