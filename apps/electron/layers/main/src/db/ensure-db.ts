@@ -37,11 +37,10 @@ import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 import { openWorkspaceDatabase } from './workspace-db-adapter';
 
 const databaseInput$ = new Subject<string>();
-export const databaseConnector$ = new ReplaySubject<WorkspaceSQLiteDB>();
-
+const databaseConnector$ = new ReplaySubject<WorkspaceSQLiteDB>();
 const groupedIDs$ = databaseInput$.pipe(groupBy(identity));
 
-export const database$ = connectable(
+const database$ = connectable(
   groupedIDs$.pipe(
     mergeMap(id$ =>
       id$.pipe(
@@ -68,7 +67,12 @@ export const database$ = connectable(
   }
 );
 
-export const databaseConnectableSubscription = database$.connect();
+app.on('ready', () => {
+  const databaseConnectableSubscription = database$.connect();
+  app.on('before-quit', () => {
+    databaseConnectableSubscription.unsubscribe();
+  });
+});
 
 // fixme: this function has issue on registering multiple times...
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {

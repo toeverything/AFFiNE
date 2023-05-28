@@ -1,4 +1,4 @@
-import { Subject } from "rxjs";
+import { Subject } from 'rxjs';
 
 export const dbSubjects = {
   // emit workspace id when the db file is missing

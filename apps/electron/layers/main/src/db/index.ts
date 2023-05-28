@@ -1,7 +1,10 @@
 import { appContext } from '../context';
 import type { MainEventListener, NamespaceHandlers } from '../type';
 import { ensureSQLiteDB } from './ensure-db';
-import { dbSubjects } from './subject';
+import { dbSubjects } from './subjects';
+
+export * from './ensure-db';
+export * from './subjects';
 
 export const dbHandlers = {
   getDocAsUpdates: async (_, id: string) => {
@@ -34,12 +37,6 @@ export const dbHandlers = {
 } satisfies NamespaceHandlers;
 
 export const dbEvents = {
-  onDBFileMissing: (fn: (workspaceId: string) => void) => {
-    const sub = dbSubjects.fileMissing.subscribe(fn);
-    return () => {
-      sub.unsubscribe();
-    };
-  },
   onExternalUpdate: (
     fn: (update: { workspaceId: string; update: Uint8Array }) => void
   ) => {

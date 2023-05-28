@@ -6,7 +6,7 @@ import { logger } from '../logger';
 import type { YOrigin } from '../type';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
-import { dbSubjects } from './subject';
+import { dbSubjects } from './subjects';
 
 export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   yDoc = new Y.Doc();
