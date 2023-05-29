@@ -1,3 +1,5 @@
+import '../env';
+
 import { DebugLogger } from '@affine/debug';
 import markdownTemplate from '@affine/templates/AFFiNE-beta-0.5.4.md';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
@@ -9,8 +11,7 @@ declare global {
   }
 }
 
-// @ts-expect-error
-const markdown: string = markdownTemplate;
+const markdown = markdownTemplate as unknown as string;
 
 const demoTitle = markdown
   .split('\n')
