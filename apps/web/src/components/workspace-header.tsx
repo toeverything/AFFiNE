@@ -17,6 +17,7 @@ import {
 } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 import React from 'react';
+import { NIL } from 'uuid';
 
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { WorkspaceTitle } from './pure/workspace-title';
@@ -38,25 +39,30 @@ export function WorkspaceHeader({
             <div style={{ flex: 1 }}>
               <FilterList
                 value={setting.currentView.filterList}
-                onChange={filterList =>
-                  setting.changeView(
-                    {
-                      ...setting.currentView,
-                      filterList,
-                    },
-                    setting.currentViewIndex
-                  )
-                }
+                onChange={filterList => {
+                  setting.setCurrentView(view => ({
+                    ...view,
+                    filterList,
+                  }));
+                }}
               />
             </div>
             <div>
-              {setting.currentViewIndex == null ? (
+              {setting.currentView.id !== NIL ? (
                 <SaveViewButton
                   init={setting.currentView.filterList}
                   onConfirm={setting.createView}
                 ></SaveViewButton>
               ) : (
-                <Button onClick={() => setting.selectView()}>
+                <Button
+                  onClick={() =>
+                    setting.setCurrentView({
+                      name: 'default',
+                      id: NIL,
+                      filterList: [],
+                    })
+                  }
+                >
                   Back to all
                 </Button>
               )}

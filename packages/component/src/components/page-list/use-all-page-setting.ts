@@ -1,8 +1,8 @@
-import type { DBSchema} from 'idb';
-import {openDB } from 'idb'
-import { useCallback, useState } from "react";
-import useSWR from "swr";
-import { NIL }from 'uuid'
+import type { DBSchema } from 'idb';
+import { openDB } from 'idb';
+import { useCallback, useState } from 'react';
+import useSWRImmutable from 'swr/immutable';
+import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
 import type { Filter, VariableMap } from './filter/vars';
@@ -15,43 +15,57 @@ export type View = {
 
 export interface PageViewDBV1 extends DBSchema {
   view: {
-    key: View['id']
-    value: View
-  }
+    key: View['id'];
+    value: View;
+  };
 }
 
 const pageViewDBPromise = openDB<PageViewDBV1>('page-view', 1, {
-  upgrade (database) {
+  upgrade(database) {
     database.createObjectStore('view', {
-      keyPath: 'id'
-    })
-  }
-})
+      keyPath: 'id',
+    });
+  },
+});
+
+export const defaultView = {
+  name: 'default',
+  id: NIL,
+  filterList: [],
+};
 
 export const useAllPageSetting = () => {
-  const { data: savedViews, mutate } = useSWR(['affine', 'page-view'], {
-    fetcher: async () => {
-      const db = await pageViewDBPromise
-      const t = db.transaction('view').objectStore('view')
-      return t.getAll()
+  const { data: savedViews, mutate } = useSWRImmutable(
+    ['affine', 'page-view'],
+    {
+      fetcher: async () => {
+        const db = await pageViewDBPromise;
+        const t = db.transaction('view').objectStore('view');
+        return t.getAll();
+      },
+      suspense: true,
+      fallbackData: [],
+    }
+  );
+
+  const [currentView, setCurrentView] = useState<View>(() => defaultView);
+
+  const createView = useCallback(
+    async (view: View) => {
+      if (view.id === NIL) {
+        return;
+      }
+      const db = await pageViewDBPromise;
+      const t = db.transaction('view', 'readwrite').objectStore('view');
+      await t.put(view);
+      await mutate();
     },
-    suspense: true,
-    fallbackData: []
-  })
-
-  const [currentView, setCurrentView] = useState<View>(() => ({
-    name: 'default',
-    id: NIL,
-    filterList: [],
-  }));
-
-  const createView = (view: View) => useCallback(async () => {
-    view
-  }, [])
+    [mutate]
+  );
 
   return {
     currentView,
-    savedViews,
+    savedViews: savedViews as View[],
 
     // actions
     createView,

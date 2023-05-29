@@ -1,4 +1,5 @@
 import { Button, Input, Modal, ModalWrapper } from '@affine/component';
+import { uuidv4 } from '@blocksuite/store';
 import { useState } from 'react';
 
 import { FilterList } from '../filter';
@@ -9,12 +10,17 @@ type CreateViewProps = {
   init: Filter[];
   onConfirm: (view: View) => void;
 };
+
 const CreateView = ({
   init,
   onConfirm,
   onCancel,
 }: CreateViewProps & { onCancel: () => void }) => {
-  const [value, onChange] = useState<View>({ name: '', filterList: init });
+  const [value, onChange] = useState<View>({
+    name: '',
+    filterList: init,
+    id: uuidv4(),
+  });
 
   return (
     <div>

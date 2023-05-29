@@ -1,4 +1,5 @@
 import { MenuItem, styled } from '@affine/component';
+import { NIL } from 'uuid';
 
 import Menu from '../../../ui/menu/menu';
 import { CreateFilterMenu } from '../filter/vars';
@@ -7,6 +8,7 @@ import type { useAllPageSetting } from '../use-all-page-setting';
 const NoDragDiv = styled('div')`
   -webkit-app-region: no-drag;
 `;
+
 export const ViewList = ({
   setting,
 }: {
@@ -14,15 +16,18 @@ export const ViewList = ({
 }) => {
   return (
     <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}>
-      {setting.currentViewIndex != null && (
+      {setting.currentView.id !== NIL && (
         <Menu
           trigger="click"
           content={
             <div>
-              {setting.viewList.map((v, i) => {
+              {setting.savedViews.map(view => {
                 return (
-                  <MenuItem onClick={() => setting.selectView(i)} key={i}>
-                    {v.name}
+                  <MenuItem
+                    onClick={() => setting.setCurrentView(view)}
+                    key={view.id}
+                  >
+                    {view.name}
                   </MenuItem>
                 );
               })}
@@ -40,10 +45,10 @@ export const ViewList = ({
           <CreateFilterMenu
             value={setting.currentView.filterList}
             onChange={filterList => {
-              setting.changeView(
-                { ...setting.currentView, filterList },
-                setting.currentViewIndex
-              );
+              setting.setCurrentView(view => ({
+                ...view,
+                filterList,
+              }));
             }}
           />
         }
