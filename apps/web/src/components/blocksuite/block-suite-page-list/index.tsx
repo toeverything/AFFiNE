@@ -1,6 +1,14 @@
 import { Empty } from '@affine/component';
-import type { ListData, TrashListData } from '@affine/component/page-list';
-import { PageList, PageListTrashView } from '@affine/component/page-list';
+import type {
+  ListData,
+  TrashListData,
+  View,
+} from '@affine/component/page-list';
+import {
+  filterByView,
+  PageList,
+  PageListTrashView,
+} from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
@@ -19,6 +27,7 @@ export type BlockSuitePageListProps = {
   listType: 'all' | 'trash' | 'shared' | 'public';
   isPublic?: true;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
+  view?: View;
 };
 
 const filter = {
@@ -61,6 +70,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   onOpenPage,
   listType,
   isPublic = false,
+  view,
 }) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const {
@@ -74,8 +84,22 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const list = useMemo(
-    () => pageMetas.filter(pageMeta => filter[listType](pageMeta, pageMetas)),
-    [pageMetas, listType]
+    () =>
+      pageMetas.filter(pageMeta => {
+        if (!filter[listType](pageMeta, pageMetas)) {
+          return false;
+        }
+        console.log(view);
+        if (!view) {
+          return true;
+        }
+        return filterByView(view, {
+          Favorite: !!pageMeta.favorite,
+          Created: pageMeta.createDate,
+          Updated: pageMeta.updatedDate,
+        });
+      }),
+    [pageMetas, listType, view]
   );
   if (list.length === 0) {
     return <PageListEmpty listType={listType} />;

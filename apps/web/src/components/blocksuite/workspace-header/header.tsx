@@ -8,7 +8,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
-import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
+import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
   lazy,
@@ -44,6 +44,7 @@ export type BaseHeaderProps<
   currentPage: Page | null;
   isPublic: boolean;
   isPreview: boolean;
+  leftSlot?: ReactNode;
 };
 
 export const enum HeaderRightItemName {
@@ -198,11 +199,14 @@ export const Header = forwardRef<
         data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>
-          <SidebarSwitch
-            visible={!open}
-            tooltipContent={t['Expand sidebar']()}
-            data-testid="sliderBar-arrowButton-expand"
-          />
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <SidebarSwitch
+              visible={!open}
+              tooltipContent={t['Expand sidebar']()}
+              data-testid="sliderBar-arrowButton-expand"
+            />
+            {props.leftSlot}
+          </div>
         </Suspense>
 
         {props.children}
