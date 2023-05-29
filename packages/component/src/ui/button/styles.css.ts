@@ -4,6 +4,9 @@ export const dropdownBtn = style({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
+  padding: '0 10px',
+  // fix dropdown button click area
+  paddingRight: 0,
   color: 'var(--affine-text-primary-color)',
   fontWeight: 600,
   background: 'var(--affine-button-gray-color)',
@@ -22,18 +25,17 @@ export const dropdownBtn = style({
   },
 });
 
-export const children = style({
-  paddingLeft: '10px',
-  paddingRight: '4px',
-});
-
 export const divider = style({
   width: '0.5px',
   height: '16px',
   background: 'var(--affine-border-color)',
+  // fix dropdown button click area
+  margin: '0 4px',
+  marginRight: 0,
 });
 
-export const ArrowDownBox = style({
+export const dropdownWrapper = style({
+  width: '100%',
   height: '100%',
   display: 'flex',
   alignItems: 'center',
