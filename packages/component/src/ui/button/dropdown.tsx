@@ -32,4 +32,4 @@ export const DropdownButton = forwardRef<
     </button>
   );
 });
-DropdownButton.displayName = 'SimpleDropdownButton';
+DropdownButton.displayName = 'DropdownButton';
