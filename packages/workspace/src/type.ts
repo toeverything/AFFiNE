@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path='../../../apps/electron/layers/preload/preload.d.ts' />
+import type { View } from '@affine/component/page-list';
 import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -191,6 +192,7 @@ type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
 type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
+  view: View;
 };
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {

@@ -1,4 +1,3 @@
-import { Button } from '@affine/component';
 import { BrowserWarning } from '@affine/component/affine-banner';
 import {
   appSidebarFloatingAtom,
@@ -6,16 +5,11 @@ import {
 } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import {
-  CloseIcon,
-  FilteredIcon,
-  MinusIcon,
-  RoundedRectangleIcon,
-} from '@blocksuite/icons';
+import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
-import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
-import React, {
+import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
+import {
   forwardRef,
   lazy,
   Suspense,
@@ -50,6 +44,7 @@ export type BaseHeaderProps<
   currentPage: Page | null;
   isPublic: boolean;
   isPreview: boolean;
+  leftSlot?: ReactNode;
 };
 
 export const enum HeaderRightItemName {
@@ -204,22 +199,17 @@ export const Header = forwardRef<
         data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>
-          <div className={styles.rightBarContainer}>
-            {!open ? (
-              <SidebarSwitch
-                visible={!open}
-                tooltipContent={t['Expand sidebar']()}
-                data-testid="sliderBar-arrowButton-expand"
-              />
-            ) : null}
-
-            <Button icon={<FilteredIcon />} className={styles.filterButton}>
-              Filter
-            </Button>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <SidebarSwitch
+              visible={!open}
+              tooltipContent={t['Expand sidebar']()}
+              data-testid="sliderBar-arrowButton-expand"
+            />
+            {props.leftSlot}
           </div>
         </Suspense>
-        {props.children}
 
+        {props.children}
         <div className={styles.headerRightSide}>
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(

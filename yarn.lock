@@ -92,6 +92,7 @@ __metadata:
     "@vitejs/plugin-react": ^4.0.0
     clsx: ^1.2.1
     concurrently: ^8.0.1
+    dayjs: ^1.11.7
     jest-mock: ^29.5.0
     jotai: ^2.1.0
     lit: ^2.7.4
@@ -158,6 +159,7 @@ __metadata:
     electron-window-state: ^5.0.3
     esbuild: ^0.17.19
     fs-extra: ^11.1.1
+    lodash-es: ^4.17.21
     nanoid: ^4.0.2
     playwright: ^1.33.0
     rxjs: ^7.8.1
@@ -337,7 +339,7 @@ __metadata:
     "@types/react-dom": ^18.2.4
     "@types/webpack-env": ^1.18.0
     "@vanilla-extract/css": ^1.11.0
-    "@vanilla-extract/next-plugin": ^2.1.3
+    "@vanilla-extract/next-plugin": =2.1.2
     cmdk: ^0.2.0
     css-spring: ^4.1.0
     dotenv: ^16.0.3
@@ -10076,15 +10078,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vanilla-extract/next-plugin@npm:^2.1.3":
-  version: 2.1.3
-  resolution: "@vanilla-extract/next-plugin@npm:2.1.3"
+"@vanilla-extract/next-plugin@npm:=2.1.2":
+  version: 2.1.2
+  resolution: "@vanilla-extract/next-plugin@npm:2.1.2"
   dependencies:
     "@vanilla-extract/webpack-plugin": ^2.2.0
     browserslist: ^4.19.1
   peerDependencies:
     next: ">=12.0.5"
-  checksum: 8589961f15eca67caf060d1e3830f09623a51b7f22705611dd3d332f640a19ae110bdb9dd394ccf9ffb27967704b090ce5de1fe45a40b1996fc2c6c40bbc0c9e
+  checksum: 230a70ca899f090d6ea3c035bd4282acac1de7108e28ca4db39c60f4e0e1e92a7feb99570cd7bf300604a132ec67fe763e2300d17c4ecc6ebe692c5e1cbbc5c8
   languageName: node
   linkType: hard
 
@@ -13229,6 +13231,13 @@ __metadata:
   dependencies:
     time-zone: ^1.0.0
   checksum: f9cfcd1b15dfeabab15c0b9d18eb9e4e2d9d4371713564178d46a8f91ad577a290b5178b80050718d02d9c0cf646f8a875011e12d1ed05871e9f72c72c8a8fe6
+  languageName: node
+  linkType: hard
+
+"dayjs@npm:^1.11.7":
+  version: 1.11.7
+  resolution: "dayjs@npm:1.11.7"
+  checksum: 5003a7c1dd9ed51385beb658231c3548700b82d3548c0cfbe549d85f2d08e90e972510282b7506941452c58d32136d6362f009c77ca55381a09c704e9f177ebb
   languageName: node
   linkType: hard
 
