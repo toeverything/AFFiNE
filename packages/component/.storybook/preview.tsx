@@ -32,9 +32,9 @@ export const globalTypes = {
   },
 };
 
-const createI18nDecorator = ({ options } = { options: {} }) => {
-  const i18n = createI18n(options);
-  const withI18n = (Story, context) => {
+const createI18nDecorator = () => {
+  const i18n = createI18n();
+  const withI18n = (Story: any, context: any) => {
     const locale = context.globals.locale;
     useEffect(() => {
       i18n.changeLanguage(locale);

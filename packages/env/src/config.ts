@@ -3,7 +3,7 @@ import { assertEquals } from '@blocksuite/global/utils';
 import getConfig from 'next/config';
 import { z } from 'zod';
 
-import { getUaHelper } from './ua-helper';
+import { UaHelper } from './ua-helper';
 
 export const buildFlagsSchema = z.object({
   /**
@@ -110,7 +110,7 @@ export function getEnvironment() {
     return environment;
   }
   const isDebug = process.env.NODE_ENV === 'development';
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     environment = {
       isDesktop: false,
       isBrowser: false,
@@ -118,7 +118,7 @@ export function getEnvironment() {
       isDebug,
     } satisfies Server;
   } else {
-    const uaHelper = getUaHelper();
+    const uaHelper = new UaHelper(navigator);
 
     environment = {
       origin: window.location.origin,

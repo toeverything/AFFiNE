@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import markdown from '@affine/templates/AFFiNE-beta-0.5.4.md';
+import markdownTemplate from '@affine/templates/AFFiNE-beta-0.5.4.md';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { Page } from '@blocksuite/store';
 
@@ -8,6 +8,9 @@ declare global {
     lastImportedMarkdown: string;
   }
 }
+
+// @ts-expect-error
+const markdown: string = markdownTemplate;
 
 const demoTitle = markdown
   .split('\n')

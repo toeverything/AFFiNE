@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -30,6 +30,7 @@
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
       "@affine/graphql": ["./packages/graphql/src"],
+      "@affine/electron/layers/*": ["./apps/electron/layers/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
@@ -62,6 +63,9 @@
     },
     {
       "path": "./packages/env"
+    },
+    {
+      "path": "./packages/env/tsconfig.blocksuite.json"
     },
     {
       "path": "./packages/graphql"

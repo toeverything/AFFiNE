@@ -13,13 +13,16 @@
     "noImplicitOverride": true
   },
   "include": ["**/*.ts", "**/*.tsx", "package.json"],
-  "exclude": ["out", "dist", "node_modules"],
+  "exclude": ["out", "dist", "tests", "node_modules"],
   "references": [
     {
       "path": "./tsconfig.node.json"
     },
     {
       "path": "../../packages/native"
+    },
+    {
+      "path": "../../packages/env"
     }
   ],
   "ts-node": {

@@ -38,6 +38,7 @@ jobs:
       - run: |
           yarn lint --max-warnings=0
           yarn circular
+          yarn typecheck
 
   build-storybook:
     name: Build Storybook
