@@ -9,7 +9,8 @@
     "types": ["node"],
     "outDir": "dist",
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "noImplicitOverride": true
   },
   "include": ["**/*.ts", "**/*.tsx", "package.json"],
   "exclude": ["out", "dist", "node_modules"],

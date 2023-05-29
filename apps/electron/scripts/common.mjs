@@ -31,10 +31,7 @@ export const config = () => {
 
   return {
     main: {
-      entryPoints: [
-        resolve(root, './layers/main/src/index.ts'),
-        resolve(root, './layers/main/src/exposed.ts'),
-      ],
+      entryPoints: [resolve(root, './layers/main/src/index.ts')],
       outdir: resolve(root, './dist/layers/main'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
@@ -54,7 +51,7 @@ export const config = () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', '../main/exposed-meta'],
+      external: ['electron'],
       define: define,
     },
   };

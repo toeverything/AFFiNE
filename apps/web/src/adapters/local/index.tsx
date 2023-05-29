@@ -100,10 +100,11 @@ export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         </>
       );
     },
-    PageList: ({ blockSuiteWorkspace, onOpenPage }) => {
+    PageList: ({ blockSuiteWorkspace, onOpenPage, view }) => {
       return (
         <BlockSuitePageList
           listType="all"
+          view={view}
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
         />
