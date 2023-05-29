@@ -15,8 +15,10 @@ import {
   SettingsIcon,
   ShareIcon,
 } from '@blocksuite/icons';
+import { RESET } from 'jotai/utils';
 import type { ReactElement } from 'react';
 import React from 'react';
+import { NIL } from 'uuid';
 
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { WorkspaceTitle } from './pure/workspace-title';
@@ -38,25 +40,24 @@ export function WorkspaceHeader({
             <div style={{ flex: 1 }}>
               <FilterList
                 value={setting.currentView.filterList}
-                onChange={filterList =>
-                  setting.changeView(
-                    {
-                      ...setting.currentView,
-                      filterList,
-                    },
-                    setting.currentViewIndex
-                  )
-                }
+                onChange={filterList => {
+                  setting.setCurrentView(view => ({
+                    ...view,
+                    filterList,
+                  }));
+                }}
               />
             </div>
             <div>
-              {setting.currentViewIndex == null ? (
+              {setting.currentView.id !== NIL ||
+              (setting.currentView.id === NIL &&
+                setting.currentView.filterList.length > 0) ? (
                 <SaveViewButton
                   init={setting.currentView.filterList}
                   onConfirm={setting.createView}
                 ></SaveViewButton>
               ) : (
-                <Button onClick={() => setting.selectView()}>
+                <Button onClick={() => setting.setCurrentView(RESET)}>
                   Back to all
                 </Button>
               )}
