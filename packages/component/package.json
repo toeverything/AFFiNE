@@ -42,6 +42,7 @@
     "@toeverything/theme": "^0.5.9",
     "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^1.2.1",
+    "dayjs": "^1.11.7",
     "jotai": "^2.1.0",
     "lit": "^2.7.4",
     "lottie-web": "^5.11.0",
