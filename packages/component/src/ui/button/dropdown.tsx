@@ -8,22 +8,22 @@ import {
 import * as styles from './styles.css';
 
 type DropdownButtonProps = {
-  onClickDropDown?: MouseEventHandler<HTMLSpanElement>;
+  onClickDropDown?: MouseEventHandler<HTMLElement>;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 export const DropdownButton = forwardRef<
   HTMLButtonElement,
   DropdownButtonProps
 >(({ onClickDropDown, children, ...props }, ref) => {
-  const handleClickDropDown: MouseEventHandler<HTMLSpanElement> = e => {
+  const handleClickDropDown: MouseEventHandler<HTMLElement> = e => {
     e.stopPropagation();
     onClickDropDown?.(e);
   };
   return (
     <button ref={ref} className={styles.dropdownBtn} {...props}>
-      <span className={styles.children}>{children}</span>
+      <span>{children}</span>
       <span className={styles.divider} />
-      <span className={styles.ArrowDownBox} onClick={handleClickDropDown}>
+      <span className={styles.dropdownWrapper} onClick={handleClickDropDown}>
         <ArrowDownSmallIcon className={styles.icon} width={16} height={16} />
       </span>
     </button>
