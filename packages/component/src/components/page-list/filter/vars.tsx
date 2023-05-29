@@ -1,8 +1,28 @@
+import dayjs from 'dayjs';
+import type { ReactNode } from 'react';
+
 import { MenuItem } from '../../../ui/menu';
-import type { Filter } from './ast';
-import { filterMatcher } from './filter-matcher';
 import { tBoolean, tDate } from './logical/custom-type';
-import type { TType } from './logical/typesystem';
+import { Matcher } from './logical/matcher';
+import type { TFunction, TType } from './logical/typesystem';
+import { tFunction, typesystem } from './logical/typesystem';
+
+export type Ref = {
+  type: 'ref';
+  name: keyof VariableMap;
+};
+
+export type Filter = {
+  type: 'filter';
+  left: Ref;
+  funcName: string;
+  args: Literal[];
+};
+
+export type Literal = {
+  type: 'literal';
+  value: unknown;
+};
 
 export type FilterVariable = {
   name: keyof VariableMap;
@@ -86,3 +106,64 @@ export const ChangeFilterMenu = ({
     </div>
   );
 };
+
+export const filterMatcher = new Matcher<
+  {
+    name: string;
+    defaultArgs: () => unknown[];
+    render?: (props: { ast: Filter }) => ReactNode;
+    impl: (...args: unknown[]) => boolean;
+  },
+  TFunction
+>((type, target) => {
+  const staticType = typesystem.subst(
+    Object.fromEntries(type.typeVars?.map(v => [v.name, v.bound]) ?? []),
+    type
+  );
+  const firstArg = staticType.args[0];
+  return firstArg && typesystem.isSubtype(firstArg, target);
+});
+
+filterMatcher.register(
+  tFunction({
+    args: [tBoolean.create(), tBoolean.create()],
+    rt: tBoolean.create(),
+  }),
+  {
+    name: 'is',
+    defaultArgs: () => [true],
+    impl: (value, target) => {
+      return value == target;
+    },
+  }
+);
+
+filterMatcher.register(
+  tFunction({ args: [tDate.create(), tDate.create()], rt: tBoolean.create() }),
+  {
+    name: 'after',
+    defaultArgs: () => {
+      return [dayjs().subtract(1, 'day').endOf('day')];
+    },
+    impl: (date, target) => {
+      if (typeof date !== 'number' || !dayjs.isDayjs(target)) {
+        throw new Error('argument type error');
+      }
+      return dayjs(date).isAfter(target.endOf('day'));
+    },
+  }
+);
+
+filterMatcher.register(
+  tFunction({ args: [tDate.create(), tDate.create()], rt: tBoolean.create() }),
+  {
+    name: 'before',
+    defaultArgs: () => [dayjs().endOf('day')],
+    impl: (date, target) => {
+      if (typeof date !== 'number' || !dayjs.isDayjs(target)) {
+        throw new Error('argument type error');
+      }
+      return dayjs(date).isBefore(target.startOf('day'));
+    },
+  }
+);

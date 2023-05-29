@@ -2,11 +2,10 @@ import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
 import { Menu, MenuItem } from '../../../ui/menu';
-import type { Filter, Literal } from './ast';
-import { filterMatcher } from './filter-matcher';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
-import { ChangeFilterMenu, vars } from './vars';
+import type { Filter, Literal } from './vars';
+import { ChangeFilterMenu, filterMatcher, vars } from './vars';
 
 export const Condition = ({
   value,

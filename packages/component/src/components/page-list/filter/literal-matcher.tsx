@@ -1,11 +1,11 @@
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
-import type { Literal } from './ast';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TType } from './logical/typesystem';
 import { typesystem } from './logical/typesystem';
+import type { Literal } from './vars';
 
 export const literalMatcher = new Matcher<{
   render: (props: {

@@ -1,7 +1,7 @@
 import { Menu } from '@affine/component';
 
-import type { Filter } from './ast';
 import { Condition } from './condition';
+import type { Filter } from './vars';
 import { CreateFilterMenu } from './vars';
 
 export const FilterList = ({

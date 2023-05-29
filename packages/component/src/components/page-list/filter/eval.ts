@@ -1,6 +1,6 @@
-import type { Filter, Literal, Ref } from './ast';
-import { filterMatcher } from './filter-matcher';
+import type { Filter, Literal, Ref } from './vars';
 import type { VariableMap } from './vars';
+import { filterMatcher } from './vars';
 
 const evalRef = (ref: Ref, variableMap: VariableMap) => {
   return variableMap[ref.name];
