@@ -1,5 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
 import { useState } from 'react';
 
 import { DropdownButton } from '../../../ui/button/dropdown';
@@ -9,11 +9,13 @@ import { BlockCard } from '../../card/block-card';
 type NewPageButtonProps = {
   createNewPage: () => void;
   createNewEdgeless: () => void;
+  importFile: () => void;
 };
 
 export const CreateNewPagePopup = ({
   createNewPage,
   createNewEdgeless,
+  importFile,
 }: NewPageButtonProps) => {
   const t = useAFFiNEI18N();
   return (
@@ -37,6 +39,12 @@ export const CreateNewPagePopup = ({
         right={<EdgelessIcon width={20} height={20} />}
         onClick={createNewEdgeless}
       />
+      <BlockCard
+        title={t['com.affine.new_import']()}
+        desc={t['com.affine.import_file']()}
+        right={<ImportIcon width={20} height={20} />}
+        onClick={importFile}
+      />
       {/* TODO Import */}
     </div>
   );
@@ -45,6 +53,7 @@ export const CreateNewPagePopup = ({
 export const NewPageButton = ({
   createNewPage,
   createNewEdgeless,
+  importFile,
 }: NewPageButtonProps) => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
@@ -66,6 +75,10 @@ export const NewPageButton = ({
           }}
           createNewEdgeless={() => {
             createNewEdgeless();
+            setOpen(false);
+          }}
+          importFile={() => {
+            importFile();
             setOpen(false);
           }}
         />

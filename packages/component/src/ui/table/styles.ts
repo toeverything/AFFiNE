@@ -41,6 +41,7 @@ export const StyledTableCell = styled('td')<
       verticalAlign: 'middle',
       overflowWrap: 'break-word',
       userSelect: 'none',
+      fontSize: 'var(--affine-font-sm)',
       ...(active ? { color: 'var(--affine-text-primary-color)' } : {}),
       ...(ellipsis ? textEllipsis(1) : {}),
       ...(onClick ? { cursor: 'pointer' } : {}),

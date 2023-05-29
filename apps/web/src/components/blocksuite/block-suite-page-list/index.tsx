@@ -1,6 +1,14 @@
 import { Empty } from '@affine/component';
-import type { ListData, TrashListData } from '@affine/component/page-list';
-import { PageList, PageListTrashView } from '@affine/component/page-list';
+import type {
+  ListData,
+  TrashListData,
+  View,
+} from '@affine/component/page-list';
+import {
+  filterByView,
+  PageList,
+  PageListTrashView,
+} from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
@@ -12,13 +20,14 @@ import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-m
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { pageListEmptyStyle } from './index.css';
-import { formatDate, usePageHelper } from './utils';
+import { usePageHelper } from './utils';
 
 export type BlockSuitePageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   listType: 'all' | 'trash' | 'shared' | 'public';
   isPublic?: true;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
+  view?: View;
 };
 
 const filter = {
@@ -61,6 +70,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   onOpenPage,
   listType,
   isPublic = false,
+  view,
 }) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const {
@@ -70,12 +80,26 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     permanentlyDeletePage,
     cancelPublicPage,
   } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const { createPage, createEdgeless, isPreferredEdgeless } =
+  const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const list = useMemo(
-    () => pageMetas.filter(pageMeta => filter[listType](pageMeta, pageMetas)),
-    [pageMetas, listType]
+    () =>
+      pageMetas.filter(pageMeta => {
+        if (!filter[listType](pageMeta, pageMetas)) {
+          return false;
+        }
+        console.log(view);
+        if (!view) {
+          return true;
+        }
+        return filterByView(view, {
+          Favorite: !!pageMeta.favorite,
+          Created: pageMeta.createDate,
+          Updated: pageMeta.updatedDate,
+        });
+      }),
+    [pageMetas, listType, view]
   );
   if (list.length === 0) {
     return <PageListEmpty listType={listType} />;
@@ -91,8 +115,10 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         ),
         pageId: pageMeta.id,
         title: pageMeta.title,
-        createDate: formatDate(pageMeta.createDate),
-        updatedDate: formatDate(pageMeta.updatedDate ?? pageMeta.createDate),
+        createDate: new Date(pageMeta.createDate),
+        trashDate: pageMeta.trashDate
+          ? new Date(pageMeta.trashDate)
+          : undefined,
         onClickPage: () => onOpenPage(pageMeta.id),
         onClickRestore: () => {
           restoreFromTrash(pageMeta.id);
@@ -117,8 +143,8 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       title: pageMeta.title,
       favorite: !!pageMeta.favorite,
       isPublicPage: !!pageMeta.isPublic,
-      createDate: formatDate(pageMeta.createDate),
-      updatedDate: formatDate(pageMeta.updatedDate ?? pageMeta.createDate),
+      createDate: new Date(pageMeta.createDate),
+      updatedDate: new Date(pageMeta.updatedDate ?? pageMeta.createDate),
       onClickPage: () => onOpenPage(pageMeta.id),
       onOpenPageInNewTab: () => onOpenPage(pageMeta.id, true),
       onClickRestore: () => {
@@ -153,6 +179,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     <PageList
       onCreateNewPage={createPage}
       onCreateNewEdgeless={createEdgeless}
+      onImportFile={importFile}
       isPublicWorkspace={isPublic}
       list={pageList}
     />

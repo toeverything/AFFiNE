@@ -23,7 +23,7 @@ test('move workspace db file', async ({ page, appInfo, workspace }) => {
   // goto settings
   await settingButton.click();
 
-  const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
+  const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp-dir');
 
   // move db file to tmp folder
   await page.evaluate(tmpPath => {
@@ -36,6 +36,9 @@ test('move workspace db file', async ({ page, appInfo, workspace }) => {
   // check if db file exists
   await page.waitForSelector('text="Move folder success"');
   expect(await fs.exists(tmpPath)).toBe(true);
+  // check if db file exists under tmpPath (a file ends with .affine)
+  const files = await fs.readdir(tmpPath);
+  expect(files.some(f => f.endsWith('.affine'))).toBe(true);
 });
 
 test('export then add', async ({ page, appInfo, workspace }) => {
@@ -56,7 +59,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
 
-  // move db file to tmp folder
+  // export db file to tmp folder
   await page.evaluate(tmpPath => {
     window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,

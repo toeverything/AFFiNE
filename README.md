@@ -141,7 +141,7 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 We would like to express our gratitude to all the individuals who have already contributed to AFFiNE! If you have any AFFiNE-related project, documentation, tool or template, please feel free to contribute it by submitting a pull request to our curated list on GitHub: [awesome-affine](https://github.com/toeverything/awesome-affine).
 
 <a href="https://github.com/toeverything/affine/graphs/contributors">
-  <img src="https://user-images.githubusercontent.com/5910926/237263745-36bb975d-83d6-4a7c-a152-d9ad020e5023.png" />
+  <img src="https://user-images.githubusercontent.com/5910926/240508358-93eddded-48a0-40cd-85e4-a1d172dbe1d9.svg" />
 </a>
 
 ## Self-Host

@@ -1,6 +1,7 @@
 import { Button, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
   ArrowRightSmallIcon,
   DeleteIcon,
@@ -11,6 +12,7 @@ import {
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
+import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 
@@ -23,24 +25,22 @@ import { CameraIcon } from './icons';
 import { WorkspaceLeave } from './leave';
 import { StyledInput } from './style';
 
-const useDBFilePathMeta = (workspaceId: string) => {
-  const [meta, setMeta] = useState<{
-    path: string;
-    realPath: string;
-  }>();
+const useShowOpenDBFile = (workspaceId: string) => {
+  const [show, setShow] = useState(false);
   useEffect(() => {
-    if (window.apis && window.events) {
-      window.apis.db.getDBFilePath(workspaceId).then(meta => {
-        setMeta(meta);
+    if (window.apis && window.events && environment.isDesktop) {
+      window.apis.workspace.getMeta(workspaceId).then(meta => {
+        setShow(!!meta.secondaryDBPath);
       });
-      return window.events.db.onDBFilePathChange(meta => {
-        if (meta.workspaceId === workspaceId) {
-          setMeta(meta);
+      return window.events.workspace.onMetaChange(newMeta => {
+        if (newMeta.workspaceId === workspaceId) {
+          const meta = newMeta.meta;
+          setShow(!!meta.secondaryDBPath);
         }
       });
     }
   }, [workspaceId]);
-  return meta;
+  return show;
 };
 
 export const GeneralPanel: React.FC<PanelProps> = ({
@@ -56,9 +56,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   const isOwner = useIsWorkspaceOwner(workspace);
   const t = useAFFiNEI18N();
 
-  const dbPathMeta = useDBFilePathMeta(workspace.id);
-  const showOpenFolder =
-    environment.isDesktop && dbPathMeta?.path !== dbPathMeta?.realPath;
+  const showOpenFolder = useShowOpenDBFile(workspace.id);
 
   const handleUpdateWorkspaceName = (name: string) => {
     setName(name);
@@ -89,6 +87,8 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
     workspace.blockSuiteWorkspace
   );
+
+  const isLastWorkspace = useAtomValue(rootWorkspacesMetadataAtom).length === 1;
   return (
     <>
       <div data-testid="avatar-row" className={style.row}>
@@ -225,6 +225,14 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           <div className={style.settingItemLabelHint}>
             {t['Delete Workspace Label Hint']()}
           </div>
+          {isOwner && isLastWorkspace && (
+            <div
+              className={style.settingsCannotDelete}
+              data-testid="warn-cannot-delete-last-workspace"
+            >
+              {t['com.affine.workspace.cannot-delete']()}
+            </div>
+          )}
         </div>
 
         <div className={style.col}></div>
@@ -235,6 +243,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                 type="warning"
                 data-testid="delete-workspace-button"
                 size="middle"
+                disabled={isLastWorkspace}
                 icon={<DeleteIcon />}
                 onClick={() => {
                   setShowDelete(true);

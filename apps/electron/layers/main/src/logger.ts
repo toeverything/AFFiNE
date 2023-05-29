@@ -7,7 +7,7 @@ export function getLogFilePath() {
   return log.transports.file.getFile().path;
 }
 
-export function revealLogFile() {
+export async function revealLogFile() {
   const filePath = getLogFilePath();
-  shell.showItemInFolder(filePath);
+  return await shell.openPath(filePath);
 }

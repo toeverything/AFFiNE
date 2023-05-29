@@ -5,6 +5,7 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
+import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -17,26 +18,22 @@ import { TitleCell } from './components/title-cell';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer, StyledTableRow } from './styles';
-import type { ListData } from './type';
+import type { ListData, PageListProps, TrashListData } from './type';
 import { useSorter } from './use-sorter';
-
-export type PageListProps = {
-  isPublicWorkspace?: boolean;
-  list: ListData[];
-  onCreateNewPage: () => void;
-  onCreateNewEdgeless: () => void;
-};
+import { formatDate } from './utils';
 
 const AllPagesHead = ({
   isPublicWorkspace,
   sorter,
   createNewPage,
   createNewEdgeless,
+  importFile,
 }: {
   isPublicWorkspace: boolean;
   sorter: ReturnType<typeof useSorter<ListData>>;
   createNewPage: () => void;
   createNewEdgeless: () => void;
+  importFile: () => void;
 }) => {
   const t = useAFFiNEI18N();
   const titleList = [
@@ -62,6 +59,7 @@ const AllPagesHead = ({
         <NewPageButton
           createNewPage={createNewPage}
           createNewEdgeless={createNewEdgeless}
+          importFile={importFile}
         />
       ),
       showWhen: () => !isPublicWorkspace,
@@ -115,10 +113,11 @@ export const PageList = ({
   list,
   onCreateNewPage,
   onCreateNewEdgeless,
+  onImportFile,
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
-    key: 'createDate',
+    key: DEFAULT_SORT_KEY,
     order: 'desc',
   });
 
@@ -130,10 +129,19 @@ export const PageList = ({
         isPublicWorkspace={isPublicWorkspace}
         createNewPage={onCreateNewPage}
         createNewEdgeless={onCreateNewEdgeless}
+        importFile={onImportFile}
         list={sorter.data}
       />
     );
   }
+
+  const groupKey =
+    sorter.key === 'createDate' || sorter.key === 'updatedDate'
+      ? sorter.key
+      : // default sort
+      !sorter.key
+      ? DEFAULT_SORT_KEY
+      : undefined;
 
   return (
     <StyledTableContainer>
@@ -143,9 +151,11 @@ export const PageList = ({
           sorter={sorter}
           createNewPage={onCreateNewPage}
           createNewEdgeless={onCreateNewEdgeless}
+          importFile={onImportFile}
         />
         <AllPagesBody
           isPublicWorkspace={isPublicWorkspace}
+          groupKey={groupKey}
           data={sorter.data}
         />
       </Table>
@@ -165,19 +175,6 @@ const TrashListHead = () => {
       </TableRow>
     </TableHead>
   );
-};
-
-export type TrashListData = {
-  pageId: string;
-  icon: JSX.Element;
-  title: string;
-  createDate: string;
-  updatedDate?: string;
-  trashDate?: string;
-  // isPublic: boolean;
-  onClickPage: () => void;
-  onRestorePage: () => void;
-  onPermanentlyDeletePage: () => void;
 };
 
 export const PageListTrashView: React.FC<{
@@ -221,10 +218,10 @@ export const PageListTrashView: React.FC<{
             onClick={onClickPage}
           />
           <TableCell ellipsis={true} onClick={onClickPage}>
-            {createDate}
+            {formatDate(createDate)}
           </TableCell>
           <TableCell ellipsis={true} onClick={onClickPage}>
-            {trashDate}
+            {trashDate ? formatDate(trashDate) : '--'}
           </TableCell>
           <TableCell
             style={{ padding: 0 }}
