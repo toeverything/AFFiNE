@@ -19,6 +19,7 @@ import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { lazy } from 'react';
 
+import { Header } from '../../components/blocksuite/workspace-header/header.tsx';
 import type { WorkspaceAdapter } from '../type';
 
 const WorkspaceSettingDetail = lazy(() =>
@@ -78,6 +79,13 @@ export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   },
   CRUD,
   UI: {
+    Header: () => {
+      return (
+        <>
+          <Header />
+        </>
+      );
+    },
     Provider: ({ children }) => {
       return <>{children}</>;
     },
