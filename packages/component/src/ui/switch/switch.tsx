@@ -18,9 +18,10 @@ const StyledInput = styled('input')(() => {
 
     '&:checked': {
       '& + span': {
-        background: '#6880FF',
+        background: 'var(--affine-primary-color)',
         '&:before': {
-          transform: 'translate(28px, -50%)',
+          background: 'var(--affine-toggle-circle-background-color)',
+          transform: 'translate(100%,-50%)',
         },
       },
     },
@@ -29,24 +30,25 @@ const StyledInput = styled('input')(() => {
 const StyledSwitch = styled('span')(() => {
   return {
     position: 'relative',
-    width: '60px',
-    height: '28px',
-    background: '#b3b3b3',
-    borderRadius: '32px',
-    padding: '4px',
+    width: '46px',
+    height: '26px',
+    background: 'var(--affine-toggle-disable-background-color)',
+    borderRadius: '37px',
     transition: '300ms all',
-
+    border: '1px solid var(--affine-black-10)',
+    boxShadow: 'var(--affine-toggle-circle-shadow)',
     '&:before': {
-      transition: '300ms all',
+      transition: 'all .2s cubic-bezier(0.27, 0.2, 0.25, 1.51)',
       content: '""',
       position: 'absolute',
-      width: '28px',
-      height: '28px',
-      borderRadius: '35px',
+      width: '20px',
+      height: '20px',
+      borderRadius: '50%',
       top: '50%',
-      left: '4px',
-      background: 'white',
-      transform: 'translate(-4px, -50%)',
+      border: '1px solid var(--affine-black-10)',
+      background: 'var(--affine-white)',
+      transform: 'translate(1px, -50%)',
+      boxShadow: 'var(--affine-toggle-circle-shadow)',
     },
   };
 });
