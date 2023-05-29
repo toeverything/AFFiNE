@@ -9,7 +9,7 @@ import {
 } from 'langchain/prompts';
 import { type LLMResult } from 'langchain/schema';
 
-import { IndexedDBChatMessageHistory } from './langchain';
+import { IndexedDBChatMessageHistory } from './langchain/message-history';
 import { chatPrompt } from './prompts';
 
 declare global {
