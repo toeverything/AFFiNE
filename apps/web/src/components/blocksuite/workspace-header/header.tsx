@@ -1,3 +1,4 @@
+import { Button } from '@affine/component';
 import { BrowserWarning } from '@affine/component/affine-banner';
 import {
   appSidebarFloatingAtom,
@@ -5,7 +6,12 @@ import {
 } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
-import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
+import {
+  CloseIcon,
+  FilteredIcon,
+  MinusIcon,
+  RoundedRectangleIcon,
+} from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
@@ -59,6 +65,10 @@ export const enum HeaderRightItemName {
   WindowsAppControls = 'windowsAppControls',
 }
 
+export const enum HeaderLeftItemName {
+  FilterButton = 'filterButton',
+}
+
 type HeaderItem = {
   Component: FC<BaseHeaderProps>;
   // todo: public workspace should be one of the flavour
@@ -72,6 +82,20 @@ type HeaderItem = {
   ) => boolean;
 };
 
+const HeaderLeftItems: Record<HeaderLeftItemName, HeaderItem> = {
+  [HeaderLeftItemName.FilterButton]: {
+    Component: () => {
+      return (
+        <Button icon={<FilteredIcon />} className={styles.filterButton}>
+          Filter
+        </Button>
+      );
+    },
+    availableWhen: (_, currentPage) => {
+      return currentPage?.meta.all === true;
+    },
+  },
+};
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.TrashButtonGroup]: {
     Component: TrashButtonGroup,
@@ -205,6 +229,29 @@ export const Header = forwardRef<
               tooltipContent={t['Expand sidebar']()}
               data-testid="sliderBar-arrowButton-expand"
             />
+            {useMemo(() => {
+              return Object.entries(HeaderLeftItems).map(
+                ([name, { availableWhen, Component }]) => {
+                  if (
+                    availableWhen(props.workspace, props.currentPage, {
+                      isPreview: props.isPreview,
+                      isPublic: props.isPublic,
+                    })
+                  ) {
+                    return (
+                      <Component
+                        workspace={props.workspace}
+                        currentPage={props.currentPage}
+                        isPreview={props.isPreview}
+                        isPublic={props.isPublic}
+                        key={name}
+                      />
+                    );
+                  }
+                  return null;
+                }
+              );
+            }, [props])}
             {props.leftSlot}
           </div>
         </Suspense>
