@@ -58,7 +58,7 @@ export const StyledCreateWorkspaceCard = styled('div')(() => {
       background: 'var(--affine-hover-color)',
       color: 'var(--affine-text-primary-color)',
       '.add-icon': {
-        borderColor: 'var(--affine-white-color)',
+        borderColor: 'var(--affine-white)',
         color: 'var(--affine-primary-color)',
       },
     },
@@ -156,7 +156,7 @@ export const StyleWorkspaceAdd = styled('div')(() => {
     transition: 'background .2s',
     fontSize: '24px',
     ...displayFlex('center', 'center'),
-    borderColor: 'var(--affine-white-color)',
+    borderColor: 'var(--affine-white)',
     color: 'var(--affine-primary-color)',
   };
 });
