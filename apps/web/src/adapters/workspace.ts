@@ -1,12 +1,13 @@
-import type { AppEvents } from '@affine/workspace/type';
+import { Unreachable } from '@affine/env';
+import type { AppEvents, WorkspaceUISchema } from '@affine/workspace/type';
 import {
   LoadPriority,
   ReleaseType,
   WorkspaceFlavour,
 } from '@affine/workspace/type';
 
-import { AffinePlugin } from './affine';
-import { LocalPlugin } from './local';
+import { AffineAdapter } from './affine';
+import { LocalAdapter } from './local';
 import type { WorkspaceAdapter } from './type';
 
 const unimplemented = () => {
@@ -14,8 +15,8 @@ const unimplemented = () => {
 };
 
 export const WorkspaceAdapters = {
-  [WorkspaceFlavour.AFFINE]: AffinePlugin,
-  [WorkspaceFlavour.LOCAL]: LocalPlugin,
+  [WorkspaceFlavour.AFFINE]: AffineAdapter,
+  [WorkspaceFlavour.LOCAL]: LocalAdapter,
   [WorkspaceFlavour.AFFINE_CLOUD]: {
     releaseType: ReleaseType.UNRELEASED,
     flavour: WorkspaceFlavour.AFFINE_CLOUD,
@@ -59,3 +60,13 @@ export const WorkspaceAdapters = {
 } satisfies {
   [Key in WorkspaceFlavour]: WorkspaceAdapter<Key>;
 };
+
+export function getUIAdapter<Flavour extends WorkspaceFlavour>(
+  flavour: Flavour
+): WorkspaceUISchema<Flavour> {
+  const ui = WorkspaceAdapters[flavour].UI as WorkspaceUISchema<Flavour>;
+  if (!ui) {
+    throw new Unreachable();
+  }
+  return ui;
+}
