@@ -100,6 +100,6 @@ export async function openWorkspaceDatabase(
 ) {
   const meta = await getWorkspaceMeta(context, workspaceId);
   const db = new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
-  await db.connect();
+  db.connect();
   return db;
 }
