@@ -18,7 +18,7 @@ import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import type { FC, PropsWithChildren } from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { LocalPlugin } from '../../adapters/local';
+import { LocalAdapter } from '../../adapters/local';
 import { workspacesAtom } from '../../atoms';
 import { BlockSuiteWorkspace } from '../../shared';
 import { WorkspaceSubPath } from '../../shared';
@@ -92,7 +92,7 @@ describe('useRecentlyViewed', () => {
         flavour: WorkspaceFlavour.LOCAL,
       },
     ]);
-    LocalPlugin.CRUD.get = vi.fn().mockResolvedValue({
+    LocalAdapter.CRUD.get = vi.fn().mockResolvedValue({
       id: workspaceId,
       flavour: WorkspaceFlavour.LOCAL,
       blockSuiteWorkspace,

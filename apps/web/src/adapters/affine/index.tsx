@@ -96,7 +96,7 @@ function AuthContext({ children }: PropsWithChildren): ReactElement {
   return <>{children}</>;
 }
 
-export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
+export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
   releaseType: ReleaseType.STABLE,
   flavour: WorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
@@ -175,7 +175,7 @@ export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
 
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
       // refresh the local storage
-      await AffinePlugin.CRUD.list();
+      await AffineAdapter.CRUD.list();
       return id;
     },
     delete: async workspace => {
@@ -208,7 +208,7 @@ export const AffinePlugin: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
           return null;
         }
         const workspaces: AffineLegacyCloudWorkspace[] =
-          await AffinePlugin.CRUD.list();
+          await AffineAdapter.CRUD.list();
         return (
           workspaces.find(workspace => workspace.id === workspaceId) ?? null
         );
