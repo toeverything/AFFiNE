@@ -35,6 +35,12 @@ import {
   setLoginStorage,
 } from '../login';
 
+declare module '@blocksuite/store' {
+  interface PageMeta {
+    isPublic?: unknown;
+  }
+}
+
 // @ts-expect-error
 globalThis.WebSocket = WebSocket;
 
