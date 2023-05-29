@@ -106,7 +106,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
     return (
       <div className={clsx([styles.updateAvailableWrapper])}>
         <div className={clsx([styles.installLabelNormal])}>
-          <span>
+          <span className={styles.ellipsisTextOverflow}>
             {!updateReady
               ? t['com.affine.updater.downloading']()
               : t['com.affine.updater.update-available']()}
@@ -119,7 +119,9 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
         {updateReady ? (
           <div className={clsx([styles.installLabelHover])}>
             <ResetIcon className={styles.icon} />
-            <span>{t['com.affine.updater.restart-to-update']()}</span>
+            <span className={styles.ellipsisTextOverflow}>
+              {t['com.affine.updater.restart-to-update']()}
+            </span>
           </div>
         ) : (
           <div className={styles.progress}>
@@ -137,14 +139,18 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
     return (
       <>
         <div className={clsx([styles.installLabelNormal])}>
-          <span>{t['com.affine.updater.update-available']()}</span>
+          <span className={styles.ellipsisTextOverflow}>
+            {t['com.affine.updater.update-available']()}
+          </span>
           <span className={styles.versionLabel}>
             {updateAvailable?.version}
           </span>
         </div>
 
         <div className={clsx([styles.installLabelHover])}>
-          <span>{t['com.affine.updater.open-download-page']()}</span>
+          <span className={styles.ellipsisTextOverflow}>
+            {t['com.affine.updater.open-download-page']()}
+          </span>
         </div>
       </>
     );
@@ -155,7 +161,9 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
       <>
         <div className={clsx([styles.whatsNewLabel])}>
           <NewIcon className={styles.icon} />
-          <span>{t[`Discover what's new!`]()}</span>
+          <span className={styles.ellipsisTextOverflow}>
+            {t[`Discover what's new!`]()}
+          </span>
         </div>
         <div
           className={styles.closeIcon}
