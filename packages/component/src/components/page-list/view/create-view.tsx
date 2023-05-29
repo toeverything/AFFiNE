@@ -2,7 +2,7 @@ import { Button, Input, Modal, ModalWrapper } from '@affine/component';
 import { useState } from 'react';
 
 import { FilterList } from '../filter';
-import type { Filter } from '../filter/ast';
+import type { Filter } from '../filter/vars';
 import type { View } from '../use-all-page-setting';
 
 type CreateViewProps = {

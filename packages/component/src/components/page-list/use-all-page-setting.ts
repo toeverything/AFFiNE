@@ -1,8 +1,7 @@
 import { useState } from 'react';
 
 import { evalFilterList } from './filter';
-import type { Filter } from './filter/ast';
-import type { VariableMap } from './filter/vars';
+import type { Filter, VariableMap } from './filter/vars';
 
 export type View = {
   name: string;
