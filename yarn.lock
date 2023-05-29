@@ -83,7 +83,7 @@ __metadata:
     "@storybook/test-runner": ^0.10.0
     "@storybook/testing-library": ^0.1.0
     "@toeverything/hooks": "workspace:*"
-    "@toeverything/theme": ^0.5.9
+    "@toeverything/theme": ^0.6.1
     "@types/react": ^18.2.6
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.2.4
@@ -8883,10 +8883,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:0.5.9, @toeverything/theme@npm:^0.5.9":
+"@toeverything/theme@npm:0.5.9":
   version: 0.5.9
   resolution: "@toeverything/theme@npm:0.5.9"
   checksum: 4b0572c7da64e9aa37fe164ba70e8d9c62cc1819e7c1fd2039a1bed397397c03fb9295a1466b89551b7c9f6fd87444ce8f1615eca376277c75423acd6b23fb58
+  languageName: node
+  linkType: hard
+
+"@toeverything/theme@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "@toeverything/theme@npm:0.6.1"
+  checksum: c7b6e4417db79baefb4907459179cf00d4db8bb896ae0de2b519deecb35b527e182fd2fba47c846953ed13cab5291b9636d96527cded2cf283e54601ff2a8c11
   languageName: node
   linkType: hard
 
