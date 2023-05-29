@@ -39,7 +39,7 @@
     "@radix-ui/react-collapsible": "^1.0.3",
     "@radix-ui/react-toast": "^1.1.4",
     "@toeverything/hooks": "workspace:*",
-    "@toeverything/theme": "^0.5.9",
+    "@toeverything/theme": "^0.6.1",
     "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^1.2.1",
     "dayjs": "^1.11.7",

@@ -1,55 +1,8 @@
 // components/switch.tsx
+import clsx from 'clsx';
 import { useState } from 'react';
 
-import { styled } from '../../styles';
-
-const StyledLabel = styled('label')(() => {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    cursor: 'pointer',
-  };
-});
-const StyledInput = styled('input')(() => {
-  return {
-    opacity: 0,
-    position: 'absolute',
-
-    '&:checked': {
-      '& + span': {
-        background: '#6880FF',
-        '&:before': {
-          transform: 'translate(28px, -50%)',
-        },
-      },
-    },
-  };
-});
-const StyledSwitch = styled('span')(() => {
-  return {
-    position: 'relative',
-    width: '60px',
-    height: '28px',
-    background: '#b3b3b3',
-    borderRadius: '32px',
-    padding: '4px',
-    transition: '300ms all',
-
-    '&:before': {
-      transition: '300ms all',
-      content: '""',
-      position: 'absolute',
-      width: '28px',
-      height: '28px',
-      borderRadius: '35px',
-      top: '50%',
-      left: '4px',
-      background: 'white',
-      transform: 'translate(-4px, -50%)',
-    },
-  };
-});
+import * as styles from './index.css';
 
 type SwitchProps = {
   checked?: boolean;
@@ -68,14 +21,19 @@ export const Switch = (props: SwitchProps) => {
   };
 
   return (
-    <StyledLabel>
+    <label className={clsx(styles.labelStyle)}>
       {children}
-      <StyledInput
+      <input
+        className={clsx(styles.inputStyle)}
         type="checkbox"
         checked={isChecked}
         onChange={handleChange}
       />
-      <StyledSwitch />
-    </StyledLabel>
+      <span
+        className={clsx(styles.switchStyle, {
+          [styles.switchCheckedStyle]: isChecked,
+        })}
+      />
+    </label>
   );
 };
