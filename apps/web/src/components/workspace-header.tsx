@@ -15,6 +15,7 @@ import {
   SettingsIcon,
   ShareIcon,
 } from '@blocksuite/icons';
+import { RESET } from 'jotai/utils';
 import type { ReactElement } from 'react';
 import React from 'react';
 import { NIL } from 'uuid';
@@ -54,15 +55,7 @@ export function WorkspaceHeader({
                   onConfirm={setting.createView}
                 ></SaveViewButton>
               ) : (
-                <Button
-                  onClick={() =>
-                    setting.setCurrentView({
-                      name: 'default',
-                      id: NIL,
-                      filterList: [],
-                    })
-                  }
-                >
+                <Button onClick={() => setting.setCurrentView(RESET)}>
                   Back to all
                 </Button>
               )}

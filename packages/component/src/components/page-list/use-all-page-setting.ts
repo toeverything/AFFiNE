@@ -1,6 +1,9 @@
 import type { DBSchema } from 'idb';
 import { openDB } from 'idb';
-import { useCallback, useState } from 'react';
+import type { IDBPDatabase } from 'idb/build/entry';
+import { useAtom } from 'jotai';
+import { atomWithReset } from 'jotai/utils';
+import { useCallback } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { NIL } from 'uuid';
 
@@ -20,19 +23,23 @@ export interface PageViewDBV1 extends DBSchema {
   };
 }
 
-const pageViewDBPromise = openDB<PageViewDBV1>('page-view', 1, {
-  upgrade(database) {
-    database.createObjectStore('view', {
-      keyPath: 'id',
-    });
-  },
-});
+const pageViewDBPromise: Promise<IDBPDatabase<PageViewDBV1>> =
+  environment.isServer
+    ? // never resolve in SSR
+      new Promise<any>(() => {})
+    : openDB<PageViewDBV1>('page-view', 1, {
+        upgrade(database) {
+          database.createObjectStore('view', {
+            keyPath: 'id',
+          });
+        },
+      });
 
-export const defaultView = {
+const currentViewAtom = atomWithReset<View>({
   name: 'default',
   id: NIL,
   filterList: [],
-};
+});
 
 export const useAllPageSetting = () => {
   const { data: savedViews, mutate } = useSWRImmutable(
@@ -48,7 +55,7 @@ export const useAllPageSetting = () => {
     }
   );
 
-  const [currentView, setCurrentView] = useState<View>(() => defaultView);
+  const [currentView, setCurrentView] = useAtom(currentViewAtom);
 
   const createView = useCallback(
     async (view: View) => {
