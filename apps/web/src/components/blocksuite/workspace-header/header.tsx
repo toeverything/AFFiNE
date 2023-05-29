@@ -65,10 +65,6 @@ export const enum HeaderRightItemName {
   WindowsAppControls = 'windowsAppControls',
 }
 
-export const enum HeaderLeftItemName {
-  FilterButton = 'filterButton',
-}
-
 type HeaderItem = {
   Component: FC<BaseHeaderProps>;
   // todo: public workspace should be one of the flavour
@@ -82,20 +78,6 @@ type HeaderItem = {
   ) => boolean;
 };
 
-const HeaderLeftItems: Record<HeaderLeftItemName, HeaderItem> = {
-  [HeaderLeftItemName.FilterButton]: {
-    Component: () => {
-      return (
-        <Button icon={<FilteredIcon />} className={styles.filterButton}>
-          Filter
-        </Button>
-      );
-    },
-    availableWhen: (_, currentPage) => {
-      return currentPage?.meta.all === true;
-    },
-  },
-};
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.TrashButtonGroup]: {
     Component: TrashButtonGroup,
@@ -223,40 +205,22 @@ export const Header = forwardRef<
         data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <SidebarSwitch
-              visible={!open}
-              tooltipContent={t['Expand sidebar']()}
-              data-testid="sliderBar-arrowButton-expand"
-            />
-            {useMemo(() => {
-              return Object.entries(HeaderLeftItems).map(
-                ([name, { availableWhen, Component }]) => {
-                  if (
-                    availableWhen(props.workspace, props.currentPage, {
-                      isPreview: props.isPreview,
-                      isPublic: props.isPublic,
-                    })
-                  ) {
-                    return (
-                      <Component
-                        workspace={props.workspace}
-                        currentPage={props.currentPage}
-                        isPreview={props.isPreview}
-                        isPublic={props.isPublic}
-                        key={name}
-                      />
-                    );
-                  }
-                  return null;
-                }
-              );
-            }, [props])}
-            {props.leftSlot}
+          <div className={styles.rightBarContainer}>
+            {!open ? (
+              <SidebarSwitch
+                visible={!open}
+                tooltipContent={t['Expand sidebar']()}
+                data-testid="sliderBar-arrowButton-expand"
+              />
+            ) : null}
+
+            <Button icon={<FilteredIcon />} className={styles.filterButton}>
+              Filter
+            </Button>
           </div>
         </Suspense>
-
         {props.children}
+
         <div className={styles.headerRightSide}>
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
