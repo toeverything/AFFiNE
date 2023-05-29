@@ -19,7 +19,7 @@ export const blockSuiteFeatureFlags = {
  */
 export const buildFlags = {
   enableAllPageFilter:
-    process.env.VERCEL ||
+    !!process.env.VERCEL ||
     (process.env.ENABLE_ALL_PAGE_FILTER
       ? process.env.ENABLE_ALL_PAGE_FILTER === 'true'
       : false),
