@@ -8,7 +8,7 @@ import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { LocalPlugin } from '../adapters/local';
+import { LocalAdapter } from '../adapters/local';
 import { WorkspaceAdapters } from '../adapters/workspace';
 import { workspacesAtom } from '../atoms';
 import type { AllWorkspace } from '../shared';
@@ -62,7 +62,7 @@ export function useAppHelper() {
           WorkspaceFlavour.LOCAL
         );
         blockSuiteWorkspace.meta.setName(name);
-        const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
+        const id = await LocalAdapter.CRUD.create(blockSuiteWorkspace);
         set(workspaces => [
           ...workspaces,
           {

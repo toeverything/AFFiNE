@@ -1,9 +1,7 @@
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { BlockSuiteFeatureFlags } from '@affine/env';
 import { config } from '@affine/env';
-import { Unreachable } from '@affine/env/constant';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -13,7 +11,7 @@ import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
-import { WorkspaceAdapters } from '../../../adapters/workspace';
+import { getUIAdapter } from '../../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
@@ -57,28 +55,15 @@ const WorkspaceDetail: React.FC = () => {
       setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     }
   }, [currentWorkspace]);
-  if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
-    const PageDetail =
-      WorkspaceAdapters[currentWorkspace.flavour].UI.PageDetail;
-    return (
-      <PageDetail
-        currentWorkspace={currentWorkspace}
-        currentPageId={currentPageId}
-        onLoadEditor={onLoad}
-      />
-    );
-  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
-    const PageDetail =
-      WorkspaceAdapters[currentWorkspace.flavour].UI.PageDetail;
-    return (
-      <PageDetail
-        currentWorkspace={currentWorkspace}
-        currentPageId={currentPageId}
-        onLoadEditor={onLoad}
-      />
-    );
-  }
-  throw new Unreachable();
+
+  const { PageDetail } = getUIAdapter(currentWorkspace.flavour);
+  return (
+    <PageDetail
+      currentWorkspace={currentWorkspace}
+      currentPageId={currentPageId}
+      onLoadEditor={onLoad}
+    />
+  );
 };
 
 const WorkspaceDetailPage: NextPageWithLayout = () => {

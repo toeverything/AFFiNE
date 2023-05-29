@@ -45,7 +45,7 @@ const PageDetailEditor = lazy(() =>
 
 const logger = new DebugLogger('use-create-first-workspace');
 
-export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
+export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   releaseType: ReleaseType.STABLE,
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
