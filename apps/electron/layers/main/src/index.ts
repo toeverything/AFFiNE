@@ -2,13 +2,13 @@ import './security-restrictions';
 
 import { app } from 'electron';
 
-import { createApplicationMenu } from './application-menu';
+import { createApplicationMenu } from './application-menu/create';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
-import { registerUpdater } from './handlers/updater';
 import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
+import { registerUpdater } from './updater';
 
 if (require('electron-squirrel-startup')) app.quit();
 // allow tests to overwrite app name through passing args
@@ -62,14 +62,3 @@ app
   .then(createApplicationMenu)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
-/**
- * Check new app version in production mode only
- */
-// FIXME: add me back later
-// if (import.meta.env.PROD) {
-//   app
-//     .whenReady()
-//     .then(() => import('electron-updater'))
-//     .then(({ autoUpdater }) => autoUpdater.checkForUpdatesAndNotify())
-//     .catch(e => console.error('Failed check updates:', e));
-// }

@@ -14,7 +14,9 @@ let provider: SQLiteProvider;
 
 let offlineYdoc: YType.Doc;
 
-let triggerDBUpdate: ((_: string) => void) | null = null;
+let triggerDBUpdate:
+  | Parameters<typeof window.events.db.onExternalUpdate>[0]
+  | null = null;
 
 const mockedAddBlob = vi.fn();
 
@@ -27,7 +29,7 @@ vi.stubGlobal('window', {
       applyDocUpdate: async (id: string, update: Uint8Array) => {
         Y.applyUpdate(offlineYdoc, update, 'sqlite');
       },
-      getPersistedBlobs: async () => {
+      getBlobKeys: async () => {
         // todo: may need to hack the way to get hash keys of blobs
         return [];
       },
@@ -36,19 +38,11 @@ vi.stubGlobal('window', {
   },
   events: {
     db: {
-      onDBFileUpdate: (fn: (id: string) => void) => {
+      onExternalUpdate: fn => {
         triggerDBUpdate = fn;
         return () => {
           triggerDBUpdate = null;
         };
-      },
-
-      // not used in this test
-      onDBFileMissing: () => {
-        return () => {};
-      },
-      onDBFilePathChange: () => {
-        return () => {};
       },
     },
   } satisfies Partial<NonNullable<typeof window.events>>,
@@ -111,23 +105,26 @@ describe('SQLite provider', () => {
   });
 
   test('on db update', async () => {
-    vi.useFakeTimers();
     await provider.connect();
 
     offlineYdoc.getText('text').insert(0, 'sqlite-world');
 
-    triggerDBUpdate?.(id);
+    triggerDBUpdate?.({
+      workspaceId: id + '-another-id',
+      update: Y.encodeStateAsUpdate(offlineYdoc),
+    });
 
     // not yet updated
     expect(workspace.doc.getText('text').toString()).toBe('sqlite-hello');
 
-    // wait for the update to be sync'ed
-    await vi.advanceTimersByTimeAsync(1000);
+    triggerDBUpdate?.({
+      workspaceId: id,
+      update: Y.encodeStateAsUpdate(offlineYdoc),
+    });
 
     expect(workspace.doc.getText('text').toString()).toBe(
       'sqlite-worldsqlite-hello'
     );
-    vi.useRealTimers();
   });
 
   test('disconnect handlers', async () => {

@@ -5,7 +5,7 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
-import { DEFAULT_SORT_KEY } from "@affine/env/constant";
+import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
