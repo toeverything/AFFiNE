@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Button } from '../ui/button/button';
 import { DropdownButton } from '../ui/button/dropdown';
 import type { ButtonProps } from '../ui/button/interface';
+import { RadioButton, RadioButtonGroup } from '../ui/button/radio';
 import { Menu } from '../ui/menu/menu';
 import { toast } from '../ui/toast/toast';
 
@@ -89,6 +90,20 @@ export const Dropdown: StoryFn = ({ onClickDropDown, ...props }) => {
 Dropdown.args = {
   onClick: () => toast('Click button'),
   onClickDropDown: () => toast('Click dropdown'),
+};
+
+export const RadioGroup: StoryFn = ({ ...props }) => {
+  return (
+    <RadioButtonGroup {...props}>
+      <RadioButton value="all">All</RadioButton>
+      <RadioButton value="page">Page</RadioButton>
+      <RadioButton value="edgeless">Edgeless</RadioButton>
+    </RadioButtonGroup>
+  );
+};
+RadioGroup.args = {
+  defaultValue: 'all',
+  onValueChange: (value: string) => toast(`Radio value: ${value}`),
 };
 
 export const Test: StoryFn<ButtonProps> = () => {

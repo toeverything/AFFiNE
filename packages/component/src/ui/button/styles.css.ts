@@ -38,3 +38,43 @@ export const icon = style({
     },
   },
 });
+
+export const radioButton = style({
+  fontSize: 'var(--affine-font-xs)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  width: '75px',
+  height: '24px',
+  borderRadius: '8px',
+  filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1))',
+  whiteSpace: 'nowrap',
+  userSelect: 'none',
+  selectors: {
+    '&:hover': {
+      background: 'var(--affine-hover-color)',
+    },
+    '&[data-state="checked"]': {
+      background: 'var(--affine-white)',
+    },
+  },
+});
+
+export const radioUncheckedButton = style([
+  radioButton,
+  {
+    selectors: {
+      '[data-state="checked"] > &': {
+        display: 'none',
+      },
+    },
+  },
+]);
+
+export const radioButtonGroup = style({
+  display: 'inline-flex',
+  alignItems: 'flex-start',
+  background: 'var(--affine-hover-color)',
+  borderRadius: '10px',
+  padding: '2px',
+});
