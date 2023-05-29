@@ -43,7 +43,6 @@ export type BaseHeaderProps<
   workspace: Workspace;
   currentPage: Page | null;
   isPublic: boolean;
-  isPreview: boolean;
   leftSlot?: ReactNode;
 };
 
@@ -67,7 +66,6 @@ type HeaderItem = {
     currentPage: Page | null,
     status: {
       isPublic: boolean;
-      isPreview: boolean;
     }
   ) => boolean;
 };
@@ -81,8 +79,8 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.SyncUser]: {
     Component: SyncUser,
-    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !isPublic && !isPreview;
+    availableWhen: (_, currentPage, { isPublic }) => {
+      return !isPublic;
     },
   },
   [HeaderRightItemName.ShareMenu]: {
@@ -105,8 +103,8 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
-    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !isPublic && !isPreview;
+    availableWhen: (_, currentPage, { isPublic }) => {
+      return !isPublic;
     },
   },
   [HeaderRightItemName.WindowsAppControls]: {
@@ -216,7 +214,6 @@ export const Header = forwardRef<
               ([name, { availableWhen, Component }]) => {
                 if (
                   availableWhen(props.workspace, props.currentPage, {
-                    isPreview: props.isPreview,
                     isPublic: props.isPublic,
                   })
                 ) {
@@ -224,7 +221,6 @@ export const Header = forwardRef<
                     <Component
                       workspace={props.workspace}
                       currentPage={props.currentPage}
-                      isPreview={props.isPreview}
                       isPublic={props.isPublic}
                       key={name}
                     />

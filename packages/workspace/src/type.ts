@@ -10,6 +10,13 @@ import type { FC, PropsWithChildren } from 'react';
 
 export type JotaiStore = ReturnType<typeof createStore>;
 
+export const enum WorkspaceSubPath {
+  ALL = 'all',
+  SETTING = 'setting',
+  TRASH = 'trash',
+  SHARED = 'shared',
+}
+
 export type BaseProvider = {
   flavour: string;
 
@@ -168,6 +175,17 @@ type UIBaseProps<Flavour extends keyof WorkspaceRegistry> = {
   currentWorkspace: WorkspaceRegistry[Flavour];
 };
 
+export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
+  UIBaseProps<Flavour> & {
+    currentEntry:
+      | {
+          subPath: WorkspaceSubPath;
+        }
+      | {
+          pageId: string;
+        };
+  };
+
 type SettingProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
     currentTab: SettingPanel;
@@ -196,6 +214,7 @@ type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
 };
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
+  Header: FC<WorkspaceHeaderProps<Flavour>>;
   PageDetail: FC<PageDetailProps<Flavour>>;
   PageList: FC<PageListProps<Flavour>>;
   SettingsDetail: FC<SettingProps<Flavour>>;

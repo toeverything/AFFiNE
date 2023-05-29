@@ -32,6 +32,7 @@ export const WorkspaceAdapters = {
     // todo: implement this
     UI: {
       Provider: unimplemented,
+      Header: unimplemented,
       PageDetail: unimplemented,
       PageList: unimplemented,
       SettingsDetail: unimplemented,
@@ -52,6 +53,7 @@ export const WorkspaceAdapters = {
     // todo: implement this
     UI: {
       Provider: unimplemented,
+      Header: unimplemented,
       PageDetail: unimplemented,
       PageList: unimplemented,
       SettingsDetail: unimplemented,

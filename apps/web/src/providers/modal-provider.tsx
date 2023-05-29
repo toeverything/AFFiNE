@@ -1,5 +1,6 @@
 import { getEnvironment } from '@affine/env';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { WorkspaceSubPath } from '@affine/workspace/type';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
@@ -19,7 +20,6 @@ import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspaceSubPath } from '../shared';
 
 const WorkspaceListModal = lazy(() =>
   import('../components/pure/workspace-list-modal').then(module => ({
