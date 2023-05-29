@@ -1,8 +1,11 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { SettingPanel } from '@affine/workspace/type';
-import { settingPanel, settingPanelValues } from '@affine/workspace/type';
-import { SettingsIcon } from '@blocksuite/icons';
+import {
+  settingPanel,
+  settingPanelValues,
+  WorkspaceSubPath,
+} from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
@@ -13,7 +16,6 @@ import React, { useCallback, useEffect } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { PageLoading } from '../../../components/pure/loading';
-import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-workspace';
 import { useAppHelper } from '../../../hooks/use-workspaces';
@@ -115,21 +117,18 @@ const SettingPage: NextPageWithLayout = () => {
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     return <PageLoading />;
   }
-  const { SettingsDetail } = getUIAdapter(currentWorkspace.flavour);
+  const { SettingsDetail, Header } = getUIAdapter(currentWorkspace.flavour);
   return (
     <>
       <Head>
         <title>{t['Settings']()} - AFFiNE</title>
       </Head>
-      <WorkspaceTitle
-        workspace={currentWorkspace}
-        currentPage={null}
-        isPreview={false}
-        isPublic={false}
-        icon={<SettingsIcon />}
-      >
-        {t['Workspace Settings']()}
-      </WorkspaceTitle>
+      <Header
+        currentWorkspace={currentWorkspace}
+        currentEntry={{
+          subPath: WorkspaceSubPath.SETTING,
+        }}
+      />
       <SettingsDetail
         onTransformWorkspace={onTransformWorkspace}
         onDeleteWorkspace={onDeleteWorkspace}

@@ -56,13 +56,21 @@ const WorkspaceDetail: React.FC = () => {
     }
   }, [currentWorkspace]);
 
-  const { PageDetail } = getUIAdapter(currentWorkspace.flavour);
+  const { PageDetail, Header } = getUIAdapter(currentWorkspace.flavour);
   return (
-    <PageDetail
-      currentWorkspace={currentWorkspace}
-      currentPageId={currentPageId}
-      onLoadEditor={onLoad}
-    />
+    <>
+      <Header
+        currentWorkspace={currentWorkspace}
+        currentEntry={{
+          pageId: currentPageId,
+        }}
+      />
+      <PageDetail
+        currentWorkspace={currentWorkspace}
+        currentPageId={currentPageId}
+        onLoadEditor={onLoad}
+      />
+    </>
   );
 };
 

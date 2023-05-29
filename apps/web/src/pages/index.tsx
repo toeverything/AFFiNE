@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { WorkspaceSubPath } from '@affine/workspace/type';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
@@ -6,7 +7,6 @@ import { Suspense, useEffect } from 'react';
 import { PageLoading } from '../components/pure/loading';
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
 import { useAppHelper, useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspaceSubPath } from '../shared';
 
 const logger = new DebugLogger('index-page');
 

@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto';
 import assert from 'node:assert';
 
 import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/workspace/type';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
@@ -23,7 +23,7 @@ import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { workspacesAtom } from '../../atoms';
-import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
+import { BlockSuiteWorkspace } from '../../shared';
 import {
   currentWorkspaceAtom,
   useCurrentWorkspace,
