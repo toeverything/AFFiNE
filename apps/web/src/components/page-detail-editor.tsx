@@ -13,16 +13,13 @@ import { startTransition, useCallback } from 'react';
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-import { WorkspaceHeader } from './blocksuite/workspace-header';
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
-  isPreview?: boolean;
   workspace: AffineOfficialWorkspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
-  header?: React.ReactNode;
 };
 
 export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
@@ -30,9 +27,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   pageId,
   onInit,
   onLoad,
-  header,
   isPublic,
-  isPreview,
 }) => {
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const page = useBlockSuiteWorkspacePage(blockSuiteWorkspace, pageId);
@@ -52,14 +47,6 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
       <Head>
         <title>{title}</title>
       </Head>
-      <WorkspaceHeader
-        isPublic={isPublic ?? false}
-        isPreview={isPreview ?? false}
-        workspace={workspace}
-        currentPage={page}
-      >
-        {header}
-      </WorkspaceHeader>
       <Editor
         style={{
           height: 'calc(100% - 52px)',

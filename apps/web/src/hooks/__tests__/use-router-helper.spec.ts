@@ -1,13 +1,13 @@
 /**
  * @vitest-environment happy-dom
  */
+import { WorkspaceSubPath } from '@affine/workspace/type';
 import { renderHook } from '@testing-library/react';
 import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import { beforeAll, describe, expect, test } from 'vitest';
 
-import { WorkspaceSubPath } from '../../shared';
 import { RouteLogic, useRouterHelper } from '../use-router-helper';
 
 beforeAll(() => {
