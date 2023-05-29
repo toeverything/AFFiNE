@@ -6,7 +6,7 @@ import {
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/workspace/type';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -21,7 +21,6 @@ import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { LocalAdapter } from '../../adapters/local';
 import { workspacesAtom } from '../../atoms';
 import { BlockSuiteWorkspace } from '../../shared';
-import { WorkspaceSubPath } from '../../shared';
 import {
   currentWorkspaceAtom,
   useCurrentWorkspace,

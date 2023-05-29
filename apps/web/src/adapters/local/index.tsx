@@ -17,31 +17,15 @@ import {
 } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
-import { lazy } from 'react';
+import React from 'react';
 
+import {
+  BlockSuitePageList,
+  PageDetailEditor,
+  WorkspaceHeader,
+  WorkspaceSettingDetail,
+} from '../shared';
 import type { WorkspaceAdapter } from '../type';
-
-const WorkspaceSettingDetail = lazy(() =>
-  import('../../components/affine/workspace-setting-detail').then(
-    ({ WorkspaceSettingDetail }) => ({
-      default: WorkspaceSettingDetail,
-    })
-  )
-);
-const BlockSuitePageList = lazy(() =>
-  import('../../components/blocksuite/block-suite-page-list').then(
-    ({ BlockSuitePageList }) => ({
-      default: BlockSuitePageList,
-    })
-  )
-);
-const PageDetailEditor = lazy(() =>
-  import('../../components/page-detail-editor').then(
-    ({ PageDetailEditor }) => ({
-      default: PageDetailEditor,
-    })
-  )
-);
 
 const logger = new DebugLogger('use-create-first-workspace');
 
@@ -78,6 +62,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   },
   CRUD,
   UI: {
+    Header: WorkspaceHeader,
     Provider: ({ children }) => {
       return <>{children}</>;
     },
