@@ -1,33 +1,14 @@
 import { MenuItem, MuiClickAwayListener, PureMenu } from '@affine/component';
 import type { EditorPlugin } from '@affine/component/block-suite-editor';
+import type { SerializedBlock } from '@blocksuite/blocks';
 import {
   getCurrentBlockRange,
   getCurrentNativeRange,
   getVirgoByModel,
-  hasNativeSelection,
 } from '@blocksuite/blocks/std';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import { useEffect, useMemo, useRef, useState } from 'react';
-
-const isCursorInLink = (page: Page) => {
-  if (!hasNativeSelection()) return false;
-  const blockRange = getCurrentBlockRange(page);
-  if (
-    !blockRange ||
-    blockRange.type !== 'Native' ||
-    blockRange.startOffset !== blockRange.endOffset
-  ) {
-    return false;
-  }
-  const {
-    models: [model],
-  } = blockRange;
-  const vEditor = getVirgoByModel(model);
-  const delta = vEditor?.getDeltaByRangeIndex(blockRange.startOffset);
-
-  return delta?.attributes?.link;
-};
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type ShortcutMap = {
   [key: string]: (e: KeyboardEvent, page: Page) => void;
@@ -94,10 +75,25 @@ const handleEnter = ({
   return callback();
 };
 
+const shouldShowBookmarkMenu = (pastedBlocks: SerializedBlock[]) => {
+  if (!pastedBlocks.length || pastedBlocks.length > 1) {
+    return;
+  }
+  const [firstBlock] = pastedBlocks;
+  if (
+    !firstBlock.text ||
+    !firstBlock.text.length ||
+    firstBlock.text.length > 1
+  ) {
+    return;
+  }
+  return !!firstBlock.text[0].attributes?.link;
+};
 const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
   const [anchor, setAnchor] = useState<Range | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string>('');
-  const shouldHijack = useRef(false);
+  const [selectedOption, setSelectedOption] = useState<string>(
+    menuOptions[0].id
+  );
   const shortcutMap = useMemo<ShortcutMap>(
     () => ({
       ArrowUp: () => {
@@ -127,51 +123,57 @@ const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
           page,
           selectedOption,
           callback: () => {
-            shouldHijack.current = false;
             setAnchor(null);
           },
         }),
+      Escape: () => {
+        setAnchor(null);
+      },
     }),
     [page, selectedOption]
   );
-
-  useEffect(() => {
-    // TODO: textUpdated slot is not working
-    // const disposer = page.slots.textUpdated.on(() => {
-    //   console.log('text Updated', page);
-    // });
-    const disposer = page.slots.historyUpdated.on(() => {
-      if (!isCursorInLink(page)) {
-        return;
-      }
-      setAnchor(getCurrentNativeRange());
-      shouldHijack.current = true;
-    });
-
-    return () => {
-      // disposer.dispose();
-      disposer.dispose();
-    };
-  }, [page, shortcutMap]);
-
-  useEffect(() => {
-    const keydown = (e: KeyboardEvent) => {
-      if (!shouldHijack.current) {
-        return;
-      }
+  const onKeydown = useCallback(
+    (e: KeyboardEvent) => {
       const shortcut = shortcutMap[e.key];
       if (shortcut) {
         e.stopPropagation();
         e.preventDefault();
         shortcut(e, page);
+      } else {
+        setAnchor(null);
       }
-    };
-    document.addEventListener('keydown', keydown, { capture: true });
+    },
+    [page, shortcutMap]
+  );
+
+  useEffect(() => {
+    const disposer = page.slots.pasted.on(pastedBlocks => {
+      if (!shouldShowBookmarkMenu(pastedBlocks)) {
+        return;
+      }
+      setTimeout(() => {
+        setAnchor(getCurrentNativeRange());
+      }, 100);
+    });
 
     return () => {
-      document.removeEventListener('keydown', keydown, { capture: true });
+      disposer.dispose();
     };
-  }, [page, shortcutMap]);
+  }, [onKeydown, page, shortcutMap]);
+
+  useEffect(() => {
+    if (anchor) {
+      document.addEventListener('keydown', onKeydown, { capture: true });
+    } else {
+      // reset status and remove event
+      setSelectedOption(menuOptions[0].id);
+      document.removeEventListener('keydown', onKeydown, { capture: true });
+    }
+
+    return () => {
+      document.removeEventListener('keydown', onKeydown, { capture: true });
+    };
+  }, [anchor, onKeydown]);
 
   return anchor ? (
     <MuiClickAwayListener
@@ -187,7 +189,19 @@ const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
               <MenuItem
                 key={id}
                 active={selectedOption === id}
-                onClick={() => {}}
+                onClick={() => {
+                  handleEnter({
+                    page,
+                    selectedOption: id,
+                    callback: () => {
+                      setAnchor(null);
+                    },
+                  });
+                }}
+                disableHover={true}
+                onMouseEnter={() => {
+                  setSelectedOption(id);
+                }}
               >
                 {label}
               </MenuItem>
