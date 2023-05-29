@@ -1,5 +1,5 @@
 /* eslint-disable no-async-promise-executor */
-import { execSync, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -105,8 +105,6 @@ async function watchMain() {
           name: 'electron-dev:reload-app-on-main-change',
           setup(build) {
             build.onEnd(() => {
-              execSync('yarn generate-main-exposed-meta');
-
               if (initialBuild) {
                 console.log(`[main] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
