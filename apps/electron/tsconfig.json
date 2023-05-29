@@ -12,8 +12,8 @@
     "resolveJsonModule": true,
     "noImplicitOverride": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "package.json"],
-  "exclude": ["out", "dist", "tests", "node_modules"],
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"],
   "references": [
     {
       "path": "./tsconfig.node.json"

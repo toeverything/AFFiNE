@@ -115,7 +115,7 @@ beforeEach(async () => {
 declare global {
   interface DocumentEventMap {
     'affine-error': CustomEvent<{
-      code: MessageCode;
+      code: (typeof MessageCode)[keyof typeof MessageCode];
     }>;
   }
 }
@@ -170,7 +170,7 @@ describe('api', () => {
     const listener = vi.fn(
       (
         e: CustomEvent<{
-          code: MessageCode;
+          code: (typeof MessageCode)[keyof typeof MessageCode];
         }>
       ) => {
         expect(e.detail.code).toBe(MessageCode.loadListFailed);

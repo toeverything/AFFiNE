@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
-    "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@toeverything/hooks": "workspace:*",

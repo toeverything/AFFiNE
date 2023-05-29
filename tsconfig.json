@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "rootDir": ".",
     "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
@@ -39,6 +40,7 @@
       "@affine/native/*": ["./packages/native/*"]
     }
   },
+  "include": [],
   "references": [
     {
       "path": "./tests"

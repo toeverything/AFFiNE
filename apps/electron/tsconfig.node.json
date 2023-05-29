@@ -9,5 +9,5 @@
     "allowSyntheticDefaultImports": true,
     "noEmit": false
   },
-  "include": ["./scripts", "package.json"]
+  "include": ["./scripts"]
 }

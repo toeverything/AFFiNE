@@ -376,7 +376,6 @@ __metadata:
   resolution: "@affine/workspace@workspace:packages/workspace"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
-    "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@toeverything/hooks": "workspace:*"
