@@ -89,7 +89,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         if (!filter[listType](pageMeta, pageMetas)) {
           return false;
         }
-        console.log(view);
         if (!view) {
           return true;
         }
