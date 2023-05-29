@@ -3,6 +3,7 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../../utils';
+import { getExposedMeta } from './exposed';
 import { logger } from './logger';
 
 const IS_DEV: boolean =
@@ -16,6 +17,8 @@ async function createWindow() {
     defaultWidth: 1000,
     defaultHeight: 800,
   });
+
+  const exposedMeta = getExposedMeta();
 
   const browserWindow = new BrowserWindow({
     titleBarStyle: isMacOS()
@@ -40,6 +43,8 @@ async function createWindow() {
       webviewTag: false, // The webview tag is not recommended. Consider alternatives like iframe or Electron's BrowserView. https://www.electronjs.org/docs/latest/api/webview-tag#warning
       spellcheck: false, // FIXME: enable?
       preload: join(__dirname, '../preload/index.js'),
+      // serialize exposed meta that to be used in preload
+      additionalArguments: [`--exposed-meta=` + JSON.stringify(exposedMeta)],
     },
   });
 
