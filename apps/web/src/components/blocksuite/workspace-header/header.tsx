@@ -213,7 +213,6 @@ export const Header = forwardRef<
                 data-testid="sliderBar-arrowButton-expand"
               />
             ) : null}
-
             <Button icon={<FilteredIcon />} className={styles.filterButton}>
               Filter
             </Button>

@@ -117,6 +117,12 @@ export const closeButton = style({
   top: 0,
 });
 
+export const filterButton = style({
+  borderRadius: '8px',
+  padding: '2px 8px 2px 4px',
+  margin: '20px',
+});
+
 export const switchWrapper = style({
   position: 'absolute',
   right: '100%',
