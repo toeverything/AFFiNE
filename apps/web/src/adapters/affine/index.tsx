@@ -34,15 +34,17 @@ import { z } from 'zod';
 
 import { createAffineProviders } from '../../blocksuite';
 import { createAffineDownloadProvider } from '../../blocksuite/providers/affine';
-import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
-import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
-import { PageDetailEditor } from '../../components/page-detail-editor';
 import { PageLoading } from '../../components/pure/loading';
-import { WorkspaceHeader } from '../../components/workspace-header';
 import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh-auth-token';
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis, affineAuth } from '../../shared/apis';
 import { toast } from '../../utils';
+import {
+  BlockSuitePageList,
+  PageDetailEditor,
+  WorkspaceHeader,
+  WorkspaceSettingDetail,
+} from '../shared';
 import type { WorkspaceAdapter } from '../type';
 import { QueryKey } from './fetcher';
 
