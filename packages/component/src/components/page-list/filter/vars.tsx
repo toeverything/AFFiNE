@@ -1,5 +1,4 @@
-import { MenuItem } from '@affine/component';
-
+import { MenuItem } from '../../../ui/menu';
 import type { Filter } from './ast';
 import { filterMatcher } from './filter-matcher';
 import { tBoolean, tDate } from './logical/custom-type';

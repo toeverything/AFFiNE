@@ -1,7 +1,7 @@
-import { Menu, MenuItem } from '@affine/component';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
+import { Menu, MenuItem } from '../../../ui/menu';
 import type { Filter, Literal } from './ast';
 import { filterMatcher } from './filter-matcher';
 import { literalMatcher } from './literal-matcher';
