@@ -57,7 +57,7 @@
     "@blocksuite/editor": "0.0.0-20230529110357-2729de93-nightly",
     "@blocksuite/global": "0.0.0-20230529110357-2729de93-nightly",
     "@blocksuite/icons": "^2.1.19",
-    "@blocksuite/lit": "0.0.0-20230529102007-5ac37643-nightly",
+    "@blocksuite/lit": "0.0.0-20230529110357-2729de93-nightly",
     "@blocksuite/store": "0.0.0-20230529110357-2729de93-nightly",
     "@storybook/addon-actions": "^7.0.18",
     "@storybook/addon-coverage": "^0.0.8",

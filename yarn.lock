@@ -54,7 +54,7 @@ __metadata:
     "@blocksuite/editor": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/icons": ^2.1.19
-    "@blocksuite/lit": 0.0.0-20230529102007-5ac37643-nightly
+    "@blocksuite/lit": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
     "@dnd-kit/core": ^6.0.8
     "@dnd-kit/sortable": ^7.0.2
@@ -227,7 +227,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/editor": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
-    "@blocksuite/lit": 0.0.0-20230529102007-5ac37643-nightly
+    "@blocksuite/lit": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
     jotai: ^2.1.0
     lottie-web: ^5.11.0
@@ -317,7 +317,7 @@ __metadata:
     "@blocksuite/editor": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/icons": ^2.1.19
-    "@blocksuite/lit": 0.0.0-20230529102007-5ac37643-nightly
+    "@blocksuite/lit": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
     "@dnd-kit/core": ^6.0.8
     "@dnd-kit/sortable": ^7.0.2
@@ -2196,21 +2196,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/global@npm:0.0.0-20230529102007-5ac37643-nightly":
-  version: 0.0.0-20230529102007-5ac37643-nightly
-  resolution: "@blocksuite/global@npm:0.0.0-20230529102007-5ac37643-nightly"
-  dependencies:
-    ansi-colors: ^4.1.3
-    zod: ^3.21.4
-  peerDependencies:
-    lit: ^2.7
-  peerDependenciesMeta:
-    lit:
-      optional: true
-  checksum: 5fbede5501002ae135c946030b1f170fbbaa9c3691f2ec188a8ab66a28244c67b0dae5cc3bc417c51ba0d11fe67eabf7fb2ee23fd5bcbef5c7f072d0c9145687
-  languageName: node
-  linkType: hard
-
 "@blocksuite/global@npm:0.0.0-20230529110357-2729de93-nightly":
   version: 0.0.0-20230529110357-2729de93-nightly
   resolution: "@blocksuite/global@npm:0.0.0-20230529110357-2729de93-nightly"
@@ -2236,15 +2221,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/lit@npm:0.0.0-20230529102007-5ac37643-nightly":
-  version: 0.0.0-20230529102007-5ac37643-nightly
-  resolution: "@blocksuite/lit@npm:0.0.0-20230529102007-5ac37643-nightly"
+"@blocksuite/lit@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/lit@npm:0.0.0-20230529110357-2729de93-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230529102007-5ac37643-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     lit: ^2.7.3
   peerDependencies:
-    "@blocksuite/store": 0.0.0-20230529102007-5ac37643-nightly
-  checksum: 1756b99a5ec5f10bc70247fcba11b97c59fb7441aca063894a3a95acc1dd012648fe15c971b634f5b5be5f24c716b5d528dae9f3e8af0515e139c2f055ae03d8
+    "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
+  checksum: be08e09254d870ab58a4f59176fddb9fbc659161ac0ed526e83d815549a1916d7e9734b8ccbf2df83f3a9d779267bca679030502744543dce36c8db0349a72cc
   languageName: node
   linkType: hard
 
