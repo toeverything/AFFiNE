@@ -49,7 +49,9 @@ export function WorkspaceHeader({
               />
             </div>
             <div>
-              {setting.currentView.id !== NIL ? (
+              {setting.currentView.id !== NIL ||
+              (setting.currentView.id === NIL &&
+                setting.currentView.filterList.length > 0) ? (
                 <SaveViewButton
                   init={setting.currentView.filterList}
                   onConfirm={setting.createView}
