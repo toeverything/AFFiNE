@@ -6,16 +6,15 @@ import {
   ViewList,
 } from '@affine/component/page-list';
 import { config } from '@affine/env';
-import { QueryParamError, Unreachable } from '@affine/env/constant';
+import { QueryParamError } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
-import { WorkspaceAdapters } from '../../../adapters/workspace';
+import { getUIAdapter } from '../../../adapters/workspace';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
@@ -78,58 +77,31 @@ const AllPage: NextPageWithLayout = () => {
         </div>
       </div>
     );
-  if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
-    const PageList = WorkspaceAdapters[currentWorkspace.flavour].UI.PageList;
-    return (
-      <>
-        <Head>
-          <title>{t['All pages']()} - AFFiNE</title>
-        </Head>
-        <WorkspaceTitle
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPreview={false}
-          isPublic={false}
-          icon={<FolderIcon />}
-          leftSlot={leftSlot}
-        >
-          {t['All pages']()}
-        </WorkspaceTitle>
-        {filterContainer}
-        <PageList
-          view={setting.currentView}
-          onOpenPage={onClickPage}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
-      </>
-    );
-  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
-    const PageList = WorkspaceAdapters[currentWorkspace.flavour].UI.PageList;
-    return (
-      <>
-        <Head>
-          <title>{t['All pages']()} - AFFiNE</title>
-        </Head>
-        <WorkspaceTitle
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPreview={false}
-          isPublic={false}
-          icon={<FolderIcon />}
-          leftSlot={leftSlot}
-        >
-          {t['All pages']()}
-        </WorkspaceTitle>
-        {filterContainer}
-        <PageList
-          view={setting.currentView}
-          onOpenPage={onClickPage}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
-      </>
-    );
-  }
-  throw new Unreachable();
+
+  const { PageList } = getUIAdapter(currentWorkspace.flavour);
+  return (
+    <>
+      <Head>
+        <title>{t['All pages']()} - AFFiNE</title>
+      </Head>
+      <WorkspaceTitle
+        workspace={currentWorkspace}
+        currentPage={null}
+        isPreview={false}
+        isPublic={false}
+        icon={<FolderIcon />}
+        leftSlot={leftSlot}
+      >
+        {t['All pages']()}
+      </WorkspaceTitle>
+      {filterContainer}
+      <PageList
+        view={setting.currentView}
+        onOpenPage={onClickPage}
+        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+      />
+    </>
+  );
 };
 
 export default AllPage;
