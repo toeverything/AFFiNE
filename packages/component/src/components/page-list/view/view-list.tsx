@@ -1,5 +1,4 @@
 import { MenuItem, styled } from '@affine/component';
-import { NIL } from 'uuid';
 
 import Menu from '../../../ui/menu/menu';
 import { CreateFilterMenu } from '../filter/vars';
@@ -16,7 +15,7 @@ export const ViewList = ({
 }) => {
   return (
     <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}>
-      {setting.currentView.id !== NIL && (
+      {setting.savedViews.length > 0 && (
         <Menu
           trigger="click"
           content={

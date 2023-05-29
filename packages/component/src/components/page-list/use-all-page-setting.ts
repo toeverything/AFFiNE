@@ -52,6 +52,7 @@ export const useAllPageSetting = () => {
       },
       suspense: true,
       fallbackData: [],
+      revalidateOnMount: true,
     }
   );
 
