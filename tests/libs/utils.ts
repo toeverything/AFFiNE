@@ -126,3 +126,16 @@ export async function getMetas(page: Page): Promise<PageMeta[]> {
     () => globalThis.currentWorkspace.blockSuiteWorkspace.meta.pageMetas ?? []
   );
 }
+
+export async function waitForLogMessage(
+  page: Page,
+  log: string
+): Promise<boolean> {
+  return new Promise(resolve => {
+    page.on('console', msg => {
+      if (msg.type() === 'log' && msg.text() === log) {
+        resolve(true);
+      }
+    });
+  });
+}
