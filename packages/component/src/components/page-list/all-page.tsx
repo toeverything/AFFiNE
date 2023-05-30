@@ -20,7 +20,7 @@ import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer, StyledTableRow } from './styles';
 import type { ListData, PageListProps, TrashListData } from './type';
 import { useSorter } from './use-sorter';
-import { formatDate } from './utils';
+import { formatDate, useIsSmallDevices } from './utils';
 
 const AllPagesHead = ({
   isPublicWorkspace,
@@ -121,8 +121,7 @@ export const PageList = ({
     order: 'desc',
   });
 
-  const theme = useTheme();
-  const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallDevices = useIsSmallDevices();
   if (isSmallDevices) {
     return (
       <AllPageListMobileView
