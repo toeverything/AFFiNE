@@ -9,11 +9,14 @@ import type { Loader, PluginUIAdapter } from './type';
 export const affinePluginsAtom = atom<Record<string, AffinePlugin<string>>>({});
 
 const pluginLogger = new DebugLogger('affine:plugin');
-
+import { config } from '@affine/env';
 export function definePlugin<ID extends string>(
   definition: Definition<ID>,
   uiAdapterLoader?: Loader<Partial<PluginUIAdapter>>
 ) {
+  if (!config.enablePlugin) {
+    return;
+  }
   const basePlugin = {
     definition,
     uiAdapter: {},
