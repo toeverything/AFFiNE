@@ -6,6 +6,7 @@
   "license": "MPL-2.0",
   "workspaces": [
     "apps/*",
+    "plugins/*",
     "packages/*",
     "tests/fixtures",
     "tests/kit"
@@ -51,7 +52,7 @@
     "@istanbuljs/schema": "^0.1.3",
     "@magic-works/i18n-codegen": "^0.5.0",
     "@perfsee/sdk": "^1.6.0",
-    "@playwright/test": "^1.33.0",
+    "@playwright/test": "=1.33.0",
     "@taplo/cli": "^0.5.2",
     "@testing-library/react": "^14.0.0",
     "@types/eslint": "^8.40.0",

@@ -84,7 +84,9 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: local
-          ENABLE_DEBUG_PAGE: true
+          ENABLE_DEBUG_PAGE: 1
+          ENABLE_PLUGIN: true
+          ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: true
           COVERAGE: true
 
@@ -106,7 +108,9 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: affine
-          ENABLE_DEBUG_PAGE: true
+          ENABLE_DEBUG_PAGE: 1
+          ENABLE_PLUGIN: true
+          ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: false
           COVERAGE: true
 
