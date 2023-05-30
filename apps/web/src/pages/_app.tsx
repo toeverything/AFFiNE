@@ -9,7 +9,7 @@ import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
-import { AffinePluginContext } from '@toeverything/plugin-infra/react/context';
+import { AffinePluginContext } from '@toeverything/plugin-infra/react';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
