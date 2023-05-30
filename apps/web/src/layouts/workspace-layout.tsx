@@ -1,4 +1,5 @@
 import { Content, displayFlex } from '@affine/component';
+import { AffineWatermark } from '@affine/component/affine-watermark';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
@@ -445,6 +446,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
                 />
               )}
             </ToolContainer>
+            <AffineWatermark />
           </MainContainer>
         </AppContainer>
         <PageListTitleCellDragOverlay />
