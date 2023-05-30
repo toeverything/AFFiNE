@@ -1,3 +1,11 @@
+import { useMediaQuery, useTheme } from '@mui/material';
+
+export const useIsSmallDevices = () => {
+  const theme = useTheme();
+  const isSmallDevices = useMediaQuery(theme.breakpoints.down(900));
+  return isSmallDevices;
+};
+
 export function isToday(date: Date): boolean {
   const today = new Date();
   return (

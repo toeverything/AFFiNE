@@ -39,7 +39,7 @@ export const StyledTableCell = styled('td')<
       boxSizing: 'border-box',
       textAlign: align,
       verticalAlign: 'middle',
-      overflowWrap: 'break-word',
+      whiteSpace: 'nowrap',
       userSelect: 'none',
       fontSize: 'var(--affine-font-sm)',
       ...(active ? { color: 'var(--affine-text-primary-color)' } : {}),
