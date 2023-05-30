@@ -1,4 +1,7 @@
+import { Content, displayFlex } from '@affine/component';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import type { DraggableTitleCellData } from '@affine/component/page-list';
+import { StyledTitleLink } from '@affine/component/page-list';
 import {
   AppContainer,
   MainContainer,
@@ -9,6 +12,7 @@ import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { initPage } from '@affine/env/blocksuite';
 import { setUpLanguage, useI18N } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
@@ -19,6 +23,16 @@ import {
 import type { BackgroundProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  pointerWithin,
+  useDndContext,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
@@ -34,13 +48,18 @@ import {
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
 import { HelpIsland } from '../components/pure/help-island';
-import { RootAppSidebar } from '../components/root-app-sidebar';
+import {
+  DROPPABLE_SIDEBAR_TRASH,
+  RootAppSidebar,
+} from '../components/root-app-sidebar';
+import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { ModalProvider } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
+import { toast } from '../utils';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -350,46 +369,123 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
 
   const resizing = useAtomValue(appSidebarResizingAtom);
 
+  const sensors = useSensors(
+    // Delay 10ms after mousedown
+    // Otherwise clicks would be intercepted
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        delay: 10,
+        tolerance: 10,
+      },
+    })
+  );
+
+  const { removeToTrash: moveToTrash } = useBlockSuiteMetaHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
+  const t = useAFFiNEI18N();
+
+  const handleDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      // Drag page into trash folder
+      if (
+        e.over?.id === DROPPABLE_SIDEBAR_TRASH &&
+        String(e.active.id).startsWith('page-list-item-')
+      ) {
+        const { pageId } = e.active.data.current as DraggableTitleCellData;
+        // TODO-Doma
+        // Co-locate `moveToTrash` with the toast for reuse, as they're always used together
+        moveToTrash(pageId);
+        toast(t['Successfully deleted']());
+      }
+    },
+    [moveToTrash, t]
+  );
+
   return (
     <>
       <Head>
         <title>{title}</title>
       </Head>
-      <AppContainer resizing={resizing}>
-        <RootAppSidebar
-          isPublicWorkspace={isPublicWorkspace}
-          onOpenQuickSearchModal={handleOpenQuickSearchModal}
-          currentWorkspace={currentWorkspace}
-          onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
-          openPage={useCallback(
-            (pageId: string) => {
-              assertExists(currentWorkspace);
-              return openPage(currentWorkspace.id, pageId);
-            },
-            [currentWorkspace, openPage]
-          )}
-          createPage={handleCreatePage}
-          currentPath={router.asPath.split('?')[0]}
-          paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
-        />
-        <MainContainer>
-          {children}
-          <ToolContainer>
-            {/* fixme(himself65): remove this */}
-            <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-              {/* Slot for block hub */}
-            </div>
-            {!isPublicWorkspace && (
-              <HelpIsland
-                showList={
-                  router.query.pageId ? undefined : ['whatNew', 'contact']
-                }
-              />
+      {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={pointerWithin}
+        onDragEnd={handleDragEnd}
+      >
+        <AppContainer resizing={resizing}>
+          <RootAppSidebar
+            isPublicWorkspace={isPublicWorkspace}
+            onOpenQuickSearchModal={handleOpenQuickSearchModal}
+            currentWorkspace={currentWorkspace}
+            onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
+            openPage={useCallback(
+              (pageId: string) => {
+                assertExists(currentWorkspace);
+                return openPage(currentWorkspace.id, pageId);
+              },
+              [currentWorkspace, openPage]
             )}
-          </ToolContainer>
-        </MainContainer>
-      </AppContainer>
+            createPage={handleCreatePage}
+            currentPath={router.asPath.split('?')[0]}
+            paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
+          />
+          <MainContainer>
+            {children}
+            <ToolContainer>
+              {/* fixme(himself65): remove this */}
+              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+                {/* Slot for block hub */}
+              </div>
+              {!isPublicWorkspace && (
+                <HelpIsland
+                  showList={
+                    router.query.pageId ? undefined : ['whatNew', 'contact']
+                  }
+                />
+              )}
+            </ToolContainer>
+          </MainContainer>
+        </AppContainer>
+        <PageListTitleCellDragOverlay />
+      </DndContext>
       <QuickSearch />
     </>
   );
 };
+
+function PageListTitleCellDragOverlay() {
+  const { active } = useDndContext();
+
+  const renderChildren = useCallback(
+    ({ icon, pageTitle }: DraggableTitleCellData) => {
+      return (
+        <StyledTitleLink>
+          {icon}
+          <Content ellipsis={true} color="inherit">
+            {pageTitle}
+          </Content>
+        </StyledTitleLink>
+      );
+    },
+    []
+  );
+
+  return (
+    <DragOverlay
+      style={{
+        zIndex: 1001,
+        backgroundColor: 'var(--affine-black-10)',
+        padding: '0 30px',
+        cursor: 'default',
+        borderRadius: 10,
+        ...displayFlex('flex-start', 'center'),
+      }}
+      dropAnimation={null}
+    >
+      {active
+        ? renderChildren(active.data.current as DraggableTitleCellData)
+        : null}
+    </DragOverlay>
+  );
+}
