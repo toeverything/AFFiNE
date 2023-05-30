@@ -218,7 +218,6 @@ export const Header = forwardRef<
       data-has-warning={showWarning}
       data-open={open}
       data-sidebar-floating={appSidebarFloating}
-      {...props}
     >
       {showGuideDownloadClientTip ? (
         <DownloadClientTip />
