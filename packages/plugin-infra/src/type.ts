@@ -132,6 +132,7 @@ export type Definition<ID extends string> = {
   stage: ReleaseStage;
 };
 
+// todo(himself65): support Vue.js
 export type Adapter<Props extends Record<string, unknown>> = (
   props: Props
 ) => ReactElement;
@@ -140,14 +141,15 @@ export type AffinePluginContext = {
   toast: (text: string) => void;
 };
 
+export type BaseProps = {
+  contentLayoutAtom: ContentLayoutAtom;
+};
+
 export type PluginUIAdapter = {
-  sidebarItem: Adapter<Record<string, unknown>>;
-  headerItem: Adapter<{
-    contentLayoutAtom: ContentLayoutAtom;
-  }>;
-  detailContent: Adapter<{
-    contentLayoutAtom: ContentLayoutAtom;
-  }>;
+  sidebarItem: Adapter<BaseProps>;
+  headerItem: Adapter<BaseProps>;
+  detailContent: Adapter<BaseProps>;
+  debugContent: Adapter<Record<string, unknown>>;
 };
 
 export type PluginAdapterCreator = (
