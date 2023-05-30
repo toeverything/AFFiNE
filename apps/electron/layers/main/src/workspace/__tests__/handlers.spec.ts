@@ -17,6 +17,12 @@ vi.doMock('../../context', () => ({
   appContext: testAppContext,
 }));
 
+vi.doMock('../../db/ensure-db', () => ({
+  ensureSQLiteDB: async () => ({
+    destroy: () => {},
+  }),
+}));
+
 afterEach(async () => {
   await fs.remove(tmpDir);
 });
@@ -61,12 +67,6 @@ describe('list workspaces', () => {
 
 describe('delete workspace', () => {
   test('deleteWorkspace', async () => {
-    vi.doMock('../../db/ensure-db', () => ({
-      ensureSQLiteDB: async () => ({
-        destroy: () => {},
-      }),
-    }));
-
     const { deleteWorkspace } = await import('../handlers');
     const workspaceId = v4();
     const workspacePath = path.join(

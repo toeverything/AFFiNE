@@ -49,6 +49,21 @@ vi.doMock('electron', () => {
   return electronModule;
 });
 
+const constructorStub = vi.fn();
+const destroyStub = vi.fn();
+
+vi.doMock('../secondary-db', () => {
+  return {
+    SecondaryWorkspaceSQLiteDB: class {
+      constructor(...args: any[]) {
+        constructorStub(...args);
+      }
+
+      destroy = destroyStub;
+    },
+  };
+});
+
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
 });
@@ -90,20 +105,6 @@ test('db should be destroyed when app quits', async () => {
 });
 
 test('if db has a secondary db path, we should also poll that', async () => {
-  const constructorStub = vi.fn();
-  const destroyStub = vi.fn();
-  vi.doMock('../secondary-db', () => {
-    return {
-      SecondaryWorkspaceSQLiteDB: class {
-        constructor(...args: any[]) {
-          constructorStub(...args);
-        }
-
-        destroy = destroyStub;
-      },
-    };
-  });
-
   const { ensureSQLiteDB } = await import('../ensure-db');
   const { appContext } = await import('../../context');
   const { storeWorkspaceMeta } = await import('../../workspace');
