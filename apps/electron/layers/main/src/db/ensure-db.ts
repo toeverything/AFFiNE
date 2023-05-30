@@ -5,6 +5,7 @@ import {
   from,
   fromEvent,
   interval,
+  merge,
   Observable,
 } from 'rxjs';
 import {
@@ -75,15 +76,22 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
     })
   );
 
+  const firstDelayedTick$ = defer(() => {
+    return new Promise<number>(resolve =>
+      setTimeout(() => {
+        resolve(0);
+      }, 1000)
+    );
+  });
+
   // pull every 30 seconds
-  const poll$ = interval(30000).pipe(
+  const poll$ = merge(firstDelayedTick$, interval(30000)).pipe(
     switchMap(() => secondaryDB$),
     tap({
       next: secondaryDB => {
         secondaryDB.pull();
       },
-    }),
-    shareReplay(1)
+    })
   );
 
   return poll$.pipe(takeUntil(db.update$.pipe(last())), shareReplay(1));

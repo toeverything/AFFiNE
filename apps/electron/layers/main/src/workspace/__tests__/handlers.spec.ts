@@ -13,6 +13,10 @@ const testAppContext: AppContext = {
   appName: 'test',
 };
 
+vi.doMock('../../context', () => ({
+  appContext: testAppContext,
+}));
+
 afterEach(async () => {
   await fs.remove(tmpDir);
 });
@@ -165,6 +169,40 @@ test('storeWorkspaceMeta', async () => {
   });
   expect(await fs.readJSON(path.join(workspacePath, 'meta.json'))).toEqual({
     ...meta,
+    secondaryDBPath: path.join(tmpDir, 'test.db'),
+  });
+});
+
+test('getWorkspaceMeta observable', async () => {
+  const { storeWorkspaceMeta } = await import('../handlers');
+  const { getWorkspaceMeta$ } = await import('../index');
+
+  const workspaceId = v4();
+  const workspacePath = path.join(
+    testAppContext.appDataPath,
+    'workspaces',
+    workspaceId
+  );
+
+  const metaChange = vi.fn();
+
+  const meta$ = getWorkspaceMeta$(workspaceId);
+
+  meta$.subscribe(metaChange);
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  expect(metaChange).toHaveBeenCalledWith({
+    id: workspaceId,
+    mainDBPath: path.join(workspacePath, 'storage.db'),
+  });
+
+  await storeWorkspaceMeta(testAppContext, workspaceId, {
+    secondaryDBPath: path.join(tmpDir, 'test.db'),
+  });
+
+  expect(metaChange).toHaveBeenCalledWith({
+    id: workspaceId,
+    mainDBPath: path.join(workspacePath, 'storage.db'),
     secondaryDBPath: path.join(tmpDir, 'test.db'),
   });
 });

@@ -1,4 +1,4 @@
-import { from, merge } from 'rxjs';
+import { merge } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { appContext } from '../context';
@@ -35,7 +35,7 @@ export const workspaceHandlers = {
 // used internally. Get a stream of workspace id -> meta
 export const getWorkspaceMeta$ = (workspaceId: string) => {
   return merge(
-    from(getWorkspaceMeta(appContext, workspaceId)),
+    getWorkspaceMeta(appContext, workspaceId),
     workspaceSubjects.meta.pipe(map(meta => meta.meta))
   );
 };
