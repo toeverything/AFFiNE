@@ -176,7 +176,7 @@ describe('ensureSQLiteDB', () => {
     expect(fileExists).toBe(true);
     registeredHandlers.get('before-quit')?.forEach(fn => fn());
     await delay(100);
-    expect(workspaceDB.db?.open).toBe(false);
+    expect(workspaceDB.db).toBe(null);
   });
 });
 
@@ -197,7 +197,7 @@ describe('workspace handlers', () => {
     const list = await dispatch('workspace', 'list');
     expect(list.map(([id]) => id)).toEqual([ids[0]]);
     // deleted db should be closed
-    expect(dbs[1].db?.open).toBe(false);
+    expect(dbs[1].db).toBe(null);
   });
 });
 

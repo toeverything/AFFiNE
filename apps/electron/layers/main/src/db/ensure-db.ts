@@ -59,7 +59,6 @@ function getWorkspaceDB$(id: string) {
   return db$Map.get(id)!;
 }
 
-// fixme: this function has issue on registering multiple times...
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
   const meta$ = getWorkspaceMeta$(db.workspaceId);
   const secondaryDB$ = meta$.pipe(

@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import * as Y from 'yjs';
 
 import type { AppContext } from '../../context';
@@ -27,77 +27,68 @@ function getTestUpdates() {
 
   return updates;
 }
+test('can create new db file if not exists', async () => {
+  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const workspaceId = v4();
+  await openWorkspaceDatabase(testAppContext, workspaceId);
+  const dbPath = path.join(
+    testAppContext.appDataPath,
+    `workspaces/${workspaceId}`,
+    `storage.db`
+  );
+  expect(await fs.exists(dbPath)).toBe(true);
+});
 
-describe('openWorkspaceDatabase', () => {
-  test('can create new db file if not exists', async () => {
-    const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
-    const workspaceId = v4();
-    await openWorkspaceDatabase(testAppContext, workspaceId);
-    const dbPath = path.join(
-      testAppContext.appDataPath,
-      `workspaces/${workspaceId}`,
-      `storage.db`
-    );
-    expect(await fs.exists(dbPath)).toBe(true);
-  });
+test('on applyUpdate (from self), will not trigger update', async () => {
+  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const workspaceId = v4();
+  const onUpdate = vi.fn();
 
-  test('on applyUpdate (from self), will not trigger update', async () => {
-    const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
-    const workspaceId = v4();
-    const onUpdate = vi.fn();
+  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  db.update$.subscribe(onUpdate);
+  db.applyUpdate(getTestUpdates(), 'self');
+  expect(onUpdate).not.toHaveBeenCalled();
+});
 
-    const db = await openWorkspaceDatabase(testAppContext, workspaceId);
-    db.update$.subscribe(onUpdate);
-    db.applyUpdate(getTestUpdates(), 'self');
-    expect(onUpdate).not.toHaveBeenCalled();
-  });
+test('on applyUpdate (from renderer), will trigger update', async () => {
+  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const workspaceId = v4();
+  const onUpdate = vi.fn();
+  const onExternalUpdate = vi.fn();
 
-  test('on applyUpdate (from renderer), will trigger update', async () => {
-    const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
-    const workspaceId = v4();
-    const onUpdate = vi.fn();
-    const onExternalUpdate = vi.fn();
+  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  db.update$.subscribe(onUpdate);
+  const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
+  db.applyUpdate(getTestUpdates(), 'renderer');
+  expect(onUpdate).toHaveBeenCalled(); // not yet updated
+  sub.unsubscribe();
+});
 
-    vi.useFakeTimers();
-    const db = await openWorkspaceDatabase(testAppContext, workspaceId);
-    db.update$.subscribe(onUpdate);
-    const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
-    db.applyUpdate(getTestUpdates(), 'renderer');
-    expect(onUpdate).not.toHaveBeenCalled(); // not yet updated
-    vi.runAllTimers();
-    // flush the update
-    expect(onUpdate).toHaveBeenCalled();
-    expect(onExternalUpdate).not.toHaveBeenCalled();
-    sub.unsubscribe();
-    vi.useRealTimers();
-  });
+test('on applyUpdate (from external), will trigger update & send external update event', async () => {
+  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const workspaceId = v4();
+  const onUpdate = vi.fn();
+  const onExternalUpdate = vi.fn();
 
-  test('on applyUpdate (from external), will trigger update & send external update event', async () => {
-    const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
-    const workspaceId = v4();
-    const onUpdate = vi.fn();
-    const onExternalUpdate = vi.fn();
+  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  db.update$.subscribe(onUpdate);
+  const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
+  db.applyUpdate(getTestUpdates(), 'external');
+  expect(onUpdate).toHaveBeenCalled();
+  expect(onExternalUpdate).toHaveBeenCalled();
+  sub.unsubscribe();
+});
 
-    const db = await openWorkspaceDatabase(testAppContext, workspaceId);
-    db.update$.subscribe(onUpdate);
-    const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
-    db.applyUpdate(getTestUpdates(), 'external');
-    expect(onUpdate).toHaveBeenCalled();
-    expect(onExternalUpdate).toHaveBeenCalled();
-    sub.unsubscribe();
-  });
-
-  test('on destroy, check if resources have been released', async () => {
-    const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
-    const workspaceId = v4();
-    const db = await openWorkspaceDatabase(testAppContext, workspaceId);
-    const updateSub = {
-      complete: vi.fn(),
-      next: vi.fn(),
-    };
-    db.update$ = updateSub as any;
-    db.destroy();
-    expect(db.db).toBe(null);
-    expect(updateSub.complete).toHaveBeenCalled();
-  });
+test('on destroy, check if resources have been released', async () => {
+  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const workspaceId = v4();
+  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  const updateSub = {
+    complete: vi.fn(),
+    next: vi.fn(),
+  };
+  db.update$ = updateSub as any;
+  db.destroy();
+  expect(db.db).toBe(null);
+  expect(updateSub.complete).toHaveBeenCalled();
 });

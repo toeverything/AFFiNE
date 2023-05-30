@@ -91,12 +91,15 @@ test('db should be destroyed when app quits', async () => {
 
 test('if db has a secondary db path, we should also poll that', async () => {
   const constructorStub = vi.fn();
+  const destroyStub = vi.fn();
   vi.doMock('../secondary-db', () => {
     return {
       SecondaryWorkspaceSQLiteDB: class {
         constructor(...args: any[]) {
           constructorStub(...args);
         }
+
+        destroy = destroyStub;
       },
     };
   });
@@ -118,4 +121,26 @@ test('if db has a secondary db path, we should also poll that', async () => {
 
   expect(constructorStub).toBeCalledTimes(1);
   expect(constructorStub).toBeCalledWith(path.join(tmpDir, 'secondary.db'), db);
+
+  // if secondary meta is changed
+  await storeWorkspaceMeta(appContext, workspaceId, {
+    secondaryDBPath: path.join(tmpDir, 'secondary2.db'),
+  });
+
+  await vi.advanceTimersByTimeAsync(1500);
+  expect(constructorStub).toBeCalledTimes(2);
+  expect(destroyStub).toBeCalledTimes(1);
+
+  // if secondary meta is changed (but another workspace)
+  await storeWorkspaceMeta(appContext, v4(), {
+    secondaryDBPath: path.join(tmpDir, 'secondary3.db'),
+  });
+  await vi.advanceTimersByTimeAsync(1500);
+  expect(constructorStub).toBeCalledTimes(2);
+  expect(destroyStub).toBeCalledTimes(1);
+
+  // if primary is destroyed, secondary should also be destroyed
+  db.destroy();
+  await new Promise(resolve => setTimeout(resolve, 100));
+  expect(destroyStub).toBeCalledTimes(2);
 });
