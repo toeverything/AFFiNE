@@ -197,6 +197,7 @@ export const PageListTrashView: React.FC<{
       {
         pageId,
         title,
+        preview,
         icon,
         createDate,
         trashDate,
@@ -214,6 +215,7 @@ export const PageListTrashView: React.FC<{
           <TitleCell
             icon={icon}
             text={title || t['Untitled']()}
+            desc={preview}
             onClick={onClickPage}
           />
           <TableCell onClick={onClickPage}>{formatDate(createDate)}</TableCell>
