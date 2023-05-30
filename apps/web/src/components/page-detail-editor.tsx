@@ -7,12 +7,24 @@ import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
+import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
+import type { ExpectedLayout } from '@toeverything/plugin-infra/type';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
-import type React from 'react';
-import { lazy, memo, startTransition, useCallback } from 'react';
+import type { FC } from 'react';
+import React, {
+  lazy,
+  memo,
+  startTransition,
+  Suspense,
+  useCallback,
+  useMemo,
+} from 'react';
+import type { MosaicNode } from 'react-mosaic-component';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
+import { contentLayoutAtom } from '../atoms/layout';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 
@@ -86,7 +98,19 @@ const EditorWrapper = memo(function EditorWrapper({
   );
 });
 
-export const PageDetailEditor: React.FC<PageDetailEditorProps> = props => {
+const PluginContentAdapter = memo<{
+  detailContent: PluginUIAdapter['detailContent'];
+}>(function PluginContentAdapter({ detailContent }) {
+  return (
+    <div>
+      {detailContent({
+        contentLayoutAtom,
+      })}
+    </div>
+  );
+});
+
+export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
   const { workspace, pageId } = props;
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const page = useBlockSuiteWorkspacePage(blockSuiteWorkspace, pageId);
@@ -94,22 +118,57 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = props => {
     throw new PageNotFoundError(blockSuiteWorkspace, pageId);
   }
   const title = useBlockSuiteWorkspacePageTitle(blockSuiteWorkspace, pageId);
+  const affinePluginsMap = useAtomValue(affinePluginsAtom);
+  const plugins = useMemo(
+    () => Object.values(affinePluginsMap),
+    [affinePluginsMap]
+  );
+
+  const [layout, setLayout] = useAtom(contentLayoutAtom);
+
   return (
     <>
       <Head>
         <title>{title}</title>
       </Head>
       <Mosaic
-        onChange={useCallback(() => {}, [])}
+        onChange={useCallback(
+          (_: MosaicNode<string | number> | null) => {
+            // type cast
+            const node = _ as MosaicNode<string> | null;
+            if (node) {
+              if (typeof node === 'string') {
+                console.error('unexpected layout');
+              } else {
+                if (node.splitPercentage && node.splitPercentage < 70) {
+                  return;
+                } else if (node.first !== 'editor') {
+                  return;
+                }
+                setLayout(node as ExpectedLayout);
+              }
+            }
+          },
+          [setLayout]
+        )}
         renderTile={id => {
           if (id === 'editor') {
             return <EditorWrapper {...props} />;
           } else {
-            // @affine/copilot and other plugins will be added in the future
-            throw new Unreachable();
+            const plugin = plugins.find(plugin => plugin.definition.id === id);
+            if (plugin && plugin.uiAdapter.detailContent) {
+              return (
+                <Suspense>
+                  <PluginContentAdapter
+                    detailContent={plugin.uiAdapter.detailContent}
+                  />
+                </Suspense>
+              );
+            }
           }
+          throw new Unreachable();
         }}
-        value="editor"
+        value={layout}
       />
     </>
   );

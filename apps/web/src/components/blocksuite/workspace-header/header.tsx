@@ -7,11 +7,14 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
+import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
   lazy,
+  memo,
   Suspense,
   useEffect,
   useMemo,
@@ -19,6 +22,7 @@ import {
 } from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
+import { contentLayoutAtom } from '../../../atoms/layout';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { DownloadClientTip } from './download-tips';
@@ -149,6 +153,43 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
 
 export type HeaderProps = BaseHeaderProps;
 
+const PluginHeaderItemAdapter = memo<{
+  headerItem: PluginUIAdapter['headerItem'];
+}>(function PluginHeaderItemAdapter({ headerItem }) {
+  return (
+    <div>
+      {headerItem({
+        contentLayoutAtom,
+      })}
+    </div>
+  );
+});
+
+const PluginHeader = () => {
+  const affinePluginsMap = useAtomValue(affinePluginsAtom);
+  const plugins = useMemo(
+    () => Object.values(affinePluginsMap),
+    [affinePluginsMap]
+  );
+
+  return (
+    <div>
+      {plugins
+        .filter(plugin => plugin.uiAdapter.headerItem != null)
+        .map(plugin => {
+          const headerItem = plugin.uiAdapter
+            .headerItem as PluginUIAdapter['headerItem'];
+          return (
+            <PluginHeaderItemAdapter
+              key={plugin.definition.id}
+              headerItem={headerItem}
+            />
+          );
+        })}
+    </div>
+  );
+};
+
 export const Header = forwardRef<
   HTMLDivElement,
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
@@ -169,6 +210,7 @@ export const Header = forwardRef<
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
   const mode = useCurrentMode();
+
   return (
     <div
       className={styles.headerContainer}
@@ -209,6 +251,7 @@ export const Header = forwardRef<
 
         {props.children}
         <div className={styles.headerRightSide}>
+          <PluginHeader />
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
               ([name, { availableWhen, Component }]) => {

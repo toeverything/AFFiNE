@@ -5,7 +5,7 @@
   "module": "./src/index.ts",
   "devDependencies": {
     "@blocksuite/global": "0.0.0-20230530061436-d0702cc0-nightly",
-    "next": "^13.4.2",
+    "next": "=13.4.2",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "zod": "^3.21.4"
@@ -20,6 +20,8 @@
     "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
   },
   "dependencies": {
+    "@affine/copilot": "workspace:*",
+    "@toeverything/plugin-infra": "workspace:*",
     "lit": "^2.7.4"
   },
   "version": "0.7.0-canary.2"

@@ -8,10 +8,16 @@ test:
   - '**/tests/**/*'
   - '**/__tests__/**/*'
 
+plugin:copilot:
+  - 'plugins/copilot/**/*'
+
 mod:dev:
   - 'scripts/**/*'
   - 'packages/cli/**/*'
   - 'packages/debug/**/*'
+
+mod:plugin-infra:
+  - 'packages/plugin-infra/**/*'
 
 mod:workspace: 'packages/workspace/**/*'
 

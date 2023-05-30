@@ -1,7 +1,6 @@
 import { styled, TableBody, TableCell } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
-import { useMediaQuery, useTheme } from '@mui/material';
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 
@@ -11,7 +10,7 @@ import { OperationCell } from './operation-cell';
 import { StyledTableRow } from './styles';
 import type { DateKey, DraggableTitleCellData, ListData } from './type';
 import { useDateGroup } from './use-date-group';
-import { formatDate } from './utils';
+import { formatDate, useIsSmallDevices } from './utils';
 
 export const GroupRow = ({ children }: { children: ReactNode }) => {
   return (
@@ -40,8 +39,7 @@ export const AllPagesBody = ({
   groupKey?: DateKey;
 }) => {
   const t = useAFFiNEI18N();
-  const theme = useTheme();
-  const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallDevices = useIsSmallDevices();
   const dataWithGroup = useDateGroup({ data, key: groupKey });
   return (
     <TableBody>
