@@ -5,7 +5,7 @@ import { Menu, MenuItem } from '../../../ui/menu';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
 import type { Filter, Literal } from './vars';
-import { ChangeFilterMenu, filterMatcher, vars } from './vars';
+import { filterMatcher, VariableSelect, vars } from './vars';
 
 export const Condition = ({
   value,
@@ -31,15 +31,20 @@ export const Condition = ({
         >
           <Menu
             trigger="click"
-            content={<ChangeFilterMenu selected={[]} onSelect={onChange} />}
+            content={<VariableSelect selected={[]} onSelect={onChange} />}
           >
-            <div>{ast.left.name}</div>
+            <div data-testid="variable-name">{ast.left.name}</div>
           </Menu>
           <Menu
             trigger="click"
             content={<FunctionSelect value={value} onChange={onChange} />}
           >
-            <div style={{ marginLeft: 4, color: 'gray' }}>{ast.funcName}</div>
+            <div
+              style={{ marginLeft: 4, color: 'gray' }}
+              data-testid="filter-name"
+            >
+              {ast.funcName}
+            </div>
           </Menu>
           {args}
         </div>
