@@ -48,7 +48,7 @@
     "electron-window-state": "^5.0.3",
     "esbuild": "^0.17.19",
     "fs-extra": "^11.1.1",
-    "playwright": "^1.33.0",
+    "playwright": "=1.33.0",
     "ts-node": "^10.9.1",
     "undici": "^5.22.1",
     "uuid": "^9.0.0",

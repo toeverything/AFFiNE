@@ -6,8 +6,8 @@
     "./playwright": "./playwright.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.33.0",
-    "playwright": "^1.33.0"
+    "@playwright/test": "=1.33.0",
+    "playwright": "=1.33.0"
   },
   "peerDependencies": {
     "@playwright/test": "*",
