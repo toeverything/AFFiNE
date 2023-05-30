@@ -17,6 +17,7 @@ import type React from 'react';
 import { useMemo } from 'react';
 
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { usePageModeSelect } from '../../../hooks/use-select-page-mode-filter';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { pageListEmptyStyle } from './index.css';
@@ -80,25 +81,40 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     permanentlyDeletePage,
     cancelPublicPage,
   } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const [filterMode] = usePageModeSelect();
   const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const list = useMemo(
     () =>
-      pageMetas.filter(pageMeta => {
-        if (!filter[listType](pageMeta, pageMetas)) {
-          return false;
-        }
-        if (!view) {
+      pageMetas
+        .filter(pageMeta => {
+          if (filterMode === 'all') {
+            return true;
+          }
+          if (filterMode === 'edgeless') {
+            return isPreferredEdgeless(pageMeta.id);
+          }
+          if (filterMode === 'page') {
+            return !isPreferredEdgeless(pageMeta.id);
+          }
+          console.error('unknown filter mode', pageMeta, filterMode);
           return true;
-        }
-        return filterByView(view, {
-          Favorite: !!pageMeta.favorite,
-          Created: pageMeta.createDate,
-          Updated: pageMeta.updatedDate,
-        });
-      }),
-    [pageMetas, listType, view]
+        })
+        .filter(pageMeta => {
+          if (!filter[listType](pageMeta, pageMetas)) {
+            return false;
+          }
+          if (!view) {
+            return true;
+          }
+          return filterByView(view, {
+            Favorite: !!pageMeta.favorite,
+            Created: pageMeta.createDate,
+            Updated: pageMeta.updatedDate,
+          });
+        }),
+    [pageMetas, filterMode, isPreferredEdgeless, listType, view]
   );
   if (list.length === 0) {
     return <PageListEmpty listType={listType} />;
