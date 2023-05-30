@@ -58,13 +58,18 @@ describe('openWorkspaceDatabase', () => {
     const onUpdate = vi.fn();
     const onExternalUpdate = vi.fn();
 
+    vi.useFakeTimers();
     const db = await openWorkspaceDatabase(testAppContext, workspaceId);
     db.update$.subscribe(onUpdate);
     const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
     db.applyUpdate(getTestUpdates(), 'renderer');
+    expect(onUpdate).not.toHaveBeenCalled(); // not yet updated
+    vi.runAllTimers();
+    // flush the update
     expect(onUpdate).toHaveBeenCalled();
     expect(onExternalUpdate).not.toHaveBeenCalled();
     sub.unsubscribe();
+    vi.useRealTimers();
   });
 
   test('on applyUpdate (from external), will trigger update & send external update event', async () => {
@@ -88,6 +93,7 @@ describe('openWorkspaceDatabase', () => {
     const db = await openWorkspaceDatabase(testAppContext, workspaceId);
     const updateSub = {
       complete: vi.fn(),
+      next: vi.fn(),
     };
     db.update$ = updateSub as any;
     db.destroy();
