@@ -41,6 +41,8 @@ export function useBlockSuiteMetaHelper(
     [getPageMeta, setPageMeta]
   );
 
+  // TODO-Doma
+  // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".
   const removeToTrash = useCallback(
     (pageId: string, isRoot = true) => {
       const parentMeta = metas.find(m => m.subpageIds?.includes(pageId));
