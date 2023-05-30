@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import type { DBSchema } from 'idb';
 import { openDB } from 'idb';
 import type { IDBPDatabase } from 'idb/build/entry';
@@ -10,7 +9,6 @@ import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
 import type { Filter, VariableMap } from './filter/vars';
-import type { Literal } from './filter/vars';
 
 export type View = {
   id: string;
@@ -18,13 +16,7 @@ export type View = {
   filterList: Filter[];
 };
 
-type PersistenceView = Omit<View, 'filterList'> & {
-  filterList: (Omit<Filter, 'args'> & {
-    args: (Omit<Literal, 'value'> & {
-      value: string;
-    })[];
-  })[];
-};
+type PersistenceView = View;
 
 export interface PageViewDBV1 extends DBSchema {
   view: {
@@ -58,17 +50,7 @@ export const useAllPageSetting = () => {
       fetcher: async () => {
         const db = await pageViewDBPromise;
         const t = db.transaction('view').objectStore('view');
-        const all = await t.getAll();
-        return all.map(view => ({
-          ...view,
-          filterList: view.filterList.map(filter => ({
-            ...filter,
-            args: filter.args.map(arg => ({
-              ...arg,
-              value: dayjs(arg.value),
-            })),
-          })),
-        }));
+        return await t.getAll();
       },
       suspense: true,
       fallbackData: [],
@@ -85,22 +67,7 @@ export const useAllPageSetting = () => {
       }
       const db = await pageViewDBPromise;
       const t = db.transaction('view', 'readwrite').objectStore('view');
-      const persistenceView: PersistenceView = {
-        ...view,
-        filterList: view.filterList.map(filter => {
-          return {
-            ...filter,
-            args: filter.args.map(arg => {
-              return {
-                type: arg.type,
-                // @ts-expect-error
-                value: arg.value.toString(),
-              };
-            }),
-          };
-        }),
-      };
-      await t.put(persistenceView);
+      await t.put(view);
       await mutate();
     },
     [mutate]
@@ -115,5 +82,5 @@ export const useAllPageSetting = () => {
     setCurrentView,
   };
 };
-export const filterByView = (view: View, varMap: VariableMap) =>
-  evalFilterList(view.filterList, varMap);
+export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>
+  evalFilterList(filterList, varMap);

@@ -7,6 +7,7 @@ import { renderHook } from '@testing-library/react';
 import { RESET } from 'jotai/utils';
 import { expect, test } from 'vitest';
 
+import { createDefaultFilter, vars } from '../filter/vars';
 import { useAllPageSetting } from '../use-all-page-setting';
 
 test('useAllPageSetting', async () => {
@@ -15,32 +16,12 @@ test('useAllPageSetting', async () => {
   expect(settingHook.result.current.savedViews).toEqual([]);
   settingHook.result.current.setCurrentView(view => ({
     ...view,
-    filterList: [
-      {
-        type: 'filter',
-        left: {
-          type: 'ref',
-          name: 'Created',
-        },
-        funcName: 'Create',
-        args: [],
-      },
-    ],
+    filterList: [createDefaultFilter(vars[0])],
   }));
   settingHook.rerender();
   const nextView = settingHook.result.current.currentView;
   expect(nextView).not.toBe(prevView);
-  expect(nextView.filterList).toEqual([
-    {
-      type: 'filter',
-      left: {
-        type: 'ref',
-        name: 'Created',
-      },
-      funcName: 'Create',
-      args: [],
-    },
-  ]);
+  expect(nextView.filterList).toEqual([createDefaultFilter(vars[0])]);
   settingHook.result.current.setCurrentView(RESET);
   await settingHook.result.current.createView({
     ...settingHook.result.current.currentView,
