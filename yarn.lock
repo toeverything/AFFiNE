@@ -22,8 +22,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine-test/kit@workspace:tests/kit"
   dependencies:
-    "@playwright/test": ^1.33.0
-    playwright: ^1.33.0
+    "@playwright/test": =1.33.0
+    playwright: =1.33.0
   peerDependencies:
     "@playwright/test": "*"
     playwright: "*"
@@ -6607,22 +6607,6 @@ __metadata:
   bin:
     playwright: cli.js
   checksum: cec3215fc92c1cb9f5bfba357ea1cbe97b54979ab82f9d34a2287b1687cda5e0966b8ea7290dcd35416e18668e56d5781b6b8c4cec64baf12f3ae8dde0f68f5e
-  languageName: node
-  linkType: hard
-
-"@playwright/test@npm:^1.33.0":
-  version: 1.34.3
-  resolution: "@playwright/test@npm:1.34.3"
-  dependencies:
-    "@types/node": "*"
-    fsevents: 2.3.2
-    playwright-core: 1.34.3
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  bin:
-    playwright: cli.js
-  checksum: b387d85f09d275ed49aac4f600c0657205b4c20979108a52e7072ef0c43ea9b2d3d6d7206869230634680ab1f8e7b03373c63555899da4293cae700320bd31e1
   languageName: node
   linkType: hard
 
@@ -22650,7 +22634,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright@npm:^1.14.0, playwright@npm:^1.33.0":
+"playwright@npm:^1.14.0":
   version: 1.34.3
   resolution: "playwright@npm:1.34.3"
   dependencies:
