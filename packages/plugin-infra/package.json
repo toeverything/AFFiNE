@@ -1,0 +1,25 @@
+{
+  "name": "@toeverything/plugin-infra",
+  "private": true,
+  "scripts": {
+    "build": "vite build"
+  },
+  "exports": {
+    "./manager": "./src/manager.ts",
+    "./type": "./src/type.ts",
+    "./react": "./src/react/index.ts"
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/env": "workspace:*",
+    "@affine/workspace": "workspace:*"
+  },
+  "devDependencies": {
+    "jotai": "^2.1.0"
+  },
+  "peerDependencies": {
+    "jotai": "*",
+    "react": "*",
+    "react-dom": "*"
+  }
+}
