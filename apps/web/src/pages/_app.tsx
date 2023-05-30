@@ -5,7 +5,7 @@ import 'react-mosaic-component/react-mosaic-component.css';
 import '@affine/env/bootstrap';
 
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { config, setupGlobal } from '@affine/env';
+import { config } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
@@ -20,8 +20,6 @@ import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary'
 import { MessageCenter } from '../components/pure/message-center';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
-
-setupGlobal();
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
