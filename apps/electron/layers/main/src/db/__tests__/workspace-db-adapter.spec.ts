@@ -16,7 +16,10 @@ const testAppContext: AppContext = {
 };
 
 afterEach(async () => {
-  await fs.remove(tmpDir);
+  if (process.platform !== 'win32') {
+    // hmmm ....
+    await fs.remove(tmpDir);
+  }
 });
 
 function getTestUpdates() {
@@ -30,13 +33,14 @@ function getTestUpdates() {
 test('can create new db file if not exists', async () => {
   const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
   const workspaceId = v4();
-  await openWorkspaceDatabase(testAppContext, workspaceId);
+  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
   const dbPath = path.join(
     testAppContext.appDataPath,
     `workspaces/${workspaceId}`,
     `storage.db`
   );
   expect(await fs.exists(dbPath)).toBe(true);
+  db.destroy();
 });
 
 test('on applyUpdate (from self), will not trigger update', async () => {
@@ -48,6 +52,7 @@ test('on applyUpdate (from self), will not trigger update', async () => {
   db.update$.subscribe(onUpdate);
   db.applyUpdate(getTestUpdates(), 'self');
   expect(onUpdate).not.toHaveBeenCalled();
+  db.destroy();
 });
 
 test('on applyUpdate (from renderer), will trigger update', async () => {
@@ -62,6 +67,7 @@ test('on applyUpdate (from renderer), will trigger update', async () => {
   db.applyUpdate(getTestUpdates(), 'renderer');
   expect(onUpdate).toHaveBeenCalled(); // not yet updated
   sub.unsubscribe();
+  db.destroy();
 });
 
 test('on applyUpdate (from external), will trigger update & send external update event', async () => {
@@ -77,6 +83,7 @@ test('on applyUpdate (from external), will trigger update & send external update
   expect(onUpdate).toHaveBeenCalled();
   expect(onExternalUpdate).toHaveBeenCalled();
   sub.unsubscribe();
+  db.destroy();
 });
 
 test('on destroy, check if resources have been released', async () => {
