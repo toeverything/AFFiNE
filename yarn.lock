@@ -50,12 +50,12 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@affine/jotai": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/editor": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/blocks": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/editor": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/icons": ^2.1.19
-    "@blocksuite/lit": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/store": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/lit": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
     "@dnd-kit/core": ^6.0.8
     "@dnd-kit/sortable": ^7.0.2
     "@emotion/cache": ^11.11.0
@@ -68,6 +68,7 @@ __metadata:
     "@popperjs/core": ^2.11.8
     "@radix-ui/react-avatar": ^1.0.3
     "@radix-ui/react-collapsible": ^1.0.3
+    "@radix-ui/react-radio-group": ^1.1.3
     "@radix-ui/react-toast": ^1.1.4
     "@storybook/addon-actions": ^7.0.18
     "@storybook/addon-coverage": ^0.0.8
@@ -83,7 +84,7 @@ __metadata:
     "@storybook/test-runner": ^0.10.0
     "@storybook/testing-library": ^0.1.0
     "@toeverything/hooks": "workspace:*"
-    "@toeverything/theme": ^0.5.9
+    "@toeverything/theme": ^0.6.1
     "@types/react": ^18.2.6
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.2.4
@@ -178,7 +179,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     lit: ^2.7.4
     next: ^13.4.2
     react: 18.3.0-canary-16d053d59-20230506
@@ -224,11 +225,11 @@ __metadata:
   resolution: "@affine/jotai@workspace:packages/jotai"
   dependencies:
     "@affine/env": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/editor": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/lit": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/store": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/blocks": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/editor": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/lit": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
     jotai: ^2.1.0
     lottie-web: ^5.11.0
   peerDependencies:
@@ -313,12 +314,12 @@ __metadata:
     "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/editor": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/blocks": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/editor": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     "@blocksuite/icons": ^2.1.19
-    "@blocksuite/lit": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/store": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/lit": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
     "@dnd-kit/core": ^6.0.8
     "@dnd-kit/sortable": ^7.0.2
     "@emotion/cache": ^11.11.0
@@ -359,6 +360,7 @@ __metadata:
     react: 18.3.0-canary-16d053d59-20230506
     react-dom: 18.3.0-canary-16d053d59-20230506
     react-is: ^18.2.0
+    react-mosaic-component: ^6.0.1
     redux: ^4.2.1
     rxjs: ^7.8.1
     swc-plugin-coverage-instrument: ^0.0.18
@@ -2147,16 +2149,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/blocks@npm:0.0.0-20230526024755-74df4d56-nightly":
-  version: 0.0.0-20230526024755-74df4d56-nightly
-  resolution: "@blocksuite/blocks@npm:0.0.0-20230526024755-74df4d56-nightly"
+"@blocksuite/blocks@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/blocks@npm:0.0.0-20230529110357-2729de93-nightly"
   dependencies:
-    "@blocksuite/connector": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/phasor": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/virgo": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/connector": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/phasor": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/virgo": 0.0.0-20230529110357-2729de93-nightly
     "@popperjs/core": ^2.11.6
     hotkeys-js: ^3.10.1
+    html-to-image: ^1.11.11
     jszip: ^3.10.1
     lit: ^2.7.3
     marked: ^4.2.12
@@ -2164,40 +2167,40 @@ __metadata:
     turndown: ^7.1.1
     zod: ^3.21.4
   peerDependencies:
-    "@blocksuite/lit": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/store": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/lit": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
     yjs: ^13
-  checksum: 6816de11ca3628d854152cd29dc05d2e56434fabe29dc0e3ebdad99f9978586822abb4f5fa42d97a8539650fb1fd9e732e6bbc8f4acc54d6f526edd308e896f3
+  checksum: b6463619c383a48338b72a1e2363aa87c3a189018e9b246102857d00fbd957693388418e9acdfa1ff1e87d1e82c60ac7dd3579b88765d1bb833c8004ff7b2b56
   languageName: node
   linkType: hard
 
-"@blocksuite/connector@npm:0.0.0-20230526024755-74df4d56-nightly":
-  version: 0.0.0-20230526024755-74df4d56-nightly
-  resolution: "@blocksuite/connector@npm:0.0.0-20230526024755-74df4d56-nightly"
-  checksum: 5cead5549dd7d14160300d86bd9da8fa3dd93ff8b1b8019d5fed4dc14980186fc5137160df2be4583279058ace5dae45afe5691d81d3c202bc48974e4c5eec6a
+"@blocksuite/connector@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/connector@npm:0.0.0-20230529110357-2729de93-nightly"
+  checksum: 12dd6c845619bfbd3ebd6cce6339b9b445d440d91891a3ba9853f08452d2f4ade710846472ab304dbccb7c1867724243b60b1ae685b0350fef23283caa5ac52f
   languageName: node
   linkType: hard
 
-"@blocksuite/editor@npm:0.0.0-20230526024755-74df4d56-nightly":
-  version: 0.0.0-20230526024755-74df4d56-nightly
-  resolution: "@blocksuite/editor@npm:0.0.0-20230526024755-74df4d56-nightly"
+"@blocksuite/editor@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/editor@npm:0.0.0-20230529110357-2729de93-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     "@toeverything/theme": 0.5.9
     lit: ^2.7.3
     marked: ^4.2.12
     turndown: ^7.1.1
   peerDependencies:
-    "@blocksuite/blocks": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/lit": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/store": 0.0.0-20230526024755-74df4d56-nightly
-  checksum: 70f1d90e5278c30cd8aa8f0b999e9a181e281e677a714b0b45f8386cca1de897821ccdb10d962f06c006f3dbb80d953ac41b1f5c561e9442e5fd714076703bf6
+    "@blocksuite/blocks": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/lit": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
+  checksum: e6522df6f728a0ae30313158a17190484dc462f1590328b9fd4c6eeb491cdc197296c60f90118bd4be7e5c9f818e7b83c58a6bc99887cc8668c5ed6c23be66bf
   languageName: node
   linkType: hard
 
-"@blocksuite/global@npm:0.0.0-20230526024755-74df4d56-nightly":
-  version: 0.0.0-20230526024755-74df4d56-nightly
-  resolution: "@blocksuite/global@npm:0.0.0-20230526024755-74df4d56-nightly"
+"@blocksuite/global@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/global@npm:0.0.0-20230529110357-2729de93-nightly"
   dependencies:
     ansi-colors: ^4.1.3
     zod: ^3.21.4
@@ -2206,7 +2209,7 @@ __metadata:
   peerDependenciesMeta:
     lit:
       optional: true
-  checksum: 17d1a72cfad6778afc5a8e2ed7c79bcae7b1bf76e07d41b80ee2c3e92670a088a37ee0c735ec012d808e11592178ba014577e88efbb57e831c6f73bf30ff0cd6
+  checksum: 7263e3eabcf6bdef569b9c1a6349a501a4a040125182623860c546e1adf9d7d74bd690db0fb6c60b1fb5edbc46c344ff5e47c927c451c84c5147db8cc7e10530
   languageName: node
   linkType: hard
 
@@ -2220,38 +2223,38 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/lit@npm:0.0.0-20230526024755-74df4d56-nightly":
-  version: 0.0.0-20230526024755-74df4d56-nightly
-  resolution: "@blocksuite/lit@npm:0.0.0-20230526024755-74df4d56-nightly"
+"@blocksuite/lit@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/lit@npm:0.0.0-20230529110357-2729de93-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     lit: ^2.7.3
   peerDependencies:
-    "@blocksuite/store": 0.0.0-20230526024755-74df4d56-nightly
-  checksum: 0b8345ebe8366f8d9d086f6736c5b5d2ade266f5a395f5a21cfa1118a72c94535f823f52774d2e7aed26f639c08f739f608741a412f01b5140655f0b99a1c380
+    "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
+  checksum: be08e09254d870ab58a4f59176fddb9fbc659161ac0ed526e83d815549a1916d7e9734b8ccbf2df83f3a9d779267bca679030502744543dce36c8db0349a72cc
   languageName: node
   linkType: hard
 
-"@blocksuite/phasor@npm:0.0.0-20230526024755-74df4d56-nightly":
-  version: 0.0.0-20230526024755-74df4d56-nightly
-  resolution: "@blocksuite/phasor@npm:0.0.0-20230526024755-74df4d56-nightly"
+"@blocksuite/phasor@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/phasor@npm:0.0.0-20230529110357-2729de93-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     fractional-indexing: ^3.2.0
     roughjs: ^4.5.2
   peerDependencies:
     nanoid: ^4
     yjs: ^13
-  checksum: 32f578bf9daffc82cae010da2ef1a2a798846a587d86a5d55ac29bfe192dea88577e31275ceae155f8996561a4ade3b0295d502cbb96c5b90d52eb6a2c7ab14c
+  checksum: 61038d2f9bbcd42dedae81d9383f53da8457afab5186f80b75a8969229e947e5b3d1c67e9c58b5d162bec8b6a23bc3d4e2304725e52d9f2fc8b581eff3ef2ef4
   languageName: node
   linkType: hard
 
-"@blocksuite/store@npm:0.0.0-20230526024755-74df4d56-nightly":
-  version: 0.0.0-20230526024755-74df4d56-nightly
-  resolution: "@blocksuite/store@npm:0.0.0-20230526024755-74df4d56-nightly"
+"@blocksuite/store@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/store@npm:0.0.0-20230529110357-2729de93-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/virgo": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/virgo": 0.0.0-20230529110357-2729de93-nightly
     "@types/flexsearch": ^0.7.3
     buffer: ^6.0.3
     flexsearch: 0.7.21
@@ -2266,20 +2269,20 @@ __metadata:
     zod: ^3.21.4
   peerDependencies:
     yjs: ^13
-  checksum: 238272cafcbee1ffe44c30a2ecea720efa23ba33b6a39c5b4db91320824d620e0998e2c27025eb4847d71da419143f5884a4129b6f4456266b0b265c00952b18
+  checksum: 0ddc30bc664508dbdaff0220efc6dadf3372d28595b7ef82dbf1b19548670c7f63380011268df0e8382c297858bead5b687e725f10c7f45929ef10ef0c2fd694
   languageName: node
   linkType: hard
 
-"@blocksuite/virgo@npm:0.0.0-20230526024755-74df4d56-nightly":
-  version: 0.0.0-20230526024755-74df4d56-nightly
-  resolution: "@blocksuite/virgo@npm:0.0.0-20230526024755-74df4d56-nightly"
+"@blocksuite/virgo@npm:0.0.0-20230529110357-2729de93-nightly":
+  version: 0.0.0-20230529110357-2729de93-nightly
+  resolution: "@blocksuite/virgo@npm:0.0.0-20230529110357-2729de93-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/global": 0.0.0-20230529110357-2729de93-nightly
     zod: ^3.21.4
   peerDependencies:
     lit: ^2.7
     yjs: ^13
-  checksum: ecb45b0993f4b916db89c0008b2850b67a609a82641b5489cf57fed08fda47be6bde5e2267821d9057e7b49a7f7c908560081b3c5f7ce6872f76ec69b46b62da
+  checksum: 3bf58b1202746aa6147bdad43745a76ae66fb424bb2d994560efbd7c7cd36b0bc4e0bf56890dfe8531c9f3753381e22bf00ee48b8025a2845717892a7b3acadb
   languageName: node
   linkType: hard
 
@@ -6605,6 +6608,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@radix-ui/react-direction@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@radix-ui/react-direction@npm:1.0.1"
+  dependencies:
+    "@babel/runtime": ^7.13.10
+  peerDependencies:
+    "@types/react": "*"
+    react: ^16.8 || ^17.0 || ^18.0
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 5336a8b0d4f1cde585d5c2b4448af7b3d948bb63a1aadb37c77771b0e5902dc6266e409cf35fd0edaca7f33e26424be19e64fb8f9d7f7be2d6f1714ea2764210
+  languageName: node
+  linkType: hard
+
 "@radix-ui/react-dismissable-layer@npm:1.0.0":
   version: 1.0.0
   resolution: "@radix-ui/react-dismissable-layer@npm:1.0.0"
@@ -6814,6 +6832,63 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@radix-ui/react-radio-group@npm:^1.1.3":
+  version: 1.1.3
+  resolution: "@radix-ui/react-radio-group@npm:1.1.3"
+  dependencies:
+    "@babel/runtime": ^7.13.10
+    "@radix-ui/primitive": 1.0.1
+    "@radix-ui/react-compose-refs": 1.0.1
+    "@radix-ui/react-context": 1.0.1
+    "@radix-ui/react-direction": 1.0.1
+    "@radix-ui/react-presence": 1.0.1
+    "@radix-ui/react-primitive": 1.0.3
+    "@radix-ui/react-roving-focus": 1.0.4
+    "@radix-ui/react-use-controllable-state": 1.0.1
+    "@radix-ui/react-use-previous": 1.0.1
+    "@radix-ui/react-use-size": 1.0.1
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-dom": "*"
+    react: ^16.8 || ^17.0 || ^18.0
+    react-dom: ^16.8 || ^17.0 || ^18.0
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    "@types/react-dom":
+      optional: true
+  checksum: 88f7007610817ab30f471a7e1f6605e94cc507a31fb4bb218116d65cc48c9b3149fce500f386716a3ed5fb0089d65faf32d3e01971322cd4a14b51003ec82bc2
+  languageName: node
+  linkType: hard
+
+"@radix-ui/react-roving-focus@npm:1.0.4":
+  version: 1.0.4
+  resolution: "@radix-ui/react-roving-focus@npm:1.0.4"
+  dependencies:
+    "@babel/runtime": ^7.13.10
+    "@radix-ui/primitive": 1.0.1
+    "@radix-ui/react-collection": 1.0.3
+    "@radix-ui/react-compose-refs": 1.0.1
+    "@radix-ui/react-context": 1.0.1
+    "@radix-ui/react-direction": 1.0.1
+    "@radix-ui/react-id": 1.0.1
+    "@radix-ui/react-primitive": 1.0.3
+    "@radix-ui/react-use-callback-ref": 1.0.1
+    "@radix-ui/react-use-controllable-state": 1.0.1
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-dom": "*"
+    react: ^16.8 || ^17.0 || ^18.0
+    react-dom: ^16.8 || ^17.0 || ^18.0
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    "@types/react-dom":
+      optional: true
+  checksum: 69b1c82c2d9db3ba71549a848f2704200dab1b2cd22d050c1e081a78b9a567dbfdc7fd0403ee010c19b79652de69924d8ca2076cd031d6552901e4213493ffc7
+  languageName: node
+  linkType: hard
+
 "@radix-ui/react-scroll-area@npm:1.0.2":
   version: 1.0.2
   resolution: "@radix-ui/react-scroll-area@npm:1.0.2"
@@ -7011,6 +7086,37 @@ __metadata:
     "@types/react":
       optional: true
   checksum: bed9c7e8de243a5ec3b93bb6a5860950b0dba359b6680c84d57c7a655e123dec9b5891c5dfe81ab970652e7779fe2ad102a23177c7896dde95f7340817d47ae5
+  languageName: node
+  linkType: hard
+
+"@radix-ui/react-use-previous@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@radix-ui/react-use-previous@npm:1.0.1"
+  dependencies:
+    "@babel/runtime": ^7.13.10
+  peerDependencies:
+    "@types/react": "*"
+    react: ^16.8 || ^17.0 || ^18.0
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 66b4312e857c58b75f3bf62a2048ef090b79a159e9da06c19a468c93e62336969c33dbef60ff16969f00b20386cc25d138f6a353f1658b35baac0a6eff4761b9
+  languageName: node
+  linkType: hard
+
+"@radix-ui/react-use-size@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@radix-ui/react-use-size@npm:1.0.1"
+  dependencies:
+    "@babel/runtime": ^7.13.10
+    "@radix-ui/react-use-layout-effect": 1.0.1
+  peerDependencies:
+    "@types/react": "*"
+    react: ^16.8 || ^17.0 || ^18.0
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 6cc150ad1e9fa85019c225c5a5d50a0af6cdc4653dad0c21b4b40cd2121f36ee076db326c43e6bc91a69766ccff5a84e917d27970176b592577deea3c85a3e26
   languageName: node
   linkType: hard
 
@@ -8883,10 +8989,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:0.5.9, @toeverything/theme@npm:^0.5.9":
+"@toeverything/theme@npm:0.5.9":
   version: 0.5.9
   resolution: "@toeverything/theme@npm:0.5.9"
   checksum: 4b0572c7da64e9aa37fe164ba70e8d9c62cc1819e7c1fd2039a1bed397397c03fb9295a1466b89551b7c9f6fd87444ce8f1615eca376277c75423acd6b23fb58
+  languageName: node
+  linkType: hard
+
+"@toeverything/theme@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "@toeverything/theme@npm:0.6.1"
+  checksum: c7b6e4417db79baefb4907459179cf00d4db8bb896ae0de2b519deecb35b527e182fd2fba47c846953ed13cab5291b9636d96527cded2cf283e54601ff2a8c11
   languageName: node
   linkType: hard
 
@@ -8894,8 +9007,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
   dependencies:
-    "@blocksuite/blocks": 0.0.0-20230526024755-74df4d56-nightly
-    "@blocksuite/store": 0.0.0-20230526024755-74df4d56-nightly
+    "@blocksuite/blocks": 0.0.0-20230529110357-2729de93-nightly
+    "@blocksuite/store": 0.0.0-20230529110357-2729de93-nightly
     idb: ^7.1.1
     vite: ^4.3.9
     vite-plugin-dts: ^2.3.0
@@ -12321,6 +12434,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"classnames@npm:^2.3.2":
+  version: 2.3.2
+  resolution: "classnames@npm:2.3.2"
+  checksum: 2c62199789618d95545c872787137262e741f9db13328e216b093eea91c85ef2bfb152c1f9e63027204e2559a006a92eb74147d46c800a9f96297ae1d9f96f4e
+  languageName: node
+  linkType: hard
+
 "clean-regexp@npm:^1.0.0":
   version: 1.0.0
   resolution: "clean-regexp@npm:1.0.0"
@@ -13841,6 +13961,13 @@ __metadata:
     "@react-dnd/invariant": ^4.0.1
     redux: ^4.2.0
   checksum: b7d3ef4664f433af796f440ddd27ad9d7fef0205f26c4b7c0af6ebf612ffa9b33e64d095d3e79190c4baaed34aa36570f321ebe0d2cc8ff1031ff158a0907b3f
+  languageName: node
+  linkType: hard
+
+"dnd-multi-backend@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "dnd-multi-backend@npm:8.0.0"
+  checksum: ce19b14c509e3740f6ab8cab725f8df2e7ad79fd04cb7d57d4b3f9e579cd5ab1f9439517b4325e014ca1caeab6152adced993085b734aff5a5d40cbb766a5da0
   languageName: node
   linkType: hard
 
@@ -17168,6 +17295,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-to-image@npm:^1.11.11":
+  version: 1.11.11
+  resolution: "html-to-image@npm:1.11.11"
+  checksum: b453beca72a697bf06fae4945e5460d1d9b1751e8569a0d721dda9485df1dde093938cc9bd9172b8df5fc23133a53a4d619777b3d22f7211cd8a67e3197ab4e8
+  languageName: node
+  linkType: hard
+
 "html-tokenize@npm:^2.0.0":
   version: 2.0.1
   resolution: "html-tokenize@npm:2.0.1"
@@ -17423,6 +17557,13 @@ __metadata:
   version: 3.0.6
   resolution: "immediate@npm:3.0.6"
   checksum: f9b3486477555997657f70318cc8d3416159f208bec4cca3ff3442fd266bc23f50f0c9bd8547e1371a6b5e82b821ec9a7044a4f7b944798b25aa3cc6d5e63e62
+  languageName: node
+  linkType: hard
+
+"immutability-helper@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "immutability-helper@npm:3.1.1"
+  checksum: 6fdbf6d2123efa567263e904bbaff07aca0e24560d270d34967b03aab8ec20bd3e4057f394d59e50eb6c4718c9415591a6281692bb0aafd522ad72cf4887133f
   languageName: node
   linkType: hard
 
@@ -22954,6 +23095,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rdndmb-html5-to-touch@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "rdndmb-html5-to-touch@npm:8.0.0"
+  dependencies:
+    dnd-multi-backend: ^8.0.0
+    react-dnd-html5-backend: ^16.0.1
+    react-dnd-touch-backend: ^16.0.1
+  checksum: 9ede5db33820ca592f0c0aaed3b9a6cd9026cd7ffe60c2cdabd62275ab253b3a69db2b4eb909c250602b98d413bf635380ba6d5df574ca002d076fdc12f94606
+  languageName: node
+  linkType: hard
+
 "react-base16-styling@npm:^0.9.1":
   version: 0.9.1
   resolution: "react-base16-styling@npm:0.9.1"
@@ -22979,7 +23131,49 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dnd@npm:*":
+"react-dnd-html5-backend@npm:^16.0.1":
+  version: 16.0.1
+  resolution: "react-dnd-html5-backend@npm:16.0.1"
+  dependencies:
+    dnd-core: ^16.0.1
+  checksum: e2368bf85d5632a5cd867b743feb54c9052d909ea5331608860fa455edf3c633ac791f5b338e3db29b19ea8670c0ba5fb43c9c1c2510760bea030811d726cdfa
+  languageName: node
+  linkType: hard
+
+"react-dnd-multi-backend@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "react-dnd-multi-backend@npm:8.0.0"
+  dependencies:
+    dnd-multi-backend: ^8.0.0
+    react-dnd-preview: ^8.0.0
+  peerDependencies:
+    react: ^16.14.0 || ^17.0.2 || ^18.0.0
+    react-dom: ^16.14.0 || ^17.0.2 || ^18.0.0
+  checksum: a0871a4845df814f3a57b5c110e1601439d74d6433d2115a2078a4d49a200aa33a91b37a23d6dafaebc2ab857a25caa7d83d28cee034aa6907f7224c6257e56f
+  languageName: node
+  linkType: hard
+
+"react-dnd-preview@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "react-dnd-preview@npm:8.0.0"
+  peerDependencies:
+    react: ^16.14.0 || ^17.0.2 || ^18.0.0
+    react-dnd: ^16.0.1
+  checksum: abed644a2ccd454a8fc54fa5bc4904beeb8ccf40c1ea20fb3c5ff178733062fd9f5d657435fb671c5736c93d9e7b2ce8e7de8c07cbc9822b459f02fdbfc99b77
+  languageName: node
+  linkType: hard
+
+"react-dnd-touch-backend@npm:^16.0.1":
+  version: 16.0.1
+  resolution: "react-dnd-touch-backend@npm:16.0.1"
+  dependencies:
+    "@react-dnd/invariant": ^4.0.1
+    dnd-core: ^16.0.1
+  checksum: 5362c5f4266e3655d02c716f341dc55c61fae53e12eb3b239245bafb7a3f3cdb953e27e187e8dcb9d86c01bc738853d764d7c85b87104a49a8a8f1ecc4d35755
+  languageName: node
+  linkType: hard
+
+"react-dnd@npm:*, react-dnd@npm:^16.0.1":
   version: 16.0.1
   resolution: "react-dnd@npm:16.0.1"
   dependencies:
@@ -23147,6 +23341,26 @@ __metadata:
     "@types/react": ^16.8.0 || ^17.0.0 || ^18.0.0
     react: ^16.8.0 || ^17.0.0 || ^18.0.0
   checksum: e59244b1f7866a3fec7b5fe83d68833583568e9ae217c261b09077de196a51cc96642e8b1d6826d963aaf910a496e1cf432240ee142ce7efa965345915bb57ac
+  languageName: node
+  linkType: hard
+
+"react-mosaic-component@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "react-mosaic-component@npm:6.0.1"
+  dependencies:
+    classnames: ^2.3.2
+    immutability-helper: ^3.1.1
+    lodash: ^4.17.21
+    prop-types: ^15.8.1
+    rdndmb-html5-to-touch: ^8.0.0
+    react-dnd: ^16.0.1
+    react-dnd-html5-backend: ^16.0.1
+    react-dnd-multi-backend: ^8.0.0
+    react-dnd-touch-backend: ^16.0.1
+    uuid: ^9.0.0
+  peerDependencies:
+    react: 16 - 18
+  checksum: fb31b655fd841d09a5ca922f391c29cad8c7b0e87ac5d84386a434cb7d01f5a633f116b8c7ef4b79203cf0b1768a43c27ba65d41f22feba46a141be366b31de2
   languageName: node
   linkType: hard
 

@@ -8,6 +8,7 @@ import {
   newPage,
   waitMarkdownImported,
 } from '../libs/page-logic';
+import { waitForLogMessage } from '../libs/utils';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('New a page and open it ,then favorite it', async ({ page }) => {
@@ -29,7 +30,7 @@ test('New a page and open it ,then favorite it', async ({ page }) => {
   await assertCurrentWorkspaceFlavour('local', page);
 });
 
-test('Export to html and markdown', async ({ page }) => {
+test('Export to html, markdown and png', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   {
@@ -46,6 +47,31 @@ test('Export to html and markdown', async ({ page }) => {
     const downloadPromise = page.waitForEvent('download');
     await page.getByTestId('export-to-html').click();
     await downloadPromise;
+  }
+  await page.waitForTimeout(50);
+  {
+    await clickPageMoreActions(page);
+    await page.getByTestId('export-menu').click();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByTestId('export-to-png').click();
+    await downloadPromise;
+  }
+});
+
+test('Export to pdf', async ({ page }) => {
+  const CheckedMessage = '[test] beforeprint event emitted';
+  page.addInitScript(() => {
+    window.addEventListener('beforeprint', () => {
+      console.log(CheckedMessage);
+    });
+  });
+  await openHomePage(page);
+  await waitMarkdownImported(page);
+  {
+    await clickPageMoreActions(page);
+    await page.getByTestId('export-menu').click();
+    await page.getByTestId('export-to-pdf').click();
+    expect(waitForLogMessage(page, CheckedMessage)).toBeTruthy();
   }
 });
 

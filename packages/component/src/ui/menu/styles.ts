@@ -52,42 +52,51 @@ export const StyledMenuItem = styled('button')<{
   isDir?: boolean;
   disabled?: boolean;
   active?: boolean;
-}>(({ isDir = false, disabled = false, active = false }) => {
-  return {
-    width: '100%',
-    borderRadius: '5px',
-    padding: '0 14px',
-    fontSize: 'var(--affine-font-base)',
-    height: '32px',
-    ...displayFlex('flex-start', 'center'),
-    cursor: isDir ? 'pointer' : '',
-    position: 'relative',
-    backgroundColor: 'transparent',
-    color: disabled
-      ? 'var(--affine-text-disable-color)'
-      : 'var(--affine-text-primary-color)',
-    svg: {
+  disableHover?: boolean;
+}>(
+  ({
+    isDir = false,
+    disabled = false,
+    active = false,
+    disableHover = false,
+  }) => {
+    return {
+      width: '100%',
+      borderRadius: '5px',
+      padding: '0 14px',
+      fontSize: 'var(--affine-font-base)',
+      height: '32px',
+      ...displayFlex('flex-start', 'center'),
+      cursor: isDir ? 'pointer' : '',
+      position: 'relative',
+      backgroundColor: 'transparent',
       color: disabled
         ? 'var(--affine-text-disable-color)'
-        : 'var(--affine-icon-color)',
-    },
-    ...(disabled
-      ? {
-          cursor: 'not-allowed',
-          pointerEvents: 'none',
-        }
-      : {}),
+        : 'var(--affine-text-primary-color)',
+      svg: {
+        color: disabled
+          ? 'var(--affine-text-disable-color)'
+          : 'var(--affine-icon-color)',
+      },
+      ...(disabled
+        ? {
+            cursor: 'not-allowed',
+            pointerEvents: 'none',
+          }
+        : {}),
 
-    ':hover': disabled
-      ? {}
-      : {
-          backgroundColor: 'var(--affine-hover-color)',
-        },
+      ':hover':
+        disabled || disableHover
+          ? {}
+          : {
+              backgroundColor: 'var(--affine-hover-color)',
+            },
 
-    ...(active && !disabled
-      ? {
-          backgroundColor: 'var(--affine-hover-color)',
-        }
-      : {}),
-  };
-});
+      ...(active && !disabled
+        ? {
+            backgroundColor: 'var(--affine-hover-color)',
+          }
+        : {}),
+    };
+  }
+);

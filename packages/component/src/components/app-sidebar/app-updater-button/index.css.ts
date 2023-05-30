@@ -135,6 +135,11 @@ export const whatsNewLabel = style({
   fontSize: 'var(--affine-font-sm)',
   whiteSpace: 'nowrap',
 });
+export const ellipsisTextOverflow = style({
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+});
 
 export const progress = style({
   position: 'relative',
