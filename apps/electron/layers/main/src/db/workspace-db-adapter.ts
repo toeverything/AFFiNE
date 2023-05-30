@@ -21,6 +21,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   override destroy() {
     this.db?.close();
+    this.db = null;
     this.yDoc.destroy();
 
     // when db is closed, we can safely remove it from ensure-db list
