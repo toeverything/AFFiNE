@@ -1,5 +1,6 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+import 'react-mosaic-component/react-mosaic-component.css';
 
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { config, setupGlobal } from '@affine/env';
