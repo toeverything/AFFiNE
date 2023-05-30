@@ -216,10 +216,8 @@ export const PageListTrashView: React.FC<{
             text={title || t['Untitled']()}
             onClick={onClickPage}
           />
-          <TableCell ellipsis={true} onClick={onClickPage}>
-            {formatDate(createDate)}
-          </TableCell>
-          <TableCell ellipsis={true} onClick={onClickPage}>
+          <TableCell onClick={onClickPage}>{formatDate(createDate)}</TableCell>
+          <TableCell onClick={onClickPage}>
             {trashDate ? formatDate(trashDate) : '--'}
           </TableCell>
           <TableCell
