@@ -10,12 +10,17 @@ import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-s
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type React from 'react';
-import { memo, startTransition, useCallback } from 'react';
-import { Mosaic } from 'react-mosaic-component';
+import { lazy, memo, startTransition, useCallback } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
+
+const Mosaic = lazy(() =>
+  import('react-mosaic-component').then(({ Mosaic }) => ({
+    default: Mosaic,
+  }))
+);
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
@@ -94,7 +99,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = props => {
       <Head>
         <title>{title}</title>
       </Head>
-      <Mosaic<string>
+      <Mosaic
         onChange={useCallback(() => {}, [])}
         renderTile={id => {
           if (id === 'editor') {
