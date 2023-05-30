@@ -20,7 +20,7 @@ import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer, StyledTableRow } from './styles';
 import type { ListData, PageListProps, TrashListData } from './type';
 import { useSorter } from './use-sorter';
-import { formatDate } from './utils';
+import { formatDate, useIsSmallDevices } from './utils';
 
 const AllPagesHead = ({
   isPublicWorkspace,
@@ -121,8 +121,7 @@ export const PageList = ({
     order: 'desc',
   });
 
-  const theme = useTheme();
-  const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallDevices = useIsSmallDevices();
   if (isSmallDevices) {
     return (
       <AllPageListMobileView
@@ -217,10 +216,8 @@ export const PageListTrashView: React.FC<{
             text={title || t['Untitled']()}
             onClick={onClickPage}
           />
-          <TableCell ellipsis={true} onClick={onClickPage}>
-            {formatDate(createDate)}
-          </TableCell>
-          <TableCell ellipsis={true} onClick={onClickPage}>
+          <TableCell onClick={onClickPage}>{formatDate(createDate)}</TableCell>
+          <TableCell onClick={onClickPage}>
             {trashDate ? formatDate(trashDate) : '--'}
           </TableCell>
           <TableCell
