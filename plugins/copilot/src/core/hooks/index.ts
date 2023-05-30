@@ -1,5 +1,6 @@
 import { atom, useAtomValue } from 'jotai';
 import { atomFamily } from 'jotai/utils';
+import { atomWithStorage } from 'jotai/utils';
 import { type ConversationChain } from 'langchain/chains';
 import { type BufferMemory } from 'langchain/memory';
 import {
@@ -10,11 +11,25 @@ import {
 
 import { createChatAI } from '../chat';
 
-export const chatAtom = atom(async () => await createChatAI('test'));
+export const openAIApiKeyAtom = atomWithStorage<string | null>(
+  'com.affine.copilot.openai.token',
+  null
+);
 
-const conversationAtomFamily = atomFamily((chat: ConversationChain) => {
+export const chatAtom = atom(async get => {
+  const openAIApiKey = get(openAIApiKeyAtom);
+  if (!openAIApiKey) {
+    return null;
+  }
+  return createChatAI('default-copilot', openAIApiKey);
+});
+
+const conversationAtomFamily = atomFamily((chat: ConversationChain | null) => {
   const conversationBaseAtom = atom<BaseChatMessage[]>([]);
   conversationBaseAtom.onMount = setAtom => {
+    if (!chat) {
+      throw new Error();
+    }
     const memory = chat.memory as BufferMemory;
     void memory.chatHistory.getMessages().then(messages => {
       setAtom(messages);
@@ -40,6 +55,9 @@ const conversationAtomFamily = atomFamily((chat: ConversationChain) => {
   return atom<BaseChatMessage[], [string], Promise<void>>(
     get => get(conversationBaseAtom),
     async (get, set, input) => {
+      if (!chat) {
+        throw new Error();
+      }
       // set dirty value
       set(conversationBaseAtom, [
         ...get(conversationBaseAtom),

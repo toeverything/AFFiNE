@@ -19,12 +19,18 @@ declare global {
   }
 }
 
-export async function createChatAI(room: string): Promise<ConversationChain> {
+export async function createChatAI(
+  room: string,
+  openAIApiKey: string
+): Promise<ConversationChain> {
+  if (!openAIApiKey) {
+    console.warn('OpenAI API key not set, chat will not work');
+  }
   const chat = new ChatOpenAI({
     streaming: true,
     modelName: 'gpt-4',
     temperature: 0.5,
-    openAIApiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+    openAIApiKey: openAIApiKey,
     callbacks: [
       {
         async handleLLMStart(

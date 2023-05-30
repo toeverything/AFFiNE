@@ -1,14 +1,16 @@
-import type { DBSchema } from "idb";
-import { Document } from "langchain/document";
-import type { Embeddings } from "langchain/embeddings";
-import { VectorStore } from "langchain/vectorstores";
-import { similarity as ml_distance_similarity } from "ml-distance";
+// fixme: vector store has not finished
+import type { DBSchema } from 'idb';
+import { Document } from 'langchain/document';
+import type { Embeddings } from 'langchain/embeddings';
+import { VectorStore } from 'langchain/vectorstores';
+import { similarity as ml_distance_similarity } from 'ml-distance';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface VectorDBV1 extends DBSchema {
   vector: {
     key: string;
-    value: Vector
-  }
+    value: Vector;
+  };
 }
 
 interface Vector {
@@ -24,11 +26,11 @@ export interface MemoryVectorStoreArgs {
 }
 
 export class IndexedDBVectorStore extends VectorStore {
-  memoryVectors: MemoryVector[] = [];
+  memoryVectors: any[] = [];
 
   similarity: typeof ml_distance_similarity.cosine;
 
-  constructor (
+  constructor(
     embeddings: Embeddings,
     { similarity, ...rest }: MemoryVectorStoreArgs = {}
   ) {
@@ -37,7 +39,7 @@ export class IndexedDBVectorStore extends VectorStore {
     this.similarity = similarity ?? ml_distance_similarity.cosine;
   }
 
-  async addDocuments (documents: Document[]): Promise<void> {
+  async addDocuments(documents: Document[]): Promise<void> {
     const texts = documents.map(({ pageContent }) => pageContent);
     return this.addVectors(
       await this.embeddings.embedDocuments(texts),
@@ -45,37 +47,40 @@ export class IndexedDBVectorStore extends VectorStore {
     );
   }
 
-  async addVectors (vectors: number[][], documents: Document[]): Promise<void> {
+  async addVectors(vectors: number[][], documents: Document[]): Promise<void> {
     const memoryVectors = vectors.map((embedding, idx) => ({
       content: documents[idx].pageContent,
       embedding,
-      metadata: documents[idx].metadata
+      metadata: documents[idx].metadata,
     }));
 
     this.memoryVectors = this.memoryVectors.concat(memoryVectors);
   }
 
-  async similaritySearchVectorWithScore (
+  async similaritySearchVectorWithScore(
     query: number[],
     k: number
   ): Promise<[Document, number][]> {
-    const searches = this.memoryVectors.map((vector, index) => ({
-      similarity: this.similarity(query, vector.embedding),
-      index
-    })).sort((a, b) => (a.similarity > b.similarity ? -1 : 0)).slice(0, k);
+    const searches = this.memoryVectors
+      .map((vector, index) => ({
+        similarity: this.similarity(query, vector.embedding),
+        index,
+      }))
+      .sort((a, b) => (a.similarity > b.similarity ? -1 : 0))
+      .slice(0, k);
 
-    const result: [Document, number][] = searches.map((search) => [
+    const result: [Document, number][] = searches.map(search => [
       new Document({
         metadata: this.memoryVectors[search.index].metadata,
-        pageContent: this.memoryVectors[search.index].content
+        pageContent: this.memoryVectors[search.index].content,
       }),
-      search.similarity
+      search.similarity,
     ]);
 
     return result;
   }
 
-  static async fromTexts (
+  static async fromTexts(
     texts: string[],
     metadatas: object[] | object,
     embeddings: Embeddings,
@@ -86,14 +91,14 @@ export class IndexedDBVectorStore extends VectorStore {
       const metadata = Array.isArray(metadatas) ? metadatas[i] : metadatas;
       const newDoc = new Document({
         pageContent: texts[i],
-        metadata
+        metadata,
       });
       docs.push(newDoc);
     }
     return IndexedDBVectorStore.fromDocuments(docs, embeddings, dbConfig);
   }
 
-  static async fromDocuments (
+  static async fromDocuments(
     docs: Document[],
     embeddings: Embeddings,
     dbConfig?: MemoryVectorStoreArgs
@@ -103,7 +108,7 @@ export class IndexedDBVectorStore extends VectorStore {
     return instance;
   }
 
-  static async fromExistingIndex (
+  static async fromExistingIndex(
     embeddings: Embeddings,
     dbConfig?: MemoryVectorStoreArgs
   ): Promise<IndexedDBVectorStore> {

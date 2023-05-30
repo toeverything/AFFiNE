@@ -17,6 +17,7 @@ import React, {
   lazy,
   memo,
   startTransition,
+  Suspense,
   useCallback,
   useMemo,
 } from 'react';
@@ -157,9 +158,11 @@ export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
             const plugin = plugins.find(plugin => plugin.definition.id === id);
             if (plugin && plugin.uiAdapter.detailContent) {
               return (
-                <PluginContentAdapter
-                  detailContent={plugin.uiAdapter.detailContent}
-                />
+                <Suspense>
+                  <PluginContentAdapter
+                    detailContent={plugin.uiAdapter.detailContent}
+                  />
+                </Suspense>
               );
             }
           }

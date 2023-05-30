@@ -8,7 +8,7 @@ import { createRoot } from 'react-dom/client';
 
 import { Conversation } from '../core/components/conversation';
 import { Divider } from '../core/components/divider';
-import { useChatAtoms } from '../core/hooks';
+import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
 
 if (!environment.isServer) {
   import('@blocksuite/blocks').then(({ FormatQuickBar }) => {
@@ -54,16 +54,10 @@ if (!environment.isServer) {
   });
 }
 
-export const DetailContent: PluginUIAdapter['detailContent'] = ({
-  contentLayoutAtom,
-}): ReactElement => {
+const DetailContentImpl = () => {
   const [input, setInput] = useState('');
   const { conversationAtom } = useChatAtoms();
   const [conversations, call] = useAtom(conversationAtom);
-  const layout = useAtomValue(contentLayoutAtom);
-  if (layout === 'editor' || layout.second !== 'com.affine.copilot') {
-    return <></>;
-  }
   return (
     <div
       style={{
@@ -95,4 +89,18 @@ export const DetailContent: PluginUIAdapter['detailContent'] = ({
       </div>
     </div>
   );
+};
+
+export const DetailContent: PluginUIAdapter['detailContent'] = ({
+  contentLayoutAtom,
+}): ReactElement => {
+  const layout = useAtomValue(contentLayoutAtom);
+  const key = useAtomValue(openAIApiKeyAtom);
+  if (layout === 'editor' || layout.second !== 'com.affine.copilot') {
+    return <></>;
+  }
+  if (!key) {
+    return <span>Please set OpenAI API Key in the debug panel.</span>;
+  }
+  return <DetailContentImpl />;
 };

@@ -23,6 +23,8 @@ interface ChatMessageDBV1 extends DBSchema {
   };
 }
 
+export const conversationHistoryDBName = 'affine-copilot-chat';
+
 export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
   public id: string;
   private messages: BaseChatMessage[] = [];

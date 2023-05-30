@@ -1,17 +1,16 @@
 import { AppContainer, MainContainer } from '@affine/component/workspace';
 import { config } from '@affine/env';
+import { NoSsr } from '@mui/material';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
+import { Suspense } from 'react';
 
-export default function PluginPage(): ReactElement {
+const Plugins = () => {
   const plugins = useAtomValue(affinePluginsAtom);
-  if (!config.enablePlugin) {
-    return <></>;
-  }
   return (
-    <AppContainer>
-      <MainContainer>
+    <NoSsr>
+      <div>
         {Object.values(plugins).map(({ definition, uiAdapter }) => {
           const Content = uiAdapter.debugContent;
           return (
@@ -22,6 +21,21 @@ export default function PluginPage(): ReactElement {
             </div>
           );
         })}
+      </div>
+    </NoSsr>
+  );
+};
+
+export default function PluginPage(): ReactElement {
+  if (!config.enablePlugin) {
+    return <></>;
+  }
+  return (
+    <AppContainer>
+      <MainContainer>
+        <Suspense>
+          <Plugins />
+        </Suspense>
       </MainContainer>
     </AppContainer>
   );
