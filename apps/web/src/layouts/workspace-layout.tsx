@@ -39,7 +39,10 @@ import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { ModalProvider } from '../providers/modal-provider';
+import {
+  AllWorkspaceModals,
+  CurrentWorkspaceModals,
+} from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 
 const QuickSearchModal = lazy(() =>
@@ -150,6 +153,9 @@ export const CurrentWorkspaceContext = ({
   //  need a better way to check whether this workspace really exist.
   useEffect(() => {
     const id = setTimeout(() => {
+      if (metadata.length === 0) {
+        return;
+      }
       if (!exist) {
         void push('/');
         globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
@@ -158,7 +164,10 @@ export const CurrentWorkspaceContext = ({
     return () => {
       clearTimeout(id);
     };
-  }, [push, exist]);
+  }, [push, exist, metadata.length]);
+  if (metadata.length === 0) {
+    return <WorkspaceFallback key="no-workspace" />;
+  }
   if (!router.isReady) {
     return <WorkspaceFallback key="router-is-loading" />;
   }
@@ -246,9 +255,10 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         {/* load all workspaces is costly, do not block the whole UI */}
         <Suspense fallback={null}>
           <AllWorkspaceContext>
+            <AllWorkspaceModals />
             <CurrentWorkspaceContext>
               {/* fixme(himself65): don't re-render whole modals */}
-              <ModalProvider key={currentWorkspaceId} />
+              <CurrentWorkspaceModals key={currentWorkspaceId} />
             </CurrentWorkspaceContext>
           </AllWorkspaceContext>
         </Suspense>
