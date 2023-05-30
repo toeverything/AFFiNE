@@ -80,6 +80,9 @@
       "path": "./packages/plugin-infra"
     },
     {
+      "path": "./plugins/copilot"
+    },
+    {
       "path": "./tests/fixtures"
     },
     {
