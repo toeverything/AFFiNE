@@ -15,5 +15,5 @@ test('authorization expired', async ({ page }) => {
   await clickSideBarAllPageButton(page);
   await page.evaluate(() => localStorage.removeItem('affine-login-v2'));
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await expect(page.getByTestId('new-workspace')).toBeVisible();
 });
