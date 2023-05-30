@@ -18,10 +18,19 @@ export type Filter = {
   funcName: string;
   args: Literal[];
 };
-
+export type LiteralValue =
+  | number
+  | string
+  | boolean
+  | { [K: string]: LiteralValue }
+  | Array<LiteralValue>;
+export const toLiteral = (value: LiteralValue): Literal => ({
+  type: 'literal',
+  value,
+});
 export type Literal = {
   type: 'literal';
-  value: unknown;
+  value: LiteralValue;
 };
 
 export type FilterVariable = {
@@ -53,7 +62,7 @@ export const vars: FilterVariable[] = Object.entries(variableDefineMap).map(
   })
 );
 
-const createDefaultFilter = (variable: FilterVariable): Filter => {
+export const createDefaultFilter = (variable: FilterVariable): Filter => {
   const data = filterMatcher.match(variable.type);
   if (!data) {
     throw new Error('No matching function found');
@@ -107,22 +116,22 @@ export const ChangeFilterMenu = ({
   );
 };
 
-export const filterMatcher = new Matcher<
-  {
-    name: string;
-    defaultArgs: () => unknown[];
-    render?: (props: { ast: Filter }) => ReactNode;
-    impl: (...args: unknown[]) => boolean;
-  },
-  TFunction
->((type, target) => {
-  const staticType = typesystem.subst(
-    Object.fromEntries(type.typeVars?.map(v => [v.name, v.bound]) ?? []),
-    type
-  );
-  const firstArg = staticType.args[0];
-  return firstArg && typesystem.isSubtype(firstArg, target);
-});
+export type FilterMatcherDataType = {
+  name: string;
+  defaultArgs: () => LiteralValue[];
+  render?: (props: { ast: Filter }) => ReactNode;
+  impl: (...args: LiteralValue[]) => boolean;
+};
+export const filterMatcher = new Matcher<FilterMatcherDataType, TFunction>(
+  (type, target) => {
+    const staticType = typesystem.subst(
+      Object.fromEntries(type.typeVars?.map(v => [v.name, v.bound]) ?? []),
+      type
+    );
+    const firstArg = staticType.args[0];
+    return firstArg && typesystem.isSubtype(firstArg, target);
+  }
+);
 
 filterMatcher.register(
   tFunction({
@@ -143,13 +152,13 @@ filterMatcher.register(
   {
     name: 'after',
     defaultArgs: () => {
-      return [dayjs().subtract(1, 'day').endOf('day')];
+      return [dayjs().subtract(1, 'day').endOf('day').millisecond()];
     },
     impl: (date, target) => {
-      if (typeof date !== 'number' || !dayjs.isDayjs(target)) {
+      if (typeof date !== 'number' || typeof target !== 'number') {
         throw new Error('argument type error');
       }
-      return dayjs(date).isAfter(target.endOf('day'));
+      return dayjs(date).isAfter(dayjs(target).endOf('day'));
     },
   }
 );
@@ -158,12 +167,12 @@ filterMatcher.register(
   tFunction({ args: [tDate.create(), tDate.create()], rt: tBoolean.create() }),
   {
     name: 'before',
-    defaultArgs: () => [dayjs().endOf('day')],
+    defaultArgs: () => [dayjs().endOf('day').millisecond()],
     impl: (date, target) => {
-      if (typeof date !== 'number' || !dayjs.isDayjs(target)) {
+      if (typeof date !== 'number' || typeof target !== 'number') {
         throw new Error('argument type error');
       }
-      return dayjs(date).isBefore(target.startOf('day'));
+      return dayjs(date).isBefore(dayjs(target).startOf('day'));
     },
   }
 );

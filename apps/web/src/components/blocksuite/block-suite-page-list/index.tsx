@@ -5,7 +5,7 @@ import type {
   View,
 } from '@affine/component/page-list';
 import {
-  filterByView,
+  filterByFilterList,
   PageList,
   PageListTrashView,
 } from '@affine/component/page-list';
@@ -92,7 +92,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         if (!view) {
           return true;
         }
-        return filterByView(view, {
+        return filterByFilterList(view.filterList, {
           Favorite: !!pageMeta.favorite,
           Created: pageMeta.createDate,
           Updated: pageMeta.updatedDate,
