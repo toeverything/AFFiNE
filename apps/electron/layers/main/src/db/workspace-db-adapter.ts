@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 import type { AppContext } from '../context';
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
+import { mergeUpdate } from '../workers';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import { dbSubjects } from './subjects';
@@ -32,7 +33,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     return this.yDoc.getMap('space:meta').get('name') as string;
   };
 
-  override connect() {
+  async init() {
     const db = super.connect();
 
     if (!this.firstConnected) {
@@ -51,12 +52,10 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     }
 
     const updates = this.getUpdates();
+    const merged = await mergeUpdate(updates.map(update => update.data));
+
     // to initialize the yDoc, we need to apply all updates from the db
-    Y.transact(this.yDoc, () => {
-      updates.forEach(update => {
-        this.applyUpdate(update.data, 'self');
-      });
-    });
+    this.applyUpdate(merged, 'self');
 
     this.firstConnected = true;
     this.update$.next();
@@ -101,6 +100,6 @@ export async function openWorkspaceDatabase(
 ) {
   const meta = await getWorkspaceMeta(context, workspaceId);
   const db = new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
-  db.connect();
+  await db.init();
   return db;
 }

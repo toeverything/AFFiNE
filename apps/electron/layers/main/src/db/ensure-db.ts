@@ -37,6 +37,7 @@ function getWorkspaceDB$(id: string) {
     db$Map.set(
       id,
       from(openWorkspaceDatabase(appContext, id)).pipe(
+        shareReplay(1),
         switchMap(db => {
           return startPollingSecondaryDB(db).pipe(
             ignoreElements(),
@@ -66,14 +67,20 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
     distinctUntilChanged(),
     filter((p): p is string => !!p),
     switchMap(path => {
-      const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
       return new Observable<SecondaryWorkspaceSQLiteDB>(observer => {
+        const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
         observer.next(secondaryDB);
         return () => {
+          logger.info(
+            '[ensureSQLiteDB] close secondary db connection',
+            secondaryDB.path
+          );
           secondaryDB.destroy();
         };
       });
-    })
+    }),
+    takeUntil(db.update$.pipe(last())),
+    shareReplay(1)
   );
 
   const firstDelayedTick$ = defer(() => {
@@ -91,10 +98,12 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
       next: secondaryDB => {
         secondaryDB.pull();
       },
-    })
+    }),
+    takeUntil(db.update$.pipe(last())),
+    shareReplay(1)
   );
 
-  return poll$.pipe(takeUntil(db.update$.pipe(last())), shareReplay(1));
+  return poll$;
 }
 
 export function ensureSQLiteDB(id: string) {

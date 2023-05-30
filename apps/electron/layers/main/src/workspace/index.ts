@@ -1,5 +1,5 @@
 import { merge } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 
 import { appContext } from '../context';
 import type {
@@ -36,6 +36,9 @@ export const workspaceHandlers = {
 export const getWorkspaceMeta$ = (workspaceId: string) => {
   return merge(
     getWorkspaceMeta(appContext, workspaceId),
-    workspaceSubjects.meta.pipe(map(meta => meta.meta))
+    workspaceSubjects.meta.pipe(
+      map(meta => meta.meta),
+      filter(meta => meta.id === workspaceId)
+    )
   );
 };

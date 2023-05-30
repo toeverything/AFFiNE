@@ -31,7 +31,10 @@ export const config = () => {
 
   return {
     main: {
-      entryPoints: [resolve(root, './layers/main/src/index.ts')],
+      entryPoints: [
+        resolve(root, './layers/main/src/index.ts'),
+        resolve(root, './layers/main/src/workers/merge-update.worker.ts'),
+      ],
       outdir: resolve(root, './dist/layers/main'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
