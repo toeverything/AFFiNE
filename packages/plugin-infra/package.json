@@ -25,7 +25,12 @@
   },
   "dependencies": {
     "@affine/env": "workspace:*",
-    "@affine/workspace": "workspace:*",
+    "@affine/workspace": "workspace:*"
+  },
+  "devDependencies": {
     "jotai": "^2.1.0"
+  },
+  "peerDependencies": {
+    "jotai": "*"
   }
 }
