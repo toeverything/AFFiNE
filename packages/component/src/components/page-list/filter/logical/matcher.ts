@@ -34,14 +34,7 @@ export class Matcher<Data, Type extends TType = TType> {
   }
 
   allMatchedData(type: TType): Data[] {
-    const match = this._match ?? typesystem.isSubtype.bind(typesystem);
-    const result: Data[] = [];
-    for (const t of this.list) {
-      if (match(t.type, type)) {
-        result.push(t.data);
-      }
-    }
-    return result;
+    return this.allMatched(type).map(v => v.data);
   }
 
   findData(f: (data: Data) => boolean): Data | undefined {
