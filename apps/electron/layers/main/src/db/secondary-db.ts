@@ -34,10 +34,10 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   override destroy() {
+    this.flushUpdateQueue();
     this.unsubscribers.forEach(unsub => unsub());
     this.db?.close();
     this.yDoc.destroy();
-    this.close();
   }
 
   get workspaceId() {

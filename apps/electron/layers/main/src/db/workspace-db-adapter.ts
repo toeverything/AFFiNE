@@ -1,3 +1,4 @@
+import { debounce } from 'lodash-es';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
@@ -8,10 +9,17 @@ import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import { dbSubjects } from './subjects';
 
+const FLUSH_WAIT_TIME = 1500;
+const FLUSH_MAX_WAIT_TIME = 3000;
+
+const MAX_QUEUE_LENGTH = 100;
+
 export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   role = 'primary';
   yDoc = new Y.Doc();
   firstConnected = false;
+
+  updateQueue: Uint8Array[] = [];
 
   update$ = new Subject<void>();
 
@@ -20,6 +28,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   override destroy() {
+    this.flushUpdateQueue();
     this.db?.close();
     this.db = null;
     this.yDoc.destroy();
@@ -32,15 +41,43 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     return this.yDoc.getMap('space:meta').get('name') as string;
   };
 
+  // do not update db immediately, instead, push to a queue
+  // and flush the queue in a future time
+  addUpdateToUpdateQueue(update: Uint8Array) {
+    this.updateQueue.push(update);
+    if (this.updateQueue.length > MAX_QUEUE_LENGTH) {
+      this.flushUpdateQueue();
+    } else {
+      this.debouncedFlush();
+    }
+  }
+
+  flushUpdateQueue() {
+    logger.debug(
+      'flushUpdateQueue',
+      this.workspaceId,
+      'queue',
+      this.updateQueue.length
+    );
+    const updates = [...this.updateQueue];
+    this.updateQueue = [];
+    this.addUpdateToSQLite(updates);
+  }
+
+  // flush after 5s, but will not wait for more than 10s
+  debouncedFlush = debounce(this.flushUpdateQueue, FLUSH_WAIT_TIME, {
+    maxWait: FLUSH_MAX_WAIT_TIME,
+  });
+
   override connect() {
     const db = super.connect();
 
     if (!this.firstConnected) {
       this.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
-        if (origin !== 'self') {
+        if (origin === 'renderer') {
+          this.addUpdateToUpdateQueue(update);
+        } else if (origin === 'external') {
           this.addUpdateToSQLite([update]);
-        }
-        if (origin === 'external') {
           logger.debug('external update', this.workspaceId);
           dbSubjects.externalUpdate.next({
             workspaceId: this.workspaceId,
