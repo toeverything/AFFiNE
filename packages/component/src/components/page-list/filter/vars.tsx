@@ -54,7 +54,9 @@ export const variableDefineMap = {
   //   type: tBoolean.create(),
   // },
 } as const;
-export type VariableMap = { [K in keyof typeof variableDefineMap]: unknown };
+export type VariableMap = {
+  [K in keyof typeof variableDefineMap]: LiteralValue;
+};
 export const vars: FilterVariable[] = Object.entries(variableDefineMap).map(
   ([key, value]) => ({
     name: key as keyof VariableMap,
@@ -83,7 +85,7 @@ export const CreateFilterMenu = ({
   onChange: (value: Filter[]) => void;
 }) => {
   return (
-    <ChangeFilterMenu
+    <VariableSelect
       selected={value}
       onSelect={filter => {
         onChange([...value, filter]);
@@ -92,7 +94,7 @@ export const CreateFilterMenu = ({
   );
 };
 
-export const ChangeFilterMenu = ({
+export const VariableSelect = ({
   onSelect,
 }: {
   selected: Filter[];
