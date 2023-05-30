@@ -1,5 +1,6 @@
 import { Button, Input } from '@affine/component';
 import { rootStore } from '@affine/workspace/atom';
+import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { StrictMode, useState } from 'react';
@@ -8,7 +9,6 @@ import { createRoot } from 'react-dom/client';
 import { Conversation } from '../core/components/conversation';
 import { Divider } from '../core/components/divider';
 import { useChatAtoms } from '../core/hooks';
-import { contentExpandAtom } from './jotai';
 
 if (!environment.isServer) {
   import('@blocksuite/blocks').then(({ FormatQuickBar }) => {
@@ -54,13 +54,15 @@ if (!environment.isServer) {
   });
 }
 
-export function DetailContent() {
+export const DetailContent: PluginUIAdapter['detailContent'] = ({
+  contentLayoutAtom,
+}): ReactElement => {
   const [input, setInput] = useState('');
   const { conversationAtom } = useChatAtoms();
   const [conversations, call] = useAtom(conversationAtom);
-  const expand = useAtomValue(contentExpandAtom);
-  if (!expand) {
-    return null;
+  const layout = useAtomValue(contentLayoutAtom);
+  if (layout === 'editor' || layout.second !== 'com.affine.copilot') {
+    return <></>;
   }
   return (
     <div
@@ -93,4 +95,4 @@ export function DetailContent() {
       </div>
     </div>
   );
-}
+};

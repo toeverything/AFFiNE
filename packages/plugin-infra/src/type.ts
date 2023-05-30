@@ -5,7 +5,9 @@
  * AFFiNE Plugin System Types
  */
 
-import type { ReactPortal } from 'react';
+import type { WritableAtom } from 'jotai';
+import type { ReactElement } from 'react';
+import type { MosaicDirection, MosaicNode } from 'react-mosaic-component';
 
 /**
  * A code loader interface of the plugin API.
@@ -76,6 +78,25 @@ export enum ReleaseStage {
   DEV = 'dev',
 }
 
+export type ExpectedLayout =
+  | {
+      direction: MosaicDirection;
+      // the first element is always the editor
+      first: 'editor';
+      second: MosaicNode<string>;
+      // the percentage should be greater than 70
+      splitPercentage?: number;
+    }
+  | 'editor';
+
+type SetStateAction<Value> = Value | ((prev: Value) => Value);
+
+export type ContentLayoutAtom = WritableAtom<
+  ExpectedLayout,
+  [SetStateAction<ExpectedLayout>],
+  void
+>;
+
 export type Definition<ID extends string> = {
   /**
    * ID of the plugin. It should be unique.
@@ -111,10 +132,9 @@ export type Definition<ID extends string> = {
   stage: ReleaseStage;
 };
 
-export type Adapter<Options extends Record<string, unknown>> = (
-  element: HTMLDivElement,
-  options: Options
-) => ReactPortal;
+export type Adapter<Props extends Record<string, unknown>> = (
+  props: Props
+) => ReactElement;
 
 export type AffinePluginContext = {
   toast: (text: string) => void;
@@ -122,8 +142,12 @@ export type AffinePluginContext = {
 
 export type PluginUIAdapter = {
   sidebarItem: Adapter<Record<string, unknown>>;
-  headerItem: Adapter<Record<string, unknown>>;
-  detailContent: Adapter<Record<string, unknown>>;
+  headerItem: Adapter<{
+    contentLayoutAtom: ContentLayoutAtom;
+  }>;
+  detailContent: Adapter<{
+    contentLayoutAtom: ContentLayoutAtom;
+  }>;
 };
 
 export type PluginAdapterCreator = (

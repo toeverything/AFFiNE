@@ -1,15 +1,33 @@
 import { IconButton, Tooltip } from '@affine/component';
+import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 
-import { contentExpandAtom } from './jotai';
-
-export const HeaderItem = (): ReactElement => {
-  const set = useSetAtom(contentExpandAtom);
+export const HeaderItem: PluginUIAdapter['headerItem'] = ({
+  contentLayoutAtom,
+}): ReactElement => {
+  const setLayout = useSetAtom(contentLayoutAtom);
   return (
     <Tooltip content="Chat with AI" placement="bottom-end">
-      <IconButton onClick={useCallback(() => set(expand => !expand), [set])}>
+      <IconButton
+        onClick={useCallback(
+          () =>
+            setLayout(layout => {
+              if (layout === 'editor') {
+                return {
+                  direction: 'row',
+                  first: 'editor',
+                  second: 'com.affine.copilot',
+                  splitPercentage: 80,
+                };
+              } else {
+                return 'editor';
+              }
+            }),
+          [setLayout]
+        )}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="icon icon-tabler icon-tabler-brand-hipchat"

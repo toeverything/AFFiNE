@@ -14,14 +14,15 @@ import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
   lazy,
+  memo,
   Suspense,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
+import { contentLayoutAtom } from '../../../atoms/layout';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { DownloadClientTip } from './download-tips';
@@ -152,9 +153,19 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
 
 export type HeaderProps = BaseHeaderProps;
 
-const PluginHeader = () => {
-  const divRef = useRef<HTMLDivElement>(null);
+const PluginHeaderItemAdapter = memo<{
+  headerItem: PluginUIAdapter['headerItem'];
+}>(function PluginHeaderItemAdapter({ headerItem }) {
+  return (
+    <div>
+      {headerItem({
+        contentLayoutAtom,
+      })}
+    </div>
+  );
+});
 
+const PluginHeader = () => {
   const affinePluginsMap = useAtomValue(affinePluginsAtom);
   const plugins = useMemo(
     () => Object.values(affinePluginsMap),
@@ -162,17 +173,19 @@ const PluginHeader = () => {
   );
 
   return (
-    <div ref={divRef}>
-      {divRef.current &&
-        plugins
-          .filter(plugin => plugin.uiAdapter.headerItem != null)
-          .map(plugin => {
-            const headerItem = plugin.uiAdapter
-              .headerItem as PluginUIAdapter['headerItem'];
-            const item = headerItem(divRef.current as HTMLDivElement, {});
-            item.key = plugin.definition.id;
-            return item;
-          })}
+    <div>
+      {plugins
+        .filter(plugin => plugin.uiAdapter.headerItem != null)
+        .map(plugin => {
+          const headerItem = plugin.uiAdapter
+            .headerItem as PluginUIAdapter['headerItem'];
+          return (
+            <PluginHeaderItemAdapter
+              key={plugin.definition.id}
+              headerItem={headerItem}
+            />
+          );
+        })}
     </div>
   );
 };
