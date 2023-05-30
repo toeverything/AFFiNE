@@ -16,62 +16,76 @@ interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
 
 interface MenuLinkItemProps extends MenuItemProps, Pick<LinkProps, 'href'> {}
 
-export function MenuItem({
-  onClick,
-  icon,
-  active,
-  children,
-  disabled,
-  collapsed,
-  onCollapsedChange,
-  ...props
-}: MenuItemProps) {
-  const collapsible = collapsed !== undefined;
-  if (collapsible && !onCollapsedChange) {
-    throw new Error('onCollapsedChange is required when collapsed is defined');
+export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
+  (
+    {
+      onClick,
+      icon,
+      active,
+      children,
+      disabled,
+      collapsed,
+      onCollapsedChange,
+      ...props
+    },
+    ref
+  ) => {
+    const collapsible = collapsed !== undefined;
+    if (collapsible && !onCollapsedChange) {
+      throw new Error(
+        'onCollapsedChange is required when collapsed is defined'
+      );
+    }
+    return (
+      <div
+        ref={ref}
+        {...props}
+        className={clsx([styles.root, props.className])}
+        onClick={onClick}
+        data-active={active}
+        data-disabled={disabled}
+        data-collapsible={collapsible}
+      >
+        {icon && (
+          <div className={styles.iconsContainer} data-collapsible={collapsible}>
+            {collapsible && (
+              <div
+                onClick={e => {
+                  e.stopPropagation();
+                  e.preventDefault(); // for links
+                  onCollapsedChange?.(!collapsed);
+                }}
+                data-testid="fav-collapsed-button"
+                className={styles.collapsedIconContainer}
+              >
+                <ArrowDownSmallIcon
+                  className={styles.collapsedIcon}
+                  data-collapsed={collapsed}
+                />
+              </div>
+            )}
+            {React.cloneElement(icon, {
+              className: clsx([styles.icon, icon.props.className]),
+            })}
+          </div>
+        )}
+
+        <div className={styles.content}>{children}</div>
+      </div>
+    );
   }
-  return (
-    <div
-      {...props}
-      className={clsx([styles.root, props.className])}
-      onClick={onClick}
-      data-active={active}
-      data-disabled={disabled}
-      data-collapsible={collapsible}
-    >
-      {icon && (
-        <div className={styles.iconsContainer} data-collapsible={collapsible}>
-          {collapsible && (
-            <div
-              onClick={e => {
-                e.stopPropagation();
-                e.preventDefault(); // for links
-                onCollapsedChange?.(!collapsed);
-              }}
-              data-testid="fav-collapsed-button"
-              className={styles.collapsedIconContainer}
-            >
-              <ArrowDownSmallIcon
-                className={styles.collapsedIcon}
-                data-collapsed={collapsed}
-              />
-            </div>
-          )}
-          {React.cloneElement(icon, {
-            className: clsx([styles.icon, icon.props.className]),
-          })}
-        </div>
-      )}
+);
+MenuItem.displayName = 'MenuItem';
 
-      <div className={styles.content}>{children}</div>
-    </div>
-  );
-}
-
-export function MenuLinkItem({ href, ...props }: MenuLinkItemProps) {
-  return (
-    <Link href={href} className={styles.linkItemRoot}>
-      <MenuItem {...props}></MenuItem>
-    </Link>
-  );
-}
+export const MenuLinkItem = React.forwardRef<HTMLDivElement, MenuLinkItemProps>(
+  ({ href, ...props }, ref) => {
+    return (
+      <Link href={href} className={styles.linkItemRoot}>
+        {/* The <a> element rendered by Link does not generate display box due to `display: contents` style */}
+        {/* Thus ref is passed to MenuItem instead of Link */}
+        <MenuItem ref={ref} {...props}></MenuItem>
+      </Link>
+    );
+  }
+);
+MenuLinkItem.displayName = 'MenuLinkItem';

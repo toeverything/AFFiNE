@@ -22,7 +22,7 @@ export const createSQLiteStorage = (workspaceId: string): BlobStorage => {
         return apis.db.deleteBlob(workspaceId, key);
       },
       list: async () => {
-        return apis.db.getPersistedBlobs(workspaceId);
+        return apis.db.getBlobKeys(workspaceId);
       },
     },
   };

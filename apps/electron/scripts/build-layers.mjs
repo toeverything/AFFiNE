@@ -25,8 +25,6 @@ async function buildLayers() {
       'process.env.BUILD_TYPE': `"${process.env.BUILD_TYPE || 'stable'}"`,
     },
   });
-
-  await $`yarn workspace @affine/electron generate-main-exposed-meta`;
 }
 
 await buildLayers();

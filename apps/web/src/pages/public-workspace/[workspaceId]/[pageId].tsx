@@ -16,7 +16,8 @@ import {
   publicWorkspaceIdAtom,
   publicWorkspacePageIdAtom,
 } from '../../../atoms/public-workspace';
-import { PageDetailContent } from '../../../components/page-detail-content';
+import { BlockSuiteEditorHeader } from '../../../components/blocksuite/workspace-header';
+import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
@@ -70,7 +71,29 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
   return (
     <>
       <PublicQuickSearch workspace={publicWorkspace} />
-      <PageDetailContent
+      <BlockSuiteEditorHeader
+        isPublic={true}
+        workspace={publicWorkspace}
+        currentPage={blockSuiteWorkspace.getPage(pageId)}
+      >
+        <NavContainer>
+          <Breadcrumbs>
+            <StyledBreadcrumbs
+              href={`/public-workspace/${blockSuiteWorkspace.id}`}
+            >
+              <WorkspaceAvatar size={24} name={name} avatar={avatar} />
+              <span>{name}</span>
+            </StyledBreadcrumbs>
+            <StyledBreadcrumbs
+              href={`/public-workspace/${blockSuiteWorkspace.id}/${pageId}`}
+            >
+              <PageIcon fontSize={24} />
+              <span>{pageTitle ? pageTitle : t['Untitled']()}</span>
+            </StyledBreadcrumbs>
+          </Breadcrumbs>
+        </NavContainer>
+      </BlockSuiteEditorHeader>
+      <PageDetailEditor
         isPublic={true}
         pageId={pageId}
         workspace={publicWorkspace}
@@ -85,24 +108,6 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
           };
         }}
         onInit={initPage}
-        header={
-          <NavContainer>
-            <Breadcrumbs>
-              <StyledBreadcrumbs
-                href={`/public-workspace/${blockSuiteWorkspace.id}`}
-              >
-                <WorkspaceAvatar size={24} name={name} avatar={avatar} />
-                <span>{name}</span>
-              </StyledBreadcrumbs>
-              <StyledBreadcrumbs
-                href={`/public-workspace/${blockSuiteWorkspace.id}/${pageId}`}
-              >
-                <PageIcon fontSize={24} />
-                <span>{pageTitle ? pageTitle : t['Untitled']()}</span>
-              </StyledBreadcrumbs>
-            </Breadcrumbs>
-          </NavContainer>
-        }
       />
     </>
   );

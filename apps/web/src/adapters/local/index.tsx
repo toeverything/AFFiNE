@@ -17,35 +17,19 @@ import {
 } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
-import { lazy } from 'react';
+import React from 'react';
 
+import {
+  BlockSuitePageList,
+  PageDetailEditor,
+  WorkspaceHeader,
+  WorkspaceSettingDetail,
+} from '../shared';
 import type { WorkspaceAdapter } from '../type';
-
-const WorkspaceSettingDetail = lazy(() =>
-  import('../../components/affine/workspace-setting-detail').then(
-    ({ WorkspaceSettingDetail }) => ({
-      default: WorkspaceSettingDetail,
-    })
-  )
-);
-const BlockSuitePageList = lazy(() =>
-  import('../../components/blocksuite/block-suite-page-list').then(
-    ({ BlockSuitePageList }) => ({
-      default: BlockSuitePageList,
-    })
-  )
-);
-const PageDetailContent = lazy(() =>
-  import('../../components/page-detail-content').then(
-    ({ PageDetailContent }) => ({
-      default: PageDetailContent,
-    })
-  )
-);
 
 const logger = new DebugLogger('use-create-first-workspace');
 
-export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
+export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   releaseType: ReleaseType.STABLE,
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
@@ -78,6 +62,7 @@ export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   },
   CRUD,
   UI: {
+    Header: WorkspaceHeader,
     Provider: ({ children }) => {
       return <>{children}</>;
     },
@@ -91,7 +76,7 @@ export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       }
       return (
         <>
-          <PageDetailContent
+          <PageDetailEditor
             pageId={currentPageId}
             onInit={initPage}
             onLoad={onLoadEditor}
@@ -100,10 +85,11 @@ export const LocalPlugin: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         </>
       );
     },
-    PageList: ({ blockSuiteWorkspace, onOpenPage }) => {
+    PageList: ({ blockSuiteWorkspace, onOpenPage, view }) => {
       return (
         <BlockSuitePageList
           listType="all"
+          view={view}
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
         />

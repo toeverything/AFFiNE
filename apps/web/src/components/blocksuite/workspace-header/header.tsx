@@ -10,7 +10,7 @@ import type { Page } from '@blocksuite/store';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue } from 'jotai';
-import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
+import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
   lazy,
@@ -46,7 +46,7 @@ export type BaseHeaderProps<
   workspace: Workspace;
   currentPage: Page | null;
   isPublic: boolean;
-  isPreview: boolean;
+  leftSlot?: ReactNode;
 };
 
 export const enum HeaderRightItemName {
@@ -69,7 +69,6 @@ type HeaderItem = {
     currentPage: Page | null,
     status: {
       isPublic: boolean;
-      isPreview: boolean;
     }
   ) => boolean;
 };
@@ -83,8 +82,8 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.SyncUser]: {
     Component: SyncUser,
-    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !isPublic && !isPreview;
+    availableWhen: (_, currentPage, { isPublic }) => {
+      return !isPublic;
     },
   },
   [HeaderRightItemName.ShareMenu]: {
@@ -107,8 +106,8 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
-    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !isPublic && !isPreview;
+    availableWhen: (_, currentPage, { isPublic }) => {
+      return !isPublic;
     },
   },
   [HeaderRightItemName.WindowsAppControls]: {
@@ -227,11 +226,14 @@ export const Header = forwardRef<
         data-is-edgeless={mode === 'edgeless'}
       >
         <Suspense>
-          <SidebarSwitch
-            visible={!open}
-            tooltipContent={t['Expand sidebar']()}
-            data-testid="sliderBar-arrowButton-expand"
-          />
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <SidebarSwitch
+              visible={!open}
+              tooltipContent={t['Expand sidebar']()}
+              data-testid="sliderBar-arrowButton-expand"
+            />
+            {props.leftSlot}
+          </div>
         </Suspense>
 
         {props.children}
@@ -242,7 +244,6 @@ export const Header = forwardRef<
               ([name, { availableWhen, Component }]) => {
                 if (
                   availableWhen(props.workspace, props.currentPage, {
-                    isPreview: props.isPreview,
                     isPublic: props.isPublic,
                   })
                 ) {
@@ -250,7 +251,6 @@ export const Header = forwardRef<
                     <Component
                       workspace={props.workspace}
                       currentPage={props.currentPage}
-                      isPreview={props.isPreview}
                       isPublic={props.isPublic}
                       key={name}
                     />

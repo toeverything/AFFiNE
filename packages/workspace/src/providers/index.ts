@@ -176,9 +176,7 @@ const createSQLiteProvider = (
   }
 
   async function syncBlobIntoSQLite(bs: BlobManager) {
-    const persistedKeys = await apis.db.getPersistedBlobs(
-      blockSuiteWorkspace.id
-    );
+    const persistedKeys = await apis.db.getBlobKeys(blockSuiteWorkspace.id);
 
     const allKeys = await bs.list();
     const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
@@ -242,20 +240,9 @@ const createSQLiteProvider = (
 
       blockSuiteWorkspace.doc.on('update', handleUpdate);
 
-      let timer = 0;
-      unsubscribe = events.db.onDBFileUpdate(workspaceId => {
+      unsubscribe = events.db.onExternalUpdate(({ update, workspaceId }) => {
         if (workspaceId === blockSuiteWorkspace.id) {
-          // throttle
-          logger.debug('on db update', workspaceId);
-          if (timer) {
-            clearTimeout(timer);
-          }
-
-          // @ts-expect-error ignore the type
-          timer = setTimeout(() => {
-            syncUpdates();
-            timer = 0;
-          }, 1000);
+          Y.applyUpdate(blockSuiteWorkspace.doc, update, sqliteOrigin);
         }
       });
 

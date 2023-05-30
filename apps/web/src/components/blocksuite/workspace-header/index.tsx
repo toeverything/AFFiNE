@@ -18,7 +18,7 @@ import * as styles from './styles.css';
 
 export type WorkspaceHeaderProps = BaseHeaderProps;
 
-export const WorkspaceHeader: FC<
+export const BlockSuiteEditorHeader: FC<
   PropsWithChildren<WorkspaceHeaderProps> & HTMLAttributes<HTMLDivElement>
 > = (props): ReactElement => {
   const { workspace, currentPage, children, isPublic } = props;
@@ -62,4 +62,4 @@ export const WorkspaceHeader: FC<
   );
 };
 
-WorkspaceHeader.displayName = 'BlockSuiteEditorHeader';
+BlockSuiteEditorHeader.displayName = 'BlockSuiteEditorHeader';
