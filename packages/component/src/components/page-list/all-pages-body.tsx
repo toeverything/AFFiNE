@@ -1,4 +1,4 @@
-import { TableBody, TableCell } from '@affine/component';
+import { styled, TableBody, TableCell } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -139,6 +139,12 @@ export const AllPagesBody = ({
   );
 };
 
+const FullSizeButton = styled('button')(() => ({
+  width: '100%',
+  height: '100%',
+  display: 'block',
+}));
+
 type DraggableTitleCellProps = {
   pageId: string;
   draggableData?: DraggableTitleCellData;
@@ -158,9 +164,15 @@ function DraggableTitleCell({
     <TitleCell
       ref={setNodeRef}
       style={{ opacity: isDragging ? 0.5 : 1 }}
-      {...listeners}
-      {...attributes}
       {...props}
-    />
+    >
+      {/* Use `button` for draggable element */}
+      {/* See https://docs.dndkit.com/api-documentation/draggable/usedraggable#role */}
+      {element => (
+        <FullSizeButton {...listeners} {...attributes}>
+          {element}
+        </FullSizeButton>
+      )}
+    </TitleCell>
   );
 }
