@@ -3,7 +3,7 @@ import { rootStore } from '@affine/workspace/atom';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { StrictMode, useState } from 'react';
+import { Fragment, StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { Conversation } from '../core/components/conversation';
@@ -72,10 +72,10 @@ export const DetailContent: PluginUIAdapter['detailContent'] = ({
     >
       {conversations.map((message, idx) => {
         return (
-          <>
-            <Conversation key={idx} text={message.text} />
+          <Fragment key={idx}>
+            <Conversation text={message.text} />
             <Divider />
-          </>
+          </Fragment>
         );
       })}
       <div>
