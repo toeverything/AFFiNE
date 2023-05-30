@@ -9,21 +9,8 @@
     "./type": "./src/type.ts",
     "./react": "./src/react/index.ts"
   },
-  "publishConfig": {
-    "exports": {
-      "./manager": {
-        "types": "./dist/manager.d.ts",
-        "import": "./dist/manager.js",
-        "require": "./dist/manager.js"
-      },
-      "./type": {
-        "types": "./dist/type.d.ts",
-        "import": "./dist/type.js",
-        "require": "./dist/type.js"
-      }
-    }
-  },
   "dependencies": {
+    "@affine/component": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/workspace": "workspace:*"
   },
@@ -31,6 +18,8 @@
     "jotai": "^2.1.0"
   },
   "peerDependencies": {
-    "jotai": "*"
+    "jotai": "*",
+    "react": "*",
+    "react-dom": "*"
   }
 }

@@ -9084,9 +9084,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/plugin-infra@workspace:packages/plugin-infra"
   dependencies:
+    "@affine/component": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/workspace": "workspace:*"
     jotai: ^2.1.0
+  peerDependencies:
+    jotai: "*"
+    react: "*"
+    react-dom: "*"
   languageName: unknown
   linkType: soft
 
