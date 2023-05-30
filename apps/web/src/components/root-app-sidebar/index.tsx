@@ -19,10 +19,10 @@ import {
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { useDroppable } from '@dnd-kit/core';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import type React from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 
 import { useHistoryAtom } from '../../atoms/history';
 import type { AllWorkspace } from '../../shared';
@@ -45,25 +45,34 @@ export type RootAppSidebarProps = {
   };
 };
 
-const RouteMenuLinkItem = ({
-  currentPath,
-  path,
-  icon,
-  children,
-  ...props
-}: {
-  currentPath: string; // todo: pass through useRouter?
-  path?: string | null;
-  icon: ReactElement;
-  children?: ReactElement;
-} & React.HTMLAttributes<HTMLDivElement>) => {
-  const active = currentPath === path;
+const RouteMenuLinkItem = React.forwardRef<
+  HTMLDivElement,
+  {
+    currentPath: string; // todo: pass through useRouter?
+    path?: string | null;
+    icon: ReactElement;
+    children?: ReactElement;
+    isDraggedOver?: boolean;
+  } & React.HTMLAttributes<HTMLDivElement>
+>(({ currentPath, path, icon, children, isDraggedOver, ...props }, ref) => {
+  // Force active style when a page is dragged over
+  const active = isDraggedOver || currentPath === path;
   return (
-    <MenuLinkItem {...props} active={active} href={path ?? ''} icon={icon}>
+    <MenuLinkItem
+      ref={ref}
+      {...props}
+      active={active}
+      href={path ?? ''}
+      icon={icon}
+    >
       {children}
     </MenuLinkItem>
   );
-};
+});
+RouteMenuLinkItem.displayName = 'RouteMenuLinkItem';
+
+// Unique droppable IDs
+export const DROPPABLE_SIDEBAR_TRASH = 'trash-folder';
 
 /**
  * This is for the whole affine app sidebar.
@@ -126,6 +135,10 @@ export const RootAppSidebar = ({
     };
   }, [history, setHistory]);
 
+  const trashDroppable = useDroppable({
+    id: DROPPABLE_SIDEBAR_TRASH,
+  });
+
   return (
     <>
       <AppSidebar router={router}>
@@ -182,6 +195,8 @@ export const RootAppSidebar = ({
 
           <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem
+            ref={trashDroppable.setNodeRef}
+            isDraggedOver={trashDroppable.isOver}
             icon={<DeleteTemporarilyIcon />}
             currentPath={currentPath}
             path={currentWorkspaceId && paths.trash(currentWorkspaceId)}

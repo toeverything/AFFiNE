@@ -9,7 +9,8 @@ import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
-import type { CSSProperties } from 'react';
+import type React from 'react';
+import { type CSSProperties } from 'react';
 
 import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
