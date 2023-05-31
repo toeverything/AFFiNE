@@ -19,7 +19,7 @@ test('Expand Sidebar', async ({ page }) => {
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).not.toBeInViewport();
 
-  await page.getByTestId('sliderBar-arrowButton-expand').click();
+  await page.getByTestId('app-sidebar-arrow-button-expand').click();
   await expect(sliderBarArea).toBeInViewport();
 });
 
