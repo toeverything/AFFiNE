@@ -1,3 +1,5 @@
+import { MenuItem, PureMenu } from '@affine/component';
+import { MuiClickAwayListener } from '@affine/component';
 import type { SerializedBlock } from '@blocksuite/blocks';
 import {
   getCurrentBlockRange,
@@ -6,14 +8,17 @@ import {
 } from '@blocksuite/blocks/std';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
+import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { MenuItem, MuiClickAwayListener, PureMenu } from '../../..';
-import type { EditorPlugin } from '..';
+export type BookMarkProps = {
+  page: Page;
+};
 
 type ShortcutMap = {
   [key: string]: (e: KeyboardEvent, page: Page) => void;
 };
+
 const menuOptions = [
   {
     id: 'dismiss',
@@ -90,7 +95,7 @@ const shouldShowBookmarkMenu = (pastedBlocks: SerializedBlock[]) => {
   }
   return !!firstBlock.text[0].attributes?.link;
 };
-const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
+export const BookMarkUI: FC<BookMarkProps> = ({ page }) => {
   const [anchor, setAnchor] = useState<Range | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>(
     menuOptions[0].id
@@ -212,14 +217,4 @@ const BookMarkMenu: EditorPlugin['render'] = ({ page }) => {
       </div>
     </MuiClickAwayListener>
   ) : null;
-};
-
-const Defender: EditorPlugin['render'] = props => {
-  const flag = props.page.awarenessStore.getFlag('enable_bookmark_operation');
-  return flag ? <BookMarkMenu {...props} /> : null;
-};
-
-export const bookmarkPlugin: EditorPlugin = {
-  flavour: 'bookmark',
-  render: Defender,
 };
