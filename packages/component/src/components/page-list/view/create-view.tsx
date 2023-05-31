@@ -1,3 +1,4 @@
+import { SaveIcon } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
 import { useState } from 'react';
 
@@ -5,6 +6,7 @@ import { Button, Input, Modal, ModalWrapper } from '../../..';
 import { FilterList } from '../filter';
 import type { Filter } from '../filter/vars';
 import type { View } from '../use-all-page-setting';
+import * as styles from './view-list.css';
 
 type CreateViewProps = {
   init: Filter[];
@@ -68,7 +70,18 @@ export const SaveViewButton = ({ init, onConfirm }: CreateViewProps) => {
   const [show, changeShow] = useState(false);
   return (
     <>
-      <Button onClick={() => changeShow(true)}>Save view</Button>
+      <Button
+        className={styles.saveButton}
+        onClick={() => changeShow(true)}
+        size="middle"
+      >
+        <div className={styles.saveButtonContainer}>
+          <div className={styles.saveIcon}>
+            <SaveIcon />
+          </div>
+          <div className={styles.saveText}>Save View</div>
+        </div>
+      </Button>
       <Modal open={show} onClose={() => changeShow(false)}>
         <ModalWrapper width={560} style={{ padding: '40px' }}>
           <CreateView

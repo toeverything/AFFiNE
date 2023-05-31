@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
 import { Menu, MenuItem } from '../../../ui/menu';
+import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
 import type { Filter, Literal } from './vars';
@@ -33,16 +34,15 @@ export const Condition = ({
             trigger="click"
             content={<VariableSelect selected={[]} onSelect={onChange} />}
           >
-            <div data-testid="variable-name">{ast.left.name}</div>
+            <div data-testid="variable-name" className={styles.filterTypeStyle}>
+              {ast.left.name}
+            </div>
           </Menu>
           <Menu
             trigger="click"
             content={<FunctionSelect value={value} onChange={onChange} />}
           >
-            <div
-              style={{ marginLeft: 4, color: 'gray' }}
-              data-testid="filter-name"
-            >
+            <div className={styles.switchStyle} data-testid="filter-name">
               {ast.funcName}
             </div>
           </Menu>

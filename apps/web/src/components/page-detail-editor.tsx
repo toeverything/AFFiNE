@@ -11,6 +11,7 @@ import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-s
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import type { ExpectedLayout } from '@toeverything/plugin-infra/type';
+import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type { FC } from 'react';
@@ -50,6 +51,11 @@ const EditorWrapper = memo(function EditorWrapper({
   onLoad,
   isPublic,
 }: PageDetailEditorProps) {
+  const affinePluginsMap = useAtomValue(affinePluginsAtom);
+  const plugins = useMemo(
+    () => Object.values(affinePluginsMap),
+    [affinePluginsMap]
+  );
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const page = useBlockSuiteWorkspacePage(blockSuiteWorkspace, pageId);
   if (!page) {
@@ -88,12 +94,22 @@ const EditorWrapper = memo(function EditorWrapper({
             updatedDate: Date.now(),
           });
           localStorage.setItem('last_page_id', page.id);
+          let dispose = () => {};
           if (onLoad) {
-            return onLoad(page, editor);
+            dispose = onLoad(page, editor);
           }
-          return () => {};
+          const uiDecorators = plugins
+            .map(plugin => plugin.blockSuiteAdapter.uiDecorator)
+            .filter((ui): ui is PluginBlockSuiteAdapter['uiDecorator'] =>
+              Boolean(ui)
+            );
+          const disposes = uiDecorators.map(ui => ui(editor));
+          return () => {
+            disposes.map(fn => fn());
+            dispose();
+          };
         },
-        [onLoad, setEditor]
+        [plugins, onLoad, setEditor]
       )}
     />
   );
