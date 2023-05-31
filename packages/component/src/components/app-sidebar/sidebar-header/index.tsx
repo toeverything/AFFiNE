@@ -54,7 +54,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
           {!environment.isMacOs && <div style={{ flex: 1 }} />}
         </>
       )}
-      <SidebarSwitch />
+      {open && <SidebarSwitch />}
     </div>
   );
 };
