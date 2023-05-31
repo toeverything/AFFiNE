@@ -1,13 +1,13 @@
 import { Unreachable } from '@affine/env/constant';
+import { affineApis } from '@affine/workspace/affine/shared';
 import { rootStore } from '@affine/workspace/atom';
+import { createAffineProviders } from '@affine/workspace/providers';
 import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
 
 import { workspacesAtom } from '../../atoms';
-import { createAffineProviders } from '../../blocksuite';
-import { affineApis } from '../../shared/apis';
 
 type Query = (typeof QueryKey)[keyof typeof QueryKey];
 

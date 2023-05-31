@@ -6,13 +6,13 @@ import {
   SignMethod,
   storageChangeSlot,
 } from '@affine/workspace/affine/login';
+import { affineAuth } from '@affine/workspace/affine/shared';
 import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { affineAuth } from '../../shared/apis';
 import { useTransformWorkspace } from '../use-transform-workspace';
 
 export function useOnTransformWorkspace() {
