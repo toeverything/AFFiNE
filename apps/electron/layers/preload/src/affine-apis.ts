@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../../constraints.d.ts" />
+
 // NOTE: we will generate preload types from this file
-
 import { ipcRenderer } from 'electron';
-
-import type { MainIPCEventMap, MainIPCHandlerMap } from '../../constraints';
 
 type WithoutFirstParameter<T> = T extends (_: any, ...args: infer P) => infer R
   ? (...args: P) => R

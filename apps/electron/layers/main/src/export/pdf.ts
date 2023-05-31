@@ -5,7 +5,7 @@ import { logger } from '../logger';
 import type { ErrorMessage } from './utils';
 import { getFakedResult } from './utils';
 
-interface SavePDFFileResult {
+export interface SavePDFFileResult {
   filePath?: string;
   canceled?: boolean;
   error?: ErrorMessage;

@@ -1,11 +1,16 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
     "jsx": "react-jsx",
     "moduleResolution": "Node",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "noEmit": false,
+    "outDir": "lib/.storybook"
   },
-  "include": [".storybook/**/*"]
+  "include": [".storybook/**/*"],
+  "exclude": ["lib"],
+  "references": [{ "path": "../i18n" }]
 }

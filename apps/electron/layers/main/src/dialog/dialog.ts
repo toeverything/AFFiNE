@@ -29,7 +29,7 @@ export async function revealDBFile(workspaceId: string) {
 }
 
 // provide a backdoor to set dialog path for testing in playwright
-interface FakeDialogResult {
+export interface FakeDialogResult {
   canceled?: boolean;
   filePath?: string;
   filePaths?: string[];
@@ -63,7 +63,7 @@ const ErrorMessages = [
 
 type ErrorMessage = (typeof ErrorMessages)[number];
 
-interface SaveDBFileResult {
+export interface SaveDBFileResult {
   filePath?: string;
   canceled?: boolean;
   error?: ErrorMessage;
@@ -122,7 +122,7 @@ export async function saveDBFileAs(
   }
 }
 
-interface SelectDBFileLocationResult {
+export interface SelectDBFileLocationResult {
   filePath?: string;
   error?: ErrorMessage;
   canceled?: boolean;
@@ -154,7 +154,7 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
   }
 }
 
-interface LoadDBFileResult {
+export interface LoadDBFileResult {
   workspaceId?: string;
   error?: ErrorMessage;
   canceled?: boolean;
@@ -237,7 +237,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
   }
 }
 
-interface MoveDBFileResult {
+export interface MoveDBFileResult {
   filePath?: string;
   error?: ErrorMessage;
   canceled?: boolean;

@@ -4,9 +4,12 @@ import { z } from 'zod';
 import { checkLoginStorage } from '../login';
 
 export class RequestError extends Error {
-  public readonly code: MessageCode;
+  public readonly code: (typeof MessageCode)[keyof typeof MessageCode];
 
-  constructor(code: MessageCode, cause: unknown | null = null) {
+  constructor(
+    code: (typeof MessageCode)[keyof typeof MessageCode],
+    cause: unknown | null = null
+  ) {
     super(Messages[code].message);
     sendMessage(code);
     this.code = code;
@@ -15,7 +18,7 @@ export class RequestError extends Error {
   }
 }
 
-function sendMessage(code: MessageCode) {
+function sendMessage(code: (typeof MessageCode)[keyof typeof MessageCode]) {
   document.dispatchEvent(
     new CustomEvent('affine-error', {
       detail: {

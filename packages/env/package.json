@@ -14,14 +14,12 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
-    "./blocksuite": "./src/blocksuite.ts"
+    "./blocksuite": "./blocksuite/index.ts"
   },
   "peerDependencies": {
     "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
   },
   "dependencies": {
-    "@affine/copilot": "workspace:*",
-    "@toeverything/plugin-infra": "workspace:*",
     "lit": "^2.7.4"
   },
   "version": "0.5.4-beta.2"

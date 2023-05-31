@@ -36,7 +36,7 @@ export type BaseHeaderProps<
   leftSlot?: ReactNode;
 };
 
-export const enum HeaderRightItemName {
+export enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
   TrashButtonGroup = 'trashButtonGroup',
   SyncUser = 'syncUser',

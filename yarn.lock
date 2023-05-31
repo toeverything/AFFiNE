@@ -212,9 +212,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@affine/copilot": "workspace:*"
     "@blocksuite/global": 0.0.0-20230531080915-ca9c55a2-nightly
-    "@toeverything/plugin-infra": "workspace:*"
     lit: ^2.7.4
     next: =13.4.2
     react: 18.3.0-canary-16d053d59-20230506
@@ -415,7 +413,6 @@ __metadata:
   resolution: "@affine/workspace@workspace:packages/workspace"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
-    "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@toeverything/hooks": "workspace:*"
@@ -9067,6 +9064,9 @@ __metadata:
 "@toeverything/hooks@workspace:*, @toeverything/hooks@workspace:packages/hooks":
   version: 0.0.0-use.local
   resolution: "@toeverything/hooks@workspace:packages/hooks"
+  dependencies:
+    "@affine/env": "workspace:*"
+    "@toeverything/y-indexeddb": "workspace:*"
   languageName: unknown
   linkType: soft
 

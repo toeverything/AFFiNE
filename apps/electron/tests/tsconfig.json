@@ -2,7 +2,9 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "noEmit": true
+    "noEmit": true,
+    "target": "ESNext"
   },
+  "references": [{ "path": "../../../tests/kit" }],
   "include": ["**.spec.ts", "**.test.ts"]
 }
