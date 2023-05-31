@@ -1,6 +1,6 @@
-import { Button, MenuItem } from '@affine/component';
 import { FilteredIcon } from '@blocksuite/icons';
 
+import { Button, MenuItem } from '../../..';
 import Menu from '../../../ui/menu/menu';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useAllPageSetting } from '../use-all-page-setting';

@@ -1,11 +1,3 @@
-import {
-  Confirm,
-  FlexWrapper,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
-} from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeletePermanentlyIcon,
@@ -18,6 +10,14 @@ import {
 import type React from 'react';
 import { useState } from 'react';
 
+import {
+  Confirm,
+  FlexWrapper,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+} from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export type OperationCellProps = {

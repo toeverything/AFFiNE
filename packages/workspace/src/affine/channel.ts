@@ -1,14 +1,11 @@
 import { DebugLogger } from '@affine/debug';
-import {
-  getLoginStorage,
-  isExpired,
-  parseIdToken,
-} from '@affine/workspace/affine/login';
-import { WorkspaceFlavour } from '@affine/workspace/type';
-import { cleanupWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/global/utils';
 import * as url from 'lib0/url';
 import * as websocket from 'lib0/websocket';
+
+import { getLoginStorage, isExpired, parseIdToken } from '../affine/login';
+import { WorkspaceFlavour } from '../type';
+import { cleanupWorkspace } from '../utils';
 
 const RECONNECT_INTERVAL_TIME = 500;
 const MAX_RECONNECT_TIMES = 50;
