@@ -1,0 +1,53 @@
+{
+  "name": "@affine/waku",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start --config vite.prd.config.js"
+  },
+  "dependencies": {
+    "@affine-test/fixtures": "workspace:*",
+    "@affine/component": "workspace:*",
+    "@affine/copilot": "workspace:*",
+    "@affine/debug": "workspace:*",
+    "@affine/env": "workspace:*",
+    "@affine/graphql": "workspace:*",
+    "@affine/i18n": "workspace:*",
+    "@affine/jotai": "workspace:*",
+    "@affine/templates": "workspace:*",
+    "@affine/workspace": "workspace:*",
+    "@blocksuite/blocks": "0.0.0-20230531040027-44cd9d8e-nightly",
+    "@blocksuite/editor": "0.0.0-20230531040027-44cd9d8e-nightly",
+    "@blocksuite/global": "0.0.0-20230531040027-44cd9d8e-nightly",
+    "@blocksuite/icons": "^2.1.19",
+    "@blocksuite/lit": "0.0.0-20230531040027-44cd9d8e-nightly",
+    "@blocksuite/store": "0.0.0-20230531040027-44cd9d8e-nightly",
+    "@dnd-kit/core": "^6.0.8",
+    "@dnd-kit/sortable": "^7.0.2",
+    "@emotion/cache": "^11.11.0",
+    "@emotion/react": "^11.11.0",
+    "@emotion/server": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/material": "^5.13.2",
+    "@react-hookz/web": "^23.0.1",
+    "express": "^4.18.2",
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506",
+    "react-is": "^18.2.0",
+    "react-mosaic-component": "^6.0.1",
+    "react-server-dom-webpack": "18.3.0-canary-16d053d59-20230506",
+    "rxjs": "^7.8.1",
+    "swr": "^2.1.5",
+    "waku": "0.11.0",
+    "y-protocols": "^1.0.5",
+    "yjs": "^13.6.1",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.7",
+    "@types/react-dom": "^18.2.4",
+    "typescript": "^5.0.4"
+  }
+}
