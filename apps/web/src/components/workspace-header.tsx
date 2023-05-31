@@ -26,23 +26,21 @@ export function WorkspaceHeader({
   const t = useAFFiNEI18N();
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {
-      const leftSlot = config.enableAllPageFilter && (
-        <ViewList setting={setting}></ViewList>
-      );
-      const filterContainer = config.enableAllPageFilter &&
-        setting.currentView.filterList.length > 0 && (
-          <div className={filterContainerStyle}>
-            <div style={{ flex: 1 }}>
-              <FilterList
-                value={setting.currentView.filterList}
-                onChange={filterList => {
-                  setting.setCurrentView(view => ({
-                    ...view,
-                    filterList,
-                  }));
-                }}
-              />
-            </div>
+      const leftSlot = <ViewList setting={setting}></ViewList>;
+      const filterContainer = setting.currentView.filterList.length > 0 && (
+        <div className={filterContainerStyle}>
+          <div style={{ flex: 1 }}>
+            <FilterList
+              value={setting.currentView.filterList}
+              onChange={filterList => {
+                setting.setCurrentView(view => ({
+                  ...view,
+                  filterList,
+                }));
+              }}
+            />
+          </div>
+          {config.enableAllPageFilter && (
             <div>
               {setting.currentView.id !== NIL ||
               (setting.currentView.id === NIL &&
@@ -57,8 +55,9 @@ export function WorkspaceHeader({
                 </Button>
               )}
             </div>
-          </div>
-        );
+          )}
+        </div>
+      );
       return (
         <>
           <WorkspaceModeFilterTab
