@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 import type { AppContext } from '../context';
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
+import { mergeUpdateWorker } from '../workers';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
@@ -26,6 +27,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   ) {
     super(path);
     this.setupAndListen();
+    logger.debug('[SecondaryWorkspaceSQLiteDB] created', this.workspaceId);
   }
 
   close() {
@@ -34,10 +36,10 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   override destroy() {
+    this.flushUpdateQueue();
     this.unsubscribers.forEach(unsub => unsub());
     this.db?.close();
     this.yDoc.destroy();
-    this.close();
   }
 
   get workspaceId() {
@@ -74,13 +76,13 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   // wrap the fn with connect and close
   // it only works for sync functions
-  run = (fn: () => void) => {
+  run = <T extends (...args: any[]) => any>(fn: T) => {
     try {
       if (this.runCounter === 0) {
         this.connect();
       }
       this.runCounter++;
-      fn();
+      return fn();
     } catch (err) {
       logger.error(err);
     } finally {
@@ -166,19 +168,24 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
    * - get blobs and put new blobs to upstream
    * - disconnect
    */
-  pull() {
-    this.run(() => {
+  async pull() {
+    const start = performance.now();
+    const updates = this.run(() => {
       // TODO: no need to get all updates, just get the latest ones (using a cursor, etc)?
-      const updates = this.getUpdates().map(update => update.data);
-      Y.transact(this.yDoc, () => {
-        updates.forEach(update => {
-          this.applyUpdate(update, 'self');
-        });
-      });
-      logger.debug('pull external updates', this.path, updates.length);
-
       this.syncBlobs();
+      return this.getUpdates().map(update => update.data);
     });
+
+    const merged = await mergeUpdateWorker(updates);
+    this.applyUpdate(merged, 'self');
+
+    logger.debug(
+      'pull external updates',
+      this.path,
+      updates.length,
+      (performance.now() - start).toFixed(2),
+      'ms'
+    );
   }
 }
 
