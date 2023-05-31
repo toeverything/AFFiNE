@@ -36,6 +36,9 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
       const value = url.split('/')[2];
       if (value) {
         set(value);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('last_workspace_id', value);
+        }
       } else {
         set(null);
       }

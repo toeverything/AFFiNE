@@ -46,7 +46,11 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
   const id = setTimeout(() => {
     setAtom(metadata => {
       if (abortController.signal.aborted) return metadata;
-      if (metadata.length === 0) {
+      if (
+        metadata.length === 0 &&
+        localStorage.getItem('is-first-open') === null
+      ) {
+        localStorage.setItem('is-first-open', 'false');
         const newMetadata = createFirst();
         logger.info('create first workspace', newMetadata);
         return newMetadata;
