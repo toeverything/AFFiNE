@@ -1,3 +1,5 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+
 import {
   Content,
   Table,
@@ -5,9 +7,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
-} from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-
+} from '../../..';
 import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import {

@@ -1,14 +1,15 @@
 /**
  * @vitest-environment happy-dom
  */
-import type { AccessTokenMessage } from '@affine/workspace/affine/login';
+import { describe, expect, test } from 'vitest';
+
+import type { AccessTokenMessage } from '../login';
 import {
   getLoginStorage,
   isExpired,
   setLoginStorage,
   STORAGE_KEY,
-} from '@affine/workspace/affine/login';
-import { describe, expect, test } from 'vitest';
+} from '../login';
 
 describe('storage', () => {
   test('should work', () => {

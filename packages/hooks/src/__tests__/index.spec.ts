@@ -9,14 +9,14 @@ import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
-import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
-import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
 import { useAtomValue } from 'jotai';
 import { describe, expect, test, vitest } from 'vitest';
 import { beforeEach } from 'vitest';
 
+import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
 import { useBlockSuiteWorkspaceName } from '../use-block-suite-workspace-name';
+import { useBlockSuiteWorkspacePageIsPublic } from '../use-block-suite-workspace-page-is-public';
+import { useBlockSuiteWorkspacePageTitle } from '../use-block-suite-workspace-page-title';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 

@@ -1,8 +1,9 @@
 /**
  * @vitest-environment happy-dom
  */
-import { DebugLogger } from '@affine/debug';
 import { describe, expect, test, vi } from 'vitest';
+
+import { DebugLogger } from '..';
 
 describe('debug', () => {
   test('disabled', () => {

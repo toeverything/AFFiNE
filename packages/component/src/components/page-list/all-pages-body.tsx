@@ -1,9 +1,9 @@
-import { styled, TableBody, TableCell } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 
+import { styled, TableBody, TableCell } from '../../..';
 import { FavoriteTag } from './components/favorite-tag';
 import { TitleCell } from './components/title-cell';
 import { OperationCell } from './operation-cell';
