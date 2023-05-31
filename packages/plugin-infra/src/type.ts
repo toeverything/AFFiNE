@@ -5,6 +5,9 @@
  * AFFiNE Plugin System Types
  */
 
+import type { EditorContainer } from '@blocksuite/editor';
+import type { Workspace } from '@blocksuite/store';
+import type { Page } from '@playwright/test';
 import type { WritableAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import type { MosaicDirection, MosaicNode } from 'react-mosaic-component';
@@ -152,6 +155,14 @@ export type PluginUIAdapter = {
   debugContent: Adapter<Record<string, unknown>>;
 };
 
+type Cleanup = () => void;
+
+export type PluginBlockSuiteAdapter = {
+  storeDecorator: (currentWorkspace: Workspace) => Promise<void>;
+  pageDecorator: (currentPage: Page) => Cleanup;
+  uiDecorator: (root: EditorContainer) => Cleanup;
+};
+
 export type PluginAdapterCreator = (
   context: AffinePluginContext
 ) => PluginUIAdapter;
@@ -159,4 +170,5 @@ export type PluginAdapterCreator = (
 export type AffinePlugin<ID extends string> = {
   definition: Definition<ID>;
   uiAdapter: Partial<PluginUIAdapter>;
+  blockSuiteAdapter: Partial<PluginBlockSuiteAdapter>;
 };
