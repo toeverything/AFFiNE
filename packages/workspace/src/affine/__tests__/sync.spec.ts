@@ -21,6 +21,12 @@ import { uuidv4, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { WebSocket } from 'ws';
 
+declare module '@blocksuite/store' {
+  interface PageMeta {
+    foo: string;
+  }
+}
+
 // @ts-expect-error
 globalThis.WebSocket = WebSocket;
 

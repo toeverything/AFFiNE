@@ -14,8 +14,13 @@ import {
   setLoginStorage,
   SignMethod,
 } from '@affine/workspace/affine/login';
+import { affineApis, affineAuth } from '@affine/workspace/affine/shared';
 import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
+import {
+  createAffineProviders,
+  createIndexedDBBackgroundProvider,
+} from '@affine/workspace/providers';
+import { createAffineDownloadProvider } from '@affine/workspace/providers';
 import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
 import {
   LoadPriority,
@@ -32,12 +37,9 @@ import { Suspense, useEffect } from 'react';
 import { mutate } from 'swr';
 import { z } from 'zod';
 
-import { createAffineProviders } from '../../blocksuite';
-import { createAffineDownloadProvider } from '../../blocksuite/providers/affine';
 import { PageLoading } from '../../components/pure/loading';
 import { useAffineRefreshAuthToken } from '../../hooks/affine/use-affine-refresh-auth-token';
 import { BlockSuiteWorkspace } from '../../shared';
-import { affineApis, affineAuth } from '../../shared/apis';
 import { toast } from '../../utils';
 import {
   BlockSuitePageList,

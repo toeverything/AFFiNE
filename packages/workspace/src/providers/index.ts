@@ -1,17 +1,4 @@
 import { config, websocketPrefixUrl } from '@affine/env';
-import { KeckProvider } from '@affine/workspace/affine/keck';
-import {
-  getLoginStorage,
-  storageChangeSlot,
-} from '@affine/workspace/affine/login';
-import type {
-  AffineWebSocketProvider,
-  LocalIndexedDBBackgroundProvider,
-  LocalIndexedDBDownloadProvider,
-  Provider,
-  SQLiteProvider,
-} from '@affine/workspace/type';
-import { CallbackSet } from '@affine/workspace/utils';
 import type { BlobManager, Disposable } from '@blocksuite/store';
 import {
   assertExists,
@@ -23,6 +10,17 @@ import {
   EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
 
+import { KeckProvider } from '../affine/keck';
+import { getLoginStorage, storageChangeSlot } from '../affine/login';
+import type {
+  AffineWebSocketProvider,
+  LocalIndexedDBBackgroundProvider,
+  LocalIndexedDBDownloadProvider,
+  Provider,
+  SQLiteProvider,
+} from '../type';
+import { CallbackSet } from '../utils';
+import { createAffineDownloadProvider } from './affine-download';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 import { localProviderLogger as logger } from './logger';
 
@@ -258,6 +256,7 @@ const createSQLiteProvider = (
 };
 
 export {
+  createAffineDownloadProvider,
   createAffineWebSocketProvider,
   createBroadCastChannelProvider,
   createIndexedDBBackgroundProvider,
@@ -275,6 +274,20 @@ export const createLocalProviders = (
       createIndexedDBBackgroundProvider(blockSuiteWorkspace),
       createIndexedDBDownloadProvider(blockSuiteWorkspace),
       environment.isDesktop && createSQLiteProvider(blockSuiteWorkspace),
+    ] as any[]
+  ).filter(v => Boolean(v));
+};
+
+export const createAffineProviders = (
+  blockSuiteWorkspace: BlockSuiteWorkspace
+): Provider[] => {
+  return (
+    [
+      createAffineDownloadProvider(blockSuiteWorkspace),
+      createAffineWebSocketProvider(blockSuiteWorkspace),
+      config.enableBroadCastChannelProvider &&
+        createBroadCastChannelProvider(blockSuiteWorkspace),
+      createIndexedDBDownloadProvider(blockSuiteWorkspace),
     ] as any[]
   ).filter(v => Boolean(v));
 };
