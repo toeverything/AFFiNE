@@ -1,3 +1,5 @@
+import { CloseIcon, PlusIcon } from '@blocksuite/icons';
+
 import { Menu } from '../../..';
 import { Condition } from './condition';
 import * as styles from './index.css';
@@ -24,12 +26,12 @@ export const FilterList = ({
               }}
             />
             <div
-              style={{ marginLeft: 8, cursor: 'pointer' }}
+              className={styles.filterItemCloseStyle}
               onClick={() => {
                 onChange(value.filter((_, index) => i !== index));
               }}
             >
-              x
+              <CloseIcon />
             </div>
           </div>
         );
@@ -47,7 +49,7 @@ export const FilterList = ({
             alignItems: 'center',
           }}
         >
-          +
+          <PlusIcon />
         </div>
       </Menu>
     </div>
