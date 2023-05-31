@@ -5,6 +5,7 @@ import {
   from,
   fromEvent,
   interval,
+  merge,
   Observable,
 } from 'rxjs';
 import {
@@ -36,6 +37,7 @@ function getWorkspaceDB$(id: string) {
     db$Map.set(
       id,
       from(openWorkspaceDatabase(appContext, id)).pipe(
+        shareReplay(1),
         switchMap(db => {
           return startPollingSecondaryDB(db).pipe(
             ignoreElements(),
@@ -57,7 +59,6 @@ function getWorkspaceDB$(id: string) {
   return db$Map.get(id)!;
 }
 
-// fixme: this function has issue on registering multiple times...
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
   const meta$ = getWorkspaceMeta$(db.workspaceId);
   const secondaryDB$ = meta$.pipe(
@@ -65,28 +66,43 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
     distinctUntilChanged(),
     filter((p): p is string => !!p),
     switchMap(path => {
-      const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
       return new Observable<SecondaryWorkspaceSQLiteDB>(observer => {
+        const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
         observer.next(secondaryDB);
         return () => {
+          logger.info(
+            '[ensureSQLiteDB] close secondary db connection',
+            secondaryDB.path
+          );
           secondaryDB.destroy();
         };
       });
-    })
+    }),
+    takeUntil(db.update$.pipe(last())),
+    shareReplay(1)
   );
 
+  const firstDelayedTick$ = defer(() => {
+    return new Promise<number>(resolve =>
+      setTimeout(() => {
+        resolve(0);
+      }, 1000)
+    );
+  });
+
   // pull every 30 seconds
-  const poll$ = interval(30000).pipe(
+  const poll$ = merge(firstDelayedTick$, interval(30000)).pipe(
     switchMap(() => secondaryDB$),
     tap({
       next: secondaryDB => {
         secondaryDB.pull();
       },
     }),
+    takeUntil(db.update$.pipe(last())),
     shareReplay(1)
   );
 
-  return poll$.pipe(takeUntil(db.update$.pipe(last())), shareReplay(1));
+  return poll$;
 }
 
 export function ensureSQLiteDB(id: string) {

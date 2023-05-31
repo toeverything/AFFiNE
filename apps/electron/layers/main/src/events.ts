@@ -21,9 +21,18 @@ export function registerEvents() {
   // register events
   for (const [namespace, namespaceEvents] of Object.entries(allEvents)) {
     for (const [key, eventRegister] of Object.entries(namespaceEvents)) {
-      const subscription = eventRegister((...args: any) => {
+      const subscription = eventRegister((...args: any[]) => {
         const chan = `${namespace}:${key}`;
-        logger.info('[ipc-event]', chan, args);
+        logger.info(
+          '[ipc-event]',
+          chan,
+          args.filter(
+            a =>
+              a !== undefined &&
+              typeof a !== 'function' &&
+              typeof a !== 'object'
+          )
+        );
         getActiveWindows().forEach(win => win.webContents.send(chan, ...args));
       });
       app.on('before-quit', () => {
