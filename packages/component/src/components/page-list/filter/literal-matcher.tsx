@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
+import { inputStyle } from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TType } from './logical/typesystem';
@@ -20,6 +21,7 @@ export const literalMatcher = new Matcher<{
 literalMatcher.register(tBoolean.create(), {
   render: ({ value, onChange }) => (
     <div
+      className={inputStyle}
       style={{ cursor: 'pointer' }}
       onClick={() => {
         onChange({ type: 'literal', value: !value.value });
@@ -32,6 +34,7 @@ literalMatcher.register(tBoolean.create(), {
 literalMatcher.register(tDate.create(), {
   render: ({ value, onChange }) => (
     <input
+      className={inputStyle}
       value={dayjs(value.value as number).format('YYYY-MM-DD')}
       type="date"
       onChange={e => {
