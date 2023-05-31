@@ -5,11 +5,15 @@ import { atom } from 'jotai';
 
 const weakMap = new WeakMap<Page, Atom<string>>();
 
-const getPagePreviewText = (page: Page) => {
+export const getPagePreviewText = (page: Page) => {
+  // TODO this is incorrect, since the order of blocks is not guaranteed
   const paragraphBlocks = page.getBlockByFlavour(
     'affine:paragraph'
   ) as ParagraphBlockModel[];
-  const text = paragraphBlocks.map(block => block.text.toString()).join('\n');
+  const text = paragraphBlocks
+    .slice(0, 10)
+    .map(block => block.text.toString())
+    .join('\n');
   return text.slice(0, 30);
 };
 
