@@ -2,16 +2,15 @@
  * @vitest-environment node
  */
 import { loginResponseSchema } from '@affine/workspace/affine/login';
+import type { affineApis as API } from '@affine/workspace/affine/shared';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-
-import type { affineApis as API } from '../apis';
 
 let affineApis: typeof API;
 
 beforeAll(async () => {
   // @ts-expect-error
   globalThis.window = undefined;
-  affineApis = (await import('../apis')).affineApis;
+  affineApis = (await import('@affine/workspace/affine/shared')).affineApis;
 });
 
 describe('apis', () => {

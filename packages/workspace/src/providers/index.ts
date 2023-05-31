@@ -4,6 +4,7 @@ import {
   getLoginStorage,
   storageChangeSlot,
 } from '@affine/workspace/affine/login';
+import { createAffineDownloadProvider } from '@affine/workspace/providers/affine-download';
 import type {
   AffineWebSocketProvider,
   LocalIndexedDBBackgroundProvider,
@@ -258,6 +259,7 @@ const createSQLiteProvider = (
 };
 
 export {
+  createAffineDownloadProvider,
   createAffineWebSocketProvider,
   createBroadCastChannelProvider,
   createIndexedDBBackgroundProvider,
@@ -275,6 +277,20 @@ export const createLocalProviders = (
       createIndexedDBBackgroundProvider(blockSuiteWorkspace),
       createIndexedDBDownloadProvider(blockSuiteWorkspace),
       environment.isDesktop && createSQLiteProvider(blockSuiteWorkspace),
+    ] as any[]
+  ).filter(v => Boolean(v));
+};
+
+export const createAffineProviders = (
+  blockSuiteWorkspace: BlockSuiteWorkspace
+): Provider[] => {
+  return (
+    [
+      createAffineDownloadProvider(blockSuiteWorkspace),
+      createAffineWebSocketProvider(blockSuiteWorkspace),
+      config.enableBroadCastChannelProvider &&
+        createBroadCastChannelProvider(blockSuiteWorkspace),
+      createIndexedDBDownloadProvider(blockSuiteWorkspace),
     ] as any[]
   ).filter(v => Boolean(v));
 };
