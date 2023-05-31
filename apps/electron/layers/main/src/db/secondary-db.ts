@@ -4,7 +4,7 @@ import * as Y from 'yjs';
 import type { AppContext } from '../context';
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
-import { mergeUpdate } from '../workers';
+import { mergeUpdateWorker } from '../workers';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
@@ -176,7 +176,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       return this.getUpdates().map(update => update.data);
     });
 
-    const merged = await mergeUpdate(updates);
+    const merged = await mergeUpdateWorker(updates);
     this.applyUpdate(merged, 'self');
 
     logger.debug(

@@ -1,15 +1,14 @@
 import { parentPort, workerData } from 'node:worker_threads';
 
-import * as Y from 'yjs';
+import { mergeUpdate } from './merge-update';
 
 function getMergeUpdate(updates: Uint8Array[]) {
-  const yDoc = new Y.Doc();
-  Y.transact(yDoc, () => {
-    for (const update of updates) {
-      Y.applyUpdate(yDoc, update);
-    }
-  });
-  return Y.encodeStateAsUpdate(yDoc);
+  const update = mergeUpdate(updates);
+  const buffer = new SharedArrayBuffer(update.byteLength);
+  const view = new Uint8Array(buffer);
+  view.set(update);
+
+  return update;
 }
 
 parentPort?.postMessage(getMergeUpdate(workerData));

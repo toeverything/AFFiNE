@@ -23,6 +23,7 @@ export const config = () => {
       JSON.stringify(process.env[key] ?? ''),
     ]),
     ['process.env.NODE_ENV', `"${mode}"`],
+    ['process.env.USE_WORKER', '"true"'],
   ]);
 
   if (DEV_SERVER_URL) {

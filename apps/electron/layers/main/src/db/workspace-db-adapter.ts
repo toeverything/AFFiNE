@@ -4,7 +4,7 @@ import * as Y from 'yjs';
 import type { AppContext } from '../context';
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
-import { mergeUpdate } from '../workers';
+import { mergeUpdateWorker } from '../workers';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import { dbSubjects } from './subjects';
@@ -52,7 +52,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     }
 
     const updates = this.getUpdates();
-    const merged = await mergeUpdate(updates.map(update => update.data));
+    const merged = await mergeUpdateWorker(updates.map(update => update.data));
 
     // to initialize the yDoc, we need to apply all updates from the db
     this.applyUpdate(merged, 'self');
