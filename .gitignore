@@ -70,3 +70,5 @@ next-env.d.ts
 # Rust
 target
 *.node
+tsconfig.node.tsbuildinfo
+lib

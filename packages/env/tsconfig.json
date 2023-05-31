@@ -1,4 +1,10 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src", "env.d.ts"]
+  "compilerOptions": {
+    "noEmit": false,
+    "composite": true,
+    "outDir": "lib"
+  },
+  "include": ["./src", "env.d.ts", "./src/global.d.ts"],
+  "exclude": ["blocksuite", "lib"]
 }

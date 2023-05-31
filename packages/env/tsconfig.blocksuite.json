@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib/blocksuite",
+    "target": "ESNext"
+  },
+  "include": ["./blocksuite/*.ts", "src/types.d.ts", "env.d.ts"],
+  "references": [{ "path": "../debug" }]
+}

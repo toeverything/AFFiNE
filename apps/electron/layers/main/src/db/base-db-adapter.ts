@@ -44,9 +44,9 @@ export abstract class BaseSQLiteAdapter {
   }
 
   // todo: what if SQLite DB wrapper later is not sync?
-  connect() {
+  connect(): Database | undefined {
     if (this.db) {
-      return;
+      return this.db;
     }
     logger.log(`[SQLiteAdapter][${this.role}] open db`, this.path);
     const db = (this.db = sqlite(this.path));

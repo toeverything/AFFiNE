@@ -3,8 +3,12 @@
   "compilerOptions": {
     "module": "ESNext",
     "target": "ESNext",
-    "sourceMap": true
+    "sourceMap": true,
+    "noEmit": false,
+    "outDir": "lib",
+    "composite": true
   },
   "include": ["./src"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "references": [{ "path": "../env" }]
 }

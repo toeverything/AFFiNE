@@ -6,7 +6,7 @@ import React from 'react';
 
 import * as styles from './index.css';
 
-interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactElement;
   active?: boolean;
   disabled?: boolean;
@@ -14,7 +14,9 @@ interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
   onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-interface MenuLinkItemProps extends MenuItemProps, Pick<LinkProps, 'href'> {}
+export interface MenuLinkItemProps
+  extends MenuItemProps,
+    Pick<LinkProps, 'href'> {}
 
 export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
   (

@@ -3,7 +3,15 @@
   "include": ["./src"],
   "references": [
     {
-      "path": "./tsconfig.node.json"
+      "path": "../component"
+    },
+    {
+      "path": "../workspace"
     }
-  ]
+  ],
+  "compilerOptions": {
+    "noEmit": false,
+    "composite": true,
+    "outDir": "lib"
+  }
 }

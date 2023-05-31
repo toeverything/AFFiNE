@@ -1,4 +1,18 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"]
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "include": ["./src", "./src/affine/api", "../../apps/electron/layers"],
+  "exclude": ["lib"],
+  "references": [
+    { "path": "../../tests/fixtures" },
+    { "path": "../y-indexeddb" },
+    { "path": "../env" },
+    { "path": "../debug" },
+    { "path": "../hooks" },
+    { "path": "../component" }
+  ]
 }

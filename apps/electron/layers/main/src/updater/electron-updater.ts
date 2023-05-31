@@ -2,8 +2,8 @@ import { app } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 import { z } from 'zod';
 
-import { isMacOS } from '../../../utils';
 import { logger } from '../logger';
+import { isMacOS } from '../utils';
 import { updaterSubjects } from './event';
 
 export const ReleaseTypeSchema = z.enum([

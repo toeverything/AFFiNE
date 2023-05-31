@@ -1,11 +1,13 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "composite": true,
     "target": "ESNext",
     "module": "ESNext",
     "resolveJsonModule": true,
     "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "noEmit": false
   },
-  "include": ["./scripts", "package.json"]
+  "include": ["./scripts"]
 }
