@@ -1,10 +1,10 @@
+import { affineApis } from '@affine/workspace/affine/shared';
 import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 
 import { QueryKey } from '../../adapters/affine/fetcher';
-import { affineApis } from '../../shared/apis';
 
 export function useToggleWorkspacePublish(
   workspace: AffineLegacyCloudWorkspace

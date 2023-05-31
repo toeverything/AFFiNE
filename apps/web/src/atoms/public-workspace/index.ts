@@ -1,12 +1,12 @@
 import type { BlockSuiteFeatureFlags } from '@affine/env';
 import { config } from '@affine/env';
+import { affineApis } from '@affine/workspace/affine/shared';
 import type { AffinePublicWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { atom } from 'jotai';
 
 import { BlockSuiteWorkspace } from '../../shared';
-import { affineApis } from '../../shared/apis';
 
 function createPublicWorkspace(
   workspaceId: string,
