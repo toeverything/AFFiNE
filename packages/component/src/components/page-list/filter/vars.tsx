@@ -165,7 +165,7 @@ filterMatcher.register(
   {
     name: 'after',
     defaultArgs: () => {
-      return [dayjs().subtract(1, 'day').endOf('day').millisecond()];
+      return [dayjs().subtract(1, 'day').endOf('day').valueOf()];
     },
     impl: (date, target) => {
       if (typeof date !== 'number' || typeof target !== 'number') {
@@ -180,7 +180,7 @@ filterMatcher.register(
   tFunction({ args: [tDate.create(), tDate.create()], rt: tBoolean.create() }),
   {
     name: 'before',
-    defaultArgs: () => [dayjs().endOf('day').millisecond()],
+    defaultArgs: () => [dayjs().endOf('day').valueOf()],
     impl: (date, target) => {
       if (typeof date !== 'number' || typeof target !== 'number') {
         throw new Error('argument type error');

@@ -37,7 +37,7 @@ literalMatcher.register(tDate.create(), {
       onChange={e => {
         onChange({
           type: 'literal',
-          value: dayjs(e.target.value, 'YYYY-MM-DD').millisecond(),
+          value: dayjs(e.target.value, 'YYYY-MM-DD').valueOf(),
         });
       }}
     />
