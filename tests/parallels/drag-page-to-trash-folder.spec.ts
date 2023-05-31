@@ -19,7 +19,7 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
   // Ref: https://playwright.dev/docs/input#dragging-manually
   await page.getByText('AFFiNE - not just a note taking app').hover();
   await page.mouse.down();
-  await page.waitForTimeout(10);
+  await page.waitForTimeout(1000);
   await page.getByText('Trash').hover();
   await page.mouse.up();
 

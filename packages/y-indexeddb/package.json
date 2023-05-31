@@ -1,7 +1,7 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.7.0-canary.3",
+  "version": "0.7.0-canary.4",
   "scripts": {
     "build": "vite build"
   },
@@ -28,8 +28,8 @@
     "idb": "^7.1.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230531040027-44cd9d8e-nightly",
-    "@blocksuite/store": "0.0.0-20230531040027-44cd9d8e-nightly",
+    "@blocksuite/blocks": "0.0.0-20230531080915-ca9c55a2-nightly",
+    "@blocksuite/store": "0.0.0-20230531080915-ca9c55a2-nightly",
     "vite": "^4.3.9",
     "vite-plugin-dts": "^2.3.0",
     "y-indexeddb": "^9.0.11"
