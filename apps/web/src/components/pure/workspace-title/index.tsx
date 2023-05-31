@@ -1,11 +1,11 @@
 import { RadioButton, RadioButtonGroup } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useSetAtom } from 'jotai';
-import { useAtom } from "jotai";
+import { useAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import type React from 'react';
 
-import { openQuickSearchModalAtom, pageModeSelectAtom } from "../../../atoms";
+import { openQuickSearchModalAtom, pageModeSelectAtom } from '../../../atoms';
 import type { HeaderProps } from '../../blocksuite/workspace-header/header';
 import { Header } from '../../blocksuite/workspace-header/header';
 import * as styles from '../../blocksuite/workspace-header/styles.css';
@@ -49,7 +49,7 @@ export const WorkspaceModeFilterTab = ({ ...props }: WorkspaceTitleProps) => {
   };
   return (
     <Header {...props}>
-      <div className={styles.pageListTitleWrapper}>
+      <div className={styles.allPageListTitleWrapper}>
         <RadioButtonGroup
           defaultValue={value}
           onValueChange={handleValueChange}

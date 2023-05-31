@@ -149,7 +149,24 @@ export const pageListTitleWrapper = style({
   justifyContent: 'center',
   alignItems: 'center',
 });
-
+export const allPageListTitleWrapper = style({
+  fontSize: 'var(--affine-font-base)',
+  color: 'var(--affine-text-primary-color)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  '::after': {
+    content: '""',
+    display: 'block',
+    width: '100%',
+    height: '1px',
+    background: 'var(--affine-border-color)',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    margin: '0 1px',
+  },
+});
 export const pageListTitleIcon = style({
   fontSize: '20px',
   height: '1em',

@@ -1,8 +1,8 @@
 import { Menu } from '../../..';
 import { Condition } from './condition';
+import * as styles from './index.css';
 import type { Filter } from './vars';
 import { CreateFilterMenu } from './vars';
-
 export const FilterList = ({
   value,
   onChange,
@@ -14,17 +14,7 @@ export const FilterList = ({
     <div style={{ display: 'flex', flexWrap: 'wrap' }}>
       {value.map((filter, i) => {
         return (
-          <div
-            style={{
-              display: 'flex',
-              border: '1px solid gray',
-              borderRadius: 4,
-              padding: '2px 6px',
-              margin: 4,
-              backgroundColor: 'white',
-            }}
-            key={i}
-          >
+          <div className={styles.filterItemStyle} key={i}>
             <Condition
               value={filter}
               onChange={filter => {
