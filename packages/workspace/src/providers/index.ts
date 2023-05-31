@@ -20,6 +20,7 @@ import type {
   SQLiteProvider,
 } from '../type';
 import { CallbackSet } from '../utils';
+import { createAffineDownloadProvider } from './affine-download';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 import { localProviderLogger as logger } from './logger';
 
@@ -255,6 +256,7 @@ const createSQLiteProvider = (
 };
 
 export {
+  createAffineDownloadProvider,
   createAffineWebSocketProvider,
   createBroadCastChannelProvider,
   createIndexedDBBackgroundProvider,
@@ -272,6 +274,20 @@ export const createLocalProviders = (
       createIndexedDBBackgroundProvider(blockSuiteWorkspace),
       createIndexedDBDownloadProvider(blockSuiteWorkspace),
       environment.isDesktop && createSQLiteProvider(blockSuiteWorkspace),
+    ] as any[]
+  ).filter(v => Boolean(v));
+};
+
+export const createAffineProviders = (
+  blockSuiteWorkspace: BlockSuiteWorkspace
+): Provider[] => {
+  return (
+    [
+      createAffineDownloadProvider(blockSuiteWorkspace),
+      createAffineWebSocketProvider(blockSuiteWorkspace),
+      config.enableBroadCastChannelProvider &&
+        createBroadCastChannelProvider(blockSuiteWorkspace),
+      createIndexedDBDownloadProvider(blockSuiteWorkspace),
     ] as any[]
   ).filter(v => Boolean(v));
 };

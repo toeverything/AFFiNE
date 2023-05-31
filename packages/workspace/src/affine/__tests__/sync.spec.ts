@@ -19,6 +19,12 @@ import type { Workspace } from '../api';
 import { createWorkspaceApis, PermissionType } from '../api';
 import { KeckProvider } from '../keck';
 
+declare module '@blocksuite/store' {
+  interface PageMeta {
+    foo: string;
+  }
+}
+
 // @ts-expect-error
 globalThis.WebSocket = WebSocket;
 
