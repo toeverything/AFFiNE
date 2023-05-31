@@ -49,7 +49,7 @@ export const variableDefineMap = {
     type: tDate.create(),
     icon: <DateTimeIcon />,
   },
-  'Is Favourited': {
+  Favorite: {
     type: tBoolean.create(),
     icon: <FavoritedIcon />,
   },
