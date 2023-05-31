@@ -27,7 +27,26 @@ export const filterItemStyle = style({
   display: 'flex',
   border: '1px solid var(--affine-border-color)',
   borderRadius: '8px',
-  padding: '2px 6px',
-  margin: 4,
   background: 'var(--affine-white)',
+  margin: '4px',
+  padding: '4px 8px',
+});
+
+export const filterItemCloseStyle = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  marginLeft: '4px',
+});
+export const inputStyle = style({
+  fontSize: 'var(--affine-font-xs)',
+});
+export const switchStyle = style({
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-secondary-color)',
+  marginLeft: '4px',
+});
+export const filterTypeStyle = style({
+  fontSize: 'var(--affine-font-sm)',
 });
