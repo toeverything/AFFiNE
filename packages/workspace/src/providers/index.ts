@@ -1,18 +1,4 @@
 import { config, websocketPrefixUrl } from '@affine/env';
-import { KeckProvider } from '@affine/workspace/affine/keck';
-import {
-  getLoginStorage,
-  storageChangeSlot,
-} from '@affine/workspace/affine/login';
-import { createAffineDownloadProvider } from '@affine/workspace/providers/affine-download';
-import type {
-  AffineWebSocketProvider,
-  LocalIndexedDBBackgroundProvider,
-  LocalIndexedDBDownloadProvider,
-  Provider,
-  SQLiteProvider,
-} from '@affine/workspace/type';
-import { CallbackSet } from '@affine/workspace/utils';
 import type { BlobManager, Disposable } from '@blocksuite/store';
 import {
   assertExists,
@@ -24,6 +10,17 @@ import {
   EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
 
+import { KeckProvider } from '../affine/keck';
+import { getLoginStorage, storageChangeSlot } from '../affine/login';
+import type {
+  AffineWebSocketProvider,
+  LocalIndexedDBBackgroundProvider,
+  LocalIndexedDBDownloadProvider,
+  Provider,
+  SQLiteProvider,
+} from '../type';
+import { CallbackSet } from '../utils';
+import { createAffineDownloadProvider } from './affine-download';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 import { localProviderLogger as logger } from './logger';
 

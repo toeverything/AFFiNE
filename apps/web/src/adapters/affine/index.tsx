@@ -20,7 +20,7 @@ import {
   createAffineProviders,
   createIndexedDBBackgroundProvider,
 } from '@affine/workspace/providers';
-import { createAffineDownloadProvider } from '@affine/workspace/providers/affine-download';
+import { createAffineDownloadProvider } from '@affine/workspace/providers';
 import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
 import {
   LoadPriority,
