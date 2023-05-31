@@ -45,7 +45,7 @@ export const inputStyle = style({
 export const switchStyle = style({
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
-  margin: 'auto',
+  marginLeft: '4px',
 });
 export const filterTypeStyle = style({
   fontSize: 'var(--affine-font-sm)',
