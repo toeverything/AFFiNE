@@ -15,6 +15,7 @@ import type { ReactElement } from 'react';
 import { NIL } from 'uuid';
 
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
+import { filterContainerStyle } from './filter-container.css';
 import { WorkspaceModeFilterTab, WorkspaceTitle } from './pure/workspace-title';
 
 export function WorkspaceHeader({
@@ -30,7 +31,7 @@ export function WorkspaceHeader({
       );
       const filterContainer = config.enableAllPageFilter &&
         setting.currentView.filterList.length > 0 && (
-          <div style={{ padding: 12, display: 'flex' }}>
+          <div className={filterContainerStyle}>
             <div style={{ flex: 1 }}>
               <FilterList
                 value={setting.currentView.filterList}

@@ -4,7 +4,7 @@ import { TableRow } from '@affine/component';
 export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
     height: 'calc(100vh - 52px)',
-    padding: '52px 32px',
+    padding: '18px 32px 52px 32px',
     maxWidth: '100%',
     overflowY: 'auto',
     [theme.breakpoints.down('sm')]: {
