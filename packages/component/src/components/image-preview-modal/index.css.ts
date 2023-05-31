@@ -11,7 +11,8 @@ export const imagePreviewModalStyle = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'var(--affine-background-modal-color)',
+  // background: 'var(--affine-background-modal-color)',
+  background: 'rgba(0,0,0,0.75)',
 });
 
 export const imagePreviewModalCloseButtonStyle = style({
@@ -79,15 +80,13 @@ export const imagePreviewModalActionsStyle = style({
 
 export const imagePreviewTitleBarStyle = style({
   position: 'fixed',
-  bottom: 0,
-  width: '100%',
+  bottom: '10px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   padding: '16px 0',
-  backgroundColor: 'white',
-  borderTopLeftRadius: '8px',
-  borderTopRightRadius: '8px',
+  backgroundColor: 'var(--affine-white)',
+  borderRadius: '8px',
   zIndex: baseTheme.zIndexModal + 1,
 });
 
@@ -95,10 +94,8 @@ export const groupStyle = style({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  marginRight: '24px',
   padding: '8px',
-  backgroundColor: 'white',
-  borderRadius: '8px',
+  backgroundColor: 'var(--affine-white)',
 });
 
 export const groupDividerStyle = style({
