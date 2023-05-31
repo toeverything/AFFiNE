@@ -15,8 +15,8 @@
     "@types/react-dom": "^18.2.4",
     "idb": "^7.1.1",
     "jotai": "^2.1.0",
-    "langchain": "^0.0.83",
-    "marked": "^5.0.2",
+    "langchain": "^0.0.86",
+    "marked": "^5.0.4",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506"
   },
