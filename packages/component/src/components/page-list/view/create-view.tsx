@@ -1,7 +1,7 @@
-import { Button, Input, Modal, ModalWrapper } from '@affine/component';
 import { uuidv4 } from '@blocksuite/store';
 import { useState } from 'react';
 
+import { Button, Input, Modal, ModalWrapper } from '../../..';
 import { FilterList } from '../filter';
 import type { Filter } from '../filter/vars';
 import type { View } from '../use-all-page-setting';

@@ -1,8 +1,8 @@
-import { MenuItem, styled } from '@affine/component';
-import { PublicLinkDisableModal } from '@affine/component/share-menu';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ShareIcon } from '@blocksuite/icons';
 
+import { MenuItem, styled } from '../../../';
+import { PublicLinkDisableModal } from '../../share-menu';
 import type { CommonMenuItemProps } from './types';
 
 const StyledMenuItem = styled(MenuItem)(({ theme }) => {

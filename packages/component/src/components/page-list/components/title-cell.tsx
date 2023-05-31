@@ -1,7 +1,7 @@
-import type { TableCellProps } from '@affine/component';
-import { Content, TableCell } from '@affine/component';
 import React, { useCallback } from 'react';
 
+import type { TableCellProps } from '../../..';
+import { Content, TableCell } from '../../..';
 import {
   StyledTitleContentWrapper,
   StyledTitleLink,

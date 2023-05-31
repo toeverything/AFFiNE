@@ -1,4 +1,3 @@
-import { IconButton } from '@affine/component';
 import { getEnvironment } from '@affine/env/config';
 import {
   ArrowLeftSmallIcon,
@@ -7,6 +6,7 @@ import {
 } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
 
+import { IconButton } from '../../..';
 import type { History } from '..';
 import { navHeaderStyle, sidebarButtonStyle } from '../index.css';
 import { appSidebarOpenAtom } from '../index.jotai';

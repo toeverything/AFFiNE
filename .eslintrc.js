@@ -1,3 +1,43 @@
+const createPattern = packageName => [
+  {
+    group: ['**/dist', '**/dist/**'],
+    message: 'Do not import from dist',
+    allowTypeImports: false,
+  },
+  {
+    group: ['**/src', '**/src/**'],
+    message: 'Do not import from src',
+    allowTypeImports: false,
+  },
+  {
+    group: [`@affine/${packageName}`],
+    message: 'Do not import package itself',
+    allowTypeImports: false,
+  },
+  {
+    group: [`@toeverything/${packageName}`],
+    message: 'Do not import package itself',
+    allowTypeImports: false,
+  },
+];
+
+const allPackages = [
+  'cli',
+  'component',
+  'debug',
+  'env',
+  'graphql',
+  'hooks',
+  'i18n',
+  'jotai',
+  'native',
+  'plugin-infra',
+  'templates',
+  'theme',
+  'workspace',
+  'y-indexeddb',
+];
+
 /**
  * @type {import('eslint').Linter.Config}
  */
@@ -96,6 +136,17 @@ const config = {
         '@typescript-eslint/no-var-requires': 0,
       },
     },
+    ...allPackages.map(pkg => ({
+      files: [`packages/${pkg}/src/**/*.ts`, `packages/${pkg}/src/**/*.tsx`],
+      rules: {
+        '@typescript-eslint/no-restricted-imports': [
+          'error',
+          {
+            patterns: createPattern(pkg),
+          },
+        ],
+      },
+    })),
   ],
 };
 

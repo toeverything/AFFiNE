@@ -1,11 +1,6 @@
-import {
-  FlexWrapper,
-  Modal,
-  ModalCloseButton,
-  ModalWrapper,
-} from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
+import { FlexWrapper, Modal, ModalCloseButton, ModalWrapper } from '../..';
 import {
   DiscordIcon,
   DocIcon,
