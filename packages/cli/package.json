@@ -13,7 +13,7 @@
     "@clack/prompts": "^0.6.3"
   },
   "dependencies": {
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.1.1"
   },
   "version": "0.7.0-canary.5"
 }
