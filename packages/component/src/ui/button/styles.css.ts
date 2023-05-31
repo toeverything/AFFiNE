@@ -77,4 +77,6 @@ export const radioButtonGroup = style({
   background: 'var(--affine-hover-color)',
   borderRadius: '10px',
   padding: '2px',
+  // @ts-expect-error - fix electron drag
+  WebkitAppRegion: 'no-drag',
 });
