@@ -20,7 +20,7 @@ export const SidebarSwitch = () => {
       zIndex={1000}
     >
       <IconButton
-        data-testid="app-sidebar-arrow-button-collapse"
+        data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
         className={sidebarButtonStyle}
         onClick={() => setOpen(open => !open)}
       >
