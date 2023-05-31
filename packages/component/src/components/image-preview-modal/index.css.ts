@@ -52,6 +52,8 @@ export const imagePreviewModalGoStyle = style({
 export const imagePreviewModalContainerStyle = style({
   position: 'absolute',
   top: '20%',
+  bottom: '20%',
+  minHeight: '120%',
 });
 
 export const imagePreviewModalImageStyle = style({
@@ -60,6 +62,11 @@ export const imagePreviewModalImageStyle = style({
   objectFit: 'contain',
   objectPosition: 'center',
   borderRadius: '4px',
+  marginBottom: '24px',
+});
+
+export const imagePreviewModalCaptionStyle = style({
+  color: 'var(--affine-white)',
 });
 
 export const imagePreviewModalActionsStyle = style({
