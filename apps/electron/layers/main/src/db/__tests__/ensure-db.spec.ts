@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
@@ -40,8 +41,10 @@ const electronModule = {
   dialog: {} as Partial<Electron.Dialog>,
 };
 
-const runHandler = (key: string) => {
-  registeredHandlers.get(key)?.forEach(handler => handler());
+const runHandler = async (key: string) => {
+  await Promise.all(
+    (registeredHandlers.get(key) ?? []).map(handler => handler())
+  );
 };
 
 // dynamically import handlers so that we can inject local variables to mocks
@@ -59,6 +62,10 @@ vi.doMock('../secondary-db', () => {
         constructorStub(...args);
       }
 
+      connect = () => Promise.resolve();
+
+      pull = () => Promise.resolve();
+
       destroy = destroyStub;
     },
   };
@@ -69,7 +76,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  runHandler('before-quit');
+  await runHandler('before-quit');
   await fs.remove(tmpDir);
   vi.useRealTimers();
 });
@@ -98,7 +105,7 @@ test('db should be destroyed when app quits', async () => {
   expect(db0.db).not.toBeNull();
   expect(db1.db).not.toBeNull();
 
-  runHandler('before-quit');
+  await runHandler('before-quit');
 
   expect(db0.db).toBeNull();
   expect(db1.db).toBeNull();
@@ -117,8 +124,7 @@ test('if db has a secondary db path, we should also poll that', async () => {
 
   await vi.advanceTimersByTimeAsync(1500);
 
-  // not sure why but we still need to wait with real timer
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await setTimeout(100);
 
   expect(constructorStub).toBeCalledTimes(1);
   expect(constructorStub).toBeCalledWith(path.join(tmpDir, 'secondary.db'), db);
@@ -141,7 +147,7 @@ test('if db has a secondary db path, we should also poll that', async () => {
   expect(destroyStub).toBeCalledTimes(1);
 
   // if primary is destroyed, secondary should also be destroyed
-  db.destroy();
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await db.destroy();
+  await setTimeout(100);
   expect(destroyStub).toBeCalledTimes(2);
 });

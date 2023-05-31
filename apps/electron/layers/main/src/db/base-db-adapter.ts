@@ -20,12 +20,13 @@ export abstract class BaseSQLiteAdapter {
     } else if (this.db.isClose) {
       await this.db.connect();
     }
-    return this.db!;
+    return this.db;
   }
 
   async destroy() {
-    await this.db?.close();
+    const { db } = this;
     this.db = null;
+    await db?.close();
   }
 
   async addBlob(key: string, data: Uint8Array) {

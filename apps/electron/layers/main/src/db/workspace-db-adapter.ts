@@ -40,12 +40,12 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
         if (origin === 'renderer') {
           await this.addUpdateToSQLite([update]);
         } else if (origin === 'external') {
-          await this.addUpdateToSQLite([update]);
-          logger.debug('external update', this.workspaceId);
           dbSubjects.externalUpdate.next({
             workspaceId: this.workspaceId,
             update,
           });
+          await this.addUpdateToSQLite([update]);
+          logger.debug('external update', this.workspaceId);
         }
       });
     }
