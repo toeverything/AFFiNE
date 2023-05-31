@@ -47,12 +47,31 @@ test('Create new workspace, then delete it', async ({ page }) => {
   await assertCurrentWorkspaceFlavour('local', page);
 });
 
-test('Should not delete the last one workspace', async ({ page }) => {
+test('Delete last workspace', async ({ page }) => {
   await openHomePage(page);
   await waitMarkdownImported(page);
   await clickSideBarSettingButton(page);
-  await expect(
-    page.getByTestId('warn-cannot-delete-last-workspace').isVisible()
-  ).toBeTruthy();
-  await assertCurrentWorkspaceFlavour('local', page);
+  await page.getByTestId('delete-workspace-button').click();
+  const workspaceNameDom = await page.getByTestId('workspace-name');
+  const currentWorkspaceName = await workspaceNameDom.evaluate(
+    node => node.textContent
+  );
+  await page
+    .getByTestId('delete-workspace-input')
+    .type(currentWorkspaceName as string);
+  const promise = page
+    .getByTestId('affine-toast')
+    .waitFor({ state: 'attached' });
+  await page.getByTestId('delete-workspace-confirm-button').click();
+  await promise;
+  await page.reload();
+  await expect(page.getByTestId('new-workspace')).toBeVisible();
+  await page.getByTestId('new-workspace').click();
+  await page.type('[data-testid="create-workspace-input"]', 'Test Workspace');
+  await page.getByTestId('create-workspace-create-button').click();
+  await page.waitForTimeout(1000);
+  await page.waitForSelector('[data-testid="workspace-name"]');
+  expect(await page.getByTestId('workspace-name').textContent()).toBe(
+    'Test Workspace'
+  );
 });

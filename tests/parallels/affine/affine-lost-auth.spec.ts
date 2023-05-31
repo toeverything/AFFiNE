@@ -1,4 +1,5 @@
 import { test } from '@affine-test/kit/playwright';
+import { expect } from '@playwright/test';
 
 import { openHomePage } from '../../libs/load-page';
 import { waitMarkdownImported } from '../../libs/page-logic';
@@ -15,5 +16,5 @@ test('authorization expired', async ({ page }) => {
   await clickSideBarAllPageButton(page);
   await page.evaluate(() => localStorage.removeItem('affine-login-v2'));
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await expect(page.getByTestId('new-workspace')).toBeVisible();
 });

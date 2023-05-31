@@ -1,5 +1,4 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { SettingPanel } from '@affine/workspace/type';
 import {
   settingPanel,
@@ -7,7 +6,7 @@ import {
   WorkspaceSubPath,
 } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import Head from 'next/head';
 import type { NextRouter } from 'next/router';
@@ -21,7 +20,6 @@ import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-wo
 import { useAppHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
-import { toast } from '../../../utils';
 
 const settingPanelAtom = atomWithStorage<SettingPanel>(
   'workspaceId',
@@ -77,7 +75,6 @@ function useTabRouterSync(
 
 const SettingPage: NextPageWithLayout = () => {
   const router = useRouter();
-  const workspaceIds = useAtomValue(rootWorkspacesMetadataAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();
   const [currentTab, setCurrentTab] = useAtom(settingPanelAtom);
@@ -102,13 +99,8 @@ const SettingPage: NextPageWithLayout = () => {
   const onDeleteWorkspace = useCallback(async () => {
     assertExists(currentWorkspace);
     const workspaceId = currentWorkspace.id;
-    if (workspaceIds.length === 1 && workspaceId === workspaceIds[0].id) {
-      toast(t['You cannot delete the last workspace']());
-      throw new Error('You cannot delete the last workspace');
-    } else {
-      return await helper.deleteWorkspace(workspaceId);
-    }
-  }, [currentWorkspace, helper, t, workspaceIds]);
+    return helper.deleteWorkspace(workspaceId);
+  }, [currentWorkspace, helper]);
   const onTransformWorkspace = useOnTransformWorkspace();
   if (!router.isReady) {
     return <PageLoading />;
