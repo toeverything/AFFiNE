@@ -110,7 +110,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
             return true;
           }
           return filterByFilterList(view.filterList, {
-            Favorite: !!pageMeta.favorite,
+            'Is Favourited': !!pageMeta.favorite,
             Created: pageMeta.createDate,
             Updated: pageMeta.updatedDate ?? pageMeta.createDate,
           });
