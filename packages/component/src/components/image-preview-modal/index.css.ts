@@ -54,6 +54,8 @@ export const imagePreviewModalContainerStyle = style({
   top: '20%',
   bottom: '20%',
   minHeight: '120%',
+  display: 'flex',
+  flexDirection: 'column',
 });
 
 export const imagePreviewModalImageStyle = style({
@@ -73,4 +75,56 @@ export const imagePreviewModalActionsStyle = style({
   position: 'absolute',
   bottom: '28px',
   background: 'var(--affine-white)',
+});
+
+export const imagePreviewTitleBarStyle = style({
+  position: 'fixed',
+  bottom: 0,
+  width: '100%',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: '16px 0',
+  backgroundColor: 'white',
+  borderTopLeftRadius: '8px',
+  borderTopRightRadius: '8px',
+  zIndex: baseTheme.zIndexModal + 1,
+});
+
+export const groupStyle = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: '24px',
+  padding: '8px',
+  backgroundColor: 'white',
+  borderRadius: '8px',
+});
+
+export const groupDividerStyle = style({
+  borderRight: '24px solid transparent',
+});
+
+export const buttonStyle = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '8px',
+  backgroundColor: 'transparent',
+  border: 'none',
+  color: 'black',
+  fontSize: '14px',
+  cursor: 'pointer',
+
+  ':hover': {
+    backgroundColor: '#e1e1e1',
+  },
+});
+
+export const scaleIndicatorStyle = style({
+  margin: '0 8px',
+});
+
+export const deleteButtonStyle = style({
+  color: 'red',
 });
