@@ -1,8 +1,8 @@
-import { IconButton, Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SidebarIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
 
+import { IconButton, Tooltip } from '../../../';
 import { sidebarButtonStyle } from '../index.css';
 import { appSidebarOpenAtom } from '../index.jotai';
 
