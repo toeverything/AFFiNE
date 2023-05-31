@@ -1,6 +1,7 @@
 import './page-detail-editor.css';
 
 import { PageNotFoundError, Unreachable } from '@affine/env/constant';
+import { rootCurrentEditorAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -23,7 +24,7 @@ import React, {
 } from 'react';
 import type { MosaicNode } from 'react-mosaic-component';
 
-import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
+import { workspacePreferredModeAtom } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
@@ -59,7 +60,7 @@ const EditorWrapper = memo(function EditorWrapper({
   );
   const currentMode =
     useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
-  const setEditor = useSetAtom(currentEditorAtom);
+  const setEditor = useSetAtom(rootCurrentEditorAtom);
   assertExists(meta);
   return (
     <Editor
