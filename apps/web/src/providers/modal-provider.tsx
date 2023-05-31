@@ -1,6 +1,6 @@
 import { getEnvironment } from '@affine/env';
 import {
-  rootCurrentPageIdAtom,
+  rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { WorkspaceSubPath } from '@affine/workspace/type';
@@ -96,7 +96,7 @@ export const AllWorkspaceModals = (): ReactElement => {
   const workspaces = useWorkspaces();
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
-    rootCurrentPageIdAtom
+    rootCurrentWorkspaceIdAtom
   );
   const [transitioning, transition] = useTransition();
   return (
