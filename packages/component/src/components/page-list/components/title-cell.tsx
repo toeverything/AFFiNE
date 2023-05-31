@@ -2,11 +2,16 @@ import type { TableCellProps } from '@affine/component';
 import { Content, TableCell } from '@affine/component';
 import React, { useCallback } from 'react';
 
-import { StyledTitleLink } from '../styles';
+import {
+  StyledTitleContentWrapper,
+  StyledTitleLink,
+  StyledTitlePreview,
+} from '../styles';
 
 type TitleCellProps = {
   icon: JSX.Element;
   text: string;
+  desc?: string;
   suffix?: JSX.Element;
   /**
    * Customize the children of the cell
@@ -17,22 +22,29 @@ type TitleCellProps = {
 } & Omit<TableCellProps, 'children'>;
 
 export const TitleCell = React.forwardRef<HTMLTableCellElement, TitleCellProps>(
-  ({ icon, text, suffix, children: render, ...props }, ref) => {
+  ({ icon, text, desc, suffix, children: render, ...props }, ref) => {
     const renderChildren = useCallback(() => {
       const childElement = (
         <>
           <StyledTitleLink>
             {icon}
-            <Content ellipsis={true} color="inherit">
-              {text}
-            </Content>
+            <StyledTitleContentWrapper>
+              <Content ellipsis={true} maxWidth="100%" color="inherit">
+                {text}
+              </Content>
+              {desc && (
+                <StyledTitlePreview ellipsis={true} color="inherit">
+                  {desc}
+                </StyledTitlePreview>
+              )}
+            </StyledTitleContentWrapper>
           </StyledTitleLink>
           {suffix}
         </>
       );
 
       return render ? render(childElement) : childElement;
-    }, [icon, render, suffix, text]);
+    }, [desc, icon, render, suffix, text]);
 
     return (
       <TableCell ref={ref} {...props}>
