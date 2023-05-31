@@ -382,7 +382,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     // Otherwise clicks would be intercepted
     useSensor(MouseSensor, {
       activationConstraint: {
-        delay: 10,
+        delay: 500,
         tolerance: 10,
       },
     })
