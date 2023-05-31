@@ -139,7 +139,7 @@ export const Results: FC<ResultsProps> = ({
           >
             <StyledListItem>
               {result.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
-              <span>{result.title}</span>
+              <span>{result.title || UNTITLED_WORKSPACE_NAME}</span>
             </StyledListItem>
           </Command.Item>
         );

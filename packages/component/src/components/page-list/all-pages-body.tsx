@@ -1,6 +1,6 @@
-import { TableBody, TableCell } from '@affine/component';
+import { styled, TableBody, TableCell } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMediaQuery, useTheme } from '@mui/material';
+import { useDraggable } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 
@@ -8,9 +8,9 @@ import { FavoriteTag } from './components/favorite-tag';
 import { TitleCell } from './components/title-cell';
 import { OperationCell } from './operation-cell';
 import { StyledTableRow } from './styles';
-import type { DateKey, ListData } from './type';
+import type { DateKey, DraggableTitleCellData, ListData } from './type';
 import { useDateGroup } from './use-date-group';
-import { formatDate } from './utils';
+import { formatDate, useIsSmallDevices } from './utils';
 
 export const GroupRow = ({ children }: { children: ReactNode }) => {
   return (
@@ -39,8 +39,7 @@ export const AllPagesBody = ({
   groupKey?: DateKey;
 }) => {
   const t = useAFFiNEI18N();
-  const theme = useTheme();
-  const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallDevices = useIsSmallDevices();
   const dataWithGroup = useDateGroup({ data, key: groupKey });
   return (
     <TableBody>
@@ -63,6 +62,7 @@ export const AllPagesBody = ({
           },
           index
         ) => {
+          const displayTitle = title || t['Untitled']();
           return (
             <Fragment key={pageId}>
               {groupName &&
@@ -71,9 +71,15 @@ export const AllPagesBody = ({
                   <GroupRow>{groupName}</GroupRow>
                 )}
               <StyledTableRow data-testid={`page-list-item-${pageId}`}>
-                <TitleCell
+                <DraggableTitleCell
+                  pageId={pageId}
+                  draggableData={{
+                    pageId,
+                    pageTitle: displayTitle,
+                    icon,
+                  }}
                   icon={icon}
-                  text={title || t['Untitled']()}
+                  text={displayTitle}
                   data-testid="title"
                   onClick={onClickPage}
                 />
@@ -130,3 +136,41 @@ export const AllPagesBody = ({
     </TableBody>
   );
 };
+
+const FullSizeButton = styled('button')(() => ({
+  width: '100%',
+  height: '100%',
+  display: 'block',
+}));
+
+type DraggableTitleCellProps = {
+  pageId: string;
+  draggableData?: DraggableTitleCellData;
+} & React.ComponentProps<typeof TitleCell>;
+
+function DraggableTitleCell({
+  pageId,
+  draggableData,
+  ...props
+}: DraggableTitleCellProps) {
+  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
+    id: 'page-list-item-title-' + pageId,
+    data: draggableData,
+  });
+
+  return (
+    <TitleCell
+      ref={setNodeRef}
+      style={{ opacity: isDragging ? 0.5 : 1 }}
+      {...props}
+    >
+      {/* Use `button` for draggable element */}
+      {/* See https://docs.dndkit.com/api-documentation/draggable/usedraggable#role */}
+      {element => (
+        <FullSizeButton {...listeners} {...attributes}>
+          {element}
+        </FullSizeButton>
+      )}
+    </TitleCell>
+  );
+}

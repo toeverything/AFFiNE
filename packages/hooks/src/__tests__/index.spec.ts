@@ -9,8 +9,10 @@ import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
+import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
+import { useAtomValue } from 'jotai';
 import { describe, expect, test, vitest } from 'vitest';
 import { beforeEach } from 'vitest';
 
@@ -84,5 +86,26 @@ describe('useBlockSuiteWorkspacePageIsPublic', () => {
     expect(page.meta.isPublic).toBe(true);
     hook.rerender();
     expect(hook.result.current[0]).toBe(true);
+  });
+});
+
+describe('useBlockSuitePagePreview', () => {
+  test('basic', async () => {
+    const page = blockSuiteWorkspace.getPage('page0') as Page;
+    const id = page.addBlock(
+      'affine:paragraph',
+      {
+        text: new page.Text('Hello, world!'),
+      },
+      page.getBlockByFlavour('affine:frame')[0].id
+    );
+    const hook = renderHook(() => useAtomValue(useBlockSuitePagePreview(page)));
+    expect(hook.result.current).toBe('\nHello, world!');
+    page.transact(() => {
+      page.getBlockById(id)!.text!.insert('Test', 0);
+    });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    hook.rerender();
+    expect(hook.result.current).toBe('\nTestHello, world!');
   });
 });

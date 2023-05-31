@@ -21,6 +21,9 @@ export const headerContainer = style({
       display: 'none',
     },
   },
+  ':has([data-popper-placement])': {
+    WebkitAppRegion: 'no-drag',
+  },
 } as ComplexStyleRule);
 
 export const header = style({

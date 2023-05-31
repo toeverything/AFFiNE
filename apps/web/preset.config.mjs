@@ -18,6 +18,7 @@ export const blockSuiteFeatureFlags = {
  * @type {import('@affine/env').BuildFlags}
  */
 export const buildFlags = {
+  enablePlugin: process.env.ENABLE_PLUGIN === 'true',
   enableAllPageFilter:
     !!process.env.VERCEL ||
     (process.env.ENABLE_ALL_PAGE_FILTER

@@ -43,3 +43,9 @@ export type PageListProps = {
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;
 };
+
+export type DraggableTitleCellData = {
+  pageId: string;
+  pageTitle: string;
+  icon: React.ReactElement;
+};
