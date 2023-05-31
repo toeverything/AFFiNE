@@ -8,6 +8,7 @@ import {
   newPage,
   waitMarkdownImported,
 } from '../libs/page-logic';
+import { waitForLogMessage } from '../libs/utils';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('New a page and open it ,then favorite it', async ({ page }) => {
@@ -57,22 +58,22 @@ test('Export to html, markdown and png', async ({ page }) => {
   // }
 });
 
-// test('Export to pdf', async ({ page }) => {
-//   const CheckedMessage = '[test] beforeprint event emitted';
-//   page.addInitScript(() => {
-//     window.addEventListener('beforeprint', () => {
-//       console.log(CheckedMessage);
-//     });
-//   });
-//   await openHomePage(page);
-//   await waitMarkdownImported(page);
-//   {
-//     await clickPageMoreActions(page);
-//     await page.getByTestId('export-menu').click();
-//     await page.getByTestId('export-to-pdf').click();
-//     expect(waitForLogMessage(page, CheckedMessage)).toBeTruthy();
-//   }
-// });
+test.skip('Export to pdf', async ({ page }) => {
+  const CheckedMessage = '[test] beforeprint event emitted';
+  page.addInitScript(() => {
+    window.addEventListener('beforeprint', () => {
+      console.log(CheckedMessage);
+    });
+  });
+  await openHomePage(page);
+  await waitMarkdownImported(page);
+  {
+    await clickPageMoreActions(page);
+    await page.getByTestId('export-menu').click();
+    await page.getByTestId('export-to-pdf').click();
+    expect(waitForLogMessage(page, CheckedMessage)).toBeTruthy();
+  }
+});
 
 test('Cancel favorite', async ({ page }) => {
   await openHomePage(page);
