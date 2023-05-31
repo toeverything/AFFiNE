@@ -6,6 +6,6 @@
     "outDir": "lib/blocksuite",
     "target": "ESNext"
   },
-  "include": ["./blocksuite/*.ts", "src/types.d.ts"],
+  "include": ["./blocksuite/*.ts", "src/types.d.ts", "env.d.ts"],
   "references": [{ "path": "../debug" }]
 }

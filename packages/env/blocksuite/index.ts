@@ -1,4 +1,5 @@
-import '../env';
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../env.d.ts" />
 
 import { DebugLogger } from '@affine/debug';
 import markdownTemplate from '@affine/templates/AFFiNE-beta-0.5.4.md';

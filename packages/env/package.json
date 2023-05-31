@@ -14,7 +14,7 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
-    "./blocksuite": "./src/blocksuite.ts"
+    "./blocksuite": "./blocksuite/index.ts"
   },
   "peerDependencies": {
     "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
