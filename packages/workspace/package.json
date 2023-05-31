@@ -10,7 +10,8 @@
     "./providers": "./src/providers/index.ts",
     "./affine/*": "./src/affine/*.ts",
     "./affine/api": "./src/affine/api/index.ts",
-    "./affine/keck": "./src/affine/keck/index.ts"
+    "./affine/keck": "./src/affine/keck/index.ts",
+    "./affine/shared": "./src/affine/shared.ts"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
@@ -18,7 +19,6 @@
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
-    "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@toeverything/hooks": "workspace:*",

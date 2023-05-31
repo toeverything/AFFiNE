@@ -34,7 +34,8 @@
     "test:unit:ui": "vitest --ui",
     "test:unit:coverage": "vitest run --coverage",
     "postinstall": "i18n-codegen gen && husky install",
-    "notify": "node scripts/notify.mjs"
+    "notify": "node scripts/notify.mjs",
+    "typecheck": "tsc -b tsconfig.json"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown --cache",

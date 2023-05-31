@@ -2,7 +2,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 
 import type { MainEventListener } from '../type';
 
-interface UpdateMeta {
+export interface UpdateMeta {
   version: string;
   allowAutoUpdate: boolean;
 }

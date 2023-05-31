@@ -10,7 +10,7 @@ import { toast } from '../../../utils';
 declare global {
   interface DocumentEventMap {
     'affine-error': CustomEvent<{
-      code: MessageCode;
+      code: keyof typeof Messages;
     }>;
   }
 }
@@ -21,7 +21,7 @@ export const MessageCenter: FC = memo(function MessageCenter() {
   useEffect(() => {
     const listener = (
       event: CustomEvent<{
-        code: MessageCode;
+        code: keyof typeof Messages;
       }>
     ) => {
       // fixme: need refactor

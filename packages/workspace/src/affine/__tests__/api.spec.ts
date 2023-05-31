@@ -13,7 +13,6 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, PageMeta } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
-import type {} from '@toeverything/hooks/use-block-suite-page-meta';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { applyUpdate } from 'yjs';
@@ -35,6 +34,12 @@ import {
   loginResponseSchema,
   setLoginStorage,
 } from '../login';
+
+declare module '@blocksuite/store' {
+  interface PageMeta {
+    isPublic?: boolean;
+  }
+}
 
 // @ts-expect-error
 globalThis.WebSocket = WebSocket;
@@ -110,7 +115,7 @@ beforeEach(async () => {
 declare global {
   interface DocumentEventMap {
     'affine-error': CustomEvent<{
-      code: MessageCode;
+      code: (typeof MessageCode)[keyof typeof MessageCode];
     }>;
   }
 }
@@ -165,7 +170,7 @@ describe('api', () => {
     const listener = vi.fn(
       (
         e: CustomEvent<{
-          code: MessageCode;
+          code: (typeof MessageCode)[keyof typeof MessageCode];
         }>
       ) => {
         expect(e.detail.code).toBe(MessageCode.loadListFailed);

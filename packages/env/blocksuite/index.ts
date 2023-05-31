@@ -1,5 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../env.d.ts" />
+
 import { DebugLogger } from '@affine/debug';
-import markdown from '@affine/templates/AFFiNE-beta-0.5.4.md';
+import markdownTemplate from '@affine/templates/AFFiNE-beta-0.5.4.md';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { Page } from '@blocksuite/store';
 
@@ -8,6 +11,8 @@ declare global {
     lastImportedMarkdown: string;
   }
 }
+
+const markdown = markdownTemplate as unknown as string;
 
 const demoTitle = markdown
   .split('\n')

@@ -1,4 +1,11 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["."]
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib",
+    "moduleResolution": "nodenext",
+    "resolveJsonModule": true
+  },
+  "include": [".", "./*.json"]
 }

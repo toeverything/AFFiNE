@@ -2,7 +2,7 @@ import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import 'react-mosaic-component/react-mosaic-component.css';
 // bootstrap code before everything
-import '@affine/env/bootstrap';
+import '../bootstrap';
 
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { config } from '@affine/env';

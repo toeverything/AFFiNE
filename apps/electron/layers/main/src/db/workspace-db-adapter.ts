@@ -1,3 +1,4 @@
+import type { Database } from 'better-sqlite3';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
@@ -33,7 +34,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     return this.yDoc.getMap('space:meta').get('name') as string;
   };
 
-  async init() {
+  async init(): Promise<Database | undefined> {
     const db = super.connect();
 
     if (!this.firstConnected) {

@@ -1,8 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ESNext",
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,6 +17,33 @@
     "incremental": true,
     "experimentalDecorators": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/types/types.d.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "src/types/types.d.ts",
+    "../../packages/graphql",
+    "../electron/layers"
+  ],
+  "exclude": ["node_modules"],
+  "references": [
+    {
+      "path": "../../packages/env"
+    },
+    {
+      "path": "../../packages/debug"
+    },
+    {
+      "path": "../../packages/component"
+    },
+    {
+      "path": "../../packages/i18n"
+    },
+    {
+      "path": "../../packages/jotai"
+    },
+    {
+      "path": "../../packages/hooks"
+    }
+  ]
 }

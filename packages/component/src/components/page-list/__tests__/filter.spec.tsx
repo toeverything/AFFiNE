@@ -30,7 +30,7 @@ const mockVariableMap = (vars: Partial<VariableMap>): VariableMap => {
   return {
     Created: 0,
     Updated: 0,
-    Favorite: false,
+    'Is Favourited': false,
     ...vars,
   };
 };
@@ -103,10 +103,10 @@ describe('eval filter', () => {
   test('is', async () => {
     const is = filterMatcher.findData(v => v.name === 'is');
     assertExists(is);
-    const filter1 = filter(is, ref('Favorite'), [false]);
-    const filter2 = filter(is, ref('Favorite'), [true]);
+    const filter1 = filter(is, ref('Is Favourited'), [false]);
+    const filter2 = filter(is, ref('Is Favourited'), [true]);
     const varMap = mockVariableMap({
-      Favorite: true,
+      'Is Favourited': true,
     });
     expect(filterByFilterList([filter1], varMap)).toBe(false);
     expect(filterByFilterList([filter2], varMap)).toBe(true);
@@ -118,7 +118,9 @@ describe('render filter', () => {
     const is = filterMatcher.match(tBoolean.create());
     assertExists(is);
     const Wrapper = () => {
-      const [value, onChange] = useState(filter(is, ref('Favorite'), [true]));
+      const [value, onChange] = useState(
+        filter(is, ref('Is Favourited'), [true])
+      );
       return <Condition value={value} onChange={onChange} />;
     };
     const result = render(<Wrapper />);

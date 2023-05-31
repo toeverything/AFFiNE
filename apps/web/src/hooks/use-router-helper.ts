@@ -2,7 +2,7 @@ import type { WorkspaceSubPath } from '@affine/workspace/type';
 import type { NextRouter } from 'next/router';
 import { useCallback } from 'react';
 
-export const enum RouteLogic {
+export enum RouteLogic {
   REPLACE = 'replace',
   PUSH = 'push',
 }

@@ -119,7 +119,7 @@ export const checkLoginStorage = async (
   return getLoginStorage() as LoginResponse;
 };
 
-export const enum SignMethod {
+export enum SignMethod {
   Google = 'Google',
   GitHub = 'GitHub',
   // Twitter = 'Twitter',

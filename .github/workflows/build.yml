@@ -36,6 +36,8 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - run: |
+          yarn i18n-codegen gen
+          yarn typecheck
           yarn lint --max-warnings=0
           yarn circular
 

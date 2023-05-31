@@ -1,9 +1,34 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src", "./.storybook/*.ts"],
+  "include": [
+    "./src/**/*.ts",
+    "./src/**/*.tsx",
+    "./src/**/*.json",
+    "../workspace/src",
+    "../../apps/electron/layers/**/src"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "exclude": ["lib"],
   "references": [
     {
+      "path": "../debug"
+    },
+    {
+      "path": "../i18n"
+    },
+    {
+      "path": "../jotai"
+    },
+    {
+      "path": "../hooks"
+    },
+    {
       "path": "./tsconfig.node.json"
-    }
+    },
+    { "path": "../../tests/fixtures" }
   ]
 }
