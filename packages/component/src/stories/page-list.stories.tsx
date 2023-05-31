@@ -71,6 +71,7 @@ AffineAllPageList.args = {
       icon: <PageIcon />,
       isPublicPage: true,
       title: 'Today Page',
+      preview: 'this is page preview',
       createDate: new Date(),
       updatedDate: new Date(),
       bookmarkPage: () => toast('Bookmark page'),
@@ -84,7 +85,10 @@ AffineAllPageList.args = {
       favorite: false,
       icon: <PageIcon />,
       isPublicPage: true,
-      title: '1 Example Public Page with long title that will be truncated',
+      title:
+        '1 Example Public Page with long title that will be truncated because it is too too long',
+      preview:
+        'this is page preview and it is very long and will be truncated because it is too long and it is very long and will be truncated because it is too long',
       createDate: new Date('2021-01-01'),
       updatedDate: new Date('2021-01-02'),
       bookmarkPage: () => toast('Bookmark page'),
@@ -139,6 +143,7 @@ AffineTrashPageList.args = {
       pageId: '1',
       icon: <PageIcon />,
       title: 'Example Page',
+      preview: 'this is trash page preview',
       createDate: new Date('2021-01-01'),
       trashDate: new Date('2021-01-01'),
       onClickPage: () => toast('Click page'),

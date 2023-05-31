@@ -49,6 +49,7 @@ export const AllPagesBody = ({
             groupName,
             pageId,
             title,
+            preview,
             icon,
             isPublicPage,
             favorite,
@@ -80,6 +81,7 @@ export const AllPagesBody = ({
                   }}
                   icon={icon}
                   text={displayTitle}
+                  desc={preview}
                   data-testid="title"
                   onClick={onClickPage}
                 />
