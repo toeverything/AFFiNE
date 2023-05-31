@@ -11,7 +11,7 @@ import type { Workspace as RemoteWorkspace } from './affine/api';
 
 export type JotaiStore = ReturnType<typeof createStore>;
 
-export const enum WorkspaceSubPath {
+export enum WorkspaceSubPath {
   ALL = 'all',
   SETTING = 'setting',
   TRASH = 'trash',

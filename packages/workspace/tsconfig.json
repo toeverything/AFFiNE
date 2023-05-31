@@ -5,7 +5,8 @@
     "noEmit": false,
     "outDir": "lib"
   },
-  "include": ["./src", "../../apps/electron/layers"],
+  "include": ["./src", "./src/affine/api", "../../apps/electron/layers"],
+  "exclude": ["lib"],
   "references": [
     { "path": "../../tests/fixtures" },
     { "path": "../y-indexeddb" },

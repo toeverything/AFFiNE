@@ -28,12 +28,6 @@ declare module '@blocksuite/store' {
 // @ts-expect-error
 globalThis.WebSocket = WebSocket;
 
-declare module '@blocksuite/store' {
-  interface PageMeta {
-    foo?: unknown;
-  }
-}
-
 const currentTokenRef = {
   current: null as LoginResponse | null,
 };

@@ -4,14 +4,15 @@
     "./src/**/*.ts",
     "./src/**/*.tsx",
     "./src/**/*.json",
-    "../workspace",
-    "../../apps/electron/layers"
+    "../workspace/src",
+    "../../apps/electron/layers/**/src"
   ],
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
     "outDir": "lib"
   },
+  "exclude": ["lib"],
   "references": [
     {
       "path": "../debug"

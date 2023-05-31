@@ -1,4 +1,20 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"]
+  "include": ["./src"],
+  "compilerOptions": {
+    "noEmit": false,
+    "composite": true,
+    "outDir": "lib"
+  },
+  "references": [
+    {
+      "path": "../../packages/component"
+    },
+    {
+      "path": "../../packages/plugin-infra"
+    },
+    {
+      "path": "../../packages/env"
+    }
+  ]
 }
