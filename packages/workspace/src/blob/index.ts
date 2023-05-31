@@ -1,8 +1,9 @@
-import type { createWorkspaceApis } from '@affine/workspace/affine/api';
 import type { BlobStorage } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import { openDB } from 'idb';
 import type { DBSchema } from 'idb/build/entry';
+
+import type { createWorkspaceApis } from '../affine/api';
 
 type UploadingBlob = {
   key: string;

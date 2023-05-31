@@ -1,8 +1,8 @@
-import type { ConfirmProps } from '@affine/component';
-import { Confirm, MenuItem } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
 
+import type { ConfirmProps } from '../../..';
+import { Confirm, MenuItem } from '../../..';
 import type { CommonMenuItemProps } from './types';
 
 export const MoveToTrash = ({

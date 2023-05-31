@@ -1,11 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import {
-  rootCurrentEditorAtom,
-  rootCurrentPageIdAtom,
-  rootCurrentWorkspaceIdAtom,
-  rootWorkspacesMetadataAtom,
-} from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
@@ -17,11 +12,6 @@ import type { CreateWorkspaceMode } from '../components/affine/create-workspace-
 const logger = new DebugLogger('web:atoms');
 
 // workspace necessary atoms
-/**
- * @deprecated Use `rootCurrentWorkspaceIdAtom` directly instead.
- */
-export const currentWorkspaceIdAtom = rootCurrentWorkspaceIdAtom;
-
 // todo(himself65): move this to the workspace package
 rootWorkspacesMetadataAtom.onMount = setAtom => {
   function createFirst(): RootWorkspaceMetadata[] {
@@ -80,15 +70,6 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
     abortController.abort();
   };
 };
-
-/**
- * @deprecated Use `rootCurrentPageIdAtom` directly instead.
- */
-export const currentPageIdAtom = rootCurrentPageIdAtom;
-/**
- * @deprecated Use `rootCurrentEditorAtom` directly instead.
- */
-export const currentEditorAtom = rootCurrentEditorAtom;
 
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);

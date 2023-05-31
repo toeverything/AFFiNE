@@ -1,4 +1,3 @@
-import { IconButton } from '@affine/component';
 import {
   DeleteTemporarilyIcon,
   SettingsIcon,
@@ -8,6 +7,7 @@ import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
 import { type PropsWithChildren, useState } from 'react';
 
+import { IconButton } from '../..';
 import { AppSidebar, AppSidebarFallback, appSidebarOpenAtom } from '.';
 import { AddPageButton } from './add-page-button';
 import { CategoryDivider } from './category-divider';

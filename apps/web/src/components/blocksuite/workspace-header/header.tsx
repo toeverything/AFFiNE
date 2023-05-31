@@ -3,7 +3,7 @@ import {
   appSidebarFloatingAtom,
   appSidebarOpenAtom,
 } from '@affine/component/app-sidebar';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
@@ -11,15 +11,7 @@ import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
-import {
-  forwardRef,
-  lazy,
-  memo,
-  Suspense,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { forwardRef, memo, useEffect, useMemo, useState } from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { contentLayoutAtom } from '../../../atoms/layout';
@@ -34,12 +26,6 @@ import TrashButtonGroup from './header-right-items/trash-button-group';
 import UserAvatar from './header-right-items/user-avatar';
 import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
-
-const SidebarSwitch = lazy(() =>
-  import('../../affine/sidebar-switch').then(module => ({
-    default: module.SidebarSwitch,
-  }))
-);
 
 export type BaseHeaderProps<
   Workspace extends AffineOfficialWorkspace = AffineOfficialWorkspace
@@ -205,8 +191,6 @@ export const Header = forwardRef<
     setShowGuideDownloadClientTip(shouldShowGuideDownloadClientTip);
   }, [shouldShowGuideDownloadClientTip]);
   const open = useAtomValue(appSidebarOpenAtom);
-  const t = useAFFiNEI18N();
-
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
   const mode = useCurrentMode();
@@ -237,16 +221,10 @@ export const Header = forwardRef<
         data-testid="editor-header-items"
         data-is-edgeless={mode === 'edgeless'}
       >
-        <Suspense>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <SidebarSwitch
-              visible={!open}
-              tooltipContent={t['Expand sidebar']()}
-              data-testid="sliderBar-arrowButton-expand"
-            />
-            {props.leftSlot}
-          </div>
-        </Suspense>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {!open && <SidebarSwitch />}
+          {props.leftSlot}
+        </div>
 
         {props.children}
         <div className={styles.headerRightSide}>

@@ -30,7 +30,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/bookmark-block@workspace:^, @affine/bookmark-block@workspace:plugins/bookmark-block":
+"@affine/bookmark-block@workspace:plugins/bookmark-block":
   version: 0.0.0-use.local
   resolution: "@affine/bookmark-block@workspace:plugins/bookmark-block"
   dependencies:
@@ -341,7 +341,6 @@ __metadata:
   resolution: "@affine/web@workspace:apps/web"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
-    "@affine/bookmark-block": "workspace:^"
     "@affine/component": "workspace:*"
     "@affine/copilot": "workspace:*"
     "@affine/debug": "workspace:*"
