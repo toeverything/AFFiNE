@@ -24,5 +24,5 @@
     "@toeverything/plugin-infra": "workspace:*",
     "lit": "^2.7.4"
   },
-  "version": "0.7.0-canary.2"
+  "version": "0.7.0-canary.3"
 }
