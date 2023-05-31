@@ -36,9 +36,9 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - run: |
+          yarn typecheck
           yarn lint --max-warnings=0
           yarn circular
-          yarn typecheck
 
   build-storybook:
     name: Build Storybook
