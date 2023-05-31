@@ -20,11 +20,9 @@ import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { LocalAdapter } from '../../adapters/local';
 import { workspacesAtom } from '../../atoms';
+import { rootCurrentWorkspaceAtom } from '../../atoms/root';
 import { BlockSuiteWorkspace } from '../../shared';
-import {
-  currentWorkspaceAtom,
-  useCurrentWorkspace,
-} from '../current/use-current-workspace';
+import { useCurrentWorkspace } from '../current/use-current-workspace';
 import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
@@ -98,14 +96,14 @@ describe('useRecentlyViewed', () => {
       providers: [],
     } satisfies LocalWorkspace);
     store.set(rootCurrentWorkspaceIdAtom, blockSuiteWorkspace.id);
-    const workspace = await store.get(currentWorkspaceAtom);
+    const workspace = await store.get(rootCurrentWorkspaceAtom);
     expect(workspace?.id).toBe(blockSuiteWorkspace.id);
     const currentHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,
     });
     expect(currentHook.result.current[0]?.id).toEqual(workspaceId);
     store.set(rootCurrentWorkspaceIdAtom, blockSuiteWorkspace.id);
-    await store.get(currentWorkspaceAtom);
+    await store.get(rootCurrentWorkspaceAtom);
     const recentlyViewedHook = renderHook(() => useRecentlyViewed(), {
       wrapper: ProviderWrapper,
     });

@@ -23,11 +23,9 @@ import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { workspacesAtom } from '../../atoms';
+import { rootCurrentWorkspaceAtom } from '../../atoms/root';
 import { BlockSuiteWorkspace } from '../../shared';
-import {
-  currentWorkspaceAtom,
-  useCurrentWorkspace,
-} from '../current/use-current-workspace';
+import { useCurrentWorkspace } from '../current/use-current-workspace';
 import { useAppHelper, useWorkspaces } from '../use-workspaces';
 
 vi.mock(
@@ -169,7 +167,7 @@ describe('useWorkspacesHelper', () => {
       wrapper: ProviderWrapper,
     });
     store.set(rootCurrentWorkspaceIdAtom, workspacesHook.result.current[1].id);
-    await store.get(currentWorkspaceAtom);
+    await store.get(rootCurrentWorkspaceAtom);
     const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,
     });

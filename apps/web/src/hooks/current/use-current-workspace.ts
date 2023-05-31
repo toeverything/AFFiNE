@@ -1,22 +1,20 @@
+import {
+  rootCurrentPageIdAtom,
+  rootCurrentWorkspaceIdAtom,
+} from '@affine/workspace/atom';
 import { useAtom, useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 
-import { currentPageIdAtom, currentWorkspaceIdAtom } from '../../atoms';
 import { rootCurrentWorkspaceAtom } from '../../atoms/root';
 import type { AllWorkspace } from '../../shared';
-
-/**
- * @deprecated use `rootCurrentWorkspaceAtom` instead
- */
-export const currentWorkspaceAtom = rootCurrentWorkspaceAtom;
 
 export function useCurrentWorkspace(): [
   AllWorkspace,
   (id: string | null) => void
 ] {
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
-  const [, setId] = useAtom(currentWorkspaceIdAtom);
-  const [, setPageId] = useAtom(currentPageIdAtom);
+  const [, setId] = useAtom(rootCurrentWorkspaceIdAtom);
+  const [, setPageId] = useAtom(rootCurrentPageIdAtom);
   return [
     currentWorkspace,
     useCallback(
