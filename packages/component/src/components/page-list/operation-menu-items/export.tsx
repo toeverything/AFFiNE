@@ -1,13 +1,10 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageBlockModel } from '@blocksuite/blocks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import {
   ArrowRightSmallIcon,
   ExportIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
-  ExportToPdfIcon,
-  ExportToPngIcon,
 } from '@blocksuite/icons';
 import { useRef } from 'react';
 
@@ -27,7 +24,7 @@ export const Export = ({
       trigger="click"
       content={
         <>
-          <MenuItem
+          {/* <MenuItem
             data-testid="export-to-pdf"
             onClick={async () => {
               if (!contentParserRef.current) {
@@ -49,7 +46,7 @@ export const Export = ({
             icon={<ExportToPdfIcon />}
           >
             {t['Export to PDF']()}
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             data-testid="export-to-html"
             onClick={() => {
@@ -65,7 +62,7 @@ export const Export = ({
           >
             {t['Export to HTML']()}
           </MenuItem>
-          <MenuItem
+          {/* <MenuItem
             data-testid="export-to-png"
             onClick={() => {
               if (!contentParserRef.current) {
@@ -79,7 +76,7 @@ export const Export = ({
             icon={<ExportToPngIcon />}
           >
             {t['Export to PNG']()}
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             data-testid="export-to-markdown"
             onClick={() => {
