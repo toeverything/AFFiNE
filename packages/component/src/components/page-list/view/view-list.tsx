@@ -1,10 +1,10 @@
-import { Button, MenuItem } from '@affine/component';
-import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { FilteredIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useAtom } from 'jotai';
 
+import { Button, MenuItem } from '../../..';
 import Menu from '../../../ui/menu/menu';
+import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useAllPageSetting } from '../use-all-page-setting';
 import * as styles from './view-list.css';

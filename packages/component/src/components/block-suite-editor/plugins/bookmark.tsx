@@ -1,5 +1,3 @@
-import { MenuItem, MuiClickAwayListener, PureMenu } from '@affine/component';
-import type { EditorPlugin } from '@affine/component/block-suite-editor';
 import type { SerializedBlock } from '@blocksuite/blocks';
 import {
   getCurrentBlockRange,
@@ -9,6 +7,9 @@ import {
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { MenuItem, MuiClickAwayListener, PureMenu } from '../../..';
+import type { EditorPlugin } from '..';
 
 type ShortcutMap = {
   [key: string]: (e: KeyboardEvent, page: Page) => void;

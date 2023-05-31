@@ -1,12 +1,13 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path='../../../apps/electron/layers/preload/preload.d.ts' />
 import type { View } from '@affine/component/page-list';
-import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { createStore } from 'jotai';
 import type { FC, PropsWithChildren } from 'react';
+
+import type { Workspace as RemoteWorkspace } from './affine/api';
 
 export type JotaiStore = ReturnType<typeof createStore>;
 

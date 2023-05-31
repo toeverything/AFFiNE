@@ -1,4 +1,3 @@
-import { CallbackSet } from '@affine/workspace/utils';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import type { Awareness } from 'y-protocols/awareness';
@@ -8,6 +7,7 @@ import {
 } from 'y-protocols/awareness';
 
 import type { BroadCastChannelProvider } from '../../type';
+import { CallbackSet } from '../../utils';
 import { localProviderLogger } from '../logger';
 import type {
   AwarenessChanges,

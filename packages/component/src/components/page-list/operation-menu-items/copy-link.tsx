@@ -1,8 +1,8 @@
-import { MenuItem, toast } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CopyIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 
+import { MenuItem, toast } from '../../..';
 import type { CommonMenuItemProps } from './types';
 
 export const CopyLink = ({ onItemClick, onSelect }: CommonMenuItemProps) => {

@@ -1,5 +1,4 @@
-import { Menu } from '@affine/component';
-
+import { Menu } from '../../..';
 import { Condition } from './condition';
 import * as styles from './index.css';
 import type { Filter } from './vars';

@@ -1,4 +1,3 @@
-import { Menu, MenuItem } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
@@ -12,6 +11,7 @@ import {
 } from '@blocksuite/icons';
 import { useRef } from 'react';
 
+import { Menu, MenuItem } from '../../..';
 import type { CommonMenuItemProps } from './types';
 
 export const Export = ({

@@ -1,8 +1,8 @@
-import { BlockCard } from '@affine/component/card/block-card';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { Workspace } from '@blocksuite/store';
 
+import { BlockCard } from '../components/card/block-card';
 import { WorkspaceCard } from '../components/card/workspace-card';
 import { toast } from '../ui/toast';
 
