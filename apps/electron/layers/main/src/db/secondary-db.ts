@@ -31,9 +31,9 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   override async destroy() {
+    await super.destroy();
     await this.flushUpdateQueue();
     this.unsubscribers.forEach(unsub => unsub());
-    await this.db?.close();
     this.yDoc.destroy();
   }
 

@@ -5,7 +5,6 @@ import {
   from,
   fromEvent,
   interval,
-  merge,
   Observable,
 } from 'rxjs';
 import {
@@ -46,8 +45,10 @@ function getWorkspaceDB$(id: string) {
             tap({
               complete: () => {
                 logger.info('[ensureSQLiteDB] close db connection');
-                db.destroy();
                 db$Map.delete(id);
+                db.destroy().catch(err => {
+                  logger.error('[ensureSQLiteDB] destroy db failed', err);
+                });
               },
             })
           );
@@ -60,53 +61,44 @@ function getWorkspaceDB$(id: string) {
 }
 
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
-  const meta$ = getWorkspaceMeta$(db.workspaceId);
-  const secondaryDB$ = meta$.pipe(
-    map(meta => meta?.secondaryDBPath),
-    distinctUntilChanged(),
-    filter((p): p is string => !!p),
-    switchMap(path => {
-      return new Observable<SecondaryWorkspaceSQLiteDB>(observer => {
-        const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
-        secondaryDB
-          .connect()
-          .then(() => {
-            observer.next(secondaryDB);
-          })
-          .catch(err => {
-            observer.error(err);
-          });
-        return () => {
-          logger.info(
-            '[ensureSQLiteDB] close secondary db connection',
-            secondaryDB.path
-          );
-          secondaryDB.destroy();
-        };
-      });
-    }),
-    takeUntil(db.update$.pipe(last())),
-    shareReplay(1)
-  );
-
-  const firstDelayedTick$ = defer(() => {
-    return new Promise<number>(resolve =>
-      setTimeout(() => {
-        resolve(0);
-      }, 1000)
-    );
-  });
-
   // pull every 30 seconds
-  const poll$ = merge(firstDelayedTick$, interval(30000)).pipe(
-    switchMap(() => secondaryDB$),
-    tap({
-      next: secondaryDB => {
-        secondaryDB.pull();
-      },
+  const poll$ = interval(30000).pipe(
+    startWith(0),
+    switchMap(() => {
+      return getWorkspaceMeta$(db.workspaceId).pipe(
+        map(meta => meta?.secondaryDBPath),
+        distinctUntilChanged(),
+        filter((p): p is string => !!p),
+        switchMap(path => {
+          return new Observable<SecondaryWorkspaceSQLiteDB>(observer => {
+            const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
+            secondaryDB
+              .connect()
+              .then(() => secondaryDB.pull())
+              .then(() => {
+                observer.next(secondaryDB);
+              })
+              .catch(err => {
+                observer.error(err);
+              });
+            return () => {
+              logger.info(
+                '[ensureSQLiteDB] close secondary db connection',
+                secondaryDB.path
+              );
+              return secondaryDB.destroy();
+            };
+          });
+        })
+      );
     }),
     takeUntil(db.update$.pipe(last())),
-    shareReplay(1)
+    shareReplay(1),
+    tap({
+      error: err => {
+        logger.error(err);
+      },
+    })
   );
 
   return poll$;

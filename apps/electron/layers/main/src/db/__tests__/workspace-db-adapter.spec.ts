@@ -83,7 +83,7 @@ test('on applyUpdate (from external), will trigger update & send external update
   expect(onUpdate).toHaveBeenCalled();
   expect(onExternalUpdate).toHaveBeenCalled();
   sub.unsubscribe();
-  db.destroy();
+  await db.destroy();
 });
 
 test('on destroy, check if resources have been released', async () => {
@@ -95,7 +95,7 @@ test('on destroy, check if resources have been released', async () => {
     next: vi.fn(),
   };
   db.update$ = updateSub as any;
-  db.destroy();
+  await db.destroy();
   expect(db.db).toBe(null);
   expect(updateSub.complete).toHaveBeenCalled();
 });
