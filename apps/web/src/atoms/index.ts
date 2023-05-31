@@ -139,3 +139,6 @@ export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
     return record[id];
   }
 );
+
+export type PageModeOption = 'all' | 'page' | 'edgeless';
+export const pageModeSelectAtom = atom<PageModeOption>('all');

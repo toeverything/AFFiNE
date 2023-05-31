@@ -9,19 +9,13 @@ import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceHeaderProps } from '@affine/workspace/type';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/workspace/type';
-import {
-  DeleteTemporarilyIcon,
-  FolderIcon,
-  SettingsIcon,
-  ShareIcon,
-} from '@blocksuite/icons';
+import { SettingsIcon } from '@blocksuite/icons';
 import { RESET } from 'jotai/utils';
 import type { ReactElement } from 'react';
-import React from 'react';
 import { NIL } from 'uuid';
 
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
-import { WorkspaceTitle } from './pure/workspace-title';
+import { WorkspaceModeFilterTab, WorkspaceTitle } from './pure/workspace-title';
 
 export function WorkspaceHeader({
   currentWorkspace,
@@ -64,18 +58,14 @@ export function WorkspaceHeader({
             </div>
           </div>
         );
-
       return (
         <>
-          <WorkspaceTitle
+          <WorkspaceModeFilterTab
             workspace={currentWorkspace}
             currentPage={null}
             isPublic={false}
-            icon={<FolderIcon />}
             leftSlot={leftSlot}
-          >
-            {t['All pages']()}
-          </WorkspaceTitle>
+          />
           {filterContainer}
         </>
       );
@@ -92,25 +82,19 @@ export function WorkspaceHeader({
       );
     } else if (currentEntry.subPath === WorkspaceSubPath.SHARED) {
       return (
-        <WorkspaceTitle
+        <WorkspaceModeFilterTab
           workspace={currentWorkspace}
           currentPage={null}
           isPublic={false}
-          icon={<ShareIcon />}
-        >
-          {t['Shared Pages']()}
-        </WorkspaceTitle>
+        />
       );
     } else if (currentEntry.subPath === WorkspaceSubPath.TRASH) {
       return (
-        <WorkspaceTitle
+        <WorkspaceModeFilterTab
           workspace={currentWorkspace}
           currentPage={null}
           isPublic={false}
-          icon={<DeleteTemporarilyIcon />}
-        >
-          {t['Trash']()}
-        </WorkspaceTitle>
+        />
       );
     }
   } else if ('pageId' in currentEntry) {

@@ -13,9 +13,11 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useAtom } from 'jotai';
 import type React from 'react';
 import { useMemo } from 'react';
 
+import { pageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
@@ -80,25 +82,40 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     permanentlyDeletePage,
     cancelPublicPage,
   } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const [filterMode] = useAtom(pageModeSelectAtom);
   const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const list = useMemo(
     () =>
-      pageMetas.filter(pageMeta => {
-        if (!filter[listType](pageMeta, pageMetas)) {
-          return false;
-        }
-        if (!view) {
+      pageMetas
+        .filter(pageMeta => {
+          if (filterMode === 'all') {
+            return true;
+          }
+          if (filterMode === 'edgeless') {
+            return isPreferredEdgeless(pageMeta.id);
+          }
+          if (filterMode === 'page') {
+            return !isPreferredEdgeless(pageMeta.id);
+          }
+          console.error('unknown filter mode', pageMeta, filterMode);
           return true;
-        }
-        return filterByFilterList(view.filterList, {
-          Favorite: !!pageMeta.favorite,
-          Created: pageMeta.createDate,
-          Updated: pageMeta.updatedDate ?? pageMeta.createDate,
-        });
-      }),
-    [pageMetas, listType, view]
+        })
+        .filter(pageMeta => {
+          if (!filter[listType](pageMeta, pageMetas)) {
+            return false;
+          }
+          if (!view) {
+            return true;
+          }
+          return filterByFilterList(view.filterList, {
+            Favorite: !!pageMeta.favorite,
+            Created: pageMeta.createDate,
+            Updated: pageMeta.updatedDate ?? pageMeta.createDate,
+          });
+        }),
+    [pageMetas, filterMode, isPreferredEdgeless, listType, view]
   );
   if (list.length === 0) {
     return <PageListEmpty listType={listType} />;
