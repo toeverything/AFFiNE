@@ -39,18 +39,18 @@ export const useDateGroup = ({
       match: (date: Date) => isYesterday(date) && !isToday(date),
     },
     {
-      id: 'lastWeek',
-      label: t['com.affine.lastWeek'](),
+      id: 'last7Days',
+      label: t['com.affine.last7Days'](),
       match: (date: Date) => isLastWeek(date) && !isYesterday(date),
     },
     {
-      id: 'lastMonth',
-      label: t['com.affine.lastMonth'](),
+      id: 'last30Days',
+      label: t['com.affine.last30Days'](),
       match: (date: Date) => isLastMonth(date) && !isLastWeek(date),
     },
     {
-      id: 'lastYear',
-      label: t['com.affine.lastYear'](),
+      id: 'currentYear',
+      label: t['com.affine.currentYear'](),
       match: (date: Date) => isLastYear(date) && !isLastMonth(date),
     },
   ] as const;
