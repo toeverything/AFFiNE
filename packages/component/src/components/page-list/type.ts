@@ -11,6 +11,7 @@ export type ListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
+  preview?: string;
   favorite: boolean;
   createDate: Date;
   updatedDate: Date;
@@ -28,6 +29,7 @@ export type TrashListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
+  preview?: string;
   createDate: Date;
   // TODO remove optional after assert that trashDate is always set
   trashDate?: Date;
@@ -42,4 +44,11 @@ export type PageListProps = {
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;
+};
+
+export type DraggableTitleCellData = {
+  pageId: string;
+  pageTitle: string;
+  pagePreview?: string;
+  icon: React.ReactElement;
 };

@@ -1,10 +1,10 @@
-import { displayFlex, styled } from '@affine/component';
-import { TableRow } from '@affine/component';
+import { TableRow } from '../..';
+import { Content, displayFlex, styled } from '../../';
 
 export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
     height: 'calc(100vh - 52px)',
-    padding: '52px 32px',
+    padding: '18px 32px 52px 32px',
     maxWidth: '100%',
     overflowY: 'auto',
     [theme.breakpoints.down('sm')]: {
@@ -47,6 +47,24 @@ export const StyledTitleLink = styled('div')(() => {
       marginRight: '12px',
       color: 'var(--affine-icon-color)',
     },
+  };
+});
+
+export const StyledTitleContentWrapper = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    width: '100%',
+    overflow: 'hidden',
+  };
+});
+
+export const StyledTitlePreview = styled(Content)(() => {
+  return {
+    fontWeight: 400,
+    fontSize: 'var(--affine-font-xs)',
+    maxWidth: '100%',
   };
 });
 

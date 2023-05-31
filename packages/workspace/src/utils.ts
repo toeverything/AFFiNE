@@ -1,10 +1,10 @@
-import type { createWorkspaceApis } from '@affine/workspace/affine/api';
-import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { createAffineBlobStorage } from '@affine/workspace/blob';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Generator, StoreOptions } from '@blocksuite/store';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 
+import type { createWorkspaceApis } from './affine/api';
+import { rootStore, rootWorkspacesMetadataAtom } from './atom';
+import { createAffineBlobStorage } from './blob';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
 import { WorkspaceFlavour } from './type';
 

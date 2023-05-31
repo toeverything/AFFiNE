@@ -1,14 +1,22 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path='../../../apps/electron/layers/preload/preload.d.ts' />
 import type { View } from '@affine/component/page-list';
-import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { createStore } from 'jotai';
 import type { FC, PropsWithChildren } from 'react';
 
+import type { Workspace as RemoteWorkspace } from './affine/api';
+
 export type JotaiStore = ReturnType<typeof createStore>;
+
+export const enum WorkspaceSubPath {
+  ALL = 'all',
+  SETTING = 'setting',
+  TRASH = 'trash',
+  SHARED = 'shared',
+}
 
 export type BaseProvider = {
   flavour: string;
@@ -168,6 +176,17 @@ type UIBaseProps<Flavour extends keyof WorkspaceRegistry> = {
   currentWorkspace: WorkspaceRegistry[Flavour];
 };
 
+export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
+  UIBaseProps<Flavour> & {
+    currentEntry:
+      | {
+          subPath: WorkspaceSubPath;
+        }
+      | {
+          pageId: string;
+        };
+  };
+
 type SettingProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
     currentTab: SettingPanel;
@@ -196,6 +215,7 @@ type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
 };
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
+  Header: FC<WorkspaceHeaderProps<Flavour>>;
   PageDetail: FC<PageDetailProps<Flavour>>;
   PageList: FC<PageListProps<Flavour>>;
   SettingsDetail: FC<SettingProps<Flavour>>;

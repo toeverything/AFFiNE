@@ -1,54 +1,69 @@
-import { MenuItem, styled } from '@affine/component';
+import { FilteredIcon } from '@blocksuite/icons';
+import clsx from 'clsx';
+import { useAtom } from 'jotai';
 
+import { Button, MenuItem } from '../../..';
 import Menu from '../../../ui/menu/menu';
+import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useAllPageSetting } from '../use-all-page-setting';
-
-const NoDragDiv = styled('div')`
-  -webkit-app-region: no-drag;
-`;
+import * as styles from './view-list.css';
 export const ViewList = ({
   setting,
 }: {
   setting: ReturnType<typeof useAllPageSetting>;
 }) => {
+  const [open] = useAtom(appSidebarOpenAtom);
   return (
     <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}>
-      {setting.currentViewIndex != null && (
+      {setting.savedViews.length > 0 && (
         <Menu
           trigger="click"
           content={
             <div>
-              {setting.viewList.map((v, i) => {
+              {setting.savedViews.map(view => {
                 return (
-                  <MenuItem onClick={() => setting.selectView(i)} key={i}>
-                    {v.name}
+                  <MenuItem
+                    onClick={() => setting.setCurrentView(view)}
+                    key={view.id}
+                  >
+                    {view.name}
                   </MenuItem>
                 );
               })}
             </div>
           }
         >
-          <NoDragDiv style={{ marginRight: 12, cursor: 'pointer' }}>
+          <Button style={{ marginRight: 12, cursor: 'pointer' }}>
             {setting.currentView.name}
-          </NoDragDiv>
+          </Button>
         </Menu>
       )}
       <Menu
         trigger="click"
+        placement="bottom-start"
         content={
           <CreateFilterMenu
             value={setting.currentView.filterList}
             onChange={filterList => {
-              setting.changeView(
-                { ...setting.currentView, filterList },
-                setting.currentViewIndex
-              );
+              setting.setCurrentView(view => ({
+                ...view,
+                filterList,
+              }));
             }}
           />
         }
       >
-        <NoDragDiv style={{ cursor: 'pointer' }}>Filter</NoDragDiv>
+        <Button
+          icon={<FilteredIcon />}
+          className={clsx(styles.filterButton, {
+            [styles.filterButtonCollapse]: !open,
+          })}
+          size="small"
+          hoverColor="var(--affine-icon-color)"
+        >
+          Filter
+        </Button>
       </Menu>
     </div>
   );

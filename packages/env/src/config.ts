@@ -12,6 +12,7 @@ export const buildFlagsSchema = z.object({
    * filter feature in the all pages.
    */
   enableAllPageFilter: z.boolean(),
+  enablePlugin: z.boolean(),
   enableImagePreviewModal: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadCastChannelProvider: z.boolean(),

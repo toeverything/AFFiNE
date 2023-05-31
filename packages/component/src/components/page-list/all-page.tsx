@@ -1,16 +1,11 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-} from '@affine/component';
 import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
-import type { CSSProperties } from 'react';
+import type React from 'react';
+import { type CSSProperties } from 'react';
 
+import { Table, TableBody, TableCell, TableHead, TableRow } from '../..';
 import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import { TitleCell } from './components/title-cell';
@@ -19,7 +14,7 @@ import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer, StyledTableRow } from './styles';
 import type { ListData, PageListProps, TrashListData } from './type';
 import { useSorter } from './use-sorter';
-import { formatDate } from './utils';
+import { formatDate, useIsSmallDevices } from './utils';
 
 const AllPagesHead = ({
   isPublicWorkspace,
@@ -120,8 +115,7 @@ export const PageList = ({
     order: 'desc',
   });
 
-  const theme = useTheme();
-  const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallDevices = useIsSmallDevices();
   if (isSmallDevices) {
     return (
       <AllPageListMobileView
@@ -197,6 +191,7 @@ export const PageListTrashView: React.FC<{
       {
         pageId,
         title,
+        preview,
         icon,
         createDate,
         trashDate,
@@ -214,12 +209,11 @@ export const PageListTrashView: React.FC<{
           <TitleCell
             icon={icon}
             text={title || t['Untitled']()}
+            desc={preview}
             onClick={onClickPage}
           />
-          <TableCell ellipsis={true} onClick={onClickPage}>
-            {formatDate(createDate)}
-          </TableCell>
-          <TableCell ellipsis={true} onClick={onClickPage}>
+          <TableCell onClick={onClickPage}>{formatDate(createDate)}</TableCell>
+          <TableCell onClick={onClickPage}>
             {trashDate ? formatDate(trashDate) : '--'}
           </TableCell>
           <TableCell

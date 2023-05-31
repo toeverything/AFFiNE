@@ -6,7 +6,7 @@ import {
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/workspace/type';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -18,14 +18,11 @@ import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import type { FC, PropsWithChildren } from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { LocalPlugin } from '../../adapters/local';
+import { LocalAdapter } from '../../adapters/local';
 import { workspacesAtom } from '../../atoms';
+import { rootCurrentWorkspaceAtom } from '../../atoms/root';
 import { BlockSuiteWorkspace } from '../../shared';
-import { WorkspaceSubPath } from '../../shared';
-import {
-  currentWorkspaceAtom,
-  useCurrentWorkspace,
-} from '../current/use-current-workspace';
+import { useCurrentWorkspace } from '../current/use-current-workspace';
 import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
@@ -92,21 +89,21 @@ describe('useRecentlyViewed', () => {
         flavour: WorkspaceFlavour.LOCAL,
       },
     ]);
-    LocalPlugin.CRUD.get = vi.fn().mockResolvedValue({
+    LocalAdapter.CRUD.get = vi.fn().mockResolvedValue({
       id: workspaceId,
       flavour: WorkspaceFlavour.LOCAL,
       blockSuiteWorkspace,
       providers: [],
     } satisfies LocalWorkspace);
     store.set(rootCurrentWorkspaceIdAtom, blockSuiteWorkspace.id);
-    const workspace = await store.get(currentWorkspaceAtom);
+    const workspace = await store.get(rootCurrentWorkspaceAtom);
     expect(workspace?.id).toBe(blockSuiteWorkspace.id);
     const currentHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,
     });
     expect(currentHook.result.current[0]?.id).toEqual(workspaceId);
     store.set(rootCurrentWorkspaceIdAtom, blockSuiteWorkspace.id);
-    await store.get(currentWorkspaceAtom);
+    await store.get(rootCurrentWorkspaceAtom);
     const recentlyViewedHook = renderHook(() => useRecentlyViewed(), {
       wrapper: ProviderWrapper,
     });

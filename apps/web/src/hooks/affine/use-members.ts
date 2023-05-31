@@ -1,9 +1,9 @@
 import type { Member } from '@affine/workspace/affine/api';
+import { affineApis } from '@affine/workspace/affine/shared';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 
 import { QueryKey } from '../../adapters/affine/fetcher';
-import { affineApis } from '../../shared/apis';
 
 export function useMembers(workspaceId: string) {
   const { data, mutate } = useSWR<Member[]>(

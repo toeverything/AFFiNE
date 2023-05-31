@@ -1,17 +1,15 @@
 import { DebugLogger } from '@affine/debug';
 import { websocketPrefixUrl } from '@affine/env/api';
-import {
-  workspaceDetailSchema,
-  workspaceSchema,
-} from '@affine/workspace/affine/api';
-import { WebsocketClient } from '@affine/workspace/affine/channel';
-import { storageChangeSlot } from '@affine/workspace/affine/login';
-import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import type { WorkspaceCRUD } from '@affine/workspace/type';
-import type { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Disposable } from '@blocksuite/store';
 import { z } from 'zod';
+
+import { workspaceDetailSchema, workspaceSchema } from '../affine/api';
+import { WebsocketClient } from '../affine/channel';
+import { storageChangeSlot } from '../affine/login';
+import { rootStore, rootWorkspacesMetadataAtom } from '../atom';
+import type { WorkspaceCRUD } from '../type';
+import type { WorkspaceFlavour } from '../type';
 
 const logger = new DebugLogger('affine-sync');
 

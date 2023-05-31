@@ -1,10 +1,10 @@
 import { MessageCode, Messages } from '@affine/env/constant';
 import { setLoginStorage, SignMethod } from '@affine/workspace/affine/login';
-import type React from 'react';
+import { affineAuth } from '@affine/workspace/affine/shared';
+import type { FC } from 'react';
 import { memo, useEffect, useState } from 'react';
 
 import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
-import { affineAuth } from '../../../shared/apis';
 import { toast } from '../../../utils';
 
 declare global {
@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-export const MessageCenter: React.FC = memo(function MessageCenter() {
+export const MessageCenter: FC = memo(function MessageCenter() {
   const [popup, setPopup] = useState(false);
   const onLogout = useAffineLogOut();
   useEffect(() => {

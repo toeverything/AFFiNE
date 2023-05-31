@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto';
 import assert from 'node:assert';
 
 import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/workspace/type';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
@@ -23,11 +23,9 @@ import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { workspacesAtom } from '../../atoms';
-import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
-import {
-  currentWorkspaceAtom,
-  useCurrentWorkspace,
-} from '../current/use-current-workspace';
+import { rootCurrentWorkspaceAtom } from '../../atoms/root';
+import { BlockSuiteWorkspace } from '../../shared';
+import { useCurrentWorkspace } from '../current/use-current-workspace';
 import { useAppHelper, useWorkspaces } from '../use-workspaces';
 
 vi.mock(
@@ -169,7 +167,7 @@ describe('useWorkspacesHelper', () => {
       wrapper: ProviderWrapper,
     });
     store.set(rootCurrentWorkspaceIdAtom, workspacesHook.result.current[1].id);
-    await store.get(currentWorkspaceAtom);
+    await store.get(rootCurrentWorkspaceAtom);
     const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,
     });
@@ -191,22 +189,20 @@ describe('useWorkspaces', () => {
     const { result } = renderHook(() => useAppHelper(), {
       wrapper: ProviderWrapper,
     });
-    // next tick
-    await new Promise(resolve => setTimeout(resolve, 100));
     {
       const workspaces = await store.get(workspacesAtom);
-      expect(workspaces.length).toEqual(1);
+      expect(workspaces.length).toEqual(0);
     }
     await result.current.createLocalWorkspace('test');
     {
       const workspaces = await store.get(workspacesAtom);
-      expect(workspaces.length).toEqual(2);
+      expect(workspaces.length).toEqual(1);
     }
     const { result: result2 } = renderHook(() => useWorkspaces(), {
       wrapper: ProviderWrapper,
     });
-    expect(result2.current.length).toEqual(2);
-    const firstWorkspace = result2.current[1];
+    expect(result2.current.length).toEqual(1);
+    const firstWorkspace = result2.current[0];
     expect(firstWorkspace.flavour).toBe('local');
     assert(firstWorkspace.flavour === WorkspaceFlavour.LOCAL);
     expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');

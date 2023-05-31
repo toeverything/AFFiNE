@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 
 import { dbHandlers } from './db';
 import { dialogHandlers } from './dialog';
+import { exportHandlers } from './export';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import type { NamespaceHandlers } from './type';
 import { uiHandlers } from './ui';
@@ -23,6 +24,7 @@ export const allHandlers = {
   debug: debugHandlers,
   dialog: dialogHandlers,
   ui: uiHandlers,
+  export: exportHandlers,
   updater: updaterHandlers,
   workspace: workspaceHandlers,
 } satisfies Record<string, NamespaceHandlers>;

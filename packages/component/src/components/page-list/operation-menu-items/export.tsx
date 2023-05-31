@@ -1,4 +1,3 @@
-import { Menu, MenuItem } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import {
@@ -9,12 +8,13 @@ import {
 } from '@blocksuite/icons';
 import { useRef } from 'react';
 
+import { Menu, MenuItem } from '../../..';
 import type { CommonMenuItemProps } from './types';
 
 export const Export = ({
   onSelect,
   onItemClick,
-}: CommonMenuItemProps<{ type: 'markdown' | 'html' }>) => {
+}: CommonMenuItemProps<{ type: 'markdown' | 'html' | 'pdf' | 'png' }>) => {
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
   return (
@@ -24,6 +24,29 @@ export const Export = ({
       trigger="click"
       content={
         <>
+          {/* <MenuItem
+            data-testid="export-to-pdf"
+            onClick={async () => {
+              if (!contentParserRef.current) {
+                contentParserRef.current = new ContentParser(
+                  globalThis.currentEditor!.page
+                );
+              }
+              const result = await window.apis?.export.savePDFFileAs(
+                (
+                  globalThis.currentEditor!.page.root as PageBlockModel
+                ).title.toString()
+              );
+              if (result !== undefined) {
+                return;
+              }
+              contentParserRef.current.exportPdf();
+              onSelect?.({ type: 'pdf' });
+            }}
+            icon={<ExportToPdfIcon />}
+          >
+            {t['Export to PDF']()}
+          </MenuItem> */}
           <MenuItem
             data-testid="export-to-html"
             onClick={() => {
@@ -39,6 +62,21 @@ export const Export = ({
           >
             {t['Export to HTML']()}
           </MenuItem>
+          {/* <MenuItem
+            data-testid="export-to-png"
+            onClick={() => {
+              if (!contentParserRef.current) {
+                contentParserRef.current = new ContentParser(
+                  globalThis.currentEditor!.page
+                );
+              }
+              contentParserRef.current.exportPng();
+              onSelect?.({ type: 'png' });
+            }}
+            icon={<ExportToPngIcon />}
+          >
+            {t['Export to PNG']()}
+          </MenuItem> */}
           <MenuItem
             data-testid="export-to-markdown"
             onClick={() => {

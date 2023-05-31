@@ -5,6 +5,7 @@ import * as Y from 'yjs';
 import type { AppContext } from '../context';
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
+import { mergeUpdateWorker } from '../workers';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import { dbSubjects } from './subjects';
@@ -22,6 +23,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   override destroy() {
     this.db?.close();
+    this.db = null;
     this.yDoc.destroy();
 
     // when db is closed, we can safely remove it from ensure-db list
@@ -32,15 +34,15 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     return this.yDoc.getMap('space:meta').get('name') as string;
   };
 
-  override connect(): Database | undefined {
+  async init(): Promise<Database | undefined> {
     const db = super.connect();
 
     if (!this.firstConnected) {
       this.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
-        if (origin !== 'self') {
+        if (origin === 'renderer') {
           this.addUpdateToSQLite([update]);
-        }
-        if (origin === 'external') {
+        } else if (origin === 'external') {
+          this.addUpdateToSQLite([update]);
           logger.debug('external update', this.workspaceId);
           dbSubjects.externalUpdate.next({
             workspaceId: this.workspaceId,
@@ -51,12 +53,10 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     }
 
     const updates = this.getUpdates();
+    const merged = await mergeUpdateWorker(updates.map(update => update.data));
+
     // to initialize the yDoc, we need to apply all updates from the db
-    Y.transact(this.yDoc, () => {
-      updates.forEach(update => {
-        this.applyUpdate(update.data, 'self');
-      });
-    });
+    this.applyUpdate(merged, 'self');
 
     this.firstConnected = true;
     this.update$.next();
@@ -101,6 +101,6 @@ export async function openWorkspaceDatabase(
 ) {
   const meta = await getWorkspaceMeta(context, workspaceId);
   const db = new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
-  await db.connect();
+  await db.init();
   return db;
 }

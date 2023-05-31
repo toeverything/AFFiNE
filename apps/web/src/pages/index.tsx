@@ -1,4 +1,6 @@
+import { WorkspaceFallback } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
+import { WorkspaceSubPath } from '@affine/workspace/type';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
@@ -6,7 +8,8 @@ import { Suspense, useEffect } from 'react';
 import { PageLoading } from '../components/pure/loading';
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
 import { useAppHelper, useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspaceSubPath } from '../shared';
+import { AllWorkspaceContext } from '../layouts/workspace-layout';
+import { AllWorkspaceModals } from '../providers/modal-provider';
 
 const logger = new DebugLogger('index-page');
 
@@ -62,7 +65,13 @@ const IndexPageInner = () => {
     }
   }, [helper, jumpToPage, jumpToSubPath, router, workspaces]);
 
-  return <PageLoading key="IndexPageInfinitePageLoading" />;
+  return (
+    <Suspense fallback={<WorkspaceFallback />}>
+      <AllWorkspaceContext>
+        <AllWorkspaceModals />
+      </AllWorkspaceContext>
+    </Suspense>
+  );
 };
 
 const IndexPage: NextPage = () => {

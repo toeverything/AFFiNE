@@ -31,11 +31,15 @@
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
       "@affine/graphql": ["./packages/graphql/src"],
+      "@affine/copilot": ["./plugins/copilot/src"],
+      "@affine/copilot/*": ["./plugins/copilot/src/*"],
       "@affine/electron/layers/*": ["./apps/electron/layers/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"],
+      "@toeverything/plugin-infra": ["./packages/plugin-infra/src"],
+      "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
       "@affine/native/*": ["./packages/native/*"]
     }
@@ -80,6 +84,12 @@
     },
     {
       "path": "./packages/y-indexeddb"
+    },
+    {
+      "path": "./packages/plugin-infra"
+    },
+    {
+      "path": "./plugins/copilot"
     },
     {
       "path": "./tests/fixtures"
