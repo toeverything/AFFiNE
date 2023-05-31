@@ -46,6 +46,7 @@
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "react-error-boundary": "^4.0.9",
     "react-is": "^18.2.0",
+    "react-zoom-pan-pinch": "^3.0.7",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
