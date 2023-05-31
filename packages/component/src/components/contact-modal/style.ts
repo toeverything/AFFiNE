@@ -1,4 +1,4 @@
-import { absoluteCenter, displayFlex, styled } from '@affine/component';
+import { absoluteCenter, displayFlex, styled } from '../..';
 
 export const StyledBigLink = styled('a')(() => {
   return {

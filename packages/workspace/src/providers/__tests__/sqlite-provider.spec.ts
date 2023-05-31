@@ -1,9 +1,9 @@
-import type { SQLiteProvider } from '@affine/workspace/type';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
 import { uuidv4, Workspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import type { SQLiteProvider } from '../../type';
 import { createSQLiteProvider } from '../index';
 
 const Y = Workspace.Y;

@@ -3,12 +3,12 @@
  */
 import 'fake-indexeddb/auto';
 
-import type { LocalWorkspace, WorkspaceCRUD } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
 import { afterEach, assertType, describe, expect, test } from 'vitest';
 
+import type { LocalWorkspace, WorkspaceCRUD } from '../../type';
+import { WorkspaceFlavour } from '../../type';
 import { CRUD } from '../crud';
 
 afterEach(() => {
