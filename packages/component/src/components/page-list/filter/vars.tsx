@@ -1,7 +1,9 @@
+import { DateTimeIcon, FavoritedIcon } from '@blocksuite/icons';
 import dayjs from 'dayjs';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { MenuItem } from '../../../ui/menu';
+import * as styles from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TFunction, TType } from './logical/typesystem';
@@ -36,16 +38,20 @@ export type Literal = {
 export type FilterVariable = {
   name: keyof VariableMap;
   type: TType;
+  icon: ReactElement;
 };
 export const variableDefineMap = {
   Created: {
     type: tDate.create(),
+    icon: <DateTimeIcon />,
   },
   Updated: {
     type: tDate.create(),
+    icon: <DateTimeIcon />,
   },
-  Favorite: {
+  'Is Favourited': {
     type: tBoolean.create(),
+    icon: <FavoritedIcon />,
   },
   // Imported: {
   //   type: tBoolean.create(),
@@ -61,6 +67,7 @@ export const vars: FilterVariable[] = Object.entries(variableDefineMap).map(
   ([key, value]) => ({
     name: key as keyof VariableMap,
     type: value.type,
+    icon: value.icon,
   })
 );
 
@@ -102,16 +109,20 @@ export const VariableSelect = ({
 }) => {
   return (
     <div>
+      <div className={styles.variableSelectTitleStyle}>Filter</div>
+      <div className={styles.variableSelectDividerStyle}></div>
       {vars
         // .filter(v => !selected.find(filter => filter.left.name === v.name))
         .map(v => (
           <MenuItem
+            icon={v.icon}
             key={v.name}
             onClick={() => {
               onSelect(createDefaultFilter(v));
             }}
+            className={styles.menuItemStyle}
           >
-            {v.name}
+            <div className={styles.menuItemTextStyle}>{v.name}</div>
           </MenuItem>
         ))}
     </div>
