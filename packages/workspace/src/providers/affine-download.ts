@@ -1,14 +1,15 @@
-import type { AffineDownloadProvider } from '@affine/workspace/type';
-import { assertExists } from '@blocksuite/store';
+import { DebugLogger } from '@affine/debug';
+import { assertExists, Workspace } from '@blocksuite/store';
 
-import { BlockSuiteWorkspace } from '../../../shared';
-import { affineApis } from '../../../shared/apis';
-import { providerLogger } from '../../logger';
+import { affineApis } from '../affine/shared';
+import type { AffineDownloadProvider } from '../type';
 
 const hashMap = new Map<string, ArrayBuffer>();
 
+const logger = new DebugLogger('affine:workspace:download-provider');
+
 export const createAffineDownloadProvider = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
+  blockSuiteWorkspace: Workspace
 ): AffineDownloadProvider => {
   assertExists(blockSuiteWorkspace.id);
   const id = blockSuiteWorkspace.id;
@@ -22,10 +23,10 @@ export const createAffineDownloadProvider = (
     },
     callbacks,
     connect: () => {
-      providerLogger.info('connect download provider', id);
+      logger.info('connect download provider', id);
       if (hashMap.has(id)) {
-        providerLogger.debug('applyUpdate');
-        BlockSuiteWorkspace.Y.applyUpdate(
+        logger.debug('applyUpdate');
+        Workspace.Y.applyUpdate(
           blockSuiteWorkspace.doc,
           new Uint8Array(hashMap.get(id) as ArrayBuffer)
         );
@@ -37,8 +38,8 @@ export const createAffineDownloadProvider = (
         .downloadWorkspace(id, false)
         .then(binary => {
           hashMap.set(id, binary);
-          providerLogger.debug('applyUpdate');
-          BlockSuiteWorkspace.Y.applyUpdate(
+          logger.debug('applyUpdate');
+          Workspace.Y.applyUpdate(
             blockSuiteWorkspace.doc,
             new Uint8Array(binary)
           );
@@ -46,11 +47,11 @@ export const createAffineDownloadProvider = (
           callbacks.forEach(cb => cb());
         })
         .catch(e => {
-          providerLogger.error('downloadWorkspace', e);
+          logger.error('downloadWorkspace', e);
         });
     },
     disconnect: () => {
-      providerLogger.info('disconnect download provider', id);
+      logger.info('disconnect download provider', id);
       connected = false;
     },
     cleanup: () => {

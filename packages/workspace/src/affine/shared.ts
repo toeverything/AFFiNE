@@ -1,25 +1,16 @@
-import { DebugLogger } from '@affine/debug';
 import { prefixUrl } from '@affine/env';
-import {
-  createUserApis,
-  createWorkspaceApis,
-} from '@affine/workspace/affine/api';
-import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
-import type { LoginResponse } from '@affine/workspace/affine/login';
-import {
-  createAffineAuth,
-  parseIdToken,
-  setLoginStorage,
-} from '@affine/workspace/affine/login';
-import { rootStore } from '@affine/workspace/atom';
+
+import { rootStore } from '../atom';
+import { createUserApis, createWorkspaceApis } from './api/index';
+import { currentAffineUserAtom } from './atom';
+import type { LoginResponse } from './login';
+import { createAffineAuth, parseIdToken, setLoginStorage } from './login';
 
 export const affineAuth = createAffineAuth(prefixUrl);
 const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;
 Object.assign(affineApis, createUserApis(prefixUrl));
 Object.assign(affineApis, createWorkspaceApis(prefixUrl));
-
-const _debugLogger = new DebugLogger('affine-debug-apis');
 
 if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_APIS = affineApis;
