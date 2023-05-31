@@ -17,9 +17,7 @@ export async function getHTMLByURL(
   return new Promise(resolve => {
     const { timeout = 10000, shouldReGetHTML } = options;
     const window = new BrowserWindow({
-      width: 800,
-      height: 600,
-      show: true,
+      show: false,
     });
     let html = '';
     window.loadURL(url);
