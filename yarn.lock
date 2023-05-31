@@ -30,6 +30,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/bookmark-block@workspace:plugins/bookmark-block":
+  version: 0.0.0-use.local
+  resolution: "@affine/bookmark-block@workspace:plugins/bookmark-block"
+  dependencies:
+    "@toeverything/plugin-infra": "workspace:*"
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
+  peerDependencies:
+    react: "*"
+    react-dom: "*"
+  languageName: unknown
+  linkType: soft
+
 "@affine/cli@workspace:*, @affine/cli@workspace:packages/cli":
   version: 0.0.0-use.local
   resolution: "@affine/cli@workspace:packages/cli"
@@ -9087,8 +9100,18 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/workspace": "workspace:*"
+    "@blocksuite/blocks": 0.0.0-20230531080915-ca9c55a2-nightly
+    "@blocksuite/editor": 0.0.0-20230531080915-ca9c55a2-nightly
+    "@blocksuite/global": 0.0.0-20230531080915-ca9c55a2-nightly
+    "@blocksuite/lit": 0.0.0-20230531080915-ca9c55a2-nightly
+    "@blocksuite/store": 0.0.0-20230531080915-ca9c55a2-nightly
     jotai: ^2.1.0
   peerDependencies:
+    "@blocksuite/blocks": "*"
+    "@blocksuite/editor": "*"
+    "@blocksuite/global": "*"
+    "@blocksuite/lit": "*"
+    "@blocksuite/store": "*"
     jotai: "*"
     react: "*"
     react-dom: "*"
