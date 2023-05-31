@@ -5,12 +5,13 @@
     "noEmit": false,
     "outDir": "lib"
   },
-  "include": ["./src"],
+  "include": ["./src", "../../apps/electron/layers"],
   "references": [
     { "path": "../../tests/fixtures" },
     { "path": "../y-indexeddb" },
     { "path": "../env" },
     { "path": "../debug" },
-    { "path": "../hooks" }
+    { "path": "../hooks" },
+    { "path": "../component" }
   ]
 }

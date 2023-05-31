@@ -1,6 +1,12 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"],
+  "include": [
+    "./src/**/*.ts",
+    "./src/**/*.tsx",
+    "./src/**/*.json",
+    "../workspace",
+    "../../apps/electron/layers"
+  ],
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
@@ -17,13 +23,11 @@
       "path": "../jotai"
     },
     {
-      "path": "../workspace"
-    },
-    {
       "path": "../hooks"
     },
     {
       "path": "./tsconfig.node.json"
-    }
+    },
+    { "path": "../../tests/fixtures" }
   ]
 }

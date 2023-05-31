@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path='../../../apps/electron/layers/preload/preload.d.ts' />
+import type { View } from '@affine/component/page-list';
 import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -106,19 +107,19 @@ export interface AffinePublicWorkspace {
   providers: Provider[];
 }
 
-export const enum ReleaseType {
+export enum ReleaseType {
   // if workspace is not released yet, we will not show it in the workspace list
   UNRELEASED = 'unreleased',
   STABLE = 'stable',
 }
 
-export const enum LoadPriority {
+export enum LoadPriority {
   HIGH = 1,
   MEDIUM = 2,
   LOW = 3,
 }
 
-export const enum WorkspaceFlavour {
+export enum WorkspaceFlavour {
   /**
    * AFFiNE Workspace is the workspace
    * that hosted on the Legacy AFFiNE Cloud Server.

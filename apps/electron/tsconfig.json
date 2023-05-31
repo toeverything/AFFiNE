@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "composite": true,
     "skipLibCheck": true,
     "target": "ESNext",
     "module": "ESNext",
@@ -13,7 +14,7 @@
     "noImplicitOverride": true
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules", "out", "dist"],
   "references": [
     {
       "path": "./tsconfig.node.json"
@@ -23,7 +24,8 @@
     },
     {
       "path": "../../packages/env"
-    }
+    },
+    { "path": "../../tests/kit" }
   ],
   "ts-node": {
     "esm": true,

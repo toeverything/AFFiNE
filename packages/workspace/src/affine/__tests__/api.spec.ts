@@ -37,7 +37,7 @@ import {
 
 declare module '@blocksuite/store' {
   interface PageMeta {
-    isPublic?: unknown;
+    isPublic?: boolean;
   }
 }
 

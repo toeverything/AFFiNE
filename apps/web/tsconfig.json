@@ -11,21 +11,39 @@
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "isolatedModules": false,
+    "isolatedModules": true,
     "jsx": "preserve",
     "jsxImportSource": "@emotion/react",
     "incremental": true,
     "experimentalDecorators": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/types/types.d.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "src/types/types.d.ts",
+    "../../packages/graphql",
+    "../electron/layers"
+  ],
   "exclude": ["node_modules"],
   "references": [
-    { "path": "../../packages/env" },
-    { "path": "../../packages/debug" },
-    { "path": "../../packages/component" },
-    { "path": "../../packages/graphql" },
-    { "path": "../../packages/i18n" },
-    { "path": "../../packages/jotai" },
-    { "path": "../../packages/hooks" }
+    {
+      "path": "../../packages/env"
+    },
+    {
+      "path": "../../packages/debug"
+    },
+    {
+      "path": "../../packages/component"
+    },
+    {
+      "path": "../../packages/i18n"
+    },
+    {
+      "path": "../../packages/jotai"
+    },
+    {
+      "path": "../../packages/hooks"
+    }
   ]
 }

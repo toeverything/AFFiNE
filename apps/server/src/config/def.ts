@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-export const enum ExternalAccount {
+export enum ExternalAccount {
   github = 'github',
   google = 'google',
   firebase = 'firebase',

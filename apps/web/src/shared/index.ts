@@ -24,7 +24,7 @@ export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
   getLayout?: (page: ReactElement) => ReactNode;
 };
 
-export const enum WorkspaceSubPath {
+export enum WorkspaceSubPath {
   ALL = 'all',
   SETTING = 'setting',
   TRASH = 'trash',
