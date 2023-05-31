@@ -21,5 +21,6 @@
     "jotai": "*",
     "react": "*",
     "react-dom": "*"
-  }
+  },
+  "version": "0.7.0-canary.3"
 }
