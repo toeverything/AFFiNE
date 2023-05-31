@@ -11,11 +11,17 @@ import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
 import {
+  buttonStyle,
+  deleteButtonStyle,
+  groupStyle,
+  imagePreviewModalCaptionStyle,
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
   imagePreviewModalGoStyle,
   imagePreviewModalImageStyle,
   imagePreviewModalStyle,
+  imagePreviewTitleBarStyle,
+  scaleIndicatorStyle,
 } from './index.css';
 import { previewBlockIdAtom } from './index.jotai';
 
@@ -31,6 +37,7 @@ const ImagePreviewModalImpl = (
   }
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
+  const [bIsActionBarVisble, setBIsActionBarVisible] = useState(false);
   const [caption, setCaption] = useState(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
@@ -76,6 +83,41 @@ const ImagePreviewModalImpl = (
   if (!url) {
     return null;
   }
+  const nextImageHandler = blockId => {
+    assertExists(blockId);
+    const workspace = props.workspace;
+
+    const page = workspace.getPage(props.pageId);
+    assertExists(page);
+    const block = page.getBlockById(blockId);
+    assertExists(block);
+    const nextBlock = page
+      .getNextSiblings(block)
+      .find(
+        (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+      );
+    if (nextBlock) {
+      setBlockId(nextBlock.id);
+    }
+  };
+
+  const previousImageHandler = blockId => {
+    assertExists(blockId);
+    const workspace = props.workspace;
+
+    const page = workspace.getPage(props.pageId);
+    assertExists(page);
+    const block = page.getBlockById(blockId);
+    assertExists(block);
+    const prevBlock = page
+      .getPreviousSiblings(block)
+      .findLast(
+        (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+      );
+    if (prevBlock) {
+      setBlockId(prevBlock.id);
+    }
+  };
   return (
     <div data-testid="image-preview-modal" className={imagePreviewModalStyle}>
       <button
@@ -104,59 +146,66 @@ const ImagePreviewModalImpl = (
         style={{
           left: 0,
         }}
-        onClick={() => {
-          assertExists(blockId);
-          const workspace = props.workspace;
-
-          const page = workspace.getPage(props.pageId);
-          assertExists(page);
-          const block = page.getBlockById(blockId);
-          assertExists(block);
-          const prevBlock = page
-            .getPreviousSiblings(block)
-            .findLast(
-              (block): block is EmbedBlockModel =>
-                block.flavour === 'affine:embed'
-            );
-          if (prevBlock) {
-            setBlockId(prevBlock.id);
-          }
-        }}
+        onClick={() => previousImageHandler(blockId)}
       >
         ❮
       </span>
       <div className={imagePreviewModalContainerStyle}>
-        <img
-          data-blob-id={props.blockId}
-          alt={caption}
-          className={imagePreviewModalImageStyle}
-          ref={imageRef}
-          src={url}
-        />
+        <div>
+          <img
+            data-blob-id={props.blockId}
+            alt={caption}
+            className={imagePreviewModalImageStyle}
+            onMouseOver={() => setBIsActionBarVisible(true)}
+            onMouseOut={() => {
+              setTimeout(() => {
+                setBIsActionBarVisible(false);
+              }, 3000);
+            }}
+            ref={imageRef}
+            src={url}
+          />
+          <p className={imagePreviewModalCaptionStyle}>{caption}</p>
+        </div>
+        <div>
+          {bIsActionBarVisble ? (
+            <div className={imagePreviewTitleBarStyle}>
+              <div className={groupStyle}>
+                <button
+                  className={buttonStyle}
+                  onClick={() => previousImageHandler(blockId)}
+                >
+                  Previous Image
+                </button>
+                <button
+                  className={buttonStyle}
+                  onClick={() => nextImageHandler(blockId)}
+                >
+                  Next Image
+                </button>
+                <div className={groupStyle}>
+                  <button className={buttonStyle}>reset size</button>
+                  <button className={buttonStyle}>zoom out</button>
+                  <span className={scaleIndicatorStyle}>100%</span>
+                  <button className={buttonStyle}>zoom in</button>
+                </div>
+                <div className={groupStyle}>
+                  <button className="button"> Download</button>
+                </div>
+                <div className={groupStyle}>
+                  <button className={deleteButtonStyle}>delete</button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
       <span
         className={imagePreviewModalGoStyle}
         style={{
           right: 0,
         }}
-        onClick={() => {
-          assertExists(blockId);
-          const workspace = props.workspace;
-
-          const page = workspace.getPage(props.pageId);
-          assertExists(page);
-          const block = page.getBlockById(blockId);
-          assertExists(block);
-          const nextBlock = page
-            .getNextSiblings(block)
-            .find(
-              (block): block is EmbedBlockModel =>
-                block.flavour === 'affine:embed'
-            );
-          if (nextBlock) {
-            setBlockId(nextBlock.id);
-          }
-        }}
+        onClick={() => nextImageHandler(blockId)}
       >
         ❯
       </span>
