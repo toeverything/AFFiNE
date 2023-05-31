@@ -173,9 +173,6 @@ export const CurrentWorkspaceContext = ({
   //  need a better way to check whether this workspace really exist.
   useEffect(() => {
     const id = setTimeout(() => {
-      if (metadata.length === 0) {
-        return;
-      }
       if (!exist) {
         void push('/');
         globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
