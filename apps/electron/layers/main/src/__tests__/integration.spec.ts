@@ -176,7 +176,7 @@ describe('ensureSQLiteDB', () => {
     expect(fileExists).toBe(true);
     registeredHandlers.get('before-quit')?.forEach(fn => fn());
     await delay(100);
-    expect(workspaceDB.db?.open).toBe(false);
+    expect(workspaceDB.db).toBe(null);
   });
 });
 
@@ -197,7 +197,7 @@ describe('workspace handlers', () => {
     const list = await dispatch('workspace', 'list');
     expect(list.map(([id]) => id)).toEqual([ids[0]]);
     // deleted db should be closed
-    expect(dbs[1].db?.open).toBe(false);
+    expect(dbs[1].db).toBe(null);
   });
 });
 
@@ -436,6 +436,8 @@ describe('dialog handlers', () => {
   });
 
   test('moveDBFile (valid)', async () => {
+    const sendStub = vi.fn();
+    browserWindow.webContents.send = sendStub;
     const newPath = path.join(SESSION_DATA_PATH, 'xxx');
     const showOpenDialog = vi.fn(() => {
       return { filePaths: [newPath] };
@@ -444,13 +446,19 @@ describe('dialog handlers', () => {
 
     const id = v4();
     const { ensureSQLiteDB } = await import('../db/ensure-db');
-    await ensureSQLiteDB(id);
+    const db = await ensureSQLiteDB(id);
     const res = await dispatch('dialog', 'moveDBFile', id);
     expect(showOpenDialog).toBeCalled();
     assert(res.filePath);
     expect(path.dirname(res.filePath)).toBe(newPath);
     expect(res.filePath.endsWith('.affine')).toBe(true);
+    // should also send workspace meta change event
+    expect(sendStub).toBeCalledWith('workspace:onMetaChange', {
+      workspaceId: id,
+      meta: { id, secondaryDBPath: res.filePath, mainDBPath: db.path },
+    });
     electronModule.dialog = {};
+    browserWindow.webContents.send = () => {};
   });
 
   test('moveDBFile (canceled)', async () => {
@@ -467,5 +475,20 @@ describe('dialog handlers', () => {
     expect(showOpenDialog).toBeCalled();
     expect(res.filePath).toBe(undefined);
     electronModule.dialog = {};
+  });
+});
+
+describe('applicationMenu', () => {
+  // test some basic IPC events
+  test('applicationMenu event', async () => {
+    const { applicationMenuSubjects } = await import('../application-menu');
+    const sendStub = vi.fn();
+    browserWindow.webContents.send = sendStub;
+    applicationMenuSubjects.newPageAction.next();
+    expect(sendStub).toHaveBeenCalledWith(
+      'applicationMenu:onNewPageAction',
+      undefined
+    );
+    browserWindow.webContents.send = () => {};
   });
 });

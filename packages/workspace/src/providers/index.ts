@@ -178,7 +178,7 @@ const createSQLiteProvider = (
   async function syncBlobIntoSQLite(bs: BlobManager) {
     const persistedKeys = await apis.db.getBlobKeys(blockSuiteWorkspace.id);
 
-    const allKeys = await bs.list();
+    const allKeys = await bs.list().catch(() => []);
     const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
 
     logger.info('persisting blobs', keysToPersist, 'to sqlite');
