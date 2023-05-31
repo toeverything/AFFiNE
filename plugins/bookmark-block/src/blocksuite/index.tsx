@@ -6,11 +6,11 @@ import { BookMarkUI } from './ui';
 
 export default {
   uiDecorator: editor => {
-    const div = document.createElement('div');
     if (
       editor.parentElement &&
       editor.page.awarenessStore.getFlag('enable_bookmark_operation')
     ) {
+      const div = document.createElement('div');
       editor.parentElement.appendChild(div);
       const root = createRoot(div);
       root.render(
