@@ -4,7 +4,6 @@ export const filterButton = style({
   borderRadius: '8px',
   height: '100%',
   padding: '4px 8px',
-  marginLeft: '-30px',
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-hover-color)',
   color: 'var(--affine-text-secondary-color)',
