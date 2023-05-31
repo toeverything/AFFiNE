@@ -1,0 +1,20 @@
+{
+  "name": "@affine/bookmark-block",
+  "private": true,
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@toeverything/plugin-infra": "workspace:*"
+  },
+  "devDependencies": {
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-dom": "*"
+  }
+}

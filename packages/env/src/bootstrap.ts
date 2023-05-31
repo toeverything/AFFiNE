@@ -1,7 +1,11 @@
-import { config, getEnvironment, setupGlobal } from './config';
+import { config, setupGlobal } from './config';
 
-if (config.enablePlugin && !getEnvironment().isServer) {
+setupGlobal();
+
+if (config.enablePlugin && !environment.isServer) {
   import('@affine/copilot');
 }
 
-setupGlobal();
+if (!environment.isServer) {
+  import('@affine/bookmark-block');
+}
