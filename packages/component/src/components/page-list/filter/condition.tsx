@@ -5,7 +5,7 @@ import { Menu, MenuItem } from '../../../ui/menu';
 import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
-import type { Filter, Literal } from './vars';
+import type { Filter, Literal } from './shared-types';
 import { filterMatcher, VariableSelect, vars } from './vars';
 
 export const Condition = ({

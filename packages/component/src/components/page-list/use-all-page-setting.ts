@@ -8,13 +8,7 @@ import useSWRImmutable from 'swr/immutable';
 import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
-import type { Filter, VariableMap } from './filter/vars';
-
-export type View = {
-  id: string;
-  name: string;
-  filterList: Filter[];
-};
+import type { Filter, VariableMap, View } from './filter/shared-types';
 
 type PersistenceView = View;
 

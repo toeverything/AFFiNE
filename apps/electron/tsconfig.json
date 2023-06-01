@@ -11,7 +11,8 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "noEmit": false
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "out", "dist"],
