@@ -12,12 +12,13 @@ import { Condition } from '../filter/condition';
 import { tBoolean, tDate } from '../filter/logical/custom-type';
 import type {
   Filter,
-  FilterMatcherDataType,
   LiteralValue,
   Ref,
   VariableMap,
-} from '../filter/vars';
-import { filterMatcher, toLiteral } from '../filter/vars';
+} from '../filter/shared-types';
+import { toLiteral } from '../filter/shared-types';
+import type { FilterMatcherDataType } from '../filter/vars';
+import { filterMatcher } from '../filter/vars';
 import { filterByFilterList } from '../use-all-page-setting';
 
 const ref = (name: keyof VariableMap): Ref => {

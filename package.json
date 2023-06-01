@@ -35,7 +35,7 @@
     "test:unit:coverage": "vitest run --coverage",
     "postinstall": "i18n-codegen gen && husky install",
     "notify": "node scripts/notify.mjs",
-    "typecheck": "tsc -b tsconfig.json"
+    "typecheck": "tsc -b tsconfig.json --diagnostics"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown --cache",

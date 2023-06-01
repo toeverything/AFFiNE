@@ -1,5 +1,4 @@
-import type { Filter, Literal, Ref } from './vars';
-import type { VariableMap } from './vars';
+import type { Filter, Literal, Ref, VariableMap } from './shared-types';
 import { filterMatcher } from './vars';
 
 const evalRef = (ref: Ref, variableMap: VariableMap) => {

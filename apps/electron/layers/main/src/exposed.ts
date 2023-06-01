@@ -30,3 +30,7 @@ export const getExposedMeta = () => {
     events: eventsMeta,
   };
 };
+
+export type MainIPCHandlerMap = typeof handlers;
+
+export type MainIPCEventMap = typeof events;
