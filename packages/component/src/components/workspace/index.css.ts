@@ -58,6 +58,11 @@ export const mainContainerStyle = style({
       borderRadius: '8px',
       overflow: 'hidden',
       boxShadow: 'var(--affine-shadow-1)',
+      '@media': {
+        print: {
+          overflow: 'visible',
+        },
+      },
     },
   },
 });
