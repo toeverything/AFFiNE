@@ -40,6 +40,5 @@ export const buildFlags = {
     process.env.ENABLE_DEBUG_PAGE ?? process.env.NODE_ENV === 'development'
   ),
   changelogUrl:
-    process.env.CHANGELOG_URL ??
-    'https://affine.pro/blog/whats-new-affine-0518',
+    process.env.CHANGELOG_URL ?? 'http://affine.pro/blog/whats-new-affine-0601',
 };
