@@ -42,7 +42,7 @@ async function createWindow() {
       sandbox: false,
       webviewTag: false, // The webview tag is not recommended. Consider alternatives like iframe or Electron's BrowserView. https://www.electronjs.org/docs/latest/api/webview-tag#warning
       spellcheck: false, // FIXME: enable?
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/bootstrap.js'),
       // serialize exposed meta that to be used in preload
       additionalArguments: [`--exposed-meta=` + JSON.stringify(exposedMeta)],
     },
@@ -98,7 +98,7 @@ async function createWindow() {
 // singleton
 let browserWindow: Electron.BrowserWindow | undefined;
 /**
- * Restore existing BrowserWindow or Create new BrowserWindow
+ * Restore BrowserWindow or Create new BrowserWindow
  */
 export async function restoreOrCreateWindow() {
   browserWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());

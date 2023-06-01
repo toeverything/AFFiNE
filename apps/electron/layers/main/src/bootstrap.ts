@@ -1,6 +1,10 @@
+// Notice that electron ts code will be translated to CJS code
+//  In this term, `import` is actually `require`
 import './security-restrictions';
 
 import { app } from 'electron';
+// Enable sandbox globally
+app.enableSandbox();
 
 import { createApplicationMenu } from './application-menu/create';
 import { registerEvents } from './events';
@@ -28,9 +32,7 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-app.on('second-instance', () => {
-  restoreOrCreateWindow();
-});
+app.on('second-instance', () => restoreOrCreateWindow());
 
 app.on('open-url', async (_, _url) => {
   // todo: handle `affine://...` urls
@@ -51,7 +53,7 @@ app.on('window-all-closed', () => {
 app.on('activate', restoreOrCreateWindow);
 
 /**
- * Create app window when background process will be ready
+ * Create the app window when the background process will be ready
  */
 app
   .whenReady()

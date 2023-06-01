@@ -30,6 +30,7 @@ export const allHandlers = {
 } satisfies Record<string, NamespaceHandlers>;
 
 export const registerHandlers = () => {
+  performance.mark('affine/registerHandlers');
   // TODO: listen to namespace instead of individual event types
   ipcMain.setMaxListeners(100);
   for (const [namespace, namespaceHandlers] of Object.entries(allHandlers)) {

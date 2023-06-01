@@ -39,6 +39,7 @@ export const checkForUpdatesAndNotify = async (force = true) => {
 };
 
 export const registerUpdater = async () => {
+  performance.mark('affine/registerUpdater');
   // so we wrap it in a function
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { autoUpdater } = require('electron-updater');

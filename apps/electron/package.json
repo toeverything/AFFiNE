@@ -24,7 +24,7 @@
   "config": {
     "forge": "./forge.config.js"
   },
-  "main": "./dist/layers/main/index.js",
+  "main": "./dist/layers/main/bootstrap.js",
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/native": "workspace:*",

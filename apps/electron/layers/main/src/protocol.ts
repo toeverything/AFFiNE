@@ -30,6 +30,7 @@ function toAbsolutePath(url: string) {
 }
 
 export function registerProtocol() {
+  performance.mark('affine/registerProtocol');
   protocol.interceptFileProtocol('file', (request, callback) => {
     const url = request.url.replace(/^file:\/\//, '');
     const realpath = toAbsolutePath(url);

@@ -33,7 +33,7 @@ export const config = () => {
   return {
     main: {
       entryPoints: [
-        resolve(root, './layers/main/src/index.ts'),
+        resolve(root, './layers/main/src/bootstrap.ts'),
         resolve(root, './layers/main/src/workers/merge-update.worker.ts'),
       ],
       outdir: resolve(root, './dist/layers/main'),
@@ -50,7 +50,7 @@ export const config = () => {
       treeShaking: true,
     },
     preload: {
-      entryPoints: [resolve(root, './layers/preload/src/index.ts')],
+      entryPoints: [resolve(root, './layers/preload/src/bootstrap.ts')],
       outdir: resolve(root, './dist/layers/preload'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,

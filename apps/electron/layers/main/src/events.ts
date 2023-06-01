@@ -18,6 +18,7 @@ function getActiveWindows() {
 }
 
 export function registerEvents() {
+  performance.mark('affine/registerEvents');
   // register events
   for (const [namespace, namespaceEvents] of Object.entries(allEvents)) {
     for (const [key, eventRegister] of Object.entries(namespaceEvents)) {

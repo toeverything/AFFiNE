@@ -9,6 +9,7 @@ import { applicationMenuSubjects } from './subject';
 const MENUITEM_NEW_PAGE = 'affine:new-page';
 
 export function createApplicationMenu() {
+  performance.mark('affine/createApplicationMenu');
   const isMac = isMacOS();
 
   // Electron menu cannot be modified
