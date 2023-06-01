@@ -1,8 +1,8 @@
+import handlers from '@affine/bookmark-block/server';
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
 import { isMacOS } from '../utils';
-import { getMetaData } from './get-meta-data';
 import { getGoogleOauthCode } from './google-auth';
 
 export const uiHandlers = {
@@ -40,11 +40,5 @@ export const uiHandlers = {
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
   },
-  getBookmarkDataByLink: async (_, url: string) => {
-    return getMetaData(url, {
-      shouldReGetHTML: metaData => {
-        return !metaData.title && !metaData.description;
-      },
-    });
-  },
+  ...handlers,
 } satisfies NamespaceHandlers;

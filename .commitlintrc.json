@@ -21,7 +21,9 @@
         "templates",
         "y-indexeddb",
         "debug",
-        "theme"
+        "theme",
+        "plugin",
+        "plugin-infra"
       ]
     ]
   }

@@ -35,7 +35,8 @@
       "@affine/workspace/*": ["./packages/workspace/src/*"],
       "@affine/graphql": ["./packages/graphql/src"],
       "@affine/copilot": ["./plugins/copilot/src"],
-      "@affine/copilot/*": ["./plugins/copilot/src/*"],
+      "@affine/bookmark-block": ["./plugins/bookmark-block/src"],
+      "@affine/bookmark-block/server": ["./plugins/bookmark-block/src/server"],
       "@affine/electron/layers/*": ["./apps/electron/layers/*"],
       "@affine/electron/preload": [
         "./apps/electron/layers/preload/preload.d.ts"
