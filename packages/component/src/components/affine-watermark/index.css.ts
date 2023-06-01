@@ -4,7 +4,7 @@ export const waterMarkStyle = style({
   display: 'none',
   '@media': {
     print: {
-      position: 'absolute',
+      position: 'fixed',
       bottom: '0',
       right: '20px',
       zIndex: 100,
