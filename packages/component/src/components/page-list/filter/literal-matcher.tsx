@@ -6,7 +6,7 @@ import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TType } from './logical/typesystem';
 import { typesystem } from './logical/typesystem';
-import type { Literal } from './vars';
+import type { Literal } from './shared-types';
 
 export const literalMatcher = new Matcher<{
   render: (props: {

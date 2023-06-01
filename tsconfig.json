@@ -20,7 +20,10 @@
     "baseUrl": ".",
     "paths": {
       "@affine/component": ["./packages/component/src/index"],
-      "@affine/component/*": ["./packages/component/src/components/*/index"],
+      "@affine/component/*": [
+        "./packages/component/src/components/*/index",
+        "./packages/component/src/components/*"
+      ],
       "@affine/templates/*": ["./packages/templates/src/*"],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/i18n/hooks": ["./packages/i18n/src/i18n-generated"],
@@ -34,6 +37,9 @@
       "@affine/copilot": ["./plugins/copilot/src"],
       "@affine/copilot/*": ["./plugins/copilot/src/*"],
       "@affine/electron/layers/*": ["./apps/electron/layers/*"],
+      "@affine/electron/preload": [
+        "./apps/electron/layers/preload/preload.d.ts"
+      ],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],

@@ -1,18 +1,18 @@
 {
   "extends": "../../tsconfig.json",
-  "include": [
-    "./src/**/*.ts",
-    "./src/**/*.tsx",
-    "./src/**/*.json",
-    "../workspace/src",
-    "../../apps/electron/layers/**/src"
+  "exclude": [
+    "lib",
+    "./src/components/page-list/filter/shared-types.tsx",
+    "./src/components/page-list/filter/logic/custom-type.ts",
+    "./src/components/page-list/filter/logic/matcher.ts",
+    "./src/components/page-list/filter/logic/typesystem.ts"
   ],
+  "include": ["./src/**/*", "./src/**/*.json"],
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
     "outDir": "lib"
   },
-  "exclude": ["lib"],
   "references": [
     {
       "path": "../debug"
@@ -26,9 +26,14 @@
     {
       "path": "../hooks"
     },
+    { "path": "../workspace" },
+    {
+      "path": "../../apps/electron"
+    },
     {
       "path": "./tsconfig.node.json"
     },
+    { "path": "./tsconfig.workspace.json" },
     { "path": "../../tests/fixtures" }
   ]
 }
