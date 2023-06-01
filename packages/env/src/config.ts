@@ -106,12 +106,8 @@ interface Desktop extends ChromeBrowser {
 
 export type Environment = Browser | Server | Desktop;
 
-let environment: Environment | null = null;
-
-export function getEnvironment() {
-  if (environment) {
-    return environment;
-  }
+export const env: Environment = (() => {
+  let environment = null;
   const isDebug = process.env.NODE_ENV === 'development';
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     environment = {
@@ -153,7 +149,7 @@ export function getEnvironment() {
   }
   globalThis.environment = environment;
   return environment;
-}
+})();
 
 function printBuildInfo() {
   console.group('Build info');
@@ -185,8 +181,8 @@ export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-  globalThis.environment = getEnvironment();
-  if (getEnvironment().isBrowser) {
+  globalThis.environment = env;
+  if (env.isBrowser) {
     printBuildInfo();
     globalThis.editorVersion = config.editorVersion;
   }

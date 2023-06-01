@@ -1,4 +1,4 @@
-import { getEnvironment } from '@affine/env/config';
+import { env } from '@affine/env/config';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useAtomValue } from 'jotai';
 
@@ -18,12 +18,11 @@ export type SidebarHeaderProps = {
 
 export const SidebarHeader = (props: SidebarHeaderProps) => {
   const open = useAtomValue(appSidebarOpenAtom);
-  const environment = getEnvironment();
   return (
     <div className={navHeaderStyle} data-open={open}>
-      {environment.isDesktop && (
+      {env.isDesktop && (
         <>
-          {environment.isMacOs && <div style={{ flex: 1 }} />}
+          {env.isMacOs && <div style={{ flex: 1 }} />}
           <IconButton
             size="middle"
             data-testid="app-sidebar-arrow-button-back"
@@ -51,7 +50,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
             <ArrowRightSmallIcon />
           </IconButton>
 
-          {!environment.isMacOs && <div style={{ flex: 1 }} />}
+          {!env.isMacOs && <div style={{ flex: 1 }} />}
         </>
       )}
       {open && <SidebarSwitch />}
