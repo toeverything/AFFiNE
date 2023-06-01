@@ -1,4 +1,4 @@
-import { getEnvironment } from '@affine/env';
+import { env } from '@affine/env';
 import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
@@ -79,8 +79,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   // disable animation to avoid UI flash
   const enableAnimation = useEnableAnimation();
 
-  const environment = getEnvironment();
-  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+  const isMacosDesktop = env.isDesktop && env.isMacOs;
   if (initialRender) {
     // avoid the UI flash
     return <div />;
