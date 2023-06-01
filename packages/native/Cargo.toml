@@ -10,7 +10,6 @@ crate-type = ["cdylib"]
 affine_schema = { path = "./schema" }
 anyhow = "1"
 chrono = "0.4"
-libc = "0.2"
 napi = { version = "2", default-features = false, features = [
   "napi5",
   "tokio_rt",

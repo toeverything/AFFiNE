@@ -7,12 +7,6 @@ use sqlx::{
   Pool, Row,
 };
 
-#[cfg(all(target_os = "linux", target_env = "gnu"))]
-#[no_mangle]
-extern "C" fn fcntl64(fd: i32, cmd: i32, arg: i32) -> i32 {
-  unsafe { libc::fcntl(fd, cmd, arg) }
-}
-
 #[napi(object)]
 pub struct BlobRow {
   pub key: String,
@@ -37,6 +31,7 @@ pub struct SqliteConnection {
 impl SqliteConnection {
   #[napi(constructor)]
   pub fn new(path: String) -> napi::Result<Self> {
+    println!("{}", path);
     let sqlite_options = SqliteConnectOptions::new()
       .filename(&path)
       .foreign_keys(false)
