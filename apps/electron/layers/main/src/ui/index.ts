@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeTheme, session } from 'electron';
+import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
 import { isMacOS } from '../utils';
@@ -42,7 +42,9 @@ export const uiHandlers = {
   },
   getBookmarkDataByLink: async (_, url: string) => {
     return getMetaData(url, {
-      ua: session.defaultSession.getUserAgent(),
+      shouldReGetHTML: metaData => {
+        return !metaData.title && !metaData.description;
+      },
     });
   },
 } satisfies NamespaceHandlers;
