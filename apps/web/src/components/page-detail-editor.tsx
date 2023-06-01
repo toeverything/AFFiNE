@@ -143,50 +143,58 @@ export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
 
   const [layout, setLayout] = useAtom(contentLayoutAtom);
 
+  const onChange = useCallback(
+    (_: MosaicNode<string | number> | null) => {
+      // type cast
+      const node = _ as MosaicNode<string> | null;
+      if (node) {
+        if (typeof node === 'string') {
+          console.error('unexpected layout');
+        } else {
+          if (node.splitPercentage && node.splitPercentage < 70) {
+            return;
+          } else if (node.first !== 'editor') {
+            return;
+          }
+          setLayout(node as ExpectedLayout);
+        }
+      }
+    },
+    [setLayout]
+  );
+
   return (
     <>
       <Head>
         <title>{title}</title>
       </Head>
-      <Mosaic
-        onChange={useCallback(
-          (_: MosaicNode<string | number> | null) => {
-            // type cast
-            const node = _ as MosaicNode<string> | null;
-            if (node) {
-              if (typeof node === 'string') {
-                console.error('unexpected layout');
-              } else {
-                if (node.splitPercentage && node.splitPercentage < 70) {
-                  return;
-                } else if (node.first !== 'editor') {
-                  return;
-                }
-                setLayout(node as ExpectedLayout);
+      {layout === 'editor' ? (
+        <EditorWrapper {...props} />
+      ) : (
+        <Mosaic
+          onChange={onChange}
+          renderTile={id => {
+            if (id === 'editor') {
+              return <EditorWrapper {...props} />;
+            } else {
+              const plugin = plugins.find(
+                plugin => plugin.definition.id === id
+              );
+              if (plugin && plugin.uiAdapter.detailContent) {
+                return (
+                  <Suspense>
+                    <PluginContentAdapter
+                      detailContent={plugin.uiAdapter.detailContent}
+                    />
+                  </Suspense>
+                );
               }
             }
-          },
-          [setLayout]
-        )}
-        renderTile={id => {
-          if (id === 'editor') {
-            return <EditorWrapper {...props} />;
-          } else {
-            const plugin = plugins.find(plugin => plugin.definition.id === id);
-            if (plugin && plugin.uiAdapter.detailContent) {
-              return (
-                <Suspense>
-                  <PluginContentAdapter
-                    detailContent={plugin.uiAdapter.detailContent}
-                  />
-                </Suspense>
-              );
-            }
-          }
-          throw new Unreachable();
-        }}
-        value={layout}
-      />
+            throw new Unreachable();
+          }}
+          value={layout}
+        />
+      )}
     </>
   );
 };
