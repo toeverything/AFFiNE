@@ -10,7 +10,7 @@ export abstract class BaseSQLiteAdapter {
   db: SqliteConnection | null;
   abstract role: string;
 
-  constructor(public path: string) {
+  constructor(public readonly path: string) {
     this.db = new SqliteConnection(path);
   }
 
@@ -79,12 +79,11 @@ export abstract class BaseSQLiteAdapter {
   }
 
   // add a single update to SQLite
-  async addUpdateToSQLite(updates: Uint8Array[]) {
+  async addUpdateToSQLite(db: SqliteConnection, updates: Uint8Array[]) {
     // batch write instead write per key stroke?
     try {
-      assert(this.db, 'db is not connected');
       const start = performance.now();
-      await this.db.insertUpdates(updates);
+      await db.insertUpdates(updates);
       logger.debug(
         `[SQLiteAdapter][${this.role}] addUpdateToSQLite`,
         'length:',

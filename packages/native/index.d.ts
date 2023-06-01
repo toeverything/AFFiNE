@@ -57,7 +57,7 @@ export class SqliteConnection {
   deleteBlob(key: string): Promise<void>;
   getBlobKeys(): Promise<Array<string>>;
   getUpdates(): Promise<Array<UpdateRow>>;
-  insertUpdates(updates: Array<Uint8Array>): Promise<Array<number>>;
+  insertUpdates(updates: Array<Uint8Array>): Promise<void>;
   close(): Promise<void>;
   get isClose(): boolean;
   static validate(path: string): Promise<boolean>;

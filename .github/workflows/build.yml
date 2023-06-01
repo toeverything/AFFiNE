@@ -118,8 +118,7 @@ jobs:
           COVERAGE: true
 
       - name: Export static resources
-        run: yarn export
-        working-directory: apps/web
+        run: yarn workspace @affine/web export
 
       - name: Upload static resources artifact
         uses: actions/upload-artifact@v3

@@ -1,3 +1,4 @@
+import type { SqliteConnection } from '@affine/native';
 import { debounce } from 'lodash-es';
 import * as Y from 'yjs';
 
@@ -31,10 +32,13 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   override async destroy() {
+    const { db } = this;
+    this.db = null;
     await super.destroy();
-    await this.flushUpdateQueue();
+    await this.flushUpdateQueue(db!);
     this.unsubscribers.forEach(unsub => unsub());
     this.yDoc.destroy();
+    await db!.close();
   }
 
   get workspaceId() {
@@ -43,12 +47,12 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   // do not update db immediately, instead, push to a queue
   // and flush the queue in a future time
-  addUpdateToUpdateQueue(update: Uint8Array) {
+  async addUpdateToUpdateQueue(db: SqliteConnection, update: Uint8Array) {
     this.updateQueue.push(update);
-    this.debouncedFlush();
+    await this.debouncedFlush(db);
   }
 
-  async flushUpdateQueue() {
+  async flushUpdateQueue(db: SqliteConnection) {
     logger.debug(
       'flushUpdateQueue',
       this.workspaceId,
@@ -57,9 +61,8 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     );
     const updates = [...this.updateQueue];
     this.updateQueue = [];
-    await this.connect();
-    this.addUpdateToSQLite(updates);
-    await super.destroy();
+    await db.connect();
+    await this.addUpdateToSQLite(db, updates);
   }
 
   // flush after 5s, but will not wait for more than 10s
@@ -96,6 +99,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       return;
     }
     this.firstConnected = true;
+    const { db } = this;
 
     const onUpstreamUpdate = (update: Uint8Array, origin: YOrigin) => {
       if (origin === 'renderer') {
@@ -107,7 +111,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     const onSelfUpdate = (update: Uint8Array, origin: YOrigin) => {
       // for self update from upstream, we need to push it to external DB
       if (origin === 'upstream') {
-        this.addUpdateToUpdateQueue(update);
+        this.addUpdateToUpdateQueue(db!, update);
       }
 
       if (origin === 'self') {
