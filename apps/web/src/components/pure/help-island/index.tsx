@@ -1,5 +1,5 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { config, getEnvironment } from '@affine/env';
+import { config, env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
@@ -15,7 +15,6 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-const env = getEnvironment();
 const ContactModal = lazy(() =>
   import('@affine/component/contact-modal').then(({ ContactModal }) => ({
     default: ContactModal,
