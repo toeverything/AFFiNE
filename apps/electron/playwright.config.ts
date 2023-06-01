@@ -12,8 +12,9 @@ import type { PlaywrightTestConfig } from '@playwright/test';
  */
 const config: PlaywrightTestConfig = {
   testDir: './tests',
-  fullyParallel: true,
+  fullyParallel: false,
   timeout: process.env.CI ? 50_000 : 30_000,
+  workers: 1,
   use: {
     viewport: { width: 1440, height: 800 },
   },

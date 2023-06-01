@@ -8,6 +8,7 @@ use sqlx::{
 };
 
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
+#[no_mangle]
 extern "C" fn fcntl64(fd: i32, cmd: i32, arg: i32) -> i32 {
   unsafe { libc::fcntl(fd, cmd, arg) }
 }
@@ -112,19 +113,17 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn insert_updates(&self, updates: Vec<Uint8Array>) -> napi::Result<Vec<i64>> {
+  pub async fn insert_updates(&self, updates: Vec<Uint8Array>) -> napi::Result<()> {
     let mut transaction = self.pool.begin().await.map_err(anyhow::Error::from)?;
-    let mut update_ids: Vec<i64> = Vec::with_capacity(updates.len());
     for update in updates.into_iter() {
       let update = update.as_ref();
-      let (update_id,): (i64,) = sqlx::query_as("INSERT INTO updates (data) VALUES (?)")
+      sqlx::query("INSERT INTO updates (data) VALUES (?)")
         .bind(update)
-        .fetch_one(&mut *transaction)
+        .execute(&mut *transaction)
         .await
         .map_err(anyhow::Error::from)?;
-      update_ids.push(update_id);
     }
-    Ok(update_ids)
+    Ok(())
   }
 
   #[napi]

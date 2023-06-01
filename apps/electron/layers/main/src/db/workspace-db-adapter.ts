@@ -1,3 +1,4 @@
+import type { SqliteConnection } from '@affine/native';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
@@ -38,13 +39,13 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     if (!this.firstConnected) {
       this.yDoc.on('update', async (update: Uint8Array, origin: YOrigin) => {
         if (origin === 'renderer') {
-          await this.addUpdateToSQLite([update]);
+          await this.addUpdateToSQLite(db, [update]);
         } else if (origin === 'external') {
           dbSubjects.externalUpdate.next({
             workspaceId: this.workspaceId,
             update,
           });
-          await this.addUpdateToSQLite([update]);
+          await this.addUpdateToSQLite(db, [update]);
           logger.debug('external update', this.workspaceId);
         }
       });
@@ -87,8 +88,8 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     this.update$.next();
   }
 
-  override async addUpdateToSQLite(data: Uint8Array[]) {
-    super.addUpdateToSQLite(data);
+  override async addUpdateToSQLite(db: SqliteConnection, data: Uint8Array[]) {
+    super.addUpdateToSQLite(db, data);
     this.update$.next();
   }
 }
