@@ -7,7 +7,7 @@ export interface WatchOptions {
   recursive?: boolean;
 }
 /** Watcher kind enumeration */
-export enum WatcherKind {
+export const enum WatcherKind {
   /** inotify backend (linux) */
   Inotify = 'Inotify',
   /** FS-Event backend (mac) */

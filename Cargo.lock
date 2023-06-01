@@ -10,7 +10,6 @@ dependencies = [
  "anyhow",
  "chrono",
  "dotenv",
- "libc",
  "napi",
  "napi-build",
  "napi-derive",
