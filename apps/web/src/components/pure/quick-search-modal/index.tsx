@@ -1,5 +1,5 @@
 import { Modal, ModalWrapper } from '@affine/component';
-import { getEnvironment } from '@affine/env';
+import { env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';
@@ -27,7 +27,6 @@ import {
 } from './style';
 
 const isMac = () => {
-  const env = getEnvironment();
   return env.isBrowser && env.isMacOs;
 };
 

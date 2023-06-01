@@ -1,4 +1,4 @@
-import { getEnvironment } from '@affine/env/config';
+import { env } from '@affine/env/config';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SearchIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
@@ -13,8 +13,7 @@ interface QuickSearchInputProps extends React.HTMLAttributes<HTMLDivElement> {
 // Although it is called an input, it is actually a button.
 export function QuickSearchInput({ onClick, ...props }: QuickSearchInputProps) {
   const t = useAFFiNEI18N();
-  const environment = getEnvironment();
-  const isMac = environment.isBrowser && environment.isMacOs;
+  const isMac = env.isBrowser && env.isMacOs;
 
   return (
     <div

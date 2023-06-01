@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { getEnvironment } from '@affine/env';
+import { env } from '@affine/env';
 import { assertExists } from '@blocksuite/global/utils';
 import { Slot } from '@blocksuite/store';
 import { initializeApp } from 'firebase/app';
@@ -165,7 +165,6 @@ export function createAffineAuth(prefix = '/') {
       method: SignMethod
     ): Promise<LoginResponse | null> => {
       const auth = getAuth();
-      const environment = getEnvironment();
       if (!auth) {
         throw new Error('Failed to initialize firebase');
       }
@@ -189,7 +188,7 @@ export function createAffineAuth(prefix = '/') {
       }
       try {
         let idToken: string | undefined;
-        if (environment.isDesktop) {
+        if (env.isDesktop) {
           idToken = await signInWithElectron(auth);
         } else {
           const response = await signInWithPopup(auth, provider);
