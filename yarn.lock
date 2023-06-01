@@ -99,6 +99,7 @@ __metadata:
     "@toeverything/hooks": "workspace:*"
     "@toeverything/theme": ^0.6.1
     "@types/react": ^18.2.6
+    "@types/react-datepicker": ^4.11.2
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.2.4
     "@vanilla-extract/css": ^1.11.0
@@ -9747,6 +9748,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-datepicker@npm:^4.11.2":
+  version: 4.11.2
+  resolution: "@types/react-datepicker@npm:4.11.2"
+  dependencies:
+    "@popperjs/core": ^2.9.2
+    "@types/react": "*"
+    date-fns: ^2.0.1
+    react-popper: ^2.2.5
+  checksum: 592cff1604c74a336dcf5bb72db3f9f47de50bcab4e3d95684b21b4cf6b22e7e7e6351758e866e734c209aa41d21601f04322e1b03920a9473152e4db08bc170
+  languageName: node
+  linkType: hard
+
 "@types/react-dnd@npm:^3.0.2":
   version: 3.0.2
   resolution: "@types/react-dnd@npm:3.0.2"
@@ -13386,7 +13399,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"date-fns@npm:^2.24.0, date-fns@npm:^2.29.3":
+"date-fns@npm:^2.0.1, date-fns@npm:^2.24.0, date-fns@npm:^2.29.3":
   version: 2.30.0
   resolution: "date-fns@npm:2.30.0"
   dependencies:
@@ -23671,7 +23684,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-popper@npm:^2.3.0":
+"react-popper@npm:^2.2.5, react-popper@npm:^2.3.0":
   version: 2.3.0
   resolution: "react-popper@npm:2.3.0"
   dependencies:
