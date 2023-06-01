@@ -9,6 +9,7 @@ import { PageList } from '../components/page-list/all-page';
 import { NewPageButton } from '../components/page-list/components/new-page-buttton';
 import type { OperationCellProps } from '../components/page-list/operation-cell';
 import { OperationCell } from '../components/page-list/operation-cell';
+import Empty from '../ui/empty/empty';
 import { toast } from '../ui/toast';
 
 export default {
@@ -126,6 +127,19 @@ AffineAllPageList.args = {
       removeToTrash: () => toast('Remove to trash'),
     },
   ],
+};
+
+export const AffineEmptyAllPageList: StoryFn<typeof PageList> = ({
+  ...props
+}) => <PageList {...props} />;
+
+AffineEmptyAllPageList.args = {
+  isPublicWorkspace: false,
+  onCreateNewPage: () => toast('Create new page'),
+  onCreateNewEdgeless: () => toast('Create new edgeless'),
+  onImportFile: () => toast('Import file'),
+  list: [],
+  fallback: <Empty description="empty description" />,
 };
 
 export const AffinePublicPageList: StoryFn<typeof PageList> = ({
