@@ -29,11 +29,21 @@ export const TitleCell = React.forwardRef<HTMLTableCellElement, TitleCellProps>(
           <StyledTitleLink>
             {icon}
             <StyledTitleContentWrapper>
-              <Content ellipsis={true} maxWidth="100%" color="inherit">
+              <Content
+                ellipsis={true}
+                maxWidth="100%"
+                color="inherit"
+                fontSize="var(--affine-font-sm)"
+                weight="600"
+                lineHeight="18px"
+              >
                 {text}
               </Content>
               {desc && (
-                <StyledTitlePreview ellipsis={true} color="inherit">
+                <StyledTitlePreview
+                  ellipsis={true}
+                  color="var(--affine-text-secondary-color)"
+                >
                   {desc}
                 </StyledTitlePreview>
               )}
