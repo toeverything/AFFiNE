@@ -5,5 +5,5 @@
   "exports": {
     "./*.md": "./src/*.md"
   },
-  "version": "0.7.0-canary.6"
+  "version": "0.7.0-canary.7"
 }
