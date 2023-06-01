@@ -52,7 +52,7 @@ export class FsWatcher {
 export class SqliteConnection {
   constructor(path: string);
   connect(): Promise<void>;
-  addBlob(key: string, blob: Uint8Array): Promise<number>;
+  addBlob(key: string, blob: Uint8Array): Promise<void>;
   getBlob(key: string): Promise<BlobRow | null>;
   deleteBlob(key: string): Promise<void>;
   getBlobKeys(): Promise<Array<string>>;

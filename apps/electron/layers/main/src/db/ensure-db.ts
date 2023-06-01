@@ -73,7 +73,7 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
           return new Observable<SecondaryWorkspaceSQLiteDB>(observer => {
             const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
             secondaryDB
-              .connect()
+              .connectIfNeeded()
               .then(() => secondaryDB.pull())
               .then(() => {
                 observer.next(secondaryDB);

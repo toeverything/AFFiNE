@@ -14,10 +14,9 @@ export abstract class BaseSQLiteAdapter {
     this.db = new SqliteConnection(path);
   }
 
-  async connect() {
+  async connectIfNeeded() {
     if (!this.db) {
       this.db = new SqliteConnection(this.path);
-    } else if (this.db.isClose) {
       await this.db.connect();
     }
     return this.db;
@@ -71,6 +70,7 @@ export abstract class BaseSQLiteAdapter {
   async getUpdates() {
     try {
       assert(this.db, 'db is not connected');
+      await this.db.connect();
       return await this.db.getUpdates();
     } catch (error) {
       logger.error('getUpdates', error);
@@ -83,6 +83,7 @@ export abstract class BaseSQLiteAdapter {
     // batch write instead write per key stroke?
     try {
       const start = performance.now();
+      await db.connect();
       await db.insertUpdates(updates);
       logger.debug(
         `[SQLiteAdapter][${this.role}] addUpdateToSQLite`,

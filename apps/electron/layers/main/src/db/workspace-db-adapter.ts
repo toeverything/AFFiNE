@@ -34,7 +34,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   };
 
   async init() {
-    const db = await super.connect();
+    const db = await super.connectIfNeeded();
 
     if (!this.firstConnected) {
       this.yDoc.on('update', async (update: Uint8Array, origin: YOrigin) => {
