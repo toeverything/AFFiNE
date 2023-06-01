@@ -13,11 +13,11 @@
     "@affine/component": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/workspace": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230601062752-68dbf1a4-nightly",
-    "@blocksuite/editor": "0.0.0-20230601062752-68dbf1a4-nightly",
-    "@blocksuite/global": "0.0.0-20230601062752-68dbf1a4-nightly",
-    "@blocksuite/lit": "0.0.0-20230601062752-68dbf1a4-nightly",
-    "@blocksuite/store": "0.0.0-20230601062752-68dbf1a4-nightly"
+    "@blocksuite/blocks": "0.0.0-20230601101714-0d24ba91-nightly",
+    "@blocksuite/editor": "0.0.0-20230601101714-0d24ba91-nightly",
+    "@blocksuite/global": "0.0.0-20230601101714-0d24ba91-nightly",
+    "@blocksuite/lit": "0.0.0-20230601101714-0d24ba91-nightly",
+    "@blocksuite/store": "0.0.0-20230601101714-0d24ba91-nightly"
   },
   "devDependencies": {
     "jotai": "^2.1.0"
