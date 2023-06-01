@@ -3,6 +3,10 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'url';
 
 export const root = fileURLToPath(new URL('..', import.meta.url));
+export const pluginDir = fileURLToPath(
+  new URL('../../../plugins', import.meta.url)
+);
+
 export const NODE_MAJOR_VERSION = 18;
 
 // hard-coded for now:
@@ -35,6 +39,7 @@ export const config = () => {
       entryPoints: [
         resolve(root, './layers/main/src/index.ts'),
         resolve(root, './layers/main/src/workers/merge-update.worker.ts'),
+        resolve(pluginDir, './bookmark-block/src/server.ts'),
       ],
       outdir: resolve(root, './dist/layers/main'),
       bundle: true,
@@ -48,6 +53,7 @@ export const config = () => {
       },
       assetNames: '[name]',
       treeShaking: true,
+      tsconfig: resolve(root, 'tsconfig.json'),
     },
     preload: {
       entryPoints: [resolve(root, './layers/preload/src/index.ts')],
@@ -57,6 +63,7 @@ export const config = () => {
       platform: 'node',
       external: ['electron'],
       define: define,
+      tsconfig: resolve(root, 'tsconfig.json'),
     },
   };
 };

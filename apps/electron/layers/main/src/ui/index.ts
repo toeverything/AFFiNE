@@ -1,4 +1,5 @@
-import handlers from '@affine/bookmark-block/server';
+import { join } from 'node:path';
+
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
@@ -40,5 +41,5 @@ export const uiHandlers = {
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
   },
-  ...handlers,
+  ...require(join(__dirname, './plugins/bookmark-block/src/server.js')),
 } satisfies NamespaceHandlers;
