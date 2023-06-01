@@ -48,6 +48,7 @@
     "lit": "^2.7.4",
     "lottie-web": "^5.12.0",
     "react": "18.3.0-canary-16d053d59-20230506",
+    "react-datepicker": "^4.12.0",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "react-error-boundary": "^4.0.9",
     "react-is": "^18.2.0",
