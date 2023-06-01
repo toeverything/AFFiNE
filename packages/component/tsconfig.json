@@ -5,7 +5,8 @@
     "./src/**/*.tsx",
     "./src/**/*.json",
     "../workspace/src",
-    "../../apps/electron/layers/**/src"
+    "../../apps/electron/layers/**/src",
+    "../../plugins"
   ],
   "compilerOptions": {
     "composite": true,
