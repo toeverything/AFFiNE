@@ -6,6 +6,12 @@ import type { NamespaceHandlers } from '../type';
 import { isMacOS } from '../utils';
 import { getGoogleOauthCode } from './google-auth';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const handlers = require(join(
+  __dirname,
+  './plugins/bookmark-block/src/server.js'
+)) as NamespaceHandlers;
+
 export const uiHandlers = {
   handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
     nativeTheme.themeSource = theme;
@@ -41,5 +47,5 @@ export const uiHandlers = {
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
   },
-  ...require(join(__dirname, './plugins/bookmark-block/src/server.js')),
+  ...handlers,
 } satisfies NamespaceHandlers;
