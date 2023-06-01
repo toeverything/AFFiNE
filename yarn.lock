@@ -35,6 +35,8 @@ __metadata:
   resolution: "@affine/bookmark-block@workspace:plugins/bookmark-block"
   dependencies:
     "@toeverything/plugin-infra": "workspace:*"
+    cheerio: ^1.0.0-rc.12
+    got: ^13.0.0
     react: 18.3.0-canary-16d053d59-20230506
     react-dom: 18.3.0-canary-16d053d59-20230506
   peerDependencies:
