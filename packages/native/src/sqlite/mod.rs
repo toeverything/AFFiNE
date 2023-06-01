@@ -31,7 +31,6 @@ pub struct SqliteConnection {
 impl SqliteConnection {
   #[napi(constructor)]
   pub fn new(path: String) -> napi::Result<Self> {
-    println!("{}", path);
     let sqlite_options = SqliteConnectOptions::new()
       .filename(&path)
       .foreign_keys(false)
@@ -58,17 +57,17 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn add_blob(&self, key: String, blob: Uint8Array) -> napi::Result<i64> {
+  pub async fn add_blob(&self, key: String, blob: Uint8Array) -> napi::Result<()> {
     let blob = blob.as_ref();
-    let (blob_id,): (i64,) = sqlx::query_as(
+    sqlx::query(
       "INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?",
     )
     .bind(key)
     .bind(blob)
-    .fetch_one(&self.pool)
+    .execute(&self.pool)
     .await
     .map_err(anyhow::Error::from)?;
-    Ok(blob_id)
+    Ok(())
   }
 
   #[napi]

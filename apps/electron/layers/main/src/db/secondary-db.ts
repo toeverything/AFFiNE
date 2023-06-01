@@ -80,7 +80,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   > {
     try {
       if (this.runCounter === 0) {
-        await this.connect();
+        await this.connectIfNeeded();
       }
       this.runCounter++;
       return await fn();
