@@ -108,6 +108,7 @@ export const PageList = ({
   onCreateNewPage,
   onCreateNewEdgeless,
   onImportFile,
+  fallback,
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
@@ -152,6 +153,7 @@ export const PageList = ({
           data={sorter.data}
         />
       </Table>
+      {sorter.data.length === 0 && fallback ? fallback : null}
     </StyledTableContainer>
   );
 };
@@ -172,7 +174,8 @@ const TrashListHead = () => {
 
 export const PageListTrashView: React.FC<{
   list: TrashListData[];
-}> = ({ list }) => {
+  fallback?: React.ReactNode;
+}> = ({ list, fallback }) => {
   const t = useAFFiNEI18N();
 
   const theme = useTheme();
@@ -237,6 +240,7 @@ export const PageListTrashView: React.FC<{
         <TrashListHead />
         <TableBody>{ListItems}</TableBody>
       </Table>
+      {list.length === 0 && fallback ? fallback : null}
     </StyledTableContainer>
   );
 };

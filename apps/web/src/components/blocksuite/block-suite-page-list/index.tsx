@@ -118,9 +118,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         }),
     [pageMetas, filterMode, isPreferredEdgeless, listType, view]
   );
-  if (list.length === 0) {
-    return <PageListEmpty listType={listType} />;
-  }
 
   if (listType === 'trash') {
     const pageList: TrashListData[] = list.map(pageMeta => {
@@ -153,7 +150,12 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         },
       };
     });
-    return <PageListTrashView list={pageList} />;
+    return (
+      <PageListTrashView
+        list={pageList}
+        fallback={<PageListEmpty listType={listType} />}
+      />
+    );
   }
 
   const pageList: ListData[] = list.map(pageMeta => {
@@ -205,6 +207,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       onImportFile={importFile}
       isPublicWorkspace={isPublic}
       list={pageList}
+      fallback={<PageListEmpty listType={listType} />}
     />
   );
 };
