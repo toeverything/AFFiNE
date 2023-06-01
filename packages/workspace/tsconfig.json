@@ -5,7 +5,7 @@
     "noEmit": false,
     "outDir": "lib"
   },
-  "include": ["./src", "./src/affine/api", "../../apps/electron/layers"],
+  "include": ["./src", "./src/affine/api"],
   "exclude": ["lib"],
   "references": [
     { "path": "../../tests/fixtures" },
@@ -13,6 +13,7 @@
     { "path": "../env" },
     { "path": "../debug" },
     { "path": "../hooks" },
-    { "path": "../component" }
+    { "path": "../component/tsconfig.workspace.json" },
+    { "path": "../../apps/electron" }
   ]
 }

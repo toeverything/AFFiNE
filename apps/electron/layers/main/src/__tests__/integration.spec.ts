@@ -6,6 +6,8 @@ import { v4 } from 'uuid';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import * as Y from 'yjs';
 
+import type { MainIPCHandlerMap } from '../exposed';
+
 const registeredHandlers = new Map<
   string,
   ((...args: any[]) => Promise<any>)[]

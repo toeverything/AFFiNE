@@ -1,1 +1,4 @@
 pnpm-lock.yaml
+target
+lib
+test-results
