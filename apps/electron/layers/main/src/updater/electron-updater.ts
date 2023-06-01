@@ -3,7 +3,7 @@ import type { AppUpdater } from 'electron-updater';
 import { z } from 'zod';
 
 import { logger } from '../logger';
-import { isMacOS } from '../utils';
+import { isMac } from '../utils';
 import { updaterSubjects } from './event';
 
 export const ReleaseTypeSchema = z.enum([
@@ -50,7 +50,7 @@ export const registerUpdater = async () => {
   }
 
   // TODO: support auto update on windows and linux
-  const allowAutoUpdate = isMacOS();
+  const allowAutoUpdate = isMac;
 
   _autoUpdater.autoDownload = false;
   _autoUpdater.allowPrerelease = buildType !== 'stable';

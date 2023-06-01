@@ -4,7 +4,7 @@ import { join } from 'path';
 
 import { getExposedMeta } from './exposed';
 import { logger } from './logger';
-import { isMacOS, isWindows } from './utils';
+import { isMac, isWindows } from './utils';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
@@ -21,9 +21,9 @@ async function createWindow() {
   const exposedMeta = getExposedMeta();
 
   const browserWindow = new BrowserWindow({
-    titleBarStyle: isMacOS()
+    titleBarStyle: isMac
       ? 'hiddenInset'
-      : isWindows()
+      : isWindows
       ? 'hidden'
       : 'default',
     trafficLightPosition: { x: 24, y: 18 },

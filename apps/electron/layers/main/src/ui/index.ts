@@ -1,7 +1,7 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
-import { isMacOS } from '../utils';
+import { isMac } from '../utils';
 import { getMetaData } from './get-meta-data';
 import { getGoogleOauthCode } from './google-auth';
 
@@ -10,7 +10,7 @@ export const uiHandlers = {
     nativeTheme.themeSource = theme;
   },
   handleSidebarVisibilityChange: async (_, visible: boolean) => {
-    if (isMacOS()) {
+    if (isMac) {
       const windows = BrowserWindow.getAllWindows();
       windows.forEach(w => {
         // hide window buttons when sidebar is not visible

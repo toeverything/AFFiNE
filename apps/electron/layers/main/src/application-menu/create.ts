@@ -2,15 +2,13 @@ import { app, Menu } from 'electron';
 
 import { revealLogFile } from '../logger';
 import { checkForUpdatesAndNotify } from '../updater';
-import { isMacOS } from '../utils';
+import { isMac } from '../utils';
 import { applicationMenuSubjects } from './subject';
 
 // Unique id for menuitems
 const MENUITEM_NEW_PAGE = 'affine:new-page';
 
 export function createApplicationMenu() {
-  const isMac = isMacOS();
-
   // Electron menu cannot be modified
   // You have to copy the complete default menu template event if you want to add a single custom item
   // See https://www.electronjs.org/docs/latest/api/menu#examples
