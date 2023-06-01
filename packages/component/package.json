@@ -54,12 +54,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/editor": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/global": "0.0.0-20230531080915-ca9c55a2-nightly",
+    "@blocksuite/blocks": "0.0.0-20230601101714-0d24ba91-nightly",
+    "@blocksuite/editor": "0.0.0-20230601101714-0d24ba91-nightly",
+    "@blocksuite/global": "0.0.0-20230601101714-0d24ba91-nightly",
     "@blocksuite/icons": "^2.1.19",
-    "@blocksuite/lit": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/store": "0.0.0-20230531080915-ca9c55a2-nightly",
+    "@blocksuite/lit": "0.0.0-20230601101714-0d24ba91-nightly",
+    "@blocksuite/store": "0.0.0-20230601101714-0d24ba91-nightly",
     "@storybook/addon-actions": "^7.0.18",
     "@storybook/addon-coverage": "^0.0.8",
     "@storybook/addon-essentials": "^7.0.18",
@@ -88,5 +88,5 @@
     "wait-on": "^7.0.1",
     "yjs": "^13.6.1"
   },
-  "version": "0.7.0-canary.5"
+  "version": "0.7.0-canary.7"
 }

@@ -1,6 +1,7 @@
+import { useTheme } from 'next-themes';
 import type { CSSProperties } from 'react';
 
-import { EmptySvg } from './empty-svg';
+import { EmptyDarkSvg, EmptyLightSvg } from './empty-svg';
 import { StyledEmptyContainer } from './style';
 export type EmptyContentProps = {
   containerStyle?: CSSProperties;
@@ -13,10 +14,12 @@ export const Empty = ({
   description,
   descriptionStyle,
 }: EmptyContentProps) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   return (
     <StyledEmptyContainer style={containerStyle}>
-      <EmptySvg />
-      <p style={descriptionStyle}>{description}</p>
+      {isDark ? <EmptyDarkSvg /> : <EmptyLightSvg />}
+      <p style={{ marginTop: '30px', ...descriptionStyle }}>{description}</p>
     </StyledEmptyContainer>
   );
 };
