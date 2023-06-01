@@ -25,6 +25,9 @@
     {
       "path": "../../packages/env"
     },
+    {
+      "path": "../../plugins/bookmark-block"
+    },
     { "path": "../../tests/kit" }
   ],
   "ts-node": {
