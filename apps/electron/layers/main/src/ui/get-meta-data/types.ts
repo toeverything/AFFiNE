@@ -1,6 +1,6 @@
 import type { Element } from 'cheerio';
 
-export interface MetaData {
+export type MetaData = {
   title?: string;
   description?: string;
   icon?: string;
@@ -12,29 +12,32 @@ export interface MetaData {
   provider?: string;
 
   [x: string]: string | string[] | undefined;
-}
+};
 
 export type MetadataRule = [string, (el: Element) => string | null];
 
-export interface Context {
+export type Context = {
   url: string;
-  options: Options;
-}
+} & GetMetaDataOptions;
 
-export interface RuleSet {
+export type RuleSet = {
   rules: MetadataRule[];
   defaultValue?: (context: Context) => string | string[];
   scorer?: (el: Element, score: any) => any;
   processor?: (input: any, context: Context) => any;
-}
+};
 
-export interface Options {
-  maxRedirects?: number;
-  ua?: string;
-  lang?: string;
-  timeout?: number;
-  forceImageHttps?: boolean;
-  html?: string;
-  url?: string;
+export type GetMetaDataOptions = {
   customRules?: Record<string, RuleSet>;
-}
+  forceImageHttps?: boolean;
+};
+
+export type GetHTMLOptions = {
+  timeout?: number;
+  shouldReGetHTML?: (currentHTML: string) => boolean | Promise<boolean>;
+};
+
+export type Options = {
+  shouldReGetHTML?: (metaData: MetaData) => boolean | Promise<boolean>;
+} & GetMetaDataOptions &
+  Omit<GetHTMLOptions, 'shouldReGetHTML'>;

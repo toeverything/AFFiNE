@@ -591,7 +591,7 @@ export const metaDataRules: Record<string, RuleSet> = {
       ],
     ],
     processor: (imageUrl: any, context) =>
-      context.options.forceImageHttps === true
+      context.forceImageHttps === true
         ? makeUrlSecure(makeUrlAbsolute(context.url, imageUrl))
         : makeUrlAbsolute(context.url, imageUrl),
   },
@@ -625,7 +625,7 @@ export const metaDataRules: Record<string, RuleSet> = {
     },
     defaultValue: context => makeUrlAbsolute(context.url, '/favicon.ico'),
     processor: (iconUrl, context) =>
-      context.options.forceImageHttps === true
+      context.forceImageHttps === true
         ? makeUrlSecure(makeUrlAbsolute(context.url, iconUrl))
         : makeUrlAbsolute(context.url, iconUrl),
   },
@@ -654,7 +654,7 @@ export const metaDataRules: Record<string, RuleSet> = {
       ['meta[name="og:video"][content]', element => element.attribs['content']],
     ],
     processor: (imageUrl: any, context) =>
-      context.options.forceImageHttps === true
+      context.forceImageHttps === true
         ? makeUrlSecure(makeUrlAbsolute(context.url, imageUrl))
         : makeUrlAbsolute(context.url, imageUrl),
   },
@@ -683,7 +683,7 @@ export const metaDataRules: Record<string, RuleSet> = {
       ['meta[name="og:audio"][content]', element => element.attribs['content']],
     ],
     processor: (imageUrl: any, context) =>
-      context.options.forceImageHttps === true
+      context.forceImageHttps === true
         ? makeUrlSecure(makeUrlAbsolute(context.url, imageUrl))
         : makeUrlAbsolute(context.url, imageUrl),
   },
