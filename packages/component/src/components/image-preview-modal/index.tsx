@@ -1,26 +1,39 @@
 /// <reference types="react/experimental" />
 import '@blocksuite/blocks';
 
+import { Button } from '@affine/component';
 import type { EmbedBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
+import {
+  ArrowLeftSmallIcon,
+  ArrowRightSmallIcon,
+  CopyIcon,
+  DeleteIcon,
+  DownloadIcon,
+  MinusIcon,
+  PlusIcon,
+  ViewBarIcon,
+} from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import useSWR from 'swr';
 
 import {
   buttonStyle,
-  deleteButtonStyle,
   groupStyle,
+  imageNavigationControlStyle,
+  imagePreviewActionBarStyle,
+  imagePreviewControlStyle,
   imagePreviewModalCaptionStyle,
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
   imagePreviewModalGoStyle,
   imagePreviewModalImageStyle,
   imagePreviewModalStyle,
-  imagePreviewTitleBarStyle,
   scaleIndicatorStyle,
 } from './index.css';
 import { previewBlockIdAtom } from './index.jotai';
@@ -37,7 +50,8 @@ const ImagePreviewModalImpl = (
   }
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
-  const [bIsActionBarVisble, setBIsActionBarVisible] = useState(false);
+
+  // const [bIsActionBarVisble, setBIsActionBarVisible] = useState(false);
   const [caption, setCaption] = useState(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
@@ -120,95 +134,151 @@ const ImagePreviewModalImpl = (
   };
   return (
     <div data-testid="image-preview-modal" className={imagePreviewModalStyle}>
-      <button
-        onClick={() => {
-          props.onClose();
-        }}
-        className={imagePreviewModalCloseButtonStyle}
-      >
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+      <div className={imageNavigationControlStyle}>
+        <span
+          className={imagePreviewModalGoStyle}
+          style={{
+            left: 0,
+          }}
+          onClick={() => previousImageHandler(blockId)}
         >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M0.286086 0.285964C0.530163 0.0418858 0.925891 0.0418858 1.16997 0.285964L5.00013 4.11613L8.83029 0.285964C9.07437 0.0418858 9.4701 0.0418858 9.71418 0.285964C9.95825 0.530041 9.95825 0.925769 9.71418 1.16985L5.88401 5.00001L9.71418 8.83017C9.95825 9.07425 9.95825 9.46998 9.71418 9.71405C9.4701 9.95813 9.07437 9.95813 8.83029 9.71405L5.00013 5.88389L1.16997 9.71405C0.925891 9.95813 0.530163 9.95813 0.286086 9.71405C0.0420079 9.46998 0.0420079 9.07425 0.286086 8.83017L4.11625 5.00001L0.286086 1.16985C0.0420079 0.925769 0.0420079 0.530041 0.286086 0.285964Z"
-            fill="#77757D"
-          />
-        </svg>
-      </button>
-      <span
-        className={imagePreviewModalGoStyle}
-        style={{
-          left: 0,
-        }}
-        onClick={() => previousImageHandler(blockId)}
-      >
-        ❮
-      </span>
+          ❮
+        </span>
+        <span
+          className={imagePreviewModalGoStyle}
+          style={{
+            right: 0,
+          }}
+          onClick={() => nextImageHandler(blockId)}
+        >
+          ❯
+        </span>
+      </div>
       <div className={imagePreviewModalContainerStyle}>
-        <div>
-          <img
-            data-blob-id={props.blockId}
-            alt={caption}
-            className={imagePreviewModalImageStyle}
-            onMouseOver={() => setBIsActionBarVisible(true)}
-            onMouseOut={() => {
-              setTimeout(() => {
-                setBIsActionBarVisible(false);
-              }, 3000);
-            }}
-            ref={imageRef}
-            src={url}
-          />
-          <p className={imagePreviewModalCaptionStyle}>{caption}</p>
-        </div>
-        <div>
-          {bIsActionBarVisble ? (
-            <div className={imagePreviewTitleBarStyle}>
-              <div className={groupStyle}>
-                <button
-                  className={buttonStyle}
-                  onClick={() => previousImageHandler(blockId)}
-                >
-                  Previous Image
-                </button>
-                <button
-                  className={buttonStyle}
-                  onClick={() => nextImageHandler(blockId)}
-                >
-                  Next Image
-                </button>
-                <div className={groupStyle}>
-                  <button className={buttonStyle}>reset size</button>
-                  <button className={buttonStyle}>zoom out</button>
-                  <span className={scaleIndicatorStyle}>100%</span>
-                  <button className={buttonStyle}>zoom in</button>
-                </div>
-                <div className={groupStyle}>
-                  <button className="button"> Download</button>
-                </div>
-                <div className={groupStyle}>
-                  <button className={deleteButtonStyle}>delete</button>
-                </div>
-              </div>
+        <TransformWrapper initialScale={0.1}>
+          <TransformComponent>
+            <img
+              data-blob-id={props.blockId}
+              alt={caption}
+              className={imagePreviewModalImageStyle}
+              ref={imageRef}
+              src={url}
+            />
+          </TransformComponent>
+        </TransformWrapper>
+        <p className={imagePreviewModalCaptionStyle}>{caption}</p>
+      </div>
+      <div className={imagePreviewControlStyle}>
+        <button
+          onClick={() => {
+            props.onClose();
+          }}
+          className={imagePreviewModalCloseButtonStyle}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M0.286086 0.285964C0.530163 0.0418858 0.925891 0.0418858 1.16997 0.285964L5.00013 4.11613L8.83029 0.285964C9.07437 0.0418858 9.4701 0.0418858 9.71418 0.285964C9.95825 0.530041 9.95825 0.925769 9.71418 1.16985L5.88401 5.00001L9.71418 8.83017C9.95825 9.07425 9.95825 9.46998 9.71418 9.71405C9.4701 9.95813 9.07437 9.95813 8.83029 9.71405L5.00013 5.88389L1.16997 9.71405C0.925891 9.95813 0.530163 9.95813 0.286086 9.71405C0.0420079 9.46998 0.0420079 9.07425 0.286086 8.83017L4.11625 5.00001L0.286086 1.16985C0.0420079 0.925769 0.0420079 0.530041 0.286086 0.285964Z"
+              fill="#77757D"
+            />
+          </svg>
+        </button>
+        <div className={imagePreviewActionBarStyle}>
+          <div className={groupStyle}>
+            <Button
+              icon={<ArrowLeftSmallIcon />}
+              noBorder={true}
+              className={buttonStyle}
+              onClick={() => previousImageHandler(blockId)}
+            />
+            <Button
+              icon={<ArrowRightSmallIcon />}
+              noBorder={true}
+              className={buttonStyle}
+              onClick={() => nextImageHandler(blockId)}
+            />
+            <div className={groupStyle}>
+              <Button
+                icon={<ViewBarIcon />}
+                noBorder={true}
+                className={buttonStyle}
+              />
+              <Button
+                icon={<MinusIcon />}
+                noBorder={true}
+                className={buttonStyle}
+              />
+              <span className={scaleIndicatorStyle}>100%</span>
+              <Button
+                icon={<PlusIcon />}
+                noBorder={true}
+                className={buttonStyle}
+              />
             </div>
-          ) : null}
+            <div className={groupStyle}>
+              <Button
+                icon={<DownloadIcon />}
+                noBorder={true}
+                className={buttonStyle}
+                onClick={() => {
+                  const imageUrl = url;
+                  const link = document.createElement('a');
+                  if (typeof imageUrl === 'string') {
+                    link.href = imageUrl;
+                  }
+                  link.download = 'image.jpg';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              />
+              <Button
+                icon={<CopyIcon />}
+                noBorder={true}
+                className={buttonStyle}
+                onClick={() => {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = imageRef.current.naturalWidth;
+                  canvas.height = imageRef.current.naturalHeight;
+                  const context = canvas.getContext('2d');
+                  context.drawImage(imageRef.current, 0, 0);
+                  canvas.toBlob(blob => {
+                    const dataUrl = URL.createObjectURL(blob);
+                    navigator.clipboard
+                      .write([new ClipboardItem({ 'image/png': blob })])
+                      .then(() => {
+                        console.log('Image copied to clipboard');
+                        URL.revokeObjectURL(dataUrl);
+                      })
+                      .catch(error => {
+                        console.error(
+                          'Error copying image to clipboard',
+                          error
+                        );
+                        URL.revokeObjectURL(dataUrl);
+                      });
+                  }, 'image/png');
+                }}
+              />
+            </div>
+            <div className={groupStyle}>
+              <Button
+                icon={<DeleteIcon />}
+                noBorder={true}
+                className={buttonStyle}
+                onClick={() => {}}
+              />
+            </div>
+          </div>
         </div>
       </div>
-      <span
-        className={imagePreviewModalGoStyle}
-        style={{
-          right: 0,
-        }}
-        onClick={() => nextImageHandler(blockId)}
-      >
-        ❯
-      </span>
     </div>
   );
 };
