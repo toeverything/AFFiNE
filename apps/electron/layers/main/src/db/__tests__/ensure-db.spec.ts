@@ -62,7 +62,7 @@ vi.doMock('../secondary-db', () => {
         constructorStub(...args);
       }
 
-      connect = () => Promise.resolve();
+      connectIfNeeded = () => Promise.resolve();
 
       pull = () => Promise.resolve();
 
