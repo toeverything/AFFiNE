@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
-const pluginDir = resolve(rootDir, 'plugins');
+const pluginOutputDir = resolve(rootDir, './apps/electron/dist/plugins');
 
 export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env.PLUGIN_DIR': JSON.stringify(pluginDir),
+    'process.env.PLUGIN_DIR': JSON.stringify(pluginOutputDir),
   },
   test: {
     setupFiles: [
