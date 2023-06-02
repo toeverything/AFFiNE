@@ -69,7 +69,7 @@ function spawnOrReloadElectron() {
 const common = config();
 
 async function watchPlugins() {
-  await import('../../../scripts/esbuild/dev-plugins.mjs');
+  await import('./plugins/dev-plugins.mjs');
 }
 
 async function watchPreload() {
