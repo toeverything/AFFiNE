@@ -7,10 +7,6 @@
     ".": "./src/index.ts",
     "./server": "./src/server.ts"
   },
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch"
-  },
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
     "cheerio": "^1.0.0-rc.12"
