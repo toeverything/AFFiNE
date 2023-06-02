@@ -26,7 +26,7 @@ type MyDatePickerProps = {
   onChange: (value: string) => void;
 };
 
-export const MyDatePicker = (props: MyDatePickerProps) => {
+export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
   const { value, onChange } = props;
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     value ? dayjs(value).toDate() : null
@@ -132,4 +132,4 @@ export const MyDatePicker = (props: MyDatePickerProps) => {
   );
 };
 
-export default MyDatePicker;
+export default AFFiNEDatePicker;
