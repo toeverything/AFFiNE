@@ -1,6 +1,9 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"],
+  "compilerOptions": {
+    "rootDir": "./src"
+  },
+  "include": ["**.ts", "**.tsx"],
   "references": [
     {
       "path": "./tsconfig.node.json"
