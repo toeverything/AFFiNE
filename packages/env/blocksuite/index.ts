@@ -2,8 +2,7 @@
 /// <reference path="../env.d.ts" />
 
 import { DebugLogger } from '@affine/debug';
-import markdownTemplate from '@affine/templates/AFFiNE-beta-0.5.4.md';
-import { ContentParser } from '@blocksuite/blocks/content-parser';
+import preloadingData from '@affine/templates/affine-0.6.0-preloading.json';
 import type { Page } from '@blocksuite/store';
 
 declare global {
@@ -11,17 +10,6 @@ declare global {
     lastImportedMarkdown: string;
   }
 }
-
-const markdown = markdownTemplate as unknown as string;
-
-const demoTitle = markdown
-  .split('\n')
-  .splice(0, 1)
-  .join('')
-  .replaceAll('#', '')
-  .trim();
-
-const demoText = markdown.split('\n').slice(1).join('\n');
 
 const logger = new DebugLogger('init-page');
 
@@ -51,13 +39,6 @@ export function _initEmptyPage(page: Page, title?: string): void {
 
 export function _initPageWithDemoMarkdown(page: Page): void {
   logger.debug('initPageWithDefaultMarkdown', page.id);
-  const pageBlockId = page.addBlock('affine:page', {
-    title: new page.Text(demoTitle),
-  });
-  page.addBlock('affine:surface', {}, pageBlockId);
-  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
-  page.addBlock('affine:paragraph', {}, frameId);
-  const contentParser = new ContentParser(page);
-  contentParser.importMarkdown(demoText, frameId);
-  page.workspace.setPageMeta(page.id, { title: demoTitle });
+  const workspace = page.workspace;
+  workspace.importSnapshot(preloadingData, 'space:Qmo9-1SGTB');
 }
