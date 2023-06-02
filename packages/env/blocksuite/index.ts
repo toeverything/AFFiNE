@@ -31,7 +31,7 @@ export function initPage(page: Page): void {
     page.workspace.setPageMeta(page.id, {
       init: false,
     });
-    _initPageWithDemoMarkdown(page);
+    _initPageWithPreloading(page);
   } else {
     _initEmptyPage(page);
   }
@@ -47,8 +47,8 @@ export function _initEmptyPage(page: Page, title?: string): void {
   page.addBlock('affine:paragraph', {}, frameId);
 }
 
-export function _initPageWithDemoMarkdown(page: Page): void {
-  logger.debug('initPageWithDefaultMarkdown', page.id);
+export function _initPageWithPreloading(page: Page): void {
+  logger.debug('initPageWithPreloading', page.id);
   const workspace = page.workspace;
   workspace.importSnapshot(preloadingData.data, 'space:Qmo9-1SGTB');
 }

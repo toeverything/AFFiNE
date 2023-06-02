@@ -16,9 +16,9 @@ const InitPagePage: NextPageWithLayout = () => {
   if (!router.isReady) {
     return <>loading...</>;
   }
-  let testType: 'empty' | 'importMarkdown' = 'empty';
-  if (router.query.type === 'importMarkdown') {
-    testType = 'importMarkdown';
+  let testType: 'empty' | 'preloading' = 'empty';
+  if (router.query.type === 'preloading') {
+    testType = 'preloading';
   } else if (router.query.type === 'empty') {
     testType = 'empty';
   }

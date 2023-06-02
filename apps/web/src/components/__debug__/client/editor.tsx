@@ -20,11 +20,11 @@ const page = blockSuiteWorkspace.createPage({ id: 'page0' });
 
 const Editor: React.FC<{
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
-  testType: 'empty' | 'importMarkdown';
+  testType: 'empty' | 'preloading';
 }> = ({ onInit, testType }) => {
   const onceRef = useRef(false);
   if (!onceRef.current) {
-    if (testType === 'importMarkdown') {
+    if (testType === 'preloading') {
       page.workspace.meta.setPageMeta(page.id, {
         init: true,
       });
