@@ -37,31 +37,34 @@ export const imagePreviewModalCloseButtonStyle = style({
 });
 
 export const imagePreviewModalGoStyle = style({
-  height: '50%',
   color: 'var(--affine-white)',
   position: 'absolute',
   fontSize: '60px',
   lineHeight: '60px',
   fontWeight: 'bold',
-  display: 'flex',
-  alignItems: 'center',
   opacity: '0.2',
   padding: '0 15px',
   cursor: 'pointer',
 });
 
+export const imageNavigationControlStyle = style({
+  display: 'flex',
+  height: '100%',
+  zIndex: 0,
+  justifyContent: 'space-between',
+  alignItems: 'center',
+});
+
 export const imagePreviewModalContainerStyle = style({
-  position: 'absolute',
-  top: '20%',
-  bottom: '20%',
-  minHeight: '120%',
   display: 'flex',
   flexDirection: 'column',
+  zIndex: 1,
 });
 
 export const imagePreviewModalImageStyle = style({
   background: 'transparent',
-  maxWidth: '686px',
+  height: '100%',
+  width: '100%',
   objectFit: 'contain',
   objectPosition: 'center',
   borderRadius: '4px',
@@ -78,44 +81,33 @@ export const imagePreviewModalActionsStyle = style({
   background: 'var(--affine-white)',
 });
 
-export const imagePreviewTitleBarStyle = style({
+export const imagePreviewActionBarStyle = style({
   position: 'fixed',
-  bottom: '10px',
+  bottom: '28px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   padding: '16px 0',
   backgroundColor: 'var(--affine-white)',
   borderRadius: '8px',
-  zIndex: baseTheme.zIndexModal + 1,
+  boxShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
 });
 
 export const groupStyle = style({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: '8px',
   backgroundColor: 'var(--affine-white)',
 });
 
 export const groupDividerStyle = style({
+  color: 'black',
   borderRight: '24px solid transparent',
 });
 
 export const buttonStyle = style({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '8px',
-  backgroundColor: 'transparent',
-  border: 'none',
-  color: 'black',
-  fontSize: '14px',
-  cursor: 'pointer',
-
-  ':hover': {
-    backgroundColor: '#e1e1e1',
-  },
+  paddingLeft: '10px',
+  paddingRight: '10px',
 });
 
 export const scaleIndicatorStyle = style({
@@ -124,4 +116,13 @@ export const scaleIndicatorStyle = style({
 
 export const deleteButtonStyle = style({
   color: 'red',
+});
+
+export const imagePreviewControlStyle = style({
+  position: 'absolute',
+  width: '100%',
+  height: '100%',
+  zIndex: baseTheme.zIndexModal + 1,
+  display: 'flex',
+  justifyContent: 'center',
 });
