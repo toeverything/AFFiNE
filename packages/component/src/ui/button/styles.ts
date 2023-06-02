@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import { absoluteCenter, displayInlineFlex, styled } from '../../styles';
+import { displayInlineFlex, styled } from '../../styles';
 import type { ButtonProps } from './interface';
 import { getButtonColors, getSize } from './utils';
 
@@ -46,25 +46,13 @@ export const StyledIconButton = styled('button', {
       WebkitAppRegion: 'no-drag',
       color: 'var(--affine-icon-color)',
       ...displayInlineFlex('center', 'center'),
-      position: 'relative',
       ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
       transition: 'background .15s',
-
-      // TODO: we need to add @emotion/babel-plugin
-      '::after': {
-        content: '""',
-        width,
-        height,
-        borderRadius,
-        transition: 'background .15s',
-        ...absoluteCenter({ horizontal: true, vertical: true }),
-      },
+      borderRadius,
 
       ':hover': {
         color: hoverColor ?? 'var(--affine-primary-color)',
-        '::after': {
-          background: hoverBackground || 'var(--affine-hover-color)',
-        },
+        background: hoverBackground || 'var(--affine-hover-color)',
         ...(hoverStyle ?? {}),
       },
     };

@@ -87,10 +87,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
           disablePortal={true}
           trigger="click"
         >
-          <IconButton
-            data-testid="page-list-operation-button"
-            style={{ position: 'initial' }}
-          >
+          <IconButton data-testid="page-list-operation-button">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
@@ -136,7 +133,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
     <FlexWrapper>
       <Tooltip content={t['Restore it']()} placement="top-start">
         <IconButton
-          style={{ marginRight: '12px', position: 'initial' }}
+          style={{ marginRight: '12px' }}
           onClick={() => {
             onRestorePage();
           }}
@@ -146,7 +143,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
       </Tooltip>
       <Tooltip content={t['Delete permanently']()} placement="top-start">
         <IconButton
-          style={{ position: 'initial' }}
           onClick={() => {
             setOpen(true);
           }}
