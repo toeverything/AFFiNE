@@ -40,5 +40,5 @@ export function _initEmptyPage(page: Page, title?: string): void {
 export function _initPageWithDemoMarkdown(page: Page): void {
   logger.debug('initPageWithDefaultMarkdown', page.id);
   const workspace = page.workspace;
-  workspace.importSnapshot(preloadingData, 'space:Qmo9-1SGTB');
+  workspace.importSnapshot(preloadingData.data, 'space:Qmo9-1SGTB');
 }
