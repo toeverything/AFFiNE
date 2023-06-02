@@ -47,7 +47,7 @@ export const dropdownWrapper = style({
 export const icon = style({
   borderRadius: '4px',
   selectors: {
-    '&:hover': {
+    [`${dropdownWrapper}:hover &`]: {
       background: 'var(--affine-hover-color)',
     },
   },
