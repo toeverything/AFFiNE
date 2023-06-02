@@ -7,12 +7,10 @@ import { logger } from '../logger';
  * A base class for SQLite DB adapter that provides basic methods around updates & blobs
  */
 export abstract class BaseSQLiteAdapter {
-  db: SqliteConnection | null;
+  db: SqliteConnection | null = null;
   abstract role: string;
 
-  constructor(public readonly path: string) {
-    this.db = new SqliteConnection(path);
-  }
+  constructor(public readonly path: string) {}
 
   async connectIfNeeded() {
     if (!this.db) {
@@ -69,8 +67,7 @@ export abstract class BaseSQLiteAdapter {
 
   async getUpdates() {
     try {
-      assert(this.db, 'db is not connected');
-      await this.db.connect();
+      assert(this.db && !this.db.isClose, 'db is not connected');
       return await this.db.getUpdates();
     } catch (error) {
       logger.error('getUpdates', error);

@@ -79,9 +79,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     (T extends (...args: any[]) => infer U ? Awaited<U> : unknown) | undefined
   > {
     try {
-      if (this.runCounter === 0) {
-        await this.connectIfNeeded();
-      }
+      await this.connectIfNeeded();
       this.runCounter++;
       return await fn();
     } catch (err) {
