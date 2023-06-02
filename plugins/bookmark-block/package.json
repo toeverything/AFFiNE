@@ -4,10 +4,16 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
   },
   "dependencies": {
-    "@toeverything/plugin-infra": "workspace:*"
+    "@toeverything/plugin-infra": "workspace:*",
+    "cheerio": "^1.0.0-rc.12"
   },
   "devDependencies": {
     "react": "18.3.0-canary-16d053d59-20230506",
