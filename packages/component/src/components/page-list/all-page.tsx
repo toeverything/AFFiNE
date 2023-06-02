@@ -7,6 +7,7 @@ import { type CSSProperties } from 'react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeadRow } from '../..';
 import { TableBodyRow } from '../../ui/table';
+import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
 import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import { TitleCell } from './components/title-cell';
@@ -116,7 +117,7 @@ export const PageList = ({
     key: DEFAULT_SORT_KEY,
     order: 'desc',
   });
-
+  const [hasScrollTop, ref] = useHasScrollTop();
   const isSmallDevices = useIsSmallDevices();
   if (isSmallDevices) {
     return (
@@ -139,8 +140,8 @@ export const PageList = ({
       : undefined;
 
   return (
-    <StyledTableContainer>
-      <Table style={{ maxHeight: '100%' }}>
+    <StyledTableContainer ref={ref}>
+      <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
         <AllPagesHead
           isPublicWorkspace={isPublicWorkspace}
           sorter={sorter}
@@ -180,6 +181,7 @@ export const PageListTrashView: React.FC<{
   const t = useAFFiNEI18N();
 
   const theme = useTheme();
+  const [hasScrollTop, ref] = useHasScrollTop();
   const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
   if (isSmallDevices) {
     const mobileList = list.map(({ pageId, icon, title, onClickPage }) => ({
@@ -236,8 +238,8 @@ export const PageListTrashView: React.FC<{
   );
 
   return (
-    <StyledTableContainer>
-      <Table>
+    <StyledTableContainer ref={ref}>
+      <Table showBorder={hasScrollTop}>
         <TrashListHead />
         <TableBody>{ListItems}</TableBody>
       </Table>

@@ -136,7 +136,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
     <FlexWrapper>
       <Tooltip content={t['Restore it']()} placement="top-start">
         <IconButton
-          style={{ marginRight: '12px' }}
+          style={{ marginRight: '12px', position: 'initial' }}
           onClick={() => {
             onRestorePage();
           }}
@@ -146,6 +146,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
       </Tooltip>
       <Tooltip content={t['Delete permanently']()} placement="top-start">
         <IconButton
+          style={{ position: 'initial' }}
           onClick={() => {
             setOpen(true);
           }}
