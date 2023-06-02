@@ -4,7 +4,7 @@
   "sideEffect": false,
   "exports": {
     "./*.md": "./src/*.md",
-    "./*.ts": "./src/*.ts"
+    "./*.json": "./src/*.json"
   },
   "version": "0.7.0-canary.7"
 }
