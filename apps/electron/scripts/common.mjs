@@ -2,7 +2,10 @@ import { resolve } from 'node:path';
 
 import { fileURLToPath } from 'url';
 
-export const root = fileURLToPath(new URL('..', import.meta.url));
+export const electronDir = fileURLToPath(new URL('..', import.meta.url));
+
+export const rootDir = resolve(electronDir, '..', '..');
+
 export const NODE_MAJOR_VERSION = 18;
 
 // hard-coded for now:
@@ -33,10 +36,13 @@ export const config = () => {
   return {
     main: {
       entryPoints: [
-        resolve(root, './layers/main/src/index.ts'),
-        resolve(root, './layers/main/src/workers/merge-update.worker.ts'),
+        resolve(electronDir, './layers/main/src/index.ts'),
+        resolve(
+          electronDir,
+          './layers/main/src/workers/merge-update.worker.ts'
+        ),
       ],
-      outdir: resolve(root, './dist/layers/main'),
+      outdir: resolve(electronDir, './dist/layers/main'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
@@ -50,8 +56,8 @@ export const config = () => {
       treeShaking: true,
     },
     preload: {
-      entryPoints: [resolve(root, './layers/preload/src/index.ts')],
-      outdir: resolve(root, './dist/layers/preload'),
+      entryPoints: [resolve(electronDir, './layers/preload/src/index.ts')],
+      outdir: resolve(electronDir, './dist/layers/preload'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',

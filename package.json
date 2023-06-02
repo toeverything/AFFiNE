@@ -18,6 +18,7 @@
     "dev:app": "yarn workspace @affine/electron dev:app",
     "build": "yarn workspace @affine/web build",
     "build:client": "yarn workspace @affine/client-app build:app",
+    "build:plugins": "yarn workspaces ",
     "build:storybook": "yarn workspace @affine/component build-storybook",
     "bump:nightly": "./scripts/bump-blocksuite.sh",
     "circular": "madge --circular --ts-config ./tsconfig.json ./apps/web/src/pages/**/*.tsx",

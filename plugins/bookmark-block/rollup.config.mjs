@@ -6,7 +6,7 @@ import typescript from '@rollup/plugin-typescript';
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default {
-  input: 'src/server.ts',
+  input: resolve(rootDir, 'src/server.ts'),
   output: {
     dir: resolve(
       rootDir,
@@ -24,6 +24,7 @@ export default {
   plugins: [
     typescript({
       outputToFilesystem: true,
+      tsconfig: resolve(rootDir, './tsconfig.json'),
     }),
   ],
 };
