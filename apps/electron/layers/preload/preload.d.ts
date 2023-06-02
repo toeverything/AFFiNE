@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/consistent-type-imports */
 
-interface Window {
-  apis: typeof import('./src/affine-apis').apis;
-  events: typeof import('./src/affine-apis').events;
+declare interface Window {
+  apis: import('./src/affine-apis').PreloadHandlers;
+  events: import('./src/affine-apis').MainIPCEventMap;
 }

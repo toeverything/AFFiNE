@@ -1,4 +1,4 @@
-import { getEnvironment } from '@affine/env';
+import { env } from '@affine/env';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -56,7 +56,6 @@ export function CurrentWorkspaceModals() {
     openOnboardingModalAtom
   );
 
-  const env = getEnvironment();
   const onCloseOnboardingModal = useCallback(() => {
     setOpenOnboardingModal(false);
   }, [setOpenOnboardingModal]);

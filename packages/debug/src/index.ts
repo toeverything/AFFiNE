@@ -1,8 +1,7 @@
-import { getEnvironment } from '@affine/env';
+import { env } from '@affine/env';
 import debug from 'debug';
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-const env = getEnvironment();
 
 const SESSION_KEY = 'affine:debug';
 const development = env.isDebug;

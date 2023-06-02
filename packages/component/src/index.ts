@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../../../apps/electron/layers/preload/preload.d.ts" />
+
 export * from './components/list-skeleton';
 export * from './styles';
 export * from './ui/breadcrumbs';

@@ -1,14 +1,11 @@
 import { Empty } from '@affine/component';
-import type {
-  ListData,
-  TrashListData,
-  View,
-} from '@affine/component/page-list';
+import type { ListData, TrashListData } from '@affine/component/page-list';
 import {
   filterByFilterList,
   PageList,
   PageListTrashView,
 } from '@affine/component/page-list';
+import type { View } from '@affine/component/page-list/filter/shared-types';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
@@ -118,9 +115,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         }),
     [pageMetas, filterMode, isPreferredEdgeless, listType, view]
   );
-  if (list.length === 0) {
-    return <PageListEmpty listType={listType} />;
-  }
 
   if (listType === 'trash') {
     const pageList: TrashListData[] = list.map(pageMeta => {
@@ -153,7 +147,12 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         },
       };
     });
-    return <PageListTrashView list={pageList} />;
+    return (
+      <PageListTrashView
+        list={pageList}
+        fallback={<PageListEmpty listType={listType} />}
+      />
+    );
   }
 
   const pageList: ListData[] = list.map(pageMeta => {
@@ -205,6 +204,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       onImportFile={importFile}
       isPublicWorkspace={isPublic}
       list={pageList}
+      fallback={<PageListEmpty listType={listType} />}
     />
   );
 };
