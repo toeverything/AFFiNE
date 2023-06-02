@@ -6,13 +6,13 @@ import {
   TableBody,
   TableCell,
   TableHead,
-  TableRow,
+  TableHeadRow,
 } from '../../..';
 import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import {
+  StyledTableBodyRow,
   StyledTableContainer,
-  StyledTableRow,
   StyledTitleLink,
 } from './styles';
 import type { ListData } from './type';
@@ -31,7 +31,7 @@ const MobileHead = ({
   const t = useAFFiNEI18N();
   return (
     <TableHead>
-      <TableRow>
+      <TableHeadRow>
         <TableCell proportion={0.8}>{t['Title']()}</TableCell>
         {!isPublicWorkspace && (
           <TableCell>
@@ -50,7 +50,7 @@ const MobileHead = ({
             </div>
           </TableCell>
         )}
-      </TableRow>
+      </TableHeadRow>
     </TableHead>
   );
 };
@@ -103,7 +103,7 @@ export const TrashListMobileView = ({
 
   const ListItems = list.map(({ pageId, title, icon, onClickPage }, index) => {
     return (
-      <StyledTableRow
+      <StyledTableBodyRow
         data-testid={`page-list-item-${pageId}`}
         key={`${pageId}-${index}`}
       >
@@ -115,7 +115,7 @@ export const TrashListMobileView = ({
             </Content>
           </StyledTitleLink>
         </TableCell>
-      </StyledTableRow>
+      </StyledTableBodyRow>
     );
   });
 

@@ -3,18 +3,19 @@ import { useDraggable } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 
-import { styled, TableBody, TableCell } from '../../..';
+import { styled } from '../../styles';
+import { TableBody, TableCell } from '../../ui/table';
 import { FavoriteTag } from './components/favorite-tag';
 import { TitleCell } from './components/title-cell';
 import { OperationCell } from './operation-cell';
-import { StyledTableRow } from './styles';
+import { StyledTableBodyRow } from './styles';
 import type { DateKey, DraggableTitleCellData, ListData } from './type';
 import { useDateGroup } from './use-date-group';
 import { formatDate, useIsSmallDevices } from './utils';
 
 export const GroupRow = ({ children }: { children: ReactNode }) => {
   return (
-    <StyledTableRow>
+    <StyledTableBodyRow>
       <TableCell
         style={{
           color: 'var(--affine-text-secondary-color)',
@@ -25,7 +26,7 @@ export const GroupRow = ({ children }: { children: ReactNode }) => {
       >
         {children}
       </TableCell>
-    </StyledTableRow>
+    </StyledTableBodyRow>
   );
 };
 
@@ -42,7 +43,7 @@ export const AllPagesBody = ({
   const isSmallDevices = useIsSmallDevices();
   const dataWithGroup = useDateGroup({ data, key: groupKey });
   return (
-    <TableBody>
+    <TableBody style={{ overflowY: 'auto', height: '100%' }}>
       {dataWithGroup.map(
         (
           {
@@ -71,7 +72,7 @@ export const AllPagesBody = ({
                   dataWithGroup[index - 1].groupName !== groupName) && (
                   <GroupRow>{groupName}</GroupRow>
                 )}
-              <StyledTableRow data-testid={`page-list-item-${pageId}`}>
+              <StyledTableBodyRow data-testid={`page-list-item-${pageId}`}>
                 <DraggableTitleCell
                   pageId={pageId}
                   draggableData={{
@@ -130,7 +131,7 @@ export const AllPagesBody = ({
                     />
                   </TableCell>
                 )}
-              </StyledTableRow>
+              </StyledTableBodyRow>
             </Fragment>
           );
         }

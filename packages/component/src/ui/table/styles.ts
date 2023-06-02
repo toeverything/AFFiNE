@@ -53,24 +53,29 @@ export const StyledTableHead = styled('thead')(() => {
   return {
     fontWeight: 500,
     color: 'var(--affine-text-secondary-color)',
-    tr: {
-      td: {
-        whiteSpace: 'nowrap',
-      },
-      ':hover': {
-        td: {
-          background: 'unset',
-        },
-      },
+  };
+});
+
+export const StyledTHeadRow = styled('tr')(() => {
+  return {
+    td: {
+      whiteSpace: 'nowrap',
+      // How to set tbody height with overflow scroll
+      // see https://stackoverflow.com/questions/23989463/how-to-set-tbody-height-with-overflow-scroll
+      position: 'sticky',
+      top: 0,
+      background: 'var(--affine-background-primary-color)',
     },
   };
 });
 
-export const StyledTableRow = styled('tr')(() => {
+export const StyledTBodyRow = styled('tr')(() => {
   return {
     td: {
       transition: 'background .15s',
     },
+    // Add border radius to table row
+    // see https://stackoverflow.com/questions/4094126/how-to-add-border-radius-on-table-row
     'td:first-of-type': {
       borderTopLeftRadius: '10px',
       borderBottomLeftRadius: '10px',

@@ -60,11 +60,6 @@ export const StyledIconButton = styled('button', {
         ...absoluteCenter({ horizontal: true, vertical: true }),
       },
 
-      svg: {
-        position: 'relative',
-        zIndex: 1,
-      },
-
       ':hover': {
         color: hoverColor ?? 'var(--affine-primary-color)',
         '::after': {

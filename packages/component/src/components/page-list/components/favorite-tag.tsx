@@ -21,6 +21,7 @@ export const FavoriteTag = forwardRef<
         ref={ref}
         iconSize={[20, 20]}
         style={{
+          position: 'initial',
           color: active
             ? 'var(--affine-primary-color)'
             : 'var(--affine-icon-color)',
