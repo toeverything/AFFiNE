@@ -1,8 +1,10 @@
+import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 
-const years = Array.from({ length: dayjs().year() - 1970 }, (v, i) =>
+import * as styles from './index.css';
+const years = Array.from({ length: dayjs().year() - 1969 }, (v, i) =>
   (1970 + i).toString()
 );
 const months = [
@@ -56,13 +58,10 @@ export const MyDatePicker = (props: MyDatePickerProps) => {
     const selectedYear = dayjs(date).year();
     const selectedMonth = dayjs(date).month();
     return (
-      <div style={{ margin: 10, display: 'flex', justifyContent: 'center' }}>
-        <button onClick={decreaseMonth} disabled={prevMonthButtonDisabled}>
-          {'<'}
-        </button>
+      <div className={styles.headerStyle}>
         <select
           value={selectedYear}
-          onChange={e => changeYear(dayjs(e.target.value).year())}
+          onChange={e => changeYear(Number(e.target.value))}
         >
           {years.map(year => (
             <option key={year} value={year}>
@@ -72,7 +71,9 @@ export const MyDatePicker = (props: MyDatePickerProps) => {
         </select>
         <select
           value={selectedMonth}
-          onChange={e => changeMonth(dayjs(e.target.value).month())}
+          onChange={e => {
+            changeMonth(Number(e.target.value));
+          }}
         >
           {months.map((month, index) => (
             <option key={month} value={index}>
@@ -80,19 +81,33 @@ export const MyDatePicker = (props: MyDatePickerProps) => {
             </option>
           ))}
         </select>
-        <button onClick={increaseMonth} disabled={nextMonthButtonDisabled}>
-          {'>'}
+        <button
+          className={styles.arrowLeftStyle}
+          onClick={decreaseMonth}
+          disabled={prevMonthButtonDisabled}
+        >
+          <ArrowLeftSmallIcon />
+        </button>
+        <button
+          className={styles.arrowRightStyle}
+          onClick={increaseMonth}
+          disabled={nextMonthButtonDisabled}
+        >
+          <ArrowRightSmallIcon />
         </button>
       </div>
     );
   };
   return (
     <DatePicker
-      className="myDatePicker"
-      calendarClassName="myDatePicker"
-      dayClassName={() => 'myDatePickerDay'}
+      className={styles.inputStyle}
+      calendarClassName={styles.calendarStyle}
+      weekDayClassName={() => styles.weekStyle}
+      dayClassName={() => styles.dayStyle}
+      popperClassName={styles.popperStyle}
       selected={selectedDate}
       onChange={handleSelectDate}
+      showPopperArrow={false}
       dateFormat="yyyy-MM-dd"
       renderCustomHeader={({
         date,
