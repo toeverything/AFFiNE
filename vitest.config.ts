@@ -17,7 +17,7 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env.PLUGIN_DIR': resolve(rootDir, 'plugins'),
+    'process.env.PLUGIN_DIR': JSON.stringify(resolve(rootDir, 'plugins')),
   },
   test: {
     setupFiles: [
