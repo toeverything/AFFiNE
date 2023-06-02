@@ -53,6 +53,7 @@ impl SqliteConnection {
       .execute(connection.as_mut())
       .await
       .map_err(anyhow::Error::from)?;
+    connection.detach();
     Ok(())
   }
 
