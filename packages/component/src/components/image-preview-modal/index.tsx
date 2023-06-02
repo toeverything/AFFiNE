@@ -115,6 +115,16 @@ const ImagePreviewModalImpl = (
     }
   };
 
+  const deleteHandler = blockId => {
+    assertExists(blockId);
+    const workspace = props.workspace;
+
+    const page = workspace.getPage(props.pageId);
+    assertExists(page);
+    const block = page.getBlockById(blockId);
+    page.deleteBlock(block);
+  };
+
   const previousImageHandler = blockId => {
     assertExists(blockId);
     const workspace = props.workspace;
@@ -273,7 +283,7 @@ const ImagePreviewModalImpl = (
                 icon={<DeleteIcon />}
                 noBorder={true}
                 className={buttonStyle}
-                onClick={() => {}}
+                onClick={() => deleteHandler(blockId)}
               />
             </div>
           </div>
