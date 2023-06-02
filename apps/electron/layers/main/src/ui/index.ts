@@ -8,8 +8,8 @@ import { getGoogleOauthCode } from './google-auth';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const handlers = require(join(
-  __dirname,
-  '../../plugins/bookmark-block/server'
+  process.env.PLUGIN_DIR ?? './../plugins',
+  './bookmark-block/server'
 )) as NamespaceHandlers;
 
 export const uiHandlers = {

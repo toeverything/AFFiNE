@@ -16,6 +16,9 @@ export default defineConfig({
       'next/config': resolve(rootDir, './scripts/vitest/next-config-mock.ts'),
     },
   },
+  define: {
+    'process.env.PLUGIN_DIR': resolve(rootDir, 'plugins'),
+  },
   test: {
     setupFiles: [
       resolve(rootDir, './scripts/setup/lit.ts'),

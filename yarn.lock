@@ -186,7 +186,6 @@ __metadata:
     "@types/fs-extra": ^11.0.1
     "@types/uuid": ^9.0.1
     better-sqlite3: ^8.4.0
-    cheerio: ^1.0.0-rc.12
     chokidar: ^3.5.3
     cross-env: 7.0.3
     electron: 25.0.0
