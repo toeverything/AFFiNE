@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
+const pluginDir = resolve(rootDir, 'plugins');
 
 export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
@@ -15,6 +16,9 @@ export default defineConfig({
       'next/router': 'next-router-mock',
       'next/config': resolve(rootDir, './scripts/vitest/next-config-mock.ts'),
     },
+  },
+  define: {
+    'process.env.PLUGIN_DIR': JSON.stringify(pluginDir),
   },
   test: {
     setupFiles: [
