@@ -1,12 +1,9 @@
 #!/usr/bin/env zx
 import 'zx/globals';
 
-import { spawnSync } from 'node:child_process';
-import { resolve } from 'node:path';
-
 import * as esbuild from 'esbuild';
 
-import { config, rootDir } from './common.mjs';
+import { config } from './common.mjs';
 
 const NODE_ENV =
   process.env.NODE_ENV === 'development' ? 'development' : 'production';
@@ -20,11 +17,8 @@ async function buildLayers() {
   const common = config();
   await esbuild.build(common.preload);
 
-  console.log('build plugins');
-  spawnSync('yarn', ['build'], {
-    cwd: resolve(rootDir, './plugins/bookmark-block'),
-    stdio: 'inherit',
-  });
+  console.log('Build plugins');
+  await import('./plugins/build-plugins.mjs');
 
   await esbuild.build({
     ...common.main,
