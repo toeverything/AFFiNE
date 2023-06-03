@@ -18,7 +18,7 @@ export const StyledTable = styled('table')<{ showBorder?: boolean }>(
                 display: 'block',
                 position: 'absolute',
                 content: '""',
-                width: '100vw',
+                width: '100%',
                 height: '1px',
                 left: 0,
                 background: 'var(--affine-border-color)',
