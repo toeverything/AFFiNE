@@ -18,6 +18,14 @@ if (process.argv.includes('--app-name')) {
   app.setName(appName);
 }
 
+if (app.isPackaged) {
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    args: ['--openAsHidden'],
+    openAsHidden: true,
+  });
+}
+
 /**
  * Prevent multiple instances
  */

@@ -1,4 +1,4 @@
-import { BrowserWindow, nativeTheme } from 'electron';
+import { app, BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
@@ -51,6 +51,12 @@ async function createWindow() {
   nativeTheme.themeSource = 'light';
 
   mainWindowState.manage(browserWindow);
+
+  browserWindow.once('ready-to-show', () => {
+    if (!app.getLoginItemSettings().wasOpenedAsHidden) {
+      browserWindow.show();
+    }
+  });
 
   /**
    * If you install `show: true` then it can cause issues when trying to close the window.
