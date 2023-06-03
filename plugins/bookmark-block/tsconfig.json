@@ -1,4 +1,13 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"]
+  "compilerOptions": {
+    "rootDir": "./src",
+    "types": ["electron"]
+  },
+  "include": ["**.ts", "**.tsx"],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

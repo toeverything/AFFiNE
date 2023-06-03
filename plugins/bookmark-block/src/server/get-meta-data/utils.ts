@@ -1,10 +1,10 @@
-import urlparse from 'url';
+import { parse, resolve } from 'node:url';
 
 export function makeUrlAbsolute(base: string, relative: string): string {
-  const relativeParsed = urlparse.parse(relative);
+  const relativeParsed = parse(relative);
 
   if (relativeParsed.host === null) {
-    return urlparse.resolve(base, relative);
+    return resolve(base, relative);
   }
 
   return relative;
@@ -15,7 +15,7 @@ export function makeUrlSecure(url: string): string {
 }
 
 export function parseUrl(url: string): string {
-  return urlparse.parse(url).hostname || '';
+  return parse(url).hostname || '';
 }
 
 export function getProvider(host: string): string {
