@@ -82,8 +82,6 @@ export const imagePreviewModalActionsStyle = style({
 });
 
 export const imagePreviewActionBarStyle = style({
-  position: 'fixed',
-  bottom: '28px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -98,11 +96,7 @@ export const groupStyle = style({
   alignItems: 'center',
   justifyContent: 'center',
   backgroundColor: 'var(--affine-white)',
-});
-
-export const groupDividerStyle = style({
-  color: 'black',
-  borderRight: '24px solid transparent',
+  borderLeft: '1px solid #E3E2E4',
 });
 
 export const buttonStyle = style({
@@ -120,9 +114,69 @@ export const deleteButtonStyle = style({
 
 export const imagePreviewControlStyle = style({
   position: 'absolute',
-  width: '100%',
   height: '100%',
-  zIndex: baseTheme.zIndexModal + 1,
   display: 'flex',
   justifyContent: 'center',
+});
+
+export const imageBottomContainerStyle = style({
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'fixed',
+  bottom: '28px',
+  zIndex: baseTheme.zIndexModal + 1,
+});
+
+// Component styles
+export const imageZoom = style({
+  position: 'relative',
+  width: '100%',
+  height: '100vh',
+  overflow: 'hidden',
+});
+
+export const zoomArea = style({
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+});
+
+export const zoomedBigger = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'black',
+  paddingBottom: '20px',
+});
+
+export const zoomAreaImg = style({
+  display: 'block',
+  maxWidth: '100%',
+  maxHeight: '100%',
+  pointerEvents: 'none',
+});
+
+export const captionStyle = style({
+  color: 'var(--affine-white)',
+  background: 'rgba(0,0,0,0.75)',
+  padding: '10px',
+  marginBottom: '21px',
+});
+
+export const blackBg = style({
+  backgroundColor: 'red',
+});
+
+export const zoomControls = style({
+  position: 'absolute',
+  bottom: '10px',
+  right: '10px',
+});
+
+export const zoomControlsButton = style({
+  marginRight: '5px',
 });
