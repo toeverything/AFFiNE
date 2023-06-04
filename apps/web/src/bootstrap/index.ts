@@ -10,7 +10,7 @@ if (!environment.isServer) {
   import('@affine/bookmark-block');
 }
 
-if (!environment.isDesktop) {
+if (!environment.isDesktop && !environment.isServer) {
   // Polyfill Electron
   const unimplemented = () => {
     throw new Error('AFFiNE Plugin Web will be supported in the future');
