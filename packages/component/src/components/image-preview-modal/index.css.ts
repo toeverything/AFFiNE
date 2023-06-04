@@ -59,6 +59,11 @@ export const imagePreviewModalContainerStyle = style({
   display: 'flex',
   flexDirection: 'column',
   zIndex: 1,
+  '@media': {
+    'screen and (max-width: 768px)': {
+      alignItems: 'center',
+    },
+  },
 });
 
 export const imagePreviewModalImageStyle = style({
@@ -73,6 +78,12 @@ export const imagePreviewModalImageStyle = style({
 
 export const imagePreviewModalCaptionStyle = style({
   color: 'var(--affine-white)',
+  marginTop: '24px',
+  '@media': {
+    'screen and (max-width: 768px)': {
+      textAlign: 'center',
+    },
+  },
 });
 
 export const imagePreviewModalActionsStyle = style({
@@ -108,17 +119,6 @@ export const scaleIndicatorStyle = style({
   margin: '0 8px',
 });
 
-export const deleteButtonStyle = style({
-  color: 'red',
-});
-
-export const imagePreviewControlStyle = style({
-  position: 'absolute',
-  height: '100%',
-  display: 'flex',
-  justifyContent: 'center',
-});
-
 export const imageBottomContainerStyle = style({
   display: 'flex',
   flexDirection: 'column',
@@ -127,56 +127,10 @@ export const imageBottomContainerStyle = style({
   zIndex: baseTheme.zIndexModal + 1,
 });
 
-// Component styles
-export const imageZoom = style({
-  position: 'relative',
-  width: '100%',
-  height: '100vh',
-  overflow: 'hidden',
-});
-
-export const zoomArea = style({
-  position: 'relative',
-  width: '100%',
-  height: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  overflow: 'hidden',
-});
-
-export const zoomedBigger = style({
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'black',
-  paddingBottom: '20px',
-});
-
-export const zoomAreaImg = style({
-  display: 'block',
-  maxWidth: '100%',
-  maxHeight: '100%',
-  pointerEvents: 'none',
-});
-
 export const captionStyle = style({
+  maxWidth: '686px',
   color: 'var(--affine-white)',
   background: 'rgba(0,0,0,0.75)',
   padding: '10px',
   marginBottom: '21px',
-});
-
-export const blackBg = style({
-  backgroundColor: 'red',
-});
-
-export const zoomControls = style({
-  position: 'absolute',
-  bottom: '10px',
-  right: '10px',
-});
-
-export const zoomControlsButton = style({
-  marginRight: '5px',
 });
