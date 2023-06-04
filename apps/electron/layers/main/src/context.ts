@@ -2,10 +2,16 @@ import { app } from 'electron';
 
 export const appContext = {
   get appName() {
-    return app.name;
+    if (app) {
+      return app.name;
+    }
+    return process.env.AFFINE_NAME!;
   },
   get appDataPath() {
-    return app.getPath('sessionData');
+    if (app) {
+      return app.getPath('sessionData');
+    }
+    return process.env.AFFINE_APP_DATA_PATH!;
   },
 };
 

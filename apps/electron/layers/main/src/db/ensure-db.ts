@@ -1,4 +1,3 @@
-import { app } from 'electron';
 import {
   defer,
   firstValueFrom,
@@ -30,7 +29,7 @@ import { openWorkspaceDatabase } from './workspace-db-adapter';
 
 const db$Map = new Map<string, Observable<WorkspaceSQLiteDB>>();
 
-const beforeQuit$ = defer(() => fromEvent(app, 'before-quit'));
+const beforeQuit$ = defer(() => fromEvent(process, 'beforeExit'));
 
 function getWorkspaceDB$(id: string) {
   if (!db$Map.has(id)) {
@@ -105,6 +104,6 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
   return poll$;
 }
 
-export function ensureSQLiteDB(id: string) {
+export async function ensureSQLiteDB(id: string) {
   return firstValueFrom(getWorkspaceDB$(id));
 }

@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 
@@ -10,7 +11,10 @@ export function mergeUpdateWorker(updates: Uint8Array[]) {
   }
   return new Promise<Uint8Array>((resolve, reject) => {
     // it is intended to have "./workers" in the path
-    const workerFile = path.join(__dirname, './workers/merge-update.worker.js');
+    let workerFile = path.join(__dirname, './workers/merge-update.worker.js');
+    if (!existsSync(workerFile)) {
+      workerFile = path.join(__dirname, '../workers/merge-update.worker.js');
+    }
 
     // convert updates to SharedArrayBuffer[s]
     const sharedArrayBufferUpdates = updates.map(update => {
