@@ -19,7 +19,7 @@ test('Open last workspace when back to affine', async ({ page }) => {
   await workspaceCards[1].click();
   await openHomePage(page);
 
-  const workspaceNameDom = await page.getByTestId('workspace-name');
+  const workspaceNameDom = page.getByTestId('workspace-name');
   const currentWorkspaceName = await workspaceNameDom.evaluate(
     node => node.textContent
   );

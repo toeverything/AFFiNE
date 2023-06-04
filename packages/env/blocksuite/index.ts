@@ -23,7 +23,6 @@ export function initPageWithPreloading(page: Page): void {
 }
 
 export function initEmptyPage(page: Page): void {
-  console.trace();
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(''),
   });
