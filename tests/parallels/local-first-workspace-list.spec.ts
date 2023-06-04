@@ -2,13 +2,13 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 import { clickSideBarAllPageButton } from '../libs/sidebar';
 import { createWorkspace, openWorkspaceListModal } from '../libs/workspace';
 
 test('just one item in the workspace list at first', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const workspaceName = page.getByTestId('workspace-name');
   await workspaceName.click();
   expect(
@@ -21,7 +21,7 @@ test('just one item in the workspace list at first', async ({ page }) => {
 
 test('create one workspace in the workspace list', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const newWorkspaceNameStr = 'New Workspace';
   await createWorkspace({ name: newWorkspaceNameStr }, page);
 
@@ -50,7 +50,7 @@ test('create one workspace in the workspace list', async ({ page }) => {
 
 test('create multi workspace in the workspace list', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await createWorkspace({ name: 'New Workspace 2' }, page);
   await createWorkspace({ name: 'New Workspace 3' }, page);
 

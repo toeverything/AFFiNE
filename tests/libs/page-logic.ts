@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-export async function waitMarkdownImported(page: Page) {
+export async function waitEditorLoad(page: Page) {
   await page.waitForSelector('v-line', {
     timeout: 10000,
   });
@@ -12,7 +12,7 @@ export async function newPage(page: Page) {
   await page.getByTestId('new-page-button').click({
     delay: 100,
   });
-  await page.waitForSelector('v-line');
+  await waitEditorLoad(page);
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {

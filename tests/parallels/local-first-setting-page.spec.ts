@@ -4,14 +4,14 @@ import { test, testResultDir } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 import { clickSideBarSettingButton } from '../libs/sidebar';
 
 test('Should highlight the setting page menu when selected', async ({
   page,
 }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const element = await page.getByTestId('slider-bar-workspace-setting-button');
   const prev = await element.screenshot({
     path: resolve(

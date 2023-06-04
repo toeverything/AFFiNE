@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../../libs/load-page';
-import { waitMarkdownImported } from '../../libs/page-logic';
+import { waitEditorLoad } from '../../libs/page-logic';
 import { clickNewPageButton } from '../../libs/sidebar';
 import { createFakeUser, loginUser } from '../../libs/utils';
 import { createWorkspace } from '../../libs/workspace';
@@ -13,7 +13,7 @@ test('public single page', async ({ page, browser }) => {
   await loginUser(page, a);
   const name = `test-${Date.now()}`;
   await createWorkspace({ name }, page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickNewPageButton(page);
   const page1Id = page.url().split('/').at(-1);
   await clickNewPageButton(page);
