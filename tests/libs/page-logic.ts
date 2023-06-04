@@ -2,7 +2,9 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 export async function waitMarkdownImported(page: Page) {
-  await page.waitForSelector('v-line');
+  await page.waitForSelector('v-line', {
+    timeout: 10000,
+  });
 }
 
 export async function newPage(page: Page) {
