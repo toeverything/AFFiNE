@@ -11,7 +11,7 @@ import {
 } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
@@ -305,10 +305,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       id: pageId,
     });
     assertEquals(page.id, pageId);
-    currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
-      init: true,
-    });
-    initPage(page);
+    initEmptyPage(page);
     if (!router.query.pageId) {
       setCurrentPageId(pageId);
       void jumpToPage(currentWorkspace.id, pageId);

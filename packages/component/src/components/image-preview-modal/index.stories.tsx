@@ -1,4 +1,4 @@
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Meta } from '@storybook/react';
@@ -16,7 +16,7 @@ const workspace = createEmptyBlockSuiteWorkspace(
   WorkspaceFlavour.LOCAL
 );
 const page = workspace.createPage('page0');
-initPage(page);
+initEmptyPage(page);
 fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
   .then(res => res.arrayBuffer())
   .then(async buffer => {
@@ -50,7 +50,7 @@ export const Default = () => {
           overflow: 'auto',
         }}
       >
-        <BlockSuiteEditor mode="page" page={page} onInit={initPage} />
+        <BlockSuiteEditor mode="page" page={page} onInit={initEmptyPage} />
       </div>
       <div
         style={{

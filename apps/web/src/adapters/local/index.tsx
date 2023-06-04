@@ -1,9 +1,11 @@
 import { DebugLogger } from '@affine/debug';
+import type { BlockSuiteFeatureFlags } from '@affine/env';
 import {
+  config,
   DEFAULT_HELLO_WORLD_PAGE_ID,
   DEFAULT_WORKSPACE_NAME,
 } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
 import {
   CRUD,
@@ -17,8 +19,8 @@ import {
 } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
-import React from 'react';
 
+import type { BlockSuiteWorkspace } from '../../shared';
 import {
   BlockSuitePageList,
   PageDetailEditor,
@@ -28,6 +30,15 @@ import {
 import type { WorkspaceAdapter } from '../type';
 
 const logger = new DebugLogger('use-create-first-workspace');
+
+function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
+    blockSuiteWorkspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
+}
 
 export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   releaseType: ReleaseType.STABLE,
@@ -43,10 +54,8 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       const page = blockSuiteWorkspace.createPage({
         id: DEFAULT_HELLO_WORLD_PAGE_ID,
       });
-      blockSuiteWorkspace.setPageMeta(page.id, {
-        init: true,
-      });
-      initPage(page);
+      setEditorFlags(blockSuiteWorkspace);
+      initPageWithPreloading(page);
       blockSuiteWorkspace.setPageMeta(page.id, {
         jumpOnce: true,
       });
@@ -78,7 +87,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         <>
           <PageDetailEditor
             pageId={currentPageId}
-            onInit={initPage}
+            onInit={initEmptyPage}
             onLoad={onLoadEditor}
             workspace={currentWorkspace}
           />

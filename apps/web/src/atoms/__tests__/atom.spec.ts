@@ -3,7 +3,6 @@
  */
 import 'fake-indexeddb/auto';
 
-import { initPage } from '@affine/env/blocksuite';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -17,6 +16,7 @@ import {
 import type { ParagraphBlockModel } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { createStore } from 'jotai';
+import { initEmptyPage } from 'packages/env/blocksuite';
 import { describe, expect, test } from 'vitest';
 
 import { WorkspaceAdapters } from '../../adapters/workspace';
@@ -32,7 +32,7 @@ describe('currentWorkspace atom', () => {
         WorkspaceFlavour.LOCAL
       );
       const page = workspace.createPage({ id: 'page0' });
-      initPage(page);
+      initEmptyPage(page);
       const frameId = page.getBlockByFlavour('affine:frame').at(0)
         ?.id as string;
       id = page.addBlock(
