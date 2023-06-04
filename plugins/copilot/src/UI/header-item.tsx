@@ -16,7 +16,7 @@ export const HeaderItem: PluginUIAdapter['headerItem'] = ({
             setLayout(layout => {
               if (layout === 'editor') {
                 return {
-                  direction: 'row',
+                  direction: 'horizontal',
                   first: 'editor',
                   second: 'com.affine.copilot',
                   splitPercentage: 80,
