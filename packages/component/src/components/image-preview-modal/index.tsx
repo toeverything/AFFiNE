@@ -67,7 +67,6 @@ const ImagePreviewModalImpl = (
     setCaption(block?.caption === '' ? null : block?.caption);
     // is it actually necessary?
     const disposable = block.propsUpdated.on(() => {
-      console.log(block.caption);
       setCaption(block.caption);
     });
     return () => {
@@ -85,18 +84,18 @@ const ImagePreviewModalImpl = (
     suspense: true,
   });
   const zoomRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+
   const {
     zoomIn,
     zoomOut,
     isZoomedBigger,
-    handleDragStart,
     handleDrag,
-    handleDragEnd,
+    handleDragStart,
     resetZoom,
-  } = useZoomControls({ zoomRef });
+  } = useZoomControls({ zoomRef, imageRef });
   const [prevData, setPrevData] = useState<string | null>(() => data);
   const [url, setUrl] = useState<string | null>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
   if (prevData !== data) {
     if (url) {
       URL.revokeObjectURL(url);
@@ -125,6 +124,12 @@ const ImagePreviewModalImpl = (
       );
     if (nextBlock) {
       setBlockId(nextBlock.id);
+      const image = imageRef.current;
+      resetZoom();
+      if (image) {
+        image.style.width = '100%'; // Reset the width to its original size
+        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+      }
     }
   };
 
@@ -135,7 +140,6 @@ const ImagePreviewModalImpl = (
     const page = workspace.getPage(props.pageId);
     assertExists(page);
     const block = page.getBlockById(blockId);
-    page.deleteBlock(block);
     if (
       page
         .getPreviousSiblings(block)
@@ -149,6 +153,12 @@ const ImagePreviewModalImpl = (
           (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
         );
       setBlockId(prevBlock.id);
+      const image = imageRef.current;
+      resetZoom();
+      if (image) {
+        image.style.width = '100%'; // Reset the width to its original size
+        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+      }
     } else if (
       page
         .getNextSiblings(block)
@@ -161,10 +171,17 @@ const ImagePreviewModalImpl = (
         .find(
           (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
         );
+      const image = imageRef.current;
+      resetZoom();
+      if (image) {
+        image.style.width = '100%'; // Reset the width to its original size
+        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+      }
       setBlockId(nextBlock.id);
     } else {
       props.onClose();
     }
+    page.deleteBlock(block);
   };
 
   const previousImageHandler = blockId => {
@@ -182,6 +199,12 @@ const ImagePreviewModalImpl = (
       );
     if (prevBlock) {
       setBlockId(prevBlock.id);
+      const image = imageRef.current;
+      if (image) {
+        resetZoom();
+        image.style.width = '100%'; // Reset the width to its original size
+        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+      }
     }
   };
 
@@ -230,15 +253,13 @@ const ImagePreviewModalImpl = (
               draggable={isZoomedBigger}
               onDragStart={handleDragStart}
               onDrag={handleDrag}
-              onDragEnd={handleDragEnd}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
-              <img
-                src={url}
-                alt="test"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              />
-              <p className={imagePreviewModalCaptionStyle}>{caption}</p>
+              <img src={url} alt={caption} ref={imageRef} />
+              {isZoomedBigger ? null : (
+                <p className={imagePreviewModalCaptionStyle}>{caption}</p>
+              )}
             </div>
           </div>
         </div>
