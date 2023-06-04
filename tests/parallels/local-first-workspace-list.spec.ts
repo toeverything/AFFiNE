@@ -99,8 +99,9 @@ test('create multi workspace in the workspace list', async ({ page }) => {
     }
   );
   await page.mouse.up();
-  await page.waitForTimeout(50);
+  await page.waitForTimeout(100);
   await page.reload();
+  await page.waitForTimeout(100);
   await openWorkspaceListModal(page);
 
   //check workspace list length

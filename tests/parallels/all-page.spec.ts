@@ -76,7 +76,7 @@ const checkFilterName = async (page: Page, name: string) => {
 
 test('allow creation of filters by favorite', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await closeDownloadTip(page);
   await createFirstFilter(page, 'Is Favourited');
@@ -115,7 +115,7 @@ const fillDatePicker = async (page: Page, date: Date) => {
 };
 test('allow creation of filters by created time', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await closeDownloadTip(page);
   await createFirstFilter(page, 'Created');
