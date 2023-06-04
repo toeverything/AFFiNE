@@ -47,7 +47,7 @@
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "react-is": "^18.2.0",
-    "react-mosaic-component": "^6.0.1",
+    "react-resizable-panels": "^0.0.48",
     "rxjs": "^7.8.1",
     "swr": "^2.1.5",
     "y-protocols": "^1.0.5",
