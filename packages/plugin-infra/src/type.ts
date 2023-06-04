@@ -10,7 +10,6 @@ import type { Workspace } from '@blocksuite/store';
 import type { Page } from '@playwright/test';
 import type { WritableAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import type { MosaicDirection, MosaicNode } from 'react-mosaic-component';
 
 /**
  * A code loader interface of the plugin API.
@@ -81,14 +80,23 @@ export enum ReleaseStage {
   DEV = 'dev',
 }
 
+export type LayoutDirection = 'horizontal' | 'vertical';
+export type LayoutNode = LayoutParentNode | string;
+export type LayoutParentNode = {
+  direction: LayoutDirection;
+  splitPercentage: number; // 0 - 100
+  first: LayoutNode;
+  second: LayoutNode;
+};
+
 export type ExpectedLayout =
   | {
-      direction: MosaicDirection;
+      direction: LayoutDirection;
       // the first element is always the editor
       first: 'editor';
-      second: MosaicNode<string>;
+      second: LayoutNode;
       // the percentage should be greater than 70
-      splitPercentage?: number;
+      splitPercentage: number;
     }
   | 'editor';
 
