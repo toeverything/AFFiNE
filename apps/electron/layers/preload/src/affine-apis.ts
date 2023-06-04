@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../../constraints.d.ts" />
 
 // NOTE: we will generate preload types from this file
 import { ipcRenderer } from 'electron';
+
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import type {
+  MainIPCEventMap,
+  MainIPCHandlerMap,
+} from '../../main/src/exposed';
 
 type WithoutFirstParameter<T> = T extends (_: any, ...args: infer P) => infer R
   ? (...args: P) => R
@@ -15,7 +19,7 @@ type HandlersMap<N extends keyof MainIPCHandlerMap> = {
   >;
 };
 
-type PreloadHandlers = {
+export type PreloadHandlers = {
   [N in keyof MainIPCHandlerMap]: HandlersMap<N>;
 };
 
@@ -88,3 +92,6 @@ const appInfo = {
 };
 
 export { apis, appInfo, events };
+
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+export type { MainIPCEventMap } from '../../main/src/exposed';

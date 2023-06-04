@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
+const pluginOutputDir = resolve(rootDir, './apps/electron/dist/plugins');
 
 export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
@@ -16,8 +17,12 @@ export default defineConfig({
       'next/config': resolve(rootDir, './scripts/vitest/next-config-mock.ts'),
     },
   },
+  define: {
+    'process.env.PLUGIN_DIR': JSON.stringify(pluginOutputDir),
+  },
   test: {
     setupFiles: [
+      resolve(rootDir, './scripts/setup/build-plugins.ts'),
       resolve(rootDir, './scripts/setup/lit.ts'),
       resolve(rootDir, './scripts/setup/i18n.ts'),
       resolve(rootDir, './scripts/setup/search.ts'),

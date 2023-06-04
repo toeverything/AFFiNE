@@ -43,9 +43,9 @@
     "@toeverything/theme": "^0.6.1",
     "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^1.2.1",
-    "dayjs": "^1.11.7",
-    "jotai": "^2.1.0",
-    "lit": "^2.7.4",
+    "dayjs": "^1.11.8",
+    "jotai": "^2.1.1",
+    "lit": "^2.7.5",
     "lottie-web": "^5.12.0",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
@@ -54,12 +54,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/editor": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/global": "0.0.0-20230531080915-ca9c55a2-nightly",
+    "@blocksuite/blocks": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/editor": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/global": "0.0.0-20230601122821-16196c35-nightly",
     "@blocksuite/icons": "^2.1.19",
-    "@blocksuite/lit": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/store": "0.0.0-20230531080915-ca9c55a2-nightly",
+    "@blocksuite/lit": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/store": "0.0.0-20230601122821-16196c35-nightly",
     "@storybook/addon-actions": "^7.0.18",
     "@storybook/addon-coverage": "^0.0.8",
     "@storybook/addon-essentials": "^7.0.18",
@@ -78,7 +78,7 @@
     "@types/react-dom": "18.2.4",
     "@vanilla-extract/css": "^1.11.0",
     "@vitejs/plugin-react": "^4.0.0",
-    "concurrently": "^8.0.1",
+    "concurrently": "^8.1.0",
     "jest-mock": "^29.5.0",
     "serve": "^14.2.0",
     "storybook": "^7.0.18",
@@ -88,5 +88,5 @@
     "wait-on": "^7.0.1",
     "yjs": "^13.6.1"
   },
-  "version": "0.7.0-canary.5"
+  "version": "0.7.0-canary.8"
 }

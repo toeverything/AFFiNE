@@ -1,4 +1,4 @@
-import { getEnvironment } from '@affine/env/config';
+import { env } from '@affine/env/config';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { Observable } from 'rxjs';
 
@@ -21,9 +21,8 @@ function rpcToObservable<
 ) {
   return new Observable<T>(subscriber => {
     subscriber.next(initialValue);
-    const environment = getEnvironment();
     onSubscribe?.();
-    if (typeof window === 'undefined' || !environment.isDesktop || !event) {
+    if (typeof window === 'undefined' || !env.isDesktop || !event) {
       subscriber.complete();
       return () => {};
     }

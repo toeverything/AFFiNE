@@ -6,7 +6,7 @@ import path from 'node:path';
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
 
-import { config, root } from './common.mjs';
+import { config, electronDir } from './common.mjs';
 
 // this means we don't spawn electron windows, mainly for testing
 const watchMode = process.argv.includes('--watch');
@@ -21,7 +21,10 @@ const stderrFilterPatterns = [
 
 // these are set before calling `config`, so we have a chance to override them
 try {
-  const devJson = readFileSync(path.resolve(root, './dev.json'), 'utf-8');
+  const devJson = readFileSync(
+    path.resolve(electronDir, './dev.json'),
+    'utf-8'
+  );
   const devEnv = JSON.parse(devJson);
   Object.assign(process.env, devEnv);
 } catch (err) {
@@ -65,7 +68,11 @@ function spawnOrReloadElectron() {
 
 const common = config();
 
-function watchPreload() {
+async function watchPlugins() {
+  await import('./plugins/dev-plugins.mjs');
+}
+
+async function watchPreload() {
   return new Promise(async resolve => {
     let initialBuild = false;
     const preloadBuild = await esbuild.context({
@@ -122,6 +129,7 @@ async function watchMain() {
 }
 
 async function main() {
+  await watchPlugins();
   await watchMain();
   await watchPreload();
 

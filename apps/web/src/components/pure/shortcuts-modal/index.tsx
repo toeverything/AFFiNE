@@ -3,7 +3,7 @@ import {
   MuiClickAwayListener,
   MuiSlide,
 } from '@affine/component';
-import { getEnvironment } from '@affine/env';
+import { env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useEffect, useState } from 'react';
 
@@ -27,7 +27,6 @@ type ModalProps = {
 };
 
 const checkIsMac = () => {
-  const env = getEnvironment();
   return env.isBrowser && env.isMacOs;
 };
 

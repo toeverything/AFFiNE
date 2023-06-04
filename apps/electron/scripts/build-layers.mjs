@@ -17,6 +17,9 @@ async function buildLayers() {
   const common = config();
   await esbuild.build(common.preload);
 
+  console.log('Build plugins');
+  await import('./plugins/build-plugins.mjs');
+
   await esbuild.build({
     ...common.main,
     define: {

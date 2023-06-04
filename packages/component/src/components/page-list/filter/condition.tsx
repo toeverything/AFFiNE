@@ -5,7 +5,7 @@ import { Menu, MenuItem } from '../../../ui/menu';
 import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
-import type { Filter, Literal } from './vars';
+import type { Filter, Literal } from './shared-types';
 import { filterMatcher, VariableSelect, vars } from './vars';
 
 export const Condition = ({
@@ -68,7 +68,7 @@ const FunctionSelect = ({
     return filterMatcher.allMatchedData(type);
   }, [value.left.name]);
   return (
-    <div>
+    <div data-testid="filter-name-select">
       {list.map(v => (
         <MenuItem
           onClick={() => {
@@ -101,7 +101,7 @@ export const Arg = ({
     return null;
   }
   return (
-    <div style={{ marginLeft: 4 }}>
+    <div data-testid="filter-arg" style={{ marginLeft: 4 }}>
       {data.render({ type, value, onChange })}
     </div>
   );

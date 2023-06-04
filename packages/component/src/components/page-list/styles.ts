@@ -1,10 +1,11 @@
-import { TableRow } from '../..';
-import { Content, displayFlex, styled } from '../../';
+import { displayFlex, styled } from '../../styles';
+import { Content } from '../../ui/layout/content';
+import { TableRow } from '../../ui/table/table-row';
 
 export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
     height: 'calc(100vh - 52px)',
-    padding: '18px 32px 52px 32px',
+    padding: '18px 32px 80px 32px',
     maxWidth: '100%',
     overflowY: 'auto',
     [theme.breakpoints.down('sm')]: {

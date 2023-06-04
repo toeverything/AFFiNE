@@ -1,9 +1,16 @@
-import { app, BrowserWindow, nativeTheme, session } from 'electron';
+import { join } from 'node:path';
+
+import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
 import { isMacOS } from '../utils';
-import { getMetaData } from './get-meta-data';
 import { getGoogleOauthCode } from './google-auth';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const handlers = require(join(
+  process.env.PLUGIN_DIR ?? '../../plugins',
+  './bookmark-block/server'
+)) as NamespaceHandlers;
 
 export const uiHandlers = {
   handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
@@ -40,9 +47,5 @@ export const uiHandlers = {
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
   },
-  getBookmarkDataByLink: async (_, url: string) => {
-    return getMetaData(url, {
-      ua: session.defaultSession.getUserAgent(),
-    });
-  },
+  ...handlers,
 } satisfies NamespaceHandlers;

@@ -41,6 +41,7 @@ export type TrashListData = {
 export type PageListProps = {
   isPublicWorkspace?: boolean;
   list: ListData[];
+  fallback?: React.ReactNode;
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;

@@ -4,14 +4,14 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@affine/env": "workspace:*",
-    "jotai": "^2.1.0"
+    "jotai": "^2.1.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/editor": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/global": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/lit": "0.0.0-20230531080915-ca9c55a2-nightly",
-    "@blocksuite/store": "0.0.0-20230531080915-ca9c55a2-nightly",
+    "@blocksuite/blocks": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/editor": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/global": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/lit": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/store": "0.0.0-20230601122821-16196c35-nightly",
     "lottie-web": "^5.12.0"
   },
   "peerDependencies": {
@@ -22,5 +22,5 @@
     "@blocksuite/store": "*",
     "lottie-web": "*"
   },
-  "version": "0.7.0-canary.5"
+  "version": "0.7.0-canary.8"
 }
