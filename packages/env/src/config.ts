@@ -21,6 +21,7 @@ export const buildFlagsSchema = z.object({
   enableDebugPage: z.boolean(),
   enableLegacyCloud: z.boolean(),
   changelogUrl: z.string(),
+  enablePreloading: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({

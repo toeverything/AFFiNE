@@ -55,7 +55,11 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         id: DEFAULT_HELLO_WORLD_PAGE_ID,
       });
       setEditorFlags(blockSuiteWorkspace);
-      initPageWithPreloading(page);
+      if (config.enablePreloading) {
+        initPageWithPreloading(page);
+      } else {
+        initEmptyPage(page);
+      }
       blockSuiteWorkspace.setPageMeta(page.id, {
         jumpOnce: true,
       });

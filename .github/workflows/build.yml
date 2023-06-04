@@ -228,6 +228,7 @@ jobs:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
+          ENABLE_PRELOADING: false
 
     steps:
       - uses: actions/checkout@v3
@@ -395,6 +396,7 @@ jobs:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
+          ENABLE_PRELOADING: false
 
     steps:
       - uses: actions/checkout@v3
