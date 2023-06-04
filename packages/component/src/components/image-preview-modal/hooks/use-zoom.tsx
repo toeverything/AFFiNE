@@ -133,6 +133,7 @@ export const useZoomControls = ({
     zoomOut,
     resetZoom,
     isZoomedBigger,
+    currentScale,
     handleDragStart,
     handleDrag,
     handleDragEnd,

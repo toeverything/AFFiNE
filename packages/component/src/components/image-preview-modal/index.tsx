@@ -97,6 +97,7 @@ const ImagePreviewModalImpl = (
   } = useZoomControls({ zoomRef, imageRef });
   const [prevData, setPrevData] = useState<string | null>(() => data);
   const [url, setUrl] = useState<string | null>(null);
+  console.log(currentScale);
   if (prevData !== data) {
     if (url) {
       URL.revokeObjectURL(url);
@@ -323,9 +324,9 @@ const ImagePreviewModalImpl = (
                 className={buttonStyle}
                 onClick={zoomOut}
               />
-              <span className={scaleIndicatorStyle}>{`${
-                (Math.round(10 * currentScale) / 10) * 100
-              }%`}</span>
+              <span className={scaleIndicatorStyle}>{`${(
+                currentScale * 100
+              ).toFixed(0)}%`}</span>
               <Button
                 icon={<PlusIcon />}
                 noBorder={true}
