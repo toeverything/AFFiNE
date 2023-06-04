@@ -73,8 +73,8 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   const currentId: string = await page.evaluate(() => currentWorkspace.id);
 
   await openWorkspaceListModal(page);
-  const sourceElement = await page.getByTestId('draggable-item').nth(2);
-  const targetElement = await page.getByTestId('draggable-item').nth(1);
+  const sourceElement = page.getByTestId('draggable-item').nth(2);
+  const targetElement = page.getByTestId('draggable-item').nth(1);
 
   const sourceBox = await sourceElement.boundingBox();
   const targetBox = await targetElement.boundingBox();

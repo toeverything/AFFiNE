@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import type { BlockSuiteFeatureFlags } from '@affine/env';
 import {
   config,
   DEFAULT_HELLO_WORLD_PAGE_ID,
@@ -20,7 +19,7 @@ import {
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 
-import type { BlockSuiteWorkspace } from '../../shared';
+import { setEditorFlags } from '../../utils/editor-flag';
 import {
   BlockSuitePageList,
   PageDetailEditor,
@@ -30,15 +29,6 @@ import {
 import type { WorkspaceAdapter } from '../type';
 
 const logger = new DebugLogger('use-create-first-workspace');
-
-function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
-  Object.entries(config.editorFlags).forEach(([key, value]) => {
-    blockSuiteWorkspace.awarenessStore.setFlag(
-      key as keyof BlockSuiteFeatureFlags,
-      value
-    );
-  });
-}
 
 export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   releaseType: ReleaseType.STABLE,
