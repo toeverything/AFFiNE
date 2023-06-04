@@ -2,65 +2,73 @@ import { useCallback, useEffect, useState } from 'react';
 
 interface UseZoomControlsProps {
   zoomRef: React.RefObject<HTMLDivElement>;
+  imageRef: React.RefObject<HTMLImageElement>;
 }
 
-export const useZoomControls = ({ zoomRef }: UseZoomControlsProps) => {
+export const useZoomControls = ({
+  zoomRef,
+  imageRef,
+}: UseZoomControlsProps) => {
   const [currentScale, setCurrentScale] = useState<number>(1);
   const [isZoomedBigger, setIsZoomedBigger] = useState<boolean>(false);
+  const [startX, setStartX] = useState<number>(0);
+  const [startY, setStartY] = useState<number>(0);
 
-  const zoomIn = () => {
-    const { current: zoomArea } = zoomRef;
-    if (zoomArea) {
-      const image = zoomArea.querySelector('img');
-      if (image && currentScale < 2) {
-        setCurrentScale(prevScale => prevScale + 0.1);
-        image.style.transform = `scale(${currentScale + 0.1})`;
+  const zoomIn = useCallback(() => {
+    const image = imageRef.current;
+
+    if (image && currentScale < 2) {
+      const newScale = currentScale + 0.1;
+      setCurrentScale(newScale);
+      image.style.width = `${image.naturalWidth * newScale}px`;
+      image.style.height = `${image.naturalHeight * newScale}px`;
+    }
+  }, [imageRef, currentScale]);
+
+  const zoomOut = useCallback(() => {
+    const image = imageRef.current;
+    if (image && currentScale > 0.5) {
+      const newScale = currentScale - 0.1;
+      setCurrentScale(newScale);
+      image.style.width = `${image.naturalWidth * newScale}px`;
+      image.style.height = `${image.naturalHeight * newScale}px`;
+      if (!isZoomedBigger) {
+        image.style.transform = 'translate(0, 0)';
       }
     }
-  };
-
-  const zoomOut = () => {
-    const { current: zoomArea } = zoomRef;
-    if (zoomArea) {
-      const image = zoomArea.querySelector('img');
-      if (image && currentScale > 0.5) {
-        setCurrentScale(prevScale => prevScale - 0.1);
-        image.style.transform = `scale(${currentScale - 0.1})`;
-      }
-    }
-  };
+  }, [imageRef, currentScale, isZoomedBigger]);
 
   const resetZoom = () => {
-    const { current: zoomArea } = zoomRef;
-    if (zoomArea) {
-      const image = zoomArea.querySelector('img');
-      if (image) {
-        setCurrentScale(1);
-        image.style.transform = 'scale(1)';
+    const image = imageRef.current;
+    if (image) {
+      setCurrentScale(1);
+      image.style.width = `${image.naturalWidth}px`;
+      image.style.height = `${image.naturalHeight}px`;
+      if (!isZoomedBigger) {
+        image.style.transform = 'translate(0, 0)';
       }
     }
   };
 
-  const handleDragStart = (event: React.DragEvent<HTMLImageElement>) => {
+  const handleDragStart = event => {
     const { clientX, clientY } = event.touches ? event.touches[0] : event;
-    event.dataTransfer.setDragImage(new Image(), 0, 0); // Hide the default drag image
-    event.dataTransfer.setData('text/plain', ''); // Set some dummy data to enable dragging
-    event.currentTarget.dataset.startX = String(clientX);
-    event.currentTarget.dataset.startY = String(clientY);
+    event.dataTransfer.setDragImage(new Image(), 0, 0);
+    event.dataTransfer.setData('text/plain', '');
+    setStartX(clientX);
+    setStartY(clientY);
   };
 
-  const handleDrag = (event: React.DragEvent<HTMLImageElement>) => {
+  const handleDrag = event => {
     event.preventDefault();
     const { clientX, clientY } = event.touches ? event.touches[0] : event;
-    const startX = parseInt(event.currentTarget.dataset.startX || '0', 10);
-    const startY = parseInt(event.currentTarget.dataset.startY || '0', 10);
     const deltaX = clientX - startX;
     const deltaY = clientY - startY;
-    const { current: zoomArea } = zoomRef;
-    if (zoomArea) {
-      const image = zoomArea.querySelector('img');
+    if (isZoomedBigger) {
+      const image = imageRef.current;
       if (image) {
-        image.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${currentScale})`;
+        const imageX = deltaX + startX;
+        const imageY = deltaY + startY;
+        image.style.transform = `translate(${imageX}px, ${imageY}px)`;
       }
     }
   };
@@ -68,9 +76,13 @@ export const useZoomControls = ({ zoomRef }: UseZoomControlsProps) => {
   const handleDragEnd = () => {
     const { current: zoomArea } = zoomRef;
     if (zoomArea) {
-      const image = zoomArea.querySelector('img');
+      const image = imageRef.current;
       if (image) {
-        image.style.transform = `scale(${currentScale})`;
+        const imageX = parseInt(image.style.left || (0 as string), 10);
+        const imageY = parseInt(image.style.top || (0 as string), 10);
+        setStartX(imageX);
+        setStartY(imageY);
+        image.style.transform = `translate(${imageX}px, ${imageY}px)`;
       }
     }
   };
