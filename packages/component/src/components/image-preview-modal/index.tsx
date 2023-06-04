@@ -1,7 +1,6 @@
 /// <reference types="react/experimental" />
 import '@blocksuite/blocks';
 
-import { Button } from '@affine/component';
 import type { EmbedBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -21,6 +20,7 @@ import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
+import Button from '../../ui/button/button';
 import { useZoomControls } from './hooks/use-zoom';
 import {
   buttonStyle,
@@ -93,6 +93,7 @@ const ImagePreviewModalImpl = (
     handleDrag,
     handleDragStart,
     resetZoom,
+    currentScale,
   } = useZoomControls({ zoomRef, imageRef });
   const [prevData, setPrevData] = useState<string | null>(() => data);
   const [url, setUrl] = useState<string | null>(null);
@@ -322,7 +323,9 @@ const ImagePreviewModalImpl = (
                 className={buttonStyle}
                 onClick={zoomOut}
               />
-              <span className={scaleIndicatorStyle}>100%</span>
+              <span className={scaleIndicatorStyle}>{`${(
+                currentScale * 100
+              ).toFixed(0)}%`}</span>
               <Button
                 icon={<PlusIcon />}
                 noBorder={true}
