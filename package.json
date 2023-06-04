@@ -31,9 +31,9 @@
     "lint:fix": "yarn lint --fix",
     "test": "playwright test",
     "test:coverage": "COVERAGE=true yarn test --forbid-only",
-    "test:unit": "vitest --run",
-    "test:unit:ui": "vitest --ui",
-    "test:unit:coverage": "vitest run --coverage",
+    "test:unit": "ENABLE_PRELOADING=false vitest --run",
+    "test:unit:ui": "ENABLE_PRELOADING=false vitest --ui",
+    "test:unit:coverage": "ENABLE_PRELOADING=false vitest run --coverage",
     "postinstall": "i18n-codegen gen && husky install",
     "notify": "node scripts/notify.mjs",
     "typecheck": "tsc -b tsconfig.json --diagnostics"

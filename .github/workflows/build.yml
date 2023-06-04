@@ -92,7 +92,6 @@ jobs:
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: true
           COVERAGE: true
-          ENABLE_PRELOADING: false
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -117,7 +116,6 @@ jobs:
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: false
           COVERAGE: true
-          ENABLE_PRELOADING: false
 
       - name: Export static resources
         run: yarn export
