@@ -50,5 +50,8 @@ export function _initEmptyPage(page: Page, title?: string): void {
 export function _initPageWithPreloading(page: Page): void {
   logger.debug('initPageWithPreloading', page.id);
   const workspace = page.workspace;
-  workspace.importSnapshot(preloadingData.data, 'space:Qmo9-1SGTB');
+  workspace.importPageSnapshot(
+    preloadingData.data['space:Qmo9-1SGTB'],
+    page.id
+  );
 }
