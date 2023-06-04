@@ -20,7 +20,7 @@
     "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
   },
   "dependencies": {
-    "lit": "^2.7.4"
+    "lit": "^2.7.5"
   },
   "version": "0.6.0"
 }
