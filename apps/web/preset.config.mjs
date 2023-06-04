@@ -41,7 +41,8 @@ export const buildFlags = {
   ),
   changelogUrl:
     process.env.CHANGELOG_URL ?? 'http://affine.pro/blog/whats-new-affine-0601',
-  enablePreloading: process.env.ENABLE_PRELOADING
-    ? process.env.ENABLE_PRELOADING === 'true'
-    : true,
+  enablePreloading:
+    process.env.ENABLE_LEGACY_PROVIDER !== undefined
+      ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
+      : true,
 };
