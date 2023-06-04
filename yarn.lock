@@ -396,6 +396,7 @@ __metadata:
     react-dom: 18.3.0-canary-16d053d59-20230506
     react-is: ^18.2.0
     react-mosaic-component: ^6.0.1
+    react-resizable-panels: ^0.0.48
     redux: ^4.2.1
     rxjs: ^7.8.1
     swc-plugin-coverage-instrument: ^0.0.18
@@ -23704,6 +23705,16 @@ __metadata:
     react: ^16.14.0 || ^17.0.0 || ^18.0.0
     react-dom: ^16.14.0 || ^17.0.0 || ^18.0.0
   checksum: 229322d1c130916bb79a5a74d6860ff5d613e60da56e483bd599fa1e5ca1a2319c75d709d60f5cd72fba68a8125448aaddb2d30d2e32fef9d7eaa8ee826e2cda
+  languageName: node
+  linkType: hard
+
+"react-resizable-panels@npm:^0.0.48":
+  version: 0.0.48
+  resolution: "react-resizable-panels@npm:0.0.48"
+  peerDependencies:
+    react: ^16.14.0 || ^17.0.0 || ^18.0.0
+    react-dom: ^16.14.0 || ^17.0.0 || ^18.0.0
+  checksum: dbc4ef9ac6a1b74a95bb81185b6bffbf8f1f1ab544090383e766e065979258bdafcf4485bd5507a5fd247eb02e6d060bcc05765c0e12c0ff47c4800a2cc3d7bb
   languageName: node
   linkType: hard
 

@@ -1,6 +1,6 @@
 import './page-detail-editor.css';
 
-import { PageNotFoundError, Unreachable } from '@affine/env/constant';
+import { PageNotFoundError } from '@affine/env/constant';
 import { rootCurrentEditorAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -9,32 +9,28 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
-import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
-import type { ExpectedLayout } from '@toeverything/plugin-infra/type';
+import type {
+  AffinePlugin,
+  LayoutNode,
+  PluginUIAdapter,
+} from '@toeverything/plugin-infra/type';
 import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
-import type { FC } from 'react';
+import type { FC, ReactElement } from 'react';
 import React, {
-  lazy,
   memo,
   startTransition,
   Suspense,
   useCallback,
   useMemo,
 } from 'react';
-import type { MosaicNode } from 'react-mosaic-component';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { workspacePreferredModeAtom } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-
-const Mosaic = lazy(() =>
-  import('react-mosaic-component').then(({ Mosaic }) => ({
-    default: Mosaic,
-  }))
-);
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
@@ -127,6 +123,54 @@ const PluginContentAdapter = memo<{
   );
 });
 
+type LayoutPanelProps = {
+  node: LayoutNode;
+  editorProps: PageDetailEditorProps;
+  plugins: AffinePlugin<string>[];
+};
+
+const LayoutPanel = memo(function LayoutPanel(
+  props: LayoutPanelProps
+): ReactElement {
+  const node = props.node;
+  if (typeof node === 'string') {
+    if (node === 'editor') {
+      return <EditorWrapper {...props.editorProps} />;
+    } else {
+      const plugin = props.plugins.find(
+        plugin => plugin.definition.id === node
+      );
+      const Content = plugin?.uiAdapter.detailContent;
+      assertExists(Content);
+      return <PluginContentAdapter detailContent={Content} />;
+    }
+  } else {
+    return (
+      <PanelGroup direction={node.direction}>
+        <Panel defaultSize={node.splitPercentage}>
+          <Suspense>
+            <LayoutPanel
+              node={node.first}
+              editorProps={props.editorProps}
+              plugins={props.plugins}
+            />
+          </Suspense>
+        </Panel>
+        <PanelResizeHandle />
+        <Panel defaultSize={100 - node.splitPercentage}>
+          <Suspense>
+            <LayoutPanel
+              node={node.second}
+              editorProps={props.editorProps}
+              plugins={props.plugins}
+            />
+          </Suspense>
+        </Panel>
+      </PanelGroup>
+    );
+  }
+});
+
 export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
   const { workspace, pageId } = props;
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
@@ -135,32 +179,12 @@ export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
     throw new PageNotFoundError(blockSuiteWorkspace, pageId);
   }
   const title = useBlockSuiteWorkspacePageTitle(blockSuiteWorkspace, pageId);
+
+  const layout = useAtomValue(contentLayoutAtom);
   const affinePluginsMap = useAtomValue(affinePluginsAtom);
   const plugins = useMemo(
     () => Object.values(affinePluginsMap),
     [affinePluginsMap]
-  );
-
-  const [layout, setLayout] = useAtom(contentLayoutAtom);
-
-  const onChange = useCallback(
-    (_: MosaicNode<string | number> | null) => {
-      // type cast
-      const node = _ as MosaicNode<string> | null;
-      if (node) {
-        if (typeof node === 'string') {
-          console.error('unexpected layout');
-        } else {
-          if (node.splitPercentage && node.splitPercentage < 70) {
-            return;
-          } else if (node.first !== 'editor') {
-            return;
-          }
-          setLayout(node as ExpectedLayout);
-        }
-      }
-    },
-    [setLayout]
   );
 
   return (
@@ -168,33 +192,9 @@ export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
       <Head>
         <title>{title}</title>
       </Head>
-      {layout === 'editor' ? (
-        <EditorWrapper {...props} />
-      ) : (
-        <Mosaic
-          onChange={onChange}
-          renderTile={id => {
-            if (id === 'editor') {
-              return <EditorWrapper {...props} />;
-            } else {
-              const plugin = plugins.find(
-                plugin => plugin.definition.id === id
-              );
-              if (plugin && plugin.uiAdapter.detailContent) {
-                return (
-                  <Suspense>
-                    <PluginContentAdapter
-                      detailContent={plugin.uiAdapter.detailContent}
-                    />
-                  </Suspense>
-                );
-              }
-            }
-            throw new Unreachable();
-          }}
-          value={layout}
-        />
-      )}
+      <Suspense>
+        <LayoutPanel node={layout} editorProps={props} plugins={plugins} />
+      </Suspense>
     </>
   );
 };
