@@ -93,6 +93,7 @@ const ImagePreviewModalImpl = (
     handleDrag,
     handleDragStart,
     resetZoom,
+    currentScale,
   } = useZoomControls({ zoomRef, imageRef });
   const [prevData, setPrevData] = useState<string | null>(() => data);
   const [url, setUrl] = useState<string | null>(null);
@@ -322,7 +323,9 @@ const ImagePreviewModalImpl = (
                 className={buttonStyle}
                 onClick={zoomOut}
               />
-              <span className={scaleIndicatorStyle}>100%</span>
+              <span className={scaleIndicatorStyle}>{`${
+                (Math.round(10 * currentScale) / 10) * 100
+              }%`}</span>
               <Button
                 icon={<PlusIcon />}
                 noBorder={true}
