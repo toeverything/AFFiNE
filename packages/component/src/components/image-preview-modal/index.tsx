@@ -19,20 +19,20 @@ import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import useSWR from 'swr';
 
+import { useZoomControls } from './hooks/use-zoom';
 import {
   buttonStyle,
+  captionStyle,
   groupStyle,
+  imageBottomContainerStyle,
   imageNavigationControlStyle,
   imagePreviewActionBarStyle,
-  imagePreviewControlStyle,
   imagePreviewModalCaptionStyle,
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
   imagePreviewModalGoStyle,
-  imagePreviewModalImageStyle,
   imagePreviewModalStyle,
   scaleIndicatorStyle,
 } from './index.css';
@@ -51,7 +51,7 @@ const ImagePreviewModalImpl = (
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
 
-  // const [bIsActionBarVisble, setBIsActionBarVisible] = useState(false);
+  const [bIsActionBarVisble, setBIsActionBarVisible] = useState(false);
   const [caption, setCaption] = useState(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
@@ -64,7 +64,10 @@ const ImagePreviewModalImpl = (
     assertExists(page);
     const block = page.getBlockById(props.blockId) as EmbedBlockModel | null;
     assertExists(block);
+    setCaption(block?.caption === '' ? null : block?.caption);
+    // is it actually necessary?
     const disposable = block.propsUpdated.on(() => {
+      console.log(block.caption);
       setCaption(block.caption);
     });
     return () => {
@@ -81,6 +84,16 @@ const ImagePreviewModalImpl = (
     },
     suspense: true,
   });
+  const zoomRef = useRef<HTMLDivElement>(null);
+  const {
+    zoomIn,
+    zoomOut,
+    isZoomedBigger,
+    handleDragStart,
+    handleDrag,
+    handleDragEnd,
+    resetZoom,
+  } = useZoomControls({ zoomRef });
   const [prevData, setPrevData] = useState<string | null>(() => data);
   const [url, setUrl] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -123,6 +136,35 @@ const ImagePreviewModalImpl = (
     assertExists(page);
     const block = page.getBlockById(blockId);
     page.deleteBlock(block);
+    if (
+      page
+        .getPreviousSiblings(block)
+        .findLast(
+          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+        )
+    ) {
+      const prevBlock = page
+        .getPreviousSiblings(block)
+        .findLast(
+          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+        );
+      setBlockId(prevBlock.id);
+    } else if (
+      page
+        .getNextSiblings(block)
+        .find(
+          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+        )
+    ) {
+      const nextBlock = page
+        .getNextSiblings(block)
+        .find(
+          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+        );
+      setBlockId(nextBlock.id);
+    } else {
+      props.onClose();
+    }
   };
 
   const previousImageHandler = blockId => {
@@ -142,6 +184,20 @@ const ImagePreviewModalImpl = (
       setBlockId(prevBlock.id);
     }
   };
+
+  let actionbarTimeout;
+
+  const handleMouseEnter = () => {
+    clearTimeout(actionbarTimeout);
+    setBIsActionBarVisible(true);
+  };
+
+  const handleMouseLeave = () => {
+    actionbarTimeout = setTimeout(() => {
+      setBIsActionBarVisible(false);
+    }, 3000); // Delay in milliseconds before hiding the action bar
+  };
+
   return (
     <div data-testid="image-preview-modal" className={imagePreviewModalStyle}>
       <div className={imageNavigationControlStyle}>
@@ -165,71 +221,92 @@ const ImagePreviewModalImpl = (
         </span>
       </div>
       <div className={imagePreviewModalContainerStyle}>
-        <TransformWrapper initialScale={0.1}>
-          <TransformComponent>
-            <img
-              data-blob-id={props.blockId}
-              alt={caption}
-              className={imagePreviewModalImageStyle}
-              ref={imageRef}
-              src={url}
-            />
-          </TransformComponent>
-        </TransformWrapper>
-        <p className={imagePreviewModalCaptionStyle}>{caption}</p>
-      </div>
-      <div className={imagePreviewControlStyle}>
-        <button
-          onClick={() => {
-            props.onClose();
-          }}
-          className={imagePreviewModalCloseButtonStyle}
+        <div
+          className={`zoom-area ${isZoomedBigger ? 'zoomed-bigger' : ''}`}
+          ref={zoomRef}
         >
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 10 10"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M0.286086 0.285964C0.530163 0.0418858 0.925891 0.0418858 1.16997 0.285964L5.00013 4.11613L8.83029 0.285964C9.07437 0.0418858 9.4701 0.0418858 9.71418 0.285964C9.95825 0.530041 9.95825 0.925769 9.71418 1.16985L5.88401 5.00001L9.71418 8.83017C9.95825 9.07425 9.95825 9.46998 9.71418 9.71405C9.4701 9.95813 9.07437 9.95813 8.83029 9.71405L5.00013 5.88389L1.16997 9.71405C0.925891 9.95813 0.530163 9.95813 0.286086 9.71405C0.0420079 9.46998 0.0420079 9.07425 0.286086 8.83017L4.11625 5.00001L0.286086 1.16985C0.0420079 0.925769 0.0420079 0.530041 0.286086 0.285964Z"
-              fill="#77757D"
-            />
-          </svg>
-        </button>
-        <div className={imagePreviewActionBarStyle}>
-          <div className={groupStyle}>
-            <Button
-              icon={<ArrowLeftSmallIcon />}
-              noBorder={true}
-              className={buttonStyle}
-              onClick={() => previousImageHandler(blockId)}
-            />
-            <Button
-              icon={<ArrowRightSmallIcon />}
-              noBorder={true}
-              className={buttonStyle}
-              onClick={() => nextImageHandler(blockId)}
-            />
+          <div className="zoom-content">
+            <div
+              draggable={isZoomedBigger}
+              onDragStart={handleDragStart}
+              onDrag={handleDrag}
+              onDragEnd={handleDragEnd}
+            >
+              <img
+                src={url}
+                alt="test"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              />
+              <p className={imagePreviewModalCaptionStyle}>{caption}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={() => {
+          props.onClose();
+        }}
+        className={imagePreviewModalCloseButtonStyle}
+      >
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M0.286086 0.285964C0.530163 0.0418858 0.925891 0.0418858 1.16997 0.285964L5.00013 4.11613L8.83029 0.285964C9.07437 0.0418858 9.4701 0.0418858 9.71418 0.285964C9.95825 0.530041 9.95825 0.925769 9.71418 1.16985L5.88401 5.00001L9.71418 8.83017C9.95825 9.07425 9.95825 9.46998 9.71418 9.71405C9.4701 9.95813 9.07437 9.95813 8.83029 9.71405L5.00013 5.88389L1.16997 9.71405C0.925891 9.95813 0.530163 9.95813 0.286086 9.71405C0.0420079 9.46998 0.0420079 9.07425 0.286086 8.83017L4.11625 5.00001L0.286086 1.16985C0.0420079 0.925769 0.0420079 0.530041 0.286086 0.285964Z"
+            fill="#77757D"
+          />
+        </svg>
+      </button>
+      {bIsActionBarVisble ? (
+        <div
+          className={imageBottomContainerStyle}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {isZoomedBigger && caption !== null ? (
+            <p className={captionStyle}>{caption}</p>
+          ) : null}
+          <div className={imagePreviewActionBarStyle}>
+            <div>
+              <Button
+                icon={<ArrowLeftSmallIcon />}
+                noBorder={true}
+                className={buttonStyle}
+                onClick={() => previousImageHandler(blockId)}
+              />
+              <Button
+                icon={<ArrowRightSmallIcon />}
+                noBorder={true}
+                className={buttonStyle}
+                onClick={() => nextImageHandler(blockId)}
+              />
+            </div>
             <div className={groupStyle}>
               <Button
                 icon={<ViewBarIcon />}
                 noBorder={true}
                 className={buttonStyle}
+                onClick={() => resetZoom()}
               />
               <Button
                 icon={<MinusIcon />}
                 noBorder={true}
                 className={buttonStyle}
+                onClick={zoomOut}
               />
               <span className={scaleIndicatorStyle}>100%</span>
               <Button
                 icon={<PlusIcon />}
                 noBorder={true}
                 className={buttonStyle}
+                onClick={() => zoomIn()}
               />
             </div>
             <div className={groupStyle}>
@@ -288,7 +365,7 @@ const ImagePreviewModalImpl = (
             </div>
           </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 };
