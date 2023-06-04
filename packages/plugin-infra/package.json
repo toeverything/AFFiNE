@@ -20,7 +20,7 @@
     "@blocksuite/store": "0.0.0-20230601122821-16196c35-nightly"
   },
   "devDependencies": {
-    "jotai": "^2.1.0"
+    "jotai": "^2.1.1"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
