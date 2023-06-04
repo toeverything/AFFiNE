@@ -5,9 +5,6 @@ import { DebugLogger } from '@affine/debug';
 import preloadingData from '@affine/templates/affine-0.6.0-preloading.json';
 import type { Page } from '@blocksuite/store';
 
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { config } from '../src/config';
-
 declare global {
   interface Window {
     lastImportedMarkdown: string;
@@ -16,15 +13,8 @@ declare global {
 
 const logger = new DebugLogger('init-page');
 
-function setEditorFlags(page: Page) {
-  Object.entries(config.editorFlags).forEach(([key, value]) => {
-    page.workspace.awarenessStore.setFlag(key as keyof BlockSuiteFlags, value);
-  });
-}
-
 export function initPage(page: Page): void {
   logger.debug('initEmptyPage', page.id);
-  setEditorFlags(page);
   // Add page block and surface block at root level
   const isFirstPage = page.meta.init === true;
   if (isFirstPage) {

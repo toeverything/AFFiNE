@@ -1,4 +1,5 @@
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { type BlockSuiteFeatureFlags, config } from '@affine/env/config';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -7,7 +8,7 @@ import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
@@ -15,7 +16,16 @@ import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspac
 import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import type { NextPageWithLayout } from '../../../shared';
+import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
+
+function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
+    blockSuiteWorkspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
+}
 
 const WorkspaceDetail: React.FC = () => {
   const router = useRouter();
@@ -38,6 +48,12 @@ const WorkspaceDetail: React.FC = () => {
     },
     [blockSuiteWorkspace.id, openPage]
   );
+
+  useEffect(() => {
+    if (currentWorkspace) {
+      setEditorFlags(currentWorkspace.blockSuiteWorkspace);
+    }
+  }, [currentWorkspace]);
 
   const { PageDetail, Header } = getUIAdapter(currentWorkspace.flavour);
   return (
