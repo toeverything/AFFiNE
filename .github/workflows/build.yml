@@ -92,6 +92,7 @@ jobs:
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: true
           COVERAGE: true
+          ENABLE_PRELOADING: false
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -116,6 +117,7 @@ jobs:
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: false
           COVERAGE: true
+          ENABLE_PRELOADING: false
 
       - name: Export static resources
         run: yarn export
@@ -228,7 +230,6 @@ jobs:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
-          ENABLE_PRELOADING: false
 
     steps:
       - uses: actions/checkout@v3
@@ -396,7 +397,6 @@ jobs:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
-          ENABLE_PRELOADING: false
 
     steps:
       - uses: actions/checkout@v3
