@@ -94,11 +94,18 @@ Dropdown.args = {
 
 export const RadioGroup: StoryFn = ({ ...props }) => {
   return (
-    <RadioButtonGroup {...props}>
-      <RadioButton value="all">All</RadioButton>
-      <RadioButton value="page">Page</RadioButton>
-      <RadioButton value="edgeless">Edgeless</RadioButton>
-    </RadioButtonGroup>
+    <>
+      <RadioButtonGroup {...props}>
+        <RadioButton value="all">All</RadioButton>
+        <RadioButton value="page">Page</RadioButton>
+        <RadioButton value="edgeless">Edgeless</RadioButton>
+      </RadioButtonGroup>
+      <RadioButtonGroup {...props}>
+        <RadioButton value="all">Long long text and some more</RadioButton>
+        <RadioButton value="page">Lorem ipsum dolor sit amet</RadioButton>
+        <RadioButton value="edgeless">Long long text</RadioButton>
+      </RadioButtonGroup>
+    </>
   );
 };
 RadioGroup.args = {
