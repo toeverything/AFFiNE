@@ -1,13 +1,13 @@
 import { displayFlex, styled } from '../../styles';
 import { Content } from '../../ui/layout/content';
-import { TableRow } from '../../ui/table/table-row';
+import { TableBodyRow } from '../../ui/table/table-row';
 
 export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
-    height: 'calc(100vh - 52px)',
-    padding: '18px 32px 80px 32px',
+    height: '100%',
+    padding: '0 32px 180px 32px',
     maxWidth: '100%',
-    overflowY: 'auto',
+    overflowY: 'scroll',
     [theme.breakpoints.down('sm')]: {
       padding: '52px 0px',
       'tr > td:first-of-type': {
@@ -69,7 +69,7 @@ export const StyledTitlePreview = styled(Content)(() => {
   };
 });
 
-export const StyledTableRow = styled(TableRow)(() => {
+export const StyledTableBodyRow = styled(TableBodyRow)(() => {
   return {
     cursor: 'pointer',
     '.favorite-button': {
