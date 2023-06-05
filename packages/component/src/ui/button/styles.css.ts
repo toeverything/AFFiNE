@@ -58,7 +58,7 @@ export const radioButton = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  width: '75px',
+  padding: '0 30px',
   height: '24px',
   borderRadius: '8px',
   filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1))',
