@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef } from 'react';
 export function useAffineAsyncCallback(channel: string) {
   return useCallback(
     (...args: any[]): Promise<any> => {
-      return window.affine.invoke(channel, ...args);
+      return window.affine.ipcRenderer.invoke(channel, ...args);
     },
     [channel]
   );
@@ -26,12 +26,12 @@ export function useAffineListener(
   }
   useEffect(() => {
     if (once) {
-      window.affine.once(channel, fnRef.current!);
+      window.affine.ipcRenderer.once(channel, fnRef.current!);
     } else {
-      window.affine.on(channel, fnRef.current!);
+      window.affine.ipcRenderer.on(channel, fnRef.current!);
     }
     return () => {
-      window.affine.removeListener(channel, fnRef.current!);
+      window.affine.ipcRenderer.removeListener(channel, fnRef.current!);
     };
   }, [channel, once]);
 }

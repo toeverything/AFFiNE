@@ -15,7 +15,7 @@ if (!environment.isDesktop && !environment.isServer) {
   const unimplemented = () => {
     throw new Error('AFFiNE Plugin Web will be supported in the future');
   };
-  window.affine = {
+  window.affine.ipcRenderer = {
     invoke: unimplemented,
     send: unimplemented,
     on: unimplemented,
