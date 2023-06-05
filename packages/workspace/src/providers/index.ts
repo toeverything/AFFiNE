@@ -162,12 +162,13 @@ const createSQLiteProvider = (
   const sqliteOrigin = Symbol('sqlite-provider-origin');
   const apis = window.apis!;
   const events = window.events!;
+  let destroyed = false;
   // make sure it is being used in Electron with APIs
   assertExists(apis);
   assertExists(events);
 
   function handleUpdate(update: Uint8Array, origin: unknown) {
-    if (origin === sqliteOrigin) {
+    if (origin === sqliteOrigin || destroyed) {
       return;
     }
     apis.db.applyDocUpdate(blockSuiteWorkspace.id, update);
@@ -200,6 +201,10 @@ const createSQLiteProvider = (
     logger.info('syncing updates from sqlite', blockSuiteWorkspace.id);
     const updates = await apis.db.getDocAsUpdates(blockSuiteWorkspace.id);
 
+    if (destroyed) {
+      return;
+    }
+
     if (updates) {
       Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
     }
@@ -219,7 +224,15 @@ const createSQLiteProvider = (
 
   let unsubscribe = () => {};
   let connected = false;
+
   const callbacks = new CallbackSet();
+
+  const cleanup = () => {
+    unsubscribe();
+    blockSuiteWorkspace.doc.off('update', handleUpdate);
+    connected = false;
+    destroyed = true;
+  };
 
   return {
     flavour: 'sqlite',
@@ -228,29 +241,23 @@ const createSQLiteProvider = (
     get connected(): boolean {
       return connected;
     },
-    cleanup: () => {
-      throw new Error('Method not implemented.');
-    },
+    cleanup,
     connect: async () => {
       logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
-      await syncUpdates();
-      connected = true;
-
       blockSuiteWorkspace.doc.on('update', handleUpdate);
-
       unsubscribe = events.db.onExternalUpdate(({ update, workspaceId }) => {
         if (workspaceId === blockSuiteWorkspace.id) {
           Y.applyUpdate(blockSuiteWorkspace.doc, update, sqliteOrigin);
         }
       });
-
+      await syncUpdates();
+      connected = true;
       // blockSuiteWorkspace.doc.on('destroy', ...);
       logger.info('connecting sqlite done', blockSuiteWorkspace.id);
     },
     disconnect: () => {
-      unsubscribe();
-      blockSuiteWorkspace.doc.off('update', handleUpdate);
-      connected = false;
+      cleanup();
+      logger.info('destroyed sqlite provider', blockSuiteWorkspace.id);
     },
   };
 };

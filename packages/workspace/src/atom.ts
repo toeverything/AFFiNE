@@ -8,6 +8,7 @@ import type { WorkspaceFlavour } from './type';
 export type RootWorkspaceMetadata = {
   id: string;
   flavour: WorkspaceFlavour;
+  fromImport?: boolean;
 };
 // #region root atoms
 // root primitive atom that stores the necessary data for the whole app
