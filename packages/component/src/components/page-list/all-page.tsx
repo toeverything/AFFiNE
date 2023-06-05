@@ -5,13 +5,15 @@ import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
 import { type CSSProperties } from 'react';
 
-import { Table, TableBody, TableCell, TableHead, TableRow } from '../..';
+import { Table, TableBody, TableCell, TableHead, TableHeadRow } from '../..';
+import { TableBodyRow } from '../../ui/table';
+import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
 import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import { TitleCell } from './components/title-cell';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { TrashOperationCell } from './operation-cell';
-import { StyledTableContainer, StyledTableRow } from './styles';
+import { StyledTableContainer } from './styles';
 import type { ListData, PageListProps, TrashListData } from './type';
 import { useSorter } from './use-sorter';
 import { formatDate, useIsSmallDevices } from './utils';
@@ -66,7 +68,7 @@ const AllPagesHead = ({
 
   return (
     <TableHead>
-      <TableRow>
+      <TableHeadRow>
         {titleList
           .filter(({ showWhen = () => true }) => showWhen())
           .map(({ key, content, proportion, sortable = true, styles }) => (
@@ -97,7 +99,7 @@ const AllPagesHead = ({
               </div>
             </TableCell>
           ))}
-      </TableRow>
+      </TableHeadRow>
     </TableHead>
   );
 };
@@ -115,7 +117,7 @@ export const PageList = ({
     key: DEFAULT_SORT_KEY,
     order: 'desc',
   });
-
+  const [hasScrollTop, ref] = useHasScrollTop();
   const isSmallDevices = useIsSmallDevices();
   if (isSmallDevices) {
     return (
@@ -138,8 +140,8 @@ export const PageList = ({
       : undefined;
 
   return (
-    <StyledTableContainer>
-      <Table>
+    <StyledTableContainer ref={ref}>
+      <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
         <AllPagesHead
           isPublicWorkspace={isPublicWorkspace}
           sorter={sorter}
@@ -162,12 +164,12 @@ const TrashListHead = () => {
   const t = useAFFiNEI18N();
   return (
     <TableHead>
-      <TableRow>
+      <TableHeadRow>
         <TableCell proportion={0.5}>{t['Title']()}</TableCell>
         <TableCell proportion={0.2}>{t['Created']()}</TableCell>
         <TableCell proportion={0.2}>{t['Moved to Trash']()}</TableCell>
         <TableCell proportion={0.1}></TableCell>
-      </TableRow>
+      </TableHeadRow>
     </TableHead>
   );
 };
@@ -179,6 +181,7 @@ export const PageListTrashView: React.FC<{
   const t = useAFFiNEI18N();
 
   const theme = useTheme();
+  const [hasScrollTop, ref] = useHasScrollTop();
   const isSmallDevices = useMediaQuery(theme.breakpoints.down('sm'));
   if (isSmallDevices) {
     const mobileList = list.map(({ pageId, icon, title, onClickPage }) => ({
@@ -205,7 +208,7 @@ export const PageListTrashView: React.FC<{
       index
     ) => {
       return (
-        <StyledTableRow
+        <TableBodyRow
           data-testid={`page-list-item-${pageId}`}
           key={`${pageId}-${index}`}
         >
@@ -229,14 +232,14 @@ export const PageListTrashView: React.FC<{
               onOpenPage={onClickPage}
             />
           </TableCell>
-        </StyledTableRow>
+        </TableBodyRow>
       );
     }
   );
 
   return (
-    <StyledTableContainer>
-      <Table>
+    <StyledTableContainer ref={ref}>
+      <Table showBorder={hasScrollTop}>
         <TrashListHead />
         <TableBody>{ListItems}</TableBody>
       </Table>
