@@ -31,11 +31,11 @@ const electronModule = {
       handlers.push(callback);
       registeredHandlers.set(name, handlers);
     },
-    addEventListener: (...args: any[]) => {
+    addListener: (...args: any[]) => {
       // @ts-ignore
       electronModule.app.on(...args);
     },
-    removeEventListener: () => {},
+    removeListener: () => {},
   },
   shell: {} as Partial<Electron.Shell>,
   dialog: {} as Partial<Electron.Dialog>,
@@ -54,6 +54,7 @@ vi.doMock('electron', () => {
 
 const constructorStub = vi.fn();
 const destroyStub = vi.fn();
+destroyStub.mockReturnValue(Promise.resolve());
 
 vi.doMock('../secondary-db', () => {
   return {
@@ -107,6 +108,9 @@ test('db should be destroyed when app quits', async () => {
 
   await runHandler('before-quit');
 
+  // wait the async `db.destroy()` to be called
+  await setTimeout(100);
+
   expect(db0.db).toBeNull();
   expect(db1.db).toBeNull();
 });
@@ -122,9 +126,7 @@ test('if db has a secondary db path, we should also poll that', async () => {
 
   const db = await ensureSQLiteDB(workspaceId);
 
-  await vi.advanceTimersByTimeAsync(1500);
-
-  await setTimeout(100);
+  await setTimeout(10);
 
   expect(constructorStub).toBeCalledTimes(1);
   expect(constructorStub).toBeCalledWith(path.join(tmpDir, 'secondary.db'), db);
@@ -134,7 +136,8 @@ test('if db has a secondary db path, we should also poll that', async () => {
     secondaryDBPath: path.join(tmpDir, 'secondary2.db'),
   });
 
-  await vi.advanceTimersByTimeAsync(1500);
+  // wait the async `db.destroy()` to be called
+  await setTimeout(100);
   expect(constructorStub).toBeCalledTimes(2);
   expect(destroyStub).toBeCalledTimes(1);
 

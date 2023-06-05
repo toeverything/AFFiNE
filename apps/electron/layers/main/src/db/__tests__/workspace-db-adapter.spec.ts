@@ -16,7 +16,7 @@ const testAppContext: AppContext = {
 };
 
 afterEach(async () => {
-  // await fs.remove(tmpDir);
+  await fs.remove(tmpDir);
 });
 
 function getTestUpdates() {

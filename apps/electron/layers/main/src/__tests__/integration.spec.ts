@@ -107,11 +107,11 @@ const electronModule = {
       handlers.push(callback);
       registeredHandlers.set(name, handlers);
     },
-    addEventListener: (...args: any[]) => {
+    addListener: (...args: any[]) => {
       // @ts-ignore
       electronModule.app.on(...args);
     },
-    removeEventListener: () => {},
+    removeListener: () => {},
   },
   BrowserWindow: {
     getAllWindows: () => {
@@ -144,7 +144,10 @@ beforeEach(async () => {
 afterEach(async () => {
   // reset registered handlers
   registeredHandlers.get('before-quit')?.forEach(fn => fn());
-
+  // wait for the db to be closed on Windows
+  if (process.platform === 'win32') {
+    await setTimeout(200);
+  }
   await fs.remove(SESSION_DATA_PATH);
 });
 

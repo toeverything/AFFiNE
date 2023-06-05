@@ -28,7 +28,7 @@ export abstract class BaseSQLiteAdapter {
 
   async addBlob(key: string, data: Uint8Array) {
     try {
-      assert(this.db, 'db is not connected');
+      assert(this.db, `${this.path} is not connected`);
       await this.db.addBlob(key, data);
     } catch (error) {
       logger.error('addBlob', error);
@@ -37,7 +37,7 @@ export abstract class BaseSQLiteAdapter {
 
   async getBlob(key: string) {
     try {
-      assert(this.db, 'db is not connected');
+      assert(this.db, `${this.path} is not connected`);
       const blob = await this.db.getBlob(key);
       return blob?.data;
     } catch (error) {
@@ -48,26 +48,26 @@ export abstract class BaseSQLiteAdapter {
 
   async deleteBlob(key: string) {
     try {
-      assert(this.db, 'db is not connected');
+      assert(this.db, `${this.path} is not connected`);
       await this.db.deleteBlob(key);
     } catch (error) {
-      logger.error('deleteBlob', error);
+      logger.error(`${this.path} delete blob failed`, error);
     }
   }
 
   async getBlobKeys() {
     try {
-      assert(this.db, 'db is not connected');
+      assert(this.db, `${this.path} is not connected`);
       return await this.db.getBlobKeys();
     } catch (error) {
-      logger.error('getBlobKeys', error);
+      logger.error(`getBlobKeys failed`, error);
       return [];
     }
   }
 
   async getUpdates() {
     try {
-      assert(this.db && !this.db.isClose, 'db is not connected');
+      assert(this.db, `${this.path} is not connected`);
       return await this.db.getUpdates();
     } catch (error) {
       logger.error('getUpdates', error);

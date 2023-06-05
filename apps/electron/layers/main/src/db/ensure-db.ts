@@ -1,34 +1,40 @@
 import { app } from 'electron';
+import type { Observable } from 'rxjs';
 import {
+  concat,
   defer,
-  firstValueFrom,
   from,
   fromEvent,
   interval,
-  Observable,
+  lastValueFrom,
+  merge,
 } from 'rxjs';
 import {
+  concatMap,
   distinctUntilChanged,
   filter,
   ignoreElements,
   last,
   map,
+  mergeMap,
   shareReplay,
   startWith,
   switchMap,
+  take,
   takeUntil,
   tap,
 } from 'rxjs/operators';
 
 import { appContext } from '../context';
 import { logger } from '../logger';
-import { getWorkspaceMeta$ } from '../workspace';
+import { getWorkspaceMeta, workspaceSubjects } from '../workspace';
 import { SecondaryWorkspaceSQLiteDB } from './secondary-db';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 import { openWorkspaceDatabase } from './workspace-db-adapter';
 
 const db$Map = new Map<string, Observable<WorkspaceSQLiteDB>>();
 
+// use defer to prevent `app` is undefined while running tests
 const beforeQuit$ = defer(() => fromEvent(app, 'before-quit'));
 
 function getWorkspaceDB$(id: string) {
@@ -36,23 +42,37 @@ function getWorkspaceDB$(id: string) {
     db$Map.set(
       id,
       from(openWorkspaceDatabase(appContext, id)).pipe(
-        shareReplay(1),
-        switchMap(db => {
-          return startPollingSecondaryDB(db).pipe(
-            ignoreElements(),
-            startWith(db),
-            takeUntil(beforeQuit$),
-            tap({
-              complete: () => {
-                logger.info('[ensureSQLiteDB] close db connection');
-                db$Map.delete(id);
-                db.destroy().catch(err => {
-                  logger.error('[ensureSQLiteDB] destroy db failed', err);
-                });
-              },
-            })
-          );
+        tap({
+          next: db => {
+            logger.info(
+              '[ensureSQLiteDB] db connection established',
+              db.workspaceId
+            );
+          },
         }),
+        switchMap(db =>
+          // takeUntil the polling stream, and then destroy the db
+          concat(
+            startPollingSecondaryDB(db).pipe(
+              ignoreElements(),
+              startWith(db),
+              takeUntil(beforeQuit$),
+              last()
+            ),
+            defer(() => {
+              return db
+                .destroy()
+                .then(() => {
+                  db$Map.delete(id);
+                  return db;
+                })
+                .catch(err => {
+                  logger.error('[ensureSQLiteDB] destroy db failed', err);
+                  throw err;
+                });
+            })
+          ).pipe(startWith(db))
+        ),
         shareReplay(1)
       )
     );
@@ -61,49 +81,74 @@ function getWorkspaceDB$(id: string) {
 }
 
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
-  // pull every 30 seconds
-  const poll$ = interval(30000).pipe(
-    startWith(0),
-    switchMap(() => {
-      return getWorkspaceMeta$(db.workspaceId).pipe(
-        map(meta => meta?.secondaryDBPath),
-        distinctUntilChanged(),
-        filter((p): p is string => !!p),
-        switchMap(path => {
-          return new Observable<SecondaryWorkspaceSQLiteDB>(observer => {
-            const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
-            secondaryDB
-              .connectIfNeeded()
-              .then(() => secondaryDB.pull())
-              .then(() => {
-                observer.next(secondaryDB);
-              })
-              .catch(err => {
-                observer.error(err);
-              });
-            return () => {
+  return merge(
+    interval(30000).pipe(
+      startWith(0),
+      switchMap(() => getWorkspaceMeta(appContext, db.workspaceId))
+    ),
+    workspaceSubjects.meta.pipe(
+      map(({ meta }) => meta),
+      filter(meta => meta.id === db.workspaceId)
+    )
+  ).pipe(
+    map(meta => meta?.secondaryDBPath),
+    filter((p): p is string => !!p),
+    distinctUntilChanged(),
+    concatMap(path => {
+      const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
+      return from(secondaryDB.connectIfNeeded()).pipe(
+        mergeMap(() =>
+          // use concat to make sure the db.destroy is running after the `secondaryDBPath` is changed
+          concat(
+            db.update$.pipe(
+              mergeMap(async () => {
+                try {
+                  secondaryDB.pull();
+                } catch (err) {
+                  logger.error(`[PollingSecondaryDB] pull error`, err);
+                }
+                return secondaryDB;
+              }),
+              takeUntil(
+                merge(
+                  beforeQuit$,
+                  workspaceSubjects.meta.pipe(
+                    filter(
+                      ({ meta }) =>
+                        meta.id === db.workspaceId &&
+                        meta.secondaryDBPath !== path
+                    ),
+                    tap({
+                      next: meta => {
+                        logger.info(`[PollingSecondaryDB] meta update`, meta);
+                      },
+                    })
+                  )
+                )
+              )
+            ),
+            defer(() => {
               logger.info(
                 '[ensureSQLiteDB] close secondary db connection',
                 secondaryDB.path
               );
               return secondaryDB.destroy();
-            };
-          });
-        })
+            })
+          )
+        )
       );
     }),
-    takeUntil(db.update$.pipe(last())),
-    shareReplay(1),
     tap({
       error: err => {
-        logger.error(err);
+        logger.error(`[ensureSQLiteDB] polling secondary db error`, err);
+      },
+      complete: () => {
+        logger.info('[ensureSQLiteDB] polling secondary db complete');
       },
     })
   );
-
-  return poll$;
 }
 
 export function ensureSQLiteDB(id: string) {
-  return firstValueFrom(getWorkspaceDB$(id));
+  return lastValueFrom(getWorkspaceDB$(id).pipe(take(1)));
 }
