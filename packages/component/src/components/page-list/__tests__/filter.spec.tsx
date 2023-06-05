@@ -25,6 +25,7 @@ const ref = (name: keyof VariableMap): Ref => {
   return {
     type: 'ref',
     name,
+    icon: <div />,
   };
 };
 const mockVariableMap = (vars: Partial<VariableMap>): VariableMap => {
