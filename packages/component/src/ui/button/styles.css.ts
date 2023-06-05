@@ -44,10 +44,10 @@ export const dropdownWrapper = style({
   paddingRight: '10px',
 });
 
-export const icon = style({
+export const dropdownIcon = style({
   borderRadius: '4px',
   selectors: {
-    '&:hover': {
+    [`${dropdownWrapper}:hover &`]: {
       background: 'var(--affine-hover-color)',
     },
   },
