@@ -1,3 +1,4 @@
+/// <reference types="@affine/env" />
 import { useCallback, useEffect, useRef } from 'react';
 
 /**
