@@ -79,6 +79,7 @@ export const sidebarButtonStyle = style({
   width: 'auto',
   height: '32px',
   color: 'var(--affine-icon-color)',
+  zIndex: 1,
 });
 
 export const sidebarFloatMaskStyle = style({

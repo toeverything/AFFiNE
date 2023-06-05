@@ -60,7 +60,7 @@ export const VariableSelect = ({
   onSelect: (value: Filter) => void;
 }) => {
   return (
-    <div>
+    <div data-testid="variable-select">
       <div className={styles.variableSelectTitleStyle}>Filter</div>
       <div className={styles.variableSelectDividerStyle}></div>
       {vars
@@ -74,7 +74,12 @@ export const VariableSelect = ({
             }}
             className={styles.menuItemStyle}
           >
-            <div className={styles.menuItemTextStyle}>{v.name}</div>
+            <div
+              data-testid="variable-select-item"
+              className={styles.menuItemTextStyle}
+            >
+              {v.name}
+            </div>
           </MenuItem>
         ))}
     </div>

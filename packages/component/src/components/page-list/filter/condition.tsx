@@ -69,7 +69,7 @@ const FunctionSelect = ({
     return filterMatcher.allMatchedData(type);
   }, [value.left.name]);
   return (
-    <div>
+    <div data-testid="filter-name-select">
       {list.map(v => (
         <MenuItem
           onClick={() => {
@@ -102,7 +102,7 @@ export const Arg = ({
     return null;
   }
   return (
-    <div style={{ marginLeft: 4 }}>
+    <div data-testid="filter-arg" style={{ marginLeft: 4 }}>
       {data.render({ type, value, onChange })}
     </div>
   );
