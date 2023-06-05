@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import type { SqliteConnection } from '@affine/native';
 import { debounce } from 'lodash-es';
 import * as Y from 'yjs';
@@ -132,7 +134,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       // to initialize the yDoc, we need to apply all updates from the db
       this.applyUpdate(upstreamUpdate, 'upstream');
 
-      this.pull();
+      await this.pull();
     });
   }
 
@@ -170,6 +172,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
    */
   async pull() {
     const start = performance.now();
+    assert(this.upstream.db, 'upstream db should be connected');
     const updates = await this.run(async () => {
       // TODO: no need to get all updates, just get the latest ones (using a cursor, etc)?
       await this.syncBlobs();

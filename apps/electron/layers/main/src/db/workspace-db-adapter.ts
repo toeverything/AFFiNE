@@ -27,6 +27,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
     // when db is closed, we can safely remove it from ensure-db list
     this.update$.complete();
+    this.firstConnected = false;
   }
 
   getWorkspaceName = () => {
@@ -101,5 +102,6 @@ export async function openWorkspaceDatabase(
   const meta = await getWorkspaceMeta(context, workspaceId);
   const db = new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
   await db.init();
+  logger.info(`openWorkspaceDatabase [${workspaceId}]`);
   return db;
 }
