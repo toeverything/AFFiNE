@@ -35,7 +35,8 @@ export const Condition = ({
             content={<VariableSelect selected={[]} onSelect={onChange} />}
           >
             <div data-testid="variable-name" className={styles.filterTypeStyle}>
-              {ast.left.name}
+              <div className={styles.filterTypeIconStyle}>{ast.left.icon}</div>
+              <div>{ast.left.name}</div>
             </div>
           </Menu>
           <Menu

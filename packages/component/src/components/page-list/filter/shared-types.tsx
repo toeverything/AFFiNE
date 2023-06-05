@@ -7,6 +7,7 @@ import type { TType } from './logical/typesystem';
 export type Ref = {
   type: 'ref';
   name: keyof VariableMap;
+  icon: ReactElement;
 };
 
 export type Filter = {

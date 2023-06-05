@@ -30,7 +30,7 @@ export const createDefaultFilter = (variable: FilterVariable): Filter => {
   }
   return {
     type: 'filter',
-    left: { type: 'ref', name: variable.name },
+    left: { type: 'ref', name: variable.name, icon: variable.icon },
     funcName: data.name,
     args: data.defaultArgs().map(value => ({ type: 'literal', value })),
   };

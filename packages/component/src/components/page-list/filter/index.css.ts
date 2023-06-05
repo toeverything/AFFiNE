@@ -49,4 +49,10 @@ export const switchStyle = style({
 });
 export const filterTypeStyle = style({
   fontSize: 'var(--affine-font-sm)',
+  display: 'flex',
+});
+export const filterTypeIconStyle = style({
+  fontSize: 'var(--affine-font-base)',
+  marginRight: '4px',
+  display: 'flex',
 });
