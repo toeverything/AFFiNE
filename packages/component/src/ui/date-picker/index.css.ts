@@ -2,6 +2,11 @@ import { globalStyle, style } from '@vanilla-extract/css';
 
 export const inputStyle = style({
   fontSize: 'var(--affine-font-xs)',
+  width: '70px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '22px',
 });
 export const popperStyle = style({
   boxShadow: 'var(--affine-shadow-2)',
@@ -26,14 +31,14 @@ export const headerStyle = style({
   padding: '0 14px',
 });
 export const yearStyle = style({
-  color: 'blue',
-  // background: 'yellow',
-  border: 'none',
+  color: 'var(--affine-text-primary-color)',
+  fontWeight: '600',
+  fontSize: 'var(--affine-font-sm)',
 });
 export const mouthStyle = style({
-  color: 'blue',
-  // background: 'yellow',
-  border: 'none',
+  color: 'var(--affine-text-primary-color)',
+  fontWeight: '600',
+  fontSize: 'var(--affine-font-sm)',
 });
 export const arrowLeftStyle = style({
   width: '16px',
@@ -55,7 +60,7 @@ export const weekStyle = style({
   height: '28px',
   lineHeight: '28px',
   padding: '0 4px',
-  margin: '0px 8px',
+  margin: '0px 6px',
   verticalAlign: 'middle',
 });
 export const calendarStyle = style({
@@ -70,7 +75,7 @@ export const dayStyle = style({
   height: '28px',
   lineHeight: '28px',
   padding: '0 4px',
-  margin: '6px 8px',
+  margin: '6px',
   verticalAlign: 'middle',
 
   selectors: {

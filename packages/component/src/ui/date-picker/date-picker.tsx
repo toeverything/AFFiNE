@@ -41,7 +41,6 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
   const renderCustomHeader = ({
     date,
     changeYear,
-    changeMonth,
     decreaseMonth,
     increaseMonth,
     prevMonthButtonDisabled,
@@ -49,7 +48,6 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
   }: {
     date: Date;
     changeYear: (year: number) => void;
-    changeMonth: (month: number) => void;
     decreaseMonth: () => void;
     increaseMonth: () => void;
     prevMonthButtonDisabled: boolean;
@@ -59,25 +57,15 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
     const selectedMonth = dayjs(date).month();
     return (
       <div className={styles.headerStyle}>
+        <div className={styles.mouthStyle}>{months[selectedMonth]}</div>
         <select
+          className={styles.yearStyle}
           value={selectedYear}
           onChange={e => changeYear(Number(e.target.value))}
         >
           {years.map(year => (
             <option key={year} value={year}>
               {year}
-            </option>
-          ))}
-        </select>
-        <select
-          value={selectedMonth}
-          onChange={e => {
-            changeMonth(Number(e.target.value));
-          }}
-        >
-          {months.map((month, index) => (
-            <option key={month} value={index}>
-              {month}
             </option>
           ))}
         </select>
@@ -112,7 +100,6 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
       renderCustomHeader={({
         date,
         changeYear,
-        changeMonth,
         decreaseMonth,
         increaseMonth,
         prevMonthButtonDisabled,
@@ -121,7 +108,6 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
         renderCustomHeader({
           date,
           changeYear,
-          changeMonth,
           decreaseMonth,
           increaseMonth,
           prevMonthButtonDisabled,

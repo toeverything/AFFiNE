@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
-import { MyDatePicker } from '../../../ui/date-picker';
+import { AFFiNEDatePicker } from '../../../ui/date-picker';
 import { inputStyle } from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
@@ -34,7 +34,7 @@ literalMatcher.register(tBoolean.create(), {
 });
 literalMatcher.register(tDate.create(), {
   render: ({ value, onChange }) => (
-    <MyDatePicker
+    <AFFiNEDatePicker
       value={dayjs(value.value as number).format('YYYY-MM-DD')}
       onChange={e => {
         onChange({
