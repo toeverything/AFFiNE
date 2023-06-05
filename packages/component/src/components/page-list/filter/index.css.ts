@@ -57,4 +57,5 @@ export const filterTypeIconStyle = style({
   fontSize: 'var(--affine-font-base)',
   marginRight: '6px',
   display: 'flex',
+  color: 'var(--affine-icon-color)',
 });
