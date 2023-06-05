@@ -1,5 +1,4 @@
 import { DateTimeIcon, FavoritedIcon } from '@blocksuite/icons';
-import type { ReactElement } from 'react';
 
 import { tBoolean, tDate } from './logical/custom-type';
 import type { TType } from './logical/typesystem';
@@ -7,7 +6,6 @@ import type { TType } from './logical/typesystem';
 export type Ref = {
   type: 'ref';
   name: keyof VariableMap;
-  icon: ReactElement;
 };
 
 export type Filter = {
@@ -34,7 +32,6 @@ export type Literal = {
 export type FilterVariable = {
   name: keyof VariableMap;
   type: TType;
-  icon: ReactElement;
 };
 
 export const variableDefineMap = {

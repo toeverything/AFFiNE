@@ -30,7 +30,7 @@ export const createDefaultFilter = (variable: FilterVariable): Filter => {
   }
   return {
     type: 'filter',
-    left: { type: 'ref', name: variable.name, icon: variable.icon },
+    left: { type: 'ref', name: variable.name },
     funcName: data.name,
     args: data.defaultArgs().map(value => ({ type: 'literal', value })),
   };
@@ -67,7 +67,7 @@ export const VariableSelect = ({
         // .filter(v => !selected.find(filter => filter.left.name === v.name))
         .map(v => (
           <MenuItem
-            icon={v.icon}
+            icon={variableDefineMap[v.name].icon}
             key={v.name}
             onClick={() => {
               onSelect(createDefaultFilter(v));

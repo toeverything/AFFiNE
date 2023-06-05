@@ -6,6 +6,7 @@ import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
 import type { Filter, Literal } from './shared-types';
+import { variableDefineMap } from './shared-types';
 import { filterMatcher, VariableSelect, vars } from './vars';
 
 export const Condition = ({
@@ -35,7 +36,9 @@ export const Condition = ({
             content={<VariableSelect selected={[]} onSelect={onChange} />}
           >
             <div data-testid="variable-name" className={styles.filterTypeStyle}>
-              <div className={styles.filterTypeIconStyle}>{ast.left.icon}</div>
+              <div className={styles.filterTypeIconStyle}>
+                {variableDefineMap[ast.left.name].icon}
+              </div>
               <div>{ast.left.name}</div>
             </div>
           </Menu>
