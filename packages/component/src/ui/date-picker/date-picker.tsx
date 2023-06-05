@@ -4,9 +4,7 @@ import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 
 import * as styles from './index.css';
-const years = Array.from({ length: dayjs().year() - 1969 }, (v, i) =>
-  (1970 + i).toString()
-);
+import { AFFiNEMonthPicker } from './month-picker';
 const months = [
   'January',
   'February',
@@ -41,6 +39,7 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
   const renderCustomHeader = ({
     date,
     changeYear,
+    changeMonth,
     decreaseMonth,
     increaseMonth,
     prevMonthButtonDisabled,
@@ -48,6 +47,7 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
   }: {
     date: Date;
     changeYear: (year: number) => void;
+    changeMonth: (month: number) => void;
     decreaseMonth: () => void;
     increaseMonth: () => void;
     prevMonthButtonDisabled: boolean;
@@ -58,17 +58,14 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
     return (
       <div className={styles.headerStyle}>
         <div className={styles.mouthStyle}>{months[selectedMonth]}</div>
-        <select
-          className={styles.yearStyle}
-          value={selectedYear}
-          onChange={e => changeYear(Number(e.target.value))}
-        >
-          {years.map(year => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
+        <div className={styles.yearStyle}>{selectedYear}</div>
+        <div>
+          <AFFiNEMonthPicker
+            date={date}
+            changeYear={changeYear}
+            changeMonth={changeMonth}
+          />
+        </div>
         <button
           className={styles.arrowLeftStyle}
           onClick={decreaseMonth}
@@ -100,6 +97,7 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
       renderCustomHeader={({
         date,
         changeYear,
+        changeMonth,
         decreaseMonth,
         increaseMonth,
         prevMonthButtonDisabled,
@@ -108,6 +106,7 @@ export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
         renderCustomHeader({
           date,
           changeYear,
+          changeMonth,
           decreaseMonth,
           increaseMonth,
           prevMonthButtonDisabled,
