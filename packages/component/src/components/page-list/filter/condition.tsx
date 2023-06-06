@@ -105,7 +105,7 @@ export const Arg = ({
     return null;
   }
   return (
-    <div data-testid="filter-arg" style={{ marginLeft: 4 }}>
+    <div data-testid="filter-arg" style={{ marginLeft: 4, fontWeight: 600 }}>
       {data.render({ type, value, onChange })}
     </div>
   );

@@ -2,7 +2,8 @@ import { globalStyle, style } from '@vanilla-extract/css';
 
 export const inputStyle = style({
   fontSize: 'var(--affine-font-xs)',
-  width: '70px',
+  width: '50px',
+  fontWeight: '600',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -16,14 +17,7 @@ export const popperStyle = style({
   marginTop: '16px',
   background: 'var(--affine-background-overlay-panel-color)',
   borderRadius: '12px',
-});
-export const monthPopperStyle = style({
-  boxShadow: 'var(--affine-shadow-2)',
-  marginTop: '16px',
-  background: 'var(--affine-background-overlay-panel-color)',
-  borderRadius: '12px',
-  padding: '0 2px',
-  width: '100%',
+  width: '300px',
 });
 
 globalStyle('.react-datepicker__header', {
@@ -45,10 +39,11 @@ export const monthHeaderStyle = style({
   background: 'var(--affine-background-overlay-panel-color)',
   border: 'none',
   display: 'flex',
+  width: '100%',
   alignItems: 'center',
-  position: 'relative',
-  margin: '8px 12px',
   marginBottom: '12px',
+  padding: '0 14px',
+  position: 'relative',
   '::after': {
     content: '""',
     position: 'absolute',
@@ -101,10 +96,6 @@ export const weekStyle = style({
   verticalAlign: 'middle',
 });
 export const calendarStyle = style({
-  background: 'var(--affine-background-overlay-panel-color)',
-  border: 'none',
-});
-export const monthCalendarStyle = style({
   background: 'var(--affine-background-overlay-panel-color)',
   border: 'none',
   width: '100%',
@@ -181,13 +172,16 @@ export const mouthsStyle = style({
   },
 });
 
-globalStyle(`${monthCalendarStyle} .react-datepicker__month-container`, {
+globalStyle(`${calendarStyle} .react-datepicker__month-container`, {
   float: 'none',
   width: '100%',
 });
-globalStyle(`${monthCalendarStyle} .react-datepicker__month-wrapper`, {
+globalStyle(`${calendarStyle} .react-datepicker__month-wrapper`, {
   display: 'flex',
   justifyContent: 'space-between',
-  padding: '0 12px',
-  marginBottom: '12px',
+  marginBottom: '18px',
+});
+globalStyle(`${calendarStyle} .react-datepicker__month-text`, {
+  margin: '0',
+  width: '64px',
 });

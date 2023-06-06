@@ -1,10 +1,13 @@
-import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
+import {
+  ArrowDownSmallIcon,
+  ArrowLeftSmallIcon,
+  ArrowRightSmallIcon,
+} from '@blocksuite/icons';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 
 import * as styles from './index.css';
-import { AFFiNEMonthPicker } from './month-picker';
 const months = [
   'January',
   'February',
@@ -26,6 +29,7 @@ type DatePickerProps = {
 
 export const AFFiNEDatePicker = (props: DatePickerProps) => {
   const { value, onChange } = props;
+  const [openMonthPicker, setOpenMonthPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     value ? dayjs(value).toDate() : null
   );
@@ -34,20 +38,17 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
     if (date) {
       setSelectedDate(date);
       onChange(dayjs(date).format('YYYY-MM-DD'));
+      setOpenMonthPicker(false);
     }
   };
   const renderCustomHeader = ({
     date,
-    changeYear,
-    changeMonth,
     decreaseMonth,
     increaseMonth,
     prevMonthButtonDisabled,
     nextMonthButtonDisabled,
   }: {
     date: Date;
-    changeYear: (year: number) => void;
-    changeMonth: (month: number) => void;
     decreaseMonth: () => void;
     increaseMonth: () => void;
     prevMonthButtonDisabled: boolean;
@@ -59,12 +60,11 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
       <div className={styles.headerStyle}>
         <div className={styles.mouthStyle}>{months[selectedMonth]}</div>
         <div className={styles.yearStyle}>{selectedYear}</div>
-        <div>
-          <AFFiNEMonthPicker
-            date={date}
-            changeYear={changeYear}
-            changeMonth={changeMonth}
-          />
+        <div
+          className={styles.arrowDownStyle}
+          onClick={() => setOpenMonthPicker(true)}
+        >
+          <ArrowDownSmallIcon />
         </div>
         <button
           className={styles.arrowLeftStyle}
@@ -83,6 +83,40 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
       </div>
     );
   };
+  const renderCustomMonthHeader = ({
+    date,
+    decreaseYear,
+    increaseYear,
+    prevYearButtonDisabled,
+    nextYearButtonDisabled,
+  }: {
+    date: Date;
+    decreaseYear: () => void;
+    increaseYear: () => void;
+    prevYearButtonDisabled: boolean;
+    nextYearButtonDisabled: boolean;
+  }) => {
+    const selectedYear = dayjs(date).year();
+    return (
+      <div className={styles.monthHeaderStyle}>
+        <div className={styles.monthTitleStyle}>{selectedYear}</div>
+        <button
+          className={styles.arrowLeftStyle}
+          onClick={decreaseYear}
+          disabled={prevYearButtonDisabled}
+        >
+          <ArrowLeftSmallIcon />
+        </button>
+        <button
+          className={styles.arrowRightStyle}
+          onClick={increaseYear}
+          disabled={nextYearButtonDisabled}
+        >
+          <ArrowRightSmallIcon />
+        </button>
+      </div>
+    );
+  };
   return (
     <DatePicker
       className={styles.inputStyle}
@@ -90,28 +124,39 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
       weekDayClassName={() => styles.weekStyle}
       dayClassName={() => styles.dayStyle}
       popperClassName={styles.popperStyle}
+      monthClassName={() => styles.mouthsStyle}
       selected={selectedDate}
       onChange={handleSelectDate}
       showPopperArrow={false}
-      dateFormat="yyyy-MM-dd"
+      dateFormat="MMM dd"
+      showMonthYearPicker={openMonthPicker}
+      shouldCloseOnSelect={!openMonthPicker}
       renderCustomHeader={({
         date,
-        changeYear,
-        changeMonth,
+        decreaseYear,
+        increaseYear,
         decreaseMonth,
         increaseMonth,
+        prevYearButtonDisabled,
+        nextYearButtonDisabled,
         prevMonthButtonDisabled,
         nextMonthButtonDisabled,
       }) =>
-        renderCustomHeader({
-          date,
-          changeYear,
-          changeMonth,
-          decreaseMonth,
-          increaseMonth,
-          prevMonthButtonDisabled,
-          nextMonthButtonDisabled,
-        })
+        openMonthPicker
+          ? renderCustomMonthHeader({
+              date,
+              decreaseYear,
+              increaseYear,
+              prevYearButtonDisabled,
+              nextYearButtonDisabled,
+            })
+          : renderCustomHeader({
+              date,
+              decreaseMonth,
+              increaseMonth,
+              prevMonthButtonDisabled,
+              nextMonthButtonDisabled,
+            })
       }
     />
   );
