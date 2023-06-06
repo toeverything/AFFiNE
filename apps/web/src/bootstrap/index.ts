@@ -15,11 +15,20 @@ if (!environment.isDesktop && !environment.isServer) {
   const unimplemented = () => {
     throw new Error('AFFiNE Plugin Web will be supported in the future');
   };
-  window.affine.ipcRenderer = {
-    invoke: unimplemented,
-    send: unimplemented,
-    on: unimplemented,
-    once: unimplemented,
-    removeListener: unimplemented,
+  const affine = {
+    ipcRenderer: {
+      invoke: unimplemented,
+      send: unimplemented,
+      on: unimplemented,
+      once: unimplemented,
+      removeListener: unimplemented,
+    },
   };
+
+  Object.freeze(affine);
+
+  Object.defineProperty(window, 'affine', {
+    value: affine,
+    writable: false,
+  });
 }
