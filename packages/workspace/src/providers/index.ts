@@ -17,6 +17,7 @@ import type {
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
   Provider,
+  SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '../type';
 import { CallbackSet } from '../utils';
@@ -156,26 +157,104 @@ const createIndexedDBDownloadProvider = (
   };
 };
 
+const sqliteOrigin = Symbol('sqlite-provider-origin');
+
 const createSQLiteProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): SQLiteProvider => {
-  const sqliteOrigin = Symbol('sqlite-provider-origin');
   const apis = window.apis!;
   const events = window.events!;
-  let destroyed = false;
   // make sure it is being used in Electron with APIs
   assertExists(apis);
   assertExists(events);
 
   function handleUpdate(update: Uint8Array, origin: unknown) {
-    if (origin === sqliteOrigin || destroyed) {
+    if (origin === sqliteOrigin) {
       return;
     }
     apis.db.applyDocUpdate(blockSuiteWorkspace.id, update);
   }
 
+  let unsubscribe = () => {};
+  let connected = false;
+
+  const callbacks = new CallbackSet();
+
+  const connect = () => {
+    logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
+    blockSuiteWorkspace.doc.on('update', handleUpdate);
+    unsubscribe = events.db.onExternalUpdate(({ update, workspaceId }) => {
+      if (workspaceId === blockSuiteWorkspace.id) {
+        Y.applyUpdate(blockSuiteWorkspace.doc, update, sqliteOrigin);
+      }
+    });
+    connected = true;
+    logger.info('connecting sqlite done', blockSuiteWorkspace.id);
+  };
+
+  const cleanup = () => {
+    logger.info('disconnecting sqlite provider', blockSuiteWorkspace.id);
+    unsubscribe();
+    blockSuiteWorkspace.doc.off('update', handleUpdate);
+    connected = false;
+  };
+
+  return {
+    flavour: 'sqlite',
+    background: true,
+    callbacks,
+    get connected(): boolean {
+      return connected;
+    },
+    cleanup,
+    connect,
+    disconnect: cleanup,
+  };
+};
+
+const createSQLiteDBDownloadProvider = (
+  blockSuiteWorkspace: BlockSuiteWorkspace
+): SQLiteDBDownloadProvider => {
+  const apis = window.apis!;
+  let disconnected = false;
+
+  let _resolve: () => void;
+  let _reject: (error: unknown) => void;
+  const promise = new Promise<void>((resolve, reject) => {
+    _resolve = resolve;
+    _reject = reject;
+  });
+
+  async function syncUpdates() {
+    logger.info('syncing updates from sqlite', blockSuiteWorkspace.id);
+    const updates = await apis.db.getDocAsUpdates(blockSuiteWorkspace.id);
+
+    if (disconnected) {
+      return;
+    }
+
+    if (updates) {
+      Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
+    }
+
+    const diff = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc, updates);
+
+    // also apply updates to sqlite
+    apis.db.applyDocUpdate(blockSuiteWorkspace.id, diff);
+
+    const bs = blockSuiteWorkspace.blobs;
+
+    if (bs && !disconnected) {
+      await syncBlobIntoSQLite(bs);
+    }
+  }
+
   async function syncBlobIntoSQLite(bs: BlobManager) {
     const persistedKeys = await apis.db.getBlobKeys(blockSuiteWorkspace.id);
+
+    if (disconnected) {
+      return;
+    }
 
     const allKeys = await bs.list().catch(() => []);
     const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
@@ -188,6 +267,11 @@ const createSQLiteProvider = (
           logger.warn('blob not found for', k);
           return;
         }
+
+        if (disconnected) {
+          return;
+        }
+
         return window.apis?.db.addBlob(
           blockSuiteWorkspace.id,
           k,
@@ -197,67 +281,19 @@ const createSQLiteProvider = (
     );
   }
 
-  async function syncUpdates() {
-    logger.info('syncing updates from sqlite', blockSuiteWorkspace.id);
-    const updates = await apis.db.getDocAsUpdates(blockSuiteWorkspace.id);
-
-    if (destroyed) {
-      return;
-    }
-
-    if (updates) {
-      Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
-    }
-
-    const mergeUpdates = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc);
-
-    // also apply updates to sqlite
-    apis.db.applyDocUpdate(blockSuiteWorkspace.id, mergeUpdates);
-
-    const bs = blockSuiteWorkspace.blobs;
-
-    if (bs) {
-      // this can be non-blocking
-      syncBlobIntoSQLite(bs);
-    }
-  }
-
-  let unsubscribe = () => {};
-  let connected = false;
-
-  const callbacks = new CallbackSet();
-
-  const cleanup = () => {
-    unsubscribe();
-    blockSuiteWorkspace.doc.off('update', handleUpdate);
-    connected = false;
-    destroyed = true;
-  };
-
   return {
-    flavour: 'sqlite',
-    background: true,
-    callbacks,
-    get connected(): boolean {
-      return connected;
+    flavour: 'sqlite-download',
+    necessary: true,
+    get whenReady() {
+      return promise;
     },
-    cleanup,
-    connect: async () => {
-      logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
-      blockSuiteWorkspace.doc.on('update', handleUpdate);
-      unsubscribe = events.db.onExternalUpdate(({ update, workspaceId }) => {
-        if (workspaceId === blockSuiteWorkspace.id) {
-          Y.applyUpdate(blockSuiteWorkspace.doc, update, sqliteOrigin);
-        }
-      });
+    cleanup: () => {
+      disconnected = true;
+    },
+    sync: async () => {
+      logger.info('connect indexeddb provider', blockSuiteWorkspace.id);
       await syncUpdates();
-      connected = true;
-      // blockSuiteWorkspace.doc.on('destroy', ...);
-      logger.info('connecting sqlite done', blockSuiteWorkspace.id);
-    },
-    disconnect: () => {
-      cleanup();
-      logger.info('destroyed sqlite provider', blockSuiteWorkspace.id);
+      _resolve();
     },
   };
 };
@@ -268,21 +304,30 @@ export {
   createBroadCastChannelProvider,
   createIndexedDBBackgroundProvider,
   createIndexedDBDownloadProvider,
+  createSQLiteDBDownloadProvider,
   createSQLiteProvider,
 };
 
 export const createLocalProviders = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): Provider[] => {
-  return (
-    [
-      config.enableBroadCastChannelProvider &&
-        createBroadCastChannelProvider(blockSuiteWorkspace),
-      createIndexedDBBackgroundProvider(blockSuiteWorkspace),
-      createIndexedDBDownloadProvider(blockSuiteWorkspace),
-      environment.isDesktop && createSQLiteProvider(blockSuiteWorkspace),
-    ] as any[]
-  ).filter(v => Boolean(v));
+  const providers = [
+    createIndexedDBBackgroundProvider(blockSuiteWorkspace),
+    createIndexedDBDownloadProvider(blockSuiteWorkspace),
+  ] as Provider[];
+
+  if (config.enableBroadCastChannelProvider) {
+    providers.push(createBroadCastChannelProvider(blockSuiteWorkspace));
+  }
+
+  if (environment.isDesktop) {
+    providers.push(
+      createSQLiteProvider(blockSuiteWorkspace),
+      createSQLiteDBDownloadProvider(blockSuiteWorkspace)
+    );
+  }
+
+  return providers;
 };
 
 export const createAffineProviders = (

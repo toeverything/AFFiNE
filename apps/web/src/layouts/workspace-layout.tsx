@@ -294,16 +294,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
-  const currentMeta = metadata.find(m => m.id === currentWorkspace.id);
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
 
   //#region init workspace
-  if (
-    currentWorkspace.blockSuiteWorkspace.isEmpty &&
-    !currentMeta?.fromImport // will skip init if this workspace is from adding workspace
-  ) {
+  if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
     // this is a new workspace, so we should redirect to the new page
     const pageId = nanoid();
     const page = currentWorkspace.blockSuiteWorkspace.createPage({

@@ -48,8 +48,6 @@ export function useAppHelper() {
           {
             id: workspaceId,
             flavour: WorkspaceFlavour.LOCAL,
-            // requires this otherwise it may cause issues when applying for updates
-            fromImport: true,
           },
         ]);
         logger.debug('imported local workspace', workspaceId);
