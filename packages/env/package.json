@@ -3,7 +3,6 @@
   "private": true,
   "main": "./src/index.ts",
   "module": "./src/index.ts",
-  "types": "./env.d.ts",
   "devDependencies": {
     "@blocksuite/global": "0.0.0-20230601122821-16196c35-nightly",
     "next": "=13.4.2",
