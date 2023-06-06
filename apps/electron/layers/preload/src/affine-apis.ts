@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-
 // NOTE: we will generate preload types from this file
 import { ipcRenderer } from 'electron';
 
