@@ -6,8 +6,7 @@
  */
 
 import type { EditorContainer } from '@blocksuite/editor';
-import type { Workspace } from '@blocksuite/store';
-import type { Page } from '@playwright/test';
+import type { Page, Workspace } from '@blocksuite/store';
 import type { WritableAtom } from 'jotai';
 import type { ReactElement } from 'react';
 
@@ -171,12 +170,16 @@ export type PluginBlockSuiteAdapter = {
   uiDecorator: (root: EditorContainer) => Cleanup;
 };
 
-export type PluginAdapterCreator = (
-  context: AffinePluginContext
-) => PluginUIAdapter;
+type AFFiNEServer = {
+  registerCommand: (command: string, fn: (...args: any[]) => any) => void;
+  unregisterCommand: (command: string) => void;
+};
+
+export type ServerAdapter = (affine: AFFiNEServer) => () => void;
 
 export type AffinePlugin<ID extends string> = {
   definition: Definition<ID>;
   uiAdapter: Partial<PluginUIAdapter>;
   blockSuiteAdapter: Partial<PluginBlockSuiteAdapter>;
+  serverAdapter?: ServerAdapter;
 };

@@ -21,6 +21,9 @@
       "path": "./tsconfig.node.json"
     },
     {
+      "path": "../../packages/plugin-infra"
+    },
+    {
       "path": "../../packages/native"
     },
     {

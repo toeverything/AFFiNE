@@ -1,5 +1,7 @@
 import './security-restrictions';
 
+import { join } from 'node:path';
+
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
@@ -50,6 +52,23 @@ app.on('window-all-closed', () => {
  */
 app.on('activate', restoreOrCreateWindow);
 
+import('@toeverything/plugin-infra/manager').then(
+  ({ rootStore, affinePluginsAtom }) => {
+    import(
+      join(
+        process.env.PLUGIN_DIR ?? '../../plugins',
+        './bookmark-block/index.mjs'
+      )
+    ).then(() => {
+      const plugins = rootStore.get(affinePluginsAtom);
+      Object.values(plugins).forEach(plugin => {
+        if (plugin.serverAdapter) {
+          console.log(plugin.serverAdapter);
+        }
+      });
+    });
+  }
+);
 /**
  * Create app window when background process will be ready
  */

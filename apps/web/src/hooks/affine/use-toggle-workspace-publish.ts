@@ -1,6 +1,7 @@
 import { affineApis } from '@affine/workspace/affine/shared';
-import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 

@@ -180,6 +180,7 @@ __metadata:
     "@electron-forge/shared-types": ^6.1.1
     "@electron/rebuild": ^3.2.13
     "@electron/remote": 2.0.9
+    "@toeverything/plugin-infra": "workspace:*"
     "@types/better-sqlite3": ^7.6.4
     "@types/fs-extra": ^11.0.1
     "@types/uuid": ^9.0.1
@@ -9075,14 +9076,14 @@ __metadata:
   resolution: "@toeverything/plugin-infra@workspace:packages/plugin-infra"
   dependencies:
     "@affine/component": "workspace:*"
-    "@affine/env": "workspace:*"
-    "@affine/workspace": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230601122821-16196c35-nightly
     "@blocksuite/editor": 0.0.0-20230601122821-16196c35-nightly
     "@blocksuite/global": 0.0.0-20230601122821-16196c35-nightly
     "@blocksuite/lit": 0.0.0-20230601122821-16196c35-nightly
     "@blocksuite/store": 0.0.0-20230601122821-16196c35-nightly
     jotai: ^2.1.1
+    vite: ^4.3.9
+    vite-plugin-dts: ^2.3.0
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"

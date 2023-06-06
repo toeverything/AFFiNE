@@ -1,5 +1,5 @@
 import type { EditorContainer } from '@blocksuite/editor';
-import { atom, createStore } from 'jotai';
+import { atom } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 import Router from 'next/router';
 
@@ -83,6 +83,3 @@ export const getStoredWorkspaceMeta = () => {
   const storage = getStorage();
   return storage.getItem('jotai-workspaces', []) as RootWorkspaceMetadata[];
 };
-
-// global store
-export const rootStore = createStore();

@@ -18,7 +18,6 @@ import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
-  rootStore,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import type { BackgroundProvider } from '@affine/workspace/type';
@@ -35,6 +34,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';

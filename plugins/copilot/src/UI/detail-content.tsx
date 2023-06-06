@@ -1,5 +1,5 @@
 import { Button, Input } from '@affine/component';
-import { rootStore } from '@affine/workspace/atom';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';

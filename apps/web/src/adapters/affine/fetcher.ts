@@ -1,11 +1,11 @@
 import { Unreachable } from '@affine/env/constant';
 import { affineApis } from '@affine/workspace/affine/shared';
-import { rootStore } from '@affine/workspace/atom';
 import { createAffineProviders } from '@affine/workspace/providers';
 import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 
 import { workspacesAtom } from '../../atoms';
 
