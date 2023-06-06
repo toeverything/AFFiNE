@@ -19,12 +19,12 @@ const months = [
   'November',
   'December',
 ];
-type MyDatePickerProps = {
+type DatePickerProps = {
   value?: string;
   onChange: (value: string) => void;
 };
 
-export const AFFiNEDatePicker = (props: MyDatePickerProps) => {
+export const AFFiNEDatePicker = (props: DatePickerProps) => {
   const { value, onChange } = props;
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     value ? dayjs(value).toDate() : null

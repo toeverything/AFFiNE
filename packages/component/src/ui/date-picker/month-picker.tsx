@@ -9,13 +9,13 @@ import DatePicker from 'react-datepicker';
 
 import * as styles from './index.css';
 
-type MyDatePickerProps = {
+type MonthPickerProps = {
   date: Date;
   changeYear: (year: number) => void;
   changeMonth: (month: number) => void;
 };
 
-export const AFFiNEMonthPicker = (props: MyDatePickerProps) => {
+export const AFFiNEMonthPicker = (props: MonthPickerProps) => {
   const { date, changeMonth, changeYear } = props;
   const [selectedDate, setSelectedDate] = useState<Date>(date);
   const handleSelectDate = (date: Date | null) => {
