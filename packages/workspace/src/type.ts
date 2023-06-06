@@ -78,12 +78,16 @@ export interface LocalIndexedDBBackgroundProvider extends BackgroundProvider {
   flavour: 'local-indexeddb-background';
 }
 
+export interface LocalIndexedDBDownloadProvider extends NecessaryProvider {
+  flavour: 'local-indexeddb';
+}
+
 export interface SQLiteProvider extends BackgroundProvider {
   flavour: 'sqlite';
 }
 
-export interface LocalIndexedDBDownloadProvider extends NecessaryProvider {
-  flavour: 'local-indexeddb';
+export interface SQLiteDBDownloadProvider extends NecessaryProvider {
+  flavour: 'sqlite-download';
 }
 
 export interface AffineWebSocketProvider extends BackgroundProvider {
