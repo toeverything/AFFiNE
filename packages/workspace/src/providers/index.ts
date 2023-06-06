@@ -292,8 +292,12 @@ const createSQLiteDBDownloadProvider = (
     },
     sync: async () => {
       logger.info('connect indexeddb provider', blockSuiteWorkspace.id);
-      await syncUpdates();
-      _resolve();
+      try {
+        await syncUpdates();
+        _resolve();
+      } catch (error) {
+        _reject(error);
+      }
     },
   };
 };
