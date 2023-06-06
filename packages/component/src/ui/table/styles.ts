@@ -1,16 +1,36 @@
 import { styled, textEllipsis } from '../../styles';
 import type { TableCellProps } from './interface';
 
-export const StyledTable = styled('table')(() => {
-  return {
-    fontSize: 'var(--affine-font-base)',
-    color: 'var(--affine-text-primary-color)',
-    tableLayout: 'fixed',
-    width: '100%',
-    borderCollapse: 'separate',
-    borderSpacing: '0',
-  };
-});
+export const StyledTable = styled('table')<{ showBorder?: boolean }>(
+  ({ showBorder }) => {
+    return {
+      fontSize: 'var(--affine-font-base)',
+      color: 'var(--affine-text-primary-color)',
+      tableLayout: 'fixed',
+      width: '100%',
+      borderCollapse: 'collapse',
+      borderSpacing: '0',
+
+      ...(typeof showBorder === 'boolean'
+        ? {
+            thead: {
+              '::after': {
+                display: 'block',
+                position: 'absolute',
+                content: '""',
+                width: '100%',
+                height: '1px',
+                left: 0,
+                background: 'var(--affine-border-color)',
+                transition: 'opacity .15s',
+                opacity: showBorder ? 1 : 0,
+              },
+            },
+          }
+        : {}),
+    };
+  }
+);
 
 export const StyledTableBody = styled('tbody')(() => {
   return {
@@ -53,24 +73,29 @@ export const StyledTableHead = styled('thead')(() => {
   return {
     fontWeight: 500,
     color: 'var(--affine-text-secondary-color)',
-    tr: {
-      td: {
-        whiteSpace: 'nowrap',
-      },
-      ':hover': {
-        td: {
-          background: 'unset',
-        },
-      },
+  };
+});
+
+export const StyledTHeadRow = styled('tr')(() => {
+  return {
+    td: {
+      whiteSpace: 'nowrap',
+      // How to set tbody height with overflow scroll
+      // see https://stackoverflow.com/questions/23989463/how-to-set-tbody-height-with-overflow-scroll
+      position: 'sticky',
+      top: 0,
+      background: 'var(--affine-background-primary-color)',
     },
   };
 });
 
-export const StyledTableRow = styled('tr')(() => {
+export const StyledTBodyRow = styled('tr')(() => {
   return {
     td: {
       transition: 'background .15s',
     },
+    // Add border radius to table row
+    // see https://stackoverflow.com/questions/4094126/how-to-add-border-radius-on-table-row
     'td:first-of-type': {
       borderTopLeftRadius: '10px',
       borderBottomLeftRadius: '10px',
