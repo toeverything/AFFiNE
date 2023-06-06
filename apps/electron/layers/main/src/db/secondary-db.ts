@@ -35,12 +35,10 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   override async destroy() {
     const { db } = this;
-    this.db = null;
-    await super.destroy();
-    await this.flushUpdateQueue(db!);
+    await this.flushUpdateQueue(db);
     this.unsubscribers.forEach(unsub => unsub());
     this.yDoc.destroy();
-    await db!.close();
+    await super.destroy();
   }
 
   get workspaceId() {
@@ -136,8 +134,6 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       const upstreamUpdate = this.upstream.getDocAsUpdates();
       // to initialize the yDoc, we need to apply all updates from the db
       this.applyUpdate(upstreamUpdate, 'upstream');
-
-      await this.pull();
     });
   }
 
