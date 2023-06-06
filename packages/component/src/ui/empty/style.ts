@@ -10,7 +10,6 @@ export const StyledEmptyContainer = styled('div')<{ style?: CSSProperties }>(
       flexDirection: 'column',
       color: 'var(--affine-text-secondary-color)',
       svg: {
-        color: 'transparent',
         width: style?.width ?? '248px',
         height: style?.height ?? '216px',
         fontSize: style?.fontSize ?? 'inherit',
