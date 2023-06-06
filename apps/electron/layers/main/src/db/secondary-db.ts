@@ -54,7 +54,10 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     await this.debouncedFlush(db);
   }
 
-  async flushUpdateQueue(db: SqliteConnection) {
+  async flushUpdateQueue(db = this.db) {
+    if (!db) {
+      return; // skip if db is not connected
+    }
     logger.debug(
       'flushUpdateQueue',
       this.workspaceId,
