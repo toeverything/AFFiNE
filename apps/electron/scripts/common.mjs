@@ -41,6 +41,7 @@ export const config = () => {
           electronDir,
           './layers/main/src/workers/merge-update.worker.ts'
         ),
+        resolve(electronDir, './layers/main/src/workers/plugin.worker.ts'),
       ],
       outdir: resolve(electronDir, './dist/layers/main'),
       bundle: true,
@@ -52,6 +53,7 @@ export const config = () => {
         'better-sqlite3',
         'electron-updater',
         '@toeverything/plugin-infra',
+        'async-call-rpc',
       ],
       define: define,
       format: 'cjs',

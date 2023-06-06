@@ -1,8 +1,11 @@
 import './security-restrictions';
 
 import { join } from 'node:path';
+import { Worker } from 'node:worker_threads';
 
-import { app } from 'electron';
+import type { EventBasedChannel } from 'async-call-rpc';
+import { AsyncCall } from 'async-call-rpc';
+import { app, ipcMain } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
 import { registerEvents } from './events';
@@ -52,20 +55,56 @@ app.on('window-all-closed', () => {
  */
 app.on('activate', restoreOrCreateWindow);
 
+class ThreadWorkerChannel implements EventBasedChannel {
+  constructor(private worker: Worker) {}
+
+  on(listener: (data: unknown) => void) {
+    this.worker.addListener('message', listener);
+    return () => {
+      this.worker.removeListener('message', listener);
+    };
+  }
+
+  send(data: unknown) {
+    this.worker.postMessage(data);
+  }
+}
+
+const pluginWorkerPath = join(__dirname, './workers/plugin.worker.js');
+const asyncCall = AsyncCall<Record<string, (...args: any) => PromiseLike<any>>>(
+  {},
+  {
+    channel: new ThreadWorkerChannel(new Worker(pluginWorkerPath)),
+  }
+);
+
 import('@toeverything/plugin-infra/manager').then(
   ({ rootStore, affinePluginsAtom }) => {
-    import(
-      join(
-        process.env.PLUGIN_DIR ?? '../../plugins',
-        './bookmark-block/index.mjs'
-      )
-    ).then(() => {
+    const bookmarkPluginPath = join(
+      process.env.PLUGIN_DIR ?? '../../plugins',
+      './bookmark-block/index.mjs'
+    );
+    import(bookmarkPluginPath);
+    let dispose: () => void;
+    rootStore.sub(affinePluginsAtom, () => {
+      if (dispose) {
+        dispose();
+      }
       const plugins = rootStore.get(affinePluginsAtom);
       Object.values(plugins).forEach(plugin => {
-        if (plugin.serverAdapter) {
-          console.log(plugin.serverAdapter);
-        }
+        plugin.definition.commands.forEach(command => {
+          ipcMain.handle(command, (event, ...args) =>
+            asyncCall[command](...args)
+          );
+        });
       });
+      dispose = () => {
+        Object.values(plugins).forEach(plugin => {
+          plugin.definition.commands.forEach(command => {
+            ipcMain.removeHandler(command);
+          });
+        });
+      };
     });
   }
 );

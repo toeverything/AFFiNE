@@ -140,6 +140,11 @@ export type Definition<ID extends string> = {
    * @example ReleaseStage.PROD
    */
   stage: ReleaseStage;
+
+  /**
+   * Registered commands
+   */
+  commands: string[];
 };
 
 // todo(himself65): support Vue.js

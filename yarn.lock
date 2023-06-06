@@ -184,6 +184,7 @@ __metadata:
     "@types/better-sqlite3": ^7.6.4
     "@types/fs-extra": ^11.0.1
     "@types/uuid": ^9.0.1
+    async-call-rpc: ^6.3.1
     better-sqlite3: ^8.4.0
     chokidar: ^3.5.3
     cross-env: 7.0.3
@@ -11313,6 +11314,13 @@ __metadata:
   version: 2.0.0
   resolution: "astral-regex@npm:2.0.0"
   checksum: 876231688c66400473ba505731df37ea436e574dd524520294cc3bbc54ea40334865e01fa0d074d74d036ee874ee7e62f486ea38bc421ee8e6a871c06f011766
+  languageName: node
+  linkType: hard
+
+"async-call-rpc@npm:^6.3.1":
+  version: 6.3.1
+  resolution: "async-call-rpc@npm:6.3.1"
+  checksum: 024e1bab4752b3aa66145977d534e6dc4c316e1d746c11a6a5076b30b16d42fa0ce4793be5a330319644f1335b01cbe13ee4ac28454cded37b1c803608400934
   languageName: node
   linkType: hard
 

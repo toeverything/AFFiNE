@@ -9,12 +9,6 @@
   "references": [
     {
       "path": "../../packages/component"
-    },
-    {
-      "path": "../../packages/plugin-infra"
-    },
-    {
-      "path": "../../packages/env"
     }
   ]
 }

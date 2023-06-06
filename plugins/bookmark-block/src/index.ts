@@ -19,6 +19,7 @@ definePlugin(
     },
     stage: ReleaseStage.NIGHTLY,
     version: '0.0.1',
+    commands: ['com.blocksuite.bookmark-block.get-bookmark-data-by-link'],
   },
   undefined,
   {
