@@ -23,6 +23,7 @@ export const monthPopperStyle = style({
   background: 'var(--affine-background-overlay-panel-color)',
   borderRadius: '12px',
   padding: '0 2px',
+  width: '100%',
 });
 
 globalStyle('.react-datepicker__header', {
@@ -47,6 +48,7 @@ export const monthHeaderStyle = style({
   alignItems: 'center',
   position: 'relative',
   margin: '8px 12px',
+  marginBottom: '12px',
   '::after': {
     content: '""',
     position: 'absolute',
@@ -61,7 +63,7 @@ export const monthTitleStyle = style({
   color: 'var(--affine-text-primary-color)',
   fontWeight: '600',
   fontSize: 'var(--affine-font-sm)',
-  marginLeft: '18px',
+  marginLeft: '24px',
 });
 export const yearStyle = style({
   marginLeft: '8px',
@@ -101,6 +103,11 @@ export const weekStyle = style({
 export const calendarStyle = style({
   background: 'var(--affine-background-overlay-panel-color)',
   border: 'none',
+});
+export const monthCalendarStyle = style({
+  background: 'var(--affine-background-overlay-panel-color)',
+  border: 'none',
+  width: '100%',
 });
 export const dayStyle = style({
   fontSize: 'var(--affine-font-xs)',
@@ -147,10 +154,9 @@ export const mouthsStyle = style({
   fontSize: 'var(--affine-font-base)',
   color: 'var(--affine-text-primary-color)',
   display: 'inline-block',
-  width: '64px',
+  height: '32px',
   lineHeight: '22px',
-  padding: '4px 8px',
-  margin: '8px',
+  padding: '4px 16px',
 
   selectors: {
     '&:hover': {
@@ -173,4 +179,15 @@ export const mouthsStyle = style({
       borderRadius: '8px',
     },
   },
+});
+
+globalStyle(`${monthCalendarStyle} .react-datepicker__month-container`, {
+  float: 'none',
+  width: '100%',
+});
+globalStyle(`${monthCalendarStyle} .react-datepicker__month-wrapper`, {
+  display: 'flex',
+  justifyContent: 'space-between',
+  padding: '0 12px',
+  marginBottom: '12px',
 });

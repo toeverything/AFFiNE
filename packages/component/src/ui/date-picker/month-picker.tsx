@@ -67,7 +67,7 @@ export const AFFiNEMonthPicker = (props: MonthPickerProps) => {
   return (
     <DatePicker
       className={styles.inputStyle}
-      calendarClassName={styles.calendarStyle}
+      calendarClassName={styles.monthCalendarStyle}
       popperClassName={styles.monthPopperStyle}
       monthClassName={() => styles.mouthsStyle}
       selected={selectedDate}
