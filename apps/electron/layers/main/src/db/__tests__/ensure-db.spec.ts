@@ -115,6 +115,15 @@ test('db should be destroyed when app quits', async () => {
   expect(db1.db).toBeNull();
 });
 
+test('db should be removed in db$Map after destroyed', async () => {
+  const { ensureSQLiteDB, db$Map } = await import('../ensure-db');
+  const workspaceId = v4();
+  const db = await ensureSQLiteDB(workspaceId);
+  await db.destroy();
+  await setTimeout(100);
+  expect(db$Map.has(workspaceId)).toBe(false);
+});
+
 test('if db has a secondary db path, we should also poll that', async () => {
   const { ensureSQLiteDB } = await import('../ensure-db');
   const { appContext } = await import('../../context');
