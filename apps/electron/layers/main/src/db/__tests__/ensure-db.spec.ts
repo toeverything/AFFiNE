@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
@@ -30,18 +31,20 @@ const electronModule = {
       handlers.push(callback);
       registeredHandlers.set(name, handlers);
     },
-    addEventListener: (...args: any[]) => {
+    addListener: (...args: any[]) => {
       // @ts-ignore
       electronModule.app.on(...args);
     },
-    removeEventListener: () => {},
+    removeListener: () => {},
   },
   shell: {} as Partial<Electron.Shell>,
   dialog: {} as Partial<Electron.Dialog>,
 };
 
-const runHandler = (key: string) => {
-  registeredHandlers.get(key)?.forEach(handler => handler());
+const runHandler = async (key: string) => {
+  await Promise.all(
+    (registeredHandlers.get(key) ?? []).map(handler => handler())
+  );
 };
 
 // dynamically import handlers so that we can inject local variables to mocks
@@ -51,6 +54,7 @@ vi.doMock('electron', () => {
 
 const constructorStub = vi.fn();
 const destroyStub = vi.fn();
+destroyStub.mockReturnValue(Promise.resolve());
 
 vi.doMock('../secondary-db', () => {
   return {
@@ -58,6 +62,10 @@ vi.doMock('../secondary-db', () => {
       constructor(...args: any[]) {
         constructorStub(...args);
       }
+
+      connectIfNeeded = () => Promise.resolve();
+
+      pull = () => Promise.resolve();
 
       destroy = destroyStub;
     },
@@ -69,7 +77,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  runHandler('before-quit');
+  await runHandler('before-quit');
   await fs.remove(tmpDir);
   vi.useRealTimers();
 });
@@ -98,10 +106,22 @@ test('db should be destroyed when app quits', async () => {
   expect(db0.db).not.toBeNull();
   expect(db1.db).not.toBeNull();
 
-  runHandler('before-quit');
+  await runHandler('before-quit');
+
+  // wait the async `db.destroy()` to be called
+  await setTimeout(100);
 
   expect(db0.db).toBeNull();
   expect(db1.db).toBeNull();
+});
+
+test('db should be removed in db$Map after destroyed', async () => {
+  const { ensureSQLiteDB, db$Map } = await import('../ensure-db');
+  const workspaceId = v4();
+  const db = await ensureSQLiteDB(workspaceId);
+  await db.destroy();
+  await setTimeout(100);
+  expect(db$Map.has(workspaceId)).toBe(false);
 });
 
 test('if db has a secondary db path, we should also poll that', async () => {
@@ -115,10 +135,7 @@ test('if db has a secondary db path, we should also poll that', async () => {
 
   const db = await ensureSQLiteDB(workspaceId);
 
-  await vi.advanceTimersByTimeAsync(1500);
-
-  // not sure why but we still need to wait with real timer
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await setTimeout(10);
 
   expect(constructorStub).toBeCalledTimes(1);
   expect(constructorStub).toBeCalledWith(path.join(tmpDir, 'secondary.db'), db);
@@ -128,7 +145,8 @@ test('if db has a secondary db path, we should also poll that', async () => {
     secondaryDBPath: path.join(tmpDir, 'secondary2.db'),
   });
 
-  await vi.advanceTimersByTimeAsync(1500);
+  // wait the async `db.destroy()` to be called
+  await setTimeout(100);
   expect(constructorStub).toBeCalledTimes(2);
   expect(destroyStub).toBeCalledTimes(1);
 
@@ -141,7 +159,7 @@ test('if db has a secondary db path, we should also poll that', async () => {
   expect(destroyStub).toBeCalledTimes(1);
 
   // if primary is destroyed, secondary should also be destroyed
-  db.destroy();
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await db.destroy();
+  await setTimeout(100);
   expect(destroyStub).toBeCalledTimes(2);
 });

@@ -1,7 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../env.d.ts" />
-
-import { DebugLogger } from '@affine/debug';
 import preloadingData from '@affine/templates/affine-0.6.0-preloading.json';
 import type { Page } from '@blocksuite/store';
 
@@ -10,8 +6,6 @@ declare global {
     lastImportedMarkdown: string;
   }
 }
-
-const logger = new DebugLogger('init-page');
 
 export function initPageWithPreloading(page: Page): void {
   logger.debug('initPageWithPreloading', page.id);

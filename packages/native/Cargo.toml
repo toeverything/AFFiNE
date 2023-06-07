@@ -7,13 +7,15 @@ version = "0.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
+affine_schema = { path = "./schema" }
 anyhow = "1"
-# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
+chrono = "0.4"
 napi = { version = "2", default-features = false, features = [
-  "napi4",
+  "napi5",
   "tokio_rt",
   "serde-json",
   "error_anyhow",
+  "chrono_date",
 ] }
 napi-derive = "2"
 notify = { version = "6", features = ["serde"] }
@@ -21,6 +23,13 @@ once_cell = "1"
 parking_lot = "0.12"
 serde = "1"
 serde_json = "1"
+sqlx = { version = "0.7.0-alpha.3", default-features = false, features = [
+  "sqlite",
+  "runtime-tokio",
+  "tls-rustls",
+  "chrono",
+  "macros",
+] }
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1", default-features = false, features = [
   "serde",
@@ -29,4 +38,16 @@ uuid = { version = "1", default-features = false, features = [
 ] }
 
 [build-dependencies]
+affine_schema = { path = "./schema" }
+dotenv = "0.15"
 napi-build = "2"
+sqlx = { version = "0.7.0-alpha.3", default-features = false, features = [
+  "sqlite",
+  "runtime-tokio",
+  "tls-rustls",
+  "chrono",
+  "macros",
+  "migrate",
+  "json",
+] }
+tokio = { version = "1", features = ["full"] }
