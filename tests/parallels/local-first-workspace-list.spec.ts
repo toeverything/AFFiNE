@@ -67,7 +67,7 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   await page.reload();
   await openWorkspaceListModal(page);
   await page.getByTestId('draggable-item').nth(1).click();
-  await page.waitForTimeout(100);
+  await page.waitForTimeout(500);
 
   // @ts-expect-error
   const currentId: string = await page.evaluate(() => currentWorkspace.id);
