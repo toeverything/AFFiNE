@@ -52,13 +52,35 @@
   "include": [],
   "references": [
     {
-      "path": "./tests"
-    },
-    {
       "path": "./apps/web"
     },
     {
+      "path": "./apps/electron"
+    },
+    {
       "path": "./apps/server"
+    },
+    {
+      "path": "./tests"
+    },
+
+    // top level package that should not include other packages
+    {
+      "path": "./packages/env"
+    },
+    {
+      "path": "./packages/debug"
+    },
+    {
+      "path": "./packages/y-indexeddb"
+    },
+    {
+      "path": "./packages/plugin-infra"
+    },
+
+    // Packages
+    {
+      "path": "./packages/storybook"
     },
     {
       "path": "./packages/component"
@@ -70,37 +92,31 @@
       "path": "./packages/i18n"
     },
     {
-      "path": "./packages/env"
-    },
-    {
       "path": "./packages/graphql"
-    },
-    {
-      "path": "./packages/debug"
     },
     {
       "path": "./packages/workspace"
     },
-    {
-      "path": "./packages/y-indexeddb"
-    },
-    {
-      "path": "./packages/plugin-infra"
-    },
-    {
-      "path": "./plugins/copilot"
-    },
+
+    // Tests
     {
       "path": "./tests/fixtures"
     },
     {
       "path": "./tests/kit"
     },
+
+    // Scripts
     {
       "path": "./tsconfig.node.json"
     },
+
+    // Plugins
     {
-      "path": "./apps/electron"
+      "path": "./plugins/copilot"
+    },
+    {
+      "path": "./plugins/bookmark-block"
     }
   ],
   "files": [],
