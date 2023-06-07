@@ -152,4 +152,7 @@ const main = async () => {
   // TODO send notification
 };
 
-void main();
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

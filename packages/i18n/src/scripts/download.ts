@@ -49,7 +49,7 @@ const main = async () => {
   try {
     await fs.access(RES_DIR);
   } catch (error) {
-    void fs.mkdir(RES_DIR);
+    fs.mkdir(RES_DIR).catch(console.error);
     console.log('Create directory', RES_DIR);
   }
   console.log('Loading project languages...');
@@ -149,4 +149,7 @@ const main = async () => {
   console.log('Done');
 };
 
-void main();
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

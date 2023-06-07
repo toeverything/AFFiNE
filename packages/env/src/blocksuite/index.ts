@@ -27,7 +27,9 @@ export function initPage(page: Page): void {
     page.workspace.setPageMeta(page.id, {
       init: false,
     });
-    void _initPageWithDemoMarkdown(page);
+    _initPageWithDemoMarkdown(page).catch(error => {
+      console.error(error);
+    });
   } else {
     _initEmptyPage(page);
   }

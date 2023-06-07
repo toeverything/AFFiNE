@@ -87,6 +87,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       return await fn();
     } catch (err) {
       logger.error(err);
+      throw err;
     } finally {
       this.runCounter--;
       if (this.runCounter === 0) {
@@ -109,10 +110,10 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       }
     };
 
-    const onSelfUpdate = (update: Uint8Array, origin: YOrigin) => {
+    const onSelfUpdate = async (update: Uint8Array, origin: YOrigin) => {
       // for self update from upstream, we need to push it to external DB
       if (origin === 'upstream') {
-        void this.addUpdateToUpdateQueue(db!, update);
+        await this.addUpdateToUpdateQueue(db!, update);
       }
 
       if (origin === 'self') {
@@ -129,12 +130,18 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       this.yDoc.off('update', onSelfUpdate);
     });
 
-    void this.run(async () => {
+    this.run(() => {
       // apply all updates from upstream
       const upstreamUpdate = this.upstream.getDocAsUpdates();
       // to initialize the yDoc, we need to apply all updates from the db
       this.applyUpdate(upstreamUpdate, 'upstream');
-    });
+    })
+      .then(() => {
+        logger.debug('run success');
+      })
+      .catch(err => {
+        logger.error('run error', err);
+      });
   }
 
   applyUpdate = (data: Uint8Array, origin: YOrigin = 'upstream') => {

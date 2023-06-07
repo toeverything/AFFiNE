@@ -80,7 +80,9 @@ export const createAffineBlobStorage = (
             .transaction('uploading', 'readwrite')
             .objectStore('uploading');
           // don't await here, we don't care if it's deleted
-          void t.delete(key);
+          t.delete(key).catch(err => {
+            logger.error('[createAffineBlobStorage] delete error', err);
+          });
         }
         await Promise.all([
           storage.crud.set(key, value),
