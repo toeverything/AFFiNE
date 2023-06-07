@@ -7,10 +7,9 @@ declare global {
   }
 }
 
-export function initPageWithPreloading(page: Page): void {
-  logger.debug('initPageWithPreloading', page.id);
+export async function initPageWithPreloading(page: Page) {
   const workspace = page.workspace;
-  workspace.importPageSnapshot(
+  await workspace.importPageSnapshot(
     preloadingData.data['space:Qmo9-1SGTB'],
     page.id
   );
