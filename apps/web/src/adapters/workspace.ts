@@ -1,10 +1,10 @@
 import { Unreachable } from '@affine/env';
-import type { AppEvents, WorkspaceUISchema } from '@affine/workspace/type';
+import type { AppEvents, WorkspaceUISchema } from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
   WorkspaceFlavour,
-} from '@affine/workspace/type';
+} from '@affine/env/workspace';
 
 import { AffineAdapter } from './affine';
 import { LocalAdapter } from './local';

@@ -12,6 +12,8 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { config, DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
+import type { BackgroundProvider } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
@@ -21,8 +23,6 @@ import {
   rootStore,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { BackgroundProvider } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {

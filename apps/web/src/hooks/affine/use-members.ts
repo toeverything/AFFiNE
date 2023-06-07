@@ -1,4 +1,4 @@
-import type { Member } from '@affine/workspace/affine/api';
+import type { Member } from '@affine/env/workspace/legacy-cloud';
 import { affineApis } from '@affine/workspace/affine/shared';
 import { useCallback } from 'react';
 import useSWR from 'swr';
