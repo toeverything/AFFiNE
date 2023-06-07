@@ -5,8 +5,8 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/workspace/type';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';

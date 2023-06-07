@@ -15,6 +15,9 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
+    "./workspace": "./src/workspace.ts",
+    "./workspace/legacy-cloud": "./src/workspace/legacy-cloud/index.ts",
+    "./filter": "./src/filter.ts",
     "./blocksuite": "./src/blocksuite/index.ts"
   },
   "peerDependencies": {

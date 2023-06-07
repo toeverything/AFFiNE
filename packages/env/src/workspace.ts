@@ -1,10 +1,10 @@
-import type { View } from '@affine/component/page-list/filter/shared-types';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { FC, PropsWithChildren } from 'react';
 
-import type { Workspace as RemoteWorkspace } from './affine/api';
+import type { View } from './filter';
+import type { Workspace as RemoteWorkspace } from './workspace/legacy-cloud';
 
 export enum WorkspaceSubPath {
   ALL = 'all',

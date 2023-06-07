@@ -4,12 +4,12 @@
 import 'fake-indexeddb/auto';
 
 import { initEmptyPage } from '@affine/env/blocksuite';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   _cleanupBlockSuiteWorkspaceCache,
   createEmptyBlockSuiteWorkspace,
