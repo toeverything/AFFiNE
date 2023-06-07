@@ -1,10 +1,10 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "lib",
-    "composite": true,
-    "noEmit": false
-  },
   "include": ["./src"],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib"
+  },
   "references": [{ "path": "../env" }, { "path": "../y-indexeddb" }]
 }

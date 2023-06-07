@@ -1,12 +1,11 @@
 {
   "extends": "../../tsconfig.json",
+  "include": ["./src"],
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
     "outDir": "lib"
   },
-  "include": ["./src", "./src/affine/api"],
-  "exclude": ["lib"],
   "references": [
     { "path": "../../tests/fixtures" },
     { "path": "../y-indexeddb" },
