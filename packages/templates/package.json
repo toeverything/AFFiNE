@@ -3,8 +3,8 @@
   "private": true,
   "sideEffect": false,
   "exports": {
-    "./*.md": "./src/*.md",
-    "./*.json": "./src/*.json"
+    "./*.md": "./*.md",
+    "./*.json": "./*.json"
   },
   "version": "0.7.0-canary.8"
 }
