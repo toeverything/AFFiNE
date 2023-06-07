@@ -1,8 +1,8 @@
 import type { BlockSuiteFeatureFlags } from '@affine/env';
 import { config } from '@affine/env';
+import type { AffinePublicWorkspace } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { affineApis } from '@affine/workspace/affine/shared';
-import type { AffinePublicWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { atom } from 'jotai';
 

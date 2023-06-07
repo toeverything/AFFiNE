@@ -1,5 +1,5 @@
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { WorkspaceSubPath } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';

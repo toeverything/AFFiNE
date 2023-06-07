@@ -12,7 +12,6 @@
     { "path": "../env" },
     { "path": "../debug" },
     { "path": "../hooks" },
-    { "path": "../component/tsconfig.workspace.json" },
     { "path": "../../apps/electron" }
   ]
 }
