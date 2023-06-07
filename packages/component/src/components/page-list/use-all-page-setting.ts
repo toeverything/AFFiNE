@@ -20,7 +20,7 @@ export interface PageViewDBV1 extends DBSchema {
 }
 
 const pageViewDBPromise: Promise<IDBPDatabase<PageViewDBV1>> =
-  environment.isServer
+  typeof window === 'undefined'
     ? // never resolve in SSR
       new Promise<any>(() => {})
     : openDB<PageViewDBV1>('page-view', 1, {
