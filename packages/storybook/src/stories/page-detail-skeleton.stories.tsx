@@ -1,6 +1,5 @@
+import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { Meta } from '@storybook/react';
-
-import { PageDetailSkeleton } from '.';
 
 export default {
   title: 'AFFiNE/PageDetailSkeleton',

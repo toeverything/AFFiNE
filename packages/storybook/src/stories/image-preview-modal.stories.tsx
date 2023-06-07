@@ -1,10 +1,9 @@
+import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
+import { ImagePreviewModal } from '@affine/component/image-preview-modal';
 import { initPage } from '@affine/env/blocksuite';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Meta } from '@storybook/react';
-
-import { BlockSuiteEditor } from '../block-suite-editor';
-import { ImagePreviewModal } from '.';
 
 export default {
   title: 'Component/ImagePreviewModal',

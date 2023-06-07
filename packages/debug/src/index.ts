@@ -1,12 +1,9 @@
-import { env } from '@affine/env';
 import debug from 'debug';
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-
 const SESSION_KEY = 'affine:debug';
-const development = env.isDebug;
 
-if (env.isBrowser) {
+if (typeof window !== 'undefined') {
   // enable debug logs if the URL search string contains `debug`
   // e.g. http://localhost:3000/?debug
   if (window.location.search.includes('debug')) {
@@ -15,8 +12,13 @@ if (env.isBrowser) {
     // we need to store the debug flag in sessionStorage
     sessionStorage.setItem(SESSION_KEY, 'true');
   }
-  if (sessionStorage.getItem(SESSION_KEY) === 'true' || development) {
+  if (sessionStorage.getItem(SESSION_KEY) === 'true') {
     // enable all debug logs by default
+    debug.enable('*');
+    console.warn('Debug logs enabled');
+  }
+} else {
+  if (process.env.NODE_ENV === 'development') {
     debug.enable('*');
     console.warn('Debug logs enabled');
   }

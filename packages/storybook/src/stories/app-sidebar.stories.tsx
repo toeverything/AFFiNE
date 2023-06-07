@@ -1,3 +1,21 @@
+import { IconButton } from '@affine/component';
+import {
+  AppSidebar,
+  AppSidebarFallback,
+  appSidebarOpenAtom,
+} from '@affine/component/app-sidebar';
+import { AddPageButton } from '@affine/component/app-sidebar';
+import { CategoryDivider } from '@affine/component/app-sidebar';
+import {
+  navHeaderStyle,
+  sidebarButtonStyle,
+} from '@affine/component/app-sidebar';
+import { MenuLinkItem } from '@affine/component/app-sidebar';
+import { QuickSearchInput } from '@affine/component/app-sidebar';
+import {
+  SidebarContainer,
+  SidebarScrollableContainer,
+} from '@affine/component/app-sidebar';
 import {
   DeleteTemporarilyIcon,
   SettingsIcon,
@@ -6,18 +24,6 @@ import {
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
 import { type PropsWithChildren, useState } from 'react';
-
-import { IconButton } from '../..';
-import { AppSidebar, AppSidebarFallback, appSidebarOpenAtom } from '.';
-import { AddPageButton } from './add-page-button';
-import { CategoryDivider } from './category-divider';
-import { navHeaderStyle, sidebarButtonStyle } from './index.css';
-import { MenuLinkItem } from './menu-item';
-import { QuickSearchInput } from './quick-search-input';
-import {
-  SidebarContainer,
-  SidebarScrollableContainer,
-} from './sidebar-containers';
 
 export default {
   title: 'Components/AppSidebar',

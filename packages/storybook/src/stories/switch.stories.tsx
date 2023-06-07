@@ -1,7 +1,6 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
+import { Switch } from '@affine/component';
 import type { StoryFn } from '@storybook/react';
-
-import { Switch } from '..';
 
 export default {
   title: 'AFFiNE/Switch',
