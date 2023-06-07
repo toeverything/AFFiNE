@@ -5,7 +5,7 @@ import {
   PageList,
   PageListTrashView,
 } from '@affine/component/page-list';
-import type { View } from '@affine/component/page-list/filter/shared-types';
+import type { View } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';

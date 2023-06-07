@@ -1,12 +1,6 @@
 {
   "extends": "../../tsconfig.json",
-  "exclude": [
-    "lib",
-    "./src/components/page-list/filter/shared-types.tsx",
-    "./src/components/page-list/filter/logic/custom-type.ts",
-    "./src/components/page-list/filter/logic/matcher.ts",
-    "./src/components/page-list/filter/logic/typesystem.ts"
-  ],
+  "exclude": ["lib"],
   "include": ["./src/**/*", "./src/**/*.json"],
   "compilerOptions": {
     "composite": true,
@@ -30,7 +24,6 @@
     {
       "path": "../../apps/electron"
     },
-    { "path": "./tsconfig.workspace.json" },
     { "path": "../../tests/fixtures" }
   ]
 }

@@ -6,6 +6,11 @@ import 'fake-indexeddb/auto';
 import { readFile } from 'node:fs/promises';
 
 import { MessageCode } from '@affine/env/constant';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import {
+  createWorkspaceResponseSchema,
+  usageResponseSchema,
+} from '@affine/env/workspace/legacy-cloud';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
@@ -17,15 +22,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { applyUpdate } from 'yjs';
 
-import { WorkspaceFlavour } from '../../type';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
-import {
-  createUserApis,
-  createWorkspaceApis,
-  createWorkspaceResponseSchema,
-  RequestError,
-  usageResponseSchema,
-} from '../api';
+import { createUserApis, createWorkspaceApis, RequestError } from '../api';
 import { createStatusApis } from '../api/status';
 import { KeckProvider } from '../keck';
 import {

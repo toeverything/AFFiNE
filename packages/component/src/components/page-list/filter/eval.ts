@@ -1,4 +1,5 @@
-import type { Filter, Literal, Ref, VariableMap } from './shared-types';
+import type { Filter, Literal, Ref, VariableMap } from '@affine/env/filter';
+
 import { filterMatcher } from './vars';
 
 const evalRef = (ref: Ref, variableMap: VariableMap) => {

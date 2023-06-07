@@ -5,6 +5,5 @@
     "composite": true,
     "noEmit": false,
     "outDir": "lib"
-  },
-  "references": [{ "path": "../env" }]
+  }
 }

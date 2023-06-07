@@ -1,34 +1,14 @@
+import type { Literal, LiteralValue, VariableMap } from '@affine/env/filter';
 import { DateTimeIcon, FavoritedIcon } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 
 import { tBoolean, tDate } from './logical/custom-type';
 import type { TType } from './logical/typesystem';
 
-export type Ref = {
-  type: 'ref';
-  name: keyof VariableMap;
-};
-
-export type Filter = {
-  type: 'filter';
-  left: Ref;
-  funcName: string;
-  args: Literal[];
-};
-export type LiteralValue =
-  | number
-  | string
-  | boolean
-  | { [K: string]: LiteralValue }
-  | Array<LiteralValue>;
 export const toLiteral = (value: LiteralValue): Literal => ({
   type: 'literal',
   value,
 });
-export type Literal = {
-  type: 'literal';
-  value: LiteralValue;
-};
 
 export type FilterVariable = {
   name: keyof VariableMap;
@@ -56,11 +36,12 @@ export const variableDefineMap = {
   //   type: tBoolean.create(),
   // },
 } as const;
-export type VariableMap = {
+
+export type InternalVariableMap = {
   [K in keyof typeof variableDefineMap]: LiteralValue;
 };
-export type View = {
-  id: string;
-  name: string;
-  filterList: Filter[];
-};
+
+declare module '@affine/env/filter' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface VariableMap extends InternalVariableMap {}
+}

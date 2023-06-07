@@ -1,10 +1,10 @@
+import type { Filter, View } from '@affine/env/filter';
 import { SaveIcon } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
 import { useState } from 'react';
 
 import { Button, Input, Modal, ModalWrapper } from '../../..';
 import { FilterList } from '../filter';
-import type { Filter, View } from '../filter/shared-types';
 import * as styles from './view-list.css';
 
 type CreateViewProps = {

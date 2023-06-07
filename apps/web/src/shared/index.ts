@@ -1,9 +1,9 @@
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
-import type { AffinePublicWorkspace } from '@affine/workspace/type';
-import type { WorkspaceRegistry } from '@affine/workspace/type';
+} from '@affine/env/workspace';
+import type { AffinePublicWorkspace } from '@affine/env/workspace';
+import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { NextPage } from 'next';
 import type { ReactElement, ReactNode } from 'react';
