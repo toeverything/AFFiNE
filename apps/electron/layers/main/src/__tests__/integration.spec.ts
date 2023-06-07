@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
@@ -12,8 +13,6 @@ const registeredHandlers = new Map<
   string,
   ((...args: any[]) => Promise<any>)[]
 >();
-
-const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 type WithoutFirstParameter<T> = T extends (_: any, ...args: infer P) => infer R
   ? (...args: P) => R
@@ -72,11 +71,14 @@ const nativeTheme = {
   themeSource: 'light',
 };
 
-function compareBuffer(a: Uint8Array | null, b: Uint8Array | null) {
+function compareBuffer(
+  a: Uint8Array | null | undefined,
+  b: Uint8Array | null | undefined
+) {
   if (
-    (a === null && b === null) ||
-    a === null ||
-    b === null ||
+    (a == null && b == null) ||
+    a == null ||
+    b == null ||
     a.length !== b.length
   ) {
     return false;
@@ -105,11 +107,11 @@ const electronModule = {
       handlers.push(callback);
       registeredHandlers.set(name, handlers);
     },
-    addEventListener: (...args: any[]) => {
+    addListener: (...args: any[]) => {
       // @ts-ignore
       electronModule.app.on(...args);
     },
-    removeEventListener: () => {},
+    removeListener: () => {},
   },
   BrowserWindow: {
     getAllWindows: () => {
@@ -135,7 +137,6 @@ beforeEach(async () => {
   const { registerEvents } = await import('../events');
   registerEvents();
   await fs.mkdirp(SESSION_DATA_PATH);
-  await import('../db/ensure-db');
 
   registeredHandlers.get('ready')?.forEach(fn => fn());
 });
@@ -143,7 +144,10 @@ beforeEach(async () => {
 afterEach(async () => {
   // reset registered handlers
   registeredHandlers.get('before-quit')?.forEach(fn => fn());
-
+  // wait for the db to be closed on Windows
+  if (process.platform === 'win32') {
+    await setTimeout(200);
+  }
   await fs.remove(SESSION_DATA_PATH);
 });
 
@@ -175,7 +179,7 @@ describe('ensureSQLiteDB', () => {
     const fileExists = await fs.pathExists(file);
     expect(fileExists).toBe(true);
     registeredHandlers.get('before-quit')?.forEach(fn => fn());
-    await delay(100);
+    await setTimeout(100);
     expect(workspaceDB.db).toBe(null);
   });
 });
@@ -254,7 +258,7 @@ describe('db handlers', () => {
   test('get non existent blob', async () => {
     const workspaceId = v4();
     const bin = await dispatch('db', 'getBlob', workspaceId, 'non-existent-id');
-    expect(bin).toBeNull();
+    expect(bin).toBeUndefined();
   });
 
   test('list blobs (empty)', async () => {

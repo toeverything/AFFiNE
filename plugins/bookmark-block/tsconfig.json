@@ -4,10 +4,5 @@
     "rootDir": "./src",
     "types": ["electron"]
   },
-  "include": ["**.ts", "**.tsx"],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ]
+  "include": ["**.ts", "**.tsx"]
 }
