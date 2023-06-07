@@ -41,7 +41,7 @@ export const monthHeaderStyle = style({
   display: 'flex',
   width: '100%',
   alignItems: 'center',
-  marginBottom: '12px',
+  marginBottom: '18px',
   padding: '0 14px',
   position: 'relative',
   '::after': {
@@ -50,7 +50,7 @@ export const monthHeaderStyle = style({
     width: 'calc(100% - 24px)',
     height: '1px',
     background: 'var(--affine-border-color)',
-    bottom: '-16px',
+    bottom: '-18px',
     left: '12px',
   },
 });
@@ -58,7 +58,7 @@ export const monthTitleStyle = style({
   color: 'var(--affine-text-primary-color)',
   fontWeight: '600',
   fontSize: 'var(--affine-font-sm)',
-  marginLeft: '24px',
+  marginLeft: '12px',
 });
 export const yearStyle = style({
   marginLeft: '8px',
@@ -108,7 +108,7 @@ export const dayStyle = style({
   height: '28px',
   lineHeight: '28px',
   padding: '0 4px',
-  margin: '6px',
+  margin: '6px 12px 6px 0px',
   verticalAlign: 'middle',
 
   selectors: {
@@ -128,7 +128,36 @@ export const dayStyle = style({
       borderRadius: '8px',
     },
     '&[tabindex="0"][aria-selected="false"]': {
-      background: 'var(--affine-tertiary-color)',
+      background: 'var(--affine-background-overlay-panel-color)',
+    },
+  },
+});
+export const todayStyle = style({
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-primary-color)',
+  display: 'inline-block',
+  width: '28px',
+  height: '28px',
+  lineHeight: '28px',
+  padding: '0 4px',
+  margin: '6px 12px 6px 0px',
+  verticalAlign: 'middle',
+  background: 'var(--affine-tertiary-color)',
+  borderRadius: '8px',
+  selectors: {
+    '&:hover': {
+      background: 'var(--affine-hover-color)',
+      borderRadius: '8px',
+      transition: 'background-color 0.3s ease-in-out',
+    },
+    '&[aria-selected="true"]': {
+      color: 'var(--affine-white)',
+      background: 'var(--affine-primary-color)',
+      borderRadius: '8px',
+      fontWeight: '400',
+    },
+    '&[aria-selected="true"]:hover': {
+      background: 'var(--affine-primary-color)',
       borderRadius: '8px',
     },
   },
@@ -145,10 +174,39 @@ export const mouthsStyle = style({
   fontSize: 'var(--affine-font-base)',
   color: 'var(--affine-text-primary-color)',
   display: 'inline-block',
-  height: '32px',
   lineHeight: '22px',
-  padding: '4px 16px',
-
+  padding: '6px 16px',
+  fontWeight: '400',
+  selectors: {
+    '&:hover': {
+      background: 'var(--affine-hover-color)',
+      borderRadius: '8px',
+      transition: 'background-color 0.3s ease-in-out',
+    },
+    '&[aria-selected="true"]': {
+      color: 'var(--affine-white)',
+      background: 'var(--affine-primary-color)',
+      borderRadius: '8px',
+      fontWeight: '400',
+    },
+    '&[aria-selected="true"]:hover': {
+      background: 'var(--affine-primary-color)',
+      borderRadius: '8px',
+    },
+    '&[tabindex="0"][aria-selected="false"]': {
+      background: 'var(--affine-background-overlay-panel-color)',
+    },
+  },
+});
+export const currentMonthStyle = style({
+  fontSize: 'var(--affine-font-base)',
+  color: 'var(--affine-text-primary-color)',
+  display: 'inline-block',
+  lineHeight: '22px',
+  padding: '6px 16px',
+  fontWeight: '400',
+  background: 'var(--affine-tertiary-color)',
+  borderRadius: '8px',
   selectors: {
     '&:hover': {
       background: 'var(--affine-hover-color)',
@@ -167,7 +225,6 @@ export const mouthsStyle = style({
     },
     '&[tabindex="0"][aria-selected="false"]': {
       background: 'var(--affine-tertiary-color)',
-      borderRadius: '8px',
     },
   },
 });

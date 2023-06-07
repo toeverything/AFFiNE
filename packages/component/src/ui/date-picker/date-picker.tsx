@@ -33,7 +33,8 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     value ? dayjs(value).toDate() : null
   );
-
+  const currentMonth = dayjs().toDate().getMonth();
+  const today = dayjs().toDate().getDate();
   const handleSelectDate = (date: Date | null) => {
     if (date) {
       setSelectedDate(date);
@@ -58,15 +59,27 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
     const selectedMonth = dayjs(date).month();
     return (
       <div className={styles.headerStyle}>
-        <div className={styles.mouthStyle}>{months[selectedMonth]}</div>
-        <div className={styles.yearStyle}>{selectedYear}</div>
         <div
+          data-testid="date-picker-current-month"
+          className={styles.mouthStyle}
+        >
+          {months[selectedMonth]}
+        </div>
+        <div
+          data-testid="date-picker-current-year"
+          className={styles.yearStyle}
+        >
+          {selectedYear}
+        </div>
+        <div
+          data-testid="month-picker-button"
           className={styles.arrowDownStyle}
           onClick={() => setOpenMonthPicker(true)}
         >
           <ArrowDownSmallIcon />
         </div>
         <button
+          data-testid="date-picker-prev-button"
           className={styles.arrowLeftStyle}
           onClick={decreaseMonth}
           disabled={prevMonthButtonDisabled}
@@ -74,6 +87,7 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
           <ArrowLeftSmallIcon />
         </button>
         <button
+          data-testid="date-picker-next-button"
           className={styles.arrowRightStyle}
           onClick={increaseMonth}
           disabled={nextMonthButtonDisabled}
@@ -99,8 +113,14 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
     const selectedYear = dayjs(date).year();
     return (
       <div className={styles.monthHeaderStyle}>
-        <div className={styles.monthTitleStyle}>{selectedYear}</div>
+        <div
+          data-testid="month-picker-current-year"
+          className={styles.monthTitleStyle}
+        >
+          {selectedYear}
+        </div>
         <button
+          data-testid="month-picker-prev-button"
           className={styles.arrowLeftStyle}
           onClick={decreaseYear}
           disabled={prevYearButtonDisabled}
@@ -108,6 +128,7 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
           <ArrowLeftSmallIcon />
         </button>
         <button
+          data-testid="month-picker-next-button"
           className={styles.arrowRightStyle}
           onClick={increaseYear}
           disabled={nextYearButtonDisabled}
@@ -119,12 +140,19 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
   };
   return (
     <DatePicker
+      onClickOutside={() => setOpenMonthPicker(false)}
       className={styles.inputStyle}
       calendarClassName={styles.calendarStyle}
       weekDayClassName={() => styles.weekStyle}
-      dayClassName={() => styles.dayStyle}
+      dayClassName={date =>
+        date.getDate() === today ? styles.todayStyle : styles.dayStyle
+      }
       popperClassName={styles.popperStyle}
-      monthClassName={() => styles.mouthsStyle}
+      monthClassName={date =>
+        date.getMonth() === currentMonth
+          ? styles.currentMonthStyle
+          : styles.mouthsStyle
+      }
       selected={selectedDate}
       onChange={handleSelectDate}
       showPopperArrow={false}
