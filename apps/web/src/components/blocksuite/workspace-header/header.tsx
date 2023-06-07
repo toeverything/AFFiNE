@@ -4,7 +4,7 @@ import {
   appSidebarOpenAtom,
 } from '@affine/component/app-sidebar';
 import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';

@@ -2,12 +2,12 @@ import type {
   AppEvents,
   WorkspaceCRUD,
   WorkspaceUISchema,
-} from '@affine/workspace/type';
+} from '@affine/env/workspace';
 import type {
   LoadPriority,
   ReleaseType,
   WorkspaceFlavour,
-} from '@affine/workspace/type';
+} from '@affine/env/workspace';
 
 export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
   releaseType: ReleaseType;

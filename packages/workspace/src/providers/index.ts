@@ -1,4 +1,12 @@
 import { config, websocketPrefixUrl } from '@affine/env';
+import type {
+  AffineWebSocketProvider,
+  LocalIndexedDBBackgroundProvider,
+  LocalIndexedDBDownloadProvider,
+  Provider,
+  SQLiteDBDownloadProvider,
+  SQLiteProvider,
+} from '@affine/env/workspace';
 import type { BlobManager, Disposable } from '@blocksuite/store';
 import {
   assertExists,
@@ -12,14 +20,6 @@ import {
 
 import { KeckProvider } from '../affine/keck';
 import { getLoginStorage, storageChangeSlot } from '../affine/login';
-import type {
-  AffineWebSocketProvider,
-  LocalIndexedDBBackgroundProvider,
-  LocalIndexedDBDownloadProvider,
-  Provider,
-  SQLiteDBDownloadProvider,
-  SQLiteProvider,
-} from '../type';
 import { CallbackSet } from '../utils';
 import { createAffineDownloadProvider } from './affine-download';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
@@ -183,6 +183,7 @@ const createSQLiteProvider = (
   const connect = () => {
     logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
     blockSuiteWorkspace.doc.on('update', handleUpdate);
+    // @ts-expect-error
     unsubscribe = events.db.onExternalUpdate(({ update, workspaceId }) => {
       if (workspaceId === blockSuiteWorkspace.id) {
         Y.applyUpdate(blockSuiteWorkspace.doc, update, sqliteOrigin);

@@ -1,12 +1,12 @@
 /**
  * @vitest-environment happy-dom
  */
+import type { LocalWorkspace } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { LocalWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/workspace/type';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';

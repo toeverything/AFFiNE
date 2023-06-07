@@ -3,6 +3,12 @@
  */
 import 'fake-indexeddb/auto';
 
+import type {
+  Filter,
+  LiteralValue,
+  Ref,
+  VariableMap,
+} from '@affine/env/filter';
 import { assertExists } from '@blocksuite/global/utils';
 import { render } from '@testing-library/react';
 import { useState } from 'react';
@@ -10,12 +16,6 @@ import { describe, expect, test } from 'vitest';
 
 import { Condition } from '../filter/condition';
 import { tBoolean, tDate } from '../filter/logical/custom-type';
-import type {
-  Filter,
-  LiteralValue,
-  Ref,
-  VariableMap,
-} from '../filter/shared-types';
 import { toLiteral } from '../filter/shared-types';
 import type { FilterMatcherDataType } from '../filter/vars';
 import { filterMatcher } from '../filter/vars';

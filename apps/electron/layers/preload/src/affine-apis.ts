@@ -1,26 +1,6 @@
 // NOTE: we will generate preload types from this file
 import { ipcRenderer } from 'electron';
 
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import type {
-  MainIPCEventMap,
-  MainIPCHandlerMap,
-} from '../../main/src/exposed';
-
-type WithoutFirstParameter<T> = T extends (_: any, ...args: infer P) => infer R
-  ? (...args: P) => R
-  : T;
-
-type HandlersMap<N extends keyof MainIPCHandlerMap> = {
-  [K in keyof MainIPCHandlerMap[N]]: WithoutFirstParameter<
-    MainIPCHandlerMap[N][K]
-  >;
-};
-
-export type PreloadHandlers = {
-  [N in keyof MainIPCHandlerMap]: HandlersMap<N>;
-};
-
 type MainExposedMeta = {
   handlers: [namespace: string, handlerNames: string[]][];
   events: [namespace: string, eventNames: string[]][];
@@ -35,7 +15,7 @@ const meta: MainExposedMeta = (() => {
 })();
 
 // main handlers that can be invoked from the renderer process
-const apis: PreloadHandlers = (() => {
+const apis: any = (() => {
   const { handlers: handlersMeta } = meta;
 
   const all = handlersMeta.map(([namespace, functionNames]) => {
@@ -55,7 +35,7 @@ const apis: PreloadHandlers = (() => {
 })();
 
 // main events that can be listened to from the renderer process
-const events: MainIPCEventMap = (() => {
+const events: any = (() => {
   const { events: eventsMeta } = meta;
 
   // NOTE: ui may try to listen to a lot of the same events, so we increase the limit...

@@ -1,3 +1,4 @@
+import type { BroadCastChannelProvider } from '@affine/env/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import type { Awareness } from 'y-protocols/awareness';
@@ -6,7 +7,6 @@ import {
   encodeAwarenessUpdate,
 } from 'y-protocols/awareness';
 
-import type { BroadCastChannelProvider } from '../../type';
 import { CallbackSet } from '../../utils';
 import { localProviderLogger } from '../logger';
 import type {

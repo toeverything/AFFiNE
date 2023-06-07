@@ -1,12 +1,12 @@
 import { DebugLogger } from '@affine/debug';
+import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import { z } from 'zod';
 
 import { createLocalProviders } from '../providers';
-import type { LocalWorkspace, WorkspaceCRUD } from '../type';
-import { WorkspaceFlavour } from '../type';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 
 const getStorage = () => createJSONStorage(() => localStorage);
@@ -102,9 +102,11 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
 
     // workspaces in desktop
     if (window.apis && environment.isDesktop) {
+      // @ts-expect-error
       const desktopIds = (await window.apis.workspace.list()).map(([id]) => id);
       // the ids maybe a subset of the local storage
       const moreWorkspaces = desktopIds.filter(
+        // @ts-expect-error
         id => !allWorkspaceIDs.includes(id)
       );
       allWorkspaceIDs = [...allWorkspaceIDs, ...moreWorkspaces];
