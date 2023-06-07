@@ -16,12 +16,12 @@ beforeEach(async () => {
   config = module.get(Config);
 });
 
-void test('should be able to get config', () => {
+test('should be able to get config', () => {
   ok(typeof config.host === 'string');
   equal(config.env, 'test');
 });
 
-void test('should be able to override config', async () => {
+test('should be able to override config', async () => {
   const module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({

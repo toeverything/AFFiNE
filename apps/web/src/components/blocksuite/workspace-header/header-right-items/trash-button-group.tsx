@@ -54,21 +54,15 @@ export const TrashButtonGroup = () => {
         confirmText={t['Delete']()}
         confirmType="danger"
         open={open}
-        onConfirm={() => {
+        onConfirm={async () => {
           // fixme(himself65): remove these hooks ASAP
-          router
-            .push({
-              pathname: '/workspace/[workspaceId]/all',
-              query: {
-                workspaceId: workspace.id,
-              },
-            })
-            .then(() => {
-              blockSuiteWorkspace.removePage(pageId);
-            })
-            .catch(() => {
-              // do nothing
-            });
+          await router.push({
+            pathname: '/workspace/[workspaceId]/all',
+            query: {
+              workspaceId: workspace.id,
+            },
+          });
+          blockSuiteWorkspace.removePage(pageId);
         }}
         onCancel={() => {
           setOpen(false);

@@ -57,6 +57,7 @@ fetch(new URL('@affine-test/fixtures/smile.png', import.meta.url))
   })
   .catch(() => {
     // just ignore
+    console.error('Failed to load smile.png');
   });
 
 export const BlobExample: StoryFn<WorkspaceAvatarProps> = props => {

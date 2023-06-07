@@ -138,18 +138,14 @@ export const SyncUser = () => {
               workspace as LocalWorkspace
             );
             // fixme(himself65): refactor this
-            router
-              .replace({
-                pathname: `/workspace/[workspaceId]/all`,
-                query: {
-                  workspaceId: id,
-                },
-              })
-              .then(() => {
-                router.reload();
-              })
-              .catch(() => {});
+            await router.replace({
+              pathname: `/workspace/[workspaceId]/all`,
+              query: {
+                workspaceId: id,
+              },
+            });
             setOpen(false);
+            router.reload();
           }}
         />
       </>

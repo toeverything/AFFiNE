@@ -67,10 +67,9 @@ export class AffineErrorBoundary extends Component<
                         pageId: error.workspace.meta.pageMetas[0].id,
                       },
                     })
-                    .then(() => {
+                    .finally(() => {
                       this.setState({ error: null });
-                    })
-                    .catch(() => {});
+                    });
                 }}
               >
                 {' '}
