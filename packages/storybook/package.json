@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
+    "@affine/i18n": "workspace:*",
     "@storybook/addon-actions": "^7.0.18",
     "@storybook/addon-coverage": "^0.0.8",
     "@storybook/addon-essentials": "^7.0.18",
