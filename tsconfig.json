@@ -97,6 +97,9 @@
       "path": "./plugins/copilot"
     },
     {
+      "path": "./plugins/bookmark-block"
+    },
+    {
       "path": "./tests/fixtures"
     },
     {
