@@ -10,7 +10,9 @@ export abstract class BaseSQLiteAdapter {
   db: SqliteConnection | null = null;
   abstract role: string;
 
-  constructor(public readonly path: string) {}
+  constructor(public readonly path: string) {
+    logger.info(`[SQLiteAdapter]`, 'path:', path);
+  }
 
   async connectIfNeeded() {
     if (!this.db) {
