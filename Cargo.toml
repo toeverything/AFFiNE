@@ -1,5 +1,8 @@
 [workspace]
-members = ["./packages/native"]
+members = ["./packages/native", "./packages/native/schema"]
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3
 
 [profile.release]
 lto = true

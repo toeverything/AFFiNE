@@ -1,3 +1,6 @@
+import assert from 'node:assert';
+
+import type { SqliteConnection } from '@affine/native';
 import { debounce } from 'lodash-es';
 import * as Y from 'yjs';
 
@@ -30,16 +33,12 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     logger.debug('[SecondaryWorkspaceSQLiteDB] created', this.workspaceId);
   }
 
-  close() {
-    this.db?.close();
-    this.db = null;
-  }
-
-  override destroy() {
-    this.flushUpdateQueue();
+  override async destroy() {
+    const { db } = this;
+    await this.flushUpdateQueue(db);
     this.unsubscribers.forEach(unsub => unsub());
-    this.db?.close();
     this.yDoc.destroy();
+    await super.destroy();
   }
 
   get workspaceId() {
@@ -48,12 +47,15 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   // do not update db immediately, instead, push to a queue
   // and flush the queue in a future time
-  addUpdateToUpdateQueue(update: Uint8Array) {
+  async addUpdateToUpdateQueue(db: SqliteConnection, update: Uint8Array) {
     this.updateQueue.push(update);
-    this.debouncedFlush();
+    await this.debouncedFlush(db);
   }
 
-  flushUpdateQueue() {
+  async flushUpdateQueue(db = this.db) {
+    if (!db) {
+      return; // skip if db is not connected
+    }
     logger.debug(
       'flushUpdateQueue',
       this.workspaceId,
@@ -62,9 +64,8 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     );
     const updates = [...this.updateQueue];
     this.updateQueue = [];
-    this.connect();
-    this.addUpdateToSQLite(updates);
-    this.close();
+    await db.connect();
+    await this.addUpdateToSQLite(db, updates);
   }
 
   // flush after 5s, but will not wait for more than 10s
@@ -75,29 +76,31 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   runCounter = 0;
 
   // wrap the fn with connect and close
-  // it only works for sync functions
-  run = <T extends (...args: any[]) => any>(fn: T) => {
+  async run<T extends (...args: any[]) => any>(
+    fn: T
+  ): Promise<
+    (T extends (...args: any[]) => infer U ? Awaited<U> : unknown) | undefined
+  > {
     try {
-      if (this.runCounter === 0) {
-        this.connect();
-      }
+      await this.connectIfNeeded();
       this.runCounter++;
-      return fn();
+      return await fn();
     } catch (err) {
       logger.error(err);
     } finally {
       this.runCounter--;
       if (this.runCounter === 0) {
-        this.close();
+        await super.destroy();
       }
     }
-  };
+  }
 
   setupAndListen() {
     if (this.firstConnected) {
       return;
     }
     this.firstConnected = true;
+    const { db } = this;
 
     const onUpstreamUpdate = (update: Uint8Array, origin: YOrigin) => {
       if (origin === 'renderer') {
@@ -109,7 +112,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     const onSelfUpdate = (update: Uint8Array, origin: YOrigin) => {
       // for self update from upstream, we need to push it to external DB
       if (origin === 'upstream') {
-        this.addUpdateToUpdateQueue(update);
+        this.addUpdateToUpdateQueue(db!, update);
       }
 
       if (origin === 'self') {
@@ -126,13 +129,11 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       this.yDoc.off('update', onSelfUpdate);
     });
 
-    this.run(() => {
+    this.run(async () => {
       // apply all updates from upstream
       const upstreamUpdate = this.upstream.getDocAsUpdates();
       // to initialize the yDoc, we need to apply all updates from the db
       this.applyUpdate(upstreamUpdate, 'upstream');
-
-      this.pull();
     });
   }
 
@@ -141,17 +142,17 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   };
 
   // TODO: have a better solution to handle blobs
-  syncBlobs() {
-    this.run(() => {
+  async syncBlobs() {
+    await this.run(async () => {
       // pull blobs
-      const blobsKeys = this.getBlobKeys();
-      const upstreamBlobsKeys = this.upstream.getBlobKeys();
+      const blobsKeys = await this.getBlobKeys();
+      const upstreamBlobsKeys = await this.upstream.getBlobKeys();
       // put every missing blob to upstream
       for (const key of blobsKeys) {
         if (!upstreamBlobsKeys.includes(key)) {
-          const blob = this.getBlob(key);
+          const blob = await this.getBlob(key);
           if (blob) {
-            this.upstream.addBlob(key, blob);
+            await this.upstream.addBlob(key, blob);
             logger.debug('syncBlobs', this.workspaceId, key);
           }
         }
@@ -170,11 +171,16 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
    */
   async pull() {
     const start = performance.now();
-    const updates = this.run(() => {
+    assert(this.upstream.db, 'upstream db should be connected');
+    const updates = await this.run(async () => {
       // TODO: no need to get all updates, just get the latest ones (using a cursor, etc)?
-      this.syncBlobs();
-      return this.getUpdates().map(update => update.data);
+      await this.syncBlobs();
+      return (await this.getUpdates()).map(update => update.data);
     });
+
+    if (!updates) {
+      return;
+    }
 
     const merged = await mergeUpdateWorker(updates);
     this.applyUpdate(merged, 'self');
