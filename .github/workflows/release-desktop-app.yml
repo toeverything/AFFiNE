@@ -126,12 +126,6 @@ jobs:
           name: before-make-web-static
           path: apps/electron/resources/web-static
 
-      - name: Rebuild Electron dependences
-        shell: bash
-        run: |
-          rm -rf apps/electron/node_modules/better-sqlite3/build
-          yarn workspace @affine/electron rebuild:for-electron --arch=${{ matrix.spec.arch }}
-
       - name: Build layers
         run: yarn workspace @affine/electron build-layers
 

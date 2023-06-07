@@ -38,5 +38,7 @@
     "tests/unit/**/*.spec.ts",
     "tests/unit/**/*.spec.tsx"
   ],
-  "deepscan.enable": true
+  "rust-analyzer.check.extraEnv": {
+    "DATABASE_URL": "sqlite:affine.db"
+  }
 }
