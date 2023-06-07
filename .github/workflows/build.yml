@@ -118,8 +118,7 @@ jobs:
           COVERAGE: true
 
       - name: Export static resources
-        run: yarn export
-        working-directory: apps/web
+        run: yarn workspace @affine/web export
 
       - name: Upload static resources artifact
         uses: actions/upload-artifact@v3
@@ -327,10 +326,7 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: |
-          rm -rf apps/electron/node_modules/better-sqlite3/build
-          yarn --cwd apps/electron/node_modules/better-sqlite3 run install
-          yarn test:unit
+        run: yarn test:unit
         env:
           NATIVE_TEST: 'true'
       - name: Build layers
@@ -341,12 +337,6 @@ jobs:
         with:
           name: next-js-static
           path: ./apps/electron/resources/web-static
-
-      - name: Rebuild Electron dependences
-        shell: bash
-        run: |
-          rm -rf apps/electron/node_modules/better-sqlite3/build
-          yarn workspace @affine/electron rebuild:for-electron --arch=${{ matrix.spec.arch }}
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
