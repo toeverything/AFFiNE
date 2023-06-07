@@ -77,9 +77,6 @@
       "path": "./packages/env"
     },
     {
-      "path": "./packages/env/tsconfig.blocksuite.json"
-    },
-    {
       "path": "./packages/graphql"
     },
     {
