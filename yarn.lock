@@ -234,7 +234,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/jotai@workspace:packages/jotai"
   dependencies:
-    "@affine/env": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230606130340-805f430b-nightly
     "@blocksuite/editor": 0.0.0-20230606130340-805f430b-nightly
     "@blocksuite/global": 0.0.0-20230606130340-805f430b-nightly
