@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
