@@ -3,7 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -32,7 +32,7 @@ describe('currentWorkspace atom', () => {
         WorkspaceFlavour.LOCAL
       );
       const page = workspace.createPage({ id: 'page0' });
-      initPage(page);
+      initEmptyPage(page);
       const frameId = page.getBlockByFlavour('affine:frame').at(0)
         ?.id as string;
       id = page.addBlock(

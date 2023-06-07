@@ -1,5 +1,5 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
@@ -107,7 +107,7 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
             dispose.dispose();
           };
         }}
-        onInit={initPage}
+        onInit={initEmptyPage}
       />
     </>
   );
