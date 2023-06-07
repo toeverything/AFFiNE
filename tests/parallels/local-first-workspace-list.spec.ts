@@ -110,7 +110,7 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   }
 
   await page.getByTestId('draggable-item').nth(2).click();
-  await page.waitForTimeout(100);
+  await page.waitForTimeout(1000);
 
   // @ts-expect-error
   const nextId: string = await page.evaluate(() => currentWorkspace.id);
