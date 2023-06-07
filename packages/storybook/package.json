@@ -24,5 +24,9 @@
     "@storybook/testing-library": "^0.1.0",
     "storybook": "^7.0.18",
     "storybook-dark-mode": "^3.0.0"
+  },
+  "devDependencies": {
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506"
   }
 }
