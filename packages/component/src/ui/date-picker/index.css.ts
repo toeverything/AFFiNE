@@ -110,39 +110,7 @@ export const dayStyle = style({
   padding: '0 4px',
   margin: '6px 12px 6px 0px',
   verticalAlign: 'middle',
-
-  selectors: {
-    '&:hover': {
-      background: 'var(--affine-hover-color)',
-      borderRadius: '8px',
-      transition: 'background-color 0.3s ease-in-out',
-    },
-    '&[aria-selected="true"]': {
-      color: 'var(--affine-white)',
-      background: 'var(--affine-primary-color)',
-      borderRadius: '8px',
-      fontWeight: '400',
-    },
-    '&[aria-selected="true"]:hover': {
-      background: 'var(--affine-primary-color)',
-      borderRadius: '8px',
-    },
-    '&[tabindex="0"][aria-selected="false"]': {
-      background: 'var(--affine-background-overlay-panel-color)',
-    },
-  },
-});
-export const todayStyle = style({
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-primary-color)',
-  display: 'inline-block',
-  width: '28px',
-  height: '28px',
-  lineHeight: '28px',
-  padding: '0 4px',
-  margin: '6px 12px 6px 0px',
-  verticalAlign: 'middle',
-  background: 'var(--affine-tertiary-color)',
+  fontWeight: '400',
   borderRadius: '8px',
   selectors: {
     '&:hover': {
@@ -151,14 +119,25 @@ export const todayStyle = style({
       transition: 'background-color 0.3s ease-in-out',
     },
     '&[aria-selected="true"]': {
-      color: 'var(--affine-white)',
-      background: 'var(--affine-primary-color)',
-      borderRadius: '8px',
-      fontWeight: '400',
+      color: 'var(--affine-black)',
+      background: 'var(--affine-hover-color)',
     },
     '&[aria-selected="true"]:hover': {
+      background: 'var(--affine-hover-color)',
+    },
+    '&[tabindex="0"][aria-selected="false"]': {
+      background: 'var(--affine-background-overlay-panel-color)',
+    },
+    '&.react-datepicker__day--today[aria-selected="false"]': {
       background: 'var(--affine-primary-color)',
-      borderRadius: '8px',
+      color: 'var(--affine-palette-line-white)',
+    },
+    '&.react-datepicker__day--today[aria-selected="false"]:hover': {
+      color: 'var(--affine-black)',
+      background: 'var(--affine-hover-color)',
+    },
+    '&.react-datepicker__day--outside-month[aria-selected="false"]': {
+      color: 'var(--affine-text-disable-color)',
     },
   },
 });
@@ -177,54 +156,31 @@ export const mouthsStyle = style({
   lineHeight: '22px',
   padding: '6px 16px',
   fontWeight: '400',
-  selectors: {
-    '&:hover': {
-      background: 'var(--affine-hover-color)',
-      borderRadius: '8px',
-      transition: 'background-color 0.3s ease-in-out',
-    },
-    '&[aria-selected="true"]': {
-      color: 'var(--affine-white)',
-      background: 'var(--affine-primary-color)',
-      borderRadius: '8px',
-      fontWeight: '400',
-    },
-    '&[aria-selected="true"]:hover': {
-      background: 'var(--affine-primary-color)',
-      borderRadius: '8px',
-    },
-    '&[tabindex="0"][aria-selected="false"]': {
-      background: 'var(--affine-background-overlay-panel-color)',
-    },
-  },
-});
-export const currentMonthStyle = style({
-  fontSize: 'var(--affine-font-base)',
-  color: 'var(--affine-text-primary-color)',
-  display: 'inline-block',
-  lineHeight: '22px',
-  padding: '6px 16px',
-  fontWeight: '400',
-  background: 'var(--affine-tertiary-color)',
   borderRadius: '8px',
   selectors: {
     '&:hover': {
       background: 'var(--affine-hover-color)',
-      borderRadius: '8px',
       transition: 'background-color 0.3s ease-in-out',
+      borderRadius: '8px',
     },
     '&[aria-selected="true"]': {
-      color: 'var(--affine-white)',
-      background: 'var(--affine-primary-color)',
-      borderRadius: '8px',
+      color: 'var(--affine-black)',
+      background: 'var(--affine-hover-color)',
       fontWeight: '400',
     },
     '&[aria-selected="true"]:hover': {
-      background: 'var(--affine-primary-color)',
-      borderRadius: '8px',
+      background: 'var(--affine-hover-color)',
     },
     '&[tabindex="0"][aria-selected="false"]': {
-      background: 'var(--affine-tertiary-color)',
+      background: 'var(--affine-background-overlay-panel-color)',
+    },
+    '&.react-datepicker__month-text--today[aria-selected="false"]': {
+      background: 'var(--affine-primary-color)',
+      color: 'var(--affine-palette-line-white)',
+    },
+    '&.react-datepicker__month-text--today[aria-selected="false"]:hover': {
+      background: 'var(--affine-hover-color)',
+      color: 'var(--affine-black)',
     },
   },
 });

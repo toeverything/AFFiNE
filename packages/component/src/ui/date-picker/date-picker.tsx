@@ -33,8 +33,6 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     value ? dayjs(value).toDate() : null
   );
-  const currentMonth = dayjs().toDate().getMonth();
-  const today = dayjs().toDate().getDate();
   const handleSelectDate = (date: Date | null) => {
     if (date) {
       setSelectedDate(date);
@@ -144,15 +142,9 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
       className={styles.inputStyle}
       calendarClassName={styles.calendarStyle}
       weekDayClassName={() => styles.weekStyle}
-      dayClassName={date =>
-        date.getDate() === today ? styles.todayStyle : styles.dayStyle
-      }
+      dayClassName={() => styles.dayStyle}
       popperClassName={styles.popperStyle}
-      monthClassName={date =>
-        date.getMonth() === currentMonth
-          ? styles.currentMonthStyle
-          : styles.mouthsStyle
-      }
+      monthClassName={() => styles.mouthsStyle}
       selected={selectedDate}
       onChange={handleSelectDate}
       showPopperArrow={false}
