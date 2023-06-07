@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
           if-no-files-found: error
 
   build:
@@ -196,7 +196,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
       - name: Run storybook tests
         working-directory: ./packages/component
         run: |
@@ -245,7 +245,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
 
       - name: Wait for Octobase Ready
         run: |
