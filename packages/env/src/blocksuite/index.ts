@@ -1,11 +1,5 @@
 import type { Page } from '@blocksuite/store';
 
-declare global {
-  interface Window {
-    lastImportedMarkdown: string;
-  }
-}
-
 export async function initPageWithPreloading(page: Page) {
   const workspace = page.workspace;
   const { data } = await import('@affine/templates/preloading.json');
