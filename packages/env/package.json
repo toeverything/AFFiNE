@@ -4,7 +4,8 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230601101714-0d24ba91-nightly",
+    "@affine/templates": "workspace:*",
+    "@blocksuite/global": "0.0.0-20230601122821-16196c35-nightly",
     "next": "=13.4.2",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
@@ -14,7 +15,7 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
-    "./blocksuite": "./blocksuite/index.ts"
+    "./blocksuite": "./src/blocksuite/index.ts"
   },
   "peerDependencies": {
     "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"

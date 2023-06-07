@@ -6,5 +6,5 @@
     "outDir": "lib"
   },
   "include": ["./src", "env.d.ts", "./src/global.d.ts"],
-  "exclude": ["blocksuite", "lib"]
+  "exclude": ["lib"]
 }
