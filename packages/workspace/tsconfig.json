@@ -12,7 +12,6 @@
     { "path": "../y-indexeddb" },
     { "path": "../env" },
     { "path": "../debug" },
-    { "path": "../hooks" },
-    { "path": "../../apps/electron" }
+    { "path": "../hooks" }
   ]
 }

@@ -23,7 +23,7 @@ export function useBlockSuiteWorkspaceName(
   if (!blockSuiteWorkspace) {
     nameAtom = emptyWorkspaceNameAtom;
   } else if (!weakMap.has(blockSuiteWorkspace)) {
-    const baseAtom = atom<string>(
+    const baseAtom = atom(
       blockSuiteWorkspace.meta.name ?? UNTITLED_WORKSPACE_NAME
     );
     const writableAtom = atom(

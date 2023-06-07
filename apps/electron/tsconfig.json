@@ -14,9 +14,12 @@
     "noImplicitOverride": true,
     "noEmit": false
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["./layers/**/*.ts"],
   "exclude": ["node_modules", "out", "dist"],
   "references": [
+    {
+      "path": "./tests/tsconfig.json"
+    },
     {
       "path": "./tsconfig.node.json"
     },

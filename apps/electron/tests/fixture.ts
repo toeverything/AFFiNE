@@ -1,7 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../layers/preload/preload.d.ts" />
-
-/* eslint-disable no-empty-pattern */
 import crypto from 'node:crypto';
 import { join, resolve } from 'node:path';
 
@@ -45,6 +41,7 @@ export const test = base.extend<{
       });
     }
     const logFilePath = await page.evaluate(async () => {
+      // @ts-expect-error
       return window.apis?.debug.logFilePath();
     });
     // wat for blocksuite to be loaded
@@ -78,7 +75,7 @@ export const test = base.extend<{
       console.log(logs);
     }
   },
-  electronApp: async ({}, use) => {
+  electronApp: async (_, use) => {
     // a random id to avoid conflicts between tests
     const id = generateUUID();
     const ext = process.platform === 'win32' ? '.cmd' : '';

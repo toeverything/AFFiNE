@@ -1,24 +1,16 @@
-// NOTE: we will generate preload types from this file
 import { ipcRenderer } from 'electron';
 
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import type {
-  MainIPCEventMap,
-  MainIPCHandlerMap,
-} from '../../main/src/exposed';
-
-type WithoutFirstParameter<T> = T extends (_: any, ...args: infer P) => infer R
-  ? (...args: P) => R
-  : T;
-
-type HandlersMap<N extends keyof MainIPCHandlerMap> = {
-  [K in keyof MainIPCHandlerMap[N]]: WithoutFirstParameter<
-    MainIPCHandlerMap[N][K]
-  >;
+type HandlersMap = {
+  [K in keyof string]: (...args: any[]) => any[];
 };
 
-export type PreloadHandlers = {
-  [N in keyof MainIPCHandlerMap]: HandlersMap<N>;
+export type PreloadHandlers = { [N: string]: HandlersMap };
+
+type MainIPCEventMap = {
+  applicationMenu: unknown;
+  db: unknown;
+  updater: unknown;
+  workspace: unknown;
 };
 
 type MainExposedMeta = {
@@ -90,6 +82,3 @@ const appInfo = {
 };
 
 export { apis, appInfo, events };
-
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-export type { MainIPCEventMap } from '../../main/src/exposed';

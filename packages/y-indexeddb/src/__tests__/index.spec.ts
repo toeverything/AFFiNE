@@ -3,7 +3,6 @@
  */
 import 'fake-indexeddb/auto';
 
-import { initEmptyPage } from '@affine/env/blocksuite';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
@@ -374,8 +373,10 @@ describe('milestone', () => {
 
 describe('utils', () => {
   test('download binary', async () => {
-    const page = workspace.createPage('page0');
-    initEmptyPage(page);
+    workspace.createPage({
+      id: 'page0',
+      init: true,
+    });
     const provider = createIndexedDBProvider(
       workspace.id,
       workspace.doc,

@@ -55,9 +55,6 @@
       "path": "./tests"
     },
     {
-      "path": "./apps/electron/tests"
-    },
-    {
       "path": "./apps/web"
     },
     {
