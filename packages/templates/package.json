@@ -4,7 +4,7 @@
   "sideEffect": false,
   "exports": {
     "./*.md": "./*.md",
-    "./*.json": "./*.json"
+    "./preloading.json": "./preloading.json"
   },
   "version": "0.7.0-canary.8"
 }
