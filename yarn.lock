@@ -84,19 +84,6 @@ __metadata:
     "@radix-ui/react-collapsible": ^1.0.3
     "@radix-ui/react-radio-group": ^1.1.3
     "@radix-ui/react-toast": ^1.1.4
-    "@storybook/addon-actions": ^7.0.18
-    "@storybook/addon-coverage": ^0.0.8
-    "@storybook/addon-essentials": ^7.0.18
-    "@storybook/addon-interactions": ^7.0.18
-    "@storybook/addon-links": ^7.0.18
-    "@storybook/addon-storysource": ^7.0.18
-    "@storybook/blocks": ^7.0.18
-    "@storybook/builder-vite": ^7.0.18
-    "@storybook/jest": ^0.1.0
-    "@storybook/react": ^7.0.18
-    "@storybook/react-vite": ^7.0.18
-    "@storybook/test-runner": ^0.10.0
-    "@storybook/testing-library": ^0.1.0
     "@toeverything/hooks": "workspace:*"
     "@toeverything/theme": ^0.6.1
     "@types/react": ^18.2.6
@@ -104,11 +91,8 @@ __metadata:
     "@types/react-dom": 18.2.4
     "@vanilla-extract/css": ^1.11.0
     "@vanilla-extract/dynamic": ^2.0.3
-    "@vitejs/plugin-react": ^4.0.0
     clsx: ^1.2.1
-    concurrently: ^8.1.0
     dayjs: ^1.11.8
-    jest-mock: ^29.5.0
     jotai: ^2.1.1
     lit: ^2.7.5
     lottie-web: ^5.12.0
@@ -117,12 +101,8 @@ __metadata:
     react-error-boundary: ^4.0.9
     react-is: ^18.2.0
     rxjs: ^7.8.1
-    serve: ^14.2.0
-    storybook: ^7.0.18
-    storybook-dark-mode: ^3.0.0
     typescript: ^5.0.4
     vite: ^4.3.9
-    wait-on: ^7.0.1
     yjs: ^13.6.1
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -322,6 +302,49 @@ __metadata:
     vitest: ^0.31.4
   bin:
     run-test: ./scripts/run-test.ts
+  languageName: unknown
+  linkType: soft
+
+"@affine/storybook@workspace:packages/storybook":
+  version: 0.0.0-use.local
+  resolution: "@affine/storybook@workspace:packages/storybook"
+  dependencies:
+    "@affine/component": "workspace:*"
+    "@affine/i18n": "workspace:*"
+    "@blocksuite/blocks": 0.0.0-20230601122821-16196c35-nightly
+    "@blocksuite/editor": 0.0.0-20230601122821-16196c35-nightly
+    "@blocksuite/global": 0.0.0-20230601122821-16196c35-nightly
+    "@blocksuite/icons": ^2.1.19
+    "@blocksuite/lit": 0.0.0-20230601122821-16196c35-nightly
+    "@blocksuite/store": 0.0.0-20230601122821-16196c35-nightly
+    "@storybook/addon-actions": ^7.0.18
+    "@storybook/addon-essentials": ^7.0.18
+    "@storybook/addon-interactions": ^7.0.18
+    "@storybook/addon-links": ^7.0.18
+    "@storybook/addon-storysource": ^7.0.18
+    "@storybook/blocks": ^7.0.18
+    "@storybook/builder-vite": ^7.0.18
+    "@storybook/jest": ^0.1.0
+    "@storybook/react": ^7.0.18
+    "@storybook/react-vite": ^7.0.18
+    "@storybook/test-runner": ^0.10.0
+    "@storybook/testing-library": ^0.1.0
+    "@vitejs/plugin-react": ^4.0.0
+    concurrently: ^8.1.0
+    jest-mock: ^29.5.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
+    serve: ^14.2.0
+    storybook: ^7.0.18
+    storybook-dark-mode: ^3.0.0
+    wait-on: ^7.0.1
+  peerDependencies:
+    "@blocksuite/blocks": "*"
+    "@blocksuite/editor": "*"
+    "@blocksuite/global": "*"
+    "@blocksuite/icons": "*"
+    "@blocksuite/lit": "*"
+    "@blocksuite/store": "*"
   languageName: unknown
   linkType: soft
 
@@ -7926,18 +7949,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-coverage@npm:^0.0.8":
-  version: 0.0.8
-  resolution: "@storybook/addon-coverage@npm:0.0.8"
-  dependencies:
-    "@types/babel__core": ^7.1.19
-    "@types/istanbul-lib-coverage": ^2.0.4
-    babel-plugin-istanbul: ^6.1.1
-    vite-plugin-istanbul: ^3.0.1
-  checksum: 8cf18a291699df1b630f77698abfd4d370dabfba55ae186e522b76b9bc76ce6a866cdd5d0e8c044dda135dd2873651d3ab9d2ddc93903222bdabf236ef64645e
-  languageName: node
-  linkType: hard
-
 "@storybook/addon-docs@npm:7.0.18":
   version: 7.0.18
   resolution: "@storybook/addon-docs@npm:7.0.18"
@@ -9182,7 +9193,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/babel__core@npm:^7.0.0, @types/babel__core@npm:^7.1.14, @types/babel__core@npm:^7.1.19":
+"@types/babel__core@npm:^7.0.0, @types/babel__core@npm:^7.1.14":
   version: 7.20.1
   resolution: "@types/babel__core@npm:7.20.1"
   dependencies:
@@ -9464,7 +9475,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/istanbul-lib-coverage@npm:*, @types/istanbul-lib-coverage@npm:^2.0.0, @types/istanbul-lib-coverage@npm:^2.0.1, @types/istanbul-lib-coverage@npm:^2.0.4":
+"@types/istanbul-lib-coverage@npm:*, @types/istanbul-lib-coverage@npm:^2.0.0, @types/istanbul-lib-coverage@npm:^2.0.1":
   version: 2.0.4
   resolution: "@types/istanbul-lib-coverage@npm:2.0.4"
   checksum: a25d7589ee65c94d31464c16b72a9dc81dfa0bea9d3e105ae03882d616e2a0712a9c101a599ec482d297c3591e16336962878cb3eb1a0a62d5b76d277a890ce7
@@ -27015,18 +27026,6 @@ __metadata:
   peerDependencies:
     vite: ">=2.9.0"
   checksum: b4247d9f7800bd72addd62fb07fbd3f5a1535a6de771420e4ed896fb5db156335b2abf810091ecd998ac05d6ebbd857a186ec3d468216f0bc6e54064c4886b31
-  languageName: node
-  linkType: hard
-
-"vite-plugin-istanbul@npm:^3.0.1":
-  version: 3.0.4
-  resolution: "vite-plugin-istanbul@npm:3.0.4"
-  dependencies:
-    "@istanbuljs/load-nyc-config": ^1.1.0
-    istanbul-lib-instrument: ^5.1.0
-    picocolors: ^1.0.0
-    test-exclude: ^6.0.0
-  checksum: 74fa99e2e2bded28ff6ba47bddf3cdd2eae04d37f2b6d257dcf5571c75f3433c6495fe94bba1f12acd0fc6046a6e83ea618b0547726ba68190bf292c7cb34695
   languageName: node
   linkType: hard
 

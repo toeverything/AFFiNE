@@ -1,3 +1,7 @@
+import { toast } from '@affine/component';
+import { PublicLinkDisableModal } from '@affine/component/share-menu/disable-public-link';
+import { ShareMenu } from '@affine/component/share-menu/share-menu';
+import { StyledDisableButton } from '@affine/component/share-menu/styles';
 import { PermissionType, WorkspaceType } from '@affine/workspace/affine/api';
 import type {
   AffineLegacyCloudWorkspace,
@@ -9,11 +13,6 @@ import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
 import { useState } from 'react';
-
-import { PublicLinkDisableModal } from '../components/share-menu/disable-public-link';
-import { ShareMenu } from '../components/share-menu/share-menu';
-import { StyledDisableButton } from '../components/share-menu/styles';
-import toast from '../ui/toast/toast';
 
 export default {
   title: 'AFFiNE/ShareMenu',

@@ -4,6 +4,9 @@ import type { ButtonProps } from './interface';
 import { Loading } from './loading';
 import { StyledButton } from './styles';
 import { getSize } from './utils';
+
+export type { ButtonProps };
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
