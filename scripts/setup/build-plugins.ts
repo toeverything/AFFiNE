@@ -8,8 +8,11 @@ const rootDir = fileURLToPath(new URL('../..', import.meta.url));
 
 beforeAll(async () => {
   console.log('Build plugin infra');
+  const { default: config } = await import(
+    resolve(rootDir, './packages/plugin-infra/vite.config.ts')
+  );
   await build({
-    configFile: resolve(rootDir, './packages/plugin-infra/vite.config.ts'),
+    ...config,
   });
   console.log('Build plugins');
   await import('../../apps/electron/scripts/plugins/build-plugins.mjs');
