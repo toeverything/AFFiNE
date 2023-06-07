@@ -1,30 +1,37 @@
+import type { Page } from 'puppeteer';
+import puppeteer from 'puppeteer';
+
 import type { GetHTMLOptions } from './types';
 
-// For normal web pages, obtaining html can be done directly,
-// but for some dynamic web pages, obtaining html should wait for the complete loading of web pages. shouldReGetHTML should be used to judge whether to obtain html again
 export async function getHTMLByURL(
   url: string,
   options: GetHTMLOptions
 ): Promise<string> {
   const { timeout = 10000, shouldReGetHTML } = options;
-
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
   let html = '';
-  let shouldRetry = true;
-  const startTime = Date.now();
+  async function loopHandle(page: Page) {
+    html = await page.evaluate(() => {
+      return document.documentElement.outerHTML;
+    });
+    if (!shouldReGetHTML) {
+      return html;
+    }
 
-  while (shouldRetry && Date.now() - startTime < timeout) {
-    try {
-      const response = await fetch(url);
-      html = await response.text();
-      shouldRetry = shouldReGetHTML ? await shouldReGetHTML(html) : false;
-
-      if (shouldRetry) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    } catch (error) {
-      shouldRetry = false;
+    if (await shouldReGetHTML(html)) {
+      setTimeout(loopHandle, 1000);
+    } else {
+      window.close();
+      clearTimeout(timer);
     }
   }
 
-  return html;
+  const timer = setTimeout(() => {
+    browser.close();
+  }, timeout);
+
+  await page.goto(url, { waitUntil: 'networkidle2' });
+
+  return loopHandle(page);
 }

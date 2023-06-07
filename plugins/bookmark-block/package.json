@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
-    "cheerio": "^1.0.0-rc.12"
+    "cheerio": "^1.0.0-rc.12",
+    "puppeteer": "^20.5.0"
   },
   "devDependencies": {
     "react": "18.3.0-canary-16d053d59-20230506",

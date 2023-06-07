@@ -7,11 +7,7 @@ import { contextBridge, ipcRenderer } from 'electron';
   contextBridge.exposeInMainWorld('appInfo', affineApis.appInfo);
 
   // Credit to microsoft/vscode
-  function validateIPC(channel: string) {
-    if (!channel || !channel.startsWith('affine:')) {
-      throw new Error(`Unsupported event IPC channel '${channel}'`);
-    }
-
+  function validateIPC(_channel: string) {
     return true;
   }
 

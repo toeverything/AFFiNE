@@ -5,7 +5,7 @@ import { getMetaData } from './server/get-meta-data';
 const adapter: ServerAdapter = affine => {
   affine.registerCommand(
     'com.blocksuite.bookmark-block.get-bookmark-data-by-link',
-    async (_: unknown, url: string) => {
+    async (url: string) => {
       return getMetaData(url, {
         shouldReGetHTML: metaData => {
           return !metaData.title && !metaData.description;
