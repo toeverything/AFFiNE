@@ -147,6 +147,26 @@ const config = {
         ],
       },
     })),
+    {
+      files: '{packages,apps}/**/src/**/*.{ts,tsx}',
+      parserOptions: {
+        project: [
+          '{packages,apps}/*/tsconfig.json',
+          '{packages,apps}/*/tsconfig.{workspace,resources}.json',
+        ],
+      },
+      // fixme: should be add the following back
+      excludedFiles: ['packages/component/src/components/page-list/**/*'],
+      rules: {
+        '@typescript-eslint/no-floating-promises': [
+          'error',
+          {
+            ignoreVoid: true,
+            ignoreIIFE: true,
+          },
+        ],
+      },
+    },
   ],
 };
 

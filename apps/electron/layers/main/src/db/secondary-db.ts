@@ -112,7 +112,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     const onSelfUpdate = (update: Uint8Array, origin: YOrigin) => {
       // for self update from upstream, we need to push it to external DB
       if (origin === 'upstream') {
-        this.addUpdateToUpdateQueue(db!, update);
+        void this.addUpdateToUpdateQueue(db!, update);
       }
 
       if (origin === 'self') {
@@ -129,7 +129,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       this.yDoc.off('update', onSelfUpdate);
     });
 
-    this.run(async () => {
+    void this.run(async () => {
       // apply all updates from upstream
       const upstreamUpdate = this.upstream.getDocAsUpdates();
       // to initialize the yDoc, we need to apply all updates from the db
