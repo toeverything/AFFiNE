@@ -5,7 +5,7 @@ import { openHomePage } from '../libs/load-page';
 import {
   getBlockSuiteEditorTitle,
   newPage,
-  waitMarkdownImported,
+  waitEditorLoad,
 } from '../libs/page-logic';
 
 async function importImage(page: Page, url: string) {
@@ -42,7 +42,7 @@ async function closeImagePreviewModal(page: Page) {
 
 test('image preview should be shown', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   const title = await getBlockSuiteEditorTitle(page);
   await title.click();
@@ -57,7 +57,7 @@ test('image preview should be shown', async ({ page }) => {
 
 test('image go left and right', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {

@@ -7,12 +7,12 @@ import {
   createLinkedPage,
   getBlockSuiteEditorTitle,
   newPage,
-  waitMarkdownImported,
+  waitEditorLoad,
 } from '../libs/page-logic';
 
 test('Show favorite items in sidebar', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
@@ -37,7 +37,7 @@ test('Show favorite items in sidebar', async ({ page }) => {
 
 test('Show favorite reference in sidebar', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
@@ -76,7 +76,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
   page,
 }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');

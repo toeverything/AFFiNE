@@ -3,10 +3,7 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import {
-  getBlockSuiteEditorTitle,
-  waitMarkdownImported,
-} from '../libs/page-logic';
+import { getBlockSuiteEditorTitle, waitEditorLoad } from '../libs/page-logic';
 import { clickSideBarAllPageButton } from '../libs/sidebar';
 
 function getAllPage(page: Page) {
@@ -29,14 +26,14 @@ function getAllPage(page: Page) {
 
 test('all page', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
 });
 
 test('all page can create new page', async ({ page }) => {
   const { clickNewPageButton } = getAllPage(page);
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await clickNewPageButton();
   const title = getBlockSuiteEditorTitle(page);
@@ -49,7 +46,7 @@ test('all page can create new page', async ({ page }) => {
 test('all page can create new edgeless page', async ({ page }) => {
   const { clickNewEdgelessDropdown } = getAllPage(page);
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await clickNewEdgelessDropdown();
   await expect(page.locator('affine-edgeless-page')).toBeVisible();
@@ -79,7 +76,7 @@ const checkFilterName = async (page: Page, name: string) => {
 
 test('allow creation of filters by favorite', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await closeDownloadTip(page);
   await createFirstFilter(page, 'Is Favourited');
@@ -118,7 +115,7 @@ const fillDatePicker = async (page: Page, date: Date) => {
 };
 test('allow creation of filters by created time', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await closeDownloadTip(page);
   await createFirstFilter(page, 'Created');
