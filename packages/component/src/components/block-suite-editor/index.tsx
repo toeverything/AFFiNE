@@ -1,4 +1,4 @@
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
