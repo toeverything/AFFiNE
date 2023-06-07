@@ -1,120 +1,76 @@
+import { SqliteConnection } from '@affine/native';
 import assert from 'assert';
-import type { Database } from 'better-sqlite3';
-import sqlite from 'better-sqlite3';
 
 import { logger } from '../logger';
-
-const schemas = [
-  `CREATE TABLE IF NOT EXISTS "updates" (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  data BLOB NOT NULL,
-  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-)`,
-  `CREATE TABLE IF NOT EXISTS "blobs" (
-  key TEXT PRIMARY KEY NOT NULL,
-  data BLOB NOT NULL,
-  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-)`,
-];
-
-interface UpdateRow {
-  id: number;
-  data: Buffer;
-  timestamp: string;
-}
-
-interface BlobRow {
-  key: string;
-  data: Buffer;
-  timestamp: string;
-}
 
 /**
  * A base class for SQLite DB adapter that provides basic methods around updates & blobs
  */
 export abstract class BaseSQLiteAdapter {
-  db: Database | null = null;
+  db: SqliteConnection | null = null;
   abstract role: string;
 
-  constructor(public path: string) {}
-
-  ensureTables() {
-    assert(this.db, 'db is not connected');
-    this.db.exec(schemas.join(';'));
+  constructor(public readonly path: string) {
+    logger.info(`[SQLiteAdapter]`, 'path:', path);
   }
 
-  // todo: what if SQLite DB wrapper later is not sync?
-  connect(): Database | undefined {
-    if (this.db) {
-      return this.db;
+  async connectIfNeeded() {
+    if (!this.db) {
+      this.db = new SqliteConnection(this.path);
+      await this.db.connect();
     }
-    logger.log(`[SQLiteAdapter][${this.role}] open db`, this.path);
-    const db = (this.db = sqlite(this.path));
-    this.ensureTables();
-    return db;
+    return this.db;
   }
 
-  destroy() {
-    this.db?.close();
+  async destroy() {
+    const { db } = this;
     this.db = null;
+    await db?.close();
   }
 
-  addBlob(key: string, data: Uint8Array) {
+  async addBlob(key: string, data: Uint8Array) {
     try {
-      assert(this.db, 'db is not connected');
-      const statement = this.db.prepare(
-        'INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?'
-      );
-      statement.run(key, data, data);
-      return key;
+      assert(this.db, `${this.path} is not connected`);
+      await this.db.addBlob(key, data);
     } catch (error) {
       logger.error('addBlob', error);
     }
   }
 
-  getBlob(key: string) {
+  async getBlob(key: string) {
     try {
-      assert(this.db, 'db is not connected');
-      const statement = this.db.prepare('SELECT data FROM blobs WHERE key = ?');
-      const row = statement.get(key) as BlobRow;
-      if (!row) {
-        return null;
-      }
-      return row.data;
+      assert(this.db, `${this.path} is not connected`);
+      const blob = await this.db.getBlob(key);
+      return blob?.data;
     } catch (error) {
       logger.error('getBlob', error);
       return null;
     }
   }
 
-  deleteBlob(key: string) {
+  async deleteBlob(key: string) {
     try {
-      assert(this.db, 'db is not connected');
-      const statement = this.db.prepare('DELETE FROM blobs WHERE key = ?');
-      statement.run(key);
+      assert(this.db, `${this.path} is not connected`);
+      await this.db.deleteBlob(key);
     } catch (error) {
-      logger.error('deleteBlob', error);
+      logger.error(`${this.path} delete blob failed`, error);
     }
   }
 
-  getBlobKeys() {
+  async getBlobKeys() {
     try {
-      assert(this.db, 'db is not connected');
-      const statement = this.db.prepare('SELECT key FROM blobs');
-      const rows = statement.all() as BlobRow[];
-      return rows.map(row => row.key);
+      assert(this.db, `${this.path} is not connected`);
+      return await this.db.getBlobKeys();
     } catch (error) {
-      logger.error('getBlobKeys', error);
+      logger.error(`getBlobKeys failed`, error);
       return [];
     }
   }
 
-  getUpdates() {
+  async getUpdates() {
     try {
-      assert(this.db, 'db is not connected');
-      const statement = this.db.prepare('SELECT * FROM updates');
-      const rows = statement.all() as UpdateRow[];
-      return rows;
+      assert(this.db, `${this.path} is not connected`);
+      return await this.db.getUpdates();
     } catch (error) {
       logger.error('getUpdates', error);
       return [];
@@ -122,22 +78,12 @@ export abstract class BaseSQLiteAdapter {
   }
 
   // add a single update to SQLite
-  addUpdateToSQLite(updates: Uint8Array[]) {
+  async addUpdateToSQLite(db: SqliteConnection, updates: Uint8Array[]) {
     // batch write instead write per key stroke?
     try {
-      assert(this.db, 'db is not connected');
       const start = performance.now();
-      const statement = this.db.prepare(
-        'INSERT INTO updates (data) VALUES (?)'
-      );
-      const insertMany = this.db.transaction(updates => {
-        for (const d of updates) {
-          statement.run(d);
-        }
-      });
-
-      insertMany(updates);
-
+      await db.connect();
+      await db.insertUpdates(updates);
       logger.debug(
         `[SQLiteAdapter][${this.role}] addUpdateToSQLite`,
         'length:',

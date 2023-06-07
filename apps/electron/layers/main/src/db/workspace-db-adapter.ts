@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import type { SqliteConnection } from '@affine/native';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
@@ -21,38 +21,38 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     super(path);
   }
 
-  override destroy() {
-    this.db?.close();
-    this.db = null;
+  override async destroy() {
+    await super.destroy();
     this.yDoc.destroy();
 
     // when db is closed, we can safely remove it from ensure-db list
     this.update$.complete();
+    this.firstConnected = false;
   }
 
   getWorkspaceName = () => {
     return this.yDoc.getMap('space:meta').get('name') as string;
   };
 
-  async init(): Promise<Database | undefined> {
-    const db = super.connect();
+  async init() {
+    const db = await super.connectIfNeeded();
 
     if (!this.firstConnected) {
-      this.yDoc.on('update', (update: Uint8Array, origin: YOrigin) => {
+      this.yDoc.on('update', async (update: Uint8Array, origin: YOrigin) => {
         if (origin === 'renderer') {
-          this.addUpdateToSQLite([update]);
+          await this.addUpdateToSQLite(db, [update]);
         } else if (origin === 'external') {
-          this.addUpdateToSQLite([update]);
-          logger.debug('external update', this.workspaceId);
           dbSubjects.externalUpdate.next({
             workspaceId: this.workspaceId,
             update,
           });
+          await this.addUpdateToSQLite(db, [update]);
+          logger.debug('external update', this.workspaceId);
         }
       });
     }
 
-    const updates = this.getUpdates();
+    const updates = await this.getUpdates();
     const merged = await mergeUpdateWorker(updates.map(update => update.data));
 
     // to initialize the yDoc, we need to apply all updates from the db
@@ -78,19 +78,19 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     Y.applyUpdate(this.yDoc, data, origin);
   };
 
-  override addBlob(key: string, value: Uint8Array) {
-    const res = super.addBlob(key, value);
+  override async addBlob(key: string, value: Uint8Array) {
+    const res = await super.addBlob(key, value);
     this.update$.next();
     return res;
   }
 
-  override deleteBlob(key: string) {
+  override async deleteBlob(key: string) {
     super.deleteBlob(key);
     this.update$.next();
   }
 
-  override addUpdateToSQLite(data: Uint8Array[]) {
-    super.addUpdateToSQLite(data);
+  override async addUpdateToSQLite(db: SqliteConnection, data: Uint8Array[]) {
+    super.addUpdateToSQLite(db, data);
     this.update$.next();
   }
 }
@@ -102,5 +102,6 @@ export async function openWorkspaceDatabase(
   const meta = await getWorkspaceMeta(context, workspaceId);
   const db = new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
   await db.init();
+  logger.info(`openWorkspaceDatabase [${workspaceId}]`);
   return db;
 }
