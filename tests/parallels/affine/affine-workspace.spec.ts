@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../../libs/load-page';
-import { waitMarkdownImported } from '../../libs/page-logic';
+import { waitEditorLoad } from '../../libs/page-logic';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const userA = require('../../fixtures/userA.json');
@@ -23,7 +23,7 @@ import {
 
 test('should login with user A', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const [a] = await createFakeUser(userA, userB);
   await loginUser(page, a);
   await clickSideBarCurrentWorkspaceBanner(page);
@@ -35,7 +35,7 @@ test('should login with user A', async ({ page }) => {
 
 test('should enable affine workspace successfully', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const [a] = await createFakeUser();
   await loginUser(page, a);
   const name = `test-${Date.now()}`;
@@ -50,6 +50,6 @@ test('should enable affine workspace successfully', async ({ page }) => {
   await assertCurrentWorkspaceFlavour('affine', page);
   await openWorkspaceListModal(page);
   await page.getByTestId('workspace-list-modal-sign-out').click();
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await assertCurrentWorkspaceFlavour('local', page);
 });

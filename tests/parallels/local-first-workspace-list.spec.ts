@@ -2,13 +2,13 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 import { clickSideBarAllPageButton } from '../libs/sidebar';
 import { createWorkspace, openWorkspaceListModal } from '../libs/workspace';
 
 test('just one item in the workspace list at first', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const workspaceName = page.getByTestId('workspace-name');
   await workspaceName.click();
   expect(
@@ -21,7 +21,7 @@ test('just one item in the workspace list at first', async ({ page }) => {
 
 test('create one workspace in the workspace list', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const newWorkspaceNameStr = 'New Workspace';
   await createWorkspace({ name: newWorkspaceNameStr }, page);
 
@@ -50,7 +50,7 @@ test('create one workspace in the workspace list', async ({ page }) => {
 
 test('create multi workspace in the workspace list', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await createWorkspace({ name: 'New Workspace 2' }, page);
   await createWorkspace({ name: 'New Workspace 3' }, page);
 
@@ -67,14 +67,14 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   await page.reload();
   await openWorkspaceListModal(page);
   await page.getByTestId('draggable-item').nth(1).click();
-  await page.waitForTimeout(50);
+  await page.waitForTimeout(500);
 
   // @ts-expect-error
   const currentId: string = await page.evaluate(() => currentWorkspace.id);
 
   await openWorkspaceListModal(page);
-  const sourceElement = await page.getByTestId('draggable-item').nth(2);
-  const targetElement = await page.getByTestId('draggable-item').nth(1);
+  const sourceElement = page.getByTestId('draggable-item').nth(2);
+  const targetElement = page.getByTestId('draggable-item').nth(1);
 
   const sourceBox = await sourceElement.boundingBox();
   const targetBox = await targetElement.boundingBox();
@@ -99,7 +99,7 @@ test('create multi workspace in the workspace list', async ({ page }) => {
     }
   );
   await page.mouse.up();
-  await page.waitForTimeout(50);
+  await page.waitForTimeout(100);
   await page.reload();
   await openWorkspaceListModal(page);
 
@@ -110,6 +110,7 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   }
 
   await page.getByTestId('draggable-item').nth(2).click();
+  await page.waitForTimeout(100);
 
   // @ts-expect-error
   const nextId: string = await page.evaluate(() => currentWorkspace.id);

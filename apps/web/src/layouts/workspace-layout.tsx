@@ -10,8 +10,8 @@ import {
   WorkspaceFallback,
 } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { config, DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
@@ -64,6 +64,7 @@ import {
 } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { toast } from '../utils';
+import { setEditorFlags } from '../utils/editor-flag';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -305,10 +306,12 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       id: pageId,
     });
     assertEquals(page.id, pageId);
-    currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
-      init: true,
-    });
-    initPage(page);
+    setEditorFlags(currentWorkspace.blockSuiteWorkspace);
+    if (config.enablePreloading) {
+      initPageWithPreloading(page);
+    } else {
+      initEmptyPage(page);
+    }
     if (!router.query.pageId) {
       setCurrentPageId(pageId);
       void jumpToPage(currentWorkspace.id, pageId);
