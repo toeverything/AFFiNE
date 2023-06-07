@@ -31,6 +31,7 @@ export const blockSuiteFeatureFlags = z.object({
   enable_slash_menu: z.boolean(),
   enable_edgeless_toolbar: z.boolean(),
   enable_linked_page: z.boolean(),
+  enable_bookmark_operation: z.boolean(),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;
@@ -106,51 +107,50 @@ interface Desktop extends ChromeBrowser {
 
 export type Environment = Browser | Server | Desktop;
 
-export const env: Environment  = (()=>{
-    let environment = null
-    const isDebug = process.env.NODE_ENV === 'development';
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-      environment = {
-        isDesktop: false,
-        isBrowser: false,
-        isServer: true,
-        isDebug,
-      } satisfies Server;
-    } else {
-      const uaHelper = new UaHelper(navigator);
+export const env: Environment = (() => {
+  let environment = null;
+  const isDebug = process.env.NODE_ENV === 'development';
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    environment = {
+      isDesktop: false,
+      isBrowser: false,
+      isServer: true,
+      isDebug,
+    } satisfies Server;
+  } else {
+    const uaHelper = new UaHelper(navigator);
 
+    environment = {
+      origin: window.location.origin,
+      isDesktop: !!window.appInfo?.electron,
+      isBrowser: true,
+      isServer: false,
+      isDebug,
+      isLinux: uaHelper.isLinux,
+      isMacOs: uaHelper.isMacOs,
+      isSafari: uaHelper.isSafari,
+      isWindows: uaHelper.isWindows,
+      isFireFox: uaHelper.isFireFox,
+      isMobile: uaHelper.isMobile,
+      isChrome: uaHelper.isChrome,
+      isIOS: uaHelper.isIOS,
+    } as Browser;
+    // Chrome on iOS is still Safari
+    if (environment.isChrome && !environment.isIOS) {
+      assertEquals(environment.isSafari, false);
+      assertEquals(environment.isFireFox, false);
       environment = {
-        origin: window.location.origin,
-        isDesktop: !!window.appInfo?.electron,
-        isBrowser: true,
-        isServer: false,
-        isDebug,
-        isLinux: uaHelper.isLinux,
-        isMacOs: uaHelper.isMacOs,
-        isSafari: uaHelper.isSafari,
-        isWindows: uaHelper.isWindows,
-        isFireFox: uaHelper.isFireFox,
-        isMobile: uaHelper.isMobile,
-        isChrome: uaHelper.isChrome,
-        isIOS: uaHelper.isIOS,
-      } as Browser;
-      // Chrome on iOS is still Safari
-      if (environment.isChrome && !environment.isIOS) {
-        assertEquals(environment.isSafari, false);
-        assertEquals(environment.isFireFox, false);
-        environment = {
-          ...environment,
-          isSafari: false,
-          isFireFox: false,
-          isChrome: true,
-          chromeVersion: uaHelper.getChromeVersion(),
-        } satisfies ChromeBrowser;
-      }
+        ...environment,
+        isSafari: false,
+        isFireFox: false,
+        isChrome: true,
+        chromeVersion: uaHelper.getChromeVersion(),
+      } satisfies ChromeBrowser;
     }
-    globalThis.environment = environment;
-    return environment;
+  }
+  globalThis.environment = environment;
+  return environment;
 })();
-
 
 function printBuildInfo() {
   console.group('Build info');
