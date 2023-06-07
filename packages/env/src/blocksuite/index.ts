@@ -1,4 +1,3 @@
-import preloadingData from '@affine/templates/affine-0.6.0-preloading.json';
 import type { Page } from '@blocksuite/store';
 
 declare global {
@@ -9,10 +8,10 @@ declare global {
 
 export async function initPageWithPreloading(page: Page) {
   const workspace = page.workspace;
-  await workspace.importPageSnapshot(
-    preloadingData.data['space:Qmo9-1SGTB'],
-    page.id
+  const { data } = await import(
+    '@affine/templates/affine-0.6.0-preloading.json'
   );
+  await workspace.importPageSnapshot(data['space:Qmo9-1SGTB'], page.id);
 }
 
 export function initEmptyPage(page: Page): void {
