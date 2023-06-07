@@ -1,11 +1,19 @@
 /// <reference types="@blocksuite/global" />
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="./global.d.ts" />
 import { assertEquals } from '@blocksuite/global/utils';
 import getConfig from 'next/config';
 import { z } from 'zod';
 
 import { UaHelper } from './ua-helper';
+
+declare global {
+  interface Window {
+    appInfo: {
+      electron: boolean;
+    };
+    apis: any;
+    events: any;
+  }
+}
 
 export const buildFlagsSchema = z.object({
   /**
