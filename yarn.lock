@@ -318,6 +318,13 @@ __metadata:
   resolution: "@affine/storybook@workspace:packages/storybook"
   dependencies:
     "@affine/component": "workspace:*"
+    "@affine/i18n": "workspace:*"
+    "@blocksuite/blocks": 0.0.0-20230601122821-16196c35-nightly
+    "@blocksuite/editor": 0.0.0-20230601122821-16196c35-nightly
+    "@blocksuite/global": 0.0.0-20230601122821-16196c35-nightly
+    "@blocksuite/icons": ^2.1.19
+    "@blocksuite/lit": 0.0.0-20230601122821-16196c35-nightly
+    "@blocksuite/store": 0.0.0-20230601122821-16196c35-nightly
     "@storybook/addon-actions": ^7.0.18
     "@storybook/addon-coverage": ^0.0.8
     "@storybook/addon-essentials": ^7.0.18
@@ -331,8 +338,17 @@ __metadata:
     "@storybook/react-vite": ^7.0.18
     "@storybook/test-runner": ^0.10.0
     "@storybook/testing-library": ^0.1.0
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
     storybook: ^7.0.18
     storybook-dark-mode: ^3.0.0
+  peerDependencies:
+    "@blocksuite/blocks": "*"
+    "@blocksuite/editor": "*"
+    "@blocksuite/global": "*"
+    "@blocksuite/icons": "*"
+    "@blocksuite/lit": "*"
+    "@blocksuite/store": "*"
   languageName: unknown
   linkType: soft
 
