@@ -6,8 +6,8 @@ import type {
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import { PermissionType } from '@affine/env/workspace/legacy-cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { PermissionType } from '@affine/workspace/affine/api';
 import {
   DeleteTemporarilyIcon,
   EmailIcon,

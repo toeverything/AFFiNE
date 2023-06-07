@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { PermissionType } from '@affine/workspace/affine/api';
+import { PermissionType } from '@affine/env/workspace/legacy-cloud';
 
 import type { AffineOfficialWorkspace } from '../../shared';
 
