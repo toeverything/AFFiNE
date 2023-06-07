@@ -24,7 +24,11 @@ export const DropdownButton = forwardRef<
       <span>{children}</span>
       <span className={styles.divider} />
       <span className={styles.dropdownWrapper} onClick={handleClickDropDown}>
-        <ArrowDownSmallIcon className={styles.icon} width={16} height={16} />
+        <ArrowDownSmallIcon
+          className={styles.dropdownIcon}
+          width={16}
+          height={16}
+        />
       </span>
     </button>
   );

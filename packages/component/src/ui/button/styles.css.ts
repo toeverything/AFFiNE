@@ -44,10 +44,10 @@ export const dropdownWrapper = style({
   paddingRight: '10px',
 });
 
-export const icon = style({
+export const dropdownIcon = style({
   borderRadius: '4px',
   selectors: {
-    '&:hover': {
+    [`${dropdownWrapper}:hover &`]: {
       background: 'var(--affine-hover-color)',
     },
   },
@@ -58,7 +58,7 @@ export const radioButton = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  width: '75px',
+  padding: '0 30px',
   height: '24px',
   borderRadius: '8px',
   filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1))',

@@ -1,3 +1,4 @@
+import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { globalStyle, style } from '@vanilla-extract/css';
 
 import { breakpoints } from '../../styles/mui-theme';
@@ -64,8 +65,17 @@ export const mainContainerStyle = style({
         },
       },
     },
+    '&[data-is-desktop="true"]:before': {
+      content: '""',
+      position: 'absolute',
+      height: '8px',
+      width: '100%',
+      top: '-8px',
+      left: 0,
+      WebkitAppRegion: 'drag',
+    },
   },
-});
+} as ComplexStyleRule);
 
 export const toolStyle = style({
   position: 'fixed',

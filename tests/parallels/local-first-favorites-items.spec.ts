@@ -71,3 +71,50 @@ test('Show favorite reference in sidebar', async ({ page }) => {
     page.locator('[data-type="favorite-list-item"] >> text=Another page')
   ).toBeVisible();
 });
+
+test("Deleted page's reference will not be shown in sidebar", async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitMarkdownImported(page);
+  await newPage(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
+
+  const newPageId = page.url().split('/').reverse()[0];
+
+  // goes to main content
+  await page.keyboard.press('Enter', { delay: 50 });
+
+  await createLinkedPage(page, 'Another page');
+
+  await clickPageMoreActions(page);
+
+  const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
+  await favoriteBtn.click();
+
+  // goto "Another page"
+  await page.locator('.affine-reference-title').click();
+
+  // delete the page
+  await clickPageMoreActions(page);
+
+  const deleteBtn = page.getByTestId('editor-option-menu-delete');
+  await deleteBtn.click();
+
+  // confirm delete
+  await page.locator('button >> text=Delete').click();
+
+  const favItemTestId = 'favorite-list-item-' + newPageId;
+
+  const favoriteListItemInSidebar = page.getByTestId(favItemTestId);
+  expect(await favoriteListItemInSidebar.textContent()).toBe(
+    'this is a new page to favorite'
+  );
+
+  const collapseButton = favoriteListItemInSidebar.locator(
+    '[data-testid="fav-collapsed-button"]'
+  );
+
+  await expect(collapseButton).not.toBeVisible();
+});

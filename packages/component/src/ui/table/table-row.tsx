@@ -1,4 +1,5 @@
-import { StyledTableRow } from './styles';
-export const TableRow = StyledTableRow;
+import { StyledTBodyRow, StyledTHeadRow } from './styles';
+export const TableHeadRow = StyledTHeadRow;
+export const TableBodyRow = StyledTBodyRow;
 
-export default TableRow;
+export default TableHeadRow;
