@@ -3,4 +3,7 @@
 declare interface Window {
   apis: import('./src/affine-apis').PreloadHandlers;
   events: import('./src/affine-apis').MainIPCEventMap;
+  appInfo: {
+    electron: boolean;
+  };
 }

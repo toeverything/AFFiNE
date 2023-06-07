@@ -1,4 +1,4 @@
-import { type BlockSuiteFeatureFlags, config } from '@affine/env';
+import { type BlockSuiteFeatureFlags, config } from '@affine/env/config';
 
 import type { BlockSuiteWorkspace } from '../shared';
 

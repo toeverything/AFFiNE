@@ -1,4 +1,4 @@
-import { env } from '@affine/env';
+import { env } from '@affine/env/config';
 import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
