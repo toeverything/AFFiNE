@@ -16,10 +16,7 @@ const testAppContext: AppContext = {
 };
 
 afterEach(async () => {
-  if (process.platform !== 'win32') {
-    // hmmm ....
-    await fs.remove(tmpDir);
-  }
+  await fs.remove(tmpDir);
 });
 
 function getTestUpdates() {
@@ -40,7 +37,7 @@ test('can create new db file if not exists', async () => {
     `storage.db`
   );
   expect(await fs.exists(dbPath)).toBe(true);
-  db.destroy();
+  await db.destroy();
 });
 
 test('on applyUpdate (from self), will not trigger update', async () => {
@@ -52,7 +49,7 @@ test('on applyUpdate (from self), will not trigger update', async () => {
   db.update$.subscribe(onUpdate);
   db.applyUpdate(getTestUpdates(), 'self');
   expect(onUpdate).not.toHaveBeenCalled();
-  db.destroy();
+  await db.destroy();
 });
 
 test('on applyUpdate (from renderer), will trigger update', async () => {
@@ -67,7 +64,7 @@ test('on applyUpdate (from renderer), will trigger update', async () => {
   db.applyUpdate(getTestUpdates(), 'renderer');
   expect(onUpdate).toHaveBeenCalled(); // not yet updated
   sub.unsubscribe();
-  db.destroy();
+  await db.destroy();
 });
 
 test('on applyUpdate (from external), will trigger update & send external update event', async () => {
@@ -83,7 +80,7 @@ test('on applyUpdate (from external), will trigger update & send external update
   expect(onUpdate).toHaveBeenCalled();
   expect(onExternalUpdate).toHaveBeenCalled();
   sub.unsubscribe();
-  db.destroy();
+  await db.destroy();
 });
 
 test('on destroy, check if resources have been released', async () => {
@@ -95,7 +92,7 @@ test('on destroy, check if resources have been released', async () => {
     next: vi.fn(),
   };
   db.update$ = updateSub as any;
-  db.destroy();
+  await db.destroy();
   expect(db.db).toBe(null);
   expect(updateSub.complete).toHaveBeenCalled();
 });
