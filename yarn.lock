@@ -208,6 +208,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
+    "@affine/templates": "workspace:*"
     "@blocksuite/global": 0.0.0-20230601122821-16196c35-nightly
     lit: ^2.7.5
     next: =13.4.2
