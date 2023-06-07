@@ -158,7 +158,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/debug@workspace:packages/debug"
   dependencies:
-    "@affine/env": "workspace:*"
     "@types/debug": ^4.1.8
     debug: ^4.3.4
   languageName: unknown
