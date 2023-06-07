@@ -1,9 +1,12 @@
 import { runCli } from '@magic-works/i18n-codegen';
 import type { StorybookConfig } from '@storybook/react-vite';
 import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { mergeConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
+
+const rootDir = fileURLToPath(new URL('../../..', import.meta.url));
 
 runCli(
   {
@@ -26,7 +29,6 @@ export default {
     '@storybook/addon-essentials',
     '@storybook/addon-interactions',
     '@storybook/addon-storysource',
-    '@storybook/addon-coverage',
     'storybook-dark-mode',
   ],
   framework: {
