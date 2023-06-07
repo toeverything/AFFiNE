@@ -10,6 +10,7 @@ const plugin = await context({
     'cheerio',
     'electron',
     'node:url',
+    'puppeteer',
     // ui.ts
     '@toeverything/plugin-infra',
     '@affine/component',

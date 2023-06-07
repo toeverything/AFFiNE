@@ -10,6 +10,7 @@ await build({
     'cheerio',
     'electron',
     'node:url',
+    'puppeteer',
     // ui.ts
     '@toeverything/plugin-infra',
     '@affine/component',
