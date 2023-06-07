@@ -1,3 +1,4 @@
+import type { Literal } from '@affine/env/filter';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
@@ -6,7 +7,6 @@ import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TType } from './logical/typesystem';
 import { typesystem } from './logical/typesystem';
-import type { Literal } from './shared-types';
 
 export const literalMatcher = new Matcher<{
   render: (props: {
