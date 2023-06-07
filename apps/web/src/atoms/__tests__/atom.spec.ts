@@ -3,6 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
+import { initEmptyPage } from '@affine/env/blocksuite';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -16,7 +17,6 @@ import {
 import type { ParagraphBlockModel } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { createStore } from 'jotai';
-import { initEmptyPage } from 'packages/env/blocksuite';
 import { describe, expect, test } from 'vitest';
 
 import { WorkspaceAdapters } from '../../adapters/workspace';

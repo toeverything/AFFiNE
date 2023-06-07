@@ -1,9 +1,9 @@
+import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { Generator } from '@blocksuite/store';
-import { initEmptyPage } from 'packages/env/blocksuite';
 import type React from 'react';
 import { useCallback } from 'react';
 
