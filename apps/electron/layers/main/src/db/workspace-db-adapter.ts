@@ -78,8 +78,8 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     Y.applyUpdate(this.yDoc, data, origin);
   };
 
-  override addBlob(key: string, value: Uint8Array) {
-    const res = super.addBlob(key, value);
+  override async addBlob(key: string, value: Uint8Array) {
+    const res = await super.addBlob(key, value);
     this.update$.next();
     return res;
   }

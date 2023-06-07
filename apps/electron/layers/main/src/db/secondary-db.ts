@@ -152,7 +152,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
         if (!upstreamBlobsKeys.includes(key)) {
           const blob = await this.getBlob(key);
           if (blob) {
-            this.upstream.addBlob(key, blob);
+            await this.upstream.addBlob(key, blob);
             logger.debug('syncBlobs', this.workspaceId, key);
           }
         }

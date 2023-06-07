@@ -60,11 +60,12 @@ impl SqliteConnection {
   #[napi]
   pub async fn add_blob(&self, key: String, blob: Uint8Array) -> napi::Result<()> {
     let blob = blob.as_ref();
-    sqlx::query(
-      "INSERT INTO blobs (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = ?",
+    sqlx::query_as!(
+      BlobRow,
+      "INSERT INTO blobs (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
+      key,
+      blob,
     )
-    .bind(key)
-    .bind(blob)
     .execute(&self.pool)
     .await
     .map_err(anyhow::Error::from)?;
@@ -112,8 +113,7 @@ impl SqliteConnection {
     let mut transaction = self.pool.begin().await.map_err(anyhow::Error::from)?;
     for update in updates.into_iter() {
       let update = update.as_ref();
-      sqlx::query("INSERT INTO updates (data) VALUES (?)")
-        .bind(update)
+      sqlx::query_as!(UpdateRow, "INSERT INTO updates (data) VALUES ($1)", update)
         .execute(&mut *transaction)
         .await
         .map_err(anyhow::Error::from)?;
