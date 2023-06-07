@@ -1,5 +1,4 @@
 /// <reference types="@blocksuite/global" />
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 import { assertEquals } from '@blocksuite/global/utils';
 import getConfig from 'next/config';
 import { z } from 'zod';
