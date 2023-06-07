@@ -1,10 +1,9 @@
 {
   "extends": "../../tsconfig.json",
+  "include": ["./src"],
   "compilerOptions": {
-    "noEmit": false,
     "composite": true,
+    "noEmit": false,
     "outDir": "lib"
-  },
-  "include": ["./src", "env.d.ts", "./src/global.d.ts"],
-  "exclude": ["lib"]
+  }
 }
