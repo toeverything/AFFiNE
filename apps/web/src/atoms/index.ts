@@ -50,8 +50,10 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
   }, 0);
 
   if (environment.isDesktop) {
+    // @ts-expect-error
     window.apis?.workspace.list().then(workspaceIDs => {
       if (abortController.signal.aborted) return;
+      // @ts-expect-error
       const newMetadata = workspaceIDs.map(w => ({
         id: w[0],
         flavour: WorkspaceFlavour.LOCAL,
@@ -59,6 +61,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
       setAtom(metadata => {
         return [
           ...metadata,
+          // @ts-expect-error
           ...newMetadata.filter(m => !metadata.find(m2 => m2.id === m.id)),
         ];
       });
