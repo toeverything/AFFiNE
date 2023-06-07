@@ -2,7 +2,6 @@
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import * as p from '@clack/prompts';
@@ -89,12 +88,6 @@ runCli(
   },
   console.error
 );
-
-spawn('yarn', ['dev'], {
-  cwd: resolve(root, './packages/infra'),
-  stdio: 'inherit',
-  shell: true,
-});
 
 spawn('yarn', ['dev'], {
   env,
