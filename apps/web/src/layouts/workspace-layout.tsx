@@ -10,8 +10,9 @@ import {
   WorkspaceFallback,
 } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { config, DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
+import { config } from '@affine/env/config';
+import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env/constant';
 import type { BackgroundProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';

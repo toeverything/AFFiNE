@@ -1,7 +1,7 @@
 import { FlexWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';

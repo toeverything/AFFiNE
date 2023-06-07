@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { env } from '@affine/env';
+import { env } from '@affine/env/config';
 import { assertExists } from '@blocksuite/global/utils';
 import { Slot } from '@blocksuite/store';
 import { initializeApp } from 'firebase/app';

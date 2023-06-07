@@ -1,4 +1,5 @@
-import { config, websocketPrefixUrl } from '@affine/env';
+import { websocketPrefixUrl } from '@affine/env/api';
+import { config } from '@affine/env/config';
 import type {
   AffineWebSocketProvider,
   LocalIndexedDBBackgroundProvider,

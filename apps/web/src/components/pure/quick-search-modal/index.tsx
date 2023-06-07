@@ -1,5 +1,5 @@
 import { Modal, ModalWrapper } from '@affine/component';
-import { env } from '@affine/env';
+import { env } from '@affine/env/config';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';

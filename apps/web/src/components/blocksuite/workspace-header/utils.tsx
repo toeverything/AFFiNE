@@ -1,4 +1,4 @@
-import { env } from '@affine/env';
+import { env } from '@affine/env/config';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type React from 'react';

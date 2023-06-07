@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';

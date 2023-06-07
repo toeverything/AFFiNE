@@ -1,4 +1,4 @@
-import { prefixUrl } from '@affine/env';
+import { prefixUrl } from '@affine/env/api';
 
 import { rootStore } from '../atom';
 import { createUserApis, createWorkspaceApis } from './api/index';

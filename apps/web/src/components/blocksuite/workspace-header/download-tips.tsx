@@ -1,5 +1,5 @@
 import { DownloadTips } from '@affine/component/affine-banner';
-import { env } from '@affine/env';
+import { env } from '@affine/env/config';
 import { useAtom } from 'jotai';
 import { useCallback } from 'react';
 

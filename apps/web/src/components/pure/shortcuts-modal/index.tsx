@@ -3,7 +3,7 @@ import {
   MuiClickAwayListener,
   MuiSlide,
 } from '@affine/component';
-import { env } from '@affine/env';
+import { env } from '@affine/env/config';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useEffect, useState } from 'react';
 

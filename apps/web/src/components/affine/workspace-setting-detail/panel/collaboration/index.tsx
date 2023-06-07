@@ -1,5 +1,5 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import { Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,

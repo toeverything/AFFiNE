@@ -5,7 +5,7 @@ import {
   useAllPageSetting,
   ViewList,
 } from '@affine/component/page-list';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';

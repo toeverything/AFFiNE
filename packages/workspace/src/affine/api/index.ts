@@ -1,4 +1,4 @@
-import { MessageCode, Messages } from '@affine/env';
+import { MessageCode, Messages } from '@affine/env/constant';
 import type {
   AcceptInvitingParams,
   DeleteWorkspaceParams,
