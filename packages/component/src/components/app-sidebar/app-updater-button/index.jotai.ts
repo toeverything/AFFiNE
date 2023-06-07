@@ -35,22 +35,14 @@ function rpcToObservable<
   });
 }
 
-type InferTFromEvent<E> = E extends (
-  callback: (t: infer T) => void
-) => () => void
-  ? T
-  : never;
-
-type UpdateMeta = InferTFromEvent<typeof window.events.updater.onUpdateReady>;
-
 export const updateReadyAtom = atomWithObservable(() => {
-  return rpcToObservable(null as UpdateMeta | null, {
+  return rpcToObservable(null as any | null, {
     event: window.events?.updater.onUpdateReady,
   });
 });
 
 export const updateAvailableAtom = atomWithObservable(() => {
-  return rpcToObservable(null as UpdateMeta | null, {
+  return rpcToObservable(null as any | null, {
     event: window.events?.updater.onUpdateAvailable,
     onSubscribe: () => {
       window.apis?.updater.checkForUpdatesAndNotify();
