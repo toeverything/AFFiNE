@@ -1,7 +1,7 @@
 import { displayFlex, styled } from '@affine/component';
 import { Button } from '@affine/component';
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import type { Permission } from '@affine/workspace/affine/api';
+import type { Permission } from '@affine/env/workspace/legacy-cloud';
 import {
   SucessfulDuotoneIcon,
   UnsucessfulDuotoneIcon,
