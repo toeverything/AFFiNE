@@ -1,4 +1,4 @@
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons';
@@ -41,7 +41,7 @@ export const Footer: React.FC<FooterProps> = ({
         const id = nanoid();
         const page = createPage(id);
         assertEquals(page.id, id);
-        initPage(page);
+        initEmptyPage(page);
         const block = page.getBlockByFlavour(
           'affine:page'
         )[0] as PageBlockModel;

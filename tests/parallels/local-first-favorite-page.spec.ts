@@ -6,14 +6,14 @@ import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
-  waitMarkdownImported,
+  waitEditorLoad,
 } from '../libs/page-logic';
 import { waitForLogMessage } from '../libs/utils';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('New a page and open it ,then favorite it', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
@@ -32,7 +32,7 @@ test('New a page and open it ,then favorite it', async ({ page }) => {
 
 test('Export to html, markdown and png', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   {
     await clickPageMoreActions(page);
     await page.getByTestId('export-menu').click();
@@ -66,7 +66,7 @@ test.skip('Export to pdf', async ({ page }) => {
     });
   });
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   {
     await clickPageMoreActions(page);
     await page.getByTestId('export-menu').click();
@@ -77,7 +77,7 @@ test.skip('Export to pdf', async ({ page }) => {
 
 test('Cancel favorite', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');

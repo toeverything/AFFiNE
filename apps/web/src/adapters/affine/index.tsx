@@ -3,7 +3,7 @@
  *  please use new affine cloud instead.
  */
 import { AFFINE_STORAGE_KEY, config } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
@@ -330,7 +330,7 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
           <PageDetailEditor
             pageId={currentPageId}
             workspace={currentWorkspace}
-            onInit={initPage}
+            onInit={initEmptyPage}
             onLoad={onLoadEditor}
           />
         </>
