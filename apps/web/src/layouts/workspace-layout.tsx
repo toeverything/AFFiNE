@@ -312,7 +312,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     assertEquals(page.id, pageId);
     setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     if (config.enablePreloading) {
-      initPageWithPreloading(page);
+      initPageWithPreloading(page).catch(error => {
+        logger.error('init page with preloading error:', error);
+      });
     } else {
       initEmptyPage(page);
     }
