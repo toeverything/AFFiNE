@@ -102,9 +102,11 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
 
     // workspaces in desktop
     if (window.apis && environment.isDesktop) {
+      // @ts-expect-error
       const desktopIds = (await window.apis.workspace.list()).map(([id]) => id);
       // the ids maybe a subset of the local storage
       const moreWorkspaces = desktopIds.filter(
+        // @ts-expect-error
         id => !allWorkspaceIDs.includes(id)
       );
       allWorkspaceIDs = [...allWorkspaceIDs, ...moreWorkspaces];

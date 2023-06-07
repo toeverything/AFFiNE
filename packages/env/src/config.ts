@@ -10,6 +10,8 @@ declare global {
     appInfo: {
       electron: boolean;
     };
+    apis: any;
+    events: any;
   }
 }
 

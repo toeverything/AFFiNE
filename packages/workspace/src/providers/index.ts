@@ -183,6 +183,7 @@ const createSQLiteProvider = (
   const connect = () => {
     logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
     blockSuiteWorkspace.doc.on('update', handleUpdate);
+    // @ts-expect-error
     unsubscribe = events.db.onExternalUpdate(({ update, workspaceId }) => {
       if (workspaceId === blockSuiteWorkspace.id) {
         Y.applyUpdate(blockSuiteWorkspace.doc, update, sqliteOrigin);
