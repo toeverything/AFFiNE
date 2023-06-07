@@ -3,7 +3,8 @@
   "private": true,
   "sideEffect": false,
   "exports": {
-    "./*.md": "./src/*.md"
+    "./*.md": "./*.md",
+    "./preloading.json": "./preloading.json"
   },
   "version": "0.7.0-canary.8"
 }

@@ -3,7 +3,7 @@ import { expect, type Page } from '@playwright/test';
 
 import { withCtrlOrMeta } from '../libs/keyboard';
 import { openHomePage } from '../libs/load-page';
-import { newPage, waitMarkdownImported } from '../libs/page-logic';
+import { newPage, waitEditorLoad } from '../libs/page-logic';
 
 const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
@@ -33,7 +33,7 @@ async function titleIsFocused(page: Page) {
 
 test('Click slider bar button', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   const quickSearchButton = page.locator(
     '[data-testid=slider-bar-quick-search-button]'
@@ -45,7 +45,7 @@ test('Click slider bar button', async ({ page }) => {
 
 test('Click arrowDown icon after title', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   const quickSearchButton = page.locator(
     '[data-testid=slider-bar-quick-search-button]'
@@ -57,7 +57,7 @@ test('Click arrowDown icon after title', async ({ page }) => {
 
 test('Press the shortcut key cmd+k', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   const quickSearch = page.locator('[data-testid=quickSearch]');
@@ -66,7 +66,7 @@ test('Press the shortcut key cmd+k', async ({ page }) => {
 
 test('Create a new page without keyword', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
@@ -77,7 +77,7 @@ test('Create a new page without keyword', async ({ page }) => {
 
 test('Create a new page with keyword', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
@@ -89,7 +89,7 @@ test('Create a new page with keyword', async ({ page }) => {
 
 test('Enter a keyword to search for', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
@@ -99,7 +99,7 @@ test('Enter a keyword to search for', async ({ page }) => {
 
 test('Create a new page and search this page', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   // input title and create new page
@@ -131,7 +131,7 @@ test('Navigate to the 404 page and try to open quick search', async ({
 
 test('Open quick search on local page', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   const publishedSearchResults = page.locator('[publishedSearchResults]');
@@ -140,7 +140,7 @@ test('Open quick search on local page', async ({ page }) => {
 
 test('Autofocus input after opening quick search', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   const locator = page.locator('[cmdk-input]');
@@ -149,7 +149,7 @@ test('Autofocus input after opening quick search', async ({ page }) => {
 });
 test('Autofocus input after select', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.press('ArrowUp');
@@ -159,7 +159,7 @@ test('Autofocus input after select', async ({ page }) => {
 });
 test('Focus title after creating a new page', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await openQuickSearchByShortcut(page);
   const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
@@ -171,7 +171,7 @@ test('Not show navigation path if page is not a subpage or current page is not i
   page,
 }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await openQuickSearchByShortcut(page);
   expect(await page.getByTestId('navigation-path').count()).toBe(0);
 });

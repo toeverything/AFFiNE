@@ -2,14 +2,14 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../../libs/load-page';
-import { waitMarkdownImported } from '../../libs/page-logic';
+import { waitEditorLoad } from '../../libs/page-logic';
 import { clickSideBarAllPageButton } from '../../libs/sidebar';
 import { createFakeUser, loginUser } from '../../libs/utils';
 import { enableAffineCloudWorkspace } from '../../libs/workspace';
 
 test('authorization expired', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const [a] = await createFakeUser();
   await loginUser(page, a);
   await enableAffineCloudWorkspace(page);

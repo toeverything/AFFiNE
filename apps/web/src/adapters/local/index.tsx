@@ -1,9 +1,10 @@
 import { DebugLogger } from '@affine/debug';
 import {
+  config,
   DEFAULT_HELLO_WORLD_PAGE_ID,
   DEFAULT_WORKSPACE_NAME,
 } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
 import {
   CRUD,
@@ -17,8 +18,8 @@ import {
 } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
-import React from 'react';
 
+import { setEditorFlags } from '../../utils/editor-flag';
 import {
   BlockSuitePageList,
   PageDetailEditor,
@@ -43,10 +44,12 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       const page = blockSuiteWorkspace.createPage({
         id: DEFAULT_HELLO_WORLD_PAGE_ID,
       });
-      blockSuiteWorkspace.setPageMeta(page.id, {
-        init: true,
-      });
-      initPage(page);
+      setEditorFlags(blockSuiteWorkspace);
+      if (config.enablePreloading) {
+        initPageWithPreloading(page);
+      } else {
+        initEmptyPage(page);
+      }
       blockSuiteWorkspace.setPageMeta(page.id, {
         jumpOnce: true,
       });
@@ -78,7 +81,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         <>
           <PageDetailEditor
             pageId={currentPageId}
-            onInit={initPage}
+            onInit={initEmptyPage}
             onLoad={onLoadEditor}
             workspace={currentWorkspace}
           />
