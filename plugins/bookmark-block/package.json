@@ -10,6 +10,7 @@
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
     "cheerio": "^1.0.0-rc.12",
+    "link-preview-js": "^3.0.4",
     "puppeteer": "^20.5.0"
   },
   "devDependencies": {
