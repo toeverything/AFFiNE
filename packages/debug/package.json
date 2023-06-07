@@ -3,7 +3,6 @@
   "private": true,
   "main": "./src/index.ts",
   "dependencies": {
-    "@affine/env": "workspace:*",
     "debug": "^4.3.4"
   },
   "devDependencies": {
