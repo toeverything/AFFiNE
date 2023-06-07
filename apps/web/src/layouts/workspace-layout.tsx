@@ -301,7 +301,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   //#region init workspace
   if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
     // this is a new workspace, so we should redirect to the new page
-    const pageId = nanoid();
+    const pageId = DEFAULT_HELLO_WORLD_PAGE_ID;
     const page = currentWorkspace.blockSuiteWorkspace.createPage({
       id: pageId,
     });
