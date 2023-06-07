@@ -9,6 +9,7 @@ export const toLiteral = (value: LiteralValue): Literal => ({
   type: 'literal',
   value,
 });
+
 export type FilterVariable = {
   name: keyof VariableMap;
   type: TType;

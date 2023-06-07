@@ -1,3 +1,4 @@
+import type { Filter, LiteralValue, VariableMap } from '@affine/env/filter';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
@@ -7,12 +8,7 @@ import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TFunction } from './logical/typesystem';
 import { tFunction, typesystem } from './logical/typesystem';
-import type {
-  Filter,
-  FilterVariable,
-  LiteralValue,
-  VariableMap,
-} from './shared-types';
+import type { FilterVariable } from './shared-types';
 import { variableDefineMap } from './shared-types';
 
 export const vars: FilterVariable[] = Object.entries(variableDefineMap).map(
