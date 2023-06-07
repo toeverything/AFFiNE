@@ -1,38 +1,51 @@
-// import { BrowserWindow } from 'electron';
 import type { Page } from 'puppeteer';
 import puppeteer from 'puppeteer';
 
 import type { GetHTMLOptions } from './types';
 
+async function getHTMLFromPage(page: Page) {
+  return page.evaluate(() => {
+    return document.documentElement.outerHTML;
+  });
+}
+
+async function wait(ms: number) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export async function getHTMLByURL(
   url: string,
   options: GetHTMLOptions
 ): Promise<string> {
-  const { timeout = 10000, shouldReGetHTML } = options;
-  const browser = await puppeteer.launch();
+  const { timeout = 20000, shouldReGetHTML } = options;
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
-  let html = '';
-  async function loopHandle(page: Page) {
-    html = await page.evaluate(() => {
-      return document.documentElement.outerHTML;
-    });
-    if (!shouldReGetHTML) {
-      return html;
-    }
-
-    if (await shouldReGetHTML(html)) {
-      setTimeout(loopHandle, 1000);
-    } else {
-      window.close();
-      clearTimeout(timer);
-    }
-  }
 
   const timer = setTimeout(() => {
     browser.close();
   }, timeout);
 
-  await page.goto(url, { waitUntil: 'networkidle2' });
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  let html = '';
+
+  async function loopHandle(page: Page) {
+    html = await getHTMLFromPage(page);
+
+    if (!shouldReGetHTML) {
+      return html;
+    }
+
+    if (await shouldReGetHTML(html)) {
+      await wait(1000);
+      return loopHandle(page);
+    } else {
+      browser.close();
+      clearTimeout(timer);
+      return html;
+    }
+  }
 
   return loopHandle(page);
 }
