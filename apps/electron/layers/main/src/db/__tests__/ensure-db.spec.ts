@@ -78,6 +78,10 @@ beforeEach(() => {
 
 afterEach(async () => {
   await runHandler('before-quit');
+  // wait for the db to be closed on Windows
+  if (process.platform === 'win32') {
+    await setTimeout(200);
+  }
   await fs.remove(tmpDir);
   vi.useRealTimers();
 });
