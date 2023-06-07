@@ -16,7 +16,7 @@ export async function getHTMLByURL(
       return document.documentElement.outerHTML;
     });
     if (!shouldReGetHTML) {
-      return html;
+      return;
     }
 
     if (await shouldReGetHTML(html)) {
@@ -33,5 +33,6 @@ export async function getHTMLByURL(
 
   await page.goto(url, { waitUntil: 'networkidle2' });
 
-  return loopHandle(page);
+  await loopHandle(page);
+  return html;
 }
