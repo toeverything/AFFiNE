@@ -1,6 +1,5 @@
+import { AffineLoading } from '@affine/component/affine-loading';
 import type { StoryFn } from '@storybook/react';
-
-import { AffineLoading } from '../components/affine-loading';
 
 export default {
   title: 'AFFiNE/Loading',

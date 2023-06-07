@@ -26,7 +26,6 @@ export default {
     '@storybook/addon-essentials',
     '@storybook/addon-interactions',
     '@storybook/addon-storysource',
-    '@storybook/addon-coverage',
     'storybook-dark-mode',
   ],
   framework: {

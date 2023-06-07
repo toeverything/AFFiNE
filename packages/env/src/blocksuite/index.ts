@@ -1,7 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../env.d.ts" />
-
-import { DebugLogger } from '@affine/debug';
 import markdownTemplate from '@affine/templates/AFFiNE-beta-0.5.4.md';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { Page } from '@blocksuite/store';
@@ -23,10 +19,8 @@ const demoTitle = markdown
 
 const demoText = markdown.split('\n').slice(1).join('\n');
 
-const logger = new DebugLogger('init-page');
-
 export function initPage(page: Page): void {
-  logger.debug('initEmptyPage', page.id);
+  console.debug('initEmptyPage', page.id);
   // Add page block and surface block at root level
   const isFirstPage = page.meta.init === true;
   if (isFirstPage) {
@@ -50,7 +44,7 @@ export function _initEmptyPage(page: Page, title?: string): void {
 }
 
 export function _initPageWithDemoMarkdown(page: Page): void {
-  logger.debug('initPageWithDefaultMarkdown', page.id);
+  console.debug('initPageWithDefaultMarkdown', page.id);
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(demoTitle),
   });

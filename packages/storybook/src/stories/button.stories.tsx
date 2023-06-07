@@ -1,13 +1,12 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
+import type { ButtonProps } from '@affine/component';
+import { Button } from '@affine/component';
+import { DropdownButton } from '@affine/component';
+import { RadioButton, RadioButtonGroup } from '@affine/component';
+import { Menu } from '@affine/component';
+import { toast } from '@affine/component';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
-
-import { Button } from '../ui/button/button';
-import { DropdownButton } from '../ui/button/dropdown';
-import type { ButtonProps } from '../ui/button/interface';
-import { RadioButton, RadioButtonGroup } from '../ui/button/radio';
-import { Menu } from '../ui/menu/menu';
-import { toast } from '../ui/toast/toast';
 
 export default {
   title: 'AFFiNE/Button',

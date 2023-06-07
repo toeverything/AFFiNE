@@ -1,9 +1,8 @@
+import { Button } from '@affine/component';
+import type { ContactModalProps } from '@affine/component/contact-modal';
+import { ContactModal } from '@affine/component/contact-modal';
 import type { StoryFn } from '@storybook/react';
 import { useState } from 'react';
-
-import type { ContactModalProps } from '../components/contact-modal';
-import { ContactModal } from '../components/contact-modal';
-import { Button } from '../ui/button';
 
 export default {
   title: 'AFFiNE/ContactModal',

@@ -1,8 +1,7 @@
+import { ChangeLog } from '@affine/component/changeLog';
 import type { StoryFn } from '@storybook/react';
 import { within } from '@storybook/testing-library';
 import { useState } from 'react';
-
-import { ChangeLog } from '../components/changeLog';
 
 export default {
   title: 'AFFiNE/ChangeLog',

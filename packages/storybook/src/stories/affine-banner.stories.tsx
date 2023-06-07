@@ -1,7 +1,6 @@
+import { BrowserWarning, DownloadTips } from '@affine/component/affine-banner';
 import type { StoryFn } from '@storybook/react';
 import { useState } from 'react';
-
-import { BrowserWarning, DownloadTips } from '../components/affine-banner';
 
 export default {
   title: 'AFFiNE/Banner',
