@@ -32,6 +32,7 @@ export const blockSuiteFeatureFlags = z.object({
   enable_slash_menu: z.boolean(),
   enable_edgeless_toolbar: z.boolean(),
   enable_linked_page: z.boolean(),
+  enable_bookmark_operation: z.boolean(),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;
