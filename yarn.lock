@@ -189,16 +189,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@affine/templates": "workspace:*"
     "@blocksuite/global": 0.0.0-20230606130340-805f430b-nightly
-    "@toeverything/infra": "workspace:*"
     lit: ^2.7.5
     next: =13.4.2
     react: 18.3.0-canary-16d053d59-20230506
     react-dom: 18.3.0-canary-16d053d59-20230506
     zod: ^3.21.4
   peerDependencies:
+    "@affine/templates": "workspace:*"
     "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
+    "@toeverything/infra": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -9206,7 +9206,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/infra@workspace:*, @toeverything/infra@workspace:^, @toeverything/infra@workspace:packages/infra":
+"@toeverything/infra@workspace:^, @toeverything/infra@workspace:packages/infra":
   version: 0.0.0-use.local
   resolution: "@toeverything/infra@workspace:packages/infra"
   dependencies:
