@@ -1,4 +1,4 @@
-import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import type { Workspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import type { Atom, WritableAtom } from 'jotai';

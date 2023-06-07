@@ -1,4 +1,4 @@
-import { env } from '@affine/env';
+import { env } from '@affine/env/config';
 import createCache from '@emotion/cache';
 
 const isBrowser = env.isBrowser;

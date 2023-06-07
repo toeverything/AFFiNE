@@ -2,8 +2,9 @@
  * This file has deprecated because we do not maintain legacy affine cloud,
  *  please use new affine cloud instead.
  */
-import { AFFINE_STORAGE_KEY, config } from '@affine/env';
 import { initEmptyPage } from '@affine/env/blocksuite';
+import { config } from '@affine/env/config';
+import { AFFINE_STORAGE_KEY } from '@affine/env/constant';
 import { PageNotFoundError } from '@affine/env/constant';
 import type { AffineLegacyCloudWorkspace } from '@affine/env/workspace';
 import {
