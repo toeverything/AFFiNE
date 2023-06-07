@@ -208,7 +208,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230601101714-0d24ba91-nightly
+    "@affine/templates": "workspace:*"
+    "@blocksuite/global": 0.0.0-20230601122821-16196c35-nightly
     lit: ^2.7.5
     next: =13.4.2
     react: 18.3.0-canary-16d053d59-20230506
@@ -2653,6 +2654,21 @@ __metadata:
     lit:
       optional: true
   checksum: f6f4ff778293ea02cb553544c0445c46d09b4483d698aafed59aea1c4da76747d9241c7793a88458da1d189196c9b07ade6b6fbdfd1706d63afc8d5797b3f32b
+  languageName: node
+  linkType: hard
+
+"@blocksuite/global@npm:0.0.0-20230601122821-16196c35-nightly":
+  version: 0.0.0-20230601122821-16196c35-nightly
+  resolution: "@blocksuite/global@npm:0.0.0-20230601122821-16196c35-nightly"
+  dependencies:
+    ansi-colors: ^4.1.3
+    zod: ^3.21.4
+  peerDependencies:
+    lit: ^2.7
+  peerDependenciesMeta:
+    lit:
+      optional: true
+  checksum: 457cd685e12336988b061dcfd0b7c413b1e553ff0e59adaef6993bd0b5cf91643ad4c1dc132b2c785436da192280c542ce752608d1b07e697a473802de6f2a4c
   languageName: node
   linkType: hard
 
