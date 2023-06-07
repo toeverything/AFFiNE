@@ -19,6 +19,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   role = 'secondary';
   yDoc = new Y.Doc();
   firstConnected = false;
+  destroyed = false;
 
   updateQueue: Uint8Array[] = [];
 
@@ -39,6 +40,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     this.unsubscribers.forEach(unsub => unsub());
     this.yDoc.destroy();
     await super.destroy();
+    this.destroyed = true;
   }
 
   get workspaceId() {
@@ -64,8 +66,9 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     );
     const updates = [...this.updateQueue];
     this.updateQueue = [];
-    await db.connect();
-    await this.addUpdateToSQLite(db, updates);
+    await this.run(async () => {
+      await this.addUpdateToSQLite(db, updates);
+    });
   }
 
   // flush after 5s, but will not wait for more than 10s
@@ -82,6 +85,9 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     (T extends (...args: any[]) => infer U ? Awaited<U> : unknown) | undefined
   > {
     try {
+      if (this.destroyed) {
+        return;
+      }
       await this.connectIfNeeded();
       this.runCounter++;
       return await fn();
@@ -90,6 +96,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     } finally {
       this.runCounter--;
       if (this.runCounter === 0) {
+        // just close db, but not the yDoc
         await super.destroy();
       }
     }
@@ -144,8 +151,11 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   // TODO: have a better solution to handle blobs
   async syncBlobs() {
     await this.run(async () => {
-      // pull blobs
+      // skip if upstream db is not connected (maybe it is already closed)
       const blobsKeys = await this.getBlobKeys();
+      if (!this.upstream.db || this.upstream.db?.isClose) {
+        return;
+      }
       const upstreamBlobsKeys = await this.upstream.getBlobKeys();
       // put every missing blob to upstream
       for (const key of blobsKeys) {
@@ -178,7 +188,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       return (await this.getUpdates()).map(update => update.data);
     });
 
-    if (!updates) {
+    if (!updates || this.destroyed) {
       return;
     }
 

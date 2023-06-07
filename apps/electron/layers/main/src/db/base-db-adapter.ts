@@ -18,6 +18,7 @@ export abstract class BaseSQLiteAdapter {
     if (!this.db) {
       this.db = new SqliteConnection(this.path);
       await this.db.connect();
+      logger.info(`[SQLiteAdapter:${this.role}]`, 'connected:', this.path);
     }
     return this.db;
   }
