@@ -20,7 +20,7 @@ export async function getHTMLByURL(
   options: GetHTMLOptions
 ): Promise<string> {
   const { timeout = 20000, shouldReGetHTML } = options;
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
 
   const timer = setTimeout(() => {
