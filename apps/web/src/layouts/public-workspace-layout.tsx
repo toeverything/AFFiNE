@@ -1,5 +1,5 @@
 import { AppContainer, MainContainer } from '@affine/component/workspace';
-import type { AffinePublicWorkspace } from '@affine/workspace/type';
+import type { AffinePublicWorkspace } from '@affine/env/workspace';
 import { useAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';

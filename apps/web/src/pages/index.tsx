@@ -1,6 +1,6 @@
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { WorkspaceSubPath } from '@affine/workspace/type';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
