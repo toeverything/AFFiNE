@@ -1,11 +1,10 @@
+import type { WorkspaceListProps } from '@affine/component/workspace-list';
+import { WorkspaceList } from '@affine/component/workspace-list';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Meta } from '@storybook/react';
 import { useState } from 'react';
-
-import type { WorkspaceListProps } from './index';
-import { WorkspaceList } from './index';
 
 export default {
   title: 'AFFiNE/WorkspaceList',
