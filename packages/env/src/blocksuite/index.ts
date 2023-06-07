@@ -8,9 +8,7 @@ declare global {
 
 export async function initPageWithPreloading(page: Page) {
   const workspace = page.workspace;
-  const { data } = await import(
-    '@affine/templates/affine-0.6.0-preloading.json'
-  );
+  const { data } = await import('@affine/templates/preloading.json');
   await workspace.importPageSnapshot(data['space:Qmo9-1SGTB'], page.id);
 }
 
