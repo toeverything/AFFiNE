@@ -1,7 +1,7 @@
 /* eslint-disable no-async-promise-executor */
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import path, { resolve } from 'node:path';
 
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
@@ -128,7 +128,17 @@ async function watchMain() {
   });
 }
 
+function watchInfra() {
+  console.log('Build infra');
+
+  spawn('yarn', ['dev'], {
+    stdio: 'inherit',
+    cwd: resolve(electronDir, '../../packages/infra'),
+  });
+}
+
 async function main() {
+  watchInfra();
   await watchPlugins();
   await watchMain();
   await watchPreload();

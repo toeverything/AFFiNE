@@ -1,9 +1,12 @@
 #!/usr/bin/env zx
 import 'zx/globals';
 
+import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
+
 import * as esbuild from 'esbuild';
 
-import { config } from './common.mjs';
+import { config, electronDir } from './common.mjs';
 
 const NODE_ENV =
   process.env.NODE_ENV === 'development' ? 'development' : 'production';
@@ -14,6 +17,13 @@ if (process.platform === 'win32') {
 }
 
 async function buildLayers() {
+  console.log('Build infra');
+
+  spawnSync('yarn', ['build'], {
+    stdio: 'inherit',
+    cwd: resolve(electronDir, '../../packages/infra'),
+  });
+
   const common = config();
   await esbuild.build(common.preload);
 

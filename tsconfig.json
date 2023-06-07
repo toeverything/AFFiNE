@@ -64,6 +64,9 @@
       "path": "./apps/server"
     },
     {
+      "path": "./packages/infra"
+    },
+    {
       "path": "./packages/component"
     },
     {
