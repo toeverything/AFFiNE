@@ -1,16 +1,15 @@
+import { Empty } from '@affine/component';
+import { toast } from '@affine/component';
+import { AffineLoading } from '@affine/component/affine-loading';
+import { PageListTrashView } from '@affine/component/page-list/all-page';
+import { PageList } from '@affine/component/page-list/all-page';
+import { NewPageButton } from '@affine/component/page-list/components/new-page-buttton';
+import type { OperationCellProps } from '@affine/component/page-list/operation-cell';
+import { OperationCell } from '@affine/component/page-list/operation-cell';
 import { PageIcon } from '@blocksuite/icons';
 import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
-
-import { AffineLoading } from '../components/affine-loading';
-import { PageListTrashView } from '../components/page-list/all-page';
-import { PageList } from '../components/page-list/all-page';
-import { NewPageButton } from '../components/page-list/components/new-page-buttton';
-import type { OperationCellProps } from '../components/page-list/operation-cell';
-import { OperationCell } from '../components/page-list/operation-cell';
-import Empty from '../ui/empty/empty';
-import { toast } from '../ui/toast';
 
 export default {
   title: 'AFFiNE/PageList',

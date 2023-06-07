@@ -1,11 +1,9 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
+import { Breadcrumbs } from '@affine/component';
 import { Link, Typography } from '@mui/material';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { within } from '@storybook/testing-library';
-
-import { Breadcrumbs } from '..';
-
 export default {
   title: 'AFFiNE/Breadcrumbs',
   component: Breadcrumbs,

@@ -1,0 +1,27 @@
+{
+  "name": "@affine/storybook",
+  "version": "1.0.0",
+  "scripts": {
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "NODE_OPTIONS=--max_old_space_size=4096 storybook build",
+    "test-storybook": "test-storybook"
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@storybook/addon-actions": "^7.0.18",
+    "@storybook/addon-coverage": "^0.0.8",
+    "@storybook/addon-essentials": "^7.0.18",
+    "@storybook/addon-interactions": "^7.0.18",
+    "@storybook/addon-links": "^7.0.18",
+    "@storybook/addon-storysource": "^7.0.18",
+    "@storybook/blocks": "^7.0.18",
+    "@storybook/builder-vite": "^7.0.18",
+    "@storybook/jest": "^0.1.0",
+    "@storybook/react": "^7.0.18",
+    "@storybook/react-vite": "^7.0.18",
+    "@storybook/test-runner": "^0.10.0",
+    "@storybook/testing-library": "^0.1.0",
+    "storybook": "^7.0.18",
+    "storybook-dark-mode": "^3.0.0"
+  }
+}
