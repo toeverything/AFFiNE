@@ -7,7 +7,10 @@ import type {
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { PermissionType, WorkspaceType } from '@affine/workspace/affine/api';
+import {
+  PermissionType,
+  WorkspaceType,
+} from '@affine/env/workspace/legacy-cloud';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
