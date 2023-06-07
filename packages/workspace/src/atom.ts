@@ -1,9 +1,8 @@
+import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 import Router from 'next/router';
-
-import type { WorkspaceFlavour } from './type';
 
 export type RootWorkspaceMetadata = {
   id: string;

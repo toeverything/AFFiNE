@@ -1,10 +1,10 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { SettingPanel } from '@affine/workspace/type';
+import type { SettingPanel } from '@affine/env/workspace';
 import {
   settingPanel,
   settingPanelValues,
   WorkspaceSubPath,
-} from '@affine/workspace/type';
+} from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';

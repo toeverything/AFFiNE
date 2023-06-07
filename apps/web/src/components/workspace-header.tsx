@@ -6,9 +6,9 @@ import {
   ViewList,
 } from '@affine/component/page-list';
 import { config } from '@affine/env';
+import type { WorkspaceHeaderProps } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceHeaderProps } from '@affine/workspace/type';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { RESET } from 'jotai/utils';
 import type { ReactElement } from 'react';
