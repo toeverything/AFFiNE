@@ -1,6 +1,6 @@
 import type { WorkspaceAvatarProps } from '@affine/component/workspace-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 
