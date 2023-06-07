@@ -30,9 +30,6 @@
     {
       "path": "../../apps/electron"
     },
-    {
-      "path": "./tsconfig.node.json"
-    },
     { "path": "./tsconfig.workspace.json" },
     { "path": "../../tests/fixtures" }
   ]
