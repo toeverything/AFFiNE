@@ -1,7 +1,6 @@
+import { AFFiNEDatePicker } from '@affine/component/date-picker';
 import type { StoryFn } from '@storybook/react';
 import { useState } from 'react';
-
-import { AFFiNEDatePicker } from '../ui/date-picker';
 
 export default {
   title: 'AFFiNE/AFFiNEDatePicker',

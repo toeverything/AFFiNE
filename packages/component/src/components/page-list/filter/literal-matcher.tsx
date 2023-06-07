@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
-import { AFFiNEDatePicker } from '../../../ui/date-picker';
+import { AFFiNEDatePicker } from '../../date-picker';
 import { inputStyle } from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
