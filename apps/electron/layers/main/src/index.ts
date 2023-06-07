@@ -85,10 +85,11 @@ import('@toeverything/plugin-infra/manager').then(
       './bookmark-block/index.mjs'
     );
     import(bookmarkPluginPath);
-    let dispose: () => void;
+    let dispose: (() => void) | undefined;
     rootStore.sub(affinePluginsAtom, () => {
       if (dispose) {
         dispose();
+        dispose = undefined;
       }
       const plugins = rootStore.get(affinePluginsAtom);
       Object.values(plugins).forEach(plugin => {
