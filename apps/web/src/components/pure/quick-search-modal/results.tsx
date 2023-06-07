@@ -71,7 +71,7 @@ export const Results: FC<ResultsProps> = ({
                   value={page.id}
                   onSelect={() => {
                     onClose();
-                    jumpToPage(blockSuiteWorkspace.id, page.id);
+                    void jumpToPage(blockSuiteWorkspace.id, page.id);
                   }}
                 >
                   <StyledListItem>
@@ -95,7 +95,7 @@ export const Results: FC<ResultsProps> = ({
                 value={link.title}
                 onSelect={() => {
                   onClose();
-                  router.push(link.href);
+                  void router.push(link.href);
                 }}
               >
                 <StyledListItem>
@@ -133,7 +133,7 @@ export const Results: FC<ResultsProps> = ({
             onSelect={() => {
               onClose();
               assertExists(blockSuiteWorkspace.id);
-              jumpToPage(blockSuiteWorkspace.id, result.id);
+              void jumpToPage(blockSuiteWorkspace.id, result.id);
             }}
             value={result.id}
           >

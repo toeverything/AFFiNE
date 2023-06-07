@@ -85,12 +85,12 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   override async deleteBlob(key: string) {
-    super.deleteBlob(key);
+    await super.deleteBlob(key);
     this.update$.next();
   }
 
   override async addUpdateToSQLite(db: SqliteConnection, data: Uint8Array[]) {
-    super.addUpdateToSQLite(db, data);
+    await super.addUpdateToSQLite(db, data);
     this.update$.next();
   }
 }

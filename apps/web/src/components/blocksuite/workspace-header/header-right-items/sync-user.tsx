@@ -147,7 +147,8 @@ export const SyncUser = () => {
               })
               .then(() => {
                 router.reload();
-              });
+              })
+              .catch(() => {});
             setOpen(false);
           }}
         />

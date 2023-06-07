@@ -69,7 +69,8 @@ export class AffineErrorBoundary extends Component<
                     })
                     .then(() => {
                       this.setState({ error: null });
-                    });
+                    })
+                    .catch(() => {});
                 }}
               >
                 {' '}

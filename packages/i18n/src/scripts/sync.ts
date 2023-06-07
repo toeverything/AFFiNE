@@ -152,4 +152,4 @@ const main = async () => {
   // TODO send notification
 };
 
-main();
+void main();

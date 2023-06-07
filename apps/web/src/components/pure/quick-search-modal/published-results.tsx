@@ -64,7 +64,7 @@ export const PublishedResults: FC<PublishedResultsProps> = ({
                 <Command.Item
                   key={result.id}
                   onSelect={() => {
-                    router.push(
+                    void router.push(
                       `/public-workspace/${router.query.workspaceId}/${result.id}`
                     );
                     onClose();

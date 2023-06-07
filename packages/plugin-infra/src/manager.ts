@@ -40,7 +40,10 @@ export function definePlugin<ID extends string>(
 
     blockSuiteAdapter
       .load()
-      .then(({ default: adapter }) => updateAdapter(adapter));
+      .then(({ default: adapter }) => updateAdapter(adapter))
+      .catch(err => {
+        pluginLogger.error('[definePlugin] blockSuiteAdapter error', err);
+      });
 
     if (import.meta.webpackHot) {
       blockSuiteAdapter.hotModuleReload(async _ => {
@@ -64,7 +67,10 @@ export function definePlugin<ID extends string>(
 
     uiAdapterLoader
       .load()
-      .then(({ default: adapter }) => updateAdapter(adapter));
+      .then(({ default: adapter }) => updateAdapter(adapter))
+      .catch(err => {
+        pluginLogger.error('[definePlugin] blockSuiteAdapter error', err);
+      });
 
     if (import.meta.webpackHot) {
       uiAdapterLoader.hotModuleReload(async _ => {

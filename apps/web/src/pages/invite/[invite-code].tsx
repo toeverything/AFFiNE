@@ -40,7 +40,7 @@ const InvitePage: NextPageWithLayout = () => {
           type="primary"
           shape="round"
           onClick={() => {
-            jumpToSubPath(
+            void jumpToSubPath(
               inviteData.workspace_id,
               WorkspaceSubPath.ALL,
               RouteLogic.REPLACE
@@ -64,7 +64,7 @@ const InvitePage: NextPageWithLayout = () => {
         <Button
           shape="round"
           onClick={() => {
-            router.replace(`/`);
+            void router.replace(`/`);
           }}
         >
           Back to Home

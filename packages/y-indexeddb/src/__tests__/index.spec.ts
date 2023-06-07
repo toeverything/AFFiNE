@@ -197,7 +197,7 @@ describe('indexeddb provider', () => {
   test('cleanup when connecting', async () => {
     const provider = createIndexedDBProvider(workspace.id, workspace.doc);
     provider.connect();
-    expect(() => provider.cleanup()).rejects.toThrowError(
+    await expect(() => provider.cleanup()).rejects.toThrowError(
       CleanupWhenConnectingError
     );
     await provider.whenSynced;
@@ -259,7 +259,7 @@ describe('indexeddb provider', () => {
       yDoc.getMap().set('foo', 'bar');
       const persistence = new IndexeddbPersistence('test', yDoc);
       await persistence.whenSynced;
-      persistence.destroy();
+      await persistence.destroy();
     }
     {
       const yDoc = new Doc();
@@ -274,7 +274,7 @@ describe('indexeddb provider', () => {
       indexedDB.databases = vi.fn(async () => {
         throw new Error('not supported');
       });
-      expect(indexedDB.databases).rejects.toThrow('not supported');
+      await expect(indexedDB.databases).rejects.toThrow('not supported');
       const yDoc = new Doc();
       expect(indexedDB.databases).toBeCalledTimes(1);
       const provider = createIndexedDBProvider('test', yDoc);

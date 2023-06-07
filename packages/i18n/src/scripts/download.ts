@@ -47,9 +47,9 @@ const getBaseTranslations = async (baseLanguage: { tag: string }) => {
 
 const main = async () => {
   try {
-    fs.access(RES_DIR);
+    await fs.access(RES_DIR);
   } catch (error) {
-    fs.mkdir(RES_DIR);
+    void fs.mkdir(RES_DIR);
     console.log('Create directory', RES_DIR);
   }
   console.log('Loading project languages...');
@@ -149,4 +149,4 @@ const main = async () => {
   console.log('Done');
 };
 
-main();
+void main();

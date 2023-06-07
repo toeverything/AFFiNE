@@ -129,7 +129,7 @@ export const AllWorkspaceModals = (): ReactElement => {
             workspace => {
               setOpenWorkspacesModal(false);
               setCurrentWorkspaceId(workspace.id);
-              jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+              void jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
             },
             [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}
@@ -137,7 +137,7 @@ export const AllWorkspaceModals = (): ReactElement => {
             workspace => {
               setOpenWorkspacesModal(false);
               setCurrentWorkspaceId(workspace.id);
-              jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+              void jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
             },
             [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}

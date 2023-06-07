@@ -27,7 +27,7 @@ export function initPage(page: Page): void {
     page.workspace.setPageMeta(page.id, {
       init: false,
     });
-    _initPageWithDemoMarkdown(page);
+    void _initPageWithDemoMarkdown(page);
   } else {
     _initEmptyPage(page);
   }
@@ -43,7 +43,7 @@ export function _initEmptyPage(page: Page, title?: string): void {
   page.addBlock('affine:paragraph', {}, frameId);
 }
 
-export function _initPageWithDemoMarkdown(page: Page): void {
+export async function _initPageWithDemoMarkdown(page: Page) {
   console.debug('initPageWithDefaultMarkdown', page.id);
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(demoTitle),
@@ -52,6 +52,6 @@ export function _initPageWithDemoMarkdown(page: Page): void {
   const frameId = page.addBlock('affine:frame', {}, pageBlockId);
   page.addBlock('affine:paragraph', {}, frameId);
   const contentParser = new ContentParser(page);
-  contentParser.importMarkdown(demoText, frameId);
+  await contentParser.importMarkdown(demoText, frameId);
   page.workspace.setPageMeta(page.id, { title: demoTitle });
 }

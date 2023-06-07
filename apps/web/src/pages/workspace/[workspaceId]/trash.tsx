@@ -24,7 +24,7 @@ const TrashPage: NextPageWithLayout = () => {
       if (newTab) {
         window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
       } else {
-        jumpToPage(currentWorkspace.id, pageId);
+        void jumpToPage(currentWorkspace.id, pageId);
       }
     },
     [currentWorkspace, jumpToPage]

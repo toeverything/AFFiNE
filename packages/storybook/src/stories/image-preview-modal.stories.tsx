@@ -37,6 +37,9 @@ fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
       },
       frameId
     );
+  })
+  .catch(() => {
+    // ignore
   });
 
 export const Default = () => {

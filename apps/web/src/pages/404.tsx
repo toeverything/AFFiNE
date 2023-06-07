@@ -34,7 +34,7 @@ export const NotfoundPage = () => {
       <Button
         shape="round"
         onClick={() => {
-          router.push('/');
+          void router.push('/');
         }}
       >
         {t['Back Home']()}

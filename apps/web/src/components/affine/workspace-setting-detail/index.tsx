@@ -95,7 +95,7 @@ export const WorkspaceSettingDetail: React.FC<
   const workspaceId = workspace.id;
   useEffect(() => {
     if (isAffine && isOwner) {
-      preload([QueryKey.getMembers, workspaceId], fetcher);
+      void preload([QueryKey.getMembers, workspaceId], fetcher);
     }
   }, [isAffine, isOwner, workspaceId]);
   const containerRef = useRef<HTMLDivElement | null>(null);

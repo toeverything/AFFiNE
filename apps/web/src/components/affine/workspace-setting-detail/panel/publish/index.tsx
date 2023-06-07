@@ -46,8 +46,8 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
   const shareUrl = origin + '/public-workspace/' + workspace.id;
   const t = useAFFiNEI18N();
   const publishWorkspace = useToggleWorkspacePublish(workspace);
-  const copyUrl = useCallback(() => {
-    navigator.clipboard.writeText(shareUrl);
+  const copyUrl = useCallback(async () => {
+    await navigator.clipboard.writeText(shareUrl);
     toast(t['Copied link to clipboard']());
   }, [shareUrl, t]);
 

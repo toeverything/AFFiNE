@@ -16,12 +16,12 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
 
   const createPageAndOpen = () => {
     const page = createPage();
-    openPage(blockSuiteWorkspace.id, page.id);
+    return openPage(blockSuiteWorkspace.id, page.id);
   };
   const createEdgelessAndOpen = () => {
     const page = createPage();
     setPreferredMode(page.id, 'edgeless');
-    openPage(blockSuiteWorkspace.id, page.id);
+    return openPage(blockSuiteWorkspace.id, page.id);
   };
   const importFileAndOpen = async () => {
     const { showImportModal } = await import('@blocksuite/blocks');

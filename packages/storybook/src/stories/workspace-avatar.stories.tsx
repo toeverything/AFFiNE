@@ -54,6 +54,9 @@ fetch(new URL('@affine-test/fixtures/smile.png', import.meta.url))
       new Blob([buffer], { type: 'image/png' })
     );
     avatarBlockSuiteWorkspace.meta.setAvatar(id);
+  })
+  .catch(() => {
+    // just ignore
   });
 
 export const BlobExample: StoryFn<WorkspaceAvatarProps> = props => {

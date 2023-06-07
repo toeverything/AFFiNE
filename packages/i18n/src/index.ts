@@ -68,7 +68,7 @@ const standardizeLocale = (language: string) => {
 
 export const createI18n = () => {
   const i18n = i18next.createInstance();
-  i18n.use(initReactI18next).init({
+  void i18n.use(initReactI18next).init({
     lng: 'en',
     fallbackLng,
     debug: false,

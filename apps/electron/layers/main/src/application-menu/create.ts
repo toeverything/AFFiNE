@@ -119,7 +119,7 @@ export function createApplicationMenu() {
         {
           label: 'Open log file',
           click: async () => {
-            revealLogFile();
+            await revealLogFile();
           },
         },
         {

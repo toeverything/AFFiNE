@@ -44,7 +44,7 @@ describe('AppModule', () => {
     await app.close();
   });
 
-  test('should init app', async () => {
+  void test('should init app', async () => {
     ok(typeof app === 'object');
     await request(app.getHttpServer())
       .post(gql)
@@ -115,7 +115,7 @@ describe('AppModule', () => {
       });
   });
 
-  test('should find default user', async () => {
+  void test('should find default user', async () => {
     await request(app.getHttpServer())
       .post(gql)
       .send({

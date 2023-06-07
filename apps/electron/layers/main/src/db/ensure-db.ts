@@ -126,8 +126,8 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
       return interval(300000).pipe(
         startWith(0),
         tap({
-          next: () => {
-            secondaryDB.pull();
+          next: async () => {
+            await secondaryDB.pull();
           },
           error: err => {
             logger.error(`[ensureSQLiteDB] polling secondary db error`, err);

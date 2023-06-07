@@ -46,12 +46,12 @@ async function sleep(ms: number) {
   });
 }
 
-test('should be able to register and signIn', async () => {
+void test('should be able to register and signIn', async () => {
   await auth.register('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
 });
 
-test('should be able to verify', async () => {
+void test('should be able to verify', async () => {
   await auth.register('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
   const user = {

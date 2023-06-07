@@ -10,7 +10,7 @@ export const EditPage = () => {
   const { jumpToPage } = useRouterHelper(router);
   const onClickPage = useCallback(() => {
     if (workspaceId && pageId) {
-      jumpToPage(workspaceId, pageId);
+      void jumpToPage(workspaceId, pageId);
     }
   }, [jumpToPage, pageId, workspaceId]);
   return (

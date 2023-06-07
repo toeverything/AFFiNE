@@ -28,8 +28,8 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-app.on('second-instance', () => {
-  restoreOrCreateWindow();
+app.on('second-instance', async () => {
+  await restoreOrCreateWindow();
 });
 
 app.on('open-url', async (_, _url) => {
