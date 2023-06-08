@@ -67,7 +67,7 @@ export const registerUpdater = async () => {
   // register events for checkForUpdatesAndNotify
   _autoUpdater.on('update-available', info => {
     if (allowAutoUpdate) {
-      _autoUpdater!.downloadUpdate();
+      _autoUpdater?.downloadUpdate();
       logger.info('Update available, downloading...', info);
     }
     updaterSubjects.updateAvailable.next({
