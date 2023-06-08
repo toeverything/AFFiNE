@@ -6,3 +6,4 @@ storybook-static
 affine-out
 _next
 lib
+.eslintrc.js

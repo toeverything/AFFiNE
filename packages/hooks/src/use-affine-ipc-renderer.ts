@@ -46,14 +46,15 @@ export function useAffineListener(
   if (!fnRef.current) {
     fnRef.current = listener;
   }
+  const ipcListener = fnRef.current ?? (fnRef.current = listener);
   useEffect(() => {
     if (once) {
-      window.affine.ipcRenderer.once(channel, fnRef.current!);
+      window.affine.ipcRenderer.once(channel, ipcListener);
     } else {
-      window.affine.ipcRenderer.on(channel, fnRef.current!);
+      window.affine.ipcRenderer.on(channel, ipcListener);
     }
     return () => {
-      window.affine.ipcRenderer.removeListener(channel, fnRef.current!);
+      window.affine.ipcRenderer.removeListener(channel, ipcListener);
     };
-  }, [channel, once]);
+  }, [channel, once, ipcListener]);
 }
