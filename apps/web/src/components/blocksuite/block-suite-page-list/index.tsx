@@ -5,7 +5,9 @@ import {
   PageList,
   PageListTrashView,
 } from '@affine/component/page-list';
+import { env } from '@affine/env';
 import type { View } from '@affine/env/filter';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
@@ -19,7 +21,7 @@ import { pageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
-import { pageListEmptyStyle } from './index.css';
+import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
 import { usePageHelper } from './utils';
 
 export type BlockSuitePageListProps = {
@@ -41,14 +43,36 @@ const filter = {
 };
 
 const PageListEmpty = (props: {
+  createPage?: () => void;
   listType: BlockSuitePageListProps['listType'];
 }) => {
-  const { listType } = props;
+  const { listType, createPage } = props;
   const t = useAFFiNEI18N();
 
   const getEmptyDescription = () => {
     if (listType === 'all') {
-      return t['emptyAllPages']();
+      const CreateNewPageButton = () => (
+        <button className={emptyDescButton} onClick={createPage}>
+          New Page
+        </button>
+      );
+      if (env.isDesktop) {
+        const shortcut = env.isMacOs ? '⌘ + N' : 'Ctrl + N';
+        return (
+          <Trans i18nKey="emptyAllPagesClient">
+            Click on the <CreateNewPageButton /> button Or press
+            <kbd className={emptyDescKbd}>{{ shortcut } as any}</kbd> to create
+            your first page.
+          </Trans>
+        );
+      }
+      return (
+        <Trans i18nKey="emptyAllPages">
+          Click on the
+          <CreateNewPageButton />
+          button to create your first page.
+        </Trans>
+      );
     }
     if (listType === 'trash') {
       return t['emptyTrash']();
@@ -60,7 +84,10 @@ const PageListEmpty = (props: {
 
   return (
     <div className={pageListEmptyStyle}>
-      <Empty description={getEmptyDescription()} />
+      <Empty
+        title={t['com.affine.emptyDesc']()}
+        description={getEmptyDescription()}
+      />
     </div>
   );
 };
@@ -204,7 +231,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       onImportFile={importFile}
       isPublicWorkspace={isPublic}
       list={pageList}
-      fallback={<PageListEmpty listType={listType} />}
+      fallback={<PageListEmpty createPage={createPage} listType={listType} />}
     />
   );
 };

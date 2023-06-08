@@ -1,15 +1,17 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import { EmptySvg } from './empty-svg';
 import { StyledEmptyContainer } from './style';
 export type EmptyContentProps = {
   containerStyle?: CSSProperties;
-  description?: string;
+  title?: ReactNode;
+  description?: ReactNode;
   descriptionStyle?: CSSProperties;
 };
 
 export const Empty = ({
   containerStyle,
+  title,
   description,
   descriptionStyle,
 }: EmptyContentProps) => {
@@ -18,7 +20,22 @@ export const Empty = ({
       <div style={{ color: 'var(--affine-black)' }}>
         <EmptySvg />
       </div>
-      <p style={{ marginTop: '30px', ...descriptionStyle }}>{description}</p>
+      {title && (
+        <p
+          style={{
+            marginTop: '30px',
+            color: 'var(--affine-text-primary-color)',
+            fontWeight: 700,
+          }}
+        >
+          {title}
+        </p>
+      )}
+      {description && (
+        <p style={{ marginTop: title ? '8px' : '30px', ...descriptionStyle }}>
+          {description}
+        </p>
+      )}
     </StyledEmptyContainer>
   );
 };
