@@ -15,7 +15,7 @@ import { useAtom } from 'jotai';
 import type React from 'react';
 import { useMemo } from 'react';
 
-import { pageModeSelectAtom } from '../../../atoms';
+import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
@@ -80,7 +80,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     permanentlyDeletePage,
     cancelPublicPage,
   } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const [filterMode] = useAtom(pageModeSelectAtom);
+  const [filterMode] = useAtom(allPageModeSelectAtom);
   const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();

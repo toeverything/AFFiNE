@@ -30,7 +30,7 @@ import React, {
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
-import { workspacePreferredModeAtom } from '../atoms';
+import { pageSettingFamily } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
@@ -63,11 +63,13 @@ const EditorWrapper = memo(function EditorWrapper({
   const meta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  const pageSettingAtom = pageSettingFamily(pageId);
+  const pageSetting = useAtomValue(pageSettingAtom);
   const currentMode =
-    useAtomValue(workspacePreferredModeAtom)[pageId] ??
-    DEFAULT_HELLO_WORLD_PAGE_ID === pageId
+    pageSetting?.mode ?? DEFAULT_HELLO_WORLD_PAGE_ID === pageId
       ? 'edgeless'
       : 'page';
+
   const setEditor = useSetAtom(rootCurrentEditorAtom);
   assertExists(meta);
   return (
