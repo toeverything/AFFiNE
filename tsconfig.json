@@ -1,28 +1,57 @@
 {
   "compilerOptions": {
-    "rootDir": ".",
-    "target": "ESNext",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    // Classification follows https://www.typescriptlang.org/tsconfig
+
+    // Type Checking
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    // FIXME: add this back
-    "noUncheckedIndexedAccess": false,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "node",
+    // exactOptionalPropertyTypes: false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    // noPropertyAccessFromIndexSignature: false,
+    // noUncheckedIndexedAccess: false,
+    // noUnusedLocals: false,
+    // noUnusedParameters: false,
+    "useUnknownInCatchVariables": true,
+
+    // Modules
+    "module": "ES2022",
+    "moduleResolution": "Node",
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
 
-    // Project
-    "incremental": true,
-    "composite": true,
+    // Emit
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    // skip type emit for @internal types
+    // "stripInternal": true,
 
+    // JavaScript Support
+    "allowJs": false,
+    "checkJs": false,
+
+    // Interop Constraints
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+
+    // Language and Environment
+    "jsx": "react-jsx",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "useDefineForClassFields": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "baseUrl": ".",
+
+    // Projects
+    "composite": true,
+    "incremental": true,
+
+    // Completeness
+    "skipLibCheck": true, // skip all type checks for .d.ts files
+
     "paths": {
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [

@@ -30,7 +30,7 @@ export class AffineErrorBoundary extends Component<
   AffineErrorBoundaryProps,
   AffineErrorBoundaryState
 > {
-  public state: AffineErrorBoundaryState = {
+  public override state: AffineErrorBoundaryState = {
     error: null,
   };
 
@@ -40,11 +40,11 @@ export class AffineErrorBoundary extends Component<
     return { error };
   }
 
-  public componentDidCatch(error: AffineError, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: AffineError, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
   }
 
-  public render(): ReactNode {
+  public override render(): ReactNode {
     if (this.state.error) {
       const error = this.state.error;
       if (error instanceof PageNotFoundError) {

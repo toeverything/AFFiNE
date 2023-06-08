@@ -12,6 +12,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./api": "./src/api.ts",
     "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
     "./workspace": "./src/workspace.ts",

@@ -101,7 +101,7 @@ export class CallbackSet extends Set<() => void> {
     this.#ready = v;
   }
 
-  add(cb: () => void) {
+  override add(cb: () => void) {
     if (this.ready) {
       cb();
       return this;
@@ -112,7 +112,7 @@ export class CallbackSet extends Set<() => void> {
     return super.add(cb);
   }
 
-  delete(cb: () => void) {
+  override delete(cb: () => void) {
     if (this.has(cb)) {
       return super.delete(cb);
     }

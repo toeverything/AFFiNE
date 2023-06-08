@@ -30,6 +30,7 @@ function useMouseOffset() {
         el.removeEventListener('mouseleave', onMouseLeave);
       };
     }
+    return () => {};
   }, []);
 
   return [offset, outside, ref] as const;

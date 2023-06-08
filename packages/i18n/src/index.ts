@@ -102,6 +102,7 @@ export function setUpLanguage(i: i18n) {
     }
     return i.changeLanguage(language);
   }
+  return void 0;
 }
 
 // const I18nProvider = I18nextProvider;
