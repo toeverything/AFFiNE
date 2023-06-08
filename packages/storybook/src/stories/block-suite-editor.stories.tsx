@@ -1,4 +1,6 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
+import type { EditorProps } from '@affine/component/block-suite-editor';
+import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -6,9 +8,6 @@ import { createMemoryStorage, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
-
-import type { EditorProps } from '.';
-import { BlockSuiteEditor } from '.';
 
 const blockSuiteWorkspace = new Workspace({
   id: 'test',

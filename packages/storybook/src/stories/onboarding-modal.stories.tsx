@@ -1,7 +1,6 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
+import { TourModal } from '@affine/component/tour-modal';
 import type { StoryFn } from '@storybook/react';
-
-import { TourModal } from '../components/tour-modal';
 
 export default {
   title: 'AFFiNE/TourModal',

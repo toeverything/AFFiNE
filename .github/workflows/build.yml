@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
           if-no-files-found: error
 
   build:
@@ -195,19 +195,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
       - name: Run storybook tests
-        working-directory: ./packages/component
+        working-directory: ./packages/storybook
         run: |
-          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test-storybook --coverage"
-      - name: Upload storybook test coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./packages/component/coverage/storybook/coverage-storybook.json
-          flags: storybook-test
-          name: affine
-          fail_ci_if_error: true
+          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test-storybook"
 
   e2e-test:
     name: E2E Test
@@ -244,7 +236,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
 
       - name: Wait for Octobase Ready
         run: |

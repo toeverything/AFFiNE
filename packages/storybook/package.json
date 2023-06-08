@@ -1,0 +1,50 @@
+{
+  "name": "@affine/storybook",
+  "private": true,
+  "scripts": {
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "NODE_OPTIONS=--max_old_space_size=4096 storybook build",
+    "test-storybook": "test-storybook"
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/i18n": "workspace:*",
+    "@storybook/addon-actions": "^7.0.18",
+    "@storybook/addon-essentials": "^7.0.18",
+    "@storybook/addon-interactions": "^7.0.18",
+    "@storybook/addon-links": "^7.0.18",
+    "@storybook/addon-storysource": "^7.0.18",
+    "@storybook/blocks": "^7.0.18",
+    "@storybook/builder-vite": "^7.0.18",
+    "@storybook/jest": "^0.1.0",
+    "@storybook/react": "^7.0.18",
+    "@storybook/react-vite": "^7.0.18",
+    "@storybook/test-runner": "^0.10.0",
+    "@storybook/testing-library": "^0.1.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "concurrently": "^8.1.0",
+    "jest-mock": "^29.5.0",
+    "serve": "^14.2.0",
+    "storybook": "^7.0.18",
+    "storybook-dark-mode": "^3.0.0",
+    "wait-on": "^7.0.1"
+  },
+  "devDependencies": {
+    "@blocksuite/blocks": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/editor": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/global": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/icons": "^2.1.19",
+    "@blocksuite/lit": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/store": "0.0.0-20230601122821-16196c35-nightly",
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506"
+  },
+  "peerDependencies": {
+    "@blocksuite/blocks": "*",
+    "@blocksuite/editor": "*",
+    "@blocksuite/global": "*",
+    "@blocksuite/icons": "*",
+    "@blocksuite/lit": "*",
+    "@blocksuite/store": "*"
+  }
+}
