@@ -2,6 +2,7 @@
 
 packages=(
   "y-indexeddb"
+  "infra"
 )
 
 for package in "${packages[@]}"; do

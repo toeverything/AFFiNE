@@ -1,10 +1,19 @@
+import type {
+  DBHandlerManager,
+  DebugHandlerManager,
+  DialogHandlerManager,
+  ExportHandlerManager,
+  UIHandlerManager,
+  UpdaterHandlerManager,
+  WorkspaceHandlerManager,
+} from '@toeverything/infra';
+import type { HandlerManager, PrimitiveHandlers } from '@toeverything/infra';
 import { ipcMain } from 'electron';
 
 import { dbHandlers } from './db';
 import { dialogHandlers } from './dialog';
 import { exportHandlers } from './export';
 import { getLogFilePath, logger, revealLogFile } from './logger';
-import type { NamespaceHandlers } from './type';
 import { uiHandlers } from './ui';
 import { updaterHandlers } from './updater';
 import { workspaceHandlers } from './workspace';
@@ -18,6 +27,26 @@ export const debugHandlers = {
   },
 };
 
+type UnwrapManagerHandler<
+  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>
+> = {
+  [K in keyof Manager['handlers']]: Manager['handlers'][K] extends (
+    ...args: infer Args
+  ) => Promise<infer R>
+    ? (event: Electron.IpcMainInvokeEvent, ...args: Args) => Promise<R>
+    : never;
+};
+
+type AllHandlers = {
+  db: UnwrapManagerHandler<DBHandlerManager>;
+  debug: UnwrapManagerHandler<DebugHandlerManager>;
+  dialog: UnwrapManagerHandler<DialogHandlerManager>;
+  export: UnwrapManagerHandler<ExportHandlerManager>;
+  ui: UnwrapManagerHandler<UIHandlerManager>;
+  updater: UnwrapManagerHandler<UpdaterHandlerManager>;
+  workspace: UnwrapManagerHandler<WorkspaceHandlerManager>;
+};
+
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
 export const allHandlers = {
   db: dbHandlers,
@@ -27,7 +56,7 @@ export const allHandlers = {
   export: exportHandlers,
   updater: updaterHandlers,
   workspace: workspaceHandlers,
-} satisfies Record<string, NamespaceHandlers>;
+} satisfies AllHandlers;
 
 export const registerHandlers = () => {
   // TODO: listen to namespace instead of individual event types
