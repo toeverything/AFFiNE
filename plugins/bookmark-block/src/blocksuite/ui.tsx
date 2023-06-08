@@ -47,8 +47,8 @@ const handleEnter = ({
     null
   >;
   const vEditor = getVirgoByModel(blockRange.models[0]);
-  const linkInfo = vEditor!
-    .getDeltasByVRange({
+  const linkInfo = vEditor
+    ?.getDeltasByVRange({
       index: blockRange.startOffset,
       length: 0,
     })
@@ -70,7 +70,7 @@ const handleEnter = ({
     currentBlockIndex + 1
   );
 
-  vEditor!.deleteText({
+  vEditor?.deleteText({
     index,
     length,
   });
