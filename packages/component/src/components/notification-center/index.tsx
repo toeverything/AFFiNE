@@ -183,6 +183,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     if (notification.undo) {
       return notification.undo();
     }
+    return void 0;
   }, [notification]);
 
   useEffect(() => {
@@ -200,6 +201,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           h.filter(height => height.notificationKey !== notification.key)
         );
     }
+    return () => {};
   }, [notification.key, setHeights]);
   return (
     <Toast.Root

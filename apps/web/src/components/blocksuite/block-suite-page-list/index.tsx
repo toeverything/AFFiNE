@@ -80,6 +80,7 @@ const PageListEmpty = (props: {
     if (listType === 'shared') {
       return t['emptySharedPages']();
     }
+    return;
   };
 
   return (

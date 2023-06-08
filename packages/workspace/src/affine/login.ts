@@ -75,6 +75,7 @@ const signInWithElectron = async (firebaseAuth: FirebaseAuth) => {
     const user = await signInWithCredential(firebaseAuth, credential);
     return await user.user.getIdToken();
   }
+  return void 0;
 };
 
 export const clearLoginStorage = () => {

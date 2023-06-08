@@ -1,11 +1,11 @@
 import { Empty } from '@affine/component';
 import { toast } from '@affine/component';
 import { AffineLoading } from '@affine/component/affine-loading';
-import { PageListTrashView } from '@affine/component/page-list/all-page';
-import { PageList } from '@affine/component/page-list/all-page';
-import { NewPageButton } from '@affine/component/page-list/components/new-page-buttton';
-import type { OperationCellProps } from '@affine/component/page-list/operation-cell';
-import { OperationCell } from '@affine/component/page-list/operation-cell';
+import type { OperationCellProps } from '@affine/component/page-list';
+import { PageListTrashView } from '@affine/component/page-list';
+import { PageList } from '@affine/component/page-list';
+import { NewPageButton } from '@affine/component/page-list';
+import { OperationCell } from '@affine/component/page-list';
 import { PageIcon } from '@blocksuite/icons';
 import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
