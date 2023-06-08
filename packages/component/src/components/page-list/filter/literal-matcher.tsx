@@ -2,6 +2,7 @@ import type { Literal } from '@affine/env/filter';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
+import { AFFiNEDatePicker } from '../../date-picker';
 import { inputStyle } from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
@@ -33,14 +34,12 @@ literalMatcher.register(tBoolean.create(), {
 });
 literalMatcher.register(tDate.create(), {
   render: ({ value, onChange }) => (
-    <input
-      className={inputStyle}
+    <AFFiNEDatePicker
       value={dayjs(value.value as number).format('YYYY-MM-DD')}
-      type="date"
       onChange={e => {
         onChange({
           type: 'literal',
-          value: dayjs(e.target.value, 'YYYY-MM-DD').valueOf(),
+          value: dayjs(e, 'YYYY-MM-DD').valueOf(),
         });
       }}
     />
