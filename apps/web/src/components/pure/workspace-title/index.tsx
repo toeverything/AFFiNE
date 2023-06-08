@@ -5,7 +5,10 @@ import { useAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import type React from 'react';
 
-import { openQuickSearchModalAtom, pageModeSelectAtom } from '../../../atoms';
+import {
+  allPageModeSelectAtom,
+  openQuickSearchModalAtom,
+} from '../../../atoms';
 import type { HeaderProps } from '../../blocksuite/workspace-header/header';
 import { Header } from '../../blocksuite/workspace-header/header';
 import * as styles from '../../blocksuite/workspace-header/styles.css';
@@ -40,7 +43,7 @@ export const WorkspaceTitle: React.FC<WorkspaceTitleProps> = ({
 
 export const WorkspaceModeFilterTab = ({ ...props }: WorkspaceTitleProps) => {
   const t = useAFFiNEI18N();
-  const [value, setMode] = useAtom(pageModeSelectAtom);
+  const [value, setMode] = useAtom(allPageModeSelectAtom);
   const handleValueChange = (value: string) => {
     if (value !== 'all' && value !== 'page' && value !== 'edgeless') {
       throw new Error('Invalid value for page mode option');
