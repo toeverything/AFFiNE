@@ -103,14 +103,21 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   await page.reload();
   await openWorkspaceListModal(page);
 
-  //check workspace list length
+  // check workspace list length
   {
     const workspaceCards1 = await page.$$('data-testid=workspace-card');
     expect(workspaceCards1.length).toBe(3);
   }
 
+  const workspaceChangePromise = page.evaluate(() => {
+    new Promise(resolve => {
+      window.addEventListener('affine:workspace:change', resolve, {
+        once: true,
+      });
+    });
+  });
   await page.getByTestId('draggable-item').nth(2).click();
-  await page.waitForTimeout(100);
+  await workspaceChangePromise;
 
   // @ts-expect-error
   const nextId: string = await page.evaluate(() => currentWorkspace.id);

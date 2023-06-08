@@ -101,6 +101,7 @@ function getWorkspaceDB$(id: string) {
       )
     );
   }
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return db$Map.get(id)!;
 }
 

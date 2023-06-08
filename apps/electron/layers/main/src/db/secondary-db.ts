@@ -108,7 +108,6 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       return;
     }
     this.firstConnected = true;
-    const { db } = this;
 
     const onUpstreamUpdate = (update: Uint8Array, origin: YOrigin) => {
       if (origin === 'renderer') {
@@ -119,8 +118,8 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
     const onSelfUpdate = async (update: Uint8Array, origin: YOrigin) => {
       // for self update from upstream, we need to push it to external DB
-      if (origin === 'upstream') {
-        await this.addUpdateToUpdateQueue(db!, update);
+      if (origin === 'upstream' && this.db) {
+        await this.addUpdateToUpdateQueue(this.db, update);
       }
 
       if (origin === 'self') {

@@ -8,7 +8,7 @@ import {
   ExportToMarkdownIcon,
   ExportToPdfIcon,
 } from '@blocksuite/icons';
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 
 import { Menu, MenuItem } from '../../..';
 import type { CommonMenuItemProps } from './types';
@@ -18,35 +18,39 @@ const ExportToPdfMenuItem = ({
 }: CommonMenuItemProps<{ type: 'pdf' }>) => {
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
-  return (
-    <>
-      {globalThis.currentEditor!.mode === 'page' && (
-        <MenuItem
-          data-testid="export-to-pdf"
-          onClick={async () => {
-            if (!contentParserRef.current) {
-              contentParserRef.current = new ContentParser(
-                globalThis.currentEditor!.page
-              );
-            }
-            const result = await window.apis?.export.savePDFFileAs(
-              (
-                globalThis.currentEditor!.page.root as PageBlockModel
-              ).title.toString()
-            );
-            if (result !== undefined) {
-              return;
-            }
-            contentParserRef.current.exportPdf();
-            onSelect?.({ type: 'pdf' });
-          }}
-          icon={<ExportToPdfIcon />}
-        >
-          {t['Export to PDF']()}
-        </MenuItem>
-      )}
-    </>
-  );
+  const { currentEditor } = globalThis;
+  const onClickDownloadPDF = useCallback(() => {
+    if (!currentEditor) {
+      return;
+    }
+    const contentParser =
+      contentParserRef.current ??
+      (contentParserRef.current = new ContentParser(currentEditor.page));
+
+    window.apis?.export
+      .savePDFFileAs(
+        (currentEditor.page.root as PageBlockModel).title.toString()
+      )
+      .then(result => {
+        if (result !== undefined) {
+          return;
+        }
+        contentParser.exportPdf();
+        onSelect?.({ type: 'pdf' });
+      });
+  }, [currentEditor, onSelect]);
+  if (currentEditor && currentEditor.mode === 'page') {
+    return (
+      <MenuItem
+        data-testid="export-to-pdf"
+        onClick={onClickDownloadPDF}
+        icon={<ExportToPdfIcon />}
+      >
+        {t['Export to PDF']()}
+      </MenuItem>
+    );
+  }
+  return null;
 };
 
 const ExportToHtmlMenuItem = ({
@@ -54,19 +58,22 @@ const ExportToHtmlMenuItem = ({
 }: CommonMenuItemProps<{ type: 'html' }>) => {
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
+  const { currentEditor } = globalThis;
+  const onClickExportHtml = useCallback(() => {
+    if (!currentEditor) {
+      return;
+    }
+    if (!contentParserRef.current) {
+      contentParserRef.current = new ContentParser(currentEditor.page);
+    }
+    contentParserRef.current.exportHtml();
+    onSelect?.({ type: 'html' });
+  }, [onSelect, currentEditor]);
   return (
     <>
       <MenuItem
         data-testid="export-to-html"
-        onClick={() => {
-          if (!contentParserRef.current) {
-            contentParserRef.current = new ContentParser(
-              globalThis.currentEditor!.page
-            );
-          }
-          contentParserRef.current.exportHtml();
-          onSelect?.({ type: 'html' });
-        }}
+        onClick={onClickExportHtml}
         icon={<ExportToHtmlIcon />}
       >
         {t['Export to HTML']()}
@@ -108,19 +115,22 @@ const ExportToMarkdownMenuItem = ({
 }: CommonMenuItemProps<{ type: 'markdown' }>) => {
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
+  const { currentEditor } = globalThis;
+  const onClickExportMarkdown = useCallback(() => {
+    if (!currentEditor) {
+      return;
+    }
+    if (!contentParserRef.current) {
+      contentParserRef.current = new ContentParser(currentEditor.page);
+    }
+    contentParserRef.current.exportMarkdown();
+    onSelect?.({ type: 'markdown' });
+  }, [onSelect, currentEditor]);
   return (
     <>
       <MenuItem
         data-testid="export-to-markdown"
-        onClick={() => {
-          if (!contentParserRef.current) {
-            contentParserRef.current = new ContentParser(
-              globalThis.currentEditor!.page
-            );
-          }
-          contentParserRef.current.exportMarkdown();
-          onSelect?.({ type: 'markdown' });
-        }}
+        onClick={onClickExportMarkdown}
         icon={<ExportToMarkdownIcon />}
       >
         {t['Export to Markdown']()}
