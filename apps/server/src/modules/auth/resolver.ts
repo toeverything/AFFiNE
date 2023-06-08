@@ -9,7 +9,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 import { UserType } from '../users/resolver';
 import { CurrentUser } from './guard';
