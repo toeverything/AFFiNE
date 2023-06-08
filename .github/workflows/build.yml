@@ -91,6 +91,7 @@ jobs:
           ENABLE_PLUGIN: true
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: true
+          ENABLE_PRELOADING: false
           COVERAGE: true
 
       - name: Upload artifact
@@ -115,6 +116,7 @@ jobs:
           ENABLE_PLUGIN: true
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: false
+          ENABLE_PRELOADING: false
           COVERAGE: true
 
       - name: Export static resources
