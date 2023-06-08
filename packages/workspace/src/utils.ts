@@ -1,3 +1,4 @@
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Generator, StoreOptions } from '@blocksuite/store';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
@@ -6,7 +7,6 @@ import type { createWorkspaceApis } from './affine/api';
 import { rootStore, rootWorkspacesMetadataAtom } from './atom';
 import { createAffineBlobStorage } from './blob';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
-import { WorkspaceFlavour } from './type';
 
 export function cleanupWorkspace(flavour: WorkspaceFlavour) {
   rootStore.set(rootWorkspacesMetadataAtom, metas =>
@@ -65,9 +65,10 @@ export function createEmptyBlockSuiteWorkspace(
   const blobStorages: StoreOptions['blobStorages'] = [];
 
   if (flavour === WorkspaceFlavour.AFFINE) {
-    blobStorages.push(id =>
-      createAffineBlobStorage(id, config!.workspaceApis!)
-    );
+    if (config && config.workspaceApis) {
+      const workspaceApis = config.workspaceApis;
+      blobStorages.push(id => createAffineBlobStorage(id, workspaceApis));
+    }
   } else {
     if (typeof window !== 'undefined') {
       blobStorages.push(createIndexeddbStorage);
@@ -100,7 +101,7 @@ export class CallbackSet extends Set<() => void> {
     this.#ready = v;
   }
 
-  add(cb: () => void) {
+  override add(cb: () => void) {
     if (this.ready) {
       cb();
       return this;
@@ -111,7 +112,7 @@ export class CallbackSet extends Set<() => void> {
     return super.add(cb);
   }
 
-  delete(cb: () => void) {
+  override delete(cb: () => void) {
     if (this.has(cb)) {
       return super.delete(cb);
     }

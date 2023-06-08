@@ -2,12 +2,12 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('preset workspace name', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const workspaceName = page.getByTestId('workspace-name');
   await page.waitForTimeout(1000);
   expect(await workspaceName.textContent()).toBe('Demo Workspace');
@@ -22,7 +22,7 @@ test('preset workspace name', async ({ page }) => {
 // });
 test('Open language switch menu', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const editorOptionMenuButton = page.getByTestId('editor-option-menu');
   await expect(editorOptionMenuButton).toBeVisible();
   await editorOptionMenuButton.click();

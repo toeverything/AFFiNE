@@ -1,8 +1,8 @@
 import { prefixUrl } from '@affine/env';
+import type { LocalWorkspace } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { LocalWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import type { FC } from 'react';
 import { useState } from 'react';
@@ -52,8 +52,8 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);
   }, [setIsPublic]);
-  const onClickCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(sharingUrl);
+  const onClickCopyLink = useCallback(async () => {
+    await navigator.clipboard.writeText(sharingUrl);
     toast(t['Copied link to clipboard']());
   }, [sharingUrl, t]);
   const onDisablePublic = useCallback(() => {

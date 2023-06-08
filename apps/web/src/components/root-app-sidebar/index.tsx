@@ -10,8 +10,8 @@ import {
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,

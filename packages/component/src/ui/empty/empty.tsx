@@ -1,25 +1,41 @@
-import { useTheme } from 'next-themes';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
-import { EmptyDarkSvg, EmptyLightSvg } from './empty-svg';
+import { EmptySvg } from './empty-svg';
 import { StyledEmptyContainer } from './style';
 export type EmptyContentProps = {
   containerStyle?: CSSProperties;
-  description?: string;
+  title?: ReactNode;
+  description?: ReactNode;
   descriptionStyle?: CSSProperties;
 };
 
 export const Empty = ({
   containerStyle,
+  title,
   description,
   descriptionStyle,
 }: EmptyContentProps) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   return (
     <StyledEmptyContainer style={containerStyle}>
-      {isDark ? <EmptyDarkSvg /> : <EmptyLightSvg />}
-      <p style={{ marginTop: '30px', ...descriptionStyle }}>{description}</p>
+      <div style={{ color: 'var(--affine-black)' }}>
+        <EmptySvg />
+      </div>
+      {title && (
+        <p
+          style={{
+            marginTop: '30px',
+            color: 'var(--affine-text-primary-color)',
+            fontWeight: 700,
+          }}
+        >
+          {title}
+        </p>
+      )}
+      {description && (
+        <p style={{ marginTop: title ? '8px' : '30px', ...descriptionStyle }}>
+          {description}
+        </p>
+      )}
     </StyledEmptyContainer>
   );
 };

@@ -5,12 +5,13 @@ import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
+import { useAtomValue } from 'jotai';
 import Image from 'next/legacy/image';
 import type { NextRouter } from 'next/router';
 import type { Dispatch, FC, SetStateAction } from 'react';
 import { useEffect } from 'react';
 
-import { useRecentlyViewed } from '../../../hooks/use-recent-views';
+import { recentPageSettingsAtom } from '../../../atoms';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
@@ -35,7 +36,7 @@ export const Results: FC<ResultsProps> = ({
   assertExists(blockSuiteWorkspace.id);
   const List = useSwitchToConfig(blockSuiteWorkspace.id);
 
-  const recentlyViewed = useRecentlyViewed();
+  const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
   const { jumpToPage } = useRouterHelper(router);
   const results = blockSuiteWorkspace.search(query);
@@ -45,7 +46,8 @@ export const Results: FC<ResultsProps> = ({
   const resultsPageMeta = pageList.filter(
     page => pageIds.indexOf(page.id) > -1 && !page.trash
   );
-  const recentlyViewedItem = recentlyViewed.filter(recent => {
+
+  const recentlyViewedItem = recentPageSetting.filter(recent => {
     const page = pageList.find(page => recent.id === page.id);
     if (!page) {
       return false;
@@ -71,7 +73,9 @@ export const Results: FC<ResultsProps> = ({
                   value={page.id}
                   onSelect={() => {
                     onClose();
-                    jumpToPage(blockSuiteWorkspace.id, page.id);
+                    jumpToPage(blockSuiteWorkspace.id, page.id).catch(
+                      console.error
+                    );
                   }}
                 >
                   <StyledListItem>
@@ -95,7 +99,7 @@ export const Results: FC<ResultsProps> = ({
                 value={link.title}
                 onSelect={() => {
                   onClose();
-                  router.push(link.href);
+                  router.push(link.href).catch(console.error);
                 }}
               >
                 <StyledListItem>
@@ -133,7 +137,9 @@ export const Results: FC<ResultsProps> = ({
             onSelect={() => {
               onClose();
               assertExists(blockSuiteWorkspace.id);
-              jumpToPage(blockSuiteWorkspace.id, result.id);
+              jumpToPage(blockSuiteWorkspace.id, result.id).catch(error =>
+                console.error(error)
+              );
             }}
             value={result.id}
           >

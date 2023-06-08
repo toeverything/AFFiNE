@@ -1,9 +1,8 @@
+import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 import Router from 'next/router';
-
-import type { WorkspaceFlavour } from './type';
 
 export type RootWorkspaceMetadata = {
   id: string;
@@ -49,6 +48,7 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
       Router.events.off('routeChangeStart', callback);
     };
   }
+  return () => {};
 };
 
 export const rootCurrentPageIdAtom = atom<string | null>(null);
@@ -69,6 +69,7 @@ rootCurrentPageIdAtom.onMount = set => {
       Router.events.off('routeChangeStart', callback);
     };
   }
+  return () => {};
 };
 
 // current editor atom, each app should have only one editor in the same time

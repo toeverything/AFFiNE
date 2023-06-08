@@ -1,6 +1,3 @@
-import { merge } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
-
 import { appContext } from '../context';
 import type {
   MainEventListener,
@@ -31,14 +28,3 @@ export const workspaceHandlers = {
     return getWorkspaceMeta(appContext, id);
   },
 } satisfies NamespaceHandlers;
-
-// used internally. Get a stream of workspace id -> meta
-export const getWorkspaceMeta$ = (workspaceId: string) => {
-  return merge(
-    getWorkspaceMeta(appContext, workspaceId),
-    workspaceSubjects.meta.pipe(
-      map(meta => meta.meta),
-      filter(meta => meta.id === workspaceId)
-    )
-  );
-};

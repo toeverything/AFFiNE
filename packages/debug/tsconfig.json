@@ -8,11 +8,6 @@
     "noEmit": false,
     "outDir": "lib"
   },
-  "references": [
-    {
-      "path": "../env"
-    }
-  ],
   "include": ["./src"],
   "exclude": ["node_modules"]
 }

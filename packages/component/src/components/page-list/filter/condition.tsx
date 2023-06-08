@@ -1,3 +1,4 @@
+import type { Filter, Literal } from '@affine/env/filter';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
@@ -5,7 +6,7 @@ import { Menu, MenuItem } from '../../../ui/menu';
 import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
-import type { Filter, Literal } from './shared-types';
+import { variableDefineMap } from './shared-types';
 import { filterMatcher, VariableSelect, vars } from './vars';
 
 export const Condition = ({
@@ -35,7 +36,10 @@ export const Condition = ({
             content={<VariableSelect selected={[]} onSelect={onChange} />}
           >
             <div data-testid="variable-name" className={styles.filterTypeStyle}>
-              {ast.left.name}
+              <div className={styles.filterTypeIconStyle}>
+                {variableDefineMap[ast.left.name].icon}
+              </div>
+              <div>{ast.left.name}</div>
             </div>
           </Menu>
           <Menu
@@ -101,7 +105,7 @@ export const Arg = ({
     return null;
   }
   return (
-    <div data-testid="filter-arg" style={{ marginLeft: 4 }}>
+    <div data-testid="filter-arg" style={{ marginLeft: 4, fontWeight: 600 }}>
       {data.render({ type, value, onChange })}
     </div>
   );

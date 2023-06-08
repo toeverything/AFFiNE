@@ -1,7 +1,7 @@
 import { displayFlex, styled } from '@affine/component';
 import { Button } from '@affine/component';
-import type { Permission } from '@affine/workspace/affine/api';
-import { WorkspaceSubPath } from '@affine/workspace/type';
+import { WorkspaceSubPath } from '@affine/env/workspace';
+import type { Permission } from '@affine/env/workspace/legacy-cloud';
 import {
   SucessfulDuotoneIcon,
   UnsucessfulDuotoneIcon,
@@ -44,7 +44,7 @@ const InvitePage: NextPageWithLayout = () => {
               inviteData.workspace_id,
               WorkspaceSubPath.ALL,
               RouteLogic.REPLACE
-            );
+            ).catch(err => console.error(err));
           }}
         >
           Go to Workspace
@@ -64,7 +64,7 @@ const InvitePage: NextPageWithLayout = () => {
         <Button
           shape="round"
           onClick={() => {
-            router.replace(`/`);
+            router.replace(`/`).catch(err => console.error(err));
           }}
         >
           Back to Home

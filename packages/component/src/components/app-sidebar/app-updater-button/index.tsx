@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
-import { startTransition } from 'react';
+import { startTransition, useCallback } from 'react';
 
 import * as styles from './index.css';
 import {
@@ -50,20 +50,56 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   const downloadProgress = useAtomValue(downloadProgressAtom);
   const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
 
-  const onDismissCurrentChangelog = () => {
+  const onDismissCurrentChangelog = useCallback(() => {
+    if (!currentVersion) {
+      return;
+    }
     startTransition(() =>
       setChangelogCheckAtom(mapping => {
         return {
           ...mapping,
-          [currentVersion!]: true,
+          [currentVersion]: true,
         };
       })
     );
-  };
+  }, [currentVersion, setChangelogCheckAtom]);
+  const onClickUpdate = useCallback(() => {
+    if (updateReady) {
+      window.apis?.updater.quitAndInstall();
+    } else if (updateAvailable) {
+      if (updateAvailable.allowAutoUpdate) {
+        // wait for download to finish
+      } else {
+        window.open(
+          `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
+          '_blank'
+        );
+      }
+    } else if (currentChangelogUnread) {
+      window.open(config.changelogUrl, '_blank');
+      onDismissCurrentChangelog();
+    } else {
+      throw new Unreachable();
+    }
+  }, [
+    currentChangelogUnread,
+    currentVersion,
+    onDismissCurrentChangelog,
+    updateAvailable,
+    updateReady,
+  ]);
 
   if (!updateAvailable && !currentChangelogUnread) {
     return null;
   }
+
+  const updateAvailableNode = updateAvailable
+    ? updateAvailable.allowAutoUpdate
+      ? renderUpdateAvailableAllowAutoUpdate()
+      : renderUpdateAvailableNotAllowAutoUpdate()
+    : null;
+  const whatsNew =
+    !updateAvailable && currentChangelogUnread ? renderWhatsNew() : null;
 
   return (
     <button
@@ -71,32 +107,10 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
       className={clsx([styles.root, className])}
       data-has-update={updateAvailable ? 'true' : 'false'}
       data-disabled={updateAvailable?.allowAutoUpdate && !updateReady}
-      onClick={() => {
-        if (updateReady) {
-          window.apis?.updater.quitAndInstall();
-        } else if (updateAvailable) {
-          if (updateAvailable.allowAutoUpdate) {
-            // wait for download to finish
-          } else {
-            window.open(
-              `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
-              '_blank'
-            );
-          }
-        } else if (currentChangelogUnread) {
-          window.open(config.changelogUrl, '_blank');
-          onDismissCurrentChangelog();
-        } else {
-          throw new Unreachable();
-        }
-      }}
+      onClick={onClickUpdate}
     >
-      {updateAvailable &&
-        (updateAvailable.allowAutoUpdate
-          ? renderUpdateAvailableAllowAutoUpdate()
-          : renderUpdateAvailableNotAllowAutoUpdate())}
-
-      {!updateAvailable && currentChangelogUnread && renderWhatsNew()}
+      {updateAvailableNode}
+      {whatsNew}
       <div className={styles.particles} aria-hidden="true"></div>
       <span className={styles.halo} aria-hidden="true"></span>
     </button>

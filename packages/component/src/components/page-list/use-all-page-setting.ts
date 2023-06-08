@@ -1,3 +1,4 @@
+import type { Filter, VariableMap, View } from '@affine/env/filter';
 import type { DBSchema } from 'idb';
 import { openDB } from 'idb';
 import type { IDBPDatabase } from 'idb/build/entry';
@@ -8,7 +9,6 @@ import useSWRImmutable from 'swr/immutable';
 import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
-import type { Filter, VariableMap, View } from './filter/shared-types';
 
 type PersistenceView = View;
 
@@ -20,7 +20,7 @@ export interface PageViewDBV1 extends DBSchema {
 }
 
 const pageViewDBPromise: Promise<IDBPDatabase<PageViewDBV1>> =
-  environment.isServer
+  typeof window === 'undefined'
     ? // never resolve in SSR
       new Promise<any>(() => {})
     : openDB<PageViewDBV1>('page-view', 1, {

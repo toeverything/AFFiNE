@@ -1,9 +1,9 @@
 import { env } from '@affine/env';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import { WorkspaceSubPath } from '@affine/workspace/type';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
@@ -129,7 +129,9 @@ export const AllWorkspaceModals = (): ReactElement => {
             workspace => {
               setOpenWorkspacesModal(false);
               setCurrentWorkspaceId(workspace.id);
-              jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+              jumpToSubPath(workspace.id, WorkspaceSubPath.ALL).catch(error => {
+                console.error(error);
+              });
             },
             [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}
@@ -137,7 +139,11 @@ export const AllWorkspaceModals = (): ReactElement => {
             workspace => {
               setOpenWorkspacesModal(false);
               setCurrentWorkspaceId(workspace.id);
-              jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+              jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING).catch(
+                error => {
+                  console.error(error);
+                }
+              );
             },
             [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}

@@ -1,4 +1,7 @@
 export * from './all-page';
+export * from './components/favorite-tag';
+export * from './components/new-page-buttton';
+export * from './components/title-cell';
 export * from './filter';
 export * from './operation-cell';
 export * from './operation-menu-items';

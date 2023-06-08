@@ -1,6 +1,9 @@
 import './page-detail-editor.css';
 
-import { PageNotFoundError } from '@affine/env/constant';
+import {
+  DEFAULT_HELLO_WORLD_PAGE_ID,
+  PageNotFoundError,
+} from '@affine/env/constant';
 import { rootCurrentEditorAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -27,7 +30,7 @@ import React, {
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
-import { workspacePreferredModeAtom } from '../atoms';
+import { pageSettingFamily } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
@@ -60,8 +63,12 @@ const EditorWrapper = memo(function EditorWrapper({
   const meta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  const pageSettingAtom = pageSettingFamily(pageId);
+  const pageSetting = useAtomValue(pageSettingAtom);
   const currentMode =
-    useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
+    pageSetting?.mode ??
+    (DEFAULT_HELLO_WORLD_PAGE_ID === pageId ? 'edgeless' : 'page');
+
   const setEditor = useSetAtom(rootCurrentEditorAtom);
   assertExists(meta);
   return (

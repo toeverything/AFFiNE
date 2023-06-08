@@ -1,6 +1,6 @@
 // cSpell:ignore Tolgee
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
 import { format } from 'prettier';
 
@@ -47,9 +47,9 @@ const getBaseTranslations = async (baseLanguage: { tag: string }) => {
 
 const main = async () => {
   try {
-    fs.access(RES_DIR);
+    await fs.access(RES_DIR);
   } catch (error) {
-    fs.mkdir(RES_DIR);
+    fs.mkdir(RES_DIR).catch(console.error);
     console.log('Create directory', RES_DIR);
   }
   console.log('Loading project languages...');
@@ -149,4 +149,7 @@ const main = async () => {
   console.log('Done');
 };
 
-main();
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

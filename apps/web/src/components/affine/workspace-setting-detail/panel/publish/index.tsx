@@ -7,12 +7,12 @@ import {
 } from '@affine/component';
 import { config } from '@affine/env';
 import { Unreachable } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Box } from '@mui/material';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -46,8 +46,8 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
   const shareUrl = origin + '/public-workspace/' + workspace.id;
   const t = useAFFiNEI18N();
   const publishWorkspace = useToggleWorkspacePublish(workspace);
-  const copyUrl = useCallback(() => {
-    navigator.clipboard.writeText(shareUrl);
+  const copyUrl = useCallback(async () => {
+    await navigator.clipboard.writeText(shareUrl);
     toast(t['Copied link to clipboard']());
   }, [shareUrl, t]);
 

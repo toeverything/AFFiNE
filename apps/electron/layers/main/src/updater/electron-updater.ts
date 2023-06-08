@@ -29,13 +29,14 @@ export const quitAndInstall = async () => {
 let lastCheckTime = 0;
 export const checkForUpdatesAndNotify = async (force = true) => {
   if (!_autoUpdater) {
-    return; // ?
+    return void 0;
   }
   // check every 30 minutes (1800 seconds) at most
   if (force || lastCheckTime + 1000 * 1800 < Date.now()) {
     lastCheckTime = Date.now();
     return await _autoUpdater.checkForUpdatesAndNotify();
   }
+  return void 0;
 };
 
 export const registerUpdater = async () => {
@@ -45,7 +46,8 @@ export const registerUpdater = async () => {
 
   _autoUpdater = autoUpdater;
 
-  if (!_autoUpdater) {
+  // skip auto update in dev mode
+  if (!_autoUpdater || isDev) {
     return;
   }
 
@@ -67,7 +69,9 @@ export const registerUpdater = async () => {
   // register events for checkForUpdatesAndNotify
   _autoUpdater.on('update-available', info => {
     if (allowAutoUpdate) {
-      _autoUpdater!.downloadUpdate();
+      _autoUpdater?.downloadUpdate().catch(e => {
+        logger.error('Failed to download update', e);
+      });
       logger.info('Update available, downloading...', info);
     }
     updaterSubjects.updateAvailable.next({

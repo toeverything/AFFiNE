@@ -131,7 +131,9 @@ export const AppSidebarFallback = (): ReactElement | null => {
 export * from './add-page-button';
 export * from './app-updater-button';
 export * from './category-divider';
+export * from './index.css';
 export * from './menu-item';
 export * from './quick-search-input';
 export * from './sidebar-containers';
+export * from './sidebar-header';
 export { appSidebarFloatingAtom, appSidebarOpenAtom, appSidebarResizingAtom };

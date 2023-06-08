@@ -1,10 +1,7 @@
-import { ArgumentsHost, ExecutionContext } from '@nestjs/common';
-import {
-  GqlArgumentsHost,
-  GqlContextType,
-  GqlExecutionContext,
-} from '@nestjs/graphql';
-import { Request, Response } from 'express';
+import type { ArgumentsHost, ExecutionContext } from '@nestjs/common';
+import type { GqlContextType } from '@nestjs/graphql';
+import { GqlArgumentsHost, GqlExecutionContext } from '@nestjs/graphql';
+import type { Request, Response } from 'express';
 
 export function getRequestResponseFromContext(context: ExecutionContext) {
   switch (context.getType<GqlContextType>()) {
@@ -14,7 +11,7 @@ export function getRequestResponseFromContext(context: ExecutionContext) {
       }>();
       return {
         req: gqlContext.req,
-        res: gqlContext.req.res!,
+        res: gqlContext.req.res,
       };
     }
     case 'http': {
@@ -37,7 +34,7 @@ export function getRequestResponseFromHost(host: ArgumentsHost) {
       }>();
       return {
         req: gqlContext.req,
-        res: gqlContext.req.res!,
+        res: gqlContext.req.res,
       };
     }
     case 'http': {

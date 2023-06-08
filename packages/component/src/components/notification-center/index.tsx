@@ -26,8 +26,11 @@ import {
   removeNotificationAtom,
 } from './index.jotai';
 
-// only expose necessary function atom to avoid misuse
-export { pushNotificationAtom, removeNotificationAtom };
+export {
+  expandNotificationCenterAtom,
+  pushNotificationAtom,
+  removeNotificationAtom,
+};
 type Height = {
   height: number;
   notificationKey: number | string;
@@ -180,6 +183,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     if (notification.undo) {
       return notification.undo();
     }
+    return void 0;
   }, [notification]);
 
   useEffect(() => {
@@ -197,6 +201,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           h.filter(height => height.notificationKey !== notification.key)
         );
     }
+    return () => {};
   }, [notification.key, setHeights]);
   return (
     <Toast.Root

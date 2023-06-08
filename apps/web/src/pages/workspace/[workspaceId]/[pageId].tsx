@@ -1,32 +1,21 @@
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
-import type { BlockSuiteFeatureFlags } from '@affine/env';
-import { config } from '@affine/env';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
+import { pageSettingFamily } from '../../../atoms';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
-
-function setEditorFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
-  Object.entries(config.editorFlags).forEach(([key, value]) => {
-    blockSuiteWorkspace.awarenessStore.setFlag(
-      key as keyof BlockSuiteFeatureFlags,
-      value
-    );
-  });
-}
+import type { NextPageWithLayout } from '../../../shared';
 
 const WorkspaceDetail: React.FC = () => {
   const router = useRouter();
@@ -36,7 +25,12 @@ const WorkspaceDetail: React.FC = () => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
+  const [setting, setSetting] = useAtom(pageSettingFamily(currentPageId));
+  if (!setting) {
+    setSetting({
+      mode: 'page',
+    });
+  }
 
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
@@ -49,12 +43,6 @@ const WorkspaceDetail: React.FC = () => {
     },
     [blockSuiteWorkspace.id, openPage]
   );
-
-  useEffect(() => {
-    if (currentWorkspace) {
-      setEditorFlags(currentWorkspace.blockSuiteWorkspace);
-    }
-  }, [currentWorkspace]);
 
   const { PageDetail, Header } = getUIAdapter(currentWorkspace.flavour);
   return (

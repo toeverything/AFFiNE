@@ -63,9 +63,10 @@ export const TrashButtonGroup = () => {
                 workspaceId: workspace.id,
               },
             })
-            .then(() => {
-              blockSuiteWorkspace.removePage(pageId);
+            .catch(error => {
+              console.error(error);
             });
+          blockSuiteWorkspace.removePage(pageId);
         }}
         onCancel={() => {
           setOpen(false);

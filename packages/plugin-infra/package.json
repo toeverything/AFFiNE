@@ -13,11 +13,11 @@
     "@affine/component": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/workspace": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230601122821-16196c35-nightly",
-    "@blocksuite/editor": "0.0.0-20230601122821-16196c35-nightly",
-    "@blocksuite/global": "0.0.0-20230601122821-16196c35-nightly",
-    "@blocksuite/lit": "0.0.0-20230601122821-16196c35-nightly",
-    "@blocksuite/store": "0.0.0-20230601122821-16196c35-nightly"
+    "@blocksuite/blocks": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/editor": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/lit": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly"
   },
   "devDependencies": {
     "jotai": "^2.1.1"
@@ -32,5 +32,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.7.0-canary.8"
+  "version": "0.7.0-canary.10"
 }

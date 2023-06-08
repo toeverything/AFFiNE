@@ -10,8 +10,10 @@ import {
   WorkspaceFallback,
 } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { config, DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
+import type { BackgroundProvider } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
@@ -21,8 +23,6 @@ import {
   rootStore,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { BackgroundProvider } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -64,6 +64,7 @@ import {
 } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { toast } from '../utils';
+import { setEditorFlags } from '../utils/editor-flag';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -203,7 +204,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     useEffect(() => {
       document.documentElement.lang = i18n.language;
       // todo(himself65): this is a hack, we should use a better way to set the language
-      setUpLanguage(i18n);
+      setUpLanguage(i18n)?.catch(error => {
+        console.error(error);
+      });
     }, [i18n]);
     useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
@@ -246,7 +249,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         logger.info('mount first data:', items);
       }
 
-      fetch();
+      fetch().catch(e => {
+        logger.error('fetch error:', e);
+      });
       return () => {
         controller.abort();
         logger.info('unmount');
@@ -263,6 +268,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
           affineGlobalChannel.disconnect();
         };
       }
+      return;
     }, [currentWorkspaceId, jotaiWorkspaces]);
 
     const Provider =
@@ -300,15 +306,19 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   //#region init workspace
   if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
     // this is a new workspace, so we should redirect to the new page
-    const pageId = nanoid();
+    const pageId = DEFAULT_HELLO_WORLD_PAGE_ID;
     const page = currentWorkspace.blockSuiteWorkspace.createPage({
       id: pageId,
     });
     assertEquals(page.id, pageId);
-    currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
-      init: true,
-    });
-    initPage(page);
+    setEditorFlags(currentWorkspace.blockSuiteWorkspace);
+    if (config.enablePreloading) {
+      initPageWithPreloading(page).catch(error => {
+        console.error('import error:', error);
+      });
+    } else {
+      initEmptyPage(page);
+    }
     if (!router.query.pageId) {
       setCurrentPageId(pageId);
       void jumpToPage(currentWorkspace.id, pageId);

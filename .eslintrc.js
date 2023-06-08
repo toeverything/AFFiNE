@@ -1,3 +1,5 @@
+const { resolve } = require('node:path');
+
 const createPattern = packageName => [
   {
     group: ['**/dist', '**/dist/**'],
@@ -22,20 +24,23 @@ const createPattern = packageName => [
 ];
 
 const allPackages = [
-  'cli',
-  'component',
-  'debug',
-  'env',
-  'graphql',
-  'hooks',
-  'i18n',
-  'jotai',
-  'native',
-  'plugin-infra',
-  'templates',
-  'theme',
-  'workspace',
-  'y-indexeddb',
+  'packages/cli',
+  'packages/component',
+  'packages/debug',
+  'packages/env',
+  'packages/graphql',
+  'packages/hooks',
+  'packages/i18n',
+  'packages/jotai',
+  'packages/native',
+  'packages/plugin-infra',
+  'packages/templates',
+  'packages/theme',
+  'packages/workspace',
+  'packages/y-indexeddb',
+  'apps/web',
+  'apps/server',
+  'apps/electron',
 ];
 
 /**
@@ -67,6 +72,7 @@ const config = {
     },
     ecmaVersion: 'latest',
     sourceType: 'module',
+    project: resolve(__dirname, './tsconfig.eslint.json'),
   },
   plugins: [
     'react',
@@ -83,7 +89,7 @@ const config = {
     'no-cond-assign': 'off',
     'react/prop-types': 'off',
     '@typescript-eslint/consistent-type-imports': 'error',
-    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'error',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-unused-vars': [
@@ -136,8 +142,14 @@ const config = {
         '@typescript-eslint/no-var-requires': 0,
       },
     },
+    {
+      files: ['**/__tests__/**/*', '**/*.stories.tsx'],
+      rules: {
+        '@typescript-eslint/no-non-null-assertion': 0,
+      },
+    },
     ...allPackages.map(pkg => ({
-      files: [`packages/${pkg}/src/**/*.ts`, `packages/${pkg}/src/**/*.tsx`],
+      files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`],
       rules: {
         '@typescript-eslint/no-restricted-imports': [
           'error',
