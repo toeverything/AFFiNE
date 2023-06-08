@@ -18,7 +18,7 @@ import { useAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
-import { workspacePreferredModeAtom } from '../../../../atoms';
+import { pageSettingFamily } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -64,8 +64,8 @@ const PageMenu = () => {
     meta => meta.id === pageId
   );
   assertExists(pageMeta);
-  const [record, set] = useAtom(workspacePreferredModeAtom);
-  const mode = record[pageId] ?? 'page';
+  const [setting, setSetting] = useAtom(pageSettingFamily(pageId));
+  const mode = setting?.mode ?? 'page';
 
   const favorite = pageMeta.favorite ?? false;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
@@ -98,9 +98,8 @@ const PageMenu = () => {
           icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
           data-testid="editor-option-menu-edgeless"
           onClick={() => {
-            set(record => ({
-              ...record,
-              [pageId]: mode === 'page' ? 'edgeless' : 'page',
+            setSetting(setting => ({
+              mode: setting?.mode === 'page' ? 'edgeless' : 'page',
             }));
           }}
         >
