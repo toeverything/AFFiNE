@@ -162,8 +162,7 @@ const sqliteOrigin = Symbol('sqlite-provider-origin');
 const createSQLiteProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): SQLiteProvider => {
-  const apis = window.apis!;
-  const events = window.events!;
+  const { apis, events } = window;
   // make sure it is being used in Electron with APIs
   assertExists(apis);
   assertExists(events);
@@ -216,7 +215,7 @@ const createSQLiteProvider = (
 const createSQLiteDBDownloadProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): SQLiteDBDownloadProvider => {
-  const apis = window.apis!;
+  const { apis } = window;
   let disconnected = false;
 
   let _resolve: () => void;
@@ -273,7 +272,7 @@ const createSQLiteDBDownloadProvider = (
           return;
         }
 
-        return window.apis?.db.addBlob(
+        return apis?.db.addBlob(
           blockSuiteWorkspace.id,
           k,
           new Uint8Array(await blob.arrayBuffer())

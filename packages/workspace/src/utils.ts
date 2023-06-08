@@ -65,9 +65,10 @@ export function createEmptyBlockSuiteWorkspace(
   const blobStorages: StoreOptions['blobStorages'] = [];
 
   if (flavour === WorkspaceFlavour.AFFINE) {
-    blobStorages.push(id =>
-      createAffineBlobStorage(id, config!.workspaceApis!)
-    );
+    if (config && config.workspaceApis) {
+      const workspaceApis = config.workspaceApis;
+      blobStorages.push(id => createAffineBlobStorage(id, workspaceApis));
+    }
   } else {
     if (typeof window !== 'undefined') {
       blobStorages.push(createIndexeddbStorage);
