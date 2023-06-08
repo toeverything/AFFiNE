@@ -45,7 +45,8 @@ export const registerUpdater = async () => {
 
   _autoUpdater = autoUpdater;
 
-  if (!_autoUpdater) {
+  // skip auto update in dev mode
+  if (!_autoUpdater || isDev) {
     return;
   }
 

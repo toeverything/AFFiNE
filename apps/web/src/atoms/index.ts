@@ -2,9 +2,8 @@ import { DebugLogger } from '@affine/debug';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import type { Page } from '@blocksuite/store';
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
+import { atomFamily, atomWithStorage } from 'jotai/utils';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
@@ -81,49 +80,70 @@ export const openDisableCloudAlertModalAtom = atom(false);
 
 export { workspacesAtom } from './root';
 
-type View = {
-  id: string;
-  /**
-   * @deprecated Use `mode` from `useWorkspacePreferredMode` instead.
-   */
-  mode: 'page' | 'edgeless';
+type PageMode = 'page' | 'edgeless';
+type PageLocalSetting = {
+  mode: PageMode;
 };
 
-export type WorkspaceRecentViews = Record<string, View[]>;
+type PartialPageLocalSettingWithPageId = Partial<PageLocalSetting> & {
+  id: string;
+};
 
-export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
-  'recentViews',
-  {}
+const pageSettingsBaseAtom = atomWithStorage(
+  'pageSettings',
+  {} as Record<string, PageLocalSetting>
 );
 
-export type PreferredModeRecord = Record<Page['id'], 'page' | 'edgeless'>;
-/**
- * @deprecated Use `useWorkspacePreferredMode` instead.
- */
-export const workspacePreferredModeAtom = atomWithStorage<PreferredModeRecord>(
-  'preferredMode',
-  {}
+// readonly atom by design
+export const pageSettingsAtom = atom(get => get(pageSettingsBaseAtom));
+
+const recentPageSettingsBaseAtom = atomWithStorage<string[]>(
+  'recentPageSettings',
+  []
 );
 
-export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
-  null,
-  (get, set, id, value) => {
-    const record = get(workspaceRecentViewsAtom);
-    if (Array.isArray(record[id])) {
-      const idx = record[id].findIndex(view => view.id === value.id);
-      if (idx !== -1) {
-        record[id].splice(idx, 1);
-      }
-      record[id] = [value, ...record[id]];
-    } else {
-      record[id] = [value];
+export const recentPageSettingsAtom = atom<PartialPageLocalSettingWithPageId[]>(
+  get => {
+    const recentPageIDs = get(recentPageSettingsBaseAtom);
+    const pageSettings = get(pageSettingsAtom);
+    return recentPageIDs.map(id => ({
+      ...pageSettings[id],
+      id,
+    }));
+  }
+);
+
+export const pageSettingFamily = atomFamily((pageId: string) =>
+  atom(
+    get => get(pageSettingsBaseAtom)[pageId],
+    (
+      get,
+      set,
+      patch:
+        | Partial<PageLocalSetting>
+        | ((prevSetting: PageLocalSetting | undefined) => void)
+    ) => {
+      set(recentPageSettingsBaseAtom, ids => {
+        // pick 3 recent page ids
+        return [...new Set([pageId, ...ids]).values()].slice(0, 3);
+      });
+      set(pageSettingsBaseAtom, settings => ({
+        ...settings,
+        [pageId]: {
+          ...settings[pageId],
+          ...(typeof patch === 'function' ? patch(settings[pageId]) : patch),
+        },
+      }));
     }
+  )
+);
 
-    record[id] = record[id].slice(0, 3);
-    set(workspaceRecentViewsAtom, { ...record });
-    return record[id];
+export const setPageModeAtom = atom(
+  void 0,
+  (get, set, pageId: string, mode: PageMode) => {
+    set(pageSettingFamily(pageId), { mode });
   }
 );
 
 export type PageModeOption = 'all' | 'page' | 'edgeless';
-export const pageModeSelectAtom = atom<PageModeOption>('all');
+export const allPageModeSelectAtom = atom<PageModeOption>('all');

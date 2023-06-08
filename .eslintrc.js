@@ -1,5 +1,4 @@
 const { resolve } = require('node:path');
-const { readdirSync, statSync } = require('node:fs');
 
 const createPattern = packageName => [
   {
@@ -24,15 +23,25 @@ const createPattern = packageName => [
   },
 ];
 
-const pkgs = readdirSync(resolve(__dirname, './packages')).filter(pkg => {
-  return statSync(`./packages/${pkg}`).isDirectory();
-});
-
-const apps = readdirSync(resolve(__dirname, './apps')).filter(pkg => {
-  return statSync(`./apps/${pkg}`).isDirectory();
-});
-
-const allPackages = pkgs.concat(apps);
+const allPackages = [
+  'packages/cli',
+  'packages/component',
+  'packages/debug',
+  'packages/env',
+  'packages/graphql',
+  'packages/hooks',
+  'packages/i18n',
+  'packages/jotai',
+  'packages/native',
+  'packages/plugin-infra',
+  'packages/templates',
+  'packages/theme',
+  'packages/workspace',
+  'packages/y-indexeddb',
+  'apps/web',
+  'apps/server',
+  'apps/electron',
+];
 
 /**
  * @type {import('eslint').Linter.Config}
@@ -63,7 +72,7 @@ const config = {
     },
     ecmaVersion: 'latest',
     sourceType: 'module',
-    project: './tsconfig.eslint.json',
+    project: resolve(__dirname, './tsconfig.eslint.json'),
   },
   plugins: [
     'react',
@@ -140,7 +149,7 @@ const config = {
       },
     },
     ...allPackages.map(pkg => ({
-      files: [`packages/${pkg}/src/**/*.ts`, `packages/${pkg}/src/**/*.tsx`],
+      files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`],
       rules: {
         '@typescript-eslint/no-restricted-imports': [
           'error',
