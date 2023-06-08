@@ -99,7 +99,7 @@ test('create multi workspace in the workspace list', async ({ page }) => {
     }
   );
   await page.mouse.up();
-  await page.waitForTimeout(100);
+  await page.waitForTimeout(1000);
   await page.reload();
   await openWorkspaceListModal(page);
 
