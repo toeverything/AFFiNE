@@ -1,6 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../layers/preload/preload.d.ts" />
-
 /* eslint-disable no-empty-pattern */
 import crypto from 'node:crypto';
 import { join, resolve } from 'node:path';
@@ -45,6 +42,7 @@ export const test = base.extend<{
       });
     }
     const logFilePath = await page.evaluate(async () => {
+      // @ts-expect-error
       return window.apis?.debug.logFilePath();
     });
     // wat for blocksuite to be loaded

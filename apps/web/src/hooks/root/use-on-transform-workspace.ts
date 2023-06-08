@@ -1,3 +1,5 @@
+import type { WorkspaceRegistry } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   getLoginStorage,
@@ -8,8 +10,6 @@ import {
 } from '@affine/workspace/affine/login';
 import { affineAuth } from '@affine/workspace/affine/shared';
 import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
-import type { WorkspaceRegistry } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

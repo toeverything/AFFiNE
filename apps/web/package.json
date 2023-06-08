@@ -1,7 +1,7 @@
 {
   "name": "@affine/web",
   "private": true,
-  "version": "0.7.0-canary.8",
+  "version": "0.7.0-canary.9",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -35,6 +35,7 @@
     "@react-hookz/web": "^23.0.1",
     "@sentry/nextjs": "^7.54.0",
     "@toeverything/hooks": "workspace:*",
+    "@toeverything/infra": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",

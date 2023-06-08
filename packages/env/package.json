@@ -4,7 +4,6 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@affine/templates": "workspace:*",
     "@blocksuite/global": "0.0.0-20230606130340-805f430b-nightly",
     "next": "=13.4.2",
     "react": "18.3.0-canary-16d053d59-20230506",
@@ -15,13 +14,18 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
+    "./workspace": "./src/workspace.ts",
+    "./workspace/legacy-cloud": "./src/workspace/legacy-cloud/index.ts",
+    "./filter": "./src/filter.ts",
     "./blocksuite": "./src/blocksuite/index.ts"
   },
   "peerDependencies": {
-    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
+    "@affine/templates": "workspace:*",
+    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly",
+    "@toeverything/infra": "workspace:*"
   },
   "dependencies": {
     "lit": "^2.7.5"
   },
-  "version": "0.7.0-canary.8"
+  "version": "0.7.0-canary.9"
 }

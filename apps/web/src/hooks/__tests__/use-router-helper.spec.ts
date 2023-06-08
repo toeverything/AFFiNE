@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { WorkspaceSubPath } from '@affine/workspace/type';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { renderHook } from '@testing-library/react';
 import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';

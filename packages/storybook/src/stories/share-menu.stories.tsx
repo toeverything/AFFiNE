@@ -2,12 +2,15 @@ import { toast } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/share-menu/disable-public-link';
 import { ShareMenu } from '@affine/component/share-menu/share-menu';
 import { StyledDisableButton } from '@affine/component/share-menu/styles';
-import { PermissionType, WorkspaceType } from '@affine/workspace/affine/api';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import {
+  PermissionType,
+  WorkspaceType,
+} from '@affine/env/workspace/legacy-cloud';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';

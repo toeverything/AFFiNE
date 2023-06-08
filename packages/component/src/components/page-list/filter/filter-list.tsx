@@ -1,9 +1,9 @@
+import type { Filter } from '@affine/env/filter';
 import { CloseIcon, PlusIcon } from '@blocksuite/icons';
 
 import { Menu } from '../../..';
 import { Condition } from './condition';
 import * as styles from './index.css';
-import type { Filter } from './shared-types';
 import { CreateFilterMenu } from './vars';
 export const FilterList = ({
   value,
