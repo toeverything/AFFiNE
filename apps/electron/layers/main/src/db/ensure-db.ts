@@ -85,10 +85,6 @@ function getWorkspaceDB$(id: string) {
               try {
                 await db.destroy();
                 db$Map.delete(id);
-                logger.info(
-                  '[ensureSQLiteDB] db connection destroyed',
-                  db.workspaceId
-                );
                 return db;
               } catch (err) {
                 logger.error('[ensureSQLiteDB] destroy db failed', err);
