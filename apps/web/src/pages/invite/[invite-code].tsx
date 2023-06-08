@@ -44,7 +44,7 @@ const InvitePage: NextPageWithLayout = () => {
               inviteData.workspace_id,
               WorkspaceSubPath.ALL,
               RouteLogic.REPLACE
-            );
+            ).catch(err => console.error(err));
           }}
         >
           Go to Workspace
@@ -64,7 +64,7 @@ const InvitePage: NextPageWithLayout = () => {
         <Button
           shape="round"
           onClick={() => {
-            router.replace(`/`);
+            router.replace(`/`).catch(err => console.error(err));
           }}
         >
           Back to Home

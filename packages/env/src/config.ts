@@ -1,5 +1,15 @@
 /// <reference types="@blocksuite/global" />
 import { assertEquals } from '@blocksuite/global/utils';
+import type {
+  DBHandlerManager,
+  DebugHandlerManager,
+  DialogHandlerManager,
+  ExportHandlerManager,
+  UIHandlerManager,
+  UnwrapManagerHandlerToClientSide,
+  UpdaterHandlerManager,
+  WorkspaceHandlerManager,
+} from '@toeverything/infra';
 import getConfig from 'next/config';
 import { z } from 'zod';
 
@@ -10,7 +20,15 @@ declare global {
     appInfo: {
       electron: boolean;
     };
-    apis: any;
+    apis: {
+      db: UnwrapManagerHandlerToClientSide<DBHandlerManager>;
+      debug: UnwrapManagerHandlerToClientSide<DebugHandlerManager>;
+      dialog: UnwrapManagerHandlerToClientSide<DialogHandlerManager>;
+      export: UnwrapManagerHandlerToClientSide<ExportHandlerManager>;
+      ui: UnwrapManagerHandlerToClientSide<UIHandlerManager>;
+      updater: UnwrapManagerHandlerToClientSide<UpdaterHandlerManager>;
+      workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
+    };
     events: any;
   }
 }

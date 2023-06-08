@@ -286,7 +286,7 @@ export const createIndexedDBProvider = (
       if (connected) {
         throw new CleanupWhenConnectingError();
       }
-      (await dbPromise).delete('workspace', id);
+      await (await dbPromise).delete('workspace', id);
     },
     whenSynced: Promise.resolve(),
     get connected() {

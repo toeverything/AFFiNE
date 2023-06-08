@@ -17,16 +17,15 @@
     "incremental": true,
     "experimentalDecorators": true
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "src/types/types.d.ts",
-    "../../packages/graphql",
-    "../electron/layers"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/types/types.d.ts"],
   "exclude": ["node_modules"],
   "references": [
+    {
+      "path": "../../packages/plugin-infra"
+    },
+    {
+      "path": "../../packages/infra"
+    },
     {
       "path": "../../packages/env"
     },
@@ -44,6 +43,17 @@
     },
     {
       "path": "../../packages/hooks"
+    },
+    {
+      "path": "../../packages/graphql"
+    },
+
+    // Plugins
+    {
+      "path": "../../plugins/bookmark-block"
+    },
+    {
+      "path": "../../plugins/copilot"
     }
   ]
 }

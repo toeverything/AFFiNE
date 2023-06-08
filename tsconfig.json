@@ -7,14 +7,17 @@
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
+
+    // Project
     "incremental": true,
+    "composite": true,
+
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
@@ -28,7 +31,7 @@
       "@affine/i18n/hooks": ["./packages/i18n/src/i18n-generated"],
       "@affine/debug": ["./packages/debug"],
       "@affine/jotai": ["./packages/jotai"],
-      "@affine/env": ["./packages/env"],
+      "@affine/env": ["./packages/env/src"],
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
@@ -41,6 +44,7 @@
       ],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
+      "@toeverything/infra": ["./packages/infra/src"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"],
       "@toeverything/plugin-infra": ["./packages/plugin-infra/src"],
@@ -51,11 +55,9 @@
   },
   "include": [],
   "references": [
+    // Apps
     {
-      "path": "./tests"
-    },
-    {
-      "path": "./apps/electron/tests"
+      "path": "./apps/electron"
     },
     {
       "path": "./apps/web"
@@ -63,6 +65,21 @@
     {
       "path": "./apps/server"
     },
+    // Top level packages
+    {
+      "path": "./packages/infra"
+    },
+    {
+      "path": "./packages/graphql"
+    },
+    {
+      "path": "./packages/debug"
+    },
+    // Tests
+    {
+      "path": "./tests"
+    },
+
     {
       "path": "./packages/component"
     },
@@ -74,12 +91,6 @@
     },
     {
       "path": "./packages/env"
-    },
-    {
-      "path": "./packages/graphql"
-    },
-    {
-      "path": "./packages/debug"
     },
     {
       "path": "./packages/workspace"
@@ -101,9 +112,6 @@
     },
     {
       "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./apps/electron"
     }
   ],
   "files": [],

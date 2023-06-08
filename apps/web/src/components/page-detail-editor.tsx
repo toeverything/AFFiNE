@@ -1,6 +1,9 @@
 import './page-detail-editor.css';
 
-import { PageNotFoundError } from '@affine/env/constant';
+import {
+  DEFAULT_HELLO_WORLD_PAGE_ID,
+  PageNotFoundError,
+} from '@affine/env/constant';
 import { rootCurrentEditorAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -61,7 +64,10 @@ const EditorWrapper = memo(function EditorWrapper({
     meta => meta.id === pageId
   );
   const currentMode =
-    useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
+    useAtomValue(workspacePreferredModeAtom)[pageId] ??
+    DEFAULT_HELLO_WORLD_PAGE_ID === pageId
+      ? 'edgeless'
+      : 'page';
   const setEditor = useSetAtom(rootCurrentEditorAtom);
   assertExists(meta);
   return (
