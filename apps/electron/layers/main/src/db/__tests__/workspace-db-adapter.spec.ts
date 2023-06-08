@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
@@ -62,7 +63,8 @@ test('on applyUpdate (from renderer), will trigger update', async () => {
   db.update$.subscribe(onUpdate);
   const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
   db.applyUpdate(getTestUpdates(), 'renderer');
-  expect(onUpdate).toHaveBeenCalled(); // not yet updated
+  await setTimeout(0);
+  expect(onUpdate).toHaveBeenCalled();
   sub.unsubscribe();
   await db.destroy();
 });
