@@ -69,7 +69,7 @@ export const AllPagesBody = ({
             <Fragment key={pageId}>
               {groupName &&
                 (index === 0 ||
-                  dataWithGroup[index - 1]?.groupName !== groupName) && (
+                  dataWithGroup[index - 1].groupName !== groupName) && (
                   <GroupRow>{groupName}</GroupRow>
                 )}
               <StyledTableBodyRow data-testid={`page-list-item-${pageId}`}>
