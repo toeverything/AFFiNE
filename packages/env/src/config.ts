@@ -1,16 +1,45 @@
 /// <reference types="@blocksuite/global" />
 import { assertEquals } from '@blocksuite/global/utils';
+import type {
+  DBHandlerManager,
+  DebugHandlerManager,
+  DialogHandlerManager,
+  ExportHandlerManager,
+  HandlerManager,
+  PrimitiveHandlers,
+  UIHandlerManager,
+  UpdaterHandlerManager,
+  WorkspaceHandlerManager,
+} from '@toeverything/infra';
 import getConfig from 'next/config';
 import { z } from 'zod';
 
 import { UaHelper } from './ua-helper';
+
+type UnwrapManagerHandler<
+  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>
+> = {
+  [K in keyof Manager['handlers']]: Manager['handlers'][K] extends (
+    ...args: infer Args
+  ) => Promise<infer R>
+    ? (...args: Args) => Promise<R>
+    : never;
+};
 
 declare global {
   interface Window {
     appInfo: {
       electron: boolean;
     };
-    apis: any;
+    apis: {
+      db: UnwrapManagerHandler<DBHandlerManager>;
+      debug: UnwrapManagerHandler<DebugHandlerManager>;
+      dialog: UnwrapManagerHandler<DialogHandlerManager>;
+      export: UnwrapManagerHandler<ExportHandlerManager>;
+      ui: UnwrapManagerHandler<UIHandlerManager>;
+      updater: UnwrapManagerHandler<UpdaterHandlerManager>;
+      workspace: UnwrapManagerHandler<WorkspaceHandlerManager>;
+    };
     events: any;
   }
 }

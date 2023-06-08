@@ -26,6 +26,9 @@
     {
       "path": "../../packages/env"
     },
+    {
+      "path": "../../packages/infra"
+    },
     { "path": "../../tests/kit" }
   ],
   "ts-node": {
