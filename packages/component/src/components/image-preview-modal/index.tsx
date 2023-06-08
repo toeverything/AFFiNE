@@ -86,7 +86,6 @@ const ImagePreviewModalImpl = (
   });
   const zoomRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-
   const {
     zoomIn,
     zoomOut,
@@ -189,7 +188,6 @@ const ImagePreviewModalImpl = (
   const previousImageHandler = blockId => {
     assertExists(blockId);
     const workspace = props.workspace;
-
     const page = workspace.getPage(props.pageId);
     assertExists(page);
     const block = page.getBlockById(blockId);
@@ -212,6 +210,61 @@ const ImagePreviewModalImpl = (
 
   let actionbarTimeout;
 
+  const downloadHandler = async blockId => {
+    assertExists(blockId);
+    const workspace = props.workspace;
+    const page = workspace.getPage(props.pageId);
+    const block = page.getBlockById(blockId) as EmbedBlockModel;
+    assertExists(block);
+    const store = await block.page.blobs;
+    const url = store?.get(block.sourceId);
+    const img = await url;
+    if (!img) {
+      return;
+    }
+    const arrayBuffer = await img.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+    let fileType: string;
+    if (
+      buffer[0] === 0x47 &&
+      buffer[1] === 0x49 &&
+      buffer[2] === 0x46 &&
+      buffer[3] === 0x38
+    ) {
+      fileType = 'image/gif';
+    } else if (
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47
+    ) {
+      fileType = 'image/png';
+    } else if (
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff &&
+      buffer[3] === 0xe0
+    ) {
+      fileType = 'image/jpeg';
+    } else {
+      // unknown, fallback to png
+      console.error('unknown image type');
+      fileType = 'image/png';
+    }
+    const downloadUrl = URL.createObjectURL(
+      new Blob([arrayBuffer], { type: fileType })
+    );
+    const a = document.createElement('a');
+    const event = new MouseEvent('click');
+    a.download = block.id;
+    a.href = downloadUrl;
+    a.dispatchEvent(event);
+
+    // cleanup
+    a.remove();
+    URL.revokeObjectURL(downloadUrl);
+  };
+
   const handleMouseEnter = () => {
     clearTimeout(actionbarTimeout);
     setBIsActionBarVisible(true);
@@ -220,7 +273,7 @@ const ImagePreviewModalImpl = (
   const handleMouseLeave = () => {
     actionbarTimeout = setTimeout(() => {
       setBIsActionBarVisible(false);
-    }, 3000); // Delay in milliseconds before hiding the action bar
+    }, 3000);
   };
 
   return (
@@ -338,17 +391,7 @@ const ImagePreviewModalImpl = (
                 icon={<DownloadIcon />}
                 noBorder={true}
                 className={buttonStyle}
-                onClick={() => {
-                  const imageUrl = url;
-                  const link = document.createElement('a');
-                  if (typeof imageUrl === 'string') {
-                    link.href = imageUrl;
-                  }
-                  link.download = 'image.jpg';
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
+                onClick={() => downloadHandler(blockId)}
               />
               <Button
                 icon={<CopyIcon />}
