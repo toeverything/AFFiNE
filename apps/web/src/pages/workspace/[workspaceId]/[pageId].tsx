@@ -12,7 +12,6 @@ import { useCallback } from 'react';
 import { getUIAdapter } from '../../../adapters/workspace';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { useSyncRecentViewsWithRouter } from '../../../hooks/use-recent-views';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
@@ -25,7 +24,6 @@ const WorkspaceDetail: React.FC = () => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  useSyncRecentViewsWithRouter(router, blockSuiteWorkspace);
 
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
