@@ -66,9 +66,8 @@ const EditorWrapper = memo(function EditorWrapper({
   const pageSettingAtom = pageSettingFamily(pageId);
   const pageSetting = useAtomValue(pageSettingAtom);
   const currentMode =
-    pageSetting?.mode ?? DEFAULT_HELLO_WORLD_PAGE_ID === pageId
-      ? 'edgeless'
-      : 'page';
+    pageSetting?.mode ??
+    (DEFAULT_HELLO_WORLD_PAGE_ID === pageId ? 'edgeless' : 'page');
 
   const setEditor = useSetAtom(rootCurrentEditorAtom);
   assertExists(meta);
