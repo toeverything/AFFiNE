@@ -30,11 +30,9 @@ export const Upload: React.FC<UploadProps> = ({
       return;
     }
     const file = files[0];
-    if (file) {
-      fileChange(file);
-      if (input_ref.current) {
-        input_ref.current.value = '';
-      }
+    fileChange(file);
+    if (input_ref.current) {
+      input_ref.current.value = '';
     }
   };
   return (

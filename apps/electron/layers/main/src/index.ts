@@ -14,7 +14,7 @@ if (require('electron-squirrel-startup')) app.quit();
 // allow tests to overwrite app name through passing args
 if (process.argv.includes('--app-name')) {
   const appNameIndex = process.argv.indexOf('--app-name');
-  const appName = process.argv[appNameIndex + 1] ?? 'AFFiNE';
+  const appName = process.argv[appNameIndex + 1];
   app.setName(appName);
 }
 
