@@ -1,8 +1,19 @@
 {
   "extends": "../../tsconfig.json",
+  "include": ["./src"],
   "compilerOptions": {
-    "rootDir": "./src",
-    "types": ["electron"]
+    "noEmit": false,
+    "outDir": "lib"
   },
-  "include": ["**.ts", "**.tsx"]
+  "references": [
+    {
+      "path": "../../packages/component"
+    },
+    {
+      "path": "../../packages/plugin-infra"
+    },
+    {
+      "path": "../../packages/env"
+    }
+  ]
 }
