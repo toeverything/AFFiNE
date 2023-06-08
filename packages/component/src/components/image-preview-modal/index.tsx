@@ -84,8 +84,8 @@ const ImagePreviewModalImpl = (
     },
     suspense: true,
   });
-  const zoomRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const zoomRef = useRef<HTMLDivElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const {
     zoomIn,
     zoomOut,
@@ -110,7 +110,7 @@ const ImagePreviewModalImpl = (
   if (!url) {
     return null;
   }
-  const nextImageHandler = blockId => {
+  const nextImageHandler = (blockId: string) => {
     assertExists(blockId);
     const workspace = props.workspace;
 
@@ -134,13 +134,13 @@ const ImagePreviewModalImpl = (
     }
   };
 
-  const deleteHandler = blockId => {
-    assertExists(blockId);
+  const deleteHandler = (blockId: string) => {
     const workspace = props.workspace;
 
     const page = workspace.getPage(props.pageId);
     assertExists(page);
     const block = page.getBlockById(blockId);
+    assertExists(block);
     if (
       page
         .getPreviousSiblings(block)
@@ -153,12 +153,14 @@ const ImagePreviewModalImpl = (
         .findLast(
           (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
         );
-      setBlockId(prevBlock.id);
-      const image = imageRef.current;
-      resetZoom();
-      if (image) {
-        image.style.width = '100%'; // Reset the width to its original size
-        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+      if (prevBlock) {
+        setBlockId(prevBlock.id);
+        const image = imageRef.current;
+        resetZoom();
+        if (image) {
+          image.style.width = '100%'; // Reset the width to its original size
+          image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+        }
       }
     } else if (
       page
@@ -172,20 +174,22 @@ const ImagePreviewModalImpl = (
         .find(
           (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
         );
-      const image = imageRef.current;
-      resetZoom();
-      if (image) {
-        image.style.width = '100%'; // Reset the width to its original size
-        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+      if (nextBlock) {
+        const image = imageRef.current;
+        resetZoom();
+        if (image) {
+          image.style.width = '100%'; // Reset the width to its original size
+          image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+        }
+        setBlockId(nextBlock.id);
       }
-      setBlockId(nextBlock.id);
     } else {
       props.onClose();
     }
     page.deleteBlock(block);
   };
 
-  const previousImageHandler = blockId => {
+  const previousImageHandler = (blockId: string) => {
     assertExists(blockId);
     const workspace = props.workspace;
     const page = workspace.getPage(props.pageId);
@@ -208,12 +212,12 @@ const ImagePreviewModalImpl = (
     }
   };
 
-  let actionbarTimeout;
+  let actionbarTimeout: ReturnType<typeof setTimeout>;
 
-  const downloadHandler = async blockId => {
-    assertExists(blockId);
+  const downloadHandler = async (blockId: string) => {
     const workspace = props.workspace;
     const page = workspace.getPage(props.pageId);
+    assertExists(page);
     const block = page.getBlockById(blockId) as EmbedBlockModel;
     assertExists(block);
     const store = await block.page.blobs;
@@ -284,7 +288,10 @@ const ImagePreviewModalImpl = (
           style={{
             left: 0,
           }}
-          onClick={() => previousImageHandler(blockId)}
+          onClick={() => {
+            assertExists(blockId);
+            previousImageHandler(blockId);
+          }}
         >
           ❮
         </span>
@@ -293,7 +300,10 @@ const ImagePreviewModalImpl = (
           style={{
             right: 0,
           }}
-          onClick={() => nextImageHandler(blockId)}
+          onClick={() => {
+            assertExists(blockId);
+            nextImageHandler(blockId);
+          }}
         >
           ❯
         </span>
@@ -354,13 +364,19 @@ const ImagePreviewModalImpl = (
                 icon={<ArrowLeftSmallIcon />}
                 noBorder={true}
                 className={buttonStyle}
-                onClick={() => previousImageHandler(blockId)}
+                onClick={() => {
+                  assertExists(blockId);
+                  previousImageHandler(blockId);
+                }}
               />
               <Button
                 icon={<ArrowRightSmallIcon />}
                 noBorder={true}
                 className={buttonStyle}
-                onClick={() => nextImageHandler(blockId)}
+                onClick={() => {
+                  assertExists(blockId);
+                  nextImageHandler(blockId);
+                }}
               />
             </div>
             <div className={groupStyle}>
@@ -391,19 +407,33 @@ const ImagePreviewModalImpl = (
                 icon={<DownloadIcon />}
                 noBorder={true}
                 className={buttonStyle}
-                onClick={() => downloadHandler(blockId)}
+                onClick={() => {
+                  assertExists(blockId);
+                  downloadHandler(blockId);
+                }}
               />
               <Button
                 icon={<CopyIcon />}
                 noBorder={true}
                 className={buttonStyle}
                 onClick={() => {
+                  if (!imageRef.current) {
+                    return;
+                  }
                   const canvas = document.createElement('canvas');
                   canvas.width = imageRef.current.naturalWidth;
                   canvas.height = imageRef.current.naturalHeight;
                   const context = canvas.getContext('2d');
+                  if (!context) {
+                    console.warn('Could not get canvas context');
+                    return;
+                  }
                   context.drawImage(imageRef.current, 0, 0);
                   canvas.toBlob(blob => {
+                    if (!blob) {
+                      console.warn('Could not get blob');
+                      return;
+                    }
                     const dataUrl = URL.createObjectURL(blob);
                     navigator.clipboard
                       .write([new ClipboardItem({ 'image/png': blob })])
@@ -427,7 +457,7 @@ const ImagePreviewModalImpl = (
                 icon={<DeleteIcon />}
                 noBorder={true}
                 className={buttonStyle}
-                onClick={() => deleteHandler(blockId)}
+                onClick={() => blockId && deleteHandler(blockId)}
               />
             </div>
           </div>

@@ -95,8 +95,8 @@ export const useZoomControls = ({
     if (zoomArea) {
       const image = imageRef.current;
       if (image) {
-        const imageX = parseInt(image.style.left || (0 as string), 10);
-        const imageY = parseInt(image.style.top || (0 as string), 10);
+        const imageX = parseInt(image.style.left || '0', 10);
+        const imageY = parseInt(image.style.top || '0', 10);
         setStartX(imageX);
         setStartY(imageY);
         image.style.transform = `translate(${imageX}px, ${imageY}px)`;
