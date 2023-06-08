@@ -1,6 +1,5 @@
 import type { Literal, LiteralValue, VariableMap } from '@affine/env/filter';
 import { DateTimeIcon, FavoritedIcon } from '@blocksuite/icons';
-import type { ReactElement } from 'react';
 
 import { tBoolean, tDate } from './logical/custom-type';
 import type { TType } from './logical/typesystem';
@@ -13,7 +12,6 @@ export const toLiteral = (value: LiteralValue): Literal => ({
 export type FilterVariable = {
   name: keyof VariableMap;
   type: TType;
-  icon: ReactElement;
 };
 
 export const variableDefineMap = {

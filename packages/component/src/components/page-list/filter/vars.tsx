@@ -63,7 +63,7 @@ export const VariableSelect = ({
         // .filter(v => !selected.find(filter => filter.left.name === v.name))
         .map(v => (
           <MenuItem
-            icon={v.icon}
+            icon={variableDefineMap[v.name].icon}
             key={v.name}
             onClick={() => {
               onSelect(createDefaultFilter(v));
