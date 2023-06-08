@@ -75,7 +75,6 @@
     "eslint-plugin-unicorn": "^47.0.0",
     "eslint-plugin-unused-imports": "^2.0.0",
     "fake-indexeddb": "4.0.1",
-    "got": "^13.0.0",
     "happy-dom": "^9.20.3",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.2",
