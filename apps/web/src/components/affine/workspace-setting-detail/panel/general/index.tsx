@@ -27,7 +27,6 @@ const useShowOpenDBFile = (workspaceId: string) => {
   const [show, setShow] = useState(false);
   useEffect(() => {
     if (window.apis && window.events && environment.isDesktop) {
-      // @ts-expect-error
       window.apis.workspace.getMeta(workspaceId).then(meta => {
         setShow(!!meta.secondaryDBPath);
       });
