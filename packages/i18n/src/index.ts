@@ -68,15 +68,23 @@ const standardizeLocale = (language: string) => {
 
 export const createI18n = () => {
   const i18n = i18next.createInstance();
-  i18n.use(initReactI18next).init({
-    lng: 'en',
-    fallbackLng,
-    debug: false,
-    resources,
-    interpolation: {
-      escapeValue: false, // not needed for react as it escapes by default
-    },
-  });
+  i18n
+    .use(initReactI18next)
+    .init({
+      lng: 'en',
+      fallbackLng,
+      debug: false,
+      resources,
+      interpolation: {
+        escapeValue: false, // not needed for react as it escapes by default
+      },
+    })
+    .then(() => {
+      console.info('i18n init success');
+    })
+    .catch(() => {
+      console.error('i18n init failed');
+    });
 
   i18n.on('languageChanged', lng => {
     localStorage.setItem(STORAGE_KEY, lng);

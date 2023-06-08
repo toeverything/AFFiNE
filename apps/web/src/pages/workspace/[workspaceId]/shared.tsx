@@ -23,7 +23,7 @@ const SharedPages: NextPageWithLayout = () => {
       if (newTab) {
         window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
       } else {
-        jumpToPage(currentWorkspace.id, pageId);
+        jumpToPage(currentWorkspace.id, pageId).catch(console.error);
       }
     },
     [currentWorkspace, jumpToPage]
