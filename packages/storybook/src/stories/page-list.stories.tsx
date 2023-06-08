@@ -138,7 +138,23 @@ AffineEmptyAllPageList.args = {
   onCreateNewEdgeless: () => toast('Create new edgeless'),
   onImportFile: () => toast('Import file'),
   list: [],
-  fallback: <Empty description="empty description" />,
+  fallback: (
+    <Empty
+      title="Empty"
+      description={
+        <div>
+          empty description, click{' '}
+          <button
+            onClick={() => {
+              toast('click');
+            }}
+          >
+            button
+          </button>
+        </div>
+      }
+    />
+  ),
 };
 
 export const AffinePublicPageList: StoryFn<typeof PageList> = ({
