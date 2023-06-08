@@ -1,5 +1,4 @@
 import { SqliteConnection } from '@affine/native';
-import assert from 'assert';
 
 import { logger } from '../logger';
 
@@ -25,11 +24,15 @@ export abstract class BaseSQLiteAdapter {
     const { db } = this;
     this.db = null;
     await db?.close();
+    logger.info(`[SQLiteAdapter:${this.role}]`, 'destroyed:', this.path);
   }
 
   async addBlob(key: string, data: Uint8Array) {
     try {
-      assert(this.db, `${this.path} is not connected`);
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
       await this.db.addBlob(key, data);
     } catch (error) {
       logger.error('addBlob', error);
@@ -38,7 +41,10 @@ export abstract class BaseSQLiteAdapter {
 
   async getBlob(key: string) {
     try {
-      assert(this.db, `${this.path} is not connected`);
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
       const blob = await this.db.getBlob(key);
       return blob?.data;
     } catch (error) {
@@ -49,7 +55,10 @@ export abstract class BaseSQLiteAdapter {
 
   async deleteBlob(key: string) {
     try {
-      assert(this.db, `${this.path} is not connected`);
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
       await this.db.deleteBlob(key);
     } catch (error) {
       logger.error(`${this.path} delete blob failed`, error);
@@ -58,7 +67,10 @@ export abstract class BaseSQLiteAdapter {
 
   async getBlobKeys() {
     try {
-      assert(this.db, `${this.path} is not connected`);
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return [];
+      }
       return await this.db.getBlobKeys();
     } catch (error) {
       logger.error(`getBlobKeys failed`, error);
@@ -68,7 +80,10 @@ export abstract class BaseSQLiteAdapter {
 
   async getUpdates() {
     try {
-      assert(this.db, `${this.path} is not connected`);
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return [];
+      }
       return await this.db.getUpdates();
     } catch (error) {
       logger.error('getUpdates', error);
@@ -80,8 +95,11 @@ export abstract class BaseSQLiteAdapter {
   async addUpdateToSQLite(db: SqliteConnection, updates: Uint8Array[]) {
     // batch write instead write per key stroke?
     try {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
       const start = performance.now();
-      await db.connect();
       await db.insertUpdates(updates);
       logger.debug(
         `[SQLiteAdapter][${this.role}] addUpdateToSQLite`,
