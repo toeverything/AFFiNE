@@ -335,19 +335,30 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     };
   }, [currentWorkspace]);
 
-  const page = currentWorkspace.blockSuiteWorkspace.getPage(
-    DEFAULT_HELLO_WORLD_PAGE_ID
-  );
-  if (page && page.meta.jumpOnce) {
-    currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
-      DEFAULT_HELLO_WORLD_PAGE_ID,
-      {
-        jumpOnce: false,
-      }
+  useEffect(() => {
+    if (!currentWorkspace) {
+      return;
+    }
+    const page = currentWorkspace.blockSuiteWorkspace.getPage(
+      DEFAULT_HELLO_WORLD_PAGE_ID
     );
-    setCurrentPageId(currentPageId);
-    void jumpToPage(currentWorkspace.id, page.id);
-  }
+    if (page && page.meta.jumpOnce) {
+      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
+        DEFAULT_HELLO_WORLD_PAGE_ID,
+        {
+          jumpOnce: false,
+        }
+      );
+      setCurrentPageId(currentPageId);
+      void jumpToPage(currentWorkspace.id, page.id);
+    }
+  }, [
+    currentPageId,
+    currentWorkspace,
+    jumpToPage,
+    router.query.pageId,
+    setCurrentPageId,
+  ]);
 
   const { openPage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
