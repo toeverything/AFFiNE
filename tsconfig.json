@@ -54,10 +54,7 @@
 
     "paths": {
       "@affine/component": ["./packages/component/src/index"],
-      "@affine/component/*": [
-        "./packages/component/src/components/*/index",
-        "./packages/component/src/components/*"
-      ],
+      "@affine/component/*": ["./packages/component/src/components/*"],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/i18n/hooks": ["./packages/i18n/src/i18n-generated"],
       "@affine/debug": ["./packages/debug"],
