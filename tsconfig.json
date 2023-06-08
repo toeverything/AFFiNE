@@ -12,8 +12,7 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     // noPropertyAccessFromIndexSignature: false,
-    // FIXME: add this back
-    "noUncheckedIndexedAccess": false,
+    // noUncheckedIndexedAccess: false,
     // noUnusedLocals: false,
     // noUnusedParameters: false,
     "useUnknownInCatchVariables": true,
