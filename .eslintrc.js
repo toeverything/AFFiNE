@@ -1,4 +1,5 @@
-const { readdirSync, statSync } = require('fs');
+const { resolve } = require('node:path');
+const { readdirSync, statSync } = require('node:fs');
 
 const createPattern = packageName => [
   {
@@ -23,10 +24,11 @@ const createPattern = packageName => [
   },
 ];
 
-const pkgs = readdirSync('./packages').filter(pkg => {
+const pkgs = readdirSync(resolve(__dirname, './packages')).filter(pkg => {
   return statSync(`./packages/${pkg}`).isDirectory();
 });
-const apps = readdirSync('./apps').filter(pkg => {
+
+const apps = readdirSync(resolve(__dirname, './apps')).filter(pkg => {
   return statSync(`./apps/${pkg}`).isDirectory();
 });
 
