@@ -308,7 +308,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     assertEquals(page.id, pageId);
     setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     if (config.enablePreloading) {
-      initPageWithPreloading(page);
+      initPageWithPreloading(page).catch(error => {
+        console.error('import error:', error);
+      });
     } else {
       initEmptyPage(page);
     }
@@ -333,30 +335,19 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     };
   }, [currentWorkspace]);
 
-  useEffect(() => {
-    if (!currentWorkspace) {
-      return;
-    }
-    const page = currentWorkspace.blockSuiteWorkspace.getPage(
-      DEFAULT_HELLO_WORLD_PAGE_ID
+  const page = currentWorkspace.blockSuiteWorkspace.getPage(
+    DEFAULT_HELLO_WORLD_PAGE_ID
+  );
+  if (page && page.meta.jumpOnce) {
+    currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
+      DEFAULT_HELLO_WORLD_PAGE_ID,
+      {
+        jumpOnce: false,
+      }
     );
-    if (page && page.meta.jumpOnce) {
-      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
-        DEFAULT_HELLO_WORLD_PAGE_ID,
-        {
-          jumpOnce: false,
-        }
-      );
-      setCurrentPageId(currentPageId);
-      void jumpToPage(currentWorkspace.id, page.id);
-    }
-  }, [
-    currentPageId,
-    currentWorkspace,
-    jumpToPage,
-    router.query.pageId,
-    setCurrentPageId,
-  ]);
+    setCurrentPageId(currentPageId);
+    void jumpToPage(currentWorkspace.id, page.id);
+  }
 
   const { openPage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
