@@ -211,7 +211,7 @@ test('creation of filters by created time, then click date picker to modify the 
   page,
 }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await closeDownloadTip(page);
   await createFirstFilter(page, 'Created');
@@ -279,7 +279,7 @@ const checkDatePickerMonth = async (page: Page, date: Date) => {
 };
 test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await closeDownloadTip(page);
   await createFirstFilter(page, 'Created');
