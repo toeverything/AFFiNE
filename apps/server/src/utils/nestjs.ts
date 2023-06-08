@@ -14,7 +14,7 @@ export function getRequestResponseFromContext(context: ExecutionContext) {
       }>();
       return {
         req: gqlContext.req,
-        res: gqlContext.req.res!,
+        res: gqlContext.req.res,
       };
     }
     case 'http': {
@@ -37,7 +37,7 @@ export function getRequestResponseFromHost(host: ArgumentsHost) {
       }>();
       return {
         req: gqlContext.req,
-        res: gqlContext.req.res!,
+        res: gqlContext.req.res,
       };
     }
     case 'http': {
