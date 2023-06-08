@@ -29,7 +29,9 @@ if (!isSingleInstance) {
 }
 
 app.on('second-instance', () => {
-  restoreOrCreateWindow();
+  restoreOrCreateWindow().catch(e =>
+    console.error('Failed to restore or create window:', e)
+  );
 });
 
 app.on('open-url', async (_, _url) => {

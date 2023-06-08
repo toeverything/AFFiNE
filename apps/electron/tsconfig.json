@@ -11,20 +11,19 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "noImplicitOverride": true,
-    "noEmit": false
+    "noImplicitOverride": true
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["./layers"],
   "exclude": ["node_modules", "out", "dist"],
   "references": [
     {
       "path": "./tsconfig.node.json"
     },
     {
-      "path": "../../packages/native"
+      "path": "./tests/tsconfig.json"
     },
     {
-      "path": "../../packages/env"
+      "path": "../../packages/native"
     },
     {
       "path": "../../packages/infra"

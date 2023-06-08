@@ -9,7 +9,7 @@ const LanguageMenuContent: FC = () => {
   const i18n = useI18N();
   const changeLanguage = useCallback(
     (event: string) => {
-      i18n.changeLanguage(event);
+      void i18n.changeLanguage(event);
     },
     [i18n]
   );

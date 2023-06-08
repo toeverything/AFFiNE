@@ -96,8 +96,8 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
         onClose={() => {
           setOpen(false);
         }}
-        onConform={() => {
-          onTransformWorkspace(
+        onConform={async () => {
+          await onTransformWorkspace(
             WorkspaceFlavour.LOCAL,
             WorkspaceFlavour.AFFINE,
             props.workspace as LocalWorkspace

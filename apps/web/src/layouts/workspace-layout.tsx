@@ -204,7 +204,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     useEffect(() => {
       document.documentElement.lang = i18n.language;
       // todo(himself65): this is a hack, we should use a better way to set the language
-      setUpLanguage(i18n);
+      setUpLanguage(i18n)?.catch(error => {
+        console.error(error);
+      });
     }, [i18n]);
     useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
@@ -247,7 +249,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         logger.info('mount first data:', items);
       }
 
-      fetch();
+      fetch().catch(e => {
+        logger.error('fetch error:', e);
+      });
       return () => {
         controller.abort();
         logger.info('unmount');
@@ -308,7 +312,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     assertEquals(page.id, pageId);
     setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     if (config.enablePreloading) {
-      initPageWithPreloading(page);
+      initPageWithPreloading(page).catch(error => {
+        console.error('import error:', error);
+      });
     } else {
       initEmptyPage(page);
     }

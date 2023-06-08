@@ -320,7 +320,7 @@ export async function moveDBFile(
       filePath: newFilePath,
     };
   } catch (err) {
-    db?.destroy();
+    await db?.destroy();
     logger.error('[moveDBFile]', err);
     return {
       error: 'UNKNOWN_ERROR',

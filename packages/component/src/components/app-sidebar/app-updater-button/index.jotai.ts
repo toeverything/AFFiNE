@@ -26,9 +26,13 @@ function rpcToObservable<
       subscriber.complete();
       return () => {};
     }
-    handler?.().then(t => {
-      subscriber.next(t);
-    });
+    handler?.()
+      .then(t => {
+        subscriber.next(t);
+      })
+      .catch(err => {
+        subscriber.error(err);
+      });
     return event(t => {
       subscriber.next(t);
     });

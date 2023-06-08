@@ -41,12 +41,21 @@ export const filterItemCloseStyle = style({
 });
 export const inputStyle = style({
   fontSize: 'var(--affine-font-xs)',
+  margin: '0 10px',
 });
 export const switchStyle = style({
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
-  marginLeft: '4px',
+  margin: '0 10px',
 });
 export const filterTypeStyle = style({
   fontSize: 'var(--affine-font-sm)',
+  display: 'flex',
+  marginRight: '10px',
+});
+export const filterTypeIconStyle = style({
+  fontSize: 'var(--affine-font-base)',
+  marginRight: '6px',
+  display: 'flex',
+  color: 'var(--affine-icon-color)',
 });
