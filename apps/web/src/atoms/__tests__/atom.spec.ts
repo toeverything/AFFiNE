@@ -3,13 +3,13 @@
  */
 import 'fake-indexeddb/auto';
 
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   _cleanupBlockSuiteWorkspaceCache,
   createEmptyBlockSuiteWorkspace,
@@ -32,7 +32,7 @@ describe('currentWorkspace atom', () => {
         WorkspaceFlavour.LOCAL
       );
       const page = workspace.createPage({ id: 'page0' });
-      initPage(page);
+      initEmptyPage(page);
       const frameId = page.getBlockByFlavour('affine:frame').at(0)
         ?.id as string;
       id = page.addBlock(

@@ -26,8 +26,11 @@ import {
   removeNotificationAtom,
 } from './index.jotai';
 
-// only expose necessary function atom to avoid misuse
-export { pushNotificationAtom, removeNotificationAtom };
+export {
+  expandNotificationCenterAtom,
+  pushNotificationAtom,
+  removeNotificationAtom,
+};
 type Height = {
   height: number;
   notificationKey: number | string;

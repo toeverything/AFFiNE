@@ -24,7 +24,7 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "firebase": "^9.22.1",
-    "jotai": "^2.1.0",
+    "jotai": "^2.1.1",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "lib0": "^0.2.78",
@@ -39,5 +39,5 @@
     "next": "=13.4.2",
     "ws": "^8.13.0"
   },
-  "version": "0.7.0-canary.8"
+  "version": "0.7.0-canary.9"
 }

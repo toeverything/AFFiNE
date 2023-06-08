@@ -1,9 +1,9 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { FC } from 'react';
 
 import { descriptionStyle, menuItemStyle } from './index.css';

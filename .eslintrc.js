@@ -1,3 +1,6 @@
+const { resolve } = require('node:path');
+const { readdirSync, statSync } = require('node:fs');
+
 const createPattern = packageName => [
   {
     group: ['**/dist', '**/dist/**'],
@@ -21,22 +24,15 @@ const createPattern = packageName => [
   },
 ];
 
-const allPackages = [
-  'cli',
-  'component',
-  'debug',
-  'env',
-  'graphql',
-  'hooks',
-  'i18n',
-  'jotai',
-  'native',
-  'plugin-infra',
-  'templates',
-  'theme',
-  'workspace',
-  'y-indexeddb',
-];
+const pkgs = readdirSync(resolve(__dirname, './packages')).filter(pkg => {
+  return statSync(`./packages/${pkg}`).isDirectory();
+});
+
+const apps = readdirSync(resolve(__dirname, './apps')).filter(pkg => {
+  return statSync(`./apps/${pkg}`).isDirectory();
+});
+
+const allPackages = pkgs.concat(apps);
 
 /**
  * @type {import('eslint').Linter.Config}
@@ -67,6 +63,7 @@ const config = {
     },
     ecmaVersion: 'latest',
     sourceType: 'module',
+    project: './tsconfig.eslint.json',
   },
   plugins: [
     'react',
@@ -83,7 +80,7 @@ const config = {
     'no-cond-assign': 'off',
     'react/prop-types': 'off',
     '@typescript-eslint/consistent-type-imports': 'error',
-    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'error',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-unused-vars': [
@@ -134,6 +131,12 @@ const config = {
       files: '*.cjs',
       rules: {
         '@typescript-eslint/no-var-requires': 0,
+      },
+    },
+    {
+      files: ['**/__tests__/**/*', '**/*.stories.tsx'],
+      rules: {
+        '@typescript-eslint/no-non-null-assertion': 0,
       },
     },
     ...allPackages.map(pkg => ({

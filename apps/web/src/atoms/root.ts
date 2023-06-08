@@ -1,15 +1,15 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
+import type {
+  NecessaryProvider,
+  WorkspaceRegistry,
+} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type {
-  NecessaryProvider,
-  WorkspaceRegistry,
-} from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 

@@ -1,8 +1,8 @@
 import { DebugLogger } from '@affine/debug';
+import type { AffineDownloadProvider } from '@affine/env/workspace';
 import { assertExists, Workspace } from '@blocksuite/store';
 
 import { affineApis } from '../affine/shared';
-import type { AffineDownloadProvider } from '../type';
 
 const hashMap = new Map<string, ArrayBuffer>();
 

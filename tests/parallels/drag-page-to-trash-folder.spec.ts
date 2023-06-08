@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 
 test('drag a page from "All pages" list onto the "Trash" folder in the sidebar to move it to trash list', async ({
   page,
@@ -11,13 +11,13 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
   // Init test db with known workspaces and open "All Pages" page via url directly
   {
     await openHomePage(page);
-    await waitMarkdownImported(page);
+    await waitEditorLoad(page);
     await page.getByText('All Pages').click();
   }
 
   // Drag-and-drop
   // Ref: https://playwright.dev/docs/input#dragging-manually
-  await page.getByText('AFFiNE - not just a note taking app').hover();
+  await page.getByText('Untitled').hover();
   await page.mouse.down();
   await page.waitForTimeout(1000);
   await page.getByText('Trash').hover();
@@ -29,7 +29,7 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
   ).toBeVisible();
 
   await expect(
-    page.getByText('AFFiNE - not just a note taking app'),
+    page.getByText('Untitled'),
     'The deleted post is no longer on the All Page list'
   ).toHaveCount(0);
 
@@ -37,7 +37,7 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
   // Visit trash page via url
   await page.getByText('Trash', { exact: true }).click();
   await expect(
-    page.getByText('AFFiNE - not just a note taking app'),
+    page.getByText('Untitled'),
     'The deleted post exists in the Trash list'
   ).toHaveCount(1);
 });

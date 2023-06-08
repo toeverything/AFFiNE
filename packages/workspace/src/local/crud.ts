@@ -1,12 +1,12 @@
 import { DebugLogger } from '@affine/debug';
+import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import { z } from 'zod';
 
 import { createLocalProviders } from '../providers';
-import type { LocalWorkspace, WorkspaceCRUD } from '../type';
-import { WorkspaceFlavour } from '../type';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 
 const getStorage = () => createJSONStorage(() => localStorage);

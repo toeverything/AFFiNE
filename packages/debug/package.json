@@ -3,11 +3,10 @@
   "private": true,
   "main": "./src/index.ts",
   "dependencies": {
-    "@affine/env": "workspace:*",
     "debug": "^4.3.4"
   },
   "devDependencies": {
     "@types/debug": "^4.1.8"
   },
-  "version": "0.7.0-canary.8"
+  "version": "0.7.0-canary.9"
 }

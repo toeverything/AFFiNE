@@ -1,6 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["./src"],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib"
+  },
   "references": [
     {
       "path": "../component"
@@ -8,10 +13,5 @@
     {
       "path": "../workspace"
     }
-  ],
-  "compilerOptions": {
-    "noEmit": false,
-    "composite": true,
-    "outDir": "lib"
-  }
+  ]
 }
