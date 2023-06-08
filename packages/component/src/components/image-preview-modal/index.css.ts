@@ -58,6 +58,7 @@ export const imageNavigationControlStyle = style({
 export const imagePreviewModalContainerStyle = style({
   display: 'flex',
   flexDirection: 'column',
+  alignItems: 'center',
   zIndex: 1,
   '@media': {
     'screen and (max-width: 768px)': {
@@ -67,13 +68,9 @@ export const imagePreviewModalContainerStyle = style({
 });
 
 export const imagePreviewModalImageStyle = style({
-  background: 'transparent',
-  height: '100%',
-  width: '100%',
-  objectFit: 'contain',
-  objectPosition: 'center',
-  borderRadius: '4px',
-  marginBottom: '24px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
 });
 
 export const imagePreviewModalCaptionStyle = style({
@@ -86,12 +83,6 @@ export const imagePreviewModalCaptionStyle = style({
   },
 });
 
-export const imagePreviewModalActionsStyle = style({
-  position: 'absolute',
-  bottom: '28px',
-  background: 'var(--affine-white)',
-});
-
 export const imagePreviewActionBarStyle = style({
   display: 'flex',
   justifyContent: 'center',
@@ -100,6 +91,7 @@ export const imagePreviewActionBarStyle = style({
   backgroundColor: 'var(--affine-white)',
   borderRadius: '8px',
   boxShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+  maxWidth: 'max-content',
 });
 
 export const groupStyle = style({
@@ -122,6 +114,7 @@ export const scaleIndicatorStyle = style({
 export const imageBottomContainerStyle = style({
   display: 'flex',
   flexDirection: 'column',
+  alignItems: 'center',
   position: 'fixed',
   bottom: '28px',
   zIndex: baseTheme.zIndexModal + 1,
