@@ -75,7 +75,6 @@
     "eslint-plugin-unicorn": "^47.0.0",
     "eslint-plugin-unused-imports": "^2.0.0",
     "fake-indexeddb": "4.0.1",
-    "got": "^13.0.0",
     "happy-dom": "^9.20.3",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.2",
@@ -98,8 +97,9 @@
   "resolutions": {
     "lit": "^2.7.2",
     "idb": "^7.1.1",
-    "@emotion/cache": "^11.10.7"
+    "@emotion/cache": "^11.10.7",
+    "@types/cacheable-request": "^6.0.2",
+    "@types/responselike": "^1.0.0"
   },
-  "packageManager": "yarn@3.5.0",
-  "stableVersion": "0.5.4"
+  "packageManager": "yarn@3.5.0"
 }
