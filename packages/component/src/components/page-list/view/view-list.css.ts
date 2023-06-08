@@ -60,3 +60,17 @@ export const saveText = style({
   justifyContent: 'center',
   fontSize: 'var(--affine-font-sm)',
 });
+export const cancelButton = style({
+  background: 'var(--affine-hover-color)',
+  borderRadius: '8px',
+  ':hover': {
+    background: 'var(--affine-hover-color)',
+    color: 'var(--affine-text-primary-color)',
+    border: '1px solid var(--affine-border-color)',
+  },
+});
+export const saveTitle = style({
+  fontSize: 'var(--affine-font-h-6)',
+  fontWeight: '600',
+  lineHeight: '24px',
+});
