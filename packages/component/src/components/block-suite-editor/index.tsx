@@ -92,20 +92,25 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       return;
     }
     if (page.awarenessStore.getFlag('enable_block_hub')) {
-      editor.createBlockHub().then(blockHub => {
-        if (blockHubRef.current) {
-          blockHubRef.current.remove();
-        }
-        blockHubRef.current = blockHub;
-        const toolWrapper = document.querySelector('#toolWrapper');
-        if (!toolWrapper) {
-          console.warn(
-            'toolWrapper not found, block hub feature will not be available.'
-          );
-        } else {
-          toolWrapper.appendChild(blockHub);
-        }
-      });
+      editor
+        .createBlockHub()
+        .then(blockHub => {
+          if (blockHubRef.current) {
+            blockHubRef.current.remove();
+          }
+          blockHubRef.current = blockHub;
+          const toolWrapper = document.querySelector('#toolWrapper');
+          if (!toolWrapper) {
+            console.warn(
+              'toolWrapper not found, block hub feature will not be available.'
+            );
+          } else {
+            toolWrapper.appendChild(blockHub);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+        });
     }
 
     container.appendChild(editor);

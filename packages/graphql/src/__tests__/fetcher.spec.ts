@@ -32,8 +32,8 @@ describe('GraphQL fetcher', () => {
 
   const gql = gqlFetcherFactory('https://example.com/graphql');
 
-  it('should send POST request to given endpoint', () => {
-    gql(
+  it('should send POST request to given endpoint', async () => {
+    await gql(
       // @ts-expect-error variables is actually optional
       { query }
     );
@@ -44,8 +44,8 @@ describe('GraphQL fetcher', () => {
     expect(ctx.method).toBe('POST');
   });
 
-  it('should send with correct graphql JSON body', () => {
-    gql({
+  it('should send with correct graphql JSON body', async () => {
+    await gql({
       query,
       // @ts-expect-error forgive the fake variables
       variables: { a: 1, b: '2', c: { d: false } },
@@ -63,8 +63,8 @@ describe('GraphQL fetcher', () => {
     `);
   });
 
-  it('should correctly ignore nil variables', () => {
-    gql({
+  it('should correctly ignore nil variables', async () => {
+    await gql({
       query,
       // @ts-expect-error forgive the fake variables
       variables: { a: false, b: null, c: undefined },
@@ -74,7 +74,7 @@ describe('GraphQL fetcher', () => {
       '"{\\"query\\":\\"query { field }\\",\\"variables\\":{\\"a\\":false,\\"b\\":null},\\"operationName\\":\\"query\\"}"'
     );
 
-    gql({
+    await gql({
       query,
       // @ts-expect-error forgive the fake variables
       variables: { a: false, b: null, c: undefined },

@@ -11,6 +11,7 @@ import {
   merge,
 } from 'rxjs';
 import {
+  concatMap,
   distinctUntilChanged,
   filter,
   ignoreElements,
@@ -126,10 +127,8 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
     switchMap(secondaryDB => {
       return interval(300000).pipe(
         startWith(0),
+        concatMap(() => secondaryDB.pull()),
         tap({
-          next: () => {
-            secondaryDB.pull();
-          },
           error: err => {
             logger.error(`[ensureSQLiteDB] polling secondary db error`, err);
           },

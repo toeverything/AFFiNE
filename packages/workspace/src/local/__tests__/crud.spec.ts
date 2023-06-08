@@ -28,7 +28,7 @@ describe('crud', () => {
   });
 
   test('delete not exist', async () => {
-    expect(async () =>
+    await expect(async () =>
       CRUD.delete({
         id: 'not_exist',
         flavour: WorkspaceFlavour.LOCAL,

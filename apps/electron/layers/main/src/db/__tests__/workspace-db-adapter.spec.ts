@@ -62,7 +62,7 @@ test('on applyUpdate (from renderer), will trigger update', async () => {
   db.update$.subscribe(onUpdate);
   const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
   db.applyUpdate(getTestUpdates(), 'renderer');
-  expect(onUpdate).toHaveBeenCalled(); // not yet updated
+  expect(onUpdate).toHaveBeenCalled();
   sub.unsubscribe();
   await db.destroy();
 });

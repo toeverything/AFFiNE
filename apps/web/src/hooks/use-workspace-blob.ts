@@ -1,7 +1,10 @@
+import { DebugLogger } from '@affine/debug';
 import type { BlobManager } from '@blocksuite/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
+
+const logger = new DebugLogger('useWorkspaceBlob');
 
 export function useWorkspaceBlob(
   blockSuiteWorkspace: BlockSuiteWorkspace
@@ -21,14 +24,19 @@ export function useWorkspaceBlobImage(
       setBlob(null);
       return;
     }
-    blobManager?.get(key).then(blob => {
-      if (controller.signal.aborted) {
-        return;
-      }
-      if (blob) {
-        setBlob(blob);
-      }
-    });
+    blobManager
+      ?.get(key)
+      .then(blob => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        if (blob) {
+          setBlob(blob);
+        }
+      })
+      .catch(err => {
+        logger.error('Failed to get blob', err);
+      });
     return () => {
       controller.abort();
     };
