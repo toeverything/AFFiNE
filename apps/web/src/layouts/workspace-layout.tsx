@@ -438,7 +438,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
               [currentWorkspace, openPage]
             )}
             createPage={handleCreatePage}
-            currentPath={router.asPath.split('?')[0]!}
+            currentPath={router.asPath.split('?')[0]}
             paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
           />
           <MainContainer>
