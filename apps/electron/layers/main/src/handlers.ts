@@ -4,10 +4,10 @@ import type {
   DialogHandlerManager,
   ExportHandlerManager,
   UIHandlerManager,
+  UnwrapManagerHandlerToServerSide,
   UpdaterHandlerManager,
   WorkspaceHandlerManager,
 } from '@toeverything/infra';
-import type { HandlerManager, PrimitiveHandlers } from '@toeverything/infra';
 import { ipcMain } from 'electron';
 
 import { dbHandlers } from './db';
@@ -27,24 +27,35 @@ export const debugHandlers = {
   },
 };
 
-type UnwrapManagerHandler<
-  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>
-> = {
-  [K in keyof Manager['handlers']]: Manager['handlers'][K] extends (
-    ...args: infer Args
-  ) => Promise<infer R>
-    ? (event: Electron.IpcMainInvokeEvent, ...args: Args) => Promise<R>
-    : never;
-};
-
 type AllHandlers = {
-  db: UnwrapManagerHandler<DBHandlerManager>;
-  debug: UnwrapManagerHandler<DebugHandlerManager>;
-  dialog: UnwrapManagerHandler<DialogHandlerManager>;
-  export: UnwrapManagerHandler<ExportHandlerManager>;
-  ui: UnwrapManagerHandler<UIHandlerManager>;
-  updater: UnwrapManagerHandler<UpdaterHandlerManager>;
-  workspace: UnwrapManagerHandler<WorkspaceHandlerManager>;
+  db: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    DBHandlerManager
+  >;
+  debug: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    DebugHandlerManager
+  >;
+  dialog: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    DialogHandlerManager
+  >;
+  export: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    ExportHandlerManager
+  >;
+  ui: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    UIHandlerManager
+  >;
+  updater: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    UpdaterHandlerManager
+  >;
+  workspace: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    WorkspaceHandlerManager
+  >;
 };
 
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
