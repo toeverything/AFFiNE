@@ -1,4 +1,12 @@
 import { config, websocketPrefixUrl } from '@affine/env';
+import type {
+  AffineWebSocketProvider,
+  LocalIndexedDBBackgroundProvider,
+  LocalIndexedDBDownloadProvider,
+  Provider,
+  SQLiteDBDownloadProvider,
+  SQLiteProvider,
+} from '@affine/env/workspace';
 import type { BlobManager, Disposable } from '@blocksuite/store';
 import {
   assertExists,
@@ -12,14 +20,6 @@ import {
 
 import { KeckProvider } from '../affine/keck';
 import { getLoginStorage, storageChangeSlot } from '../affine/login';
-import type {
-  AffineWebSocketProvider,
-  LocalIndexedDBBackgroundProvider,
-  LocalIndexedDBDownloadProvider,
-  Provider,
-  SQLiteDBDownloadProvider,
-  SQLiteProvider,
-} from '../type';
 import { CallbackSet } from '../utils';
 import { createAffineDownloadProvider } from './affine-download';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
@@ -162,8 +162,7 @@ const sqliteOrigin = Symbol('sqlite-provider-origin');
 const createSQLiteProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): SQLiteProvider => {
-  const apis = window.apis!;
-  const events = window.events!;
+  const { apis, events } = window;
   // make sure it is being used in Electron with APIs
   assertExists(apis);
   assertExists(events);
@@ -183,6 +182,7 @@ const createSQLiteProvider = (
   const connect = () => {
     logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
     blockSuiteWorkspace.doc.on('update', handleUpdate);
+    // @ts-expect-error
     unsubscribe = events.db.onExternalUpdate(({ update, workspaceId }) => {
       if (workspaceId === blockSuiteWorkspace.id) {
         Y.applyUpdate(blockSuiteWorkspace.doc, update, sqliteOrigin);
@@ -215,7 +215,7 @@ const createSQLiteProvider = (
 const createSQLiteDBDownloadProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): SQLiteDBDownloadProvider => {
-  const apis = window.apis!;
+  const { apis } = window;
   let disconnected = false;
 
   let _resolve: () => void;
@@ -272,7 +272,7 @@ const createSQLiteDBDownloadProvider = (
           return;
         }
 
-        return window.apis?.db.addBlob(
+        return apis?.db.addBlob(
           blockSuiteWorkspace.id,
           k,
           new Uint8Array(await blob.arrayBuffer())

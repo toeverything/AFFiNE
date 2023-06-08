@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 import {
   clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
@@ -11,7 +11,7 @@ import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('Create new workspace, then delete it', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
   await page
@@ -49,7 +49,7 @@ test('Create new workspace, then delete it', async ({ page }) => {
 
 test('Delete last workspace', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarSettingButton(page);
   await page.getByTestId('delete-workspace-button').click();
   const workspaceNameDom = await page.getByTestId('workspace-name');

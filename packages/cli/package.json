@@ -15,5 +15,5 @@
   "dependencies": {
     "dotenv": "^16.1.4"
   },
-  "version": "0.7.0-canary.8"
+  "version": "0.7.0-canary.9"
 }

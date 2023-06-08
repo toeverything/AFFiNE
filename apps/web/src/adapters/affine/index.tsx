@@ -3,8 +3,14 @@
  *  please use new affine cloud instead.
  */
 import { AFFINE_STORAGE_KEY, config } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
+import type { AffineLegacyCloudWorkspace } from '@affine/env/workspace';
+import {
+  LoadPriority,
+  ReleaseType,
+  WorkspaceFlavour,
+} from '@affine/env/workspace';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
@@ -21,12 +27,6 @@ import {
   createIndexedDBBackgroundProvider,
 } from '@affine/workspace/providers';
 import { createAffineDownloadProvider } from '@affine/workspace/providers';
-import type { AffineLegacyCloudWorkspace } from '@affine/workspace/type';
-import {
-  LoadPriority,
-  ReleaseType,
-  WorkspaceFlavour,
-} from '@affine/workspace/type';
 import {
   cleanupWorkspace,
   createEmptyBlockSuiteWorkspace,
@@ -330,7 +330,7 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
           <PageDetailEditor
             pageId={currentPageId}
             workspace={currentWorkspace}
-            onInit={initPage}
+            onInit={initEmptyPage}
             onLoad={onLoadEditor}
           />
         </>

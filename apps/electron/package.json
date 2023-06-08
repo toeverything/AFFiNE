@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.7.0-canary.8",
+  "version": "0.7.0-canary.9",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -35,10 +35,11 @@
     "@electron-forge/maker-zip": "^6.1.1",
     "@electron-forge/shared-types": "^6.1.1",
     "@electron/remote": "2.0.9",
+    "@toeverything/infra": "workspace:*",
     "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.1",
     "cross-env": "7.0.3",
-    "electron": "25.0.1",
+    "electron": "=25.0.1",
     "electron-log": "^5.0.0-beta.24",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",

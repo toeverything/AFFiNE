@@ -1,10 +1,10 @@
 import { DebugLogger } from '@affine/debug';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import * as url from 'lib0/url';
 import * as websocket from 'lib0/websocket';
 
 import { getLoginStorage, isExpired, parseIdToken } from '../affine/login';
-import { WorkspaceFlavour } from '../type';
 import { cleanupWorkspace } from '../utils';
 
 const RECONNECT_INTERVAL_TIME = 500;

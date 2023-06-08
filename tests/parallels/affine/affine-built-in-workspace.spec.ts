@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../../libs/load-page';
-import { waitMarkdownImported } from '../../libs/page-logic';
+import { waitEditorLoad } from '../../libs/page-logic';
 import {
   clickNewPageButton,
   clickSideBarCurrentWorkspaceBanner,
@@ -11,7 +11,7 @@ import { getBuiltInUser, loginUser } from '../../libs/utils';
 
 test('collaborative', async ({ page, browser }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const [a, b] = await getBuiltInUser();
   await loginUser(page, a);
   await page.reload();

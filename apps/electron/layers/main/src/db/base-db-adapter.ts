@@ -10,14 +10,13 @@ export abstract class BaseSQLiteAdapter {
   db: SqliteConnection | null = null;
   abstract role: string;
 
-  constructor(public readonly path: string) {
-    logger.info(`[SQLiteAdapter]`, 'path:', path);
-  }
+  constructor(public readonly path: string) {}
 
   async connectIfNeeded() {
     if (!this.db) {
       this.db = new SqliteConnection(this.path);
       await this.db.connect();
+      logger.info(`[SQLiteAdapter:${this.role}]`, 'connected:', this.path);
     }
     return this.db;
   }

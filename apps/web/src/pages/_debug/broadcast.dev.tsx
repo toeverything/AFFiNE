@@ -1,9 +1,9 @@
 import { Button } from '@affine/component';
 import { AppContainer, MainContainer } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
+import type { BroadCastChannelProvider } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { createBroadCastChannelProvider } from '@affine/workspace/providers';
-import type { BroadCastChannelProvider } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { Typography } from '@mui/material';
