@@ -1,6 +1,6 @@
+import type { SettingPanel, WorkspaceRegistry } from '@affine/env/workspace';
+import { settingPanel, WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { SettingPanel, WorkspaceRegistry } from '@affine/workspace/type';
-import { settingPanel, WorkspaceFlavour } from '@affine/workspace/type';
 import type { MouseEvent } from 'react';
 import type React from 'react';
 import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';

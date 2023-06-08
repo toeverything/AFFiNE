@@ -7,15 +7,15 @@ import {
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
 import {
+  LoadPriority,
+  ReleaseType,
+  WorkspaceFlavour,
+} from '@affine/env/workspace';
+import {
   CRUD,
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
 import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
-import {
-  LoadPriority,
-  ReleaseType,
-  WorkspaceFlavour,
-} from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 

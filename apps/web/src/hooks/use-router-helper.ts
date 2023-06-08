@@ -1,4 +1,4 @@
-import type { WorkspaceSubPath } from '@affine/workspace/type';
+import type { WorkspaceSubPath } from '@affine/env/workspace';
 import type { NextRouter } from 'next/router';
 import { useCallback } from 'react';
 

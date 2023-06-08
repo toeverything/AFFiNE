@@ -1,9 +1,9 @@
 import { env } from '@affine/env';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import { WorkspaceSubPath } from '@affine/workspace/type';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useAtom, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
