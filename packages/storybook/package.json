@@ -30,12 +30,12 @@
     "wait-on": "^7.0.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230601122821-16196c35-nightly",
-    "@blocksuite/editor": "0.0.0-20230601122821-16196c35-nightly",
-    "@blocksuite/global": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/blocks": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/editor": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/icons": "^2.1.19",
-    "@blocksuite/lit": "0.0.0-20230601122821-16196c35-nightly",
-    "@blocksuite/store": "0.0.0-20230601122821-16196c35-nightly",
+    "@blocksuite/lit": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506"
   },
