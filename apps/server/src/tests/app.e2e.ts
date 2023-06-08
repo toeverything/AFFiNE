@@ -1,7 +1,7 @@
 import { equal, ok } from 'node:assert';
 import { afterEach, beforeEach, describe, test } from 'node:test';
 
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { hash } from '@node-rs/bcrypt';
 import { PrismaClient } from '@prisma/client';

@@ -48,6 +48,7 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
       Router.events.off('routeChangeStart', callback);
     };
   }
+  return () => {};
 };
 
 export const rootCurrentPageIdAtom = atom<string | null>(null);
@@ -68,6 +69,7 @@ rootCurrentPageIdAtom.onMount = set => {
       Router.events.off('routeChangeStart', callback);
     };
   }
+  return () => {};
 };
 
 // current editor atom, each app should have only one editor in the same time

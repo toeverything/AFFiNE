@@ -117,6 +117,7 @@ export async function tryMigrate(
               }
             );
           }
+          return void 0;
         })
       );
       localStorage.setItem(`${dbName}-migration`, 'true');

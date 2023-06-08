@@ -29,13 +29,14 @@ export const quitAndInstall = async () => {
 let lastCheckTime = 0;
 export const checkForUpdatesAndNotify = async (force = true) => {
   if (!_autoUpdater) {
-    return; // ?
+    return void 0;
   }
   // check every 30 minutes (1800 seconds) at most
   if (force || lastCheckTime + 1000 * 1800 < Date.now()) {
     lastCheckTime = Date.now();
     return await _autoUpdater.checkForUpdatesAndNotify();
   }
+  return void 0;
 };
 
 export const registerUpdater = async () => {
