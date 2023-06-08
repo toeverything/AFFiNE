@@ -268,6 +268,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
           affineGlobalChannel.disconnect();
         };
       }
+      return;
     }, [currentWorkspaceId, jotaiWorkspaces]);
 
     const Provider =
