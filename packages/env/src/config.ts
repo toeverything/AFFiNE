@@ -5,9 +5,8 @@ import type {
   DebugHandlerManager,
   DialogHandlerManager,
   ExportHandlerManager,
-  HandlerManager,
-  PrimitiveHandlers,
   UIHandlerManager,
+  UnwrapManagerHandlerToClientSide,
   UpdaterHandlerManager,
   WorkspaceHandlerManager,
 } from '@toeverything/infra';
@@ -16,29 +15,19 @@ import { z } from 'zod';
 
 import { UaHelper } from './ua-helper';
 
-type UnwrapManagerHandler<
-  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>
-> = {
-  [K in keyof Manager['handlers']]: Manager['handlers'][K] extends (
-    ...args: infer Args
-  ) => Promise<infer R>
-    ? (...args: Args) => Promise<R>
-    : never;
-};
-
 declare global {
   interface Window {
     appInfo: {
       electron: boolean;
     };
     apis: {
-      db: UnwrapManagerHandler<DBHandlerManager>;
-      debug: UnwrapManagerHandler<DebugHandlerManager>;
-      dialog: UnwrapManagerHandler<DialogHandlerManager>;
-      export: UnwrapManagerHandler<ExportHandlerManager>;
-      ui: UnwrapManagerHandler<UIHandlerManager>;
-      updater: UnwrapManagerHandler<UpdaterHandlerManager>;
-      workspace: UnwrapManagerHandler<WorkspaceHandlerManager>;
+      db: UnwrapManagerHandlerToClientSide<DBHandlerManager>;
+      debug: UnwrapManagerHandlerToClientSide<DebugHandlerManager>;
+      dialog: UnwrapManagerHandlerToClientSide<DialogHandlerManager>;
+      export: UnwrapManagerHandlerToClientSide<ExportHandlerManager>;
+      ui: UnwrapManagerHandlerToClientSide<UIHandlerManager>;
+      updater: UnwrapManagerHandlerToClientSide<UpdaterHandlerManager>;
+      workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
     };
     events: any;
   }
