@@ -8,7 +8,7 @@
   },
   "references": [
     {
-      "path": "../infra"
+      "path": "./tsconfig.node.json"
     }
   ]
 }

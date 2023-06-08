@@ -122,7 +122,6 @@ const useDefaultDBLocation = () => {
   const [defaultDBLocation, setDefaultDBLocation] = useState('');
 
   useEffect(() => {
-    // @ts-expect-error
     window.apis?.db.getDefaultStorageLocation().then(dir => {
       setDefaultDBLocation(dir);
     });

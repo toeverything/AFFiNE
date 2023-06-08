@@ -158,6 +158,7 @@ __metadata:
     "@electron-forge/maker-zip": ^6.1.1
     "@electron-forge/shared-types": ^6.1.1
     "@electron/remote": 2.0.9
+    "@toeverything/infra": "workspace:*"
     "@types/fs-extra": ^11.0.1
     "@types/uuid": ^9.0.1
     cheerio: ^1.0.0-rc.12
@@ -188,7 +189,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@affine/templates": "workspace:*"
     "@blocksuite/global": 0.0.0-20230606130340-805f430b-nightly
     lit: ^2.7.5
     next: =13.4.2
@@ -196,7 +196,9 @@ __metadata:
     react-dom: 18.3.0-canary-16d053d59-20230506
     zod: ^3.21.4
   peerDependencies:
+    "@affine/templates": "workspace:*"
     "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
+    "@toeverything/infra": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -389,6 +391,7 @@ __metadata:
     "@swc-jotai/debug-label": ^0.0.10
     "@swc-jotai/react-refresh": ^0.0.8
     "@toeverything/hooks": "workspace:*"
+    "@toeverything/infra": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
     "@types/react": ^18.2.6
     "@types/react-dom": ^18.2.4
@@ -9201,6 +9204,15 @@ __metadata:
   dependencies:
     "@affine/env": "workspace:*"
     "@toeverything/y-indexeddb": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
+"@toeverything/infra@workspace:*, @toeverything/infra@workspace:packages/infra":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/infra@workspace:packages/infra"
+  dependencies:
+    vite: ^4.3.9
+    vite-plugin-dts: ^2.3.0
   languageName: unknown
   linkType: soft
 

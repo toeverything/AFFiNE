@@ -112,6 +112,7 @@ const nextConfig = {
     '@affine/copilot',
     '@toeverything/hooks',
     '@toeverything/y-indexeddb',
+    '@toeverything/infra',
     '@toeverything/plugin-infra',
   ],
   publicRuntimeConfig: {
