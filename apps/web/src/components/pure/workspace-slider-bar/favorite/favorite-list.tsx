@@ -8,7 +8,7 @@ import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import { useMemo, useState } from 'react';
 
-import { workspacePreferredModeAtom } from '../../../../atoms';
+import { pageSettingFamily } from '../../../../atoms';
 import type { FavoriteListProps } from '../index';
 import EmptyItem from './empty-item';
 import * as styles from './styles.css';
@@ -27,9 +27,9 @@ function FavoriteMenuItem({
   parentIds,
 }: FavoriteMenuItemProps) {
   const router = useRouter();
-  const record = useAtomValue(workspacePreferredModeAtom);
+  const setting = useAtomValue(pageSettingFamily(pageId));
   const active = router.query.pageId === pageId;
-  const icon = record[pageId] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
+  const icon = setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
   const references = useBlockSuitePageReferences(workspace, pageId);
   const referencesToShow = useMemo(() => {
     return [
