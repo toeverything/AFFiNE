@@ -1,8 +1,9 @@
+import type { DragEvent, RefObject, TouchEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseZoomControlsProps {
-  zoomRef: React.RefObject<HTMLDivElement>;
-  imageRef: React.RefObject<HTMLImageElement>;
+  zoomRef: RefObject<HTMLDivElement>;
+  imageRef: RefObject<HTMLImageElement>;
 }
 
 export const useZoomControls = ({
@@ -50,17 +51,33 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDragStart = event => {
-    const { clientX, clientY } = event.touches ? event.touches[0] : event;
-    event.dataTransfer.setDragImage(new Image(), 0, 0);
-    event.dataTransfer.setData('text/plain', '');
+  const handleDragStart = (event: DragEvent<HTMLDivElement> | TouchEvent) => {
+    let clientX, clientY;
+    if ('touches' in event) {
+      clientX = event.touches ? event.touches[0].clientX : 0;
+      clientY = event.touches ? event.touches[0].clientY : 0;
+    } else {
+      clientX = (event as DragEvent<HTMLImageElement>).clientX;
+      clientY = (event as DragEvent<HTMLImageElement>).clientY;
+    }
+    const dataTransfer = (event as DragEvent<HTMLImageElement>)?.dataTransfer;
+    if (dataTransfer) {
+      dataTransfer.setDragImage(new Image(), 0, 0);
+      dataTransfer.setData('text/plain', '');
+    }
     setStartX(clientX);
     setStartY(clientY);
   };
-
-  const handleDrag = event => {
+  const handleDrag = (event: DragEvent<HTMLDivElement> | TouchEvent) => {
     event.preventDefault();
-    const { clientX, clientY } = event.touches ? event.touches[0] : event;
+    let clientX, clientY;
+    if ('touches' in event) {
+      clientX = event.touches ? event.touches[0].clientX : 0;
+      clientY = event.touches ? event.touches[0].clientY : 0;
+    } else {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    }
     const deltaX = clientX - startX;
     const deltaY = clientY - startY;
     if (isZoomedBigger) {
