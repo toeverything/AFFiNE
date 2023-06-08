@@ -43,7 +43,7 @@ export const MessageCenter: FC = memo(function MessageCenter() {
           })
           .catch(() => {
             setPopup(false);
-            onLogout();
+            return onLogout();
           });
       } else {
         toast(Messages[event.detail.code].message);
