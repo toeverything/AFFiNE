@@ -10,7 +10,7 @@ import { getGoogleOauthCode } from './google-auth';
 const handlers = require(join(
   process.env.PLUGIN_DIR ?? '../../plugins',
   './bookmark-block/server'
-)) as NamespaceHandlers;
+)).default as NamespaceHandlers;
 
 export const uiHandlers = {
   handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
