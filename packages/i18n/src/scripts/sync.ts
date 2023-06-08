@@ -1,16 +1,12 @@
 // cSpell:ignore Tolgee
+import { resolve } from 'node:path';
+
 import { readFile } from 'fs/promises';
-import path from 'path';
 
 import { createsNewKey, getRemoteTranslations } from './api.js';
 import type { TranslationRes } from './utils.js';
 
-const BASE_JSON_PATH = path.resolve(
-  process.cwd(),
-  'src',
-  'resources',
-  'en.json'
-);
+const BASE_JSON_PATH = resolve(process.cwd(), 'src', 'resources', 'en.json');
 const BASE_LANGUAGES = 'en' as const;
 
 /**

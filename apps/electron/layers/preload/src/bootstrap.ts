@@ -27,6 +27,7 @@ import { contextBridge, ipcRenderer } from 'electron';
         if (validateIPC(channel)) {
           return ipcRenderer.invoke(channel, ...args);
         }
+        return void 0;
       },
 
       on(
@@ -35,9 +36,8 @@ import { contextBridge, ipcRenderer } from 'electron';
       ) {
         if (validateIPC(channel)) {
           ipcRenderer.on(channel, listener);
-
-          return this;
         }
+        return this;
       },
 
       once(
@@ -46,9 +46,8 @@ import { contextBridge, ipcRenderer } from 'electron';
       ) {
         if (validateIPC(channel)) {
           ipcRenderer.once(channel, listener);
-
-          return this;
         }
+        return this;
       },
 
       removeListener(
@@ -57,9 +56,8 @@ import { contextBridge, ipcRenderer } from 'electron';
       ) {
         if (validateIPC(channel)) {
           ipcRenderer.removeListener(channel, listener);
-
-          return this;
         }
+        return this;
       },
     },
   };
