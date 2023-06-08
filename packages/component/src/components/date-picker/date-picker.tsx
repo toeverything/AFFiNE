@@ -4,7 +4,7 @@ import {
   ArrowRightSmallIcon,
 } from '@blocksuite/icons';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import DatePicker from 'react-datepicker';
 
 import * as styles from './index.css';
@@ -33,6 +33,12 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     value ? dayjs(value).toDate() : null
   );
+  const handleOpenMonthPicker = useCallback(() => {
+    setOpenMonthPicker(true);
+  }, []);
+  const handleCloseMonthPicker = useCallback(() => {
+    setOpenMonthPicker(false);
+  }, []);
   const handleSelectDate = (date: Date | null) => {
     if (date) {
       setSelectedDate(date);
@@ -72,7 +78,7 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
         <div
           data-testid="month-picker-button"
           className={styles.arrowDownStyle}
-          onClick={() => setOpenMonthPicker(true)}
+          onClick={handleOpenMonthPicker}
         >
           <ArrowDownSmallIcon />
         </div>
@@ -138,7 +144,7 @@ export const AFFiNEDatePicker = (props: DatePickerProps) => {
   };
   return (
     <DatePicker
-      onClickOutside={() => setOpenMonthPicker(false)}
+      onClickOutside={handleCloseMonthPicker}
       className={styles.inputStyle}
       calendarClassName={styles.calendarStyle}
       weekDayClassName={() => styles.weekStyle}
