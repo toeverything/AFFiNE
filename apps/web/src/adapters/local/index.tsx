@@ -46,7 +46,9 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       });
       setEditorFlags(blockSuiteWorkspace);
       if (config.enablePreloading) {
-        initPageWithPreloading(page);
+        initPageWithPreloading(page).catch(err => {
+          logger.error('init page with preloading failed', err);
+        });
       } else {
         initEmptyPage(page);
       }

@@ -3,7 +3,7 @@ import { SaveIcon } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
 import { useState } from 'react';
 
-import { Button, Input, Modal, ModalWrapper } from '../../..';
+import { Button, Input, Modal, ModalCloseButton, ModalWrapper } from '../../..';
 import { FilterList } from '../filter';
 import * as styles from './view-list.css';
 
@@ -25,10 +25,10 @@ const CreateView = ({
 
   return (
     <div>
-      <h1>Save As New View</h1>
+      <div className={styles.saveTitle}>Save As New View</div>
       <div
         style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+          backgroundColor: 'var(--affine-hover-color)',
           borderRadius: 8,
           padding: 20,
           marginTop: 20,
@@ -47,11 +47,13 @@ const CreateView = ({
         />
       </div>
       <div
-        style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}
+        style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 40 }}
       >
-        <Button onClick={onCancel}>Cancel</Button>
+        <Button className={styles.cancelButton} onClick={onCancel}>
+          Cancel
+        </Button>
         <Button
-          style={{ marginLeft: 20 }}
+          style={{ marginLeft: 20, borderRadius: '8px' }}
           type="primary"
           onClick={() => {
             if (value.name.trim().length > 0) {
@@ -82,7 +84,19 @@ export const SaveViewButton = ({ init, onConfirm }: CreateViewProps) => {
         </div>
       </Button>
       <Modal open={show} onClose={() => changeShow(false)}>
-        <ModalWrapper width={560} style={{ padding: '40px' }}>
+        <ModalWrapper
+          width={560}
+          style={{
+            padding: '40px',
+            background: 'var(--affine-background-primary-color)',
+          }}
+        >
+          <ModalCloseButton
+            top={12}
+            right={12}
+            onClick={() => changeShow(false)}
+            hoverColor="var(--affine-icon-color)"
+          />
           <CreateView
             init={init}
             onCancel={() => changeShow(false)}

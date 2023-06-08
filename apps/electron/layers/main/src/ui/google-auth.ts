@@ -28,10 +28,12 @@ export const getExchangeTokenParams = (code: string) => {
 };
 
 export function getGoogleOauthCode() {
-  shell.openExternal(oauthEndpoint);
-
   return new Promise<ReturnType<typeof getExchangeTokenParams>>(
     (resolve, reject) => {
+      shell.openExternal(oauthEndpoint).catch(e => {
+        logger.error('Failed to open external url', e);
+        reject(e);
+      });
       const handleOpenUrl = async (_: any, url: string) => {
         const mainWindow = BrowserWindow.getAllWindows().find(
           w => !w.isDestroyed()

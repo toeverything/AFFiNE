@@ -204,7 +204,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     useEffect(() => {
       document.documentElement.lang = i18n.language;
       // todo(himself65): this is a hack, we should use a better way to set the language
-      setUpLanguage(i18n);
+      setUpLanguage(i18n)?.catch(error => {
+        console.error(error);
+      });
     }, [i18n]);
     useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
@@ -247,7 +249,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         logger.info('mount first data:', items);
       }
 
-      fetch();
+      fetch().catch(e => {
+        logger.error('fetch error:', e);
+      });
       return () => {
         controller.abort();
         logger.info('unmount');
@@ -335,19 +339,30 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     };
   }, [currentWorkspace]);
 
-  const page = currentWorkspace.blockSuiteWorkspace.getPage(
-    DEFAULT_HELLO_WORLD_PAGE_ID
-  );
-  if (page && page.meta.jumpOnce) {
-    currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
-      DEFAULT_HELLO_WORLD_PAGE_ID,
-      {
-        jumpOnce: false,
-      }
+  useEffect(() => {
+    if (!currentWorkspace) {
+      return;
+    }
+    const page = currentWorkspace.blockSuiteWorkspace.getPage(
+      DEFAULT_HELLO_WORLD_PAGE_ID
     );
-    setCurrentPageId(currentPageId);
-    void jumpToPage(currentWorkspace.id, page.id);
-  }
+    if (page && page.meta.jumpOnce) {
+      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
+        DEFAULT_HELLO_WORLD_PAGE_ID,
+        {
+          jumpOnce: false,
+        }
+      );
+      setCurrentPageId(currentPageId);
+      void jumpToPage(currentWorkspace.id, page.id);
+    }
+  }, [
+    currentPageId,
+    currentWorkspace,
+    jumpToPage,
+    router.query.pageId,
+    setCurrentPageId,
+  ]);
 
   const { openPage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);

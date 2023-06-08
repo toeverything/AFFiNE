@@ -50,7 +50,7 @@ export async function savePDFFileAs(
         });
       });
 
-    shell.openPath(filePath);
+    await shell.openPath(filePath);
     return { filePath };
   } catch (err) {
     logger.error('savePDFFileAs', err);
