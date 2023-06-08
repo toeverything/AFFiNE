@@ -34,7 +34,9 @@ function FavoriteMenuItem({
   const referencesToShow = useMemo(() => {
     return [
       ...new Set(
-        references.filter(ref => !parentIds.has(ref) && !metaMapping[ref].trash)
+        references.filter(
+          ref => !parentIds.has(ref) && !metaMapping[ref]?.trash
+        )
       ),
     ];
   }, [references, parentIds, metaMapping]);
