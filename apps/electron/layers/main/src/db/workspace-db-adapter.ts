@@ -79,19 +79,19 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   };
 
   override async addBlob(key: string, value: Uint8Array) {
-    const res = await super.addBlob(key, value);
     this.update$.next();
+    const res = await super.addBlob(key, value);
     return res;
   }
 
   override async deleteBlob(key: string) {
-    super.deleteBlob(key);
     this.update$.next();
+    await super.deleteBlob(key);
   }
 
   override async addUpdateToSQLite(db: SqliteConnection, data: Uint8Array[]) {
-    super.addUpdateToSQLite(db, data);
     this.update$.next();
+    await super.addUpdateToSQLite(db, data);
   }
 }
 

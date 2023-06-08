@@ -52,8 +52,8 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);
   }, [setIsPublic]);
-  const onClickCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(sharingUrl);
+  const onClickCopyLink = useCallback(async () => {
+    await navigator.clipboard.writeText(sharingUrl);
     toast(t['Copied link to clipboard']());
   }, [sharingUrl, t]);
   const onDisablePublic = useCallback(() => {

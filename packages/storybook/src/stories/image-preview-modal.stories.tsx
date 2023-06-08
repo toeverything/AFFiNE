@@ -37,6 +37,9 @@ fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
       },
       frameId
     );
+  })
+  .catch(err => {
+    console.error('Failed to load large-image.png', err);
   });
 
 export const Default = () => {
