@@ -103,3 +103,27 @@ export abstract class WorkspaceHandlerManager extends HandlerManager<
   'workspace',
   WorkspaceHandlers
 > {}
+
+export type UnwrapManagerHandlerToServerSide<
+  ElectronEvent extends {
+    frameId: number;
+    processId: number;
+  },
+  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>
+> = {
+  [K in keyof Manager['handlers']]: Manager['handlers'][K] extends (
+    ...args: infer Args
+  ) => Promise<infer R>
+    ? (event: ElectronEvent, ...args: Args) => Promise<R>
+    : never;
+};
+
+export type UnwrapManagerHandlerToClientSide<
+  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>
+> = {
+  [K in keyof Manager['handlers']]: Manager['handlers'][K] extends (
+    ...args: infer Args
+  ) => Promise<infer R>
+    ? (...args: Args) => Promise<R>
+    : never;
+};
