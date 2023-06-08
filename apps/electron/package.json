@@ -35,6 +35,7 @@
     "@electron-forge/maker-zip": "^6.1.1",
     "@electron-forge/shared-types": "^6.1.1",
     "@electron/remote": "2.0.9",
+    "@toeverything/infra": "workspace:*",
     "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.1",
     "cross-env": "7.0.3",

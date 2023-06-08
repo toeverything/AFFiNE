@@ -1,5 +1,7 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
 import { config } from '@affine/env';
+import type { LocalWorkspace } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   getLoginStorage,
@@ -7,8 +9,6 @@ import {
   SignMethod,
 } from '@affine/workspace/affine/login';
 import { affineAuth } from '@affine/workspace/affine/shared';
-import type { LocalWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   CloudWorkspaceIcon,
   LocalWorkspaceIcon,

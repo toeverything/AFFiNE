@@ -1,9 +1,12 @@
+import type {
+  SQLiteDBDownloadProvider,
+  SQLiteProvider,
+} from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
 import { uuidv4, Workspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import type { SQLiteDBDownloadProvider, SQLiteProvider } from '../../type';
 import { createSQLiteDBDownloadProvider, createSQLiteProvider } from '../index';
 
 const Y = Workspace.Y;
@@ -39,6 +42,7 @@ vi.stubGlobal('window', {
   },
   events: {
     db: {
+      // @ts-expect-error
       onExternalUpdate: fn => {
         triggerDBUpdate = fn;
         return () => {
@@ -113,6 +117,7 @@ describe('SQLite download provider', () => {
 
     offlineYdoc.getText('text').insert(0, 'sqlite-world');
 
+    // @ts-expect-error
     triggerDBUpdate?.({
       workspaceId: id + '-another-id',
       update: Y.encodeStateAsUpdate(offlineYdoc),
@@ -121,6 +126,7 @@ describe('SQLite download provider', () => {
     // not yet updated (because the workspace id is different)
     expect(workspace.doc.getText('text').toString()).toBe('');
 
+    // @ts-expect-error
     triggerDBUpdate?.({
       workspaceId: id,
       update: Y.encodeStateAsUpdate(offlineYdoc),
