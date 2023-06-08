@@ -33,6 +33,7 @@ import {
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
   imagePreviewModalGoStyle,
+  imagePreviewModalImageStyle,
   imagePreviewModalStyle,
   scaleIndicatorStyle,
 } from './index.css';
@@ -55,16 +56,16 @@ const ImagePreviewModalImpl = (
   const [caption, setCaption] = useState(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
-    const block = page.getBlockById(props.blockId) as EmbedBlockModel | null;
+    const block = page.getBlockById(props.blockId) as EmbedBlockModel;
     assertExists(block);
-    return block.caption;
+    return block?.caption;
   });
   useEffect(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
-    const block = page.getBlockById(props.blockId) as EmbedBlockModel | null;
+    const block = page.getBlockById(props.blockId) as EmbedBlockModel;
     assertExists(block);
-    setCaption(block?.caption === '' ? null : block?.caption);
+    setCaption(block?.caption);
     // is it actually necessary?
     const disposable = block.propsUpdated.on(() => {
       setCaption(block.caption);
@@ -77,9 +78,9 @@ const ImagePreviewModalImpl = (
     fetcher: ([_, __, pageId, blockId]) => {
       const page = props.workspace.getPage(pageId);
       assertExists(page);
-      const block = page.getBlockById(blockId) as EmbedBlockModel | null;
+      const block = page.getBlockById(blockId) as EmbedBlockModel;
       assertExists(block);
-      return props.workspace.blobs.get(block.sourceId);
+      return props.workspace.blobs.get(block?.sourceId);
     },
     suspense: true,
   });
@@ -249,19 +250,18 @@ const ImagePreviewModalImpl = (
           className={`zoom-area ${isZoomedBigger ? 'zoomed-bigger' : ''}`}
           ref={zoomRef}
         >
-          <div className="zoom-content">
-            <div
-              draggable={isZoomedBigger}
-              onDragStart={handleDragStart}
-              onDrag={handleDrag}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <img src={url} alt={caption} ref={imageRef} />
-              {isZoomedBigger ? null : (
-                <p className={imagePreviewModalCaptionStyle}>{caption}</p>
-              )}
-            </div>
+          <div
+            draggable={isZoomedBigger}
+            onDragStart={handleDragStart}
+            onDrag={handleDrag}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className={imagePreviewModalImageStyle}
+          >
+            <img src={url} alt={caption} ref={imageRef} />
+            {isZoomedBigger ? null : (
+              <p className={imagePreviewModalCaptionStyle}>{caption}</p>
+            )}
           </div>
         </div>
       </div>
@@ -292,7 +292,7 @@ const ImagePreviewModalImpl = (
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          {isZoomedBigger && caption !== null ? (
+          {isZoomedBigger && caption !== '' ? (
             <p className={captionStyle}>{caption}</p>
           ) : null}
           <div className={imagePreviewActionBarStyle}>
