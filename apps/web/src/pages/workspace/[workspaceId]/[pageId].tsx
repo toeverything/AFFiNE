@@ -4,12 +4,13 @@ import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
+import { pageSettingFamily } from '../../../atoms';
 import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
@@ -24,6 +25,12 @@ const WorkspaceDetail: React.FC = () => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
+  const [setting, setSetting] = useAtom(pageSettingFamily(currentPageId));
+  if (!setting) {
+    setSetting({
+      mode: 'page',
+    });
+  }
 
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
