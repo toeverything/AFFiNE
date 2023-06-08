@@ -80,21 +80,6 @@ export const openDisableCloudAlertModalAtom = atom(false);
 
 export { workspacesAtom } from './root';
 
-type View = {
-  id: string;
-  /**
-   * @deprecated Use `mode` from `useWorkspacePreferredMode` instead.
-   */
-  mode: 'page' | 'edgeless';
-};
-
-export type WorkspaceRecentViews = Record<string, View[]>;
-
-export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
-  'recentViews',
-  {}
-);
-
 type PageMode = 'page' | 'edgeless';
 type PageLocalSetting = {
   mode: PageMode;
