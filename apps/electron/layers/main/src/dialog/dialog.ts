@@ -306,9 +306,17 @@ export async function moveDBFile(
 
     // remove the old db file, but we don't care if it fails
     if (meta.secondaryDBPath) {
-      fs.remove(meta.secondaryDBPath).catch(err => {
-        logger.error(`[moveDBFile] remove ${meta.secondaryDBPath} failed`, err);
-      });
+      await fs
+        .remove(meta.secondaryDBPath)
+        .then(() => {
+          logger.info(`[moveDBFile] removed ${meta.secondaryDBPath}`);
+        })
+        .catch(err => {
+          logger.error(
+            `[moveDBFile] remove ${meta.secondaryDBPath} failed`,
+            err
+          );
+        });
     }
 
     // update meta
