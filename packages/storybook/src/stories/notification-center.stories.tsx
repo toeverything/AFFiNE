@@ -1,8 +1,10 @@
+import {
+  expandNotificationCenterAtom,
+  NotificationCenter,
+  pushNotificationAtom,
+} from '@affine/component/notification-center';
 import type { Meta } from '@storybook/react';
 import { useAtomValue, useSetAtom } from 'jotai';
-
-import { NotificationCenter, pushNotificationAtom } from '.';
-import { expandNotificationCenterAtom } from './index.jotai';
 
 export default {
   title: 'AFFiNE/NotificationCenter',
