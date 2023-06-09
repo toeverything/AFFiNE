@@ -15,6 +15,7 @@ const plugin = await context({
     '@blocksuite/blocks',
     'react',
     'react-dom',
+    'foxact',
   ],
 });
 

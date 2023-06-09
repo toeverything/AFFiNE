@@ -15,5 +15,6 @@ await build({
     '@blocksuite/blocks',
     'react',
     'react-dom',
+    'foxact',
   ],
 });
