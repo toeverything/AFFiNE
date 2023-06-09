@@ -78,7 +78,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
       - name: Build
-        run: yarn workspace @affine/web build
+        run: yarn nx build @affine/web
         env:
           NX_API_SERVER_PROFILE: local
           NX_ENABLE_DEBUG_PAGE: 1
@@ -95,7 +95,7 @@ jobs:
           if-no-files-found: error
 
       - name: Build @affine/web for desktop
-        run: yarn workspace @affine/web build
+        run: yarn nx build @affine/web
         env:
           NX_API_SERVER_PROFILE: affine
           NX_ENABLE_DEBUG_PAGE: 1
