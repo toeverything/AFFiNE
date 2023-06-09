@@ -32,7 +32,7 @@ const electronModule = {
       registeredHandlers.set(name, handlers);
     },
     addListener: (...args: any[]) => {
-      // @ts-ignore
+      // @ts-expect-error
       electronModule.app.on(...args);
     },
     removeListener: () => {},

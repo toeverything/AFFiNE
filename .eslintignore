@@ -7,3 +7,4 @@ affine-out
 _next
 lib
 .eslintrc.js
+packages/i18n/src/i18n-generated.ts
