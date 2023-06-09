@@ -23,7 +23,7 @@ export async function registerPlugin() {
         './bookmark-block/index.mjs'
       );
       import(bookmarkPluginPath);
-      let dispose: (() => void) | undefined;
+      let dispose: (() => void) | undefined = undefined;
       rootStore.sub(affinePluginsAtom, () => {
         if (dispose) {
           dispose();
