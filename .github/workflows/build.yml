@@ -169,8 +169,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Run server tests
-        run: yarn nx e2e:coverage @affine/monorepo
-        working-directory: apps/server
+        run: yarn nx test:coverage @affine/server
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Upload server test coverage results
