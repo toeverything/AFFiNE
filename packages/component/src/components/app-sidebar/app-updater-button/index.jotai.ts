@@ -24,7 +24,7 @@ function rpcToObservable<
     onSubscribe?.();
     if (typeof window === 'undefined' || !env.isDesktop || !event) {
       subscriber.complete();
-      return () => {};
+      return;
     }
     handler?.()
       .then(t => {
