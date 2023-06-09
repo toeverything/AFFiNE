@@ -38,6 +38,12 @@
     "build": {
       "inputs": ["production", "^production"],
       "dependsOn": ["^build"]
+    },
+    "e2e": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
     }
   }
 }
