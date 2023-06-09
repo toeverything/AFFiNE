@@ -1,4 +1,5 @@
 @import 'react-datepicker/dist/react-datepicker.css';
+@import './fonts.css';
 * {
   -webkit-overflow-scrolling: touch;
   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
