@@ -113,6 +113,3 @@ runs:
       shell: bash
       if: inputs.playwright-install == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
       run: yarn playwright install --with-deps
-    - name: Build Infra
-      shell: bash
-      run: yarn build:infra
