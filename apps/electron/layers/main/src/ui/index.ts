@@ -1,16 +1,8 @@
-import { join } from 'node:path';
-
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
 import { isMacOS } from '../utils';
 import { getGoogleOauthCode } from './google-auth';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const handlers = require(join(
-  process.env.PLUGIN_DIR ?? '../../plugins',
-  './bookmark-block/server'
-)).default as NamespaceHandlers;
 
 export const uiHandlers = {
   handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
@@ -47,5 +39,12 @@ export const uiHandlers = {
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
   },
-  ...handlers,
+  /**
+   * @deprecated Remove this when bookmark block plugin is migrated to plugin-infra
+   */
+  getBookmarkDataByLink: async (_, link: string) => {
+    return globalThis.asyncCall[
+      'com.blocksuite.bookmark-block.get-bookmark-data-by-link'
+    ](link);
+  },
 } satisfies NamespaceHandlers;

@@ -2,12 +2,9 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "target": "ESNext",
     "module": "ESNext",
-    "resolveJsonModule": true,
     "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true,
-    "noEmit": false
+    "outDir": "lib"
   },
-  "include": ["./scripts"]
+  "include": ["vite.config.ts"]
 }

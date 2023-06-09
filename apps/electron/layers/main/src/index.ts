@@ -7,6 +7,7 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
+import { registerPlugin } from './plugin';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
 
@@ -60,6 +61,7 @@ app
   .then(registerProtocol)
   .then(registerHandlers)
   .then(registerEvents)
+  .then(registerPlugin)
   .then(restoreOrCreateWindow)
   .then(createApplicationMenu)
   .then(registerUpdater)

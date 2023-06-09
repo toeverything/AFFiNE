@@ -8,11 +8,12 @@ import {
 } from '@affine/env/workspace/legacy-cloud';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Disposable } from '@blocksuite/store';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import { z } from 'zod';
 
 import { WebsocketClient } from '../affine/channel';
 import { storageChangeSlot } from '../affine/login';
-import { rootStore, rootWorkspacesMetadataAtom } from '../atom';
+import { rootWorkspacesMetadataAtom } from '../atom';
 
 const logger = new DebugLogger('affine-sync');
 

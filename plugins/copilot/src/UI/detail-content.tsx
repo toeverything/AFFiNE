@@ -1,5 +1,5 @@
 import { Button, Input } from '@affine/component';
-import { rootStore } from '@affine/workspace/atom';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
@@ -10,7 +10,7 @@ import { Conversation } from '../core/components/conversation';
 import { Divider } from '../core/components/divider';
 import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
 
-if (!environment.isServer) {
+if (typeof window === 'undefined') {
   import('@blocksuite/blocks').then(({ FormatQuickBar }) => {
     FormatQuickBar.customElements.push((_page, getSelection) => {
       const div = document.createElement('div');
