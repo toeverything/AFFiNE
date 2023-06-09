@@ -18,6 +18,7 @@
     "dev:electron": "yarn workspace @affine/electron dev:app",
     "dev:plugins": "./apps/electron/scripts/plugins/dev-plugins.mjs",
     "build": "yarn workspace @affine/web build",
+    "build:infra": "yarn workspace @toeverything/plugin-infra build && yarn workspace @toeverything/infra build",
     "build:storybook": "yarn workspace @affine/storybook build-storybook",
     "build:plugins": "./apps/electron/scripts/plugins/build-plugins.mjs",
     "bump:nightly": "./scripts/bump-blocksuite.sh",
