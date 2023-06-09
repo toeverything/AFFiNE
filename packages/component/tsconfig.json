@@ -21,9 +21,6 @@
       "path": "../hooks"
     },
     { "path": "../workspace" },
-    {
-      "path": "../../apps/electron"
-    },
     { "path": "../../tests/fixtures" }
   ]
 }
