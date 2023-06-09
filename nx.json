@@ -1,4 +1,5 @@
 {
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "npmScope": "toeverything",
   "tasksRunnerOptions": {
     "default": {
@@ -7,9 +8,6 @@
         "cacheableOperations": ["build", "test"]
       }
     }
-  },
-  "cli": {
-    "defaultCollection": "@nx/next"
   },
   "affected": {
     "defaultBase": "master"
@@ -22,36 +20,12 @@
     "tsconfig.base.json": "*",
     "nx.json": "*"
   },
-  "targetDependencies": {
-    "build": [
-      {
-        "target": "build",
-        "projects": "dependencies"
-      }
-    ]
-  },
   "namedInputs": {
     "default": ["{projectRoot}/**/*"],
     "production": ["!{projectRoot}/**/*.spec.tsx"]
   },
   "targetDefaults": {
     "build": {
-      "inputs": ["production", "^production"],
-      "dependsOn": ["^build"]
-    },
-    "e2e": {
-      "dependsOn": ["^build"]
-    },
-    "e2e:coverage": {
-      "dependsOn": ["^build"]
-    },
-    "test": {
-      "dependsOn": ["^build"]
-    },
-    "test:ui": {
-      "dependsOn": ["^build"]
-    },
-    "test:coverage": {
       "dependsOn": ["^build"]
     }
   }
