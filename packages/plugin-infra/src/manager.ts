@@ -42,9 +42,7 @@ export function definePlugin<ID extends string>(
         }));
       });
     }
-  }
-
-  if (isClient) {
+  } else if (isClient) {
     if (blockSuiteAdapter) {
       const updateAdapter = (adapter: Partial<PluginBlockSuiteAdapter>) => {
         rootStore.set(affinePluginsAtom, plugins => ({
@@ -71,7 +69,6 @@ export function definePlugin<ID extends string>(
         });
       }
     }
-
     if (uiAdapterLoader) {
       const updateAdapter = (adapter: Partial<PluginUIAdapter>) => {
         rootStore.set(affinePluginsAtom, plugins => ({
