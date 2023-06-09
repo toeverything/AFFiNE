@@ -5,7 +5,7 @@ import { Provider } from 'jotai';
 import type { PropsWithChildren } from 'react';
 import { useMemo } from 'react';
 
-export function AffinePluginContext(props: PropsWithChildren) {
+export function AffineContext(props: PropsWithChildren) {
   return (
     <ProviderComposer
       contexts={useMemo(

@@ -15,8 +15,7 @@
       "type": "./dist/type.d.ts",
       "import": "./dist/type.js",
       "require": "./dist/type.cjs"
-    },
-    "./react": "./src/react/index.ts"
+    }
   },
   "dependencies": {
     "@affine/component": "workspace:*",

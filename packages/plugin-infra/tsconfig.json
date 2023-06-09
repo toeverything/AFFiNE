@@ -8,9 +8,6 @@
   },
   "references": [
     {
-      "path": "../component"
-    },
-    {
       "path": "./tsconfig.node.json"
     }
   ]
