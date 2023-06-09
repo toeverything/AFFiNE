@@ -10,7 +10,7 @@ import { Conversation } from '../core/components/conversation';
 import { Divider } from '../core/components/divider';
 import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
 
-if (!environment.isServer) {
+if (typeof window === 'undefined') {
   import('@blocksuite/blocks').then(({ FormatQuickBar }) => {
     FormatQuickBar.customElements.push((_page, getSelection) => {
       const div = document.createElement('div');
