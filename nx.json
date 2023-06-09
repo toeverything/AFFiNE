@@ -42,7 +42,16 @@
     "e2e": {
       "dependsOn": ["^build"]
     },
+    "e2e:coverage": {
+      "dependsOn": ["^build"]
+    },
     "test": {
+      "dependsOn": ["^build"]
+    },
+    "test:ui": {
+      "dependsOn": ["^build"]
+    },
+    "test:coverage": {
       "dependsOn": ["^build"]
     }
   }
