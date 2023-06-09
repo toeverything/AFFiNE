@@ -1,3 +1,5 @@
+import type { BlockSuiteFeatureFlags } from '@affine/env';
+import { config } from '@affine/env';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Generator, StoreOptions } from '@blocksuite/store';
@@ -12,6 +14,15 @@ export function cleanupWorkspace(flavour: WorkspaceFlavour) {
   rootStore.set(rootWorkspacesMetadataAtom, metas =>
     metas.filter(meta => meta.flavour !== flavour)
   );
+}
+
+function setEditorFlags(workspace: Workspace) {
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
+    workspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
 }
 
 const hashMap = new Map<string, Workspace>();
@@ -86,6 +97,7 @@ export function createEmptyBlockSuiteWorkspace(
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
+  setEditorFlags(workspace);
   hashMap.set(cacheKey, workspace);
   return workspace;
 }

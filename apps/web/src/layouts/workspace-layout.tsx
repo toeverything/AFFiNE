@@ -64,7 +64,6 @@ import {
 } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { toast } from '../utils';
-import { setEditorFlags } from '../utils/editor-flag';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -311,7 +310,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       id: pageId,
     });
     assertEquals(page.id, pageId);
-    setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     if (config.enablePreloading) {
       initPageWithPreloading(page).catch(error => {
         console.error('import error:', error);
