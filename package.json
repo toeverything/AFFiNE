@@ -101,5 +101,5 @@
     "@types/cacheable-request": "^6.0.2",
     "@types/responselike": "^1.0.0"
   },
-  "packageManager": "yarn@3.5.0"
+  "packageManager": "yarn@3.6.0"
 }
