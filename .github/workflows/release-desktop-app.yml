@@ -54,10 +54,10 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          NX_API_SERVER_PROFILE: prod
-          NX_ENABLE_TEST_PROPERTIES: false
-          NX_ENABLE_IMAGE_PREVIEW_MODAL: false
-          NX_ENABLE_BOOKMARK_OPERATION: true
+          API_SERVER_PROFILE: prod
+          ENABLE_TEST_PROPERTIES: false
+          ENABLE_IMAGE_PREVIEW_MODAL: false
+          ENABLE_BOOKMARK_OPERATION: true
           RELEASE_VERSION: ${{ github.event.inputs.version }}
 
       - name: Upload Artifact (web-static)
