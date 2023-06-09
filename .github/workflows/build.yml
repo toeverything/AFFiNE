@@ -200,7 +200,7 @@ jobs:
       - name: Run storybook tests
         working-directory: ./packages/storybook
         run: |
-          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn nx test @affine/storybook"
+          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test"
 
   e2e-test:
     name: E2E Test
