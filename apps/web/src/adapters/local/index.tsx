@@ -19,7 +19,6 @@ import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 
-import { setEditorFlags } from '../../utils/editor-flag';
 import {
   BlockSuitePageList,
   PageDetailEditor,
@@ -44,7 +43,6 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       const page = blockSuiteWorkspace.createPage({
         id: DEFAULT_HELLO_WORLD_PAGE_ID,
       });
-      setEditorFlags(blockSuiteWorkspace);
       if (config.enablePreloading) {
         initPageWithPreloading(page).catch(err => {
           logger.error('init page with preloading failed', err);
