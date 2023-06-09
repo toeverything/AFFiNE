@@ -17,9 +17,6 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [
-        'react',
-        'react-dom',
-        'react-dom/client',
         'jotai',
         'jotai/vanilla',
         '@blocksuite/blocks',

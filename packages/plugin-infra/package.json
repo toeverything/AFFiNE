@@ -18,7 +18,6 @@
     }
   },
   "dependencies": {
-    "@affine/component": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/editor": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
