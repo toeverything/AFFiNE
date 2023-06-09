@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
+    "foxact": "^0.2.7",
     "link-preview-js": "^3.0.4"
   },
   "devDependencies": {

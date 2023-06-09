@@ -201,7 +201,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           h.filter(height => height.notificationKey !== notification.key)
         );
     }
-    return () => {};
+    return;
   }, [notification.key, setHeights]);
   return (
     <Toast.Root
