@@ -23,9 +23,11 @@ export async function registerPlugin() {
         './bookmark-block/index.mjs'
       );
       import(bookmarkPluginPath);
-      let dispose: (() => void) | undefined = undefined;
+      let dispose: () => void = () => {
+        // noop
+      };
       rootStore.sub(affinePluginsAtom, () => {
-        dispose?.();
+        dispose();
         const plugins = rootStore.get(affinePluginsAtom);
         Object.values(plugins).forEach(plugin => {
           plugin.definition.commands.forEach(command => {
