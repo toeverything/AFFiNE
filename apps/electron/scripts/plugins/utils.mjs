@@ -18,12 +18,17 @@ export const pluginDir = resolve(rootDir, 'plugins');
  */
 export function definePluginServerConfig(pluginDirName) {
   const pluginRootDir = resolve(pluginDir, pluginDirName);
-  const serverEntryFile = resolve(pluginRootDir, 'src/server.ts');
+  const mainEntryFile = resolve(pluginRootDir, 'src/index.ts');
   const serverOutputDir = resolve(electronOutputDir, pluginDirName);
   return {
-    entryPoints: [serverEntryFile],
-    platform: 'node',
+    entryPoints: [mainEntryFile],
+    platform: 'neutral',
+    format: 'esm',
+    outExtension: {
+      '.js': '.mjs',
+    },
     outdir: serverOutputDir,
     bundle: true,
+    splitting: true,
   };
 }

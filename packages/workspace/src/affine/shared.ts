@@ -1,6 +1,6 @@
 import { prefixUrl } from '@affine/env';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 
-import { rootStore } from '../atom';
 import { createUserApis, createWorkspaceApis } from './api/index';
 import { currentAffineUserAtom } from './atom';
 import type { LoginResponse } from './login';

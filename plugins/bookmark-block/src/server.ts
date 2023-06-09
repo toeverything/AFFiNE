@@ -1,3 +1,4 @@
+import type { ServerAdapter } from '@toeverything/plugin-infra/type';
 import { getLinkPreview } from 'link-preview-js';
 
 type MetaData = {
@@ -26,31 +27,41 @@ export interface PreviewType {
   favicons: string[];
 }
 
-export default {
-  getBookmarkDataByLink: async (_: unknown, url: string): Promise<MetaData> => {
-    const previewData = (await getLinkPreview(url, {
-      timeout: 6000,
-      headers: {
-        'user-agent': 'googlebot',
-      },
-      followRedirects: 'follow',
-    }).catch(() => {
-      return {
-        title: '',
-        siteName: '',
-        description: '',
-        images: [],
-        videos: [],
-        contentType: `text/html`,
-        favicons: [],
-      };
-    })) as PreviewType;
+const adapter: ServerAdapter = affine => {
+  affine.registerCommand(
+    'com.blocksuite.bookmark-block.get-bookmark-data-by-link',
+    async (url: string): Promise<MetaData> => {
+      const previewData = (await getLinkPreview(url, {
+        timeout: 6000,
+        headers: {
+          'user-agent': 'googlebot',
+        },
+        followRedirects: 'follow',
+      }).catch(() => {
+        return {
+          title: '',
+          siteName: '',
+          description: '',
+          images: [],
+          videos: [],
+          contentType: `text/html`,
+          favicons: [],
+        };
+      })) as PreviewType;
 
-    return {
-      title: previewData.title,
-      description: previewData.description,
-      icon: previewData.favicons[0],
-      image: previewData.images[0],
-    };
-  },
+      return {
+        title: previewData.title,
+        description: previewData.description,
+        icon: previewData.favicons[0],
+        image: previewData.images[0],
+      };
+    }
+  );
+  return () => {
+    affine.unregisterCommand(
+      'com.blocksuite.bookmark-block.get-bookmark-data-by-link'
+    );
+  };
 };
+
+export default adapter;

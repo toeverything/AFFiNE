@@ -5,5 +5,18 @@ import { definePluginServerConfig } from './utils.mjs';
 
 await build({
   ...definePluginServerConfig('bookmark-block'),
-  external: ['cheerio', 'electron', 'puppeteer'],
+  external: [
+    // server.ts
+    'cheerio',
+    'electron',
+    'node:url',
+    'puppeteer',
+    // ui.ts
+    '@toeverything/plugin-infra',
+    '@affine/component',
+    '@blocksuite/store',
+    '@blocksuite/blocks',
+    'react',
+    'react-dom',
+  ],
 });

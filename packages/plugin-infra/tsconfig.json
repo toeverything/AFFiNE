@@ -11,7 +11,7 @@
       "path": "../component"
     },
     {
-      "path": "../workspace"
+      "path": "./tsconfig.node.json"
     }
   ]
 }

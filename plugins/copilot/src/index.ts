@@ -22,6 +22,7 @@ definePlugin(
     },
     stage: ReleaseStage.NIGHTLY,
     version: '0.0.1',
+    commands: [],
   },
   {
     load: () => import('./UI/index'),

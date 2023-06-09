@@ -106,6 +106,17 @@
     {
       "path": "./packages/debug"
     },
+    // Plugins
+    {
+      "path": "./packages/plugin-infra"
+    },
+    {
+      "path": "./plugins/bookmark-block"
+    },
+    {
+      "path": "./plugins/copilot"
+    },
+
     // Tests
     {
       "path": "./tests"
@@ -129,12 +140,7 @@
     {
       "path": "./packages/y-indexeddb"
     },
-    {
-      "path": "./packages/plugin-infra"
-    },
-    {
-      "path": "./plugins/copilot"
-    },
+
     {
       "path": "./tests/fixtures"
     },
