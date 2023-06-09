@@ -23,9 +23,8 @@ export abstract class BaseSQLiteAdapter {
   async destroy() {
     const { db } = this;
     this.db = null;
-    // log after close will sometimes crash the app when quitting
-    logger.info(`[SQLiteAdapter:${this.role}]`, 'destroyed:', this.path);
     await db?.close();
+    logger.info(`[SQLiteAdapter:${this.role}]`, 'destroyed:', this.path);
   }
 
   async addBlob(key: string, data: Uint8Array) {
