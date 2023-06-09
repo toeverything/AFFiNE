@@ -80,7 +80,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
           .forEach(dispose => dispose());
       };
     }
-    return () => {};
+    return;
   }, [editor, editor.page, page, onLoad]);
 
   const ref = useRef<HTMLDivElement>(null);

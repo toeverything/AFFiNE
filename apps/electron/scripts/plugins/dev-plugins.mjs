@@ -5,7 +5,7 @@ import { definePluginServerConfig } from './utils.mjs';
 
 const plugin = await context({
   ...definePluginServerConfig('bookmark-block'),
-  external: ['cheerio', 'electron', 'puppeteer'],
+  external: ['cheerio', 'electron', 'puppeteer', 'foxact'],
 });
 
 await plugin.watch();

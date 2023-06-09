@@ -13,5 +13,5 @@ previewBlockIdAtom.onMount = set => {
       window.removeEventListener('affine.embed-block-db-click', callback);
     };
   }
-  return () => {};
+  return;
 };
