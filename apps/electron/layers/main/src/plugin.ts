@@ -25,10 +25,7 @@ export async function registerPlugin() {
       import(bookmarkPluginPath);
       let dispose: (() => void) | undefined = undefined;
       rootStore.sub(affinePluginsAtom, () => {
-        if (dispose) {
-          dispose();
-          dispose = undefined;
-        }
+        dispose?.();
         const plugins = rootStore.get(affinePluginsAtom);
         Object.values(plugins).forEach(plugin => {
           plugin.definition.commands.forEach(command => {
