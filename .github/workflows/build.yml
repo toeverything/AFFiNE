@@ -323,7 +323,7 @@ jobs:
         env:
           NATIVE_TEST: 'true'
       - name: Build layers
-        run: yarn nx build @affine/electron
+        run: yarn workspace @affine/electron build
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
         with:
