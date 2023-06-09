@@ -76,7 +76,6 @@ export const navBodyStyle = style({
 });
 
 export const sidebarButtonStyle = style({
-  width: 'auto',
   height: '32px',
   color: 'var(--affine-icon-color)',
   zIndex: 1,
