@@ -39,4 +39,12 @@ export const uiHandlers = {
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
   },
+  /**
+   * @deprecated Remove this when bookmark block plugin is migrated to plugin-infra
+   */
+  getBookmarkDataByLink: async (_, link: string) => {
+    return globalThis.asyncCall[
+      'com.blocksuite.bookmark-block.get-bookmark-data-by-link'
+    ](link);
+  },
 } satisfies NamespaceHandlers;

@@ -6,6 +6,13 @@ import { ipcMain } from 'electron';
 
 import { ThreadWorkerChannel } from './utils';
 
+declare global {
+  // fixme(himself65):
+  //  remove this when bookmark block plugin is migrated to plugin-infra
+  // eslint-disable-next-line no-var
+  var asyncCall: Record<string, (...args: any) => PromiseLike<any>>;
+}
+
 export async function registerPlugin() {
   const pluginWorkerPath = join(__dirname, './workers/plugin.worker.js');
   const asyncCall = AsyncCall<
@@ -16,6 +23,7 @@ export async function registerPlugin() {
       channel: new ThreadWorkerChannel(new Worker(pluginWorkerPath)),
     }
   );
+  globalThis.asyncCall = asyncCall;
   await import('@toeverything/plugin-infra/manager').then(
     ({ rootStore, affinePluginsAtom }) => {
       const bookmarkPluginPath = join(
