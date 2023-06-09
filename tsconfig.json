@@ -69,10 +69,6 @@
       "@affine/graphql": ["./packages/graphql/src"],
       "@affine/copilot": ["./plugins/copilot/src"],
       "@affine/copilot/*": ["./plugins/copilot/src/*"],
-      "@affine/electron/layers/*": ["./apps/electron/layers/*"],
-      "@affine/electron/preload": [
-        "./apps/electron/layers/preload/preload.d.ts"
-      ],
       "@affine/electron/scripts/*": ["./apps/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
@@ -82,7 +78,10 @@
       "@toeverything/plugin-infra": ["./packages/plugin-infra/src"],
       "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
-      "@affine/native/*": ["./packages/native/*"]
+      "@affine/native/*": ["./packages/native/*"],
+
+      // Development only
+      "@affine/electron/layers/*": ["./apps/electron/layers/*"]
     }
   },
   "include": [],

@@ -7,10 +7,5 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "lib"
   },
-  "include": ["vitest.config.ts", "scripts"],
-  "references": [
-    {
-      "path": "./apps/electron"
-    }
-  ]
+  "include": ["vitest.config.ts", "scripts"]
 }
