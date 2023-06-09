@@ -28,10 +28,10 @@
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.11.0",
-    "@emotion/react": "^11.11.0",
+    "@emotion/react": "^11.11.1",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.13.3",
+    "@mui/material": "^5.13.4",
     "@react-hookz/web": "^23.0.1",
     "@sentry/nextjs": "^7.54.0",
     "@toeverything/hooks": "workspace:*",
@@ -52,7 +52,7 @@
     "rxjs": "^7.8.1",
     "swr": "^2.1.5",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.1",
+    "yjs": "^13.6.2",
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -62,10 +62,10 @@
     "@sentry/webpack-plugin": "^1.20.1",
     "@swc-jotai/debug-label": "^0.0.10",
     "@swc-jotai/react-refresh": "^0.0.8",
-    "@types/react": "^18.2.6",
+    "@types/react": "^18.2.9",
     "@types/react-dom": "^18.2.4",
     "@types/webpack-env": "^1.18.1",
-    "@vanilla-extract/css": "^1.11.0",
+    "@vanilla-extract/css": "^1.11.1",
     "@vanilla-extract/next-plugin": "=2.1.2",
     "dotenv": "^16.1.4",
     "eslint": "^8.42.0",
@@ -73,12 +73,12 @@
     "eslint-plugin-unicorn": "^47.0.0",
     "next": "=13.4.2",
     "next-debug-local": "^0.1.5",
-    "next-router-mock": "^0.9.3",
+    "next-router-mock": "^0.9.5",
     "raw-loader": "^4.0.2",
     "redux": "^4.2.1",
     "swc-plugin-coverage-instrument": "^0.0.18",
     "typescript": "^5.1.3",
-    "webpack": "^5.85.0"
+    "webpack": "^5.86.0"
   },
   "stableVersion": "0.0.0"
 }

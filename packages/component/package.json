@@ -23,12 +23,12 @@
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.11.0",
-    "@emotion/react": "^11.11.0",
+    "@emotion/react": "^11.11.1",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@mui/base": "5.0.0-beta.3",
+    "@mui/base": "5.0.0-beta.4",
     "@mui/icons-material": "^5.11.16",
-    "@mui/material": "^5.13.3",
+    "@mui/material": "^5.13.4",
     "@popperjs/core": "^2.11.8",
     "@radix-ui/react-avatar": "^1.0.3",
     "@radix-ui/react-collapsible": "^1.0.3",
@@ -56,14 +56,14 @@
     "@blocksuite/icons": "^2.1.19",
     "@blocksuite/lit": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly",
-    "@types/react": "^18.2.6",
+    "@types/react": "^18.2.9",
     "@types/react-datepicker": "^4.11.2",
     "@types/react-dnd": "^3.0.2",
     "@types/react-dom": "18.2.4",
-    "@vanilla-extract/css": "^1.11.0",
+    "@vanilla-extract/css": "^1.11.1",
     "typescript": "^5.1.3",
     "vite": "^4.3.9",
-    "yjs": "^13.6.1"
+    "yjs": "^13.6.2"
   },
   "version": "0.7.0-canary.11"
 }
