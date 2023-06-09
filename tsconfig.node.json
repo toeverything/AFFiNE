@@ -1,4 +1,5 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
@@ -6,5 +7,10 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "lib"
   },
-  "include": ["vitest.config.ts", "scripts"]
+  "include": ["vitest.config.ts", "scripts"],
+  "references": [
+    {
+      "path": "./apps/electron"
+    }
+  ]
 }

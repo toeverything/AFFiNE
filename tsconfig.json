@@ -73,6 +73,7 @@
       "@affine/electron/preload": [
         "./apps/electron/layers/preload/preload.d.ts"
       ],
+      "@affine/electron/scripts/*": ["./apps/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/infra": ["./packages/infra/src"],
@@ -146,5 +147,5 @@
     }
   ],
   "files": [],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "target", "lib", "test-results"]
 }
