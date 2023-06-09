@@ -109,8 +109,7 @@ const AffineRemoteCollaborationPanel: React.FC<
                                   onClick={async () => {
                                     // FIXME: remove ignore
 
-                                    // @ts-ignore
-                                    await removeMember(member.id);
+                                    await removeMember(Number(member.id));
                                     toast(
                                       t['Member has been removed']({
                                         name: user.name,

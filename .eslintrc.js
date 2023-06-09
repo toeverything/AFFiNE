@@ -103,7 +103,15 @@ const config = {
     'unused-imports/no-unused-imports': 'error',
     'simple-import-sort/imports': 'error',
     'simple-import-sort/exports': 'error',
-    '@typescript-eslint/ban-ts-comment': 0,
+    '@typescript-eslint/ban-ts-comment': [
+      'error',
+      {
+        'ts-expect-error': 'allow-with-description',
+        'ts-ignore': true,
+        'ts-nocheck': true,
+        'ts-check': false,
+      },
+    ],
     '@typescript-eslint/no-restricted-imports': [
       'error',
       {
@@ -143,9 +151,26 @@ const config = {
       },
     },
     {
-      files: ['**/__tests__/**/*', '**/*.stories.tsx'],
+      files: [
+        '**/__tests__/**/*',
+        '**/*.stories.tsx',
+        '**/*.spec.ts',
+        '**/tests/**/*',
+        'scripts/**/*',
+        '**/benchmark/**/*',
+        '**/__debug__/**/*',
+      ],
       rules: {
         '@typescript-eslint/no-non-null-assertion': 0,
+        '@typescript-eslint/ban-ts-comment': [
+          'error',
+          {
+            'ts-expect-error': false,
+            'ts-ignore': true,
+            'ts-nocheck': true,
+            'ts-check': false,
+          },
+        ],
       },
     },
     ...allPackages.map(pkg => ({
