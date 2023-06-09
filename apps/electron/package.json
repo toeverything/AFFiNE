@@ -23,6 +23,9 @@
     "forge": "./forge.config.js"
   },
   "main": "./dist/layers/main/index.js",
+  "exports": {
+    "./scripts/plugins/build-plugins.mjs": "./scripts/plugins/build-plugins.mjs"
+  },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/native": "workspace:*",
