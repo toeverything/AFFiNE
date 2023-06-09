@@ -15,7 +15,6 @@
     }
   },
   "scripts": {
-    "build": "tsc --project ./tsconfig.json",
     "sync-languages": "NODE_OPTIONS=--experimental-fetch ts-node-esm src/scripts/sync.ts",
     "sync-languages:check": "yarn run sync-languages --check",
     "download-resources": "NODE_OPTIONS=--experimental-fetch ts-node-esm src/scripts/download.ts"
