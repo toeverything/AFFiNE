@@ -30,8 +30,7 @@ const useShowOpenDBFile = (workspaceId: string) => {
       window.apis.workspace.getMeta(workspaceId).then(meta => {
         setShow(!!meta.secondaryDBPath);
       });
-      // @ts-expect-error
-      return window.events.workspace.onMetaChange(newMeta => {
+      return window.events.workspace.onMetaChange((newMeta: any) => {
         if (newMeta.workspaceId === workspaceId) {
           const meta = newMeta.meta;
           setShow(!!meta.secondaryDBPath);
@@ -74,7 +73,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
       if (!result?.error && !result?.canceled) {
         toast(t['Move folder success']());
       } else if (result?.error) {
-        // @ts-expect-error
+        // @ts-expect-error: result.error is dynamic
         toast(t[result.error]());
       }
     } catch (err) {

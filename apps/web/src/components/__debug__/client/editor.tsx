@@ -21,9 +21,9 @@ const page = blockSuiteWorkspace.createPage({ id: 'page0' });
 
 const Editor: React.FC = () => {
   const onLoad = useCallback((page: Page, editor: EditorContainer) => {
-    // @ts-ignore
+    // @ts-expect-error
     globalThis.page = page;
-    // @ts-ignore
+    // @ts-expect-error
     globalThis.editor = editor;
     return () => void 0;
   }, []);
