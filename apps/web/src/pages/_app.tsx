@@ -3,12 +3,12 @@ import '@affine/component/theme/theme.css';
 // bootstrap code before everything
 import '../bootstrap';
 
+import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { config } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
-import { AffinePluginContext } from '@toeverything/plugin-infra/react';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -64,7 +64,7 @@ const App = function App({
         <MessageCenter />
         <AffineErrorBoundary router={useRouter()}>
           <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
-            <AffinePluginContext>
+            <AffineContext>
               <Head>
                 <title>AFFiNE</title>
                 <meta
@@ -75,7 +75,7 @@ const App = function App({
               <DebugProvider>
                 {getLayout(<Component {...pageProps} />)}
               </DebugProvider>
-            </AffinePluginContext>
+            </AffineContext>
           </Suspense>
         </AffineErrorBoundary>
       </I18nextProvider>

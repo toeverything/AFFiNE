@@ -1,18 +1,23 @@
 {
   "name": "@toeverything/plugin-infra",
-  "private": true,
+  "type": "module",
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "dev": "vite build --watch"
   },
   "exports": {
-    "./manager": "./src/manager.ts",
-    "./type": "./src/type.ts",
-    "./react": "./src/react/index.ts"
+    "./manager": {
+      "type": "./dist/manager.d.ts",
+      "import": "./dist/manager.js",
+      "require": "./dist/manager.cjs"
+    },
+    "./type": {
+      "type": "./dist/type.d.ts",
+      "import": "./dist/type.js",
+      "require": "./dist/type.cjs"
+    }
   },
   "dependencies": {
-    "@affine/component": "workspace:*",
-    "@affine/env": "workspace:*",
-    "@affine/workspace": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/editor": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
@@ -20,7 +25,9 @@
     "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly"
   },
   "devDependencies": {
-    "jotai": "^2.1.1"
+    "jotai": "^2.1.1",
+    "vite": "^4.3.9",
+    "vite-plugin-dts": "^2.3.0"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
