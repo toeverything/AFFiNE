@@ -27,7 +27,6 @@ async function dispatch<
 >(
   namespace: T,
   functionName: F,
-  // @ts-expect-error
   ...args: Parameters<WithoutFirstParameter<MainIPCHandlerMap[T][F]>>
 ): // @ts-expect-error
 ReturnType<MainIPCHandlerMap[T][F]> {

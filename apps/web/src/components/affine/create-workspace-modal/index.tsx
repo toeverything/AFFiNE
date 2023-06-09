@@ -76,9 +76,7 @@ const NameWorkspaceContent = ({
         placeholder={t['Set a Workspace name']()}
         maxLength={64}
         minLength={0}
-        onChange={value => {
-          setWorkspaceName(value);
-        }}
+        onChange={setWorkspaceName}
         onCompositionStart={() => {
           isComposition.current = true;
         }}
@@ -90,9 +88,7 @@ const NameWorkspaceContent = ({
         <Button
           data-testid="create-workspace-close-button"
           type="light"
-          onClick={() => {
-            onClose();
-          }}
+          onClick={onClose}
         >
           {t.Cancel()}
         </Button>
@@ -103,9 +99,7 @@ const NameWorkspaceContent = ({
             opacity: !workspaceName ? 0.5 : 1,
           }}
           type="primary"
-          onClick={() => {
-            handleCreateWorkspace();
-          }}
+          onClick={handleCreateWorkspace}
         >
           {t.Create()}
         </Button>
@@ -137,20 +131,24 @@ const SetDBLocationContent = ({
   const defaultDBLocation = useDefaultDBLocation();
   const [opening, setOpening] = useState(false);
 
-  const handleSelectDBFileLocation = async () => {
+  const handleSelectDBFileLocation = useCallback(() => {
     if (opening) {
       return;
     }
     setOpening(true);
-    const result = await window.apis?.dialog.selectDBFileLocation();
-    setOpening(false);
-    if (result?.filePath) {
-      onConfirmLocation(result.filePath);
-    } else if (result?.error) {
-      // @ts-expect-error: result.error is dynamic so the type is unknown
-      toast(t[result.error]());
-    }
-  };
+    (async function () {
+      const result = await window.apis?.dialog.selectDBFileLocation();
+      setOpening(false);
+      if (result?.filePath) {
+        onConfirmLocation(result.filePath);
+      } else if (result?.error) {
+        // @ts-expect-error: result.error is dynamic so the type is unknown
+        toast(t[result.error]());
+      }
+    })().catch(err => {
+      logger.error(err);
+    });
+  }, [onConfirmLocation, opening, t]);
 
   return (
     <div className={style.content}>
@@ -334,22 +332,32 @@ export const CreateWorkspaceModal = ({
     ]
   );
 
+  const onConfirmName = useCallback(
+    (name: string) => {
+      setWorkspaceName(name);
+      if (environment.isDesktop) {
+        setStep('set-syncing-mode');
+      } else {
+        // this will be the last step for web for now
+        // fix me later
+        createLocalWorkspace(name)
+          .then(id => {
+            onCreate(id);
+          })
+          .catch(err => {
+            logger.error(err);
+          });
+      }
+    },
+    [createLocalWorkspace, onCreate]
+  );
+
   const nameWorkspaceNode =
     step === 'name-workspace' ? (
       <NameWorkspaceContent
         // go to previous step instead?
         onClose={onClose}
-        onConfirmName={async name => {
-          setWorkspaceName(name);
-          if (environment.isDesktop) {
-            setStep('set-syncing-mode');
-          } else {
-            // this will be the last step for web for now
-            // fix me later
-            const id = await createLocalWorkspace(name);
-            onCreate(id);
-          }
-        }}
+        onConfirmName={onConfirmName}
       />
     ) : null;
 
