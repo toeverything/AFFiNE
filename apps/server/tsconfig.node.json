@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
     "target": "ESNext",
@@ -6,7 +7,13 @@
     "resolveJsonModule": true,
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
-    "outDir": "dist/scripts"
+    "outDir": "dist/scripts",
+    "rootDir": "."
   },
+  "references": [
+    {
+      "path": "../../tests/fixtures"
+    }
+  ],
   "include": ["scripts", "package.json"]
 }
