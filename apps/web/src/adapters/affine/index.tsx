@@ -21,7 +21,7 @@ import {
   SignMethod,
 } from '@affine/workspace/affine/login';
 import { affineApis, affineAuth } from '@affine/workspace/affine/shared';
-import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
   createAffineProviders,
   createIndexedDBBackgroundProvider,
@@ -31,6 +31,7 @@ import {
   cleanupWorkspace,
   createEmptyBlockSuiteWorkspace,
 } from '@affine/workspace/utils';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import { createJSONStorage } from 'jotai/utils';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { Suspense, useEffect } from 'react';
