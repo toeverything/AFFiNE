@@ -2,9 +2,9 @@
   "name": "@affine/storybook",
   "private": true,
   "scripts": {
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "NODE_OPTIONS=--max_old_space_size=4096 storybook build",
-    "test-storybook": "test-storybook"
+    "dev": "storybook dev -p 6006",
+    "build": "NODE_OPTIONS=--max_old_space_size=4096 storybook build",
+    "test": "test-storybook"
   },
   "dependencies": {
     "@affine/component": "workspace:*",

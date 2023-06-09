@@ -23,6 +23,7 @@ on:
 env:
   DEBUG: napi:*
   APP_NAME: affine
+  COVERAGE: true
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
@@ -51,7 +52,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - run: yarn build:storybook
+      - run: yarn nx build @affine/storybook
       - name: Upload storybook artifact
         uses: actions/upload-artifact@v3
         with:
@@ -59,7 +60,7 @@ jobs:
           path: ./packages/storybook/storybook-static
           if-no-files-found: error
 
-  build:
+  build-web:
     name: Build @affine/web
     runs-on: ubuntu-latest
     environment: development
@@ -77,22 +78,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
       - name: Build
-        run: yarn build
+        run: yarn nx build @affine/web
         env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: local
           ENABLE_DEBUG_PAGE: 1
           ENABLE_PLUGIN: true
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: true
           ENABLE_PRELOADING: false
-          COVERAGE: true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -101,23 +94,33 @@ jobs:
           path: ./apps/web/.next
           if-no-files-found: error
 
-      - name: Build @affine/web for desktop
-        run: yarn build
+  build-web-for-desktop:
+    name: Build @affine/web for desktop
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Cache Next.js
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
+
+      - name: Build
+        run: yarn nx build @affine/web
         env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: affine
           ENABLE_DEBUG_PAGE: 1
           ENABLE_PLUGIN: true
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: false
           ENABLE_PRELOADING: false
-          COVERAGE: true
 
       - name: Export static resources
         run: yarn workspace @affine/web export
@@ -169,8 +172,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Run server tests
-        run: yarn test:coverage
-        working-directory: apps/server
+        run: yarn nx test:coverage @affine/server
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Upload server test coverage results
@@ -201,7 +203,7 @@ jobs:
       - name: Run storybook tests
         working-directory: ./packages/storybook
         run: |
-          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test-storybook"
+          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test"
 
   e2e-test:
     name: E2E Test
@@ -211,7 +213,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: [build, build-storybook]
+    needs: [build-web, build-storybook]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -245,7 +247,7 @@ jobs:
           node ./scripts/wait-3000-healthz.mjs
 
       - name: Run playwright tests
-        run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
 
@@ -306,7 +308,7 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
-    needs: [build]
+    needs: [build-web-for-desktop]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -320,12 +322,11 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: yarn test:unit
+        run: yarn nx test @affine/monorepo
         env:
           NATIVE_TEST: 'true'
       - name: Build layers
-        run: yarn workspace @affine/electron build-layers
-
+        run: yarn workspace @affine/electron build
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
         with:
@@ -391,7 +392,7 @@ jobs:
         uses: ./.github/actions/setup-node
 
       - name: Unit Test
-        run: yarn run test:unit:coverage
+        run: yarn nx test:coverage @affine/monorepo
 
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
