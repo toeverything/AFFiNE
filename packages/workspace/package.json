@@ -22,6 +22,7 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@toeverything/hooks": "workspace:*",
+    "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "firebase": "^9.22.1",
     "jotai": "^2.1.1",

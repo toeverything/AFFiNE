@@ -19,6 +19,7 @@ definePlugin(
     },
     stage: ReleaseStage.NIGHTLY,
     version: '0.0.1',
+    commands: ['com.blocksuite.bookmark-block.get-bookmark-data-by-link'],
   },
   undefined,
   {
@@ -27,6 +28,20 @@ definePlugin(
       import.meta.webpackHot &&
       import.meta.webpackHot.accept('./blocksuite', () =>
         onHot(import('./blocksuite/index'))
+      ),
+  },
+  {
+    load: () =>
+      import(
+        /* webpackIgnore: true */
+        './server'
+      ),
+    hotModuleReload: onHot =>
+      onHot(
+        import(
+          /* webpackIgnore: true */
+          './server'
+        )
       ),
   }
 );

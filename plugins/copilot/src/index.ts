@@ -1,5 +1,3 @@
-import '@affine/env/config';
-
 import { definePlugin } from '@toeverything/plugin-infra/manager';
 import { ReleaseStage } from '@toeverything/plugin-infra/type';
 
@@ -22,6 +20,7 @@ definePlugin(
     },
     stage: ReleaseStage.NIGHTLY,
     version: '0.0.1',
+    commands: [],
   },
   {
     load: () => import('./UI/index'),

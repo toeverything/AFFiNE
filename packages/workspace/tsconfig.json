@@ -10,6 +10,7 @@
     { "path": "../y-indexeddb" },
     { "path": "../env" },
     { "path": "../debug" },
-    { "path": "../hooks" }
+    { "path": "../hooks" },
+    { "path": "../plugin-infra" }
   ]
 }
