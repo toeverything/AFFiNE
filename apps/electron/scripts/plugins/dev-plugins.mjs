@@ -7,10 +7,7 @@ const plugin = await context({
   ...definePluginServerConfig('bookmark-block'),
   external: [
     // server.ts
-    'cheerio',
-    'electron',
-    'node:url',
-    'puppeteer',
+    'link-preview-js',
     // ui.ts
     '@toeverything/plugin-infra',
     '@affine/component',
