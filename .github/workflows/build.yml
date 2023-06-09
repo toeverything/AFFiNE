@@ -41,6 +41,8 @@ jobs:
           yarn typecheck
           yarn lint --max-warnings=0
           yarn circular
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
 
   build-storybook:
     name: Build Storybook
