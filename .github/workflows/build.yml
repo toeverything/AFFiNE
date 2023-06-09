@@ -80,12 +80,12 @@ jobs:
       - name: Build
         run: yarn nx build @affine/web
         env:
-          NX_API_SERVER_PROFILE: local
-          NX_ENABLE_DEBUG_PAGE: 1
-          NX_ENABLE_PLUGIN: true
-          NX_ENABLE_ALL_PAGE_FILTER: true
-          NX_ENABLE_LEGACY_PROVIDER: true
-          NX_ENABLE_PRELOADING: false
+          API_SERVER_PROFILE: local
+          ENABLE_DEBUG_PAGE: 1
+          ENABLE_PLUGIN: true
+          ENABLE_ALL_PAGE_FILTER: true
+          ENABLE_LEGACY_PROVIDER: true
+          ENABLE_PRELOADING: false
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -115,12 +115,12 @@ jobs:
       - name: Build
         run: yarn nx build @affine/web
         env:
-          NX_API_SERVER_PROFILE: affine
-          NX_ENABLE_DEBUG_PAGE: 1
-          NX_ENABLE_PLUGIN: true
-          NX_ENABLE_ALL_PAGE_FILTER: true
-          NX_ENABLE_LEGACY_PROVIDER: false
-          NX_ENABLE_PRELOADING: false
+          API_SERVER_PROFILE: affine
+          ENABLE_DEBUG_PAGE: 1
+          ENABLE_PLUGIN: true
+          ENABLE_ALL_PAGE_FILTER: true
+          ENABLE_LEGACY_PROVIDER: false
+          ENABLE_PRELOADING: false
 
       - name: Export static resources
         run: yarn workspace @affine/web export
