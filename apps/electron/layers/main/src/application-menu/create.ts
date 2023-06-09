@@ -132,9 +132,9 @@ export function createApplicationMenu() {
     },
   ];
 
-  // @ts-ignore The snippet is copied from Electron official docs.
-  //            It's working as expected. No idea why it contains type errors.
-  //            Just ignore for now.
+  // @ts-expect-error: The snippet is copied from Electron official docs.
+  //                   It's working as expected. No idea why it contains type errors.
+  //                   Just ignore for now.
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 

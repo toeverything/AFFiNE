@@ -1,5 +1,5 @@
 import { css, displayFlex, keyframes, styled } from '@affine/component';
-// @ts-ignore
+// @ts-expect-error: no types for css-spring
 import spring, { toString } from 'css-spring';
 
 const ANIMATE_DURATION = 400;
