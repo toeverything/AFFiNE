@@ -18,7 +18,7 @@ export const ExportPanel = () => {
           if (id) {
             const result = await window.apis?.dialog.saveDBFileAs(id);
             if (result?.error) {
-              // @ts-expect-error
+              // @ts-expect-error: result.error is dynamic
               toast(t[result.error]());
             } else if (!result?.canceled) {
               toast(t['Export success']());
