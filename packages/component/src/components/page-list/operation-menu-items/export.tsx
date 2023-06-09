@@ -1,4 +1,8 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import {
+  rootCurrentPageIdAtom,
+  rootCurrentWorkspaceIdAtom,
+} from '@affine/workspace/atom';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import {
@@ -8,6 +12,7 @@ import {
   ExportToMarkdownIcon,
   ExportToPdfIcon,
 } from '@blocksuite/icons';
+import { useAtomValue } from 'jotai';
 import { useRef } from 'react';
 
 import { Menu, MenuItem } from '../../..';
@@ -18,6 +23,8 @@ const ExportToPdfMenuItem = ({
 }: CommonMenuItemProps<{ type: 'pdf' }>) => {
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
+  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   return (
     <>
       {globalThis.currentEditor!.mode === 'page' && (
@@ -29,7 +36,10 @@ const ExportToPdfMenuItem = ({
                 globalThis.currentEditor!.page
               );
             }
+
             const result = await window.apis?.export.savePDFFileAs(
+              currentWorkspaceId || '',
+              currentPageId || '',
               (
                 globalThis.currentEditor!.page.root as PageBlockModel
               ).title.toString()
