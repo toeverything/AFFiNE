@@ -3,7 +3,6 @@
   "include": ["./src"],
   "compilerOptions": {
     "noEmit": false,
-    "composite": true,
     "outDir": "lib"
   },
   "references": [

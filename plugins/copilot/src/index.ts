@@ -1,5 +1,3 @@
-import '@affine/env/config';
-
 import { definePlugin } from '@toeverything/plugin-infra/manager';
 import { ReleaseStage } from '@toeverything/plugin-infra/type';
 

@@ -8,6 +8,7 @@
     "./server": "./src/server.ts"
   },
   "dependencies": {
+    "@affine/component": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
     "link-preview-js": "^3.0.4"
   },
