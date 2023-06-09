@@ -20,10 +20,10 @@
     {
       "path": "../hooks"
     },
-    { "path": "../workspace" },
     {
-      "path": "../../apps/electron"
+      "path": "../plugin-infra"
     },
+    { "path": "../workspace" },
     { "path": "../../tests/fixtures" }
   ]
 }

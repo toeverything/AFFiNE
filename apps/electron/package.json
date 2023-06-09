@@ -55,6 +55,8 @@
     "zx": "^7.2.2"
   },
   "dependencies": {
+    "@toeverything/plugin-infra": "workspace:*",
+    "async-call-rpc": "^6.3.1",
     "cheerio": "^1.0.0-rc.12",
     "electron-updater": "^5.3.0",
     "lodash-es": "^4.17.21",

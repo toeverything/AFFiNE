@@ -141,6 +141,11 @@ export type Definition<ID extends string> = {
    * @example ReleaseStage.PROD
    */
   stage: ReleaseStage;
+
+  /**
+   * Registered commands
+   */
+  commands: string[];
 };
 
 // todo(himself65): support Vue.js
@@ -171,12 +176,16 @@ export type PluginBlockSuiteAdapter = {
   uiDecorator: (root: EditorContainer) => Cleanup;
 };
 
-export type PluginAdapterCreator = (
-  context: AffinePluginContext
-) => PluginUIAdapter;
+type AFFiNEServer = {
+  registerCommand: (command: string, fn: (...args: any[]) => any) => void;
+  unregisterCommand: (command: string) => void;
+};
+
+export type ServerAdapter = (affine: AFFiNEServer) => () => void;
 
 export type AffinePlugin<ID extends string> = {
   definition: Definition<ID>;
   uiAdapter: Partial<PluginUIAdapter>;
   blockSuiteAdapter: Partial<PluginBlockSuiteAdapter>;
+  serverAdapter?: ServerAdapter;
 };
