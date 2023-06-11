@@ -11,9 +11,10 @@ import {
   type WebContents,
 } from 'electron';
 
+import { restoreOrCreateWindow } from './main-window';
 import { MessageEventChannel } from './utils';
 
-const HELPER_PROCESS_PATH = path.join(__dirname, '../helper/index.js');
+const HELPER_PROCESS_PATH = path.join(__dirname, './helper.js');
 
 function pickAndBind<T extends object, U extends keyof T>(
   obj: T,
@@ -30,25 +31,21 @@ function pickAndBind<T extends object, U extends keyof T>(
   }, {} as any);
 }
 
-export class HelperProcessManager {
-  // static
-  static readonly instance = new HelperProcessManager();
-
+class HelperProcessManager {
   ready: Promise<void>;
   #process: UtilityProcess;
 
   // a rpc server for the main process -> helper process
   rpc: any;
 
-  private constructor() {
-    const process = utilityProcess.fork(HELPER_PROCESS_PATH);
-    this.#process = process;
+  constructor() {
+    const helperProcess = utilityProcess.fork(HELPER_PROCESS_PATH, undefined, {
+      cwd: __dirname,
+    });
+    this.#process = helperProcess;
     this.ready = new Promise(resolve => {
-      process.once('spawn', () => {
+      helperProcess.once('spawn', () => {
         resolve();
-      });
-      process.once('exit', () => {
-        // ?
       });
     });
   }
@@ -96,4 +93,14 @@ export class HelperProcessManager {
     );
     this.rpc = server;
   }
+}
+
+export async function startHelperProcess() {
+  const helperProcessManager = new HelperProcessManager();
+  await helperProcessManager.ready;
+  const window = await restoreOrCreateWindow();
+  helperProcessManager.connectMain();
+  const unsub = helperProcessManager.connectRenderer(window.webContents);
+  app.on('before-quit', unsub);
+  return helperProcessManager;
 }

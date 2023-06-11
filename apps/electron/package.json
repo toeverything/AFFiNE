@@ -22,7 +22,7 @@
   "config": {
     "forge": "./forge.config.js"
   },
-  "main": "./dist/layers/main/index.js",
+  "main": "./dist/main.js",
   "exports": {
     "./scripts/plugins/build-plugins.mjs": "./scripts/plugins/build-plugins.mjs"
   },

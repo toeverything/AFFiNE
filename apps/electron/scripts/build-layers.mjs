@@ -27,8 +27,9 @@ async function buildLayers() {
   console.log('Build plugins');
   await import('./plugins/build-plugins.mjs');
 
+  await esbuild.build(common.workers);
   await esbuild.build({
-    ...common,
+    ...common.layers,
     define: {
       ...common.define,
       'process.env.NODE_ENV': `"${NODE_ENV}"`,

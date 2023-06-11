@@ -42,7 +42,7 @@ async function createWindow() {
       sandbox: false,
       webviewTag: false, // The webview tag is not recommended. Consider alternatives like iframe or Electron's BrowserView. https://www.electronjs.org/docs/latest/api/webview-tag#warning
       spellcheck: false, // FIXME: enable?
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, './preload.js'),
       // serialize exposed meta that to be used in preload
       additionalArguments: [`--exposed-meta=` + JSON.stringify(exposedMeta)],
     },

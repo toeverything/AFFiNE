@@ -1,9 +1,9 @@
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { parentPort } from 'node:worker_threads';
 
 import { AsyncCall } from 'async-call-rpc';
 
-import { MessagePortChannel } from '../utils';
+import { MessageEventChannel } from '../utils';
 
 const commandProxy: Record<string, (...args: any[]) => Promise<any>> = {};
 
@@ -12,13 +12,13 @@ if (!parentPort) {
 }
 
 AsyncCall(commandProxy, {
-  channel: new MessagePortChannel(parentPort),
+  channel: new MessageEventChannel(parentPort),
 });
 
 import('@toeverything/plugin-infra/manager').then(
   ({ rootStore, affinePluginsAtom }) => {
     const bookmarkPluginPath = join(
-      process.env.PLUGIN_DIR ?? '../../../plugins',
+      process.env.PLUGIN_DIR ?? resolve(__dirname, '../plugins'),
       './bookmark-block/index.mjs'
     );
 

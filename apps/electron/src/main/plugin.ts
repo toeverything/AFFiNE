@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 
 import { AsyncCall } from 'async-call-rpc';
@@ -27,7 +27,7 @@ export async function registerPlugin() {
   await import('@toeverything/plugin-infra/manager').then(
     ({ rootStore, affinePluginsAtom }) => {
       const bookmarkPluginPath = join(
-        process.env.PLUGIN_DIR ?? '../../plugins',
+        process.env.PLUGIN_DIR ?? resolve(__dirname, './plugins'),
         './bookmark-block/index.mjs'
       );
       import(bookmarkPluginPath);

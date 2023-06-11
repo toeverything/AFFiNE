@@ -18,7 +18,7 @@ export async function getAffineAPIs() {
   return {
     apis: {
       ...mainAPIs.apis,
-      ...helperAPIs.events,
+      ...helperAPIs.apis,
     },
     events: {
       ...mainAPIs.events,
@@ -162,9 +162,11 @@ async function getHelperAPIs() {
         handlersMeta.map(([namespace, functionNames]) => {
           return [
             namespace,
-            functionNames.map(name => {
-              return [name, toHelperHandler(namespace, name)];
-            }),
+            Object.fromEntries(
+              functionNames.map(name => {
+                return [name, toHelperHandler(namespace, name)];
+              })
+            ),
           ];
         })
       );
@@ -173,9 +175,11 @@ async function getHelperAPIs() {
         eventsMeta.map(([namespace, eventNames]) => {
           return [
             namespace,
-            eventNames.map(name => {
-              return [name, toHelperEventSubscriber(namespace, name)];
-            }),
+            Object.fromEntries(
+              eventNames.map(name => {
+                return [name, toHelperEventSubscriber(namespace, name)];
+              })
+            ),
           ];
         })
       );
