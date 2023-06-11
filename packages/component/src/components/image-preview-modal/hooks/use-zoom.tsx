@@ -1,4 +1,4 @@
-import type { DragEvent, RefObject, TouchEvent } from 'react';
+import type { RefObject, TouchEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseZoomControlsProps {
@@ -12,8 +12,15 @@ export const useZoomControls = ({
 }: UseZoomControlsProps) => {
   const [currentScale, setCurrentScale] = useState<number>(1);
   const [isZoomedBigger, setIsZoomedBigger] = useState<boolean>(false);
-  const [startX, setStartX] = useState<number>(0);
-  const [startY, setStartY] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [mouseX, setMouseX] = useState<number>(0);
+  const [mouseY, setMouseY] = useState<number>(0);
+  const [dragBeforeX, setDragBeforeX] = useState<number>(0);
+  const [dragBeforeY, setDragBeforeY] = useState<number>(0);
+  const [imagePos, setImagePos] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
 
   const zoomIn = useCallback(() => {
     const image = imageRef.current;
@@ -34,7 +41,7 @@ export const useZoomControls = ({
       image.style.width = `${image.naturalWidth * newScale}px`;
       image.style.height = `${image.naturalHeight * newScale}px`;
       if (!isZoomedBigger) {
-        image.style.transform = 'translate(0, 0)';
+        image.style.transform = `translate(0px, 0px)`;
       }
     }
   }, [imageRef, currentScale, isZoomedBigger]);
@@ -51,58 +58,63 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDragStart = (event: DragEvent<HTMLDivElement> | TouchEvent) => {
-    let clientX, clientY;
-    if ('touches' in event) {
-      clientX = event.touches ? event.touches[0].clientX : 0;
-      clientY = event.touches ? event.touches[0].clientY : 0;
-    } else {
-      clientX = (event as DragEvent<HTMLImageElement>).clientX;
-      clientY = (event as DragEvent<HTMLImageElement>).clientY;
-    }
-    const dataTransfer = (event as DragEvent<HTMLImageElement>)?.dataTransfer;
-    if (dataTransfer) {
-      dataTransfer.setDragImage(new Image(), 0, 0);
-      dataTransfer.setData('text/plain', '');
-    }
-    setStartX(clientX);
-    setStartY(clientY);
-  };
-  const handleDrag = (event: DragEvent<HTMLDivElement> | TouchEvent) => {
+  const handleDragStart = (event: MouseEvent | TouchEvent) => {
     event.preventDefault();
-    let clientX, clientY;
-    if ('touches' in event) {
-      clientX = event.touches ? event.touches[0].clientX : 0;
-      clientY = event.touches ? event.touches[0].clientY : 0;
-    } else {
-      clientX = event.clientX;
-      clientY = event.clientY;
-    }
-    const deltaX = clientX - startX;
-    const deltaY = clientY - startY;
-    if (isZoomedBigger) {
-      const image = imageRef.current;
-      if (image) {
-        const imageX = deltaX + startX;
-        const imageY = deltaY + startY;
-        image.style.transform = `translate(${imageX}px, ${imageY}px)`;
-      }
+    setIsDragging(true);
+    const image = imageRef.current;
+    if (image && isZoomedBigger) {
+      image.style.cursor = 'grab';
+      const rect = image.getBoundingClientRect();
+      setDragBeforeX(rect.left);
+      setDragBeforeY(rect.top);
+      setMouseX(event.clientX);
+      setMouseY(event.clientY);
     }
   };
 
-  const handleDragEnd = () => {
-    const { current: zoomArea } = zoomRef;
-    if (zoomArea) {
-      const image = imageRef.current;
-      if (image) {
-        const imageX = parseInt(image.style.left || '0', 10);
-        const imageY = parseInt(image.style.top || '0', 10);
-        setStartX(imageX);
-        setStartY(imageY);
-        image.style.transform = `translate(${imageX}px, ${imageY}px)`;
-      }
+  const handleDrag = (event: MouseEvent | TouchEvent) => {
+    event.preventDefault();
+    const image = imageRef.current;
+
+    if (isDragging && image && isZoomedBigger) {
+      image.style.cursor = 'grabbing';
+      const currentX = imagePos.x;
+      const currentY = imagePos.y;
+      const newPosX = currentX + event.clientX - mouseX;
+      const newPosY = currentY + event.clientY - mouseY;
+
+      image.style.transform = `translate(${newPosX}px, ${newPosY}px)`;
     }
   };
+
+  const handleDragEnd = (event: MouseEvent | TouchEvent) => {
+    event.preventDefault();
+    setIsDragging(false);
+
+    const image = imageRef.current;
+    if (image) {
+      image.style.cursor = 'pointer';
+      const rect = image.getBoundingClientRect();
+      const newPos = { x: rect.left, y: rect.top };
+      const currentX = imagePos.x;
+      const currentY = imagePos.y;
+      const newPosX = currentX + newPos.x - dragBeforeX;
+      const newPosY = currentY + newPos.y - dragBeforeY;
+      setImagePos({ x: newPosX, y: newPosY });
+    }
+  };
+
+  const handleMouseUp = useCallback(() => {
+    if (isDragging) {
+      handleDragEnd(event);
+    }
+  }, [isDragging, handleDragEnd]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (isDragging) {
+      handleDragEnd(event);
+    }
+  }, [isDragging, handleDragEnd]);
 
   const checkZoomSize = useCallback(() => {
     const { current: zoomArea } = zoomRef;
@@ -138,12 +150,16 @@ export const useZoomControls = ({
 
     window.addEventListener('wheel', handleScroll, { passive: false });
     window.addEventListener('resize', handleResize);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('wheel', handleScroll);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [zoomIn, zoomOut, checkZoomSize]);
+  }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp, handleTouchEnd]);
 
   return {
     zoomIn,
