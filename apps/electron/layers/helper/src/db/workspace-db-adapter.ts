@@ -2,12 +2,11 @@ import type { SqliteConnection } from '@affine/native';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
-import type { AppContext } from '../context';
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
-import { mergeUpdateWorker } from '../workers';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
+import { mergeUpdate } from './merge-update';
 import { dbSubjects } from './subjects';
 
 export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
@@ -53,7 +52,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     }
 
     const updates = await this.getUpdates();
-    const merged = await mergeUpdateWorker(updates.map(update => update.data));
+    const merged = mergeUpdate(updates.map(update => update.data));
 
     // to initialize the yDoc, we need to apply all updates from the db
     this.applyUpdate(merged, 'self');
@@ -95,11 +94,8 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 }
 
-export async function openWorkspaceDatabase(
-  context: AppContext,
-  workspaceId: string
-) {
-  const meta = await getWorkspaceMeta(context, workspaceId);
+export async function openWorkspaceDatabase(workspaceId: string) {
+  const meta = await getWorkspaceMeta(workspaceId);
   const db = new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
   await db.init();
   logger.info(`openWorkspaceDatabase [${workspaceId}]`);

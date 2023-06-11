@@ -76,19 +76,20 @@ async function watchPlugins() {
   await import('./plugins/dev-plugins.mjs');
 }
 
-async function watchPreload() {
+async function watchLayers() {
   return new Promise(async resolve => {
     let initialBuild = false;
-    const preloadBuild = await esbuild.context({
-      ...common.preload,
+
+    const buildContext = await esbuild.context({
+      ...common,
       plugins: [
-        ...(common.preload.plugins ?? []),
+        ...(common.plugins ?? []),
         {
-          name: 'electron-dev:reload-app-on-preload-change',
+          name: 'electron-dev:reload-app-on-layers-change',
           setup(build) {
             build.onEnd(() => {
               if (initialBuild) {
-                console.log(`[preload] has changed, [re]launching electron...`);
+                console.log(`[layers] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
               } else {
                 resolve();
@@ -99,43 +100,13 @@ async function watchPreload() {
         },
       ],
     });
-    // watch will trigger build.onEnd() on first run & on subsequent changes
-    await preloadBuild.watch();
-  });
-}
-
-async function watchMain() {
-  return new Promise(async resolve => {
-    let initialBuild = false;
-
-    const mainBuild = await esbuild.context({
-      ...common.main,
-      plugins: [
-        ...(common.main.plugins ?? []),
-        {
-          name: 'electron-dev:reload-app-on-main-change',
-          setup(build) {
-            build.onEnd(() => {
-              if (initialBuild) {
-                console.log(`[main] has changed, [re]launching electron...`);
-                spawnOrReloadElectron();
-              } else {
-                resolve();
-                initialBuild = true;
-              }
-            });
-          },
-        },
-      ],
-    });
-    await mainBuild.watch();
+    await buildContext.watch();
   });
 }
 
 async function main() {
   await watchPlugins();
-  await watchMain();
-  await watchPreload();
+  await watchLayers();
 
   if (watchMode) {
     console.log(`Watching for changes...`);

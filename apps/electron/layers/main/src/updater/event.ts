@@ -1,6 +1,6 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 
-import type { MainEventListener } from '../type';
+import type { MainEventRegister } from '../type';
 
 export interface UpdateMeta {
   version: string;
@@ -33,4 +33,4 @@ export const updaterEvents = {
       sub.unsubscribe();
     };
   },
-} satisfies Record<string, MainEventListener>;
+} satisfies Record<string, MainEventRegister>;

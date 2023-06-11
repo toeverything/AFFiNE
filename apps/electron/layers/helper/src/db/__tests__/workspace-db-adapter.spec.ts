@@ -5,15 +5,16 @@ import { v4 } from 'uuid';
 import { afterEach, expect, test, vi } from 'vitest';
 import * as Y from 'yjs';
 
-import type { AppContext } from '../../context';
 import { dbSubjects } from '../subjects';
 
 const tmpDir = path.join(__dirname, 'tmp');
+const appDataPath = path.join(tmpDir, 'app-data');
 
-const testAppContext: AppContext = {
-  appDataPath: path.join(tmpDir, 'test-data'),
-  appName: 'test',
-};
+vi.doMock('../../main-rpc', () => ({
+  mainRPC: {
+    getPath: async () => appDataPath,
+  },
+}));
 
 afterEach(async () => {
   await fs.remove(tmpDir);
@@ -30,9 +31,9 @@ function getTestUpdates() {
 test('can create new db file if not exists', async () => {
   const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
   const workspaceId = v4();
-  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  const db = await openWorkspaceDatabase(workspaceId);
   const dbPath = path.join(
-    testAppContext.appDataPath,
+    appDataPath,
     `workspaces/${workspaceId}`,
     `storage.db`
   );
@@ -45,7 +46,7 @@ test('on applyUpdate (from self), will not trigger update', async () => {
   const workspaceId = v4();
   const onUpdate = vi.fn();
 
-  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  const db = await openWorkspaceDatabase(workspaceId);
   db.update$.subscribe(onUpdate);
   db.applyUpdate(getTestUpdates(), 'self');
   expect(onUpdate).not.toHaveBeenCalled();
@@ -58,7 +59,7 @@ test('on applyUpdate (from renderer), will trigger update', async () => {
   const onUpdate = vi.fn();
   const onExternalUpdate = vi.fn();
 
-  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  const db = await openWorkspaceDatabase(workspaceId);
   db.update$.subscribe(onUpdate);
   const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
   db.applyUpdate(getTestUpdates(), 'renderer');
@@ -73,7 +74,7 @@ test('on applyUpdate (from external), will trigger update & send external update
   const onUpdate = vi.fn();
   const onExternalUpdate = vi.fn();
 
-  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  const db = await openWorkspaceDatabase(workspaceId);
   db.update$.subscribe(onUpdate);
   const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
   db.applyUpdate(getTestUpdates(), 'external');
@@ -86,7 +87,7 @@ test('on applyUpdate (from external), will trigger update & send external update
 test('on destroy, check if resources have been released', async () => {
   const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
   const workspaceId = v4();
-  const db = await openWorkspaceDatabase(testAppContext, workspaceId);
+  const db = await openWorkspaceDatabase(workspaceId);
   const updateSub = {
     complete: vi.fn(),
     next: vi.fn(),

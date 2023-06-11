@@ -1,4 +1,3 @@
-import { app } from 'electron';
 import type { Subject } from 'rxjs';
 import { Observable } from 'rxjs';
 import {
@@ -25,7 +24,6 @@ import {
   tap,
 } from 'rxjs/operators';
 
-import { appContext } from '../context';
 import { logger } from '../logger';
 import { getWorkspaceMeta, workspaceSubjects } from '../workspace';
 import { SecondaryWorkspaceSQLiteDB } from './secondary-db';
@@ -36,7 +34,7 @@ import { openWorkspaceDatabase } from './workspace-db-adapter';
 export const db$Map = new Map<string, Observable<WorkspaceSQLiteDB>>();
 
 // use defer to prevent `app` is undefined while running tests
-const beforeQuit$ = defer(() => fromEvent(app, 'before-quit'));
+const beforeQuit$ = defer(() => fromEvent(process, 'beforeExit'));
 
 // return a stream that emit a single event when the subject completes
 function completed<T>(subject: Subject<T>) {
@@ -55,7 +53,7 @@ function getWorkspaceDB$(id: string) {
   if (!db$Map.has(id)) {
     db$Map.set(
       id,
-      from(openWorkspaceDatabase(appContext, id)).pipe(
+      from(openWorkspaceDatabase(id)).pipe(
         tap({
           next: db => {
             logger.info(
@@ -103,7 +101,7 @@ function getWorkspaceDB$(id: string) {
 
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
   return merge(
-    getWorkspaceMeta(appContext, db.workspaceId),
+    getWorkspaceMeta(db.workspaceId),
     workspaceSubjects.meta.pipe(
       map(({ meta }) => meta),
       filter(meta => meta.id === db.workspaceId)

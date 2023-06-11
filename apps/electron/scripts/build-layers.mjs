@@ -18,7 +18,6 @@ if (process.platform === 'win32') {
 
 async function buildLayers() {
   const common = config();
-  await esbuild.build(common.preload);
   console.log('Build plugin infra');
   spawnSync('yarn', ['build'], {
     stdio: 'inherit',
@@ -29,9 +28,9 @@ async function buildLayers() {
   await import('./plugins/build-plugins.mjs');
 
   await esbuild.build({
-    ...common.main,
+    ...common,
     define: {
-      ...common.main.define,
+      ...common.define,
       'process.env.NODE_ENV': `"${NODE_ENV}"`,
       'process.env.BUILD_TYPE': `"${process.env.BUILD_TYPE || 'stable'}"`,
     },

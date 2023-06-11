@@ -1,9 +1,4 @@
-import { appContext } from '../context';
-import type {
-  MainEventListener,
-  NamespaceHandlers,
-  WorkspaceMeta,
-} from '../type';
+import type { MainEventRegister, WorkspaceMeta } from '../type';
 import { deleteWorkspace, getWorkspaceMeta, listWorkspaces } from './handlers';
 import { workspaceSubjects } from './subjects';
 
@@ -19,12 +14,12 @@ export const workspaceEvents = {
       sub.unsubscribe();
     };
   },
-} satisfies Record<string, MainEventListener>;
+} satisfies Record<string, MainEventRegister>;
 
 export const workspaceHandlers = {
-  list: async () => listWorkspaces(appContext),
-  delete: async (_, id: string) => deleteWorkspace(appContext, id),
-  getMeta: async (_, id: string) => {
-    return getWorkspaceMeta(appContext, id);
+  list: async () => listWorkspaces(),
+  delete: async (id: string) => deleteWorkspace(id),
+  getMeta: async (id: string) => {
+    return getWorkspaceMeta(id);
   },
-} satisfies NamespaceHandlers;
+};

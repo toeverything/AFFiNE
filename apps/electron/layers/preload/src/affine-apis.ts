@@ -1,75 +1,187 @@
 // NOTE: we will generate preload types from this file
+import { AsyncCall, type EventBasedChannel } from 'async-call-rpc';
 import { ipcRenderer } from 'electron';
+import log from 'electron-log/renderer';
+import { Subject } from 'rxjs';
 
-type MainExposedMeta = {
+type ExposedMeta = {
   handlers: [namespace: string, handlerNames: string[]][];
   events: [namespace: string, eventNames: string[]][];
 };
 
-const meta: MainExposedMeta = (() => {
-  const val = process.argv
-    .find(arg => arg.startsWith('--exposed-meta='))
-    ?.split('=')[1];
+const logger = log.scope('preload');
 
-  return val ? JSON.parse(val) : null;
-})();
+export async function getAffineAPIs() {
+  const mainAPIs = getMainAPIs();
+  const helperAPIs = await getHelperAPIs();
 
-// main handlers that can be invoked from the renderer process
-const apis: any = (() => {
-  const { handlers: handlersMeta } = meta;
+  return {
+    apis: {
+      ...mainAPIs.apis,
+      ...helperAPIs.events,
+    },
+    events: {
+      ...mainAPIs.events,
+      ...helperAPIs.events,
+    },
+  };
+}
 
-  const all = handlersMeta.map(([namespace, functionNames]) => {
-    const namespaceApis = functionNames.map(name => {
-      const channel = `${namespace}:${name}`;
-      return [
-        name,
-        (...args: any[]) => {
-          return ipcRenderer.invoke(channel, ...args);
-        },
-      ];
-    });
-    return [namespace, Object.fromEntries(namespaceApis)];
-  });
-
-  return Object.fromEntries(all);
-})();
-
-// main events that can be listened to from the renderer process
-const events: any = (() => {
-  const { events: eventsMeta } = meta;
-
-  // NOTE: ui may try to listen to a lot of the same events, so we increase the limit...
-  ipcRenderer.setMaxListeners(100);
-
-  const all = eventsMeta.map(([namespace, eventNames]) => {
-    const namespaceEvents = eventNames.map(name => {
-      const channel = `${namespace}:${name}`;
-      return [
-        name,
-        (callback: (...args: any[]) => void) => {
-          const fn: (
-            event: Electron.IpcRendererEvent,
-            ...args: any[]
-          ) => void = (_, ...args) => {
-            callback(...args);
-          };
-          ipcRenderer.on(channel, fn);
-          return () => {
-            ipcRenderer.off(channel, fn);
-          };
-        },
-      ];
-    });
-    return [namespace, Object.fromEntries(namespaceEvents)];
-  });
-  return Object.fromEntries(all);
-})();
-
-const appInfo = {
+export const appInfo = {
   electron: true,
 };
 
-export { apis, appInfo, events };
+function getMainAPIs() {
+  const meta: ExposedMeta = (() => {
+    const val = process.argv
+      .find(arg => arg.startsWith('--exposed-meta='))
+      ?.split('=')[1];
 
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-export type { MainIPCEventMap } from '../../main/src/exposed';
+    return val ? JSON.parse(val) : null;
+  })();
+
+  // main handlers that can be invoked from the renderer process
+  const apis: any = (() => {
+    const { handlers: handlersMeta } = meta;
+
+    const all = handlersMeta.map(([namespace, functionNames]) => {
+      const namespaceApis = functionNames.map(name => {
+        const channel = `${namespace}:${name}`;
+        return [
+          name,
+          (...args: any[]) => {
+            return ipcRenderer.invoke(channel, ...args);
+          },
+        ];
+      });
+      return [namespace, Object.fromEntries(namespaceApis)];
+    });
+
+    return Object.fromEntries(all);
+  })();
+
+  // main events that can be listened to from the renderer process
+  const events: any = (() => {
+    const { events: eventsMeta } = meta;
+
+    // NOTE: ui may try to listen to a lot of the same events, so we increase the limit...
+    ipcRenderer.setMaxListeners(100);
+
+    const all = eventsMeta.map(([namespace, eventNames]) => {
+      const namespaceEvents = eventNames.map(name => {
+        const channel = `${namespace}:${name}`;
+        return [
+          name,
+          (callback: (...args: any[]) => void) => {
+            const fn: (
+              event: Electron.IpcRendererEvent,
+              ...args: any[]
+            ) => void = (_, ...args) => {
+              callback(...args);
+            };
+            ipcRenderer.on(channel, fn);
+            return () => {
+              ipcRenderer.off(channel, fn);
+            };
+          },
+        ];
+      });
+      return [namespace, Object.fromEntries(namespaceEvents)];
+    });
+    return Object.fromEntries(all);
+  })();
+
+  return { apis, events };
+}
+
+const helperPort$ = new Promise<MessagePort>(resolve =>
+  ipcRenderer.on('helper-connection', async e => {
+    logger.info('[preload] helper-connection', e);
+    resolve(e.ports[0]);
+  })
+);
+
+const createMessagePortChannel = (port: MessagePort): EventBasedChannel => {
+  return {
+    on(listener) {
+      port.onmessage = e => {
+        listener(e.data);
+      };
+      port.start();
+      return () => {
+        port.onmessage = null;
+        port.close();
+      };
+    },
+    send(data) {
+      port.postMessage(data);
+    },
+  };
+};
+
+async function getHelperAPIs() {
+  const helperPort = await helperPort$;
+  const events$ = new Subject<{ channel: string; args: any[] }>();
+  const [apis, events] = await new Promise<any>(resolve => {
+    const rpc = AsyncCall<any>(
+      {
+        postEvent: (channel: string, ...args: any) => {
+          events$.next({ channel, args });
+        },
+        // will be resolved by the helper process
+        exposeMeta: (meta: ExposedMeta) => {
+          setup(meta);
+        },
+      },
+      {
+        channel: createMessagePortChannel(helperPort),
+      }
+    );
+
+    const toHelperHandler = (namespace: string, name: string) => {
+      return rpc[`${namespace}:${name}`] as (...args: any[]) => Promise<any>;
+    };
+
+    const toHelperEventSubscriber = (namespace: string, name: string) => {
+      return (callback: (...args: any[]) => void) => {
+        const subscription = events$.subscribe(({ channel, args }) => {
+          if (channel === `${namespace}:${name}`) {
+            callback(...args);
+          }
+        });
+        return () => {
+          subscription.unsubscribe();
+        };
+      };
+    };
+
+    const setup = (meta: ExposedMeta) => {
+      const { handlers: handlersMeta, events: eventsMeta } = meta;
+
+      const helperHandlers = Object.fromEntries(
+        handlersMeta.map(([namespace, functionNames]) => {
+          return [
+            namespace,
+            functionNames.map(name => {
+              return [name, toHelperHandler(namespace, name)];
+            }),
+          ];
+        })
+      );
+
+      const helperEvents = Object.fromEntries(
+        eventsMeta.map(([namespace, eventNames]) => {
+          return [
+            namespace,
+            eventNames.map(name => {
+              return [name, toHelperEventSubscriber(namespace, name)];
+            }),
+          ];
+        })
+      );
+      return resolve([helperHandlers, helperEvents]);
+    };
+  });
+
+  return { apis, events };
+}

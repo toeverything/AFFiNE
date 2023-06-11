@@ -6,55 +6,21 @@ import { v4 } from 'uuid';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 const tmpDir = path.join(__dirname, 'tmp');
+const appDataPath = path.join(tmpDir, 'app-data');
 
-const registeredHandlers = new Map<
-  string,
-  ((...args: any[]) => Promise<any>)[]
->();
-
-const SESSION_DATA_PATH = path.join(tmpDir, 'affine-test');
-const DOCUMENTS_PATH = path.join(tmpDir, 'affine-test-documents');
-
-const electronModule = {
-  app: {
-    getPath: (name: string) => {
-      if (name === 'sessionData') {
-        return SESSION_DATA_PATH;
-      } else if (name === 'documents') {
-        return DOCUMENTS_PATH;
-      }
-      throw new Error('not implemented');
-    },
-    name: 'affine-test',
-    on: (name: string, callback: (...args: any[]) => any) => {
-      const handlers = registeredHandlers.get(name) || [];
-      handlers.push(callback);
-      registeredHandlers.set(name, handlers);
-    },
-    addListener: (...args: any[]) => {
-      // @ts-expect-error
-      electronModule.app.on(...args);
-    },
-    removeListener: () => {},
+vi.doMock('../../main-rpc', () => ({
+  mainRPC: {
+    getPath: async () => appDataPath,
   },
-  shell: {} as Partial<Electron.Shell>,
-  dialog: {} as Partial<Electron.Dialog>,
-};
-
-const runHandler = async (key: string) => {
-  await Promise.all(
-    (registeredHandlers.get(key) ?? []).map(handler => handler())
-  );
-};
-
-// dynamically import handlers so that we can inject local variables to mocks
-vi.doMock('electron', () => {
-  return electronModule;
-});
+}));
 
 const constructorStub = vi.fn();
 const destroyStub = vi.fn();
 destroyStub.mockReturnValue(Promise.resolve());
+
+function existProcess() {
+  process.emit('beforeExit', 0);
+}
 
 vi.doMock('../secondary-db', () => {
   return {
@@ -77,7 +43,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  await runHandler('before-quit');
+  existProcess();
   // wait for the db to be closed on Windows
   if (process.platform === 'win32') {
     await setTimeout(200);
@@ -110,7 +76,7 @@ test('db should be destroyed when app quits', async () => {
   expect(db0.db).not.toBeNull();
   expect(db1.db).not.toBeNull();
 
-  await runHandler('before-quit');
+  existProcess();
 
   // wait the async `db.destroy()` to be called
   await setTimeout(100);
@@ -130,10 +96,9 @@ test('db should be removed in db$Map after destroyed', async () => {
 
 test('if db has a secondary db path, we should also poll that', async () => {
   const { ensureSQLiteDB } = await import('../ensure-db');
-  const { appContext } = await import('../../context');
   const { storeWorkspaceMeta } = await import('../../workspace');
   const workspaceId = v4();
-  await storeWorkspaceMeta(appContext, workspaceId, {
+  await storeWorkspaceMeta(workspaceId, {
     secondaryDBPath: path.join(tmpDir, 'secondary.db'),
   });
 
@@ -145,7 +110,7 @@ test('if db has a secondary db path, we should also poll that', async () => {
   expect(constructorStub).toBeCalledWith(path.join(tmpDir, 'secondary.db'), db);
 
   // if secondary meta is changed
-  await storeWorkspaceMeta(appContext, workspaceId, {
+  await storeWorkspaceMeta(workspaceId, {
     secondaryDBPath: path.join(tmpDir, 'secondary2.db'),
   });
 
@@ -155,7 +120,7 @@ test('if db has a secondary db path, we should also poll that', async () => {
   expect(destroyStub).toBeCalledTimes(1);
 
   // if secondary meta is changed (but another workspace)
-  await storeWorkspaceMeta(appContext, v4(), {
+  await storeWorkspaceMeta(v4(), {
     secondaryDBPath: path.join(tmpDir, 'secondary3.db'),
   });
   await vi.advanceTimersByTimeAsync(1500);

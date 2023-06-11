@@ -1,10 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 (async () => {
-  const affineApis = await import('./affine-apis');
-  contextBridge.exposeInMainWorld('apis', affineApis.apis);
-  contextBridge.exposeInMainWorld('events', affineApis.events);
-  contextBridge.exposeInMainWorld('appInfo', affineApis.appInfo);
+  const { appInfo, getAffineAPIs } = await import('./affine-apis');
+  const { apis, events } = await getAffineAPIs();
+
+  contextBridge.exposeInMainWorld('apis', apis);
+  contextBridge.exposeInMainWorld('events', events);
+  contextBridge.exposeInMainWorld('appInfo', appInfo);
 
   // Credit to microsoft/vscode
   const globals = {

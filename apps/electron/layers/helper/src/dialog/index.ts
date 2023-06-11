@@ -1,4 +1,3 @@
-import type { NamespaceHandlers } from '../type';
 import {
   loadDBFile,
   moveDBFile,
@@ -9,25 +8,24 @@ import {
 } from './dialog';
 
 export const dialogHandlers = {
-  revealDBFile: async (_, workspaceId: string) => {
+  revealDBFile: async (workspaceId: string) => {
     return revealDBFile(workspaceId);
   },
   loadDBFile: async () => {
     return loadDBFile();
   },
-  saveDBFileAs: async (_, workspaceId: string) => {
+  saveDBFileAs: async (workspaceId: string) => {
     return saveDBFileAs(workspaceId);
   },
-  moveDBFile: (_, workspaceId: string, dbFileLocation?: string) => {
+  moveDBFile: (workspaceId: string, dbFileLocation?: string) => {
     return moveDBFile(workspaceId, dbFileLocation);
   },
   selectDBFileLocation: async () => {
     return selectDBFileLocation();
   },
   setFakeDialogResult: async (
-    _,
     result: Parameters<typeof setFakeDialogResult>[0]
   ) => {
     return setFakeDialogResult(result);
   },
-} satisfies NamespaceHandlers;
+};

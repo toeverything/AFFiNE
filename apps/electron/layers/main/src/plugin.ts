@@ -4,7 +4,7 @@ import { Worker } from 'node:worker_threads';
 import { AsyncCall } from 'async-call-rpc';
 import { ipcMain } from 'electron';
 
-import { ThreadWorkerChannel } from './utils';
+import { MessageEventChannel } from './utils';
 
 declare global {
   // fixme(himself65):
@@ -20,7 +20,7 @@ export async function registerPlugin() {
   >(
     {},
     {
-      channel: new ThreadWorkerChannel(new Worker(pluginWorkerPath)),
+      channel: new MessageEventChannel(new Worker(pluginWorkerPath)),
     }
   );
   globalThis.asyncCall = asyncCall;

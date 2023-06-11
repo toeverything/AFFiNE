@@ -2,26 +2,38 @@ import path from 'node:path';
 
 import fs from 'fs-extra';
 
-import { type AppContext } from '../context';
 import { ensureSQLiteDB } from '../db/ensure-db';
 import { logger } from '../logger';
+import { mainRPC } from '../main-rpc';
 import type { WorkspaceMeta } from '../type';
 import { workspaceSubjects } from './subjects';
 
-export async function listWorkspaces(
-  context: AppContext
-): Promise<[workspaceId: string, meta: WorkspaceMeta][]> {
-  const basePath = getWorkspacesBasePath(context);
+let _appDataPath = '';
+
+async function getAppDataPath() {
+  if (_appDataPath) {
+    return _appDataPath;
+  }
+  _appDataPath = await mainRPC.getPath('sessionData');
+  return _appDataPath;
+}
+
+export async function listWorkspaces(): Promise<
+  [workspaceId: string, meta: WorkspaceMeta][]
+> {
+  const basePath = await getWorkspacesBasePath();
   try {
     await fs.ensureDir(basePath);
-    const dirs = await fs.readdir(basePath, {
-      withFileTypes: true,
-    });
+    const dirs = (
+      await fs.readdir(basePath, {
+        withFileTypes: true,
+      })
+    ).filter(d => d.isDirectory());
     const metaList = (
       await Promise.all(
         dirs.map(async dir => {
           // ? shall we put all meta in a single file instead of one file per workspace?
-          return await getWorkspaceMeta(context, dir.name);
+          return await getWorkspaceMeta(dir.name);
         })
       )
     ).filter((w): w is WorkspaceMeta => !!w);
@@ -32,13 +44,9 @@ export async function listWorkspaces(
   }
 }
 
-export async function deleteWorkspace(context: AppContext, id: string) {
-  const basePath = getWorkspaceBasePath(context, id);
-  const movedPath = path.join(
-    context.appDataPath,
-    'delete-workspaces',
-    `${id}`
-  );
+export async function deleteWorkspace(id: string) {
+  const basePath = await getWorkspaceBasePath(id);
+  const movedPath = path.join(await getDeletedWorkspacesBasePath(), `${id}`);
   try {
     const db = await ensureSQLiteDB(id);
     await db.destroy();
@@ -50,22 +58,24 @@ export async function deleteWorkspace(context: AppContext, id: string) {
   }
 }
 
-export function getWorkspacesBasePath(context: AppContext) {
-  return path.join(context.appDataPath, 'workspaces');
+export async function getWorkspacesBasePath() {
+  return path.join(await getAppDataPath(), 'workspaces');
 }
 
-export function getWorkspaceBasePath(context: AppContext, workspaceId: string) {
-  return path.join(context.appDataPath, 'workspaces', workspaceId);
+export async function getWorkspaceBasePath(workspaceId: string) {
+  return path.join(await getAppDataPath(), 'workspaces', workspaceId);
 }
 
-export function getWorkspaceDBPath(context: AppContext, workspaceId: string) {
-  const basePath = getWorkspaceBasePath(context, workspaceId);
-  return path.join(basePath, 'storage.db');
+async function getDeletedWorkspacesBasePath() {
+  return path.join(await getAppDataPath(), 'deleted-workspaces');
 }
 
-export function getWorkspaceMetaPath(context: AppContext, workspaceId: string) {
-  const basePath = getWorkspaceBasePath(context, workspaceId);
-  return path.join(basePath, 'meta.json');
+export async function getWorkspaceDBPath(workspaceId: string) {
+  return path.join(await getWorkspaceBasePath(workspaceId), 'storage.db');
+}
+
+export async function getWorkspaceMetaPath(workspaceId: string) {
+  return path.join(await getWorkspaceBasePath(workspaceId), 'meta.json');
 }
 
 /**
@@ -73,16 +83,15 @@ export function getWorkspaceMetaPath(context: AppContext, workspaceId: string) {
  * This function will also migrate the workspace if needed
  */
 export async function getWorkspaceMeta(
-  context: AppContext,
   workspaceId: string
 ): Promise<WorkspaceMeta> {
   try {
-    const basePath = getWorkspaceBasePath(context, workspaceId);
-    const metaPath = getWorkspaceMetaPath(context, workspaceId);
+    const basePath = await getWorkspaceBasePath(workspaceId);
+    const metaPath = await getWorkspaceMetaPath(workspaceId);
     if (!(await fs.exists(metaPath))) {
       // since not meta is found, we will migrate symlinked db file if needed
       await fs.ensureDir(basePath);
-      const dbPath = getWorkspaceDBPath(context, workspaceId);
+      const dbPath = await getWorkspaceDBPath(workspaceId);
 
       // todo: remove this after migration (in stable version)
       const realDBPath = (await fs.exists(dbPath))
@@ -111,15 +120,14 @@ export async function getWorkspaceMeta(
 }
 
 export async function storeWorkspaceMeta(
-  context: AppContext,
   workspaceId: string,
   meta: Partial<WorkspaceMeta>
 ) {
   try {
-    const basePath = getWorkspaceBasePath(context, workspaceId);
+    const basePath = await getWorkspaceBasePath(workspaceId);
     await fs.ensureDir(basePath);
     const metaPath = path.join(basePath, 'meta.json');
-    const currentMeta = await getWorkspaceMeta(context, workspaceId);
+    const currentMeta = await getWorkspaceMeta(workspaceId);
     const newMeta = {
       ...currentMeta,
       ...meta,

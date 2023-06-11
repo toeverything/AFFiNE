@@ -4,12 +4,11 @@ import type { SqliteConnection } from '@affine/native';
 import { debounce } from 'lodash-es';
 import * as Y from 'yjs';
 
-import type { AppContext } from '../context';
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
-import { mergeUpdateWorker } from '../workers';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
+import { mergeUpdate } from './merge-update';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 
 const FLUSH_WAIT_TIME = 5000;
@@ -198,7 +197,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       return;
     }
 
-    const merged = await mergeUpdateWorker(updates);
+    const merged = mergeUpdate(updates);
     this.applyUpdate(merged, 'self');
 
     logger.debug(
@@ -211,10 +210,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 }
 
-export async function getSecondaryWorkspaceDBPath(
-  context: AppContext,
-  workspaceId: string
-) {
-  const meta = await getWorkspaceMeta(context, workspaceId);
+export async function getSecondaryWorkspaceDBPath(workspaceId: string) {
+  const meta = await getWorkspaceMeta(workspaceId);
   return meta?.secondaryDBPath;
 }

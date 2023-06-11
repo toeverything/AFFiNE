@@ -1,22 +1,16 @@
 import type {
-  DBHandlerManager,
   DebugHandlerManager,
-  DialogHandlerManager,
   ExportHandlerManager,
   UIHandlerManager,
   UnwrapManagerHandlerToServerSide,
   UpdaterHandlerManager,
-  WorkspaceHandlerManager,
 } from '@toeverything/infra';
 import { ipcMain } from 'electron';
 
-import { dbHandlers } from './db';
-import { dialogHandlers } from './dialog';
 import { exportHandlers } from './export';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { uiHandlers } from './ui';
 import { updaterHandlers } from './updater';
-import { workspaceHandlers } from './workspace';
 
 export const debugHandlers = {
   revealLogFile: async () => {
@@ -28,17 +22,9 @@ export const debugHandlers = {
 };
 
 type AllHandlers = {
-  db: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    DBHandlerManager
-  >;
   debug: UnwrapManagerHandlerToServerSide<
     Electron.IpcMainInvokeEvent,
     DebugHandlerManager
-  >;
-  dialog: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    DialogHandlerManager
   >;
   export: UnwrapManagerHandlerToServerSide<
     Electron.IpcMainInvokeEvent,
@@ -52,21 +38,14 @@ type AllHandlers = {
     Electron.IpcMainInvokeEvent,
     UpdaterHandlerManager
   >;
-  workspace: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    WorkspaceHandlerManager
-  >;
 };
 
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
 export const allHandlers = {
-  db: dbHandlers,
   debug: debugHandlers,
-  dialog: dialogHandlers,
   ui: uiHandlers,
   export: exportHandlers,
   updater: updaterHandlers,
-  workspace: workspaceHandlers,
 } satisfies AllHandlers;
 
 export const registerHandlers = () => {
@@ -78,6 +57,7 @@ export const registerHandlers = () => {
       ipcMain.handle(chan, async (e, ...args) => {
         const start = performance.now();
         try {
+          // @ts-expect-error - TODO: fix this
           const result = await handler(e, ...args);
           logger.info(
             '[ipc-api]',

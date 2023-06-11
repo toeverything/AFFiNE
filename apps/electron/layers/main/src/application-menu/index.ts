@@ -1,4 +1,4 @@
-import type { MainEventListener } from '../type';
+import type { MainEventRegister } from '../type';
 import { applicationMenuSubjects } from './subject';
 
 export * from './create';
@@ -17,4 +17,4 @@ export const applicationMenuEvents = {
       sub.unsubscribe();
     };
   },
-} satisfies Record<string, MainEventListener>;
+} satisfies Record<string, MainEventRegister>;

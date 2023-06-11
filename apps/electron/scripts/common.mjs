@@ -18,7 +18,7 @@ const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
 // List of env that will be replaced by esbuild
 const ENV_MACROS = ['AFFINE_GOOGLE_CLIENT_ID', 'AFFINE_GOOGLE_CLIENT_SECRET'];
 
-/** @return {{main: import('esbuild').BuildOptions, preload: import('esbuild').BuildOptions}} */
+/** @return {import('esbuild').BuildOptions} */
 export const config = () => {
   const define = Object.fromEntries([
     ...ENV_MACROS.map(key => [
@@ -34,43 +34,23 @@ export const config = () => {
   }
 
   return {
-    main: {
-      entryPoints: [
-        resolve(electronDir, './layers/main/src/index.ts'),
-        resolve(
-          electronDir,
-          './layers/main/src/workers/merge-update.worker.ts'
-        ),
-        resolve(electronDir, './layers/main/src/workers/plugin.worker.ts'),
-      ],
-      outdir: resolve(electronDir, './dist/layers/main'),
-      bundle: true,
-      target: `node${NODE_MAJOR_VERSION}`,
-      platform: 'node',
-      external: [
-        'electron',
-        'yjs',
-        'better-sqlite3',
-        'electron-updater',
-        '@toeverything/plugin-infra',
-        'async-call-rpc',
-      ],
-      define: define,
-      format: 'cjs',
-      loader: {
-        '.node': 'copy',
-      },
-      assetNames: '[name]',
-      treeShaking: true,
+    entryPoints: [
+      resolve(electronDir, './layers/main/src/index.ts'),
+      resolve(electronDir, './layers/preload/src/index.ts'),
+      resolve(electronDir, './layers/helper/src/index.ts'),
+      resolve(electronDir, './layers/main/src/workers/plugin.worker.ts'),
+    ],
+    outdir: resolve(electronDir, './dist/layers'),
+    bundle: true,
+    target: `node${NODE_MAJOR_VERSION}`,
+    platform: 'node',
+    external: ['electron', 'electron-updater'],
+    define: define,
+    format: 'cjs',
+    loader: {
+      '.node': 'copy',
     },
-    preload: {
-      entryPoints: [resolve(electronDir, './layers/preload/src/index.ts')],
-      outdir: resolve(electronDir, './dist/layers/preload'),
-      bundle: true,
-      target: `node${NODE_MAJOR_VERSION}`,
-      platform: 'node',
-      external: ['electron'],
-      define: define,
-    },
+    assetNames: '[name]',
+    treeShaking: true,
   };
 };

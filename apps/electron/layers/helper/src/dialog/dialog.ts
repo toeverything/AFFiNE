@@ -1,17 +1,16 @@
 import path from 'node:path';
 
-import { app } from 'electron';
-import { dialog, shell } from 'electron';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
-import { appContext } from '../context';
 import { ensureSQLiteDB } from '../db/ensure-db';
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
+import { mainRPC } from '../main-rpc';
 import {
   getWorkspaceDBPath,
   getWorkspaceMeta,
+  getWorkspacesBasePath,
   listWorkspaces,
   storeWorkspaceMeta,
 } from '../workspace';
@@ -20,11 +19,11 @@ import {
 // we are using native dialogs because HTML dialogs do not give full file paths
 
 export async function revealDBFile(workspaceId: string) {
-  const meta = await getWorkspaceMeta(appContext, workspaceId);
+  const meta = await getWorkspaceMeta(workspaceId);
   if (!meta) {
     return;
   }
-  shell.showItemInFolder(meta.secondaryDBPath ?? meta.mainDBPath);
+  await mainRPC.showItemInFolder(meta.secondaryDBPath ?? meta.mainDBPath);
 }
 
 // provide a backdoor to set dialog path for testing in playwright
@@ -88,7 +87,7 @@ export async function saveDBFileAs(
     const db = await ensureSQLiteDB(workspaceId);
     const ret =
       getFakedResult() ??
-      (await dialog.showSaveDialog({
+      (await mainRPC.showSaveDialog({
         properties: ['showOverwriteConfirmation'],
         title: 'Save Workspace',
         showsTagField: false,
@@ -111,7 +110,7 @@ export async function saveDBFileAs(
 
     await fs.copyFile(db.path, filePath);
     logger.log('saved', filePath);
-    shell.showItemInFolder(filePath);
+    mainRPC.showItemInFolder(filePath);
     return { filePath };
   } catch (err) {
     logger.error('saveDBFileAs', err);
@@ -131,11 +130,11 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
   try {
     const ret =
       getFakedResult() ??
-      (await dialog.showOpenDialog({
+      (await mainRPC.showOpenDialog({
         properties: ['openDirectory'],
         title: 'Set Workspace Storage Location',
         buttonLabel: 'Select',
-        defaultPath: app.getPath('documents'),
+        defaultPath: await mainRPC.getPath('documents'),
         message: "Select a location to store the workspace's database file",
       }));
     const dir = ret.filePaths?.[0];
@@ -177,7 +176,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
   try {
     const ret =
       getFakedResult() ??
-      (await dialog.showOpenDialog({
+      (await mainRPC.showOpenDialog({
         properties: ['openFile'],
         title: 'Load Workspace',
         buttonLabel: 'Load',
@@ -197,7 +196,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
     }
 
     // the imported file should not be in app data dir
-    if (filePath.startsWith(path.join(appContext.appDataPath, 'workspaces'))) {
+    if (filePath.startsWith(await getWorkspacesBasePath())) {
       logger.warn('loadDBFile: db file in app data dir');
       return { error: 'DB_FILE_PATH_INVALID' };
     }
@@ -216,14 +215,14 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
 
     // copy the db file to a new workspace id
     const workspaceId = nanoid(10);
-    const internalFilePath = getWorkspaceDBPath(appContext, workspaceId);
+    const internalFilePath = await getWorkspaceDBPath(workspaceId);
 
-    await fs.ensureDir(path.join(appContext.appDataPath, 'workspaces'));
+    await fs.ensureDir(await getWorkspacesBasePath());
 
     await fs.copy(filePath, internalFilePath);
     logger.info(`loadDBFile, copy: ${filePath} -> ${internalFilePath}`);
 
-    await storeWorkspaceMeta(appContext, workspaceId, {
+    await storeWorkspaceMeta(workspaceId, {
       id: workspaceId,
       mainDBPath: internalFilePath,
       secondaryDBPath: filePath,
@@ -260,13 +259,12 @@ export async function moveDBFile(
   let db: WorkspaceSQLiteDB | null = null;
   try {
     db = await ensureSQLiteDB(workspaceId);
-
-    const meta = await getWorkspaceMeta(appContext, workspaceId);
+    const meta = await getWorkspaceMeta(workspaceId);
 
     const oldDir = meta.secondaryDBPath
       ? path.dirname(meta.secondaryDBPath)
       : null;
-    const defaultDir = oldDir ?? app.getPath('documents');
+    const defaultDir = oldDir ?? (await mainRPC.getPath('documents'));
 
     const newName = getDefaultDBFileName(db.getWorkspaceName(), workspaceId);
 
@@ -274,7 +272,7 @@ export async function moveDBFile(
       dbFileDir ??
       (
         getFakedResult() ??
-        (await dialog.showOpenDialog({
+        (await mainRPC.showOpenDialog({
           properties: ['openDirectory'],
           title: 'Move Workspace Storage',
           buttonLabel: 'Move',
@@ -320,7 +318,7 @@ export async function moveDBFile(
     }
 
     // update meta
-    await storeWorkspaceMeta(appContext, workspaceId, {
+    await storeWorkspaceMeta(workspaceId, {
       secondaryDBPath: newFilePath,
     });
 
@@ -337,7 +335,7 @@ export async function moveDBFile(
 }
 
 async function dbFileAlreadyLoaded(path: string) {
-  const meta = await listWorkspaces(appContext);
+  const meta = await listWorkspaces();
   const paths = meta.map(m => m[1].secondaryDBPath);
   return paths.includes(path);
 }

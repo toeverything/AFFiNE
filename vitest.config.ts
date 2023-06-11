@@ -37,11 +37,12 @@ export default defineConfig({
           'apps/web/**/*.spec.tsx',
           'tests/unit/**/*.spec.ts',
           'tests/unit/**/*.spec.tsx',
+          'apps/electron/layers/**/*.spec.ts',
         ],
     exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
     testTimeout: 5000,
-    singleThread: Boolean(process.env.NATIVE_TEST),
-    threads: !process.env.NATIVE_TEST,
+    singleThread: true,
+    threads: false,
     coverage: {
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],
