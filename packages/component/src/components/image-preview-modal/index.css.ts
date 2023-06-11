@@ -21,11 +21,9 @@ export const imagePreviewModalCloseButtonStyle = style({
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
-
   height: '36px',
   width: '36px',
   borderRadius: '10px',
-
   top: '0.5rem',
   right: '0.5rem',
   background: 'var(--affine-white)',
@@ -34,6 +32,7 @@ export const imagePreviewModalCloseButtonStyle = style({
   cursor: 'pointer',
   color: 'var(--affine-icon-color)',
   transition: 'background 0.2s ease-in-out',
+  zIndex: 1,
 });
 
 export const imagePreviewModalGoStyle = style({
@@ -67,7 +66,7 @@ export const imagePreviewModalContainerStyle = style({
   },
 });
 
-export const imagePreviewModalImageStyle = style({
+export const imagePreviewModalCenterStyle = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
