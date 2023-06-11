@@ -30,10 +30,10 @@ import {
   imageNavigationControlStyle,
   imagePreviewActionBarStyle,
   imagePreviewModalCaptionStyle,
+  imagePreviewModalCenterStyle,
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
   imagePreviewModalGoStyle,
-  imagePreviewModalImageStyle,
   imagePreviewModalStyle,
   scaleIndicatorStyle,
 } from './index.css';
@@ -92,6 +92,7 @@ const ImagePreviewModalImpl = (
     isZoomedBigger,
     handleDrag,
     handleDragStart,
+    handleDragEnd,
     resetZoom,
     currentScale,
   } = useZoomControls({ zoomRef, imageRef });
@@ -313,15 +314,18 @@ const ImagePreviewModalImpl = (
           className={`zoom-area ${isZoomedBigger ? 'zoomed-bigger' : ''}`}
           ref={zoomRef}
         >
-          <div
-            draggable={isZoomedBigger}
-            onDragStart={handleDragStart}
-            onDrag={handleDrag}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            className={imagePreviewModalImageStyle}
-          >
-            <img src={url} alt={caption} ref={imageRef} />
+          <div className={imagePreviewModalCenterStyle}>
+            <img
+              src={url}
+              alt={caption}
+              ref={imageRef}
+              draggable={isZoomedBigger}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDrag}
+              onMouseUp={handleDragEnd}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            />
             {isZoomedBigger ? null : (
               <p className={imagePreviewModalCaptionStyle}>{caption}</p>
             )}

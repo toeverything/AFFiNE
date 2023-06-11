@@ -1,4 +1,4 @@
-import type { RefObject, TouchEvent } from 'react';
+import type { MouseEventHandler, RefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseZoomControlsProps {
@@ -58,8 +58,8 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDragStart = (event: MouseEvent | TouchEvent) => {
-    event.preventDefault();
+  const handleDragStart = (event: MouseEventHandler<HTMLImageElement>) => {
+    event?.preventDefault();
     setIsDragging(true);
     const image = imageRef.current;
     if (image && isZoomedBigger) {
@@ -72,8 +72,8 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDrag = (event: MouseEvent | TouchEvent) => {
-    event.preventDefault();
+  const handleDrag = (event: MouseEventHandler<HTMLImageElement>) => {
+    event?.preventDefault();
     const image = imageRef.current;
 
     if (isDragging && image && isZoomedBigger) {
@@ -87,8 +87,8 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent) => {
-    event.preventDefault();
+  const handleDragEnd = (event: MouseEventHandler<HTMLImageElement>) => {
+    event?.preventDefault();
     setIsDragging(false);
 
     const image = imageRef.current;
