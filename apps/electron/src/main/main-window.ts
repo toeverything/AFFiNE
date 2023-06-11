@@ -3,6 +3,7 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { getExposedMeta } from './exposed';
+import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
 import { isMacOS, isWindows } from './utils';
 
@@ -18,7 +19,10 @@ async function createWindow() {
     defaultHeight: 800,
   });
 
-  const exposedMeta = getExposedMeta();
+  const helperProcessManager = await ensureHelperProcess();
+
+  const helperExposedMeta = helperProcessManager.meta;
+  const mainExposedMeta = getExposedMeta();
 
   const browserWindow = new BrowserWindow({
     titleBarStyle: isMacOS()
@@ -44,13 +48,18 @@ async function createWindow() {
       spellcheck: false, // FIXME: enable?
       preload: join(__dirname, './preload.js'),
       // serialize exposed meta that to be used in preload
-      additionalArguments: [`--exposed-meta=` + JSON.stringify(exposedMeta)],
+      additionalArguments: [
+        `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
+        `--helper-exposed-meta=` + JSON.stringify(helperExposedMeta),
+      ],
     },
   });
 
   nativeTheme.themeSource = 'light';
 
   mainWindowState.manage(browserWindow);
+
+  helperProcessManager.connectRenderer(browserWindow.webContents);
 
   /**
    * If you install `show: true` then it can cause issues when trying to close the window.

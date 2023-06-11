@@ -1,6 +1,9 @@
 import { AsyncCall, type EventBasedChannel } from 'async-call-rpc';
 import type { app, dialog, shell } from 'electron';
 
+import { getExposedMeta } from './exposed';
+import { logger } from './logger';
+
 function createMessagePortMainChannel(
   connection: Electron.ParentPort
 ): EventBasedChannel {
@@ -28,7 +31,9 @@ type MainServer = Pick<
   | 'openExternal'
   | 'showItemInFolder'
   | 'getPath'
->;
+> & {
+  exposeHelperMeta: (meta: ReturnType<typeof getExposedMeta>) => void;
+};
 
 export const mainRPC = AsyncCall<MainServer>(
   {},
@@ -39,3 +44,9 @@ export const mainRPC = AsyncCall<MainServer>(
     channel: createMessagePortMainChannel(process.parentPort),
   }
 );
+
+process.on('loaded', () => {
+  mainRPC.exposeHelperMeta(getExposedMeta()).catch(err => {
+    logger.error('[main] exposeMeta', err);
+  });
+});

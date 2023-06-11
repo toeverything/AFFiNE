@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 (async () => {
   const { appInfo, getAffineAPIs } = await import('./affine-apis');
-  const { apis, events } = await getAffineAPIs();
+  const { apis, events } = getAffineAPIs();
 
   contextBridge.exposeInMainWorld('appInfo', appInfo);
   contextBridge.exposeInMainWorld('apis', apis);

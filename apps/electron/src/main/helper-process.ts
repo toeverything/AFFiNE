@@ -11,7 +11,7 @@ import {
   type WebContents,
 } from 'electron';
 
-import { restoreOrCreateWindow } from './main-window';
+import { logger } from './logger';
 import { MessageEventChannel } from './utils';
 
 const HELPER_PROCESS_PATH = path.join(__dirname, './helper.js');
@@ -36,16 +36,25 @@ class HelperProcessManager {
   #process: UtilityProcess;
 
   // a rpc server for the main process -> helper process
+  // todo: fix type
   rpc: any;
+  meta: any;
 
-  constructor() {
-    const helperProcess = utilityProcess.fork(HELPER_PROCESS_PATH, undefined, {
-      cwd: __dirname,
-    });
+  static instance = new HelperProcessManager();
+
+  private constructor() {
+    const helperProcess = utilityProcess.fork(HELPER_PROCESS_PATH);
     this.#process = helperProcess;
-    this.ready = new Promise(resolve => {
+    this.ready = new Promise((resolve, reject) => {
       helperProcess.once('spawn', () => {
-        resolve();
+        this.#connectMain()
+          .then(() => {
+            resolve();
+          })
+          .catch(err => {
+            logger.error('[helper] connectMain error', err);
+            reject(err);
+          });
       });
     });
   }
@@ -65,42 +74,44 @@ class HelperProcessManager {
 
   // bridge main <-> helper process
   // also set up the RPC to the helper process
-  connectMain() {
-    const dialogMethods = pickAndBind(dialog, [
-      'showOpenDialog',
-      'showSaveDialog',
-    ]);
-    const shellMethods = pickAndBind(shell, [
-      'openExternal',
-      'showItemInFolder',
-    ]);
-    const appMethods = pickAndBind(app, ['getPath']);
+  async #connectMain() {
+    return new Promise<void>(resolve => {
+      const dialogMethods = pickAndBind(dialog, [
+        'showOpenDialog',
+        'showSaveDialog',
+      ]);
+      const shellMethods = pickAndBind(shell, [
+        'openExternal',
+        'showItemInFolder',
+      ]);
+      const appMethods = pickAndBind(app, ['getPath']);
 
-    const server = AsyncCall<any>(
-      {
-        ...dialogMethods,
-        ...shellMethods,
-        ...appMethods,
-      },
-      {
-        strict: {
-          // the channel is shared for other purposes as well so that we do not want to
-          // restrict to only JSONRPC messages
-          unknownMessage: false,
+      const server = AsyncCall<any>(
+        {
+          ...dialogMethods,
+          ...shellMethods,
+          ...appMethods,
+          exposeHelperMeta: (helperMeta: any) => {
+            this.meta = helperMeta;
+            resolve();
+          },
         },
-        channel: new MessageEventChannel(this.#process),
-      }
-    );
-    this.rpc = server;
+        {
+          strict: {
+            // the channel is shared for other purposes as well so that we do not want to
+            // restrict to only JSONRPC messages
+            unknownMessage: false,
+          },
+          channel: new MessageEventChannel(this.#process),
+        }
+      );
+      this.rpc = server;
+    });
   }
 }
 
-export async function startHelperProcess() {
-  const helperProcessManager = new HelperProcessManager();
+export async function ensureHelperProcess() {
+  const helperProcessManager = HelperProcessManager.instance;
   await helperProcessManager.ready;
-  const window = await restoreOrCreateWindow();
-  helperProcessManager.connectMain();
-  const unsub = helperProcessManager.connectRenderer(window.webContents);
-  app.on('before-quit', unsub);
   return helperProcessManager;
 }

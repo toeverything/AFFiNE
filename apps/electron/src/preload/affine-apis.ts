@@ -11,9 +11,9 @@ type ExposedMeta = {
 
 const logger = log.scope('preload');
 
-export async function getAffineAPIs() {
+export function getAffineAPIs() {
   const mainAPIs = getMainAPIs();
-  const helperAPIs = await getHelperAPIs();
+  const helperAPIs = getHelperAPIs();
 
   return {
     apis: {
@@ -34,7 +34,7 @@ export const appInfo = {
 function getMainAPIs() {
   const meta: ExposedMeta = (() => {
     const val = process.argv
-      .find(arg => arg.startsWith('--exposed-meta='))
+      .find(arg => arg.startsWith('--main-exposed-meta='))
       ?.split('=')[1];
 
     return val ? JSON.parse(val) : null;
@@ -119,73 +119,79 @@ const createMessagePortChannel = (port: MessagePort): EventBasedChannel => {
   };
 };
 
-async function getHelperAPIs() {
-  const helperPort = await helperPort$;
+function getHelperAPIs() {
   const events$ = new Subject<{ channel: string; args: any[] }>();
-  const [apis, events] = await new Promise<any>(resolve => {
-    const rpc = AsyncCall<any>(
-      {
-        postEvent: (channel: string, ...args: any) => {
-          events$.next({ channel, args });
-        },
-        // will be resolved by the helper process
-        exposeMeta: (meta: ExposedMeta) => {
-          setup(meta);
-        },
+  const meta: ExposedMeta = (() => {
+    const val = process.argv
+      .find(arg => arg.startsWith('--helper-exposed-meta='))
+      ?.split('=')[1];
+
+    return val ? JSON.parse(val) : null;
+  })();
+
+  const rpc = AsyncCall<any>(
+    {
+      postEvent: (channel: string, ...args: any) => {
+        events$.next({ channel, args });
       },
-      {
-        channel: createMessagePortChannel(helperPort),
-      }
-    );
+    },
+    {
+      channel: helperPort$.then(helperPort =>
+        createMessagePortChannel(helperPort)
+      ),
+      log: false,
+    }
+  );
 
-    const toHelperHandler = (namespace: string, name: string) => {
-      return rpc[`${namespace}:${name}`] as (...args: any[]) => Promise<any>;
-    };
+  const toHelperHandler = (namespace: string, name: string) => {
+    return rpc[`${namespace}:${name}`] as (...args: any[]) => Promise<any>;
+  };
 
-    const toHelperEventSubscriber = (namespace: string, name: string) => {
-      return (callback: (...args: any[]) => void) => {
-        const subscription = events$.subscribe(({ channel, args }) => {
-          if (channel === `${namespace}:${name}`) {
-            callback(...args);
-          }
-        });
-        return () => {
-          subscription.unsubscribe();
-        };
+  const toHelperEventSubscriber = (namespace: string, name: string) => {
+    return (callback: (...args: any[]) => void) => {
+      const subscription = events$.subscribe(({ channel, args }) => {
+        if (channel === `${namespace}:${name}`) {
+          callback(...args);
+        }
+      });
+      return () => {
+        subscription.unsubscribe();
       };
     };
+  };
 
-    const setup = (meta: ExposedMeta) => {
-      const { handlers: handlersMeta, events: eventsMeta } = meta;
+  const setup = (meta: ExposedMeta) => {
+    const { handlers: handlersMeta, events: eventsMeta } = meta;
 
-      const helperHandlers = Object.fromEntries(
-        handlersMeta.map(([namespace, functionNames]) => {
-          return [
-            namespace,
-            Object.fromEntries(
-              functionNames.map(name => {
-                return [name, toHelperHandler(namespace, name)];
-              })
-            ),
-          ];
-        })
-      );
+    const helperHandlers = Object.fromEntries(
+      handlersMeta.map(([namespace, functionNames]) => {
+        return [
+          namespace,
+          Object.fromEntries(
+            functionNames.map(name => {
+              return [name, toHelperHandler(namespace, name)];
+            })
+          ),
+        ];
+      })
+    );
 
-      const helperEvents = Object.fromEntries(
-        eventsMeta.map(([namespace, eventNames]) => {
-          return [
-            namespace,
-            Object.fromEntries(
-              eventNames.map(name => {
-                return [name, toHelperEventSubscriber(namespace, name)];
-              })
-            ),
-          ];
-        })
-      );
-      return resolve([helperHandlers, helperEvents]);
-    };
-  });
+    const helperEvents = Object.fromEntries(
+      eventsMeta.map(([namespace, eventNames]) => {
+        return [
+          namespace,
+          Object.fromEntries(
+            eventNames.map(name => {
+              return [name, toHelperEventSubscriber(namespace, name)];
+            })
+          ),
+        ];
+      })
+    );
+    return [helperHandlers, helperEvents];
+  };
+
+  const [apis, events] = setup(meta);
 
   return { apis, events };
 }

@@ -5,7 +5,7 @@ import { app } from 'electron';
 import { createApplicationMenu } from './application-menu/create';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
-import { startHelperProcess } from './helper-process';
+import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
 import { registerPlugin } from './plugin';
@@ -63,8 +63,8 @@ app
   .then(registerHandlers)
   .then(registerEvents)
   .then(registerPlugin)
+  .then(ensureHelperProcess)
   .then(restoreOrCreateWindow)
-  .then(startHelperProcess)
   .then(createApplicationMenu)
   .then()
   .then(registerUpdater)

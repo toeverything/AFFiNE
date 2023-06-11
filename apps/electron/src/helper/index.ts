@@ -1,45 +1,7 @@
 import type { EventBasedChannel } from 'async-call-rpc';
 import { AsyncCall } from 'async-call-rpc';
 
-import { dbEvents, dbHandlers } from './db';
-import { dialogHandlers } from './dialog';
-import { workspaceEvents, workspaceHandlers } from './workspace';
-
-const handlers = {
-  db: dbHandlers,
-  workspace: workspaceHandlers,
-  dialog: dialogHandlers,
-};
-
-const events = {
-  db: dbEvents,
-  workspace: workspaceEvents,
-};
-
-const getExposedMeta = () => {
-  const handlersMeta = Object.entries(handlers).map(
-    ([namespace, namespaceHandlers]) => {
-      return [
-        namespace,
-        Object.keys(namespaceHandlers).map(handlerName => handlerName),
-      ];
-    }
-  );
-
-  const eventsMeta = Object.entries(events).map(
-    ([namespace, namespaceHandlers]) => {
-      return [
-        namespace,
-        Object.keys(namespaceHandlers).map(handlerName => handlerName),
-      ];
-    }
-  );
-
-  return {
-    handlers: handlersMeta,
-    events: eventsMeta,
-  };
-};
+import { events, handlers } from './exposed';
 
 const createMessagePortMainChannel = (
   connection: Electron.MessagePortMain
@@ -63,7 +25,6 @@ const createMessagePortMainChannel = (
 };
 
 interface RendererAPIs {
-  exposeMeta: (meta: ReturnType<typeof getExposedMeta>) => void;
   postEvent: (channel: string, ...args: any[]) => void;
 }
 
@@ -77,8 +38,8 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
   );
   const rpc = AsyncCall<RendererAPIs>(Object.fromEntries(flattenedHandlers), {
     channel: createMessagePortMainChannel(rendererPort),
+    log: false,
   });
-  rpc.exposeMeta(getExposedMeta());
 
   for (const [namespace, namespaceEvents] of Object.entries(events)) {
     for (const [key, eventRegister] of Object.entries(namespaceEvents)) {
