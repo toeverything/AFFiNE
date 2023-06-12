@@ -1,12 +1,12 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
+import { openHomePage } from './libs/load-page';
 import {
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
-} from '../libs/page-logic';
+} from './libs/page-logic';
 
 async function importImage(page: Page, url: string) {
   await page.evaluate(

@@ -1,15 +1,15 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../../libs/load-page';
-import { waitEditorLoad } from '../../libs/page-logic';
-import { clickPublishPanel } from '../../libs/setting';
+import { openHomePage } from '.././libs/load-page';
+import { waitEditorLoad } from '.././libs/page-logic';
+import { clickPublishPanel } from '.././libs/setting';
 import {
   clickSideBarAllPageButton,
   clickSideBarSettingButton,
-} from '../../libs/sidebar';
-import { createFakeUser, loginUser } from '../../libs/utils';
-import { createWorkspace } from '../../libs/workspace';
+} from '.././libs/sidebar';
+import { createFakeUser, loginUser } from '.././libs/utils';
+import { createWorkspace } from '.././libs/workspace';
 
 test('enable public workspace', async ({ page, context }) => {
   await openHomePage(page);

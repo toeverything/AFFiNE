@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 import { test, testResultDir } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
+import { openHomePage } from './libs/load-page';
+import { waitEditorLoad } from './libs/page-logic';
 
 // default could be anything, according to the system
 test('default white', async ({ browser }) => {

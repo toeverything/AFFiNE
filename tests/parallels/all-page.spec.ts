@@ -2,9 +2,9 @@ import { test } from '@affine-test/kit/web';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
-import { getBlockSuiteEditorTitle, waitEditorLoad } from '../libs/page-logic';
-import { clickSideBarAllPageButton } from '../libs/sidebar';
+import { openHomePage } from './libs/load-page';
+import { getBlockSuiteEditorTitle, waitEditorLoad } from './libs/page-logic';
+import { clickSideBarAllPageButton } from './libs/sidebar';
 
 function getAllPage(page: Page) {
   const newPageButton = page

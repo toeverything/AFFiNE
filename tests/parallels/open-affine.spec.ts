@@ -1,9 +1,9 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
-import { createWorkspace } from '../libs/workspace';
+import { openHomePage } from './libs/load-page';
+import { waitEditorLoad } from './libs/page-logic';
+import { createWorkspace } from './libs/workspace';
 
 test('Open last workspace when back to affine', async ({ page }) => {
   await openHomePage(page);

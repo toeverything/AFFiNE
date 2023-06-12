@@ -1,15 +1,15 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
+import { openHomePage } from './libs/load-page';
 import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
-} from '../libs/page-logic';
-import { waitForLogMessage } from '../libs/utils';
-import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
+} from './libs/page-logic';
+import { waitForLogMessage } from './libs/utils';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 
 test('New a page and open it ,then favorite it', async ({ page }) => {
   await openHomePage(page);

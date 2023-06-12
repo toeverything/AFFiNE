@@ -1,13 +1,13 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../../libs/load-page';
-import { waitEditorLoad } from '../../libs/page-logic';
+import { openHomePage } from '.././libs/load-page';
+import { waitEditorLoad } from '.././libs/page-logic';
 import {
   clickNewPageButton,
   clickSideBarCurrentWorkspaceBanner,
-} from '../../libs/sidebar';
-import { getBuiltInUser, loginUser } from '../../libs/utils';
+} from '.././libs/sidebar';
+import { getBuiltInUser, loginUser } from '.././libs/utils';
 
 test('collaborative', async ({ page, browser }) => {
   await openHomePage(page);

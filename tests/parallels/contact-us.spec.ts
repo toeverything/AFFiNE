@@ -1,8 +1,8 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
+import { openHomePage } from './libs/load-page';
+import { waitEditorLoad } from './libs/page-logic';
 
 test('Click right-bottom corner contact icon', async ({ page }) => {
   await openHomePage(page);

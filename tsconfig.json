@@ -124,6 +124,12 @@
     {
       "path": "./tests/electron"
     },
+    {
+      "path": "./tests/fixtures"
+    },
+    {
+      "path": "./tests/kit"
+    },
 
     {
       "path": "./packages/component"
@@ -144,12 +150,6 @@
       "path": "./packages/y-indexeddb"
     },
 
-    {
-      "path": "./tests/fixtures"
-    },
-    {
-      "path": "./tests/kit"
-    },
     {
       "path": "./tsconfig.node.json"
     }

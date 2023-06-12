@@ -3,9 +3,9 @@ import { resolve } from 'node:path';
 import { test, testResultDir } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
-import { clickSideBarSettingButton } from '../libs/sidebar';
+import { openHomePage } from './libs/load-page';
+import { waitEditorLoad } from './libs/page-logic';
+import { clickSideBarSettingButton } from './libs/sidebar';
 
 test('Should highlight the setting page menu when selected', async ({
   page,

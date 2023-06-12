@@ -1,13 +1,13 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
+import { openHomePage } from './libs/load-page';
 import {
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
-} from '../libs/page-logic';
-import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
+} from './libs/page-logic';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 
 test('New a page , then delete it in all pages, restore it', async ({
   page,

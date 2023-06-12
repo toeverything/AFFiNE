@@ -1,14 +1,14 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
+import { openHomePage } from './libs/load-page';
 import {
   clickPageMoreActions,
   createLinkedPage,
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
-} from '../libs/page-logic';
+} from './libs/page-logic';
 
 test('Show favorite items in sidebar', async ({ page }) => {
   await openHomePage(page);

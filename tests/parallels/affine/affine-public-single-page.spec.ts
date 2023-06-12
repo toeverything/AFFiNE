@@ -1,11 +1,11 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../../libs/load-page';
-import { waitEditorLoad } from '../../libs/page-logic';
-import { clickNewPageButton } from '../../libs/sidebar';
-import { createFakeUser, loginUser } from '../../libs/utils';
-import { createWorkspace } from '../../libs/workspace';
+import { openHomePage } from '.././libs/load-page';
+import { waitEditorLoad } from '.././libs/page-logic';
+import { clickNewPageButton } from '.././libs/sidebar';
+import { createFakeUser, loginUser } from '.././libs/utils';
+import { createWorkspace } from '.././libs/workspace';
 
 test('public single page', async ({ page, browser }) => {
   await openHomePage(page);

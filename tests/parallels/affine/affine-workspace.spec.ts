@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../../libs/load-page';
-import { waitEditorLoad } from '../../libs/page-logic';
+import { openHomePage } from '.././libs/load-page';
+import { waitEditorLoad } from '.././libs/page-logic';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const userA = require('../../fixtures/userA.json');
@@ -12,14 +12,14 @@ import { test } from '@affine-test/kit/web';
 import {
   clickNewPageButton,
   clickSideBarCurrentWorkspaceBanner,
-} from '../../libs/sidebar';
-import { createFakeUser, loginUser } from '../../libs/utils';
+} from '.././libs/sidebar';
+import { createFakeUser, loginUser } from '.././libs/utils';
 import {
   assertCurrentWorkspaceFlavour,
   createWorkspace,
   enableAffineCloudWorkspace,
   openWorkspaceListModal,
-} from '../../libs/workspace';
+} from '.././libs/workspace';
 
 test('should login with user A', async ({ page }) => {
   await openHomePage(page);

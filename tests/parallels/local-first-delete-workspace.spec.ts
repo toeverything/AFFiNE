@@ -1,13 +1,13 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
+import { openHomePage } from './libs/load-page';
+import { waitEditorLoad } from './libs/page-logic';
 import {
   clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
-} from '../libs/sidebar';
-import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
+} from './libs/sidebar';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 
 test('Create new workspace, then delete it', async ({ page }) => {
   await openHomePage(page);

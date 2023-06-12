@@ -1,10 +1,10 @@
 import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
-import { clickSideBarAllPageButton } from '../libs/sidebar';
-import { createWorkspace, openWorkspaceListModal } from '../libs/workspace';
+import { openHomePage } from './libs/load-page';
+import { waitEditorLoad } from './libs/page-logic';
+import { clickSideBarAllPageButton } from './libs/sidebar';
+import { createWorkspace, openWorkspaceListModal } from './libs/workspace';
 
 test('just one item in the workspace list at first', async ({ page }) => {
   await openHomePage(page);
