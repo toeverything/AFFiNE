@@ -13,22 +13,16 @@ export const events = {
   workspace: workspaceEvents,
 };
 
-export function getExposedMeta() {
+export const getExposedMeta = () => {
   const handlersMeta = Object.entries(handlers).map(
     ([namespace, namespaceHandlers]) => {
-      return [
-        namespace,
-        Object.keys(namespaceHandlers).map(handlerName => handlerName),
-      ];
+      return [namespace, Object.keys(namespaceHandlers)] as [string, string[]];
     }
   );
 
   const eventsMeta = Object.entries(events).map(
     ([namespace, namespaceHandlers]) => {
-      return [
-        namespace,
-        Object.keys(namespaceHandlers).map(handlerName => handlerName),
-      ];
+      return [namespace, Object.keys(namespaceHandlers)] as [string, string[]];
     }
   );
 
@@ -36,4 +30,4 @@ export function getExposedMeta() {
     handlers: handlersMeta,
     events: eventsMeta,
   };
-}
+};

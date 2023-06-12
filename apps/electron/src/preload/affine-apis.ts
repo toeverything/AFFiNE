@@ -129,22 +129,21 @@ function getHelperAPIs() {
     return val ? JSON.parse(val) : null;
   })();
 
-  const rpc = AsyncCall<any>(
-    {
-      postEvent: (channel: string, ...args: any) => {
-        events$.next({ channel, args });
-      },
+  const rendererToHelperServer: PeersAPIs.RendererToHelper = {
+    postEvent: (channel, ...args) => {
+      events$.next({ channel, args });
     },
-    {
-      channel: helperPort$.then(helperPort =>
-        createMessagePortChannel(helperPort)
-      ),
-      log: false,
-    }
-  );
+  };
+
+  const rpc = AsyncCall<PeersAPIs.HelperToRenderer>(rendererToHelperServer, {
+    channel: helperPort$.then(helperPort =>
+      createMessagePortChannel(helperPort)
+    ),
+    log: false,
+  });
 
   const toHelperHandler = (namespace: string, name: string) => {
-    return rpc[`${namespace}:${name}`] as (...args: any[]) => Promise<any>;
+    return rpc[`${namespace}:${name}`];
   };
 
   const toHelperEventSubscriber = (namespace: string, name: string) => {

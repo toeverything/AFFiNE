@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
@@ -20,8 +22,10 @@ async function createWindow() {
   });
 
   const helperProcessManager = await ensureHelperProcess();
+  const helperExposedMeta = await helperProcessManager.rpc?.getMeta();
 
-  const helperExposedMeta = helperProcessManager.meta;
+  assert(helperExposedMeta, 'helperExposedMeta should be defined');
+
   const mainExposedMeta = getExposedMeta();
 
   const browserWindow = new BrowserWindow({

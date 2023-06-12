@@ -24,10 +24,6 @@ const createMessagePortMainChannel = (
   };
 };
 
-interface RendererAPIs {
-  postEvent: (channel: string, ...args: any[]) => void;
-}
-
 function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
   const flattenedHandlers = Object.entries(handlers).flatMap(
     ([namespace, namespaceHandlers]) => {
@@ -36,10 +32,13 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
       });
     }
   );
-  const rpc = AsyncCall<RendererAPIs>(Object.fromEntries(flattenedHandlers), {
-    channel: createMessagePortMainChannel(rendererPort),
-    log: false,
-  });
+  const rpc = AsyncCall<PeersAPIs.RendererToHelper>(
+    Object.fromEntries(flattenedHandlers),
+    {
+      channel: createMessagePortMainChannel(rendererPort),
+      log: false,
+    }
+  );
 
   for (const [namespace, namespaceEvents] of Object.entries(events)) {
     for (const [key, eventRegister] of Object.entries(namespaceEvents)) {

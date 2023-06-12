@@ -34,8 +34,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   override async destroy() {
-    const { db } = this;
-    await this.flushUpdateQueue(db);
+    await this.flushUpdateQueue();
     this.unsubscribers.forEach(unsub => unsub());
     this.yDoc.destroy();
     await super.destroy();
@@ -50,12 +49,12 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   // and flush the queue in a future time
   async addUpdateToUpdateQueue(db: SqliteConnection, update: Uint8Array) {
     this.updateQueue.push(update);
-    await this.debouncedFlush(db);
+    await this.debouncedFlush();
   }
 
-  async flushUpdateQueue(db = this.db) {
-    if (!db) {
-      return; // skip if db is not connected
+  async flushUpdateQueue() {
+    if (this.destroyed) {
+      return;
     }
     logger.debug(
       'flushUpdateQueue',
@@ -66,7 +65,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     const updates = [...this.updateQueue];
     this.updateQueue = [];
     await this.run(async () => {
-      await this.addUpdateToSQLite(db, updates);
+      await this.addUpdateToSQLite(updates);
     });
   }
 

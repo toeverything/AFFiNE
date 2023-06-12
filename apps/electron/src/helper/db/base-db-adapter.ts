@@ -93,7 +93,7 @@ export abstract class BaseSQLiteAdapter {
   }
 
   // add a single update to SQLite
-  async addUpdateToSQLite(db: SqliteConnection, updates: Uint8Array[]) {
+  async addUpdateToSQLite(updates: Uint8Array[]) {
     // batch write instead write per key stroke?
     try {
       if (!this.db) {
@@ -101,7 +101,7 @@ export abstract class BaseSQLiteAdapter {
         return;
       }
       const start = performance.now();
-      await db.insertUpdates(updates);
+      await this.db.insertUpdates(updates);
       logger.debug(
         `[SQLiteAdapter][${this.role}] addUpdateToSQLite`,
         'length:',
@@ -110,7 +110,7 @@ export abstract class BaseSQLiteAdapter {
         'ms'
       );
     } catch (error) {
-      logger.error('addUpdateToSQLite', error);
+      logger.error('addUpdateToSQLite', this.path, error);
     }
   }
 }

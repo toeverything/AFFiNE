@@ -9,19 +9,13 @@ export { events, handlers };
 export const getExposedMeta = () => {
   const handlersMeta = Object.entries(handlers).map(
     ([namespace, namespaceHandlers]) => {
-      return [
-        namespace,
-        Object.keys(namespaceHandlers).map(handlerName => handlerName),
-      ];
+      return [namespace, Object.keys(namespaceHandlers)];
     }
   );
 
   const eventsMeta = Object.entries(events).map(
     ([namespace, namespaceHandlers]) => {
-      return [
-        namespace,
-        Object.keys(namespaceHandlers).map(handlerName => handlerName),
-      ];
+      return [namespace, Object.keys(namespaceHandlers)];
     }
   );
 
@@ -32,5 +26,4 @@ export const getExposedMeta = () => {
 };
 
 export type MainIPCHandlerMap = typeof handlers;
-
 export type MainIPCEventMap = typeof events;

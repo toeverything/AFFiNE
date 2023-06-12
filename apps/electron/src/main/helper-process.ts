@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { AsyncCall } from 'async-call-rpc';
+import { type _AsyncVersionOf, AsyncCall } from 'async-call-rpc';
 import {
   app,
   dialog,
@@ -36,9 +36,7 @@ class HelperProcessManager {
   #process: UtilityProcess;
 
   // a rpc server for the main process -> helper process
-  // todo: fix type
-  rpc: any;
-  meta: any;
+  rpc?: _AsyncVersionOf<PeersAPIs.HelperToMain>;
 
   static instance = new HelperProcessManager();
 
@@ -47,14 +45,13 @@ class HelperProcessManager {
     this.#process = helperProcess;
     this.ready = new Promise((resolve, reject) => {
       helperProcess.once('spawn', () => {
-        this.#connectMain()
-          .then(() => {
-            resolve();
-          })
-          .catch(err => {
-            logger.error('[helper] connectMain error', err);
-            reject(err);
-          });
+        try {
+          this.#connectMain();
+          resolve();
+        } catch (err) {
+          logger.error('[helper] connectMain error', err);
+          reject(err);
+        }
       });
     });
   }
@@ -74,39 +71,32 @@ class HelperProcessManager {
 
   // bridge main <-> helper process
   // also set up the RPC to the helper process
-  async #connectMain() {
-    return new Promise<void>(resolve => {
-      const dialogMethods = pickAndBind(dialog, [
-        'showOpenDialog',
-        'showSaveDialog',
-      ]);
-      const shellMethods = pickAndBind(shell, [
-        'openExternal',
-        'showItemInFolder',
-      ]);
-      const appMethods = pickAndBind(app, ['getPath']);
+  #connectMain() {
+    const dialogMethods = pickAndBind(dialog, [
+      'showOpenDialog',
+      'showSaveDialog',
+    ]);
+    const shellMethods = pickAndBind(shell, [
+      'openExternal',
+      'showItemInFolder',
+    ]);
+    const appMethods = pickAndBind(app, ['getPath']);
 
-      const server = AsyncCall<any>(
-        {
-          ...dialogMethods,
-          ...shellMethods,
-          ...appMethods,
-          exposeHelperMeta: (helperMeta: any) => {
-            this.meta = helperMeta;
-            resolve();
-          },
-        },
-        {
-          strict: {
-            // the channel is shared for other purposes as well so that we do not want to
-            // restrict to only JSONRPC messages
-            unknownMessage: false,
-          },
-          channel: new MessageEventChannel(this.#process),
-        }
-      );
-      this.rpc = server;
+    const mainToHelperServer: PeersAPIs.MainToHelper = {
+      ...dialogMethods,
+      ...shellMethods,
+      ...appMethods,
+    };
+
+    const server = AsyncCall<PeersAPIs.HelperToMain>(mainToHelperServer, {
+      strict: {
+        // the channel is shared for other purposes as well so that we do not want to
+        // restrict to only JSONRPC messages
+        unknownMessage: false,
+      },
+      channel: new MessageEventChannel(this.#process),
     });
+    this.rpc = server;
   }
 }
 
