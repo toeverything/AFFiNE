@@ -22,10 +22,52 @@
   },
   "targetDefaults": {
     "build": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "inputs": [
+        {
+          "runtime": "node -v"
+        },
+        {
+          "env": "ENABLE_BOOKMARK_OPERATION"
+        },
+        {
+          "env": "ENABLE_PLUGIN"
+        },
+        {
+          "env": "ENABLE_ALL_PAGE_FILTER"
+        },
+        {
+          "env": "ENABLE_IMAGE_PREVIEW_MODAL"
+        },
+        {
+          "env": "ENABLE_TEST_PROPERTIES"
+        },
+        {
+          "env": "ENABLE_LEGACY_PROVIDER"
+        },
+        {
+          "env": "ENABLE_BC_PROVIDER"
+        },
+        {
+          "env": "ENABLE_DEBUG_PAGE"
+        },
+        {
+          "env": "CHANGELOG_URL"
+        },
+        {
+          "env": "ENABLE_PRELOADING"
+        },
+        {
+          "env": "API_SERVER_PROFILE"
+        }
+      ]
     },
     "e2e": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "inputs": [
+        { "runtime": "node -v" },
+        { "runtime": "yarn playwright --version" }
+      ]
     },
     "e2e:coverage": {
       "dependsOn": ["^build"]
