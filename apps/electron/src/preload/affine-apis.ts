@@ -1,15 +1,12 @@
 // NOTE: we will generate preload types from this file
 import { AsyncCall, type EventBasedChannel } from 'async-call-rpc';
 import { ipcRenderer } from 'electron';
-import log from 'electron-log/renderer';
 import { Subject } from 'rxjs';
 
 type ExposedMeta = {
   handlers: [namespace: string, handlerNames: string[]][];
   events: [namespace: string, eventNames: string[]][];
 };
-
-const logger = log.scope('preload');
 
 export function getAffineAPIs() {
   const mainAPIs = getMainAPIs();
@@ -96,7 +93,7 @@ function getMainAPIs() {
 
 const helperPort$ = new Promise<MessagePort>(resolve =>
   ipcRenderer.on('helper-connection', async e => {
-    logger.info('[preload] helper-connection', e);
+    console.info('[preload] helper-connection', e);
     resolve(e.ports[0]);
   })
 );

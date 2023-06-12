@@ -29,7 +29,26 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
   const flattenedHandlers = Object.entries(handlers).flatMap(
     ([namespace, namespaceHandlers]) => {
       return Object.entries(namespaceHandlers).map(([name, handler]) => {
-        return [`${namespace}:${name}`, handler];
+        const handlerWithLog = async (...args: any[]) => {
+          try {
+            const start = performance.now();
+            const result = await handler(...args);
+            logger.info(
+              '[async-api]',
+              `${namespace}.${name}`,
+              args.filter(
+                arg => typeof arg !== 'function' && typeof arg !== 'object'
+              ),
+              '-',
+              (performance.now() - start).toFixed(2),
+              'ms'
+            );
+            return result;
+          } catch (error) {
+            logger.error('[async-api]', `${namespace}.${name}`, error);
+          }
+        };
+        return [`${namespace}:${name}`, handlerWithLog];
       });
     }
   );
