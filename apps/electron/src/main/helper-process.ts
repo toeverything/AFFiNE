@@ -54,6 +54,10 @@ class HelperProcessManager {
         }
       });
     });
+
+    app.on('before-quit', () => {
+      this.#process.kill();
+    });
   }
 
   // bridge renderer <-> helper process
