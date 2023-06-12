@@ -17,7 +17,7 @@
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "test": "playwright test"
+    "test": "DEBUG=pw:browser playwright test"
   },
   "config": {
     "forge": "./forge.config.js"
