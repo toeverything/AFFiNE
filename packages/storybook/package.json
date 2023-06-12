@@ -9,6 +9,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/i18n": "workspace:*",
+    "@playwright/test": "^1.35.0",
     "@storybook/addon-actions": "^7.0.18",
     "@storybook/addon-essentials": "^7.0.18",
     "@storybook/addon-interactions": "^7.0.18",

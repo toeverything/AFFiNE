@@ -379,6 +379,7 @@ __metadata:
     "@blocksuite/icons": ^2.1.19
     "@blocksuite/lit": 0.0.0-20230607055421-9b20fcaf-nightly
     "@blocksuite/store": 0.0.0-20230607055421-9b20fcaf-nightly
+    "@playwright/test": ^1.35.0
     "@storybook/addon-actions": ^7.0.18
     "@storybook/addon-essentials": ^7.0.18
     "@storybook/addon-interactions": ^7.0.18
