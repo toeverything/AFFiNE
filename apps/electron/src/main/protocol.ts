@@ -16,7 +16,7 @@ protocol.registerSchemesAsPrivileged([
 
 function toAbsolutePath(url: string) {
   let realpath = decodeURIComponent(url);
-  const webStaticDir = join(__dirname, '../../../resources/web-static');
+  const webStaticDir = join(__dirname, '../resources/web-static');
   if (url.startsWith('./')) {
     // if is a file type, load the file in resources
     if (url.split('/').at(-1)?.includes('.')) {
@@ -34,6 +34,7 @@ export function registerProtocol() {
     const url = request.url.replace(/^file:\/\//, '');
     const realpath = toAbsolutePath(url);
     callback(realpath);
+    console.log('realpath', realpath);
     return true;
   });
 
