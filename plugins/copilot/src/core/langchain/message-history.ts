@@ -104,6 +104,6 @@ export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
   }
 
   async getMessages(): Promise<BaseChatMessage[]> {
-    return await this.initPromise.then(() => this.messages);
+    return this.initPromise.then(() => this.messages);
   }
 }

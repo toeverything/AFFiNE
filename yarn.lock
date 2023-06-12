@@ -130,10 +130,11 @@ __metadata:
     "@types/react-dom": ^18.2.4
     idb: ^7.1.1
     jotai: ^2.1.1
-    langchain: ^0.0.90
+    langchain: ^0.0.92
     marked: ^5.0.4
     react: 18.3.0-canary-16d053d59-20230506
     react-dom: 18.3.0-canary-16d053d59-20230506
+    zod: ^3.21.4
   peerDependencies:
     react: "*"
     react-dom: "*"
@@ -19787,9 +19788,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"langchain@npm:^0.0.90":
-  version: 0.0.90
-  resolution: "langchain@npm:0.0.90"
+"langchain@npm:^0.0.92":
+  version: 0.0.92
+  resolution: "langchain@npm:0.0.92"
   dependencies:
     "@anthropic-ai/sdk": ^0.4.3
     ansi-styles: ^5.0.0
@@ -19835,7 +19836,7 @@ __metadata:
     cohere-ai: ^5.0.2
     d3-dsv: ^2.0.0
     epub2: ^3.0.1
-    faiss-node: ^0.2.0
+    faiss-node: ^0.2.1
     google-auth-library: ^8.8.0
     hnswlib-node: ^1.4.2
     html-to-text: ^9.0.5
@@ -19947,7 +19948,7 @@ __metadata:
       optional: true
     weaviate-ts-client:
       optional: true
-  checksum: cbd35a7397b30ad265bf4ce992818ee03a409c33dde7a7a1e17c76e7e875768dbc79ff06618e42b3c688081ff8b0ff5eb34b532a2994d078578de67937a6452b
+  checksum: a9fb6cdf48e971f9327bcf5eb2322eb9b9add63413ecacd90bb064feab40d3ba6024086ccade59c0285dd57249406dda9ba7847cdb02e08312e147618165b49e
   languageName: node
   linkType: hard
 
