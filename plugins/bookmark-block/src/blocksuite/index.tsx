@@ -1,4 +1,5 @@
 import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
+import { noop } from 'foxact/noop';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -23,7 +24,7 @@ export default {
         div.remove();
       };
     } else {
-      return () => {};
+      return noop;
     }
   },
 } satisfies Partial<PluginBlockSuiteAdapter>;

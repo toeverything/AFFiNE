@@ -20,7 +20,6 @@ import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
-  rootStore,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
@@ -35,6 +34,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -64,7 +64,6 @@ import {
 } from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { toast } from '../utils';
-import { setEditorFlags } from '../utils/editor-flag';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -268,6 +267,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
           affineGlobalChannel.disconnect();
         };
       }
+      return;
     }, [currentWorkspaceId, jotaiWorkspaces]);
 
     const Provider =
@@ -310,7 +310,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       id: pageId,
     });
     assertEquals(page.id, pageId);
-    setEditorFlags(currentWorkspace.blockSuiteWorkspace);
     if (config.enablePreloading) {
       initPageWithPreloading(page).catch(error => {
         console.error('import error:', error);

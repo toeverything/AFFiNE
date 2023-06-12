@@ -80,7 +80,7 @@ export class IndexedDBVectorStore extends VectorStore {
     return result;
   }
 
-  static async fromTexts(
+  static override async fromTexts(
     texts: string[],
     metadatas: object[] | object,
     embeddings: Embeddings,
@@ -98,7 +98,7 @@ export class IndexedDBVectorStore extends VectorStore {
     return IndexedDBVectorStore.fromDocuments(docs, embeddings, dbConfig);
   }
 
-  static async fromDocuments(
+  static override async fromDocuments(
     docs: Document[],
     embeddings: Embeddings,
     dbConfig?: MemoryVectorStoreArgs

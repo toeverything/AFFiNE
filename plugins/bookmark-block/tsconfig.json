@@ -11,9 +11,6 @@
     },
     {
       "path": "../../packages/plugin-infra"
-    },
-    {
-      "path": "../../packages/env"
     }
   ]
 }

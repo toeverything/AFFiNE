@@ -116,7 +116,6 @@ export async function loginUser(
   }
 ) {
   await page.evaluate(async token => {
-    // @ts-ignore
     globalThis.setLogin(token);
   }, token);
 }

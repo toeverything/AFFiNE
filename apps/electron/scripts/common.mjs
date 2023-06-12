@@ -41,12 +41,20 @@ export const config = () => {
           electronDir,
           './layers/main/src/workers/merge-update.worker.ts'
         ),
+        resolve(electronDir, './layers/main/src/workers/plugin.worker.ts'),
       ],
       outdir: resolve(electronDir, './dist/layers/main'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', 'yjs', 'electron-updater', '@toeverything/infra'],
+      external: [
+        'electron',
+        'yjs',
+        'better-sqlite3',
+        'electron-updater',
+        '@toeverything/plugin-infra',
+        'async-call-rpc',
+      ],
       define: define,
       format: 'cjs',
       loader: {

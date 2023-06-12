@@ -12,6 +12,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./api": "./src/api.ts",
     "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
     "./workspace": "./src/workspace.ts",
@@ -27,5 +28,5 @@
   "dependencies": {
     "lit": "^2.7.5"
   },
-  "version": "0.7.0-canary.10"
+  "version": "0.7.0-canary.11"
 }

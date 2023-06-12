@@ -31,11 +31,7 @@ export const TmpDisableAffineCloudModal: React.FC<
     >
       <ModalWrapper width={480}>
         <Header>
-          <IconButton
-            onClick={() => {
-              onClose();
-            }}
-          >
+          <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
         </Header>
@@ -69,13 +65,7 @@ export const TmpDisableAffineCloudModal: React.FC<
             />
           </StyleImage>
           <StyleButtonContainer>
-            <StyleButton
-              shape="round"
-              type="primary"
-              onClick={() => {
-                onClose();
-              }}
-            >
+            <StyleButton shape="round" type="primary" onClick={onClose}>
               {t['Got it']()}
             </StyleButton>
           </StyleButtonContainer>
