@@ -77,7 +77,7 @@ jobs:
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
-      - name: Build
+      - name: Build Web
         run: yarn nx build @affine/web
         env:
           API_SERVER_PROFILE: local
@@ -94,25 +94,7 @@ jobs:
           path: ./apps/web/.next
           if-no-files-found: error
 
-  build-web-for-desktop:
-    name: Build @affine/web for desktop
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-      - name: Cache Next.js
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ github.workspace }}/apps/web/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
-
-      - name: Build
+      - name: Build Web (Desktop)
         run: yarn nx build @affine/web
         env:
           API_SERVER_PROFILE: affine
@@ -271,7 +253,7 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
-  dekstop-test:
+  desktop-test:
     name: Desktop Test
     runs-on: ${{ matrix.spec.os }}
     environment: development
@@ -308,7 +290,7 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
-    needs: [build-web-for-desktop]
+    needs: [build-web]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
