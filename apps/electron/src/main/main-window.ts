@@ -63,7 +63,7 @@ async function createWindow() {
 
   mainWindowState.manage(browserWindow);
 
-  helperProcessManager.connectRenderer(browserWindow.webContents);
+  const unsub = helperProcessManager.connectRenderer(browserWindow.webContents);
 
   /**
    * If you install `show: true` then it can cause issues when trying to close the window.
@@ -91,6 +91,7 @@ async function createWindow() {
   browserWindow.on('close', e => {
     e.preventDefault();
     browserWindow.destroy();
+    unsub();
     // TODO: gracefully close the app, for example, ask user to save unsaved changes
   });
 

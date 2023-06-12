@@ -2,6 +2,7 @@ import type { EventBasedChannel } from 'async-call-rpc';
 import { AsyncCall } from 'async-call-rpc';
 
 import { events, handlers } from './exposed';
+import { logger } from './logger';
 
 const createMessagePortMainChannel = (
   connection: Electron.MessagePortMain
@@ -58,6 +59,7 @@ function main() {
     if (e.data.channel === 'renderer-connect' && e.ports.length === 1) {
       const rendererPort = e.ports[0];
       setupRendererConnection(rendererPort);
+      logger.info('[helper] renderer connected');
     }
   });
 }
