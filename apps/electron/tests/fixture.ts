@@ -81,7 +81,7 @@ export const test = base.extend<{
     const id = generateUUID();
     const ext = process.platform === 'win32' ? '.cmd' : '';
     const dist = resolve(__dirname, '..', 'dist');
-    const clonedDist = resolve(__dirname, '../e2e-dist', 'dist-' + id);
+    const clonedDist = resolve(__dirname, '../e2e-dist-' + id);
     await fs.copy(dist, clonedDist);
     const packageJson = await fs.readJSON(
       resolve(__dirname, '..', 'package.json')
@@ -108,11 +108,11 @@ export const test = base.extend<{
       colorScheme: 'light',
     });
     await use(electronApp);
-    // FIXME: the following does not work well on CI
-    // const sessionDataPath = await electronApp.evaluate(async ({ app }) => {
-    //   return app.getPath('sessionData');
-    // });
-    // await fs.rm(sessionDataPath, { recursive: true, force: true });
+    try {
+      await fs.rm(clonedDist, { recursive: true, force: true });
+    } catch (error) {
+      console.log(error);
+    }
   },
   appInfo: async ({ electronApp }, use) => {
     const appInfo = await electronApp.evaluate(async ({ app }) => {
