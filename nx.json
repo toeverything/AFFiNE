@@ -25,6 +25,9 @@
       "dependsOn": ["^build"],
       "inputs": [
         {
+          "runtime": "node -v"
+        },
+        {
           "env": "ENABLE_BOOKMARK_OPERATION"
         },
         {
@@ -57,7 +60,11 @@
       ]
     },
     "e2e": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "inputs": [
+        { "runtime": "node -v" },
+        { "runtime": "yarn playwright --version" }
+      ]
     },
     "e2e:coverage": {
       "dependsOn": ["^build"]
