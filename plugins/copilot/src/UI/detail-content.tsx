@@ -1,12 +1,13 @@
 import { Button, Input } from '@affine/component';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
-import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { Provider, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { StrictMode, useCallback, useState } from 'react';
+import { StrictMode, Suspense, useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { ConversationList } from '../core/components/conversation-list';
+import { FollowingUp } from '../core/components/following-up';
 import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
 import { detailContentActionsStyle, detailContentStyle } from './index.css';
 
@@ -54,23 +55,15 @@ if (typeof window === 'undefined') {
   });
 }
 
-const DetailContentImpl = () => {
+const Actions = () => {
+  const { conversationAtom, followingUpAtoms } = useChatAtoms();
+  const call = useSetAtom(conversationAtom);
+  const questions = useAtomValue(followingUpAtoms.questionsAtom);
+  const generateFollowingUp = useSetAtom(followingUpAtoms.generateChatAtom);
   const [input, setInput] = useState('');
-  const { conversationAtom, followupAtom } = useChatAtoms();
-  const [conversations, call] = useAtom(conversationAtom);
-  const generateFollowup = useSetAtom(followupAtom);
-  const [following, setFollowing] = useState<string[] | null>(null);
-  const followup = following && (
-    <div>
-      {following.map((following, idx) => (
-        <div key={idx}>{following}</div>
-      ))}
-    </div>
-  );
   return (
-    <div className={detailContentStyle}>
-      <ConversationList conversations={conversations} />
-      {followup}
+    <>
+      <FollowingUp questions={questions} />
       <div className={detailContentActionsStyle}>
         <Input
           value={input}
@@ -81,12 +74,26 @@ const DetailContentImpl = () => {
         <Button
           onClick={useCallback(async () => {
             await call(input);
-            setFollowing(await generateFollowup());
-          }, [call, generateFollowup, input])}
+            await generateFollowingUp();
+          }, [call, generateFollowingUp, input])}
         >
           send
         </Button>
       </div>
+    </>
+  );
+};
+
+const DetailContentImpl = () => {
+  const { conversationAtom } = useChatAtoms();
+  const conversations = useAtomValue(conversationAtom);
+
+  return (
+    <div className={detailContentStyle}>
+      <ConversationList conversations={conversations} />
+      <Suspense fallback="generating follow-up question">
+        <Actions />
+      </Suspense>
     </div>
   );
 };

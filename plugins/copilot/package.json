@@ -10,7 +10,9 @@
     "@affine/component": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
     "langchain": "^0.0.92",
-    "marked": "^5.0.4"
+    "marked": "^5.0.4",
+    "marked-gfm-heading-id": "^3.0.4",
+    "marked-mangle": "^1.0.1"
   },
   "devDependencies": {
     "@types/marked": "^5.0.0",
