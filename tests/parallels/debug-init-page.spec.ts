@@ -1,4 +1,4 @@
-import { test } from '@affine-test/kit/playwright';
+import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
 test('should have page0', async ({ page }) => {

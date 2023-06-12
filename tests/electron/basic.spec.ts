@@ -1,8 +1,5 @@
-import { platform } from 'node:os';
-
+import { test } from '@affine-test/kit/electron';
 import { expect } from '@playwright/test';
-
-import { test } from './fixture';
 
 test('new page', async ({ page, workspace }) => {
   await page.getByTestId('new-page-button').click({
@@ -14,7 +11,7 @@ test('new page', async ({ page, workspace }) => {
 });
 
 // macOS only
-if (platform() === 'darwin') {
+if (process.platform === 'darwin') {
   test('app sidebar router forward/back', async ({ page }) => {
     await page.getByTestId('help-island').click();
     await page.getByTestId('easy-guide').click();

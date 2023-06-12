@@ -7,7 +7,7 @@ import { waitEditorLoad } from '../../libs/page-logic';
 const userA = require('../../fixtures/userA.json');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const userB = require('../../fixtures/userB.json');
-import { test } from '@affine-test/kit/playwright';
+import { test } from '@affine-test/kit/web';
 
 import {
   clickNewPageButton,

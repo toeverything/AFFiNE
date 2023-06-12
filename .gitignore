@@ -74,3 +74,6 @@ target
 tsconfig.node.tsbuildinfo
 lib
 affine.db
+/test-results/
+/playwright-report/
+/playwright/.cache/

@@ -62,15 +62,19 @@
         }
       ]
     },
-    "e2e": {
+    "e2e:desktop": {
       "dependsOn": ["^build"],
       "inputs": [
         { "runtime": "node -v" },
         { "runtime": "yarn playwright --version" }
       ]
     },
-    "e2e:coverage": {
-      "dependsOn": ["^build"]
+    "e2e:web": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        { "runtime": "node -v" },
+        { "runtime": "yarn playwright --version" }
+      ]
     },
     "test": {
       "dependsOn": ["^build"]

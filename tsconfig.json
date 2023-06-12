@@ -119,7 +119,10 @@
 
     // Tests
     {
-      "path": "./tests"
+      "path": "./tests/parallels"
+    },
+    {
+      "path": "./tests/electron"
     },
 
     {

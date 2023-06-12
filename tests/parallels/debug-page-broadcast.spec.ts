@@ -1,4 +1,4 @@
-import { test } from '@affine-test/kit/playwright';
+import { test } from '@affine-test/kit/web';
 import { expect } from '@playwright/test';
 
 test('should broadcast a message to all debug pages', async ({

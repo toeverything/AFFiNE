@@ -1,6 +1,7 @@
 import { ok } from 'node:assert';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path, { resolve } from 'node:path';
 import process from 'node:process';
 
@@ -8,8 +9,11 @@ import { test as baseTest } from '@playwright/test';
 
 export const rootDir = resolve(__dirname, '..', '..');
 // assert that the rootDir is the root of the project
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-ok(require(resolve(rootDir, 'package.json')).name.toLowerCase() === '@affine/monorepo');
+ok(
+  JSON.parse(
+    readFileSync(resolve(rootDir, 'package.json'), 'utf-8')
+  ).name.toLowerCase() === '@affine/monorepo'
+);
 
 export const testResultDir = resolve(rootDir, 'test-results');
 

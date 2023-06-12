@@ -1,4 +1,4 @@
-import { test } from '@affine-test/kit/playwright';
+import { test } from '@affine-test/kit/web';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
