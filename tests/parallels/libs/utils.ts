@@ -116,12 +116,14 @@ export async function loginUser(
   }
 ) {
   await page.evaluate(async token => {
+    // @ts-expect-error
     globalThis.setLogin(token);
   }, token);
 }
 
 export async function getMetas(page: Page): Promise<PageMeta[]> {
   return page.evaluate(
+    // @ts-expect-error
     () => globalThis.currentWorkspace.blockSuiteWorkspace.meta.pageMetas ?? []
   );
 }

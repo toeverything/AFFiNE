@@ -34,6 +34,7 @@ export async function assertCurrentWorkspaceFlavour(
   flavour: 'affine' | 'local',
   page: Page
 ) {
+  // @ts-expect-error
   const actual = await page.evaluate(() => globalThis.currentWorkspace.flavour);
   expect(actual).toBe(flavour);
 }
