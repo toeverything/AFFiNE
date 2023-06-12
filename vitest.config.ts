@@ -29,7 +29,7 @@ export default defineConfig({
     ],
     // split tests that include native addons or not
     include: process.env.NATIVE_TEST
-      ? ['apps/electron/layers/**/*.spec.ts']
+      ? ['apps/electron/src/**/*.spec.ts']
       : [
           'packages/**/*.spec.ts',
           'packages/**/*.spec.tsx',
@@ -37,12 +37,11 @@ export default defineConfig({
           'apps/web/**/*.spec.tsx',
           'tests/unit/**/*.spec.ts',
           'tests/unit/**/*.spec.tsx',
-          'apps/electron/layers/**/*.spec.ts',
         ],
     exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
     testTimeout: 5000,
-    singleThread: true,
-    threads: false,
+    singleThread: Boolean(process.env.NATIVE_TEST),
+    threads: !process.env.NATIVE_TEST,
     coverage: {
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],

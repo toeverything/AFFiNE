@@ -61,10 +61,10 @@ describe('delete workspace', () => {
     await fs.ensureDir(workspacePath);
     await deleteWorkspace(workspaceId);
     expect(await fs.pathExists(workspacePath)).toBe(false);
-    // removed workspace will be moved to delete-workspaces
+    // removed workspace will be moved to deleted-workspaces
     expect(
       await fs.pathExists(
-        path.join(appDataPath, 'delete-workspaces', workspaceId)
+        path.join(appDataPath, 'deleted-workspaces', workspaceId)
       )
     ).toBe(true);
   });
