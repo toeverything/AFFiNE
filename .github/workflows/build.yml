@@ -200,6 +200,9 @@ jobs:
         with:
           name: storybook
           path: ./packages/storybook/storybook-static
+      - name: Install Playwright
+        working-directory: ./packages/storybook
+        run: yarn playwright install
       - name: Run storybook tests
         working-directory: ./packages/storybook
         run: |
