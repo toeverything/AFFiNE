@@ -63,6 +63,7 @@ const IndexPageInner = () => {
     } else {
       console.warn('No target workspace. This should not happen in production');
     }
+    return;
   }, [helper, jumpToPage, jumpToSubPath, router, workspaces]);
 
   return (

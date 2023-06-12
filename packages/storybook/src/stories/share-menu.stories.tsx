@@ -1,7 +1,9 @@
 import { toast } from '@affine/component';
-import { PublicLinkDisableModal } from '@affine/component/share-menu/disable-public-link';
+import {
+  PublicLinkDisableModal,
+  StyledDisableButton,
+} from '@affine/component/share-menu';
 import { ShareMenu } from '@affine/component/share-menu/share-menu';
-import { StyledDisableButton } from '@affine/component/share-menu/styles';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,

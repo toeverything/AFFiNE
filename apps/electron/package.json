@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.7.0-canary.10",
+  "version": "0.7.0-canary.11",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -13,7 +13,7 @@
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
     "watch": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs --watch",
     "prod": "yarn node scripts/dev.mjs",
-    "build-layers": "zx scripts/build-layers.mjs",
+    "build": "zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -23,6 +23,9 @@
     "forge": "./forge.config.js"
   },
   "main": "./dist/layers/main/index.js",
+  "exports": {
+    "./scripts/plugins/build-plugins.mjs": "./scripts/plugins/build-plugins.mjs"
+  },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/native": "workspace:*",
@@ -52,6 +55,8 @@
     "zx": "^7.2.2"
   },
   "dependencies": {
+    "@toeverything/plugin-infra": "workspace:*",
+    "async-call-rpc": "^6.3.1",
     "cheerio": "^1.0.0-rc.12",
     "electron-updater": "^5.3.0",
     "lodash-es": "^4.17.21",

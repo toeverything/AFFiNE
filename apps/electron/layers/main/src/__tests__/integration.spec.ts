@@ -27,11 +27,10 @@ async function dispatch<
 >(
   namespace: T,
   functionName: F,
-  // @ts-ignore
   ...args: Parameters<WithoutFirstParameter<MainIPCHandlerMap[T][F]>>
-): // @ts-ignore
+): // @ts-expect-error
 ReturnType<MainIPCHandlerMap[T][F]> {
-  // @ts-ignore
+  // @ts-expect-error
   const handlers = registeredHandlers.get(namespace + ':' + functionName);
   assert(handlers);
 
@@ -108,7 +107,7 @@ const electronModule = {
       registeredHandlers.set(name, handlers);
     },
     addListener: (...args: any[]) => {
-      // @ts-ignore
+      // @ts-expect-error
       electronModule.app.on(...args);
     },
     removeListener: () => {},

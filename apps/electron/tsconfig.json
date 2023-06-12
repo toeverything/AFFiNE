@@ -17,16 +17,21 @@
   "exclude": ["node_modules", "out", "dist"],
   "references": [
     {
-      "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./tests/tsconfig.json"
+      "path": "../../packages/plugin-infra"
     },
     {
       "path": "../../packages/native"
     },
     {
       "path": "../../packages/infra"
+    },
+
+    // Tests
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tests/tsconfig.json"
     },
     { "path": "../../tests/kit" }
   ],

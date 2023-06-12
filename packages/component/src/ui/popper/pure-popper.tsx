@@ -28,7 +28,6 @@ export const PurePopper = (props: PurePopperProps) => {
   } = props;
   const [arrowRef, setArrowRef] = useState<HTMLElement | null>();
 
-  // @ts-ignore
   return (
     <BasicStyledPopper
       zIndex={zIndex}
