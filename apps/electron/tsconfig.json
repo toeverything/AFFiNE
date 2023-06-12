@@ -26,14 +26,10 @@
       "path": "../../packages/infra"
     },
 
-    // Tests
+    // Scripts
     {
       "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./tests/tsconfig.json"
-    },
-    { "path": "../../tests/kit" }
+    }
   ],
   "ts-node": {
     "esm": true,
