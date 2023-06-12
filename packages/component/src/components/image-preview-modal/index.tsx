@@ -111,7 +111,7 @@ const ImagePreviewModalImpl = (
   if (!url) {
     return null;
   }
-  const nextImageHandler = (blockId: string) => {
+  const nextImageHandler = (blockId: string | null) => {
     assertExists(blockId);
     const workspace = props.workspace;
 
@@ -190,7 +190,7 @@ const ImagePreviewModalImpl = (
     page.deleteBlock(block);
   };
 
-  const previousImageHandler = (blockId: string) => {
+  const previousImageHandler = (blockId: string | null) => {
     assertExists(blockId);
     const workspace = props.workspace;
     const page = workspace.getPage(props.pageId);
@@ -215,7 +215,7 @@ const ImagePreviewModalImpl = (
 
   let actionbarTimeout: ReturnType<typeof setTimeout>;
 
-  const downloadHandler = async (blockId: string) => {
+  const downloadHandler = async (blockId: string | null) => {
     const workspace = props.workspace;
     const page = workspace.getPage(props.pageId);
     assertExists(page);
@@ -320,9 +320,9 @@ const ImagePreviewModalImpl = (
               alt={caption}
               ref={imageRef}
               draggable={isZoomedBigger}
-              onMouseDown={handleDragStart}
-              onMouseMove={handleDrag}
-              onMouseUp={handleDragEnd}
+              onMouseDown={event => handleDragStart(event)}
+              onMouseMove={event => handleDrag(event)}
+              onMouseUp={event => handleDragEnd(event)}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             />

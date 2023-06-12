@@ -1,4 +1,4 @@
-import type { MouseEventHandler, RefObject } from 'react';
+import type { MouseEvent, RefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseZoomControlsProps {
@@ -58,7 +58,7 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDragStart = (event: MouseEventHandler<HTMLImageElement>) => {
+  const handleDragStart = (event: MouseEvent<HTMLImageElement>) => {
     event?.preventDefault();
     setIsDragging(true);
     const image = imageRef.current;
@@ -72,7 +72,7 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDrag = (event: MouseEventHandler<HTMLImageElement>) => {
+  const handleDrag = (event: MouseEvent<HTMLImageElement>) => {
     event?.preventDefault();
     const image = imageRef.current;
 
@@ -87,7 +87,7 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDragEnd = (event: MouseEventHandler<HTMLImageElement>) => {
+  const handleDragEnd = (event: MouseEvent<HTMLImageElement> | undefined) => {
     event?.preventDefault();
     setIsDragging(false);
 
@@ -104,17 +104,14 @@ export const useZoomControls = ({
     }
   };
 
-  const handleMouseUp = useCallback(() => {
-    if (isDragging) {
-      handleDragEnd(event);
-    }
-  }, [isDragging, handleDragEnd]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (isDragging) {
-      handleDragEnd(event);
-    }
-  }, [isDragging, handleDragEnd]);
+  const handleMouseUp = useCallback(
+    (event: MouseEvent<HTMLImageElement>) => {
+      if (isDragging) {
+        handleDragEnd(event);
+      }
+    },
+    [isDragging, handleDragEnd]
+  );
 
   const checkZoomSize = useCallback(() => {
     const { current: zoomArea } = zoomRef;
@@ -150,16 +147,12 @@ export const useZoomControls = ({
 
     window.addEventListener('wheel', handleScroll, { passive: false });
     window.addEventListener('resize', handleResize);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('wheel', handleScroll);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp, handleTouchEnd]);
+  }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp]);
 
   return {
     zoomIn,
