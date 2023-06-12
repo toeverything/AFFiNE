@@ -4,5 +4,5 @@
     "baseUrl": ".",
     "noEmit": true
   },
-  "include": ["**.spec.ts", "**.test.ts"]
+  "include": ["**.spec.ts", "**.test.ts", "libs"]
 }
