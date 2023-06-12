@@ -56,6 +56,9 @@
         },
         {
           "env": "ENABLE_PRELOADING"
+        },
+        {
+          "env": "API_SERVER_PROFILE"
         }
       ]
     },
