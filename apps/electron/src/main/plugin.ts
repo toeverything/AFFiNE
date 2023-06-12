@@ -30,7 +30,7 @@ export async function registerPlugin() {
         process.env.PLUGIN_DIR ?? resolve(__dirname, './plugins'),
         './bookmark-block/index.mjs'
       );
-      import(bookmarkPluginPath);
+      import('file://' + bookmarkPluginPath);
       let dispose: () => void = () => {
         // noop
       };

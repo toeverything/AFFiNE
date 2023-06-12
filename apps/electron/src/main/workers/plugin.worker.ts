@@ -22,7 +22,7 @@ import('@toeverything/plugin-infra/manager').then(
       './bookmark-block/index.mjs'
     );
 
-    import(bookmarkPluginPath);
+    import('file://' + bookmarkPluginPath);
     rootStore.sub(affinePluginsAtom, () => {
       const plugins = rootStore.get(affinePluginsAtom);
       Object.values(plugins).forEach(plugin => {
