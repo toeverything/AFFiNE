@@ -29,12 +29,14 @@ export const test = base.extend<{
     current: () => Promise<any>; // todo: type
   };
 }>({
+  // @ts-expect-error
   page: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
     await page.getByTestId('onboarding-modal-close-button').click({
       delay: 100,
     });
     if (!process.env.CI) {
+      // @ts-expect-error
       await electronApp.evaluate(({ BrowserWindow }) => {
         BrowserWindow.getAllWindows()[0].webContents.openDevTools({
           mode: 'detach',
