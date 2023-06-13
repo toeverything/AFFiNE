@@ -34,6 +34,7 @@ import { pageSettingFamily } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
+import { pluginContainer } from './page-detail-editor.css';
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
@@ -122,7 +123,7 @@ const PluginContentAdapter = memo<{
   detailContent: PluginUIAdapter['detailContent'];
 }>(function PluginContentAdapter({ detailContent }) {
   return (
-    <div>
+    <div className={pluginContainer}>
       {detailContent({
         contentLayoutAtom,
       })}
@@ -153,7 +154,12 @@ const LayoutPanel = memo(function LayoutPanel(
     }
   } else {
     return (
-      <PanelGroup direction={node.direction}>
+      <PanelGroup
+        style={{
+          height: 'calc(100% - 52px)',
+        }}
+        direction={node.direction}
+      >
         <Panel defaultSize={node.splitPercentage}>
           <Suspense>
             <LayoutPanel

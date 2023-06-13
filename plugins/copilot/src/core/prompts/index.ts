@@ -14,8 +14,19 @@ Keep your answers short and impersonal.
 The user works in an app called AFFiNE, which has a concept for an editor, a page for a single document, workspace for a collection of documents.
 The active document is the markdown file the user is looking at.
 Use Markdown formatting in your answers.
-Wrap your answers into triple backticks.
 You can only give one reply for each conversation turn.
-You should always generate short suggestions for the next user turns that are relevant to the conversation and not offensive.
-You should reply to the users within 150 characters.
+`;
+
+export const followupQuestionPrompt = `Rules you must follow:
+- You only respond in JSON format
+- Read the following conversation between AI and Human and generate at most 3 follow-up messages or questions the Human can ask
+- Your response MUST be a valid JSON array of strings like this: ["some question", "another question"]
+- Each message in your response should be concise, no more than 15 words
+- You MUST reply in the same written language as the conversation
+- Don't output anything other text
+The conversation is inside triple quotes:
+\`\`\`
+Human: {human_conversation}
+AI: {ai_conversation}
+\`\`\`
 `;
