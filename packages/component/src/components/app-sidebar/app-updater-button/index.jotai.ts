@@ -49,7 +49,9 @@ export const updateAvailableAtom = atomWithObservable(() => {
   return rpcToObservable(null as any | null, {
     event: window.events?.updater.onUpdateAvailable,
     onSubscribe: () => {
-      window.apis?.updater.checkForUpdatesAndNotify();
+      window.apis?.updater.checkForUpdatesAndNotify().catch(err => {
+        console.error(err);
+      });
     },
   });
 });

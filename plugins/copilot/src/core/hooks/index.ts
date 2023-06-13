@@ -49,9 +49,14 @@ const getConversationAtom = (chat: ConversationChain) => {
       throw new Error();
     }
     const memory = chat.memory as BufferMemory;
-    void memory.chatHistory.getMessages().then(messages => {
-      setAtom(messages);
-    });
+    memory.chatHistory
+      .getMessages()
+      .then(messages => {
+        setAtom(messages);
+      })
+      .catch(err => {
+        console.error(err);
+      });
     const llmStart = (): void => {
       setAtom(conversations => [...conversations, new AIChatMessage('')]);
     };
@@ -86,9 +91,14 @@ const getConversationAtom = (chat: ConversationChain) => {
       });
       // refresh messages
       const memory = chat.memory as BufferMemory;
-      void memory.chatHistory.getMessages().then(messages => {
-        set(conversationBaseAtom, messages);
-      });
+      memory.chatHistory
+        .getMessages()
+        .then(messages => {
+          set(conversationBaseAtom, messages);
+        })
+        .catch(err => {
+          console.error(err);
+        });
     }
   );
   conversationWeakMap.set(chat, conversationAtom);

@@ -174,7 +174,9 @@ export const CurrentWorkspaceContext = ({
   useEffect(() => {
     const id = setTimeout(() => {
       if (!exist) {
-        void push('/');
+        push('/').catch(err => {
+          console.error(err);
+        });
         globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
       }
     }, globalThis.HALTING_PROBLEM_TIMEOUT);
@@ -319,7 +321,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     }
     if (!router.query.pageId) {
       setCurrentPageId(pageId);
-      void jumpToPage(currentWorkspace.id, pageId);
+      jumpToPage(currentWorkspace.id, pageId).catch(err => {
+        console.error(err);
+      });
     }
   }
   //#endregion
@@ -353,7 +357,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         }
       );
       setCurrentPageId(currentPageId);
-      void jumpToPage(currentWorkspace.id, page.id);
+      jumpToPage(currentWorkspace.id, page.id).catch(err => {
+        console.error(err);
+      });
     }
   }, [
     currentPageId,

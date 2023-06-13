@@ -10,7 +10,11 @@ const DesktopThemeSync = memo(function DesktopThemeSync() {
   const onceRef = useRef(false);
   if (lastThemeRef.current !== theme || !onceRef.current) {
     if (environment.isDesktop && theme) {
-      window.apis?.ui.handleThemeChange(theme as 'dark' | 'light' | 'system');
+      window.apis?.ui
+        .handleThemeChange(theme as 'dark' | 'light' | 'system')
+        .catch(err => {
+          console.error(err);
+        });
     }
     lastThemeRef.current = theme;
     onceRef.current = true;

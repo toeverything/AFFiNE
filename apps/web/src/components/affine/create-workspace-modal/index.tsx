@@ -116,9 +116,14 @@ const useDefaultDBLocation = () => {
   const [defaultDBLocation, setDefaultDBLocation] = useState('');
 
   useEffect(() => {
-    window.apis?.db.getDefaultStorageLocation().then(dir => {
-      setDefaultDBLocation(dir);
-    });
+    window.apis?.db
+      .getDefaultStorageLocation()
+      .then(dir => {
+        setDefaultDBLocation(dir);
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }, []);
 
   return defaultDBLocation;
@@ -281,7 +286,9 @@ export const CreateWorkspaceModal = ({
           }
           onClose();
         }
-      })();
+      })().catch(err => {
+        console.error(err);
+      });
     } else if (mode === 'new') {
       setStep(environment.isDesktop ? 'set-db-location' : 'name-workspace');
     } else {

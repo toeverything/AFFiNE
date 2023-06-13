@@ -12,6 +12,7 @@ import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import { forwardRef, memo, useEffect, useMemo, useState } from 'react';
+import { noop } from 'rxjs';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { contentLayoutAtom } from '../../../atoms/layout';
@@ -104,27 +105,21 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
           <button
             data-type="minimize"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleMinimizeApp();
-            }}
+            onClick={window.apis?.ui.handleMinimizeApp ?? noop}
           >
             <MinusIcon />
           </button>
           <button
             data-type="maximize"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleMaximizeApp();
-            }}
+            onClick={window.apis?.ui.handleMaximizeApp ?? noop}
           >
             <RoundedRectangleIcon />
           </button>
           <button
             data-type="close"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleCloseApp();
-            }}
+            onClick={window.apis?.ui.handleCloseApp ?? noop}
           >
             <CloseIcon />
           </button>
