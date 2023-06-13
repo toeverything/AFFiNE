@@ -10,7 +10,7 @@ export const useZoomControls = ({
   zoomRef,
   imageRef,
 }: UseZoomControlsProps) => {
-  const [currentScale, setCurrentScale] = useState<number>(1);
+  const [currentScale, setCurrentScale] = useState<number>(0.5);
   const [isZoomedBigger, setIsZoomedBigger] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [mouseX, setMouseX] = useState<number>(0);
@@ -92,7 +92,7 @@ export const useZoomControls = ({
     setIsDragging(false);
 
     const image = imageRef.current;
-    if (image) {
+    if (image && isZoomedBigger) {
       image.style.cursor = 'pointer';
       const rect = image.getBoundingClientRect();
       const newPos = { x: rect.left, y: rect.top };

@@ -66,13 +66,6 @@ const ImagePreviewModalImpl = (
     const block = page.getBlockById(props.blockId) as EmbedBlockModel;
     assertExists(block);
     setCaption(block?.caption);
-    // is it actually necessary?
-    const disposable = block.propsUpdated.on(() => {
-      setCaption(block?.caption);
-    });
-    return () => {
-      disposable.dispose();
-    };
   }, [props.blockId, props.pageId, props.workspace]);
   const { data } = useSWR(['workspace', 'embed', props.pageId, props.blockId], {
     fetcher: ([_, __, pageId, blockId]) => {
@@ -135,6 +128,29 @@ const ImagePreviewModalImpl = (
     }
   };
 
+  const previousImageHandler = (blockId: string | null) => {
+    assertExists(blockId);
+    const workspace = props.workspace;
+    const page = workspace.getPage(props.pageId);
+    assertExists(page);
+    const block = page.getBlockById(blockId);
+    assertExists(block);
+    const prevBlock = page
+      .getPreviousSiblings(block)
+      .findLast(
+        (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+      );
+    if (prevBlock) {
+      setBlockId(prevBlock.id);
+      const image = imageRef.current;
+      if (image) {
+        resetZoom();
+        image.style.width = '100%'; // Reset the width to its original size
+        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
+      }
+    }
+  };
+
   const deleteHandler = (blockId: string) => {
     const workspace = props.workspace;
 
@@ -188,29 +204,6 @@ const ImagePreviewModalImpl = (
       props.onClose();
     }
     page.deleteBlock(block);
-  };
-
-  const previousImageHandler = (blockId: string | null) => {
-    assertExists(blockId);
-    const workspace = props.workspace;
-    const page = workspace.getPage(props.pageId);
-    assertExists(page);
-    const block = page.getBlockById(blockId);
-    assertExists(block);
-    const prevBlock = page
-      .getPreviousSiblings(block)
-      .findLast(
-        (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
-      );
-    if (prevBlock) {
-      setBlockId(prevBlock.id);
-      const image = imageRef.current;
-      if (image) {
-        resetZoom();
-        image.style.width = '100%'; // Reset the width to its original size
-        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-      }
-    }
   };
 
   let actionbarTimeout: NodeJS.Timeout;
@@ -325,6 +318,7 @@ const ImagePreviewModalImpl = (
               onMouseUp={event => handleDragEnd(event)}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
+              width={'50%'}
             />
             {isZoomedBigger ? null : (
               <p className={imagePreviewModalCaptionStyle}>{caption}</p>
