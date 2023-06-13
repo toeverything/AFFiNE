@@ -26,13 +26,13 @@ const settingPanelAtom = atomWithStorage<SettingPanel>(
   settingPanel.General
 );
 
-async function useTabRouterSync(
+function useTabRouterSync(
   router: NextRouter,
   currentTab: SettingPanel,
   setCurrentTab: (tab: SettingPanel) => void
-) {
+): void {
   if (!router.isReady) {
-    return null;
+    return;
   }
   const queryCurrentTab =
     typeof router.query.currentTab === 'string'
@@ -43,32 +43,37 @@ async function useTabRouterSync(
     settingPanelValues.indexOf(queryCurrentTab as SettingPanel) === -1
   ) {
     setCurrentTab(settingPanel.General);
-    return router.replace({
-      pathname: router.pathname,
-      query: {
-        ...router.query,
-        currentTab: settingPanel.General,
-      },
-    });
+    router
+      .replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: settingPanel.General,
+        },
+      })
+      .catch(console.error);
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     setCurrentTab(settingPanel.General);
-    return router.replace({
-      pathname: router.pathname,
-      query: {
-        ...router.query,
-        currentTab: settingPanel.General,
-      },
-    });
+    router
+      .replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: settingPanel.General,
+        },
+      })
+      .catch(console.error);
   } else if (queryCurrentTab !== currentTab) {
-    return router.replace({
-      pathname: router.pathname,
-      query: {
-        ...router.query,
-        currentTab: currentTab,
-      },
-    });
+    router
+      .replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: currentTab,
+        },
+      })
+      .catch(console.error);
   }
-  return null;
 }
 
 const SettingPage: NextPageWithLayout = () => {
@@ -94,9 +99,7 @@ const SettingPage: NextPageWithLayout = () => {
     [router, setCurrentTab]
   );
 
-  useTabRouterSync(router, currentTab, setCurrentTab).catch(err => {
-    console.error(err);
-  });
+  useTabRouterSync(router, currentTab, setCurrentTab);
 
   const helper = useAppHelper();
 
