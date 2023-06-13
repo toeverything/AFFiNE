@@ -11,6 +11,7 @@ import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   ExportToPdfIcon,
+  ExportToPngIcon,
 } from '@blocksuite/icons';
 import { useAtomValue } from 'jotai';
 import { useRef } from 'react';
@@ -27,7 +28,7 @@ const ExportToPdfMenuItem = ({
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   return (
     <>
-      {globalThis.currentEditor!.mode === 'page' && (
+      {true && (
         <MenuItem
           data-testid="export-to-pdf"
           onClick={async () => {
@@ -85,33 +86,46 @@ const ExportToHtmlMenuItem = ({
   );
 };
 
-// const ExportToPngMenuItem = ({
-//   onSelect,
-// }: CommonMenuItemProps<{ type: 'png' }>) => {
-//   const t = useAFFiNEI18N();
-//   const contentParserRef = useRef<ContentParser>();
-//   return (
-//     <>
-//       {globalThis.currentEditor!.mode === 'page' && (
-//         <MenuItem
-//           data-testid="export-to-png"
-//           onClick={() => {
-//             if (!contentParserRef.current) {
-//               contentParserRef.current = new ContentParser(
-//                 globalThis.currentEditor!.page
-//               );
-//             }
-//             contentParserRef.current.exportPng();
-//             onSelect?.({ type: 'png' });
-//           }}
-//           icon={<ExportToPngIcon />}
-//         >
-//           {t['Export to PNG']()}
-//         </MenuItem>
-//       )}
-//     </>
-//   );
-// };
+const ExportToPngMenuItem = ({
+  onSelect,
+}: CommonMenuItemProps<{ type: 'png' }>) => {
+  const t = useAFFiNEI18N();
+  const contentParserRef = useRef<ContentParser>();
+  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  return (
+    <>
+      {true && (
+        <MenuItem
+          data-testid="export-to-png"
+          onClick={async () => {
+            if (!contentParserRef.current) {
+              contentParserRef.current = new ContentParser(
+                globalThis.currentEditor!.page
+              );
+            }
+            const result = await window.apis?.export.savePngFileAs(
+              currentWorkspaceId || '',
+              currentPageId || '',
+              (
+                globalThis.currentEditor!.page.root as PageBlockModel
+              ).title.toString()
+            );
+            if (result !== undefined) {
+              return;
+            }
+
+            contentParserRef.current.exportPng();
+            onSelect?.({ type: 'png' });
+          }}
+          icon={<ExportToPngIcon />}
+        >
+          {t['Export to PNG']()}
+        </MenuItem>
+      )}
+    </>
+  );
+};
 
 const ExportToMarkdownMenuItem = ({
   onSelect,
@@ -152,7 +166,7 @@ export const Export = ({
         <>
           <ExportToPdfMenuItem></ExportToPdfMenuItem>
           <ExportToHtmlMenuItem></ExportToHtmlMenuItem>
-          {/* <ExportToPngMenuItem></ExportToPngMenuItem> */}
+          <ExportToPngMenuItem></ExportToPngMenuItem>
           <ExportToMarkdownMenuItem></ExportToMarkdownMenuItem>
         </>
       }
