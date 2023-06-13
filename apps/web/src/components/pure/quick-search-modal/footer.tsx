@@ -54,7 +54,9 @@ export const Footer: React.FC<FooterProps> = ({
           title: query,
         });
         onClose();
-        void jumpToPage(blockSuiteWorkspace.id, page.id);
+        jumpToPage(blockSuiteWorkspace.id, page.id).catch(err => {
+          console.error(err);
+        });
       }, [blockSuiteWorkspace, createPage, jumpToPage, onClose, query])}
     >
       <StyledModalFooterContent>

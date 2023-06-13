@@ -12,7 +12,7 @@ import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-s
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
 import { Upload } from '../../../../pure/file-upload';
@@ -27,9 +27,14 @@ const useShowOpenDBFile = (workspaceId: string) => {
   const [show, setShow] = useState(false);
   useEffect(() => {
     if (window.apis && window.events && environment.isDesktop) {
-      window.apis.workspace.getMeta(workspaceId).then(meta => {
-        setShow(!!meta.secondaryDBPath);
-      });
+      window.apis.workspace
+        .getMeta(workspaceId)
+        .then(meta => {
+          setShow(!!meta.secondaryDBPath);
+        })
+        .catch(err => {
+          console.error(err);
+        });
       return window.events.workspace.onMetaChange((newMeta: any) => {
         if (newMeta.workspaceId === workspaceId) {
           const meta = newMeta.meta;
@@ -54,33 +59,9 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   const isOwner = useIsWorkspaceOwner(workspace);
   const t = useAFFiNEI18N();
 
-  const showOpenFolder = useShowOpenDBFile(workspace.id);
-
   const handleUpdateWorkspaceName = (name: string) => {
     setName(name);
     toast(t['Update workspace name success']());
-  };
-
-  const [moveToInProgress, setMoveToInProgress] = useState<boolean>(false);
-
-  const handleMoveTo = async () => {
-    if (moveToInProgress) {
-      return;
-    }
-    try {
-      setMoveToInProgress(true);
-      const result = await window.apis?.dialog.moveDBFile(workspace.id);
-      if (!result?.error && !result?.canceled) {
-        toast(t['Move folder success']());
-      } else if (result?.error) {
-        // @ts-expect-error: result.error is dynamic
-        toast(t[result.error]());
-      }
-    } catch (err) {
-      toast(t['UNKNOWN_ERROR']());
-    } finally {
-      setMoveToInProgress(false);
-    }
   };
 
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
@@ -137,9 +118,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
             placeholder={t['Workspace Name']()}
             maxLength={64}
             minLength={0}
-            onChange={newName => {
-              setInput(newName);
-            }}
+            onChange={setInput}
           ></StyledInput>
         </div>
 
@@ -158,63 +137,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           </Button>
         </div>
       </div>
-
-      {environment.isDesktop && (
-        <div className={style.row}>
-          <div className={style.col}>
-            <div className={style.settingItemLabel}>
-              {t['Storage Folder']()}
-            </div>
-            <div className={style.settingItemLabelHint}>
-              {t['Storage Folder Hint']()}
-            </div>
-          </div>
-
-          <div className={style.col}>
-            {showOpenFolder && (
-              <div
-                className={style.storageTypeWrapper}
-                onClick={() => {
-                  if (environment.isDesktop) {
-                    window.apis?.dialog.revealDBFile(workspace.id);
-                  }
-                }}
-              >
-                <FolderIcon color="var(--affine-primary-color)" />
-                <div className={style.storageTypeLabelWrapper}>
-                  <div className={style.storageTypeLabel}>
-                    {t['Open folder']()}
-                  </div>
-                  <div className={style.storageTypeLabelHint}>
-                    {t['Open folder hint']()}
-                  </div>
-                </div>
-                <ArrowRightSmallIcon color="var(--affine-primary-color)" />
-              </div>
-            )}
-
-            <div
-              data-testid="move-folder"
-              data-disabled={moveToInProgress}
-              className={style.storageTypeWrapper}
-              onClick={handleMoveTo}
-            >
-              <MoveToIcon color="var(--affine-primary-color)" />
-              <div className={style.storageTypeLabelWrapper}>
-                <div className={style.storageTypeLabel}>
-                  {t['Move folder']()}
-                </div>
-                <div className={style.storageTypeLabelHint}>
-                  {t['Move folder hint']()}
-                </div>
-              </div>
-              <ArrowRightSmallIcon color="var(--affine-primary-color)" />
-            </div>
-          </div>
-          <div className={style.col}></div>
-        </div>
-      )}
-
+      <DesktopClientOnly workspaceId={workspace.id} />
       <div className={style.row}>
         <div className={style.col}>
           <div className={style.settingItemLabel}>
@@ -273,3 +196,81 @@ export const GeneralPanel: React.FC<PanelProps> = ({
     </>
   );
 };
+
+function DesktopClientOnly({ workspaceId }: { workspaceId: string }) {
+  const t = useAFFiNEI18N();
+  const showOpenFolder = useShowOpenDBFile(workspaceId);
+  const onRevealDBFile = useCallback(() => {
+    if (environment.isDesktop) {
+      window.apis?.dialog.revealDBFile(workspaceId).catch(err => {
+        console.error(err);
+      });
+    }
+  }, [workspaceId]);
+  const [moveToInProgress, setMoveToInProgress] = useState<boolean>(false);
+  const handleMoveTo = useCallback(() => {
+    if (moveToInProgress) {
+      return;
+    }
+    setMoveToInProgress(true);
+    window.apis?.dialog
+      .moveDBFile(workspaceId)
+      .then(result => {
+        if (!result?.error && !result?.canceled) {
+          toast(t['Move folder success']());
+        } else if (result?.error) {
+          // @ts-expect-error: result.error is dynamic
+          toast(t[result.error]());
+        }
+      })
+      .catch(() => {
+        toast(t['UNKNOWN_ERROR']());
+      })
+      .finally(() => {
+        setMoveToInProgress(false);
+      });
+  }, [moveToInProgress, t, workspaceId]);
+  const openFolderNode = showOpenFolder ? (
+    <div className={style.storageTypeWrapper} onClick={onRevealDBFile}>
+      <FolderIcon color="var(--affine-primary-color)" />
+      <div className={style.storageTypeLabelWrapper}>
+        <div className={style.storageTypeLabel}>{t['Open folder']()}</div>
+        <div className={style.storageTypeLabelHint}>
+          {t['Open folder hint']()}
+        </div>
+      </div>
+      <ArrowRightSmallIcon color="var(--affine-primary-color)" />
+    </div>
+  ) : null;
+  return (
+    <div className={style.row}>
+      <div className={style.col}>
+        <div className={style.settingItemLabel}>{t['Storage Folder']()}</div>
+        <div className={style.settingItemLabelHint}>
+          {t['Storage Folder Hint']()}
+        </div>
+      </div>
+
+      <div className={style.col}>
+        {openFolderNode}
+
+        <div
+          data-testid="move-folder"
+          data-disabled={moveToInProgress}
+          className={style.storageTypeWrapper}
+          onClick={handleMoveTo}
+        >
+          <MoveToIcon color="var(--affine-primary-color)" />
+          <div className={style.storageTypeLabelWrapper}>
+            <div className={style.storageTypeLabel}>{t['Move folder']()}</div>
+            <div className={style.storageTypeLabelHint}>
+              {t['Move folder hint']()}
+            </div>
+          </div>
+          <ArrowRightSmallIcon color="var(--affine-primary-color)" />
+        </div>
+      </div>
+      <div className={style.col}></div>
+    </div>
+  );
+}

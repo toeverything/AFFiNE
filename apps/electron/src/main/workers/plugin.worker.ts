@@ -15,8 +15,8 @@ AsyncCall(commandProxy, {
   channel: new MessageEventChannel(parentPort),
 });
 
-import('@toeverything/plugin-infra/manager').then(
-  ({ rootStore, affinePluginsAtom }) => {
+import('@toeverything/plugin-infra/manager')
+  .then(({ rootStore, affinePluginsAtom }) => {
     const bookmarkPluginPath = join(
       process.env.PLUGIN_DIR ?? resolve(__dirname, '../plugins'),
       './bookmark-block/index.mjs'
@@ -39,5 +39,7 @@ import('@toeverything/plugin-infra/manager').then(
         }
       });
     });
-  }
-);
+  })
+  .catch(err => {
+    console.error(err);
+  });
