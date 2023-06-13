@@ -110,7 +110,7 @@ export const useZoomControls = ({
         handleDragEnd(event);
       }
     },
-    [isDragging, handleDragEnd]
+    [isDragging]
   );
 
   const checkZoomSize = useCallback(() => {

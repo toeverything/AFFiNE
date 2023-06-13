@@ -68,7 +68,7 @@ const ImagePreviewModalImpl = (
     setCaption(block?.caption);
     // is it actually necessary?
     const disposable = block.propsUpdated.on(() => {
-      setCaption(block.caption);
+      setCaption(block?.caption);
     });
     return () => {
       disposable.dispose();
@@ -213,7 +213,7 @@ const ImagePreviewModalImpl = (
     }
   };
 
-  let actionbarTimeout: ReturnType<typeof setTimeout>;
+  let actionbarTimeout: NodeJS.Timeout;
 
   const downloadHandler = async (blockId: string | null) => {
     const workspace = props.workspace;
