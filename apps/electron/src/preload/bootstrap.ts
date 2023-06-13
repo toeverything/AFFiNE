@@ -50,4 +50,6 @@ import { contextBridge, ipcRenderer } from 'electron';
   } catch (error) {
     console.error('Failed to expose affine APIs to window object!', error);
   }
-})();
+})().catch(err => {
+  console.error('Failed to bootstrap preload script!', err);
+});

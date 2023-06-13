@@ -11,7 +11,7 @@ import { atomWithStorage } from 'jotai/utils';
 import Head from 'next/head';
 import type { NextRouter } from 'next/router';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { PageLoading } from '../../../components/pure/loading';
@@ -30,7 +30,7 @@ function useTabRouterSync(
   router: NextRouter,
   currentTab: SettingPanel,
   setCurrentTab: (tab: SettingPanel) => void
-) {
+): void {
   if (!router.isReady) {
     return;
   }
@@ -43,33 +43,36 @@ function useTabRouterSync(
     settingPanelValues.indexOf(queryCurrentTab as SettingPanel) === -1
   ) {
     setCurrentTab(settingPanel.General);
-    void router.replace({
-      pathname: router.pathname,
-      query: {
-        ...router.query,
-        currentTab: settingPanel.General,
-      },
-    });
-    return;
+    router
+      .replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: settingPanel.General,
+        },
+      })
+      .catch(console.error);
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     setCurrentTab(settingPanel.General);
-    void router.replace({
-      pathname: router.pathname,
-      query: {
-        ...router.query,
-        currentTab: settingPanel.General,
-      },
-    });
-    return;
+    router
+      .replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: settingPanel.General,
+        },
+      })
+      .catch(console.error);
   } else if (queryCurrentTab !== currentTab) {
-    void router.replace({
-      pathname: router.pathname,
-      query: {
-        ...router.query,
-        currentTab: currentTab,
-      },
-    });
-    return;
+    router
+      .replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: currentTab,
+        },
+      })
+      .catch(console.error);
   }
 }
 
@@ -78,20 +81,24 @@ const SettingPage: NextPageWithLayout = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();
   const [currentTab, setCurrentTab] = useAtom(settingPanelAtom);
-  useEffect(() => {});
   const onChangeTab = useCallback(
     (tab: SettingPanel) => {
       setCurrentTab(tab as SettingPanel);
-      void router.push({
-        pathname: router.pathname,
-        query: {
-          ...router.query,
-          currentTab: tab,
-        },
-      });
+      router
+        .push({
+          pathname: router.pathname,
+          query: {
+            ...router.query,
+            currentTab: tab,
+          },
+        })
+        .catch(err => {
+          console.error(err);
+        });
     },
     [router, setCurrentTab]
   );
+
   useTabRouterSync(router, currentTab, setCurrentTab);
 
   const helper = useAppHelper();

@@ -171,7 +171,9 @@ const createSQLiteProvider = (
     if (origin === sqliteOrigin) {
       return;
     }
-    apis.db.applyDocUpdate(blockSuiteWorkspace.id, update);
+    apis.db.applyDocUpdate(blockSuiteWorkspace.id, update).catch(err => {
+      console.error(err);
+    });
   }
 
   let unsubscribe = () => {};
@@ -247,7 +249,7 @@ const createSQLiteDBDownloadProvider = (
     const diff = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc, updates);
 
     // also apply updates to sqlite
-    apis.db.applyDocUpdate(blockSuiteWorkspace.id, diff);
+    await apis.db.applyDocUpdate(blockSuiteWorkspace.id, diff);
 
     const bs = blockSuiteWorkspace.blobs;
 
