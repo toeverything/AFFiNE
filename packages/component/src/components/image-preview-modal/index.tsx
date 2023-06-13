@@ -122,7 +122,7 @@ const ImagePreviewModalImpl = (
       const image = imageRef.current;
       resetZoom();
       if (image) {
-        image.style.width = '100%'; // Reset the width to its original size
+        image.style.width = '50%'; // Reset the width to its original size
         image.style.height = 'auto'; // Reset the height to maintain aspect ratio
       }
     }
@@ -145,7 +145,7 @@ const ImagePreviewModalImpl = (
       const image = imageRef.current;
       if (image) {
         resetZoom();
-        image.style.width = '100%'; // Reset the width to its original size
+        image.style.width = '50%'; // Reset the width to its original size
         image.style.height = 'auto'; // Reset the height to maintain aspect ratio
       }
     }
