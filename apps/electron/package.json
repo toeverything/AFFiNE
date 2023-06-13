@@ -17,12 +17,12 @@
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "test": "playwright test"
+    "test": "DEBUG=pw:browser playwright test"
   },
   "config": {
     "forge": "./forge.config.js"
   },
-  "main": "./dist/layers/main/index.js",
+  "main": "./dist/main.js",
   "exports": {
     "./scripts/plugins/build-plugins.mjs": "./scripts/plugins/build-plugins.mjs"
   },

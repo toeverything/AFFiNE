@@ -81,7 +81,7 @@
       "@affine/native/*": ["./packages/native/*"],
 
       // Development only
-      "@affine/electron/layers/*": ["./apps/electron/layers/*"]
+      "@affine/electron/*": ["./apps/electron/src/*"]
     }
   },
   "include": [],
