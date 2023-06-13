@@ -33,9 +33,9 @@
         "sys:flavour": "affine:page",
         "sys:children": [
           "4-IQVC-U5A",
+          "Y4oz3g1LB6",
           "VNbg-Wz6Vs",
           "V7dUwRJxpY",
-          "Y4oz3g1LB6",
           "1cFTd-rwDr",
           "A2hTNhHJSo",
           "JSoC9zIZDz",
@@ -65,12 +65,7 @@
       "VNbg-Wz6Vs": {
         "sys:id": "VNbg-Wz6Vs",
         "sys:flavour": "affine:frame",
-        "sys:children": [
-          "Prrnq7ruGC",
-          "hiVj6pUziI",
-          "6rgGQmAmfb",
-          "KRefAQRNnh"
-        ],
+        "sys:children": ["hiVj6pUziI", "6rgGQmAmfb", "KRefAQRNnh"],
         "prop:index": "a0",
         "prop:background": "--affine-tag-green",
         "prop:xywh": "[1211.9913594556406,86.0748937043449,552.5830233754074,796]"
@@ -5330,7 +5325,7 @@
             "xywh": "[1912.0484548292225,1401.202455179755,418.812536020748,77.9999279585041]",
             "text": [
               {
-                "insert": "Take a look at how amazing and creative\\nEdgeless mode can be!!!"
+                "insert": "Take a look at how amazing and creative\nEdgeless mode can be!!!"
               }
             ],
             "color": "--affine-text-primary-color",
@@ -5915,7 +5910,7 @@
       "Y4oz3g1LB6": {
         "sys:id": "Y4oz3g1LB6",
         "sys:flavour": "affine:frame",
-        "sys:children": ["aPk03I3k9L"],
+        "sys:children": ["Prrnq7ruGC"],
         "prop:xywh": "[855.7586305793726,-38.93174493636967,1488.043436415603,104]",
         "prop:index": "a0",
         "prop:background": "--affine-tag-yellow"
@@ -5923,7 +5918,7 @@
       "1cFTd-rwDr": {
         "sys:id": "1cFTd-rwDr",
         "sys:flavour": "affine:frame",
-        "sys:children": ["4_plt-pF5i", "5O-z_KtfdV"],
+        "sys:children": ["aPk03I3k9L", "4_plt-pF5i", "5O-z_KtfdV"],
         "prop:xywh": "[1782.1527708473825,83.59728260421294,554.4267667459387,668]",
         "prop:index": "a0",
         "prop:background": "--affine-tag-blue"
