@@ -315,9 +315,9 @@ const ImagePreviewModalImpl = (
               alt={caption}
               ref={imageRef}
               draggable={isZoomedBigger}
-              onMouseDown={event => handleDragStart(event as MouseEvent)}
-              onMouseMove={event => handleDrag(event as MouseEvent)}
-              onMouseUp={event => handleDragEnd(event as MouseEvent)}
+              onMouseDown={event => handleDragStart(event)}
+              onMouseMove={event => handleDrag(event)}
+              onMouseUp={event => handleDragEnd(event)}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
               width={'50%'}

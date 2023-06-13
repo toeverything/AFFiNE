@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import type { MouseEvent, RefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseZoomControlsProps {
@@ -146,12 +146,12 @@ export const useZoomControls = ({
 
     window.addEventListener('wheel', handleScroll, { passive: false });
     window.addEventListener('resize', handleResize);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseup', handleMouseUp as any);
 
     return () => {
       window.removeEventListener('wheel', handleScroll);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseup', handleMouseUp as any);
     };
   }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp]);
 
