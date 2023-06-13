@@ -13,7 +13,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { PropsWithChildren, ReactElement } from 'react';
-import React, { lazy, Suspense, useEffect, useMemo } from 'react';
+import React, { lazy, Suspense } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { MessageCenter } from '../components/pure/message-center';
@@ -41,6 +41,11 @@ const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
   );
 };
 
+const i18n = createI18n();
+if (process.env.NODE_ENV === 'development') {
+  console.log('Runtime Preset', config);
+}
+
 const App = function App({
   Component,
   pageProps,
@@ -49,14 +54,6 @@ const App = function App({
   emotionCache?: EmotionCache;
 }) {
   const getLayout = Component.getLayout || EmptyLayout;
-  const i18n = useMemo(() => createI18n(), []);
-  if (process.env.NODE_ENV === 'development') {
-    // I know what I'm doing
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      console.log('Runtime Preset', config);
-    }, []);
-  }
 
   return (
     <CacheProvider value={emotionCache}>
