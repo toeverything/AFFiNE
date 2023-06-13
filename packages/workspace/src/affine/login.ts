@@ -100,6 +100,7 @@ export const checkLoginStorage = async (
   prefixUrl = '/'
 ): Promise<LoginResponse> => {
   const storage = getLoginStorage();
+  if(storage==null || (!storage && !storage.token)) return;
   assertExists(storage, 'Login token is not set');
   if (isExpired(parseIdToken(storage.token), 0)) {
     logger.debug('refresh token needed');
