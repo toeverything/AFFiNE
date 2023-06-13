@@ -3,7 +3,7 @@ import type { Page } from '@blocksuite/store';
 export async function initPageWithPreloading(page: Page) {
   const workspace = page.workspace;
   const { data } = await import('@affine/templates/preloading.json');
-  await workspace.importPageSnapshot(data['space:Qmo9-1SGTB'], page.id);
+  await workspace.importPageSnapshot(data['space:hello-world'], page.id);
 }
 
 export function initEmptyPage(page: Page): void {
