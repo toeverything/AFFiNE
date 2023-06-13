@@ -85,7 +85,6 @@ async function cleanup() {
   if (!process.env.SKIP_WEB_BUILD) {
     await fs.emptyDir(publicAffineOutDir);
   }
-  await fs.emptyDir(path.join(electronRootDir, 'layers', 'main', 'dist'));
-  await fs.emptyDir(path.join(electronRootDir, 'layers', 'preload', 'dist'));
+  await fs.remove(path.join(electronRootDir, 'dist'));
   await fs.remove(path.join(electronRootDir, 'out'));
 }

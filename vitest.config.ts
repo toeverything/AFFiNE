@@ -29,7 +29,7 @@ export default defineConfig({
     ],
     // split tests that include native addons or not
     include: process.env.NATIVE_TEST
-      ? ['apps/electron/layers/**/*.spec.ts']
+      ? ['apps/electron/src/**/*.spec.ts']
       : [
           'packages/**/*.spec.ts',
           'packages/**/*.spec.tsx',
