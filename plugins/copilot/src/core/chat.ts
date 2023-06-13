@@ -1,16 +1,17 @@
-import { ConversationChain } from 'langchain/chains';
+import { ConversationChain, LLMChain } from 'langchain/chains';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { BufferMemory } from 'langchain/memory';
 import {
   ChatPromptTemplate,
   HumanMessagePromptTemplate,
   MessagesPlaceholder,
+  PromptTemplate,
   SystemMessagePromptTemplate,
 } from 'langchain/prompts';
 import { type LLMResult } from 'langchain/schema';
 
 import { IndexedDBChatMessageHistory } from './langchain/message-history';
-import { chatPrompt } from './prompts';
+import { chatPrompt, followupQuestionPrompt } from './prompts';
 
 declare global {
   interface WindowEventMap {
@@ -22,13 +23,24 @@ declare global {
 export async function createChatAI(
   room: string,
   openAIApiKey: string
-): Promise<ConversationChain> {
+): Promise<{
+  conversationChain: ConversationChain;
+  followupChain: LLMChain<string>;
+  chatHistory: IndexedDBChatMessageHistory;
+}> {
   if (!openAIApiKey) {
     console.warn('OpenAI API key not set, chat will not work');
   }
+  const followup = new ChatOpenAI({
+    streaming: false,
+    modelName: 'gpt-3.5-turbo',
+    temperature: 0.5,
+    openAIApiKey: openAIApiKey,
+  });
+
   const chat = new ChatOpenAI({
     streaming: true,
-    modelName: 'gpt-4',
+    modelName: 'gpt-3.5-turbo',
     temperature: 0.5,
     openAIApiKey: openAIApiKey,
     callbacks: [
@@ -77,13 +89,32 @@ export async function createChatAI(
     HumanMessagePromptTemplate.fromTemplate('{input}'),
   ]);
 
-  return new ConversationChain({
+  const followupPromptTemplate = new PromptTemplate({
+    template: followupQuestionPrompt,
+    inputVariables: ['human_conversation', 'ai_conversation'],
+  });
+
+  const followupChain = new LLMChain({
+    llm: followup,
+    prompt: followupPromptTemplate,
+    memory: undefined,
+  });
+
+  const chatHistory = new IndexedDBChatMessageHistory(room);
+
+  const conversationChain = new ConversationChain({
     memory: new BufferMemory({
       returnMessages: true,
       memoryKey: 'history',
-      chatHistory: new IndexedDBChatMessageHistory(room),
+      chatHistory,
     }),
     prompt: chatPromptTemplate,
     llm: chat,
   });
+
+  return {
+    conversationChain,
+    followupChain,
+    chatHistory,
+  } as const;
 }
