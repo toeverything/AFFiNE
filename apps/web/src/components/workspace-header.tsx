@@ -80,15 +80,10 @@ export function WorkspaceHeader({
           {t['Workspace Settings']()}
         </WorkspaceTitle>
       );
-    } else if (currentEntry.subPath === WorkspaceSubPath.SHARED) {
-      return (
-        <WorkspaceModeFilterTab
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPublic={false}
-        />
-      );
-    } else if (currentEntry.subPath === WorkspaceSubPath.TRASH) {
+    } else if (
+      currentEntry.subPath === WorkspaceSubPath.SHARED ||
+      currentEntry.subPath === WorkspaceSubPath.TRASH
+    ) {
       return (
         <WorkspaceModeFilterTab
           workspace={currentWorkspace}
