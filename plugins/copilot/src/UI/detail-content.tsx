@@ -1,14 +1,15 @@
 import { Button, Input } from '@affine/component';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
-import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { Provider, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { Fragment, StrictMode, useState } from 'react';
+import { StrictMode, Suspense, useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { Conversation } from '../core/components/conversation';
-import { Divider } from '../core/components/divider';
+import { ConversationList } from '../core/components/conversation-list';
+import { FollowingUp } from '../core/components/following-up';
 import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
+import { detailContentActionsStyle, detailContentStyle } from './index.css';
 
 if (typeof window === 'undefined') {
   import('@blocksuite/blocks').then(({ FormatQuickBar }) => {
@@ -54,25 +55,16 @@ if (typeof window === 'undefined') {
   });
 }
 
-const DetailContentImpl = () => {
+const Actions = () => {
+  const { conversationAtom, followingUpAtoms } = useChatAtoms();
+  const call = useSetAtom(conversationAtom);
+  const questions = useAtomValue(followingUpAtoms.questionsAtom);
+  const generateFollowingUp = useSetAtom(followingUpAtoms.generateChatAtom);
   const [input, setInput] = useState('');
-  const { conversationAtom } = useChatAtoms();
-  const [conversations, call] = useAtom(conversationAtom);
   return (
-    <div
-      style={{
-        width: '300px',
-      }}
-    >
-      {conversations.map((message, idx) => {
-        return (
-          <Fragment key={idx}>
-            <Conversation text={message.text} />
-            <Divider />
-          </Fragment>
-        );
-      })}
-      <div>
+    <>
+      <FollowingUp questions={questions} />
+      <div className={detailContentActionsStyle}>
         <Input
           value={input}
           onChange={text => {
@@ -80,13 +72,28 @@ const DetailContentImpl = () => {
           }}
         />
         <Button
-          onClick={() => {
-            void call(input);
-          }}
+          onClick={useCallback(async () => {
+            await call(input);
+            await generateFollowingUp();
+          }, [call, generateFollowingUp, input])}
         >
           send
         </Button>
       </div>
+    </>
+  );
+};
+
+const DetailContentImpl = () => {
+  const { conversationAtom } = useChatAtoms();
+  const conversations = useAtomValue(conversationAtom);
+
+  return (
+    <div className={detailContentStyle}>
+      <ConversationList conversations={conversations} />
+      <Suspense fallback="generating follow-up question">
+        <Actions />
+      </Suspense>
     </div>
   );
 };
