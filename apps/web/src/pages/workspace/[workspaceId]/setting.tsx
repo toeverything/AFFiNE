@@ -11,7 +11,7 @@ import { atomWithStorage } from 'jotai/utils';
 import Head from 'next/head';
 import type { NextRouter } from 'next/router';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { PageLoading } from '../../../components/pure/loading';
@@ -26,13 +26,13 @@ const settingPanelAtom = atomWithStorage<SettingPanel>(
   settingPanel.General
 );
 
-function useTabRouterSync(
+async function useTabRouterSync(
   router: NextRouter,
   currentTab: SettingPanel,
   setCurrentTab: (tab: SettingPanel) => void
 ) {
   if (!router.isReady) {
-    return;
+    return null;
   }
   const queryCurrentTab =
     typeof router.query.currentTab === 'string'
@@ -43,34 +43,32 @@ function useTabRouterSync(
     settingPanelValues.indexOf(queryCurrentTab as SettingPanel) === -1
   ) {
     setCurrentTab(settingPanel.General);
-    void router.replace({
+    return router.replace({
       pathname: router.pathname,
       query: {
         ...router.query,
         currentTab: settingPanel.General,
       },
     });
-    return;
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     setCurrentTab(settingPanel.General);
-    void router.replace({
+    return router.replace({
       pathname: router.pathname,
       query: {
         ...router.query,
         currentTab: settingPanel.General,
       },
     });
-    return;
   } else if (queryCurrentTab !== currentTab) {
-    void router.replace({
+    return router.replace({
       pathname: router.pathname,
       query: {
         ...router.query,
         currentTab: currentTab,
       },
     });
-    return;
   }
+  return null;
 }
 
 const SettingPage: NextPageWithLayout = () => {
@@ -78,21 +76,27 @@ const SettingPage: NextPageWithLayout = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();
   const [currentTab, setCurrentTab] = useAtom(settingPanelAtom);
-  useEffect(() => {});
   const onChangeTab = useCallback(
     (tab: SettingPanel) => {
       setCurrentTab(tab as SettingPanel);
-      void router.push({
-        pathname: router.pathname,
-        query: {
-          ...router.query,
-          currentTab: tab,
-        },
-      });
+      router
+        .push({
+          pathname: router.pathname,
+          query: {
+            ...router.query,
+            currentTab: tab,
+          },
+        })
+        .catch(err => {
+          console.error(err);
+        });
     },
     [router, setCurrentTab]
   );
-  useTabRouterSync(router, currentTab, setCurrentTab);
+
+  useTabRouterSync(router, currentTab, setCurrentTab).catch(err => {
+    console.error(err);
+  });
 
   const helper = useAppHelper();
 

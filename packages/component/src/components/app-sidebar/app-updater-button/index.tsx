@@ -65,7 +65,10 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   }, [currentVersion, setChangelogCheckAtom]);
   const onClickUpdate = useCallback(() => {
     if (updateReady) {
-      window.apis?.updater.quitAndInstall();
+      window.apis?.updater.quitAndInstall().catch(err => {
+        // TODO: add error toast here
+        console.error(err);
+      });
     } else if (updateAvailable) {
       if (updateAvailable.allowAutoUpdate) {
         // wait for download to finish

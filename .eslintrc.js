@@ -152,6 +152,27 @@ const config = {
         '@typescript-eslint/no-var-requires': 0,
       },
     },
+    ...allPackages.map(pkg => ({
+      files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`],
+      parserOptions: {
+        project: resolve(__dirname, './tsconfig.eslint.json'),
+      },
+      rules: {
+        '@typescript-eslint/no-restricted-imports': [
+          'error',
+          {
+            patterns: createPattern(pkg),
+          },
+        ],
+        '@typescript-eslint/no-floating-promises': [
+          'error',
+          {
+            ignoreVoid: false,
+            ignoreIIFE: false,
+          },
+        ],
+      },
+    })),
     {
       files: [
         '**/__tests__/**/*',
@@ -173,19 +194,9 @@ const config = {
             'ts-check': false,
           },
         ],
+        '@typescript-eslint/no-floating-promises': 0,
       },
     },
-    ...allPackages.map(pkg => ({
-      files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`],
-      rules: {
-        '@typescript-eslint/no-restricted-imports': [
-          'error',
-          {
-            patterns: createPattern(pkg),
-          },
-        ],
-      },
-    })),
   ],
 };
 
