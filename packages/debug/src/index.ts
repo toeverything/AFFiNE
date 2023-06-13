@@ -17,7 +17,6 @@ if (typeof window !== 'undefined') {
     debug.enable('*');
     console.warn('Debug logs enabled');
   }
-} else {
   if (process.env.NODE_ENV === 'development') {
     debug.enable('*');
     console.warn('Debug logs enabled');

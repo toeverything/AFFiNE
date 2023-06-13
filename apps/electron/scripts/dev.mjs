@@ -76,19 +76,20 @@ async function watchPlugins() {
   await import('./plugins/dev-plugins.mjs');
 }
 
-async function watchPreload() {
+async function watchLayers() {
   return new Promise(async resolve => {
     let initialBuild = false;
-    const preloadBuild = await esbuild.context({
-      ...common.preload,
+
+    const buildContext = await esbuild.context({
+      ...common.layers,
       plugins: [
-        ...(common.preload.plugins ?? []),
+        ...(common.layers.plugins ?? []),
         {
-          name: 'electron-dev:reload-app-on-preload-change',
+          name: 'electron-dev:reload-app-on-layers-change',
           setup(build) {
             build.onEnd(() => {
               if (initialBuild) {
-                console.log(`[preload] has changed, [re]launching electron...`);
+                console.log(`[layers] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
               } else {
                 resolve();
@@ -99,25 +100,24 @@ async function watchPreload() {
         },
       ],
     });
-    // watch will trigger build.onEnd() on first run & on subsequent changes
-    await preloadBuild.watch();
+    await buildContext.watch();
   });
 }
 
-async function watchMain() {
+async function watchWorkers() {
   return new Promise(async resolve => {
     let initialBuild = false;
 
-    const mainBuild = await esbuild.context({
-      ...common.main,
+    const buildContext = await esbuild.context({
+      ...common.workers,
       plugins: [
-        ...(common.main.plugins ?? []),
+        ...(common.workers.plugins ?? []),
         {
-          name: 'electron-dev:reload-app-on-main-change',
+          name: 'electron-dev:reload-app-on-workers-change',
           setup(build) {
             build.onEnd(() => {
               if (initialBuild) {
-                console.log(`[main] has changed, [re]launching electron...`);
+                console.log(`[workers] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
               } else {
                 resolve();
@@ -128,14 +128,14 @@ async function watchMain() {
         },
       ],
     });
-    await mainBuild.watch();
+    await buildContext.watch();
   });
 }
 
 async function main() {
   await watchPlugins();
-  await watchMain();
-  await watchPreload();
+  await watchLayers();
+  await watchWorkers();
 
   if (watchMode) {
     console.log(`Watching for changes...`);
