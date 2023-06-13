@@ -212,55 +212,57 @@ const ImagePreviewModalImpl = (
     const workspace = props.workspace;
     const page = workspace.getPage(props.pageId);
     assertExists(page);
-    const block = page.getBlockById(blockId) as EmbedBlockModel;
-    assertExists(block);
-    const store = await block.page.blobs;
-    const url = store?.get(block.sourceId);
-    const img = await url;
-    if (!img) {
-      return;
-    }
-    const arrayBuffer = await img.arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer);
-    let fileType: string;
-    if (
-      buffer[0] === 0x47 &&
-      buffer[1] === 0x49 &&
-      buffer[2] === 0x46 &&
-      buffer[3] === 0x38
-    ) {
-      fileType = 'image/gif';
-    } else if (
-      buffer[0] === 0x89 &&
-      buffer[1] === 0x50 &&
-      buffer[2] === 0x4e &&
-      buffer[3] === 0x47
-    ) {
-      fileType = 'image/png';
-    } else if (
-      buffer[0] === 0xff &&
-      buffer[1] === 0xd8 &&
-      buffer[2] === 0xff &&
-      buffer[3] === 0xe0
-    ) {
-      fileType = 'image/jpeg';
-    } else {
-      // unknown, fallback to png
-      console.error('unknown image type');
-      fileType = 'image/png';
-    }
-    const downloadUrl = URL.createObjectURL(
-      new Blob([arrayBuffer], { type: fileType })
-    );
-    const a = document.createElement('a');
-    const event = new MouseEvent('click');
-    a.download = block.id;
-    a.href = downloadUrl;
-    a.dispatchEvent(event);
+    if (typeof blockId === 'string') {
+      const block = page.getBlockById(blockId) as EmbedBlockModel;
+      assertExists(block);
+      const store = await block.page.blobs;
+      const url = store?.get(block.sourceId);
+      const img = await url;
+      if (!img) {
+        return;
+      }
+      const arrayBuffer = await img.arrayBuffer();
+      const buffer = new Uint8Array(arrayBuffer);
+      let fileType: string;
+      if (
+        buffer[0] === 0x47 &&
+        buffer[1] === 0x49 &&
+        buffer[2] === 0x46 &&
+        buffer[3] === 0x38
+      ) {
+        fileType = 'image/gif';
+      } else if (
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47
+      ) {
+        fileType = 'image/png';
+      } else if (
+        buffer[0] === 0xff &&
+        buffer[1] === 0xd8 &&
+        buffer[2] === 0xff &&
+        buffer[3] === 0xe0
+      ) {
+        fileType = 'image/jpeg';
+      } else {
+        // unknown, fallback to png
+        console.error('unknown image type');
+        fileType = 'image/png';
+      }
+      const downloadUrl = URL.createObjectURL(
+        new Blob([arrayBuffer], { type: fileType })
+      );
+      const a = document.createElement('a');
+      const event = new MouseEvent('click');
+      a.download = block.id;
+      a.href = downloadUrl;
+      a.dispatchEvent(event);
 
-    // cleanup
-    a.remove();
-    URL.revokeObjectURL(downloadUrl);
+      // cleanup
+      a.remove();
+      URL.revokeObjectURL(downloadUrl);
+    }
   };
 
   const handleMouseEnter = () => {
@@ -313,9 +315,9 @@ const ImagePreviewModalImpl = (
               alt={caption}
               ref={imageRef}
               draggable={isZoomedBigger}
-              onMouseDown={event => handleDragStart(event)}
-              onMouseMove={event => handleDrag(event)}
-              onMouseUp={event => handleDragEnd(event)}
+              onMouseDown={event => handleDragStart(event as MouseEvent)}
+              onMouseMove={event => handleDrag(event as MouseEvent)}
+              onMouseUp={event => handleDragEnd(event as MouseEvent)}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
               width={'50%'}

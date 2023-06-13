@@ -1,4 +1,4 @@
-import type { MouseEvent, RefObject } from 'react';
+import type { RefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseZoomControlsProps {
@@ -49,16 +49,16 @@ export const useZoomControls = ({
   const resetZoom = () => {
     const image = imageRef.current;
     if (image) {
-      setCurrentScale(1);
-      image.style.width = `${image.naturalWidth}px`;
-      image.style.height = `${image.naturalHeight}px`;
-      if (!isZoomedBigger) {
-        image.style.transform = 'translate(0, 0)';
-      }
+      const newScale = 0.5;
+      setCurrentScale(newScale);
+      image.style.width = `${image.naturalWidth * newScale}px`;
+      image.style.height = `${image.naturalHeight * newScale}px`;
+      image.style.transform = `translate(0px, 0px)`;
+      setImagePos({ x: 0, y: 0 });
     }
   };
 
-  const handleDragStart = (event: MouseEvent<HTMLImageElement>) => {
+  const handleDragStart = (event: MouseEvent) => {
     event?.preventDefault();
     setIsDragging(true);
     const image = imageRef.current;
@@ -72,7 +72,7 @@ export const useZoomControls = ({
     }
   };
 
-  const handleDrag = (event: MouseEvent<HTMLImageElement>) => {
+  const handleDrag = (event: MouseEvent) => {
     event?.preventDefault();
     const image = imageRef.current;
 
@@ -82,17 +82,16 @@ export const useZoomControls = ({
       const currentY = imagePos.y;
       const newPosX = currentX + event.clientX - mouseX;
       const newPosY = currentY + event.clientY - mouseY;
-
       image.style.transform = `translate(${newPosX}px, ${newPosY}px)`;
     }
   };
 
-  const handleDragEnd = (event: MouseEvent<HTMLImageElement> | undefined) => {
+  const handleDragEnd = (event: MouseEvent) => {
     event?.preventDefault();
     setIsDragging(false);
 
     const image = imageRef.current;
-    if (image && isZoomedBigger) {
+    if (image && isZoomedBigger && isDragging) {
       image.style.cursor = 'pointer';
       const rect = image.getBoundingClientRect();
       const newPos = { x: rect.left, y: rect.top };
@@ -105,7 +104,7 @@ export const useZoomControls = ({
   };
 
   const handleMouseUp = useCallback(
-    (event: MouseEvent<HTMLImageElement>) => {
+    (event: MouseEvent) => {
       if (isDragging) {
         handleDragEnd(event);
       }
@@ -147,10 +146,12 @@ export const useZoomControls = ({
 
     window.addEventListener('wheel', handleScroll, { passive: false });
     window.addEventListener('resize', handleResize);
+    window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
       window.removeEventListener('wheel', handleScroll);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp]);
 
