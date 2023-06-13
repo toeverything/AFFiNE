@@ -130,10 +130,13 @@ __metadata:
     "@types/react-dom": ^18.2.4
     idb: ^7.1.1
     jotai: ^2.1.1
-    langchain: ^0.0.90
+    langchain: ^0.0.92
     marked: ^5.0.4
+    marked-gfm-heading-id: ^3.0.4
+    marked-mangle: ^1.0.1
     react: 18.3.0-canary-16d053d59-20230506
     react-dom: 18.3.0-canary-16d053d59-20230506
+    zod: ^3.21.4
   peerDependencies:
     react: "*"
     react-dom: "*"
@@ -300,6 +303,7 @@ __metadata:
     husky: ^8.0.3
     lint-staged: ^13.2.2
     madge: ^6.1.0
+    marked-mangle: ^1.0.1
     msw: ^1.2.1
     nanoid: ^4.0.2
     nx: 16.3.2
@@ -16830,6 +16834,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"github-slugger@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "github-slugger@npm:2.0.0"
+  checksum: 250375cde2058f21454872c2c79f72c4637340c30c51ff158ca4ec71cbc478f33d54477d787a662f9207aeb095a2060f155bc01f15329ba8a5fb6698e0fc81f8
+  languageName: node
+  linkType: hard
+
 "glob-parent@npm:^5.1.2, glob-parent@npm:~5.1.2":
   version: 5.1.2
   resolution: "glob-parent@npm:5.1.2"
@@ -19787,9 +19798,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"langchain@npm:^0.0.90":
-  version: 0.0.90
-  resolution: "langchain@npm:0.0.90"
+"langchain@npm:^0.0.92":
+  version: 0.0.92
+  resolution: "langchain@npm:0.0.92"
   dependencies:
     "@anthropic-ai/sdk": ^0.4.3
     ansi-styles: ^5.0.0
@@ -19835,7 +19846,7 @@ __metadata:
     cohere-ai: ^5.0.2
     d3-dsv: ^2.0.0
     epub2: ^3.0.1
-    faiss-node: ^0.2.0
+    faiss-node: ^0.2.1
     google-auth-library: ^8.8.0
     hnswlib-node: ^1.4.2
     html-to-text: ^9.0.5
@@ -19947,7 +19958,7 @@ __metadata:
       optional: true
     weaviate-ts-client:
       optional: true
-  checksum: cbd35a7397b30ad265bf4ce992818ee03a409c33dde7a7a1e17c76e7e875768dbc79ff06618e42b3c688081ff8b0ff5eb34b532a2994d078578de67937a6452b
+  checksum: a9fb6cdf48e971f9327bcf5eb2322eb9b9add63413ecacd90bb064feab40d3ba6024086ccade59c0285dd57249406dda9ba7847cdb02e08312e147618165b49e
   languageName: node
   linkType: hard
 
@@ -20757,6 +20768,26 @@ __metadata:
   peerDependencies:
     react: ">= 0.14.0"
   checksum: ea417e684d7eec9f1beebc9423aba377116ef77c3cd83a2d622df1b9030ffef99aa9b3f431192b94f3237943a33560e6dda9be8a4c1d25187518d09986dad22f
+  languageName: node
+  linkType: hard
+
+"marked-gfm-heading-id@npm:^3.0.4":
+  version: 3.0.4
+  resolution: "marked-gfm-heading-id@npm:3.0.4"
+  dependencies:
+    github-slugger: ^2.0.0
+  peerDependencies:
+    marked: ^4 || ^5
+  checksum: 8c65d0fe0f59291d6f4529f49a4af00cad5787a72a59b9397f82d6ab58b1affbf53678f7efdca77fa75c32e80bbdab1c53c2aa5d7ece3e821d2fe35a76fb4930
+  languageName: node
+  linkType: hard
+
+"marked-mangle@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "marked-mangle@npm:1.0.1"
+  peerDependencies:
+    marked: ^4 || ^5
+  checksum: 7ebdd69eb41907a865141e7cce1cd8c5c24dd6955c63aaf5299710aba2935abdfbca1b1ea0ff30cf527ff20a940c3b5a9311fca9abb84f4d294767b0435213fe
   languageName: node
   linkType: hard
 

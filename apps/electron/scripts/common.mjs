@@ -18,7 +18,7 @@ const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
 // List of env that will be replaced by esbuild
 const ENV_MACROS = ['AFFINE_GOOGLE_CLIENT_ID', 'AFFINE_GOOGLE_CLIENT_SECRET'];
 
-/** @return {{main: import('esbuild').BuildOptions, preload: import('esbuild').BuildOptions}} */
+/** @return {{layers: import('esbuild').BuildOptions, workers: import('esbuild').BuildOptions}} */
 export const config = () => {
   const define = Object.fromEntries([
     ...ENV_MACROS.map(key => [
@@ -34,27 +34,18 @@ export const config = () => {
   }
 
   return {
-    main: {
+    layers: {
       entryPoints: [
-        resolve(electronDir, './layers/main/src/index.ts'),
-        resolve(
-          electronDir,
-          './layers/main/src/workers/merge-update.worker.ts'
-        ),
-        resolve(electronDir, './layers/main/src/workers/plugin.worker.ts'),
+        resolve(electronDir, './src/main/index.ts'),
+        resolve(electronDir, './src/preload/index.ts'),
+        resolve(electronDir, './src/helper/index.ts'),
       ],
-      outdir: resolve(electronDir, './dist/layers/main'),
+      entryNames: '[dir]',
+      outdir: resolve(electronDir, './dist'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: [
-        'electron',
-        'yjs',
-        'better-sqlite3',
-        'electron-updater',
-        '@toeverything/plugin-infra',
-        'async-call-rpc',
-      ],
+      external: ['electron', 'electron-updater', '@toeverything/plugin-infra'],
       define: define,
       format: 'cjs',
       loader: {
@@ -63,14 +54,23 @@ export const config = () => {
       assetNames: '[name]',
       treeShaking: true,
     },
-    preload: {
-      entryPoints: [resolve(electronDir, './layers/preload/src/index.ts')],
-      outdir: resolve(electronDir, './dist/layers/preload'),
+    workers: {
+      entryPoints: [
+        resolve(electronDir, './src/main/workers/plugin.worker.ts'),
+      ],
+      entryNames: '[dir]/[name]',
+      outdir: resolve(electronDir, './dist/workers'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron'],
+      external: ['electron', 'electron-updater', '@toeverything/plugin-infra'],
       define: define,
+      format: 'cjs',
+      loader: {
+        '.node': 'copy',
+      },
+      assetNames: '[name]',
+      treeShaking: true,
     },
   };
 };

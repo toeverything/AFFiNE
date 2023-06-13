@@ -13,7 +13,7 @@
     "resolveJsonModule": true,
     "noImplicitOverride": true
   },
-  "include": ["./layers"],
+  "include": ["./src"],
   "exclude": ["node_modules", "out", "dist"],
   "references": [
     {

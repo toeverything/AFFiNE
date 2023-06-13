@@ -23,23 +23,40 @@ interface ChatMessageDBV1 extends DBSchema {
   };
 }
 
+interface ChatMessageDBV2 extends ChatMessageDBV1 {
+  followingUp: {
+    key: string;
+    value: {
+      /**
+       * ID of the chat
+       */
+      id: string;
+      question: string[];
+    };
+  };
+}
+
 export const conversationHistoryDBName = 'affine-copilot-chat';
 
 export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
   public id: string;
   private messages: BaseChatMessage[] = [];
 
-  private readonly dbPromise: Promise<IDBPDatabase<ChatMessageDBV1>>;
+  private readonly dbPromise: Promise<IDBPDatabase<ChatMessageDBV2>>;
   private readonly initPromise: Promise<void>;
 
   constructor(id: string) {
     super();
     this.id = id;
     this.messages = [];
-    this.dbPromise = openDB<ChatMessageDBV1>('affine-copilot-chat', 1, {
+    this.dbPromise = openDB<ChatMessageDBV2>('affine-copilot-chat', 2, {
       upgrade(database, oldVersion) {
         if (oldVersion === 0) {
           database.createObjectStore('chat', {
+            keyPath: 'id',
+          });
+        } else if (oldVersion === 1) {
+          database.createObjectStore('followingUp', {
             keyPath: 'id',
           });
         }
@@ -68,6 +85,31 @@ export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
         });
       }
     });
+  }
+
+  public async saveFollowingUp(question: string[]): Promise<void> {
+    await this.initPromise;
+    const db = await this.dbPromise;
+    const t = db
+      .transaction('followingUp', 'readwrite')
+      .objectStore('followingUp');
+    await t.put({
+      id: this.id,
+      question,
+    });
+  }
+
+  public async getFollowingUp(): Promise<string[]> {
+    await this.initPromise;
+    const db = await this.dbPromise;
+    const t = db
+      .transaction('followingUp', 'readonly')
+      .objectStore('followingUp');
+    const chat = await t.get(this.id);
+    if (chat != null) {
+      return chat.question;
+    }
+    return [];
   }
 
   protected async addMessage(message: BaseChatMessage): Promise<void> {
@@ -104,6 +146,6 @@ export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
   }
 
   async getMessages(): Promise<BaseChatMessage[]> {
-    return await this.initPromise.then(() => this.messages);
+    return this.initPromise.then(() => this.messages);
   }
 }

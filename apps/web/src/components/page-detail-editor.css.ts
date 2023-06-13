@@ -1,5 +1,6 @@
-import { globalStyle } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
-globalStyle('.mosaic.mosaic-blueprint-theme', {
-  backgroundColor: 'var(--background-color)',
+export const pluginContainer = style({
+  height: '100%',
+  width: '100%',
 });
