@@ -1,29 +1,10 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id                String                    @id @default(uuid()) @db.VarChar
-  name              String                    @db.VarChar
-  email             String                    @unique @db.VarChar
-  tokenNonce        Int                       @default(0) @map("token_nonce") @db.SmallInt
-  avatarUrl         String?                   @map("avatar_url") @db.VarChar
-  /// Available if user signed up through OAuth providers
-  password          String?                   @db.VarChar
-  /// User may created by email collobration invitation before signup.
-  /// We will precreate a user entity in such senarios but leave fulfilled as false until they signed up
-  /// This implementation is convenient for handing unregistered user permissoin
-  fulfilled         Boolean                   @default(true)
-  createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  connectedAccounts ConnectedAccount[]
-  workspaces        UserWorkspacePermission[]
-
-  @@map("users")
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Workspace {
@@ -35,18 +16,6 @@ model Workspace {
   @@map("workspaces")
 }
 
-model ConnectedAccount {
-  id             String @id @default(uuid()) @db.VarChar
-  userId         String @map("user_id")
-  /// the general provider name, e.g. google, github, facebook
-  provider       String @db.VarChar
-  /// the user id provided by OAuth providers, or other user identitive credential like `username` provided by GitHub
-  providerUserId String @unique @map("provider_user_id") @db.VarChar
-  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("connected_accounts")
-}
-
 model UserWorkspacePermission {
   id          String    @id @default(uuid()) @db.VarChar
   workspaceId String    @map("workspace_id") @db.VarChar
@@ -56,8 +25,35 @@ model UserWorkspacePermission {
   /// Whether the permission invitation is accepted by the user
   accepted    Boolean   @default(false)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("user_workspace_permissions")
+}
+
+model User {
+  id                 String                    @id @default(cuid()) @db.VarChar
+  name               String                    @db.VarChar
+  email              String                    @unique @db.VarChar
+  image              String?                   @map("avatar_url") @db.VarChar
+  token_nonce        Int                       @default(0) @db.SmallInt
+  /// Not available if user signed up through OAuth providers
+  password           String?                   @db.VarChar
+  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// User may created by email collobration invitation before signup.
+  /// We will precreate a user entity in such senarios but leave fulfilled as false until they signed up
+  /// This implementation is convenient for handing unregistered user permissoin
+  fulfilled          Boolean                   @default(true)
+  connected_accounts connected_accounts[]
+  workspaces         UserWorkspacePermission[]
+
+  @@map("users")
+}
+
+model connected_accounts {
+  id               String @id @db.VarChar
+  user_id          String
+  provider         String @db.VarChar
+  provider_user_id String @unique @db.VarChar
+  users            User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

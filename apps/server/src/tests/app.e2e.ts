@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { hash } from '@node-rs/bcrypt';
+import { hash } from '@node-rs/argon2';
 import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 

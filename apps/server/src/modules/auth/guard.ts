@@ -50,7 +50,7 @@ class AuthGuard implements CanActivate {
       return false;
     }
 
-    const claims = this.auth.verify(token);
+    const claims = await this.auth.verify(token);
     req.user = await this.prisma.user.findUnique({ where: { id: claims.id } });
     return !!req.user;
   }

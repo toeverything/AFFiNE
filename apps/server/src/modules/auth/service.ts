@@ -1,44 +1,80 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { compare, hash } from '@node-rs/bcrypt';
+import { hash, verify } from '@node-rs/argon2';
+import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import type { User } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 
-type UserClaim = Pick<User, 'id' | 'name' | 'email'>;
+type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'>;
+
+const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
 
 @Injectable()
 export class AuthService {
   constructor(private config: Config, private prisma: PrismaService) {}
 
   sign(user: UserClaim) {
-    return jwt.sign(user, this.config.auth.privateKey, {
-      algorithm: 'ES256',
-      subject: user.id,
-      issuer: this.config.serverId,
-      expiresIn: this.config.auth.accessTokenExpiresIn,
-    });
+    const now = getUtcTimestamp();
+    return sign(
+      {
+        data: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt.toISOString(),
+        },
+        iat: now,
+        exp: now + this.config.auth.accessTokenExpiresIn,
+        iss: this.config.serverId,
+        sub: user.id,
+        aud: user.name,
+      },
+      this.config.auth.privateKey,
+      {
+        algorithm: Algorithm.ES256,
+      }
+    );
   }
 
   refresh(user: UserClaim) {
-    return jwt.sign(user, this.config.auth.privateKey, {
-      algorithm: 'ES256',
-      subject: user.id,
-      issuer: this.config.serverId,
-      expiresIn: this.config.auth.refreshTokenExpiresIn,
-    });
+    const now = getUtcTimestamp();
+    return sign(
+      {
+        data: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt.toISOString(),
+        },
+        exp: now + this.config.auth.refreshTokenExpiresIn,
+        iat: now,
+        iss: this.config.serverId,
+        sub: user.id,
+        aud: user.name,
+      },
+      this.config.auth.privateKey,
+      {
+        algorithm: Algorithm.ES256,
+      }
+    );
   }
 
-  verify(token: string) {
+  async verify(token: string) {
     try {
-      return jwt.verify(token, this.config.auth.publicKey, {
-        algorithms: ['ES256'],
-      }) as UserClaim;
+      return (
+        await jwtVerify(token, this.config.auth.publicKey, {
+          algorithms: [Algorithm.ES256],
+          iss: [this.config.serverId],
+          leeway: this.config.auth.leeway,
+          requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
+        })
+      ).data as UserClaim;
     } catch (e) {
       throw new UnauthorizedException('Invalid token');
     }
@@ -58,9 +94,13 @@ export class AuthService {
     if (!user.password) {
       throw new BadRequestException('User has no password');
     }
-
-    const equal = await compare(password, user.password);
-
+    let equal = false;
+    try {
+      equal = await verify(user.password, password);
+    } catch (e) {
+      console.error(e);
+      throw new InternalServerErrorException(e, 'Verify password failed');
+    }
     if (!equal) {
       throw new UnauthorizedException('Invalid password');
     }
