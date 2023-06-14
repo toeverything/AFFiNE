@@ -1,5 +1,5 @@
 import type { NamespaceHandlers } from '../type';
-import { saveFile, savePDFFileAs, savePngFileAs } from './export';
+import { savePDFFileAs, savePngFileAs } from './export';
 
 export const exportHandlers = {
   savePDFFileAs: async (
@@ -20,14 +20,6 @@ export const exportHandlers = {
     mode: string
   ) => {
     return savePngFileAs(workspaceId, pageId, title, mode);
-  },
-
-  saveFile: async (
-    _,
-    filePath: string,
-    data: string | NodeJS.ArrayBufferView
-  ) => {
-    return saveFile(filePath, data);
   },
 } satisfies NamespaceHandlers;
 

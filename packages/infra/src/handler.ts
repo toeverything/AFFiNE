@@ -86,10 +86,6 @@ type ExportHandlers = {
     title: string,
     mode: string
   ) => Promise<any>;
-  saveFile: (
-    filePath: string,
-    data: string | NodeJS.ArrayBufferView
-  ) => Promise<any>;
 };
 
 export abstract class ExportHandlerManager extends HandlerManager<

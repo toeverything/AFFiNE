@@ -1,5 +1,6 @@
 import { BrowserWindow, dialog, shell } from 'electron';
 import fs from 'fs-extra';
+import { jsPDF } from 'jspdf';
 import { join } from 'path';
 
 import { logger } from '../logger';
@@ -18,49 +19,6 @@ interface SaveInfo {
   height: number;
   filePath: string;
   fileType: string;
-}
-
-async function generatePDF(
-  workspaceId: string,
-  pageId: string,
-  mode: string,
-  filePath: string
-): Promise<boolean> {
-  const win = await createWindow(workspaceId, pageId, mode);
-  try {
-    if (mode === 'page') {
-      const options = {
-        pageSize: 'A4',
-        printBackground: true,
-        landscape: false,
-      };
-      const data = await win.webContents.printToPDF(options);
-      fs.writeFile(filePath, data, function (err) {
-        if (err) {
-          console.log(err);
-        } else {
-          console.log('PDF Generated Successfully');
-        }
-      });
-    } else {
-      // todo
-      await win.webContents.executeJavaScript(`
-        const savePageToPng = async () => {
-          const editor = document.querySelector('editor-container');
-          if (editor.createContentParser) {
-            const parser = editor.createContentParser();
-            const canvas = await parser.transPageToCanvas();
-            const pngData = canvas.toDataURL('PNG');
-            await window.apis.export.saveFile('${filePath + '.png'}', pngData);
-          }
-        };
-        savePageToPng()
-      `);
-    }
-    return true;
-  } finally {
-    win.close();
-  }
 }
 
 // todo maybe need to change page mode
@@ -128,35 +86,100 @@ async function createWindow(
         }
       } catch (error) {
         console.log(error);
+        win.close();
         reject();
       }
     });
   });
 }
 
-async function generatePNG(
+async function saveFileAs(params: SaveInfo): Promise<string> {
+  const { imageDataUrl, width, height, filePath, fileType } = params;
+  return new Promise<string>((resolve, reject) => {
+    console.log('pdfDataUrl');
+
+    const typeMatch = imageDataUrl.match(/^data:image\/(png|jpeg|gif);base64,/);
+    if (!typeMatch) {
+      reject('Invalid image format');
+      return;
+    }
+    const imageType = typeMatch[1];
+    const extension =
+      fileType === 'pdf' ? fileType : imageType === 'jpeg' ? 'jpg' : imageType;
+    const finalFilePath = filePath.endsWith('.' + extension)
+      ? filePath
+      : `${filePath}.${extension}`;
+
+    if (fileType === 'pdf') {
+      const pdf = new jsPDF(width < height ? 'p' : 'l', 'pt', [width, height]);
+      pdf.addImage(imageDataUrl, imageType, 0, 0, width, height);
+      pdf
+        .save(finalFilePath, { returnPromise: true })
+        .then(() => {
+          console.log('PDF Generated Successfully');
+          resolve(finalFilePath);
+        })
+        .catch(err => {
+          console.log(err);
+          reject(err);
+        });
+    } else {
+      const base64Data = imageDataUrl.replace(
+        /^data:image\/(png|jpeg|gif);base64,/,
+        ''
+      );
+
+      fs.writeFile(finalFilePath, base64Data, 'base64', err => {
+        if (err) {
+          console.error('Error saving image:', err);
+          reject(err);
+        } else {
+          console.log('Image saved successfully!');
+          resolve(finalFilePath);
+        }
+      });
+    }
+  });
+}
+
+async function generatePDF(
   workspaceId: string,
   pageId: string,
   mode: string,
   filePath: string
-): Promise<boolean> {
+): Promise<string> {
   const win = await createWindow(workspaceId, pageId, mode);
   try {
-    await win.webContents.executeJavaScript(`
-      console.log('generatePNG');
-      const savePageToPng = async () => {
+    if (mode === 'page') {
+      const options = {
+        pageSize: 'A4',
+        printBackground: true,
+        landscape: false,
+      };
+      const data = await win.webContents.printToPDF(options);
+      fs.writeFile(filePath, data, function (err) {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log('PDF Generated Successfully');
+        }
+      });
+      return filePath;
+    } else {
+      const finalFilePath = await win.webContents.executeJavaScript(`
+        const savePageToPng = async () => {
           const editor = document.querySelector('editor-container');
-          console.log('generatePNG', editor);
           if (editor.createContentParser) {
             const parser = editor.createContentParser();
-            console.log('generatePNG', parser);
             const canvas = await parser.transPageToCanvas();
-            await window.api.saveFile(canvas, '${filePath}', 'png');
+            const finalFilePath = await window.api.saveFile(canvas, '${filePath}', 'pdf');
+            return finalFilePath;
           }
-      };
-      savePageToPng()
-    `);
-    return true;
+        };
+        savePageToPng()
+      `);
+      return finalFilePath;
+    }
   } finally {
     win.close();
   }
@@ -191,14 +214,46 @@ export async function savePDFFileAs(
       };
     }
 
-    await generatePDF(workspaceId, pageId, mode, filePath);
-    await shell.openPath(filePath);
-    return { filePath };
+    const finalFilePath = await generatePDF(
+      workspaceId,
+      pageId,
+      mode,
+      filePath
+    );
+    await shell.openPath(finalFilePath);
+    return { filePath: finalFilePath };
   } catch (err) {
     logger.error('savePDFFileAs', err);
     return {
       error: 'UNKNOWN_ERROR',
     };
+  }
+}
+
+async function generatePNG(
+  workspaceId: string,
+  pageId: string,
+  mode: string,
+  filePath: string
+): Promise<string> {
+  const win = await createWindow(workspaceId, pageId, mode);
+  try {
+    const finalFilePath = await win.webContents.executeJavaScript(`
+      const savePageToPng = async () => {
+          const editor = document.querySelector('editor-container');
+          if (editor.createContentParser) {
+            const parser = editor.createContentParser();
+            const canvas = await parser.transPageToCanvas();
+            const finalFilePath = await window.api.saveFile(canvas, '${filePath}', 'png');
+            return finalFilePath;
+          }
+      };
+      savePageToPng()
+    `);
+    console.log('finalFilePath', finalFilePath);
+    return finalFilePath;
+  } finally {
+    win.close();
   }
 }
 
@@ -225,43 +280,18 @@ export async function savePngFileAs(
         canceled: true,
       };
     }
-    await generatePNG(workspaceId, pageId, mode, filePath);
-    await shell.openPath(filePath);
-    return { filePath };
+    const finalFilePath = await generatePNG(
+      workspaceId,
+      pageId,
+      mode,
+      filePath
+    );
+    await shell.openPath(finalFilePath);
+    return { filePath: finalFilePath };
   } catch (err) {
     logger.error('savePNGFileAs', err);
     return {
       error: 'UNKNOWN_ERROR',
     };
   }
-}
-
-function saveFileAs(params: SaveInfo): Promise<string> {
-  const { imageDataUrl, filePath } = params;
-  return new Promise<string>((resolve, reject) => {
-    const typeMatch = imageDataUrl.match(/^data:image\/(png|jpeg|gif);base64,/);
-    if (!typeMatch) {
-      reject('Invalid image format');
-      return;
-    }
-    const imageType = typeMatch[1];
-    const base64Data = imageDataUrl.replace(
-      /^data:image\/(png|jpeg|gif);base64,/,
-      ''
-    );
-    const extension = imageType === 'jpeg' ? 'jpg' : imageType;
-    const finalFilePath = filePath.endsWith('.' + extension)
-      ? filePath
-      : `${filePath}.${extension}`;
-
-    fs.writeFile(finalFilePath, base64Data, 'base64', err => {
-      if (err) {
-        console.error('Error saving image:', err);
-        reject(err);
-      } else {
-        console.log('Image saved successfully!');
-        resolve(finalFilePath);
-      }
-    });
-  });
 }
