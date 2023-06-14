@@ -104,7 +104,7 @@ module.exports = {
       // so stable and canary will not share the same app data
       packageJson.productName = productName;
     },
-    prePackage: async () => {
+    prePackage: async (_, platform) => {
       const { $ } = await import('zx');
       if (platform === 'win32') {
         $.shell = 'powershell.exe';
