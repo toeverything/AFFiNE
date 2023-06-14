@@ -32,10 +32,6 @@ if (releaseVersionEnv && electronPackageJson.version !== releaseVersionEnv) {
 }
 // copy web dist files to electron dist
 
-// step 1: clean up
-await cleanup();
-echo('Clean up done');
-
 if (process.platform === 'win32') {
   $.shell = 'powershell.exe';
   $.prefix = '';
@@ -43,7 +39,7 @@ if (process.platform === 'win32') {
 
 cd(repoRootDir);
 
-// step 2: build web (nextjs) dist
+// step 1: build web (nextjs) dist
 if (!process.env.SKIP_WEB_BUILD) {
   process.env.ENABLE_LEGACY_PROVIDER = 'false';
   await $`yarn nx build @affine/web`;
@@ -67,7 +63,7 @@ if (!process.env.SKIP_WEB_BUILD) {
   await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 }
 
-// step 3: update app-updater.yml content with build type in resources folder
+// step 2: update app-updater.yml content with build type in resources folder
 if (process.env.BUILD_TYPE === 'internal') {
   const appUpdaterYml = path.join(publicDistDir, 'app-update.yml');
   const appUpdaterYmlContent = await fs.readFile(appUpdaterYml, 'utf-8');
@@ -76,15 +72,4 @@ if (process.env.BUILD_TYPE === 'internal') {
     'AFFiNE-Releases'
   );
   await fs.writeFile(appUpdaterYml, newAppUpdaterYmlContent);
-}
-
-/// --------
-/// --------
-/// --------
-async function cleanup() {
-  if (!process.env.SKIP_WEB_BUILD) {
-    await fs.emptyDir(publicAffineOutDir);
-  }
-  await fs.remove(path.join(electronRootDir, 'dist'));
-  await fs.remove(path.join(electronRootDir, 'out'));
 }
