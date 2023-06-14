@@ -39,6 +39,7 @@ export const config = () => {
         resolve(electronDir, './src/main/index.ts'),
         resolve(electronDir, './src/preload/index.ts'),
         resolve(electronDir, './src/helper/index.ts'),
+        resolve(electronDir, './src/main/export/preload.ts'),
       ],
       entryNames: '[dir]',
       outdir: resolve(electronDir, './dist'),

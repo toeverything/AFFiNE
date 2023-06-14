@@ -1,9 +1,7 @@
 import { BrowserWindow, dialog, shell } from 'electron';
-import type { WriteFileOptions } from 'fs-extra';
 import fs from 'fs-extra';
 import { join } from 'path';
 
-import { getExposedMeta } from '../exposed';
 import { logger } from '../logger';
 import type { ErrorMessage } from './utils';
 import { getFakedResult } from './utils';
@@ -12,6 +10,14 @@ export interface SavePDFFileResult {
   filePath?: string;
   canceled?: boolean;
   error?: ErrorMessage;
+}
+
+interface SaveInfo {
+  imageDataUrl: string;
+  width: number;
+  height: number;
+  filePath: string;
+  fileType: string;
 }
 
 async function generatePDF(
@@ -64,13 +70,11 @@ async function createWindow(
   _mode: string
 ): Promise<BrowserWindow> {
   return new Promise<BrowserWindow>((resolve, reject) => {
-    const exposedMeta = getExposedMeta();
     const win = new BrowserWindow({
       show: false,
       webPreferences: {
         nodeIntegration: true,
-        preload: join(__dirname, '../preload/index.js'),
-        additionalArguments: [`--exposed-meta=` + JSON.stringify(exposedMeta)],
+        preload: join(__dirname, './main/export.js'),
       },
     });
 
@@ -79,6 +83,20 @@ async function createWindow(
       `${
         process.env.DEV_SERVER_URL || 'file://.'
       }/workspace/${workspaceId}/${pageId}`
+    );
+
+    win.webContents.on(
+      'ipc-message',
+      async (event, channel, uniqueId: string, params) => {
+        if (channel === 'save-file') {
+          try {
+            const result = await saveFileAs(params as SaveInfo);
+            win.webContents.send(uniqueId + '-reply', result);
+          } catch (error) {
+            win.webContents.send(uniqueId + '-error', error);
+          }
+        }
+      }
     );
 
     win.webContents.on('did-finish-load', async () => {
@@ -125,13 +143,15 @@ async function generatePNG(
   const win = await createWindow(workspaceId, pageId, mode);
   try {
     await win.webContents.executeJavaScript(`
+      console.log('generatePNG');
       const savePageToPng = async () => {
           const editor = document.querySelector('editor-container');
+          console.log('generatePNG', editor);
           if (editor.createContentParser) {
             const parser = editor.createContentParser();
+            console.log('generatePNG', parser);
             const canvas = await parser.transPageToCanvas();
-            const pngData = canvas.toDataURL('PNG');
-            await window.apis.export.saveFile('${filePath}', pngData);
+            await window.api.saveFile(canvas, '${filePath}', 'png');
           }
       };
       savePageToPng()
@@ -216,23 +236,31 @@ export async function savePngFileAs(
   }
 }
 
-export async function saveFile(
-  filePath: string,
-  data: string | NodeJS.ArrayBufferView
-): Promise<boolean> {
-  return new Promise<boolean>((resolve, reject) => {
-    let options: WriteFileOptions = null;
-    let fileData = data;
-    if (filePath.endsWith('.png') && data instanceof String) {
-      options = 'base64';
-      fileData = data.replace(/^data:image\/png;base64,/, '');
+function saveFileAs(params: SaveInfo): Promise<string> {
+  const { imageDataUrl, filePath } = params;
+  return new Promise<string>((resolve, reject) => {
+    const typeMatch = imageDataUrl.match(/^data:image\/(png|jpeg|gif);base64,/);
+    if (!typeMatch) {
+      reject('Invalid image format');
+      return;
     }
-    fs.writeFile(filePath, fileData, options, function (err) {
+    const imageType = typeMatch[1];
+    const base64Data = imageDataUrl.replace(
+      /^data:image\/(png|jpeg|gif);base64,/,
+      ''
+    );
+    const extension = imageType === 'jpeg' ? 'jpg' : imageType;
+    const finalFilePath = filePath.endsWith('.' + extension)
+      ? filePath
+      : `${filePath}.${extension}`;
+
+    fs.writeFile(finalFilePath, base64Data, 'base64', err => {
       if (err) {
-        console.log(err);
-        reject();
+        console.error('Error saving image:', err);
+        reject(err);
       } else {
-        resolve(true);
+        console.log('Image saved successfully!');
+        resolve(finalFilePath);
       }
     });
   });
