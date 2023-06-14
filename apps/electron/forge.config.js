@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+
 const { z } = require('zod');
 
 const {
@@ -106,16 +107,24 @@ module.exports = {
     },
     prePackage: async () => {
       const { rm, cp } = require('node:fs/promises');
+      const { resolve } = require('node:path');
 
-      await rm('./node_modules/@toeverything/plugin-infra', {
-        recursive: true,
-        force: true,
-      });
+      await rm(
+        resolve(__dirname, './node_modules/@toeverything/plugin-infra'),
+        {
+          recursive: true,
+          force: true,
+        }
+      );
 
-      await cp('../../packages/plugin-infra', './node_modules/@toeverything', {
-        recursive: true,
-        force: true,
-      });
+      await cp(
+        resolve(__dirname, '../../packages/plugin-infra'),
+        resolve(__dirname, './node_modules/@toeverything/plugin-infra'),
+        {
+          recursive: true,
+          force: true,
+        }
+      );
     },
     generateAssets: async (_, platform, arch) => {
       if (process.env.SKIP_GENERATE_ASSETS) {
