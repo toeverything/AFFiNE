@@ -1,4 +1,5 @@
 import { BrowserWindow, dialog, shell } from 'electron';
+import type { WriteFileOptions } from 'fs-extra';
 import fs from 'fs-extra';
 import { join } from 'path';
 
@@ -18,7 +19,7 @@ async function generatePDF(
   pageId: string,
   mode: string,
   filePath: string
-): Promise<void> {
+): Promise<boolean> {
   const win = await createWindow(workspaceId, pageId, mode);
   try {
     if (mode === 'page') {
@@ -50,9 +51,8 @@ async function generatePDF(
         savePageToPng()
       `);
     }
-    win.close();
-  } catch (error) {
-    console.log(error);
+    return true;
+  } finally {
     win.close();
   }
 }
@@ -134,13 +134,10 @@ async function generatePNG(
           }
       };
       savePageToPng()
-  `);
-    win.close();
+    `);
     return true;
-  } catch (error) {
-    console.log(error);
+  } finally {
     win.close();
-    return false;
   }
 }
 
@@ -223,34 +220,19 @@ export async function saveFile(
   data: string | NodeJS.ArrayBufferView
 ): Promise<boolean> {
   return new Promise<boolean>((resolve, reject) => {
-    try {
-      if (filePath.endsWith('.png')) {
-        fs.writeFile(
-          filePath,
-          (data as string).replace(/^data:image\/png;base64,/, ''),
-          'base64',
-          function (err) {
-            if (err) {
-              console.log(err);
-              reject(false);
-            } else {
-              console.log('PNG Generated Successfully');
-              resolve(true);
-            }
-          }
-        );
-      } else {
-        fs.writeFile(filePath, data, function (err) {
-          if (err) {
-            console.log(err);
-          } else {
-            console.log('PNG Generated Successfully');
-          }
-        });
-      }
-    } catch (err) {
-      logger.error('saveFile', err);
-      resolve(false);
+    let options: WriteFileOptions = null;
+    let fileData = data;
+    if (filePath.endsWith('.png') && data instanceof String) {
+      options = 'base64';
+      fileData = data.replace(/^data:image\/png;base64,/, '');
     }
+    fs.writeFile(filePath, fileData, options, function (err) {
+      if (err) {
+        console.log(err);
+        reject();
+      } else {
+        resolve(true);
+      }
+    });
   });
 }

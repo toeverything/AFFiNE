@@ -11,6 +11,7 @@ export const exportHandlers = {
   ) => {
     return savePDFFileAs(workspaceId, pageId, title, mode);
   },
+
   savePngFileAs: async (
     _,
     workspaceId: string,
