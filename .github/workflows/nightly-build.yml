@@ -3,7 +3,10 @@ name: Build Canary Desktop App on Staging Branch
 on:
   push:
     branches:
+      # 0.6.x-staging
       - v[0-9]+.[0-9]+.x-staging
+      # 0.6.1-staging
+      - v[0-9]+.[0-9]+.[0-9]+-staging
     paths-ignore:
       - README.md
       - .github/**
