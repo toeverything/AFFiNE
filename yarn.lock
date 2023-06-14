@@ -176,7 +176,6 @@ __metadata:
     "@types/fs-extra": ^11.0.1
     "@types/uuid": ^9.0.1
     async-call-rpc: ^6.3.1
-    cheerio: ^1.0.0-rc.12
     cross-env: 7.0.3
     electron: =25.0.1
     electron-log: ^5.0.0-beta.24
@@ -185,6 +184,8 @@ __metadata:
     electron-window-state: ^5.0.3
     esbuild: ^0.17.19
     fs-extra: ^11.1.1
+    jotai: ^2.1.1
+    link-preview-js: ^3.0.4
     lodash-es: ^4.17.21
     nanoid: ^4.0.2
     playwright: =1.33.0
@@ -12729,21 +12730,6 @@ __metadata:
     parse5-htmlparser2-tree-adapter: ^7.0.0
     tslib: ^2.4.0
   checksum: 7619edcbecafb70ca6ca842ce149307a84e8d451432a888d82959b2aa04e2090701658f25eac75821e0832cc1305bdbcf02f17175102fc1723f119f3c9ece17a
-  languageName: node
-  linkType: hard
-
-"cheerio@npm:^1.0.0-rc.12":
-  version: 1.0.0-rc.12
-  resolution: "cheerio@npm:1.0.0-rc.12"
-  dependencies:
-    cheerio-select: ^2.1.0
-    dom-serializer: ^2.0.0
-    domhandler: ^5.0.3
-    domutils: ^3.0.1
-    htmlparser2: ^8.0.1
-    parse5: ^7.0.0
-    parse5-htmlparser2-tree-adapter: ^7.0.0
-  checksum: 5d4c1b7a53cf22d3a2eddc0aff70cf23cbb30d01a4c79013e703a012475c02461aa1fcd99127e8d83a02216386ed6942b2c8103845fd0812300dd199e6e7e054
   languageName: node
   linkType: hard
 

@@ -52,6 +52,7 @@
     "electron-window-state": "^5.0.3",
     "esbuild": "^0.17.19",
     "fs-extra": "^11.1.1",
+    "jotai": "^2.1.1",
     "playwright": "=1.33.0",
     "ts-node": "^10.9.1",
     "undici": "^5.22.1",
@@ -61,8 +62,8 @@
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "cheerio": "^1.0.0-rc.12",
     "electron-updater": "^5.3.0",
+    "link-preview-js": "^3.0.4",
     "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
     "rxjs": "^7.8.1",
