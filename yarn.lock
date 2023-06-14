@@ -158,6 +158,10 @@ __metadata:
   dependencies:
     "@affine-test/kit": "workspace:*"
     "@affine/native": "workspace:*"
+    "@blocksuite/blocks": 0.0.0-20230607055421-9b20fcaf-nightly
+    "@blocksuite/editor": 0.0.0-20230607055421-9b20fcaf-nightly
+    "@blocksuite/lit": 0.0.0-20230607055421-9b20fcaf-nightly
+    "@blocksuite/store": 0.0.0-20230607055421-9b20fcaf-nightly
     "@electron-forge/cli": ^6.1.1
     "@electron-forge/core": ^6.1.1
     "@electron-forge/core-utils": ^6.1.1
