@@ -142,6 +142,12 @@ export const getMilestones = async (
   return milestone.milestone;
 };
 
+type SubDocsEvent = {
+  added: Set<Doc>;
+  removed: Set<Doc>;
+  loaded: Set<Doc>;
+};
+
 export const createIndexedDBProvider = (
   id: string,
   doc: Doc,
@@ -155,81 +161,114 @@ export const createIndexedDBProvider = (
     upgrade: upgradeDB,
   });
 
-  async function handleUpdate(update: Uint8Array, origin: unknown) {
-    const db = await dbPromise;
-    if (!connected) {
-      return;
-    }
-    if (origin === indexeddbOrigin) {
-      return;
-    }
-    const store = db
-      .transaction('workspace', 'readwrite')
-      .objectStore('workspace');
-    let data = await store.get(id);
-    if (!data) {
-      data = {
-        id,
-        updates: [],
-      };
-    }
-    data.updates.push({
-      timestamp: Date.now(),
-      update,
-    });
-    if (data.updates.length > mergeCount) {
-      const updates = data.updates.map(({ update }) => update);
-      const doc = new Doc();
-      doc.transact(() => {
-        updates.forEach(update => {
-          applyUpdate(doc, update, indexeddbOrigin);
-        });
-      }, indexeddbOrigin);
+  const updateHandlerMap = new WeakMap<
+    Doc,
+    (update: Uint8Array, origin: unknown) => void
+  >();
+  const destroyHandlerMap = new WeakMap<Doc, () => void>();
+  const subDocsHandlerMap = new WeakMap<Doc, (event: SubDocsEvent) => void>();
 
-      const update = encodeStateAsUpdate(doc);
-      data = {
-        id,
-        updates: [
-          {
-            timestamp: Date.now(),
-            update,
-          },
-        ],
-      };
-      await writeOperation(store.put(data));
-    } else {
-      await writeOperation(store.put(data));
+  const createOrGetHandleUpdate = (id: string, doc: Doc) => {
+    if (updateHandlerMap.has(doc)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return updateHandlerMap.get(doc)!;
     }
-  }
+    const fn = async function handleUpdate(
+      update: Uint8Array,
+      origin: unknown
+    ) {
+      const db = await dbPromise;
+      if (!connected) {
+        return;
+      }
+      if (origin === indexeddbOrigin) {
+        return;
+      }
+      const store = db
+        .transaction('workspace', 'readwrite')
+        .objectStore('workspace');
+      let data = await store.get(id);
+      if (!data) {
+        data = {
+          id,
+          updates: [],
+        };
+      }
+      data.updates.push({
+        timestamp: Date.now(),
+        update,
+      });
+      if (data.updates.length > mergeCount) {
+        const updates = data.updates.map(({ update }) => update);
+        const doc = new Doc();
+        doc.transact(() => {
+          updates.forEach(update => {
+            applyUpdate(doc, update, indexeddbOrigin);
+          });
+        }, indexeddbOrigin);
 
-  async function handleDestroy() {
-    const db = await dbPromise;
-    db.close();
-  }
+        const update = encodeStateAsUpdate(doc);
+        data = {
+          id,
+          updates: [
+            {
+              timestamp: Date.now(),
+              update,
+            },
+          ],
+        };
+        await writeOperation(store.put(data));
+      } else {
+        await writeOperation(store.put(data));
+      }
+    };
+    updateHandlerMap.set(doc, fn);
+    return fn;
+  };
 
-  function handleSubDocs(event: {
-    added: Set<Doc>;
-    removed: Set<Doc>;
-    loaded: Set<Doc>;
-  }) {
-    event.loaded.forEach(doc => {
-      trackDoc(doc.guid, doc);
-    });
-  }
+  const createOrGetHandleDestroy = (id: string, doc: Doc) => {
+    if (destroyHandlerMap.has(doc)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return destroyHandlerMap.get(doc)!;
+    }
+    const fn = async function handleDestroy() {
+      const db = await dbPromise;
+      db.close();
+    };
+    destroyHandlerMap.set(doc, fn);
+    return fn;
+  };
+
+  const createOrGetHandleSubDocs = (id: string, doc: Doc) => {
+    if (subDocsHandlerMap.has(doc)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return subDocsHandlerMap.get(doc)!;
+    }
+    const fn = async function handleSubDocs(event: SubDocsEvent) {
+      event.removed.forEach(doc => {
+        unTrackDoc(doc.guid, doc);
+      });
+      event.loaded.forEach(doc => {
+        trackDoc(doc.guid, doc);
+      });
+    };
+    subDocsHandlerMap.set(doc, fn);
+    return fn;
+  };
 
   function trackDoc(id: string, doc: Doc) {
-    doc.on('update', handleUpdate);
-    doc.on('destroy', handleDestroy);
-    doc.on('subdocs', handleSubDocs);
+    doc.on('update', createOrGetHandleUpdate(id, doc));
+    doc.on('destroy', createOrGetHandleDestroy(id, doc));
+    doc.on('subdocs', createOrGetHandleSubDocs(id, doc));
   }
 
   function unTrackDoc(id: string, doc: Doc) {
     doc.subdocs.forEach(doc => {
       unTrackDoc(doc.guid, doc);
     });
-    doc.off('update', handleUpdate);
-    doc.off('destroy', handleDestroy);
-    doc.off('subdocs', handleSubDocs);
+    doc.off('update', createOrGetHandleUpdate(id, doc));
+    doc.off('destroy', createOrGetHandleDestroy(id, doc));
+    doc.off('subdocs', createOrGetHandleSubDocs(id, doc));
   }
 
   async function saveDocOperation(id: string, doc: Doc) {
@@ -296,7 +335,7 @@ export const createIndexedDBProvider = (
       });
       connected = true;
       trackDoc(id, doc);
-      // only run promise below, otherwise the logic is incorrect
+      // only the runs `await` below, otherwise the logic is incorrect
       const db = await dbPromise;
       await tryMigrate(db, id, dbName);
       if (!connected) {

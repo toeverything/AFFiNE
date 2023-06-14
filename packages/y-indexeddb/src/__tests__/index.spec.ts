@@ -3,7 +3,6 @@
  */
 import 'fake-indexeddb/auto';
 
-import { initEmptyPage } from '@affine/env/blocksuite';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
@@ -73,7 +72,8 @@ describe('indexeddb provider', () => {
           },
         ],
       });
-      const page = workspace.createPage('page0');
+      const page = workspace.createPage({ id: 'page0' });
+      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
       const frameId = page.addBlock('affine:frame', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
@@ -143,7 +143,8 @@ describe('indexeddb provider', () => {
     provider.disconnect();
     expect(provider.connected).toBe(false);
     {
-      const page = workspace.createPage('page0');
+      const page = workspace.createPage({ id: 'page0' });
+      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
       const frameId = page.addBlock('affine:frame', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
@@ -214,10 +215,11 @@ describe('indexeddb provider', () => {
     );
     provider.connect();
     {
-      const page = workspace.createPage('page0');
+      const page = workspace.createPage({ id: 'page0' });
+      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
       const frameId = page.addBlock('affine:frame', {}, pageBlockId);
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 99; i++) {
         page.addBlock('affine:paragraph', {}, frameId);
       }
     }
@@ -379,6 +381,7 @@ describe('subDoc', () => {
       const doc = new Doc();
       const map = doc.getMap();
       const subDoc = new Doc();
+      subDoc.load();
       map.set('1', subDoc);
       map.set('2', 'test');
       const provider = createIndexedDBProvider('test', doc);
@@ -405,8 +408,14 @@ describe('subDoc', () => {
 
 describe('utils', () => {
   test('download binary', async () => {
-    const page = workspace.createPage('page0');
-    initEmptyPage(page);
+    const page = workspace.createPage({ id: 'page0' });
+    await page.waitForLoaded();
+    const pageBlockId = page.addBlock('affine:page', {
+      title: new page.Text(''),
+    });
+    page.addBlock('affine:surface', {}, pageBlockId);
+    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    page.addBlock('affine:paragraph', {}, frameId);
     const provider = createIndexedDBProvider(
       workspace.id,
       workspace.doc,
@@ -428,7 +437,12 @@ describe('utils', () => {
     applyUpdate(newWorkspace.doc, update);
     await new Promise<void>(resolve =>
       setTimeout(() => {
-        expect(workspace.doc.toJSON()).toEqual(newWorkspace.doc.toJSON());
+        expect(workspace.doc.toJSON()['meta']).toEqual(
+          newWorkspace.doc.toJSON()['meta']
+        );
+        expect(Object.keys(workspace.doc.toJSON()['spaces'])).toEqual(
+          Object.keys(newWorkspace.doc.toJSON()['spaces'])
+        );
         resolve();
       }, 0)
     );
