@@ -104,16 +104,18 @@ module.exports = {
       // so stable and canary will not share the same app data
       packageJson.productName = productName;
     },
-    prePackage: async (_, platform) => {
-      const { $ } = await import('zx');
-      if (platform === 'win32') {
-        $.shell = 'powershell.exe';
-        $.prefix = '';
-      }
+    prePackage: async () => {
+      const { rm, cp } = require('node:fs/promises');
 
-      // hotfix for plugin-infra
-      await $`rm -rf ./node_modules/@toeverything/plugin-infra`;
-      await $`cp -r ../../packages/plugin-infra ./node_modules/@toeverything`;
+      await rm('./node_modules/@toeverything/plugin-infra', {
+        recursive: true,
+        force: true,
+      });
+
+      await cp('../../packages/plugin-infra', './node_modules/@toeverything', {
+        recursive: true,
+        force: true,
+      });
     },
     generateAssets: async (_, platform, arch) => {
       if (process.env.SKIP_GENERATE_ASSETS) {
