@@ -109,7 +109,7 @@ const EditorWrapper = memo(function EditorWrapper({
             );
           const disposes = uiDecorators.map(ui => ui(editor));
           return () => {
-            disposes.map(fn => fn());
+            disposes.forEach(fn => fn());
             dispose();
           };
         },
