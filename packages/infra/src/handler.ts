@@ -74,7 +74,22 @@ export abstract class UIHandlerManager extends HandlerManager<
 > {}
 
 type ExportHandlers = {
-  savePDFFileAs: (title: string) => Promise<any>;
+  savePDFFileAs: (
+    workspaceId: string,
+    pageId: string,
+    title: string,
+    mode: string
+  ) => Promise<any>;
+  savePngFileAs: (
+    workspaceId: string,
+    pageId: string,
+    title: string,
+    mode: string
+  ) => Promise<any>;
+  saveFile: (
+    filePath: string,
+    data: string | NodeJS.ArrayBufferView
+  ) => Promise<any>;
 };
 
 export abstract class ExportHandlerManager extends HandlerManager<
