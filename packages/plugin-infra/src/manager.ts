@@ -32,6 +32,7 @@ export function definePlugin<ID extends string>(
 
   if (isServer) {
     if (serverAdapter) {
+      console.log('register server adapter');
       serverAdapter
         .load()
         .then(({ default: adapter }) => {
