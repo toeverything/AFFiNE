@@ -226,7 +226,7 @@ export const createIndexedDBProvider = (
     return fn;
   };
 
-  const createOrGetHandleDestroy = (_id: string, doc: Doc) => {
+  const createOrGetHandleDestroy = (_: string, doc: Doc) => {
     if (destroyHandlerMap.has(doc)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return destroyHandlerMap.get(doc)!;
@@ -239,7 +239,7 @@ export const createIndexedDBProvider = (
     return fn;
   };
 
-  const createOrGetHandleSubDocs = (_id: string, doc: Doc) => {
+  const createOrGetHandleSubDocs = (_: string, doc: Doc) => {
     if (subDocsHandlerMap.has(doc)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return subDocsHandlerMap.get(doc)!;
