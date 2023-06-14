@@ -372,6 +372,37 @@ describe('milestone', () => {
   });
 });
 
+describe('subDoc', () => {
+  test('basic', async () => {
+    let json1: any, json2: any;
+    {
+      const doc = new Doc();
+      const map = doc.getMap();
+      const subDoc = new Doc();
+      map.set('1', subDoc);
+      map.set('2', 'test');
+      const provider = createIndexedDBProvider('test', doc);
+      provider.connect();
+      await provider.whenSynced;
+      provider.disconnect();
+      json1 = doc.toJSON();
+    }
+    {
+      const doc = new Doc();
+      const provider = createIndexedDBProvider('test', doc);
+      provider.connect();
+      await provider.whenSynced;
+      const map = doc.getMap();
+      const subDoc = map.get('1') as Doc;
+      subDoc.load();
+      provider.disconnect();
+      json2 = doc.toJSON();
+    }
+    expect(json1['']['1'].toJSON()).toEqual(json2['']['1'].toJSON());
+    expect(json1['']['2']).toEqual(json2['']['2']);
+  });
+});
+
 describe('utils', () => {
   test('download binary', async () => {
     const page = workspace.createPage('page0');

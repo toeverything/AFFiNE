@@ -151,6 +151,9 @@ export const createIndexedDBProvider = (
   let reject: (reason?: unknown) => void;
   let early = true;
   let connected = false;
+  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+    upgrade: upgradeDB,
+  });
 
   async function handleUpdate(update: Uint8Array, origin: unknown) {
     const db = await dbPromise;
@@ -199,14 +202,89 @@ export const createIndexedDBProvider = (
     }
   }
 
-  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
-    upgrade: upgradeDB,
-  });
-  const handleDestroy = async () => {
-    connected = true;
+  async function handleDestroy() {
     const db = await dbPromise;
     db.close();
-  };
+  }
+
+  function handleSubDocs(event: {
+    added: Set<Doc>;
+    removed: Set<Doc>;
+    loaded: Set<Doc>;
+  }) {
+    event.loaded.forEach(doc => {
+      trackDoc(doc.guid, doc);
+    });
+  }
+
+  function trackDoc(id: string, doc: Doc) {
+    doc.on('update', handleUpdate);
+    doc.on('destroy', handleDestroy);
+    doc.on('subdocs', handleSubDocs);
+  }
+
+  function unTrackDoc(id: string, doc: Doc) {
+    doc.subdocs.forEach(doc => {
+      unTrackDoc(doc.guid, doc);
+    });
+    doc.off('update', handleUpdate);
+    doc.off('destroy', handleDestroy);
+    doc.off('subdocs', handleSubDocs);
+  }
+
+  async function saveDocOperation(id: string, doc: Doc) {
+    const db = await dbPromise;
+    const store = db
+      .transaction('workspace', 'readwrite')
+      .objectStore('workspace');
+    const data = await store.get(id);
+    if (!connected) {
+      return;
+    }
+    if (!data) {
+      await writeOperation(
+        db.put('workspace', {
+          id,
+          updates: [
+            {
+              timestamp: Date.now(),
+              update: encodeStateAsUpdate(doc),
+            },
+          ],
+        })
+      );
+    } else {
+      const updates = data.updates.map(({ update }) => update);
+      const fakeDoc = new Doc();
+      fakeDoc.transact(() => {
+        updates.forEach(update => {
+          applyUpdate(fakeDoc, update);
+        });
+      }, indexeddbOrigin);
+      const newUpdate = diffUpdate(
+        encodeStateAsUpdate(doc),
+        encodeStateAsUpdate(fakeDoc)
+      );
+      await writeOperation(
+        store.put({
+          ...data,
+          updates: [
+            ...data.updates,
+            {
+              timestamp: Date.now(),
+              update: newUpdate,
+            },
+          ],
+        })
+      );
+      doc.transact(() => {
+        updates.forEach(update => {
+          applyUpdate(doc, update);
+        });
+      }, indexeddbOrigin);
+    }
+  }
+
   const apis = {
     connect: async () => {
       if (connected) return;
@@ -217,60 +295,23 @@ export const createIndexedDBProvider = (
         reject = _reject;
       });
       connected = true;
-      doc.on('update', handleUpdate);
-      doc.on('destroy', handleDestroy);
+      trackDoc(id, doc);
       // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
       await tryMigrate(db, id, dbName);
-      const store = db
-        .transaction('workspace', 'readwrite')
-        .objectStore('workspace');
-      const data = await store.get(id);
       if (!connected) {
         return;
       }
-      if (!data) {
-        await writeOperation(
-          db.put('workspace', {
-            id,
-            updates: [
-              {
-                timestamp: Date.now(),
-                update: encodeStateAsUpdate(doc),
-              },
-            ],
-          })
-        );
-      } else {
-        const updates = data.updates.map(({ update }) => update);
-        const fakeDoc = new Doc();
-        fakeDoc.transact(() => {
-          updates.forEach(update => {
-            applyUpdate(fakeDoc, update);
-          });
-        }, indexeddbOrigin);
-        const newUpdate = diffUpdate(
-          encodeStateAsUpdate(doc),
-          encodeStateAsUpdate(fakeDoc)
-        );
-        await writeOperation(
-          store.put({
-            ...data,
-            updates: [
-              ...data.updates,
-              {
-                timestamp: Date.now(),
-                update: newUpdate,
-              },
-            ],
-          })
-        );
-        doc.transact(() => {
-          updates.forEach(update => {
-            applyUpdate(doc, update);
-          });
-        }, indexeddbOrigin);
+      const docs: [string, Doc][] = [];
+      docs.push([id, doc]);
+      while (docs.length > 0) {
+        const [id, doc] = docs.pop() as [string, Doc];
+        await saveDocOperation(id, doc);
+        doc.subdocs.forEach(doc => {
+          docs.push([doc.guid, doc]);
+        });
       }
+
       early = false;
       resolve();
     },
@@ -279,8 +320,7 @@ export const createIndexedDBProvider = (
       if (early) {
         reject(new EarlyDisconnectError());
       }
-      doc.off('update', handleUpdate);
-      doc.off('destroy', handleDestroy);
+      unTrackDoc(id, doc);
     },
     async cleanup() {
       if (connected) {
