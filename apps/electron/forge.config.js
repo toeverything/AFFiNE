@@ -126,6 +126,10 @@ module.exports = {
 
       // run yarn generate-assets
       await $`yarn generate-assets`;
+
+      // hotfix for plugin-infra
+      await $`rm -rf ./node_modules/@toeverything/plugin-infra`;
+      await $`cp -r ../../packages/plugin-infra ./node_modules/@toeverything`;
     },
   },
 };
