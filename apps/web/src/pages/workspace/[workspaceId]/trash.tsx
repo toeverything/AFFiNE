@@ -31,9 +31,7 @@ const TrashPage: NextPageWithLayout = () => {
     },
     [currentWorkspace, jumpToPage]
   );
-  if (!router.isReady) {
-    return <PageLoading />;
-  } else if (currentWorkspace === null) {
+  if (!router.isReady || currentWorkspace === null) {
     return <PageLoading />;
   }
   // todo(himself65): refactor to plugin

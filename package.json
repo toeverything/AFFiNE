@@ -72,6 +72,7 @@
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-simple-import-sort": "^10.0.0",
+    "eslint-plugin-sonarjs": "^0.19.0",
     "eslint-plugin-unicorn": "^47.0.0",
     "eslint-plugin-unused-imports": "^2.0.0",
     "fake-indexeddb": "4.0.1",
