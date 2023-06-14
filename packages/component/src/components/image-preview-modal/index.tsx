@@ -14,6 +14,7 @@ import {
   ViewBarIcon,
 } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
+import clsx from 'clsx';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback } from 'react';
@@ -306,7 +307,7 @@ const ImagePreviewModalImpl = (
       </div>
       <div className={imagePreviewModalContainerStyle}>
         <div
-          className={`zoom-area ${isZoomedBigger ? 'zoomed-bigger' : ''}`}
+          className={clsx('zoom-area', { 'zoomed-bigger': isZoomedBigger })}
           ref={zoomRef}
         >
           <div className={imagePreviewModalCenterStyle}>
