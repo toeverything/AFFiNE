@@ -226,6 +226,7 @@ export const createIndexedDBProvider = (
     return fn;
   };
 
+  /* deepscan-disable UNUSED_PARAM */
   const createOrGetHandleDestroy = (_: string, doc: Doc) => {
     if (destroyHandlerMap.has(doc)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -239,6 +240,7 @@ export const createIndexedDBProvider = (
     return fn;
   };
 
+  /* deepscan-disable UNUSED_PARAM */
   const createOrGetHandleSubDocs = (_: string, doc: Doc) => {
     if (subDocsHandlerMap.has(doc)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
