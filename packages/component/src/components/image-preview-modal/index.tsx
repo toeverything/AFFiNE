@@ -311,6 +311,7 @@ const ImagePreviewModalImpl = (
         >
           <div className={imagePreviewModalCenterStyle}>
             <img
+              data-blob-id={props.blockId}
               src={url}
               alt={caption}
               ref={imageRef}
