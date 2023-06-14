@@ -104,6 +104,17 @@ module.exports = {
       // so stable and canary will not share the same app data
       packageJson.productName = productName;
     },
+    prePackage: async () => {
+      const { $ } = await import('zx');
+      if (platform === 'win32') {
+        $.shell = 'powershell.exe';
+        $.prefix = '';
+      }
+
+      // hotfix for plugin-infra
+      await $`rm -rf ./node_modules/@toeverything/plugin-infra`;
+      await $`cp -r ../../packages/plugin-infra ./node_modules/@toeverything`;
+    },
     generateAssets: async (_, platform, arch) => {
       if (process.env.SKIP_GENERATE_ASSETS) {
         return;
@@ -126,10 +137,6 @@ module.exports = {
 
       // run yarn generate-assets
       await $`yarn generate-assets`;
-
-      // hotfix for plugin-infra
-      await $`rm -rf ./node_modules/@toeverything/plugin-infra`;
-      await $`cp -r ../../packages/plugin-infra ./node_modules/@toeverything`;
     },
   },
 };
