@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+
 const { z } = require('zod');
 
 const {
@@ -103,6 +104,27 @@ module.exports = {
       // we want different package name for canary build
       // so stable and canary will not share the same app data
       packageJson.productName = productName;
+    },
+    prePackage: async () => {
+      const { rm, cp } = require('node:fs/promises');
+      const { resolve } = require('node:path');
+
+      await rm(
+        resolve(__dirname, './node_modules/@toeverything/plugin-infra'),
+        {
+          recursive: true,
+          force: true,
+        }
+      );
+
+      await cp(
+        resolve(__dirname, '../../packages/plugin-infra'),
+        resolve(__dirname, './node_modules/@toeverything/plugin-infra'),
+        {
+          recursive: true,
+          force: true,
+        }
+      );
     },
     generateAssets: async (_, platform, arch) => {
       if (process.env.SKIP_GENERATE_ASSETS) {
