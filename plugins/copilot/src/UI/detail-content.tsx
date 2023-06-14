@@ -12,47 +12,48 @@ import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
 import { detailContentActionsStyle, detailContentStyle } from './index.css';
 
 if (typeof window === 'undefined') {
-  import('@blocksuite/blocks').then(({ FormatQuickBar }) => {
-    FormatQuickBar.customElements.push((_page, getSelection) => {
-      const div = document.createElement('div');
-      const root = createRoot(div);
+  import('@blocksuite/blocks')
+    .then(({ FormatQuickBar }) => {
+      FormatQuickBar.customElements.push((_page, getSelection) => {
+        const div = document.createElement('div');
+        const root = createRoot(div);
 
-      const AskAI = (): ReactElement => {
-        const { conversationAtom } = useChatAtoms();
-        const call = useSetAtom(conversationAtom);
+        const AskAI = (): ReactElement => {
+          const { conversationAtom } = useChatAtoms();
+          const call = useSetAtom(conversationAtom);
+          const onClickAskAI = useCallback(() => {
+            const selection = getSelection();
+            if (selection != null) {
+              const text = selection.models
+                .map(model => {
+                  return model.text?.toString();
+                })
+                .filter((v): v is string => Boolean(v))
+                .join('\n');
+              console.log('selected text:', text);
+              call(
+                `I selected some text from the document: \n"${text}."`
+              ).catch(err => {
+                console.error(err);
+              });
+            }
+          }, [call]);
 
-        return (
-          <div
-            onClick={() => {
-              const selection = getSelection();
-              if (selection != null) {
-                const text = selection.models
-                  .map(model => {
-                    return model.text?.toString();
-                  })
-                  .filter((v): v is string => Boolean(v))
-                  .join('\n');
-                console.log('selected text:', text);
-                void call(
-                  `I selected some text from the document: \n"${text}."`
-                );
-              }
-            }}
-          >
-            Ask AI
-          </div>
+          return <div onClick={onClickAskAI}>Ask AI</div>;
+        };
+        root.render(
+          <StrictMode>
+            <Provider store={rootStore}>
+              <AskAI />
+            </Provider>
+          </StrictMode>
         );
-      };
-      root.render(
-        <StrictMode>
-          <Provider store={rootStore}>
-            <AskAI />
-          </Provider>
-        </StrictMode>
-      );
-      return div;
+        return div;
+      });
+    })
+    .catch(error => {
+      console.error(error);
     });
-  });
 }
 
 const Actions = () => {
