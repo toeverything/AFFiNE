@@ -52,7 +52,7 @@ const ImagePreviewModalImpl = (
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
 
-  const [bIsActionBarVisble, setBIsActionBarVisible] = useState(false);
+  const [bIsActionBarVisible, setBIsActionBarVisible] = useState(false);
   const [caption, setCaption] = useState(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
@@ -349,7 +349,7 @@ const ImagePreviewModalImpl = (
           />
         </svg>
       </button>
-      {bIsActionBarVisble ? (
+      {bIsActionBarVisible ? (
         <div
           className={imageBottomContainerStyle}
           onMouseEnter={handleMouseEnter}
@@ -409,7 +409,9 @@ const ImagePreviewModalImpl = (
                 className={buttonStyle}
                 onClick={() => {
                   assertExists(blockId);
-                  downloadHandler(blockId);
+                  downloadHandler(blockId).catch(err => {
+                    console.error('Could not download image', err);
+                  });
                 }}
               />
               <Button
