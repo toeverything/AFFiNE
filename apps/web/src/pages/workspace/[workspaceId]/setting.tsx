@@ -39,20 +39,10 @@ function useTabRouterSync(
       ? router.query.currentTab
       : null;
   if (
-    queryCurrentTab !== null &&
-    settingPanelValues.indexOf(queryCurrentTab as SettingPanel) === -1
+    (queryCurrentTab !== null &&
+      settingPanelValues.indexOf(queryCurrentTab as SettingPanel) === -1) ||
+    settingPanelValues.indexOf(currentTab as SettingPanel) === -1
   ) {
-    setCurrentTab(settingPanel.General);
-    router
-      .replace({
-        pathname: router.pathname,
-        query: {
-          ...router.query,
-          currentTab: settingPanel.General,
-        },
-      })
-      .catch(console.error);
-  } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     setCurrentTab(settingPanel.General);
     router
       .replace({
@@ -109,11 +99,11 @@ const SettingPage: NextPageWithLayout = () => {
     return helper.deleteWorkspace(workspaceId);
   }, [currentWorkspace, helper]);
   const onTransformWorkspace = useOnTransformWorkspace();
-  if (!router.isReady) {
-    return <PageLoading />;
-  } else if (currentWorkspace === null) {
-    return <PageLoading />;
-  } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
+  if (
+    !router.isReady ||
+    currentWorkspace === null ||
+    settingPanelValues.indexOf(currentTab as SettingPanel) === -1
+  ) {
     return <PageLoading />;
   }
   const { SettingsDetail, Header } = getUIAdapter(currentWorkspace.flavour);

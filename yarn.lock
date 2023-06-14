@@ -296,6 +296,7 @@ __metadata:
     eslint-plugin-react: ^7.32.2
     eslint-plugin-react-hooks: ^4.6.0
     eslint-plugin-simple-import-sort: ^10.0.0
+    eslint-plugin-sonarjs: ^0.19.0
     eslint-plugin-unicorn: ^47.0.0
     eslint-plugin-unused-imports: ^2.0.0
     fake-indexeddb: 4.0.1
@@ -15272,6 +15273,15 @@ __metadata:
   peerDependencies:
     eslint: ">=5.0.0"
   checksum: 23221ff63f80f9c52da807d388ee8a51bc36a3b73345f60ec886e7973c28d75eb1d1e47f7f2916a7c1f94a1b5037b1450356a64a8fbd58096fd6bee57c6e3e48
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-sonarjs@npm:^0.19.0":
+  version: 0.19.0
+  resolution: "eslint-plugin-sonarjs@npm:0.19.0"
+  peerDependencies:
+    eslint: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+  checksum: 893640583f62ce55584c6ddd481aa0fd6fa15fe0fffc32ac92b17f3fadde8eaf32414183bb80b612455212e9bb14400236398af6279ca04e8992f008e011926c
   languageName: node
   linkType: hard
 
