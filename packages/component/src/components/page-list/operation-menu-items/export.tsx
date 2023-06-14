@@ -26,36 +26,40 @@ const ExportToPdfMenuItem = ({
   const contentParserRef = useRef<ContentParser>();
   const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+
+  const exportPdf = async () => {
+    if (!globalThis.currentEditor) {
+      return;
+    }
+
+    const result = await window.apis?.export.savePDFFileAs(
+      currentWorkspaceId || '',
+      currentPageId || '',
+      (globalThis.currentEditor.page.root as PageBlockModel).title.toString(),
+      globalThis.currentEditor.mode
+    );
+
+    if (!result) {
+      if (!contentParserRef.current) {
+        contentParserRef.current = new ContentParser(
+          globalThis.currentEditor.page
+        );
+      }
+      contentParserRef.current.exportPdf();
+    }
+
+    onSelect?.({ type: 'pdf' });
+  };
+
   return (
     <>
-      {true && (
-        <MenuItem
-          data-testid="export-to-pdf"
-          onClick={async () => {
-            if (!contentParserRef.current) {
-              contentParserRef.current = new ContentParser(
-                globalThis.currentEditor!.page
-              );
-            }
-
-            const result = await window.apis?.export.savePDFFileAs(
-              currentWorkspaceId || '',
-              currentPageId || '',
-              (
-                globalThis.currentEditor!.page.root as PageBlockModel
-              ).title.toString()
-            );
-            if (result !== undefined) {
-              return;
-            }
-            contentParserRef.current.exportPdf();
-            onSelect?.({ type: 'pdf' });
-          }}
-          icon={<ExportToPdfIcon />}
-        >
-          {t['Export to PDF']()}
-        </MenuItem>
-      )}
+      <MenuItem
+        data-testid="export-to-pdf"
+        onClick={exportPdf}
+        icon={<ExportToPdfIcon />}
+      >
+        {t['Export to PDF']()}
+      </MenuItem>
     </>
   );
 };
@@ -93,36 +97,40 @@ const ExportToPngMenuItem = ({
   const contentParserRef = useRef<ContentParser>();
   const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+
+  const exportPng = async () => {
+    if (!globalThis.currentEditor) {
+      return;
+    }
+
+    const result = await window.apis?.export.savePngFileAs(
+      currentWorkspaceId || '',
+      currentPageId || '',
+      (globalThis.currentEditor.page.root as PageBlockModel).title.toString(),
+      globalThis.currentEditor.mode
+    );
+
+    if (!result) {
+      if (!contentParserRef.current) {
+        contentParserRef.current = new ContentParser(
+          globalThis.currentEditor.page
+        );
+      }
+      contentParserRef.current.exportPng();
+    }
+
+    onSelect?.({ type: 'png' });
+  };
+
   return (
     <>
-      {true && (
-        <MenuItem
-          data-testid="export-to-png"
-          onClick={async () => {
-            if (!contentParserRef.current) {
-              contentParserRef.current = new ContentParser(
-                globalThis.currentEditor!.page
-              );
-            }
-            const result = await window.apis?.export.savePngFileAs(
-              currentWorkspaceId || '',
-              currentPageId || '',
-              (
-                globalThis.currentEditor!.page.root as PageBlockModel
-              ).title.toString()
-            );
-            if (result !== undefined) {
-              return;
-            }
-
-            contentParserRef.current.exportPng();
-            onSelect?.({ type: 'png' });
-          }}
-          icon={<ExportToPngIcon />}
-        >
-          {t['Export to PNG']()}
-        </MenuItem>
-      )}
+      <MenuItem
+        data-testid="export-to-png"
+        onClick={exportPng}
+        icon={<ExportToPngIcon />}
+      >
+        {t['Export to PNG']()}
+      </MenuItem>
     </>
   );
 };

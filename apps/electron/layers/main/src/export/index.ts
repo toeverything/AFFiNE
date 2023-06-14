@@ -1,22 +1,24 @@
 import type { NamespaceHandlers } from '../type';
-import { saveFile, savePDFFileAs, savePngFileAs } from './pdf';
+import { saveFile, savePDFFileAs, savePngFileAs } from './export';
 
 export const exportHandlers = {
   savePDFFileAs: async (
     _,
     workspaceId: string,
     pageId: string,
-    title: string
+    title: string,
+    mode: string
   ) => {
-    return savePDFFileAs(workspaceId, pageId, title);
+    return savePDFFileAs(workspaceId, pageId, title, mode);
   },
   savePngFileAs: async (
     _,
     workspaceId: string,
     pageId: string,
-    title: string
+    title: string,
+    mode: string
   ) => {
-    return savePngFileAs(workspaceId, pageId, title);
+    return savePngFileAs(workspaceId, pageId, title, mode);
   },
 
   saveFile: async (
@@ -28,4 +30,4 @@ export const exportHandlers = {
   },
 } satisfies NamespaceHandlers;
 
-export * from './pdf';
+export * from './export';
