@@ -327,6 +327,9 @@ jobs:
         env:
           COVERAGE: true
 
+      - name: Build unstable app
+        run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+
       - name: Collect code coverage report
         if: ${{ matrix.spec.test }}
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
@@ -348,6 +351,33 @@ jobs:
           name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           path: ./test-results
           if-no-files-found: ignore
+
+      - name: Save artifacts (mac)
+        if: ${{ matrix.spec.platform == 'darwin' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+          mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+      - name: Save artifacts (windows)
+        if: ${{ matrix.spec.platform == 'win32' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
+
+      - name: Save artifacts (linux)
+        if: ${{ matrix.spec.platform == 'linux' }}
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
+          path: builds
 
   unit-test:
     name: Unit Test
