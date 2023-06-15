@@ -229,54 +229,60 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async invite(
-    @CurrentUser() currentUser: User,
+    @CurrentUser() user: User,
     @Args('workspaceId') workspaceId: string,
     @Args('email') email: string,
     @Args('permission', { type: () => Permission }) permission: Permission
   ) {
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+
     if (permission === Permission.Owner) {
       throw new ForbiddenException('Cannot change owner');
     }
 
-    const [isOwner, isAdmin] = await Promise.all([
-      this.permissionProvider.tryCheck(
-        workspaceId,
-        currentUser.id,
-        Permission.Owner
-      ),
-      this.permissionProvider.tryCheck(
-        workspaceId,
-        currentUser.id,
-        Permission.Admin
-      ),
-    ]);
-
-    if (!isOwner && !isAdmin) {
-      throw new ForbiddenException();
-    }
-
-    const user = await this.prisma.user.findUnique({
+    const target = await this.prisma.user.findUnique({
       where: {
         email,
       },
     });
 
-    if (!user) {
+    if (!target) {
       throw new NotFoundException("User doesn't exist");
     }
 
-    await this.permissionProvider.grant(workspaceId, user.id, permission);
+    await this.permissionProvider.grant(workspaceId, target.id, permission);
 
     return true;
   }
 
   @Mutation(() => Boolean)
+  async revoke(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('userId') userId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+
+    return this.permissionProvider.revoke(workspaceId, userId);
+  }
+
+  @Mutation(() => Boolean)
   async acceptInvite(
-    @CurrentUser() currentUser: User,
+    @CurrentUser() user: User,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.permissionProvider.accept(workspaceId, currentUser.id);
+    await this.permissionProvider.check(workspaceId, user.id);
 
-    return true;
+    return this.permissionProvider.accept(workspaceId, user.id);
+  }
+
+  @Mutation(() => Boolean)
+  async leaveWorkspace(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    return this.permissionProvider.revoke(workspaceId, user.id);
   }
 }
