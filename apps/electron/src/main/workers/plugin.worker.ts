@@ -34,7 +34,7 @@ import('@toeverything/plugin-infra/manager')
 
     console.log('import bookmark plugin', bookmarkPluginPath);
 
-    import(bookmarkPluginPath).catch(console.log);
+    import('file://' + bookmarkPluginPath).catch(console.log);
     rootStore.sub(affinePluginsAtom, () => {
       const plugins = rootStore.get(affinePluginsAtom);
       Object.values(plugins).forEach(plugin => {
