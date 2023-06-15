@@ -226,4 +226,57 @@ export class WorkspaceResolver {
 
     return true;
   }
+
+  @Mutation(() => Boolean)
+  async invite(
+    @CurrentUser() currentUser: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('email') email: string,
+    @Args('permission', { type: () => Permission }) permission: Permission
+  ) {
+    if (permission === Permission.Owner) {
+      throw new ForbiddenException('Cannot change owner');
+    }
+
+    const [isOwner, isAdmin] = await Promise.all([
+      this.permissionProvider.tryCheck(
+        workspaceId,
+        currentUser.id,
+        Permission.Owner
+      ),
+      this.permissionProvider.tryCheck(
+        workspaceId,
+        currentUser.id,
+        Permission.Admin
+      ),
+    ]);
+
+    if (!isOwner && !isAdmin) {
+      throw new ForbiddenException();
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException("User doesn't exist");
+    }
+
+    await this.permissionProvider.grant(workspaceId, user.id, permission);
+
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  async acceptInvite(
+    @CurrentUser() currentUser: User,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    await this.permissionProvider.accept(workspaceId, currentUser.id);
+
+    return true;
+  }
 }
