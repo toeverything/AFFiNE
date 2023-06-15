@@ -193,6 +193,7 @@ __metadata:
     ts-node: ^10.9.1
     undici: ^5.22.1
     uuid: ^9.0.0
+    which: ^3.0.1
     yjs: ^13.6.1
     zx: ^7.2.2
   peerDependencies:
@@ -28301,7 +28302,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"which@npm:^3.0.0":
+"which@npm:^3.0.0, which@npm:^3.0.1":
   version: 3.0.1
   resolution: "which@npm:3.0.1"
   dependencies:

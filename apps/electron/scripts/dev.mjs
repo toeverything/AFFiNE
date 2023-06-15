@@ -5,6 +5,7 @@ import path, { resolve } from 'node:path';
 
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
+import which from 'which';
 
 import { config, electronDir, rootDir } from './common.mjs';
 
@@ -67,9 +68,9 @@ function spawnOrReloadElectron() {
 }
 
 const common = config();
-
+const yarnPath = which.sync('yarn');
 async function watchPlugins() {
-  spawn('yarn', ['dev'], {
+  spawn(yarnPath, ['dev'], {
     stdio: 'inherit',
     cwd: resolve(rootDir, './packages/plugin-infra'),
   });
