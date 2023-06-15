@@ -105,6 +105,7 @@ const ImagePreviewModalImpl = (
   if (!url) {
     return null;
   }
+
   const nextImageHandler = (blockId: string | null) => {
     assertExists(blockId);
     const workspace = props.workspace;
@@ -269,15 +270,12 @@ const ImagePreviewModalImpl = (
     <div
       data-testid="image-preview-modal"
       className={imagePreviewModalStyle}
-      onClick={() => {
-        props.onClose();
-      }}
+      onClick={event =>
+        event.target === event.currentTarget ? props.onClose() : null
+      }
     >
       {!isZoomedBigger ? (
-        <div
-          className={imageNavigationControlStyle}
-          onClick={event => event.stopPropagation()}
-        >
+        <div className={imageNavigationControlStyle}>
           <span
             className={imagePreviewModalGoStyle}
             style={{
@@ -323,8 +321,7 @@ const ImagePreviewModalImpl = (
               onMouseUp={handleDragEnd}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
-              onLoad={() => resetZoom()}
-              onClick={event => event.stopPropagation()}
+              onLoad={resetZoom}
             />
             {isZoomedBigger ? null : (
               <p className={imagePreviewModalCaptionStyle}>{caption}</p>
