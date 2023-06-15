@@ -111,6 +111,29 @@ export class WorkspaceResolver {
     return data.user;
   }
 
+  @ResolveField(() => [UserType], {
+    description: 'Members of workspace',
+    complexity: 2,
+  })
+  async members(
+    @CurrentUser() user: UserType,
+    @Parent() workspace: WorkspaceType
+  ) {
+    const data = await this.prisma.userWorkspacePermission.findMany({
+      where: {
+        workspaceId: workspace.id,
+        accepted: true,
+        userId: {
+          not: user.id,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+    return data.map(({ user }) => user);
+  }
+
   @Query(() => [WorkspaceType], {
     description: 'Get all accessible workspaces for current user',
     complexity: 2,
@@ -202,32 +225,5 @@ export class WorkspaceResolver {
     // delete all related data, like websocket connections, blobs, etc.
 
     return true;
-  }
-
-  @Query(() => [UserType])
-  async workspaceMembers(
-    @CurrentUser() user: User,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    const [isOwner, isAdmin] = await Promise.all([
-      this.permissionProvider.tryCheck(workspaceId, user.id, Permission.Owner),
-      this.permissionProvider.tryCheck(workspaceId, user.id, Permission.Admin),
-    ]);
-
-    if (!isOwner && !isAdmin) {
-      throw new ForbiddenException();
-    }
-
-    const data = await this.prisma.userWorkspacePermission.findMany({
-      where: {
-        workspaceId,
-        accepted: true,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    return data.map(({ user }) => user);
   }
 }
