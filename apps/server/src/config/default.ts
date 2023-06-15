@@ -67,6 +67,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
     privateKey: examplePrivateKey,
     enableSignup: true,
     enableOauth: false,
+    nextAuthSecret: '',
     oauthProviders: {},
   },
   objectStorage: {

@@ -201,6 +201,10 @@ export interface AFFiNEConfig {
      */
     enableOauth: boolean;
     /**
+     * NEXTAUTH_SECRET
+     */
+    nextAuthSecret: string;
+    /**
      * all available oauth providers
      */
     oauthProviders: Partial<

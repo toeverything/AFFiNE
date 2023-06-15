@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   BadRequestException,
   Injectable,
@@ -11,9 +13,9 @@ import type { User } from '@prisma/client';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 
-type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'>;
+export type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'>;
 
-const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
+export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
 
 @Injectable()
 export class AuthService {
@@ -34,6 +36,9 @@ export class AuthService {
         iss: this.config.serverId,
         sub: user.id,
         aud: user.name,
+        jti: randomUUID({
+          disableEntropyCache: true,
+        }),
       },
       this.config.auth.privateKey,
       {
@@ -57,6 +62,9 @@ export class AuthService {
         iss: this.config.serverId,
         sub: user.id,
         aud: user.name,
+        jti: randomUUID({
+          disableEntropyCache: true,
+        }),
       },
       this.config.auth.privateKey,
       {
@@ -109,8 +117,6 @@ export class AuthService {
   }
 
   async register(name: string, email: string, password: string): Promise<User> {
-    const hashedPassword = await hash(password);
-
     const user = await this.prisma.user.findFirst({
       where: {
         email,
@@ -120,6 +126,8 @@ export class AuthService {
     if (user) {
       throw new BadRequestException('Email already exists');
     }
+
+    const hashedPassword = await hash(password);
 
     return this.prisma.user.create({
       data: {

@@ -350,6 +350,7 @@ __metadata:
   resolution: "@affine/server@workspace:apps/server"
   dependencies:
     "@apollo/server": ^4.7.4
+    "@auth/prisma-adapter": ^1.0.0
     "@nestjs/apollo": ^11.0.6
     "@nestjs/common": ^10.0.0
     "@nestjs/core": ^10.0.0
@@ -815,6 +816,36 @@ __metadata:
   dependencies:
     node-fetch: ^2.6.1
   checksum: af39bdfb4c2b35bd2c6acc540a5e302730dae17e73d3a18cd1a4aa50c1c741cb1869dffdef1379c491da5ad2e3cfa2bf3a8064e6046c12b46c6a97f54f100a8d
+  languageName: node
+  linkType: hard
+
+"@auth/core@npm:0.8.1":
+  version: 0.8.1
+  resolution: "@auth/core@npm:0.8.1"
+  dependencies:
+    "@panva/hkdf": ^1.0.4
+    cookie: 0.5.0
+    jose: ^4.11.1
+    oauth4webapi: ^2.0.6
+    preact: 10.11.3
+    preact-render-to-string: 5.2.3
+  peerDependencies:
+    nodemailer: ^6.8.0
+  peerDependenciesMeta:
+    nodemailer:
+      optional: true
+  checksum: 1e3a0e64bfb7f45945686e9e5670331d2888bed37c0453422a6c77059b1337caa83a0b5d15ba6795ef33327322b6fc1a91e1a1ce361d85bb94c8796baccee4a8
+  languageName: node
+  linkType: hard
+
+"@auth/prisma-adapter@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@auth/prisma-adapter@npm:1.0.0"
+  dependencies:
+    "@auth/core": 0.8.1
+  peerDependencies:
+    "@prisma/client": ">=2.26.0 || >=3 || >=4"
+  checksum: b36791d608852cdb3cfa1517618930eea942a9f672a570f142d24de2f953cf0cfd191817f990a65f150d8e8d6711bb23181e3dc4260926e68b5e1d910b5ac626
   languageName: node
   linkType: hard
 
@@ -7020,7 +7051,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@panva/hkdf@npm:^1.0.2":
+"@panva/hkdf@npm:^1.0.2, @panva/hkdf@npm:^1.0.4":
   version: 1.1.1
   resolution: "@panva/hkdf@npm:1.1.1"
   checksum: f0dd12903751d8792420353f809ed3c7de860cf506399759fff5f59f7acfef8a77e2b64012898cee7e5b047708fa0bd91dff5ef55a502bf8ea11aad9842160da
@@ -20048,7 +20079,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:^4.11.4, jose@npm:^4.14.1":
+"jose@npm:^4.11.1, jose@npm:^4.11.4, jose@npm:^4.14.1":
   version: 4.14.4
   resolution: "jose@npm:4.14.4"
   checksum: 2d820a91a8fd97c05d8bc8eedc373b944a0cd7f5fe41063086da233d0473c73fb523912a9f026ea870782bd221f4a515f441a2d3af4de48c6f2c76dac5082377
@@ -22777,6 +22808,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"oauth4webapi@npm:^2.0.6":
+  version: 2.3.0
+  resolution: "oauth4webapi@npm:2.3.0"
+  checksum: abe1aa9997f8cd779b661ca60b378d50de039b624f89c0a72574c65141432bca6a319116362cae49197f687b6e08d01d76476f74545f074071cbb63303d86fab
+  languageName: node
+  linkType: hard
+
 "oauth@npm:^0.9.15":
   version: 0.9.15
   resolution: "oauth@npm:0.9.15"
@@ -23823,6 +23861,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"preact-render-to-string@npm:5.2.3":
+  version: 5.2.3
+  resolution: "preact-render-to-string@npm:5.2.3"
+  dependencies:
+    pretty-format: ^3.8.0
+  peerDependencies:
+    preact: ">=10"
+  checksum: 6e46288d8956adde35b9fe3a21aecd9dea29751b40f0f155dea62f3896f27cb8614d457b32f48d33909d2da81135afcca6c55077520feacd7d15164d1371fb44
+  languageName: node
+  linkType: hard
+
 "preact-render-to-string@npm:^5.1.19":
   version: 5.2.6
   resolution: "preact-render-to-string@npm:5.2.6"
@@ -23831,6 +23880,13 @@ __metadata:
   peerDependencies:
     preact: ">=10"
   checksum: be8d5d8fb502d422c503e68af7bcccb6facd942f3ae9a4d093ebe3f1d4f0b15c540624bdac434d53a2a8e8fb7afa4606383414e937c40933ca43445470a026ff
+  languageName: node
+  linkType: hard
+
+"preact@npm:10.11.3":
+  version: 10.11.3
+  resolution: "preact@npm:10.11.3"
+  checksum: 9387115aa0581e8226309e6456e9856f17dfc0e3d3e63f774de80f3d462a882ba7c60914c05942cb51d51e23e120dcfe904b8d392d46f29ad15802941fe7a367
   languageName: node
   linkType: hard
 
