@@ -11,8 +11,14 @@ import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
-import { forwardRef, memo, useEffect, useMemo, useState } from 'react';
-import { noop } from 'rxjs';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { contentLayoutAtom } from '../../../atoms/layout';
@@ -100,26 +106,41 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.WindowsAppControls]: {
     Component: () => {
+      const handleMinimizeApp = useCallback(() => {
+        window.apis?.ui.handleMinimizeApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
+      const handleMaximizeApp = useCallback(() => {
+        window.apis?.ui.handleMaximizeApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
+      const handleCloseApp = useCallback(() => {
+        window.apis?.ui.handleCloseApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
       return (
         <div className={styles.windowAppControlsWrapper}>
           <button
             data-type="minimize"
             className={styles.windowAppControl}
-            onClick={window.apis?.ui.handleMinimizeApp ?? noop}
+            onClick={handleMinimizeApp}
           >
             <MinusIcon />
           </button>
           <button
             data-type="maximize"
             className={styles.windowAppControl}
-            onClick={window.apis?.ui.handleMaximizeApp ?? noop}
+            onClick={handleMaximizeApp}
           >
             <RoundedRectangleIcon />
           </button>
           <button
             data-type="close"
             className={styles.windowAppControl}
-            onClick={window.apis?.ui.handleCloseApp ?? noop}
+            onClick={handleCloseApp}
           >
             <CloseIcon />
           </button>
