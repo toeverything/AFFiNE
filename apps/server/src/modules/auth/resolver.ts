@@ -41,6 +41,18 @@ export class AuthResolver {
   }
 
   @Mutation(() => UserType)
+  async register(
+    @Context() ctx: { req: Request },
+    @Args('name') name: string,
+    @Args('email') email: string,
+    @Args('password') password: string
+  ) {
+    const user = await this.auth.register(name, email, password);
+    ctx.req.user = user;
+    return user;
+  }
+
+  @Mutation(() => UserType)
   async signIn(
     @Context() ctx: { req: Request },
     @Args('email') email: string,
