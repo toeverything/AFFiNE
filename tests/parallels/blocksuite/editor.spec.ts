@@ -1,9 +1,19 @@
 import { test } from '@affine-test/kit/playwright';
+import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../../libs/load-page';
 import { newPage, waitEditorLoad } from '../../libs/page-logic';
-
+const addDatabase = async (page: Page) => {
+  await page.keyboard.press('/', { delay: 50 });
+  await page.keyboard.press('d');
+  await page.keyboard.press('a');
+  await page.keyboard.press('t');
+  await page.keyboard.press('a');
+  await page.keyboard.press('b');
+  await page.keyboard.press('a', { delay: 50 });
+  await page.keyboard.press('Enter', { delay: 50 });
+};
 test('database is useable', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -12,14 +22,7 @@ test('database is useable', async ({ page }) => {
   await page.keyboard.press('Enter');
   const title = page.locator('.affine-default-page-block-title');
   expect(await title.innerText()).toBe('test title');
-  await page.keyboard.press('/', { delay: 50 });
-  await page.keyboard.press('d');
-  await page.keyboard.press('a');
-  await page.keyboard.press('t');
-  await page.keyboard.press('a');
-  await page.keyboard.press('b');
-  await page.keyboard.press('a');
-  await page.keyboard.press('Enter');
+  await addDatabase(page);
   const database = page.locator('.affine-database-table');
   expect(database).toBeVisible();
   await page.reload();
@@ -29,14 +32,7 @@ test('database is useable', async ({ page }) => {
   await page.keyboard.press('Enter');
   const title2 = page.locator('.affine-default-page-block-title');
   expect(await title2.innerText()).toBe('test title2');
-  await page.keyboard.press('/', { delay: 50 });
-  await page.keyboard.press('d');
-  await page.keyboard.press('a');
-  await page.keyboard.press('t');
-  await page.keyboard.press('a');
-  await page.keyboard.press('b');
-  await page.keyboard.press('a');
-  await page.keyboard.press('Enter');
+  await addDatabase(page);
   const database2 = page.locator('.affine-database-table');
   expect(database2).toBeVisible();
 });
@@ -64,5 +60,5 @@ test('link page is useable', async ({ page }) => {
   const link = page.locator('.affine-reference');
   expect(link).toBeVisible();
   await page.click('.affine-reference');
-  expect(title.innerText()).toBe('page1');
+  expect(await title.innerText()).toBe('page1');
 });
