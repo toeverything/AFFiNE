@@ -55,15 +55,19 @@ const ExportToPdfMenuItem = ({
         console.error(err);
       });
   }, [currentEditor, onSelect, currentWorkspaceId, currentPageId]);
-  return (
-    <MenuItem
-      data-testid="export-to-pdf"
-      onClick={onClickDownloadPDF}
-      icon={<ExportToPdfIcon />}
-    >
-      {t['Export to PDF']()}
-    </MenuItem>
-  );
+  // todo remove this condition
+  if (currentEditor && currentEditor.mode === 'page') {
+    return (
+      <MenuItem
+        data-testid="export-to-pdf"
+        onClick={onClickDownloadPDF}
+        icon={<ExportToPdfIcon />}
+      >
+        {t['Export to PDF']()}
+      </MenuItem>
+    );
+  }
+  return null;
 };
 
 const ExportToHtmlMenuItem = ({
@@ -133,6 +137,9 @@ const ExportToPngMenuItem = ({
         console.error(err);
       });
   }, [currentEditor, onSelect, currentWorkspaceId, currentPageId]);
+  // todo remove this code
+  if (currentEditor) return null;
+
   return (
     <>
       <MenuItem
