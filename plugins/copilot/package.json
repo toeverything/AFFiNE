@@ -9,17 +9,17 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
-    "langchain": "^0.0.92",
-    "marked": "^5.0.4",
+    "langchain": "^0.0.95",
+    "marked": "^5.1.0",
     "marked-gfm-heading-id": "^3.0.4",
     "marked-mangle": "^1.0.1"
   },
   "devDependencies": {
     "@types/marked": "^5.0.0",
-    "@types/react": "^18.2.6",
-    "@types/react-dom": "^18.2.4",
+    "@types/react": "^18.2.12",
+    "@types/react-dom": "^18.2.5",
     "idb": "^7.1.1",
-    "jotai": "^2.1.1",
+    "jotai": "^2.2.0",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "zod": "^3.21.4"

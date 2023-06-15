@@ -8,7 +8,6 @@ import {
   PromptTemplate,
   SystemMessagePromptTemplate,
 } from 'langchain/prompts';
-import { type LLMResult } from 'langchain/schema';
 
 import { IndexedDBChatMessageHistory } from './langchain/message-history';
 import { chatPrompt, followupQuestionPrompt } from './prompts';
@@ -45,13 +44,7 @@ export async function createChatAI(
     openAIApiKey: openAIApiKey,
     callbacks: [
       {
-        async handleLLMStart(
-          llm: { name: string },
-          prompts: string[],
-          runId: string,
-          parentRunId?: string,
-          extraParams?: Record<string, unknown>
-        ) {
+        async handleLLMStart(llm, prompts, runId, parentRunId, extraParams) {
           console.log(
             'handleLLMStart',
             llm,
@@ -62,21 +55,13 @@ export async function createChatAI(
           );
           window.dispatchEvent(new CustomEvent('llm-start'));
         },
-        async handleLLMNewToken(
-          token: string,
-          runId: string,
-          parentRunId?: string
-        ) {
+        async handleLLMNewToken(token, runId, parentRunId) {
           console.log('handleLLMNewToken', token, runId, parentRunId);
           window.dispatchEvent(
             new CustomEvent('llm-new-token', { detail: { token } })
           );
         },
-        async handleLLMEnd(
-          output: LLMResult,
-          runId: string,
-          parentRunId?: string
-        ) {
+        async handleLLMEnd(output, runId, parentRunId) {
           console.log('handleLLMEnd', output, runId, parentRunId);
         },
       },

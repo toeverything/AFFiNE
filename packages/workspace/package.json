@@ -24,19 +24,19 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
-    "firebase": "^9.22.1",
-    "jotai": "^2.1.1",
+    "firebase": "^9.22.2",
+    "jotai": "^2.2.0",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "lib0": "^0.2.78",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.1",
+    "yjs": "^13.6.2",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/ws": "^8.5.4",
+    "@types/ws": "^8.5.5",
     "next": "=13.4.2",
     "ws": "^8.13.0"
   },
