@@ -162,12 +162,6 @@ const ImagePreviewModalImpl = (
         );
       if (prevBlock) {
         setBlockId(prevBlock.id);
-        const image = imageRef.current;
-        resetZoom();
-        if (image) {
-          image.style.width = '100%'; // Reset the width to its original size
-          image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-        }
       }
     } else if (
       page
