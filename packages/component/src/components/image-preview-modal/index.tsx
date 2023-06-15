@@ -105,6 +105,7 @@ const ImagePreviewModalImpl = (
   if (!url) {
     return null;
   }
+
   const nextImageHandler = (blockId: string | null) => {
     assertExists(blockId);
     const workspace = props.workspace;
@@ -120,12 +121,6 @@ const ImagePreviewModalImpl = (
       );
     if (nextBlock) {
       setBlockId(nextBlock.id);
-      const image = imageRef.current;
-      resetZoom();
-      if (image) {
-        image.style.width = '50%'; // Reset the width to its original size
-        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-      }
     }
   };
 
@@ -143,12 +138,6 @@ const ImagePreviewModalImpl = (
       );
     if (prevBlock) {
       setBlockId(prevBlock.id);
-      const image = imageRef.current;
-      if (image) {
-        resetZoom();
-        image.style.width = '50%'; // Reset the width to its original size
-        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-      }
     }
   };
 
@@ -173,12 +162,6 @@ const ImagePreviewModalImpl = (
         );
       if (prevBlock) {
         setBlockId(prevBlock.id);
-        const image = imageRef.current;
-        resetZoom();
-        if (image) {
-          image.style.width = '100%'; // Reset the width to its original size
-          image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-        }
       }
     } else if (
       page
@@ -278,33 +261,43 @@ const ImagePreviewModalImpl = (
   };
 
   return (
-    <div data-testid="image-preview-modal" className={imagePreviewModalStyle}>
-      <div className={imageNavigationControlStyle}>
-        <span
-          className={imagePreviewModalGoStyle}
-          style={{
-            left: 0,
-          }}
-          onClick={() => {
-            assertExists(blockId);
-            previousImageHandler(blockId);
-          }}
-        >
-          ❮
-        </span>
-        <span
-          className={imagePreviewModalGoStyle}
-          style={{
-            right: 0,
-          }}
-          onClick={() => {
-            assertExists(blockId);
-            nextImageHandler(blockId);
-          }}
-        >
-          ❯
-        </span>
-      </div>
+    <div
+      data-testid="image-preview-modal"
+      className={imagePreviewModalStyle}
+      onClick={event =>
+        event.target === event.currentTarget ? props.onClose() : null
+      }
+    >
+      {!isZoomedBigger ? (
+        <div className={imageNavigationControlStyle}>
+          <span
+            className={imagePreviewModalGoStyle}
+            style={{
+              left: 0,
+            }}
+            onClick={() => {
+              assertExists(blockId);
+              previousImageHandler(blockId);
+            }}
+          >
+            ❮
+          </span>
+          <span
+            className={imagePreviewModalGoStyle}
+            style={{
+              right: 0,
+            }}
+            onClick={() => {
+              assertExists(blockId);
+              nextImageHandler(blockId);
+            }}
+          >
+            ❯
+          </span>
+        </div>
+      ) : (
+        <></>
+      )}
       <div className={imagePreviewModalContainerStyle}>
         <div
           className={clsx('zoom-area', { 'zoomed-bigger': isZoomedBigger })}
@@ -322,7 +315,7 @@ const ImagePreviewModalImpl = (
               onMouseUp={handleDragEnd}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
-              width={'50%'}
+              onLoad={resetZoom}
             />
             {isZoomedBigger ? null : (
               <p className={imagePreviewModalCaptionStyle}>{caption}</p>
@@ -356,6 +349,7 @@ const ImagePreviewModalImpl = (
           className={imageBottomContainerStyle}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
+          onClick={event => event.stopPropagation()}
         >
           {isZoomedBigger && caption !== '' ? (
             <p className={captionStyle}>{caption}</p>

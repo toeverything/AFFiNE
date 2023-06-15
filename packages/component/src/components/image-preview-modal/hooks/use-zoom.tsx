@@ -10,7 +10,7 @@ export const useZoomControls = ({
   zoomRef,
   imageRef,
 }: UseZoomControlsProps) => {
-  const [currentScale, setCurrentScale] = useState<number>(0.5);
+  const [currentScale, setCurrentScale] = useState<number>(1);
   const [isZoomedBigger, setIsZoomedBigger] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [mouseX, setMouseX] = useState<number>(0);
@@ -35,28 +35,60 @@ export const useZoomControls = ({
 
   const zoomOut = useCallback(() => {
     const image = imageRef.current;
-    if (image && currentScale > 0.5) {
+    if (image && currentScale > 0.2) {
       const newScale = currentScale - 0.1;
       setCurrentScale(newScale);
       image.style.width = `${image.naturalWidth * newScale}px`;
       image.style.height = `${image.naturalHeight * newScale}px`;
-      if (!isZoomedBigger) {
+      const zoomedWidth = image.naturalWidth * newScale;
+      const zoomedHeight = image.naturalHeight * newScale;
+      const containerWidth = window.innerWidth;
+      const containerHeight = window.innerHeight;
+      if (zoomedWidth > containerWidth || zoomedHeight > containerHeight) {
         image.style.transform = `translate(0px, 0px)`;
+        setImagePos({ x: 0, y: 0 });
       }
     }
-  }, [imageRef, currentScale, isZoomedBigger]);
+  }, [imageRef, currentScale]);
+
+  const checkZoomSize = useCallback(() => {
+    const { current: zoomArea } = zoomRef;
+    if (zoomArea) {
+      const image = zoomArea.querySelector('img');
+      if (image) {
+        const zoomedWidth = image.naturalWidth * currentScale;
+        const zoomedHeight = image.naturalHeight * currentScale;
+        const containerWidth = window.innerWidth;
+        const containerHeight = window.innerHeight;
+        setIsZoomedBigger(
+          zoomedWidth > containerWidth || zoomedHeight > containerHeight
+        );
+      }
+    }
+  }, [currentScale, zoomRef]);
 
   const resetZoom = useCallback(() => {
     const image = imageRef.current;
     if (image) {
-      const newScale = 0.5;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const margin = 0.2;
+
+      const availableWidth = viewportWidth * (1 - margin);
+      const availableHeight = viewportHeight * (1 - margin);
+
+      const widthRatio = availableWidth / image.naturalWidth;
+      const heightRatio = availableHeight / image.naturalHeight;
+
+      const newScale = Math.min(widthRatio, heightRatio);
       setCurrentScale(newScale);
       image.style.width = `${image.naturalWidth * newScale}px`;
       image.style.height = `${image.naturalHeight * newScale}px`;
-      image.style.transform = `translate(0px, 0px)`;
+      image.style.transform = 'translate(0px, 0px)';
       setImagePos({ x: 0, y: 0 });
+      checkZoomSize();
     }
-  }, [imageRef]);
+  }, [checkZoomSize, imageRef]);
 
   const handleDragStart = useCallback(
     (event: ReactMouseEvent) => {
@@ -137,22 +169,6 @@ export const useZoomControls = ({
       dragEndImpl();
     }
   }, [isDragging, dragEndImpl]);
-
-  const checkZoomSize = useCallback(() => {
-    const { current: zoomArea } = zoomRef;
-    if (zoomArea) {
-      const image = zoomArea.querySelector('img');
-      if (image) {
-        const zoomedWidth = image.naturalWidth * currentScale;
-        const zoomedHeight = image.naturalHeight * currentScale;
-        const containerWidth = window.innerWidth;
-        const containerHeight = window.innerHeight;
-        setIsZoomedBigger(
-          zoomedWidth > containerWidth || zoomedHeight > containerHeight
-        );
-      }
-    }
-  }, [currentScale, zoomRef]);
 
   useEffect(() => {
     const handleScroll = (event: WheelEvent) => {
