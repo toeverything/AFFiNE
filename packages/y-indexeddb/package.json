@@ -2,6 +2,14 @@
   "name": "@toeverything/y-indexeddb",
   "type": "module",
   "version": "0.6.0",
+  "description": "IndexedDB database adapter for Yjs",
+  "repository": "toeverything/AFFiNE",
+  "author": "toeverything",
+  "keywords": [
+    "indexeddb",
+    "yjs",
+    "yjs-adapter"
+  ],
   "scripts": {
     "build": "vite build"
   },
@@ -36,6 +44,5 @@
   },
   "peerDependencies": {
     "yjs": "^13.5.51"
-  },
-  "stableVersion": "0.5.2"
+  }
 }
