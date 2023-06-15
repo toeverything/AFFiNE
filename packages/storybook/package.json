@@ -47,5 +47,5 @@
     "@blocksuite/lit": "*",
     "@blocksuite/store": "*"
   },
-  "version": "0.6.1-beta.0"
+  "version": "0.6.1-beta.1"
 }

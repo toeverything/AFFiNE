@@ -28,5 +28,5 @@
     "vite": "^4.3.9",
     "vite-plugin-dts": "^2.3.0"
   },
-  "version": "0.6.1-beta.0"
+  "version": "0.6.1-beta.1"
 }
