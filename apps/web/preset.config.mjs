@@ -40,7 +40,8 @@ export const buildFlags = {
     process.env.ENABLE_DEBUG_PAGE ?? process.env.NODE_ENV === 'development'
   ),
   changelogUrl:
-    process.env.CHANGELOG_URL ?? 'http://affine.pro/blog/whats-new-affine-0601',
+    process.env.CHANGELOG_URL ??
+    'https://affine.pro/blog/what-is-new-affine-0615',
   enablePreloading:
     process.env.ENABLE_PRELOADING === undefined
       ? true
