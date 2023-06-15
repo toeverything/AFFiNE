@@ -3,7 +3,7 @@
   "private": true,
   "main": "./src/index.ts",
   "dependencies": {
-    "jotai": "^2.1.1"
+    "jotai": "^2.2.0"
   },
   "devDependencies": {
     "@blocksuite/blocks": "0.0.0-20230607055421-9b20fcaf-nightly",
@@ -11,7 +11,7 @@
     "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/lit": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly",
-    "lottie-web": "^5.12.0"
+    "lottie-web": "^5.12.2"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",

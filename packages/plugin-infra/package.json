@@ -23,10 +23,10 @@
     "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/lit": "0.0.0-20230607055421-9b20fcaf-nightly",
     "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly",
-    "jotai": "^2.1.1"
+    "jotai": "^2.2.0"
   },
   "devDependencies": {
-    "jotai": "^2.1.1",
+    "jotai": "^2.2.0",
     "vite": "^4.3.9",
     "vite-plugin-dts": "^2.3.0"
   },

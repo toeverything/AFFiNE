@@ -26,11 +26,11 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "i18next": "^22.5.0",
+    "i18next": "^22.5.1",
     "react-i18next": "^12.3.1"
   },
   "devDependencies": {
-    "@types/node": "^18.16.16",
+    "@types/node": "^18.16.18",
     "@types/prettier": "^2.7.3",
     "prettier": "^2.8.8",
     "ts-node": "^10.9.1",

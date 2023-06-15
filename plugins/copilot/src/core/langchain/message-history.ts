@@ -1,9 +1,9 @@
 import type { DBSchema, IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
+import { ChatMessageHistory } from 'langchain/memory';
 import {
   AIChatMessage,
   type BaseChatMessage,
-  BaseChatMessageHistory,
   ChatMessage,
   HumanChatMessage,
   type StoredMessage,
@@ -38,9 +38,9 @@ interface ChatMessageDBV2 extends ChatMessageDBV1 {
 
 export const conversationHistoryDBName = 'affine-copilot-chat';
 
-export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
+export class IndexedDBChatMessageHistory extends ChatMessageHistory {
   public id: string;
-  private messages: BaseChatMessage[] = [];
+  private chatMessages: BaseChatMessage[] = [];
 
   private readonly dbPromise: Promise<IDBPDatabase<ChatMessageDBV2>>;
   private readonly initPromise: Promise<void>;
@@ -48,7 +48,7 @@ export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
   constructor(id: string) {
     super();
     this.id = id;
-    this.messages = [];
+    this.chatMessages = [];
     this.dbPromise = openDB<ChatMessageDBV2>('affine-copilot-chat', 2, {
       upgrade(database, oldVersion) {
         if (oldVersion === 0) {
@@ -68,7 +68,7 @@ export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
         .objectStore('chat');
       const chat = await objectStore.get(id);
       if (chat != null) {
-        this.messages = chat.messages.map(message => {
+        this.chatMessages = chat.messages.map(message => {
           switch (message.type) {
             case 'ai':
               return new AIChatMessage(message.data.content);
@@ -112,9 +112,9 @@ export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
     return [];
   }
 
-  protected async addMessage(message: BaseChatMessage): Promise<void> {
+  override async addMessage(message: BaseChatMessage): Promise<void> {
     await this.initPromise;
-    this.messages.push(message);
+    this.chatMessages.push(message);
     const db = await this.dbPromise;
     const objectStore = db.transaction('chat', 'readwrite').objectStore('chat');
     const chat = await objectStore.get(this.id);
@@ -129,23 +129,23 @@ export class IndexedDBChatMessageHistory extends BaseChatMessageHistory {
     }
   }
 
-  async addAIChatMessage(message: string): Promise<void> {
+  override async addAIChatMessage(message: string): Promise<void> {
     await this.addMessage(new AIChatMessage(message));
   }
 
-  async addUserMessage(message: string): Promise<void> {
+  override async addUserMessage(message: string): Promise<void> {
     await this.addMessage(new HumanChatMessage(message));
   }
 
-  async clear(): Promise<void> {
+  override async clear(): Promise<void> {
     await this.initPromise;
-    this.messages = [];
+    this.chatMessages = [];
     const db = await this.dbPromise;
     const objectStore = db.transaction('chat', 'readwrite').objectStore('chat');
     await objectStore.delete(this.id);
   }
 
-  async getMessages(): Promise<BaseChatMessage[]> {
-    return this.initPromise.then(() => this.messages);
+  override async getMessages(): Promise<BaseChatMessage[]> {
+    return this.initPromise.then(() => this.chatMessages);
   }
 }
