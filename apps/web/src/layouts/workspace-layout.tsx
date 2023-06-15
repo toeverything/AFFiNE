@@ -10,7 +10,7 @@ import {
   WorkspaceFallback,
 } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { config, DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
+import { config, DEFAULT_HELLO_WORLD_PAGE_ID, env } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import type { BackgroundProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -48,6 +48,7 @@ import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
+import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import {
   DROPPABLE_SIDEBAR_TRASH,
@@ -407,6 +408,10 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   );
   const t = useAFFiNEI18N();
 
+  const showList: IslandItemNames[] = env.isDesktop
+    ? ['whatNew', 'contact', 'guide']
+    : ['whatNew', 'contact'];
+
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {
       // Drag page into trash folder
@@ -461,9 +466,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
               </div>
               {!isPublicWorkspace && (
                 <HelpIsland
-                  showList={
-                    router.query.pageId ? undefined : ['whatNew', 'contact']
-                  }
+                  showList={router.query.pageId ? undefined : showList}
                 />
               )}
             </ToolContainer>
