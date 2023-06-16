@@ -9,7 +9,12 @@ import { createRoot } from 'react-dom/client';
 import { ConversationList } from '../core/components/conversation-list';
 import { FollowingUp } from '../core/components/following-up';
 import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
-import { detailContentActionsStyle, detailContentStyle } from './index.css';
+import {
+  detailContentActionsStyle,
+  detailContentStyle,
+  inputStyle,
+  sendButtonStyle,
+} from './index.css';
 
 if (typeof window === 'undefined') {
   import('@blocksuite/blocks')
@@ -67,12 +72,14 @@ const Actions = () => {
       <FollowingUp questions={questions} />
       <div className={detailContentActionsStyle}>
         <Input
+          className={inputStyle}
           value={input}
           onChange={text => {
             setInput(text);
           }}
         />
         <Button
+          className={sendButtonStyle}
           onClick={useCallback(async () => {
             await call(input);
             await generateFollowingUp();
