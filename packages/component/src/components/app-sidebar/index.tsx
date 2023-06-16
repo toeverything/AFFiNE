@@ -1,9 +1,11 @@
-import { getEnvironment } from '@affine/env';
+import { env } from '@affine/env';
+import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
+import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,
   navBodyStyle,
@@ -77,8 +79,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   // disable animation to avoid UI flash
   const enableAnimation = useEnableAnimation();
 
-  const environment = getEnvironment();
-  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+  const isMacosDesktop = env.isDesktop && env.isMacOs;
   if (initialRender) {
     // avoid the UI flash
     return <div />;
@@ -114,11 +115,25 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   );
 }
 
+export const AppSidebarFallback = (): ReactElement | null => {
+  return (
+    <AppSidebar>
+      <div className={fallbackStyle}>
+        <div className={fallbackHeaderStyle}>
+          <Skeleton variant="circular" width={40} height={40} />
+          <Skeleton variant="rectangular" width={150} height={40} />
+        </div>
+      </div>
+    </AppSidebar>
+  );
+};
+
 export * from './add-page-button';
 export * from './app-updater-button';
 export * from './category-divider';
-export { AppSidebarFallback } from './fallback';
+export * from './index.css';
 export * from './menu-item';
 export * from './quick-search-input';
 export * from './sidebar-containers';
+export * from './sidebar-header';
 export { appSidebarFloatingAtom, appSidebarOpenAtom, appSidebarResizingAtom };

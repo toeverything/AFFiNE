@@ -1,13 +1,16 @@
-import { getEnvironment } from '@affine/env';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { env } from '@affine/env';
+import { WorkspaceSubPath } from '@affine/env/workspace';
+import {
+  rootCurrentWorkspaceIdAtom,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
 import { arrayMove } from '@dnd-kit/sortable';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import {
-  currentWorkspaceIdAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openOnboardingModalAtom,
@@ -16,10 +19,8 @@ import {
 import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
 import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
 import { useCurrentUser } from '../hooks/current/use-current-user';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspaceSubPath } from '../shared';
 
 const WorkspaceListModal = lazy(() =>
   import('../components/pure/workspace-list-modal').then(module => ({
@@ -47,14 +48,7 @@ const OnboardingModal = lazy(() =>
   }))
 );
 
-export function Modals() {
-  const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
-    openWorkspacesModalAtom
-  );
-  const [openCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
-    openCreateWorkspaceModalAtom
-  );
-
+export function CurrentWorkspaceModals() {
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
@@ -62,15 +56,6 @@ export function Modals() {
     openOnboardingModalAtom
   );
 
-  const router = useRouter();
-  const { jumpToSubPath } = useRouterHelper(router);
-  const user = useCurrentUser();
-  const workspaces = useWorkspaces();
-  const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
-  const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-  const [, setCurrentWorkspace] = useCurrentWorkspace();
-  const [transitioning, transition] = useTransition();
-  const env = getEnvironment();
   const onCloseOnboardingModal = useCallback(() => {
     setOpenOnboardingModal(false);
   }, [setOpenOnboardingModal]);
@@ -92,14 +77,39 @@ export function Modals() {
           />
         </Suspense>
       )}
+    </>
+  );
+}
 
+export const AllWorkspaceModals = (): ReactElement => {
+  const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
+    openWorkspacesModalAtom
+  );
+  const [isOpenCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
+    openCreateWorkspaceModalAtom
+  );
+
+  const router = useRouter();
+  const { jumpToSubPath } = useRouterHelper(router);
+  const user = useCurrentUser();
+  const workspaces = useWorkspaces();
+  const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
+    rootCurrentWorkspaceIdAtom
+  );
+  const [transitioning, transition] = useTransition();
+  return (
+    <>
       <Suspense>
         <WorkspaceListModal
           disabled={transitioning}
           user={user}
           workspaces={workspaces}
           currentWorkspaceId={currentWorkspaceId}
-          open={openWorkspacesModal || workspaces.length === 0}
+          open={
+            (openWorkspacesModal || workspaces.length === 0) &&
+            isOpenCreateWorkspaceModal === false
+          }
           onClose={useCallback(() => {
             setOpenWorkspacesModal(false);
           }, [setOpenWorkspacesModal])}
@@ -118,18 +128,24 @@ export function Modals() {
           onClickWorkspace={useCallback(
             workspace => {
               setOpenWorkspacesModal(false);
-              setCurrentWorkspace(workspace.id);
-              jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+              setCurrentWorkspaceId(workspace.id);
+              jumpToSubPath(workspace.id, WorkspaceSubPath.ALL).catch(error => {
+                console.error(error);
+              });
             },
-            [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
+            [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}
           onClickWorkspaceSetting={useCallback(
             workspace => {
               setOpenWorkspacesModal(false);
-              setCurrentWorkspace(workspace.id);
-              jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+              setCurrentWorkspaceId(workspace.id);
+              jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING).catch(
+                error => {
+                  console.error(error);
+                }
+              );
             },
-            [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
+            [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}
           onClickLogin={useAffineLogIn()}
           onClickLogout={useAffineLogOut()}
@@ -143,7 +159,7 @@ export function Modals() {
       </Suspense>
       <Suspense>
         <CreateWorkspaceModal
-          mode={openCreateWorkspaceModal}
+          mode={isOpenCreateWorkspaceModal}
           onClose={useCallback(() => {
             setOpenCreateWorkspaceModal(false);
           }, [setOpenCreateWorkspaceModal])}
@@ -151,26 +167,18 @@ export function Modals() {
             async id => {
               setOpenCreateWorkspaceModal(false);
               setOpenWorkspacesModal(false);
-              setCurrentWorkspace(id);
+              setCurrentWorkspaceId(id);
               return jumpToSubPath(id, WorkspaceSubPath.ALL);
             },
             [
               jumpToSubPath,
-              setCurrentWorkspace,
+              setCurrentWorkspaceId,
               setOpenCreateWorkspaceModal,
               setOpenWorkspacesModal,
             ]
           )}
         />
       </Suspense>
-    </>
-  );
-}
-
-export const ModalProvider = (): ReactElement => {
-  return (
-    <>
-      <Modals />
     </>
   );
 };

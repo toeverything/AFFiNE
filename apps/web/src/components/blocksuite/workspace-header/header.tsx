@@ -3,22 +3,25 @@ import {
   appSidebarFloatingAtom,
   appSidebarOpenAtom,
 } from '@affine/component/app-sidebar';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
+import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue } from 'jotai';
-import type { FC, HTMLAttributes, PropsWithChildren } from 'react';
+import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
-  lazy,
-  Suspense,
+  memo,
+  useCallback,
   useEffect,
   useMemo,
   useState,
 } from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
+import { contentLayoutAtom } from '../../../atoms/layout';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { DownloadClientTip } from './download-tips';
@@ -31,22 +34,16 @@ import UserAvatar from './header-right-items/user-avatar';
 import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
 
-const SidebarSwitch = lazy(() =>
-  import('../../affine/sidebar-switch').then(module => ({
-    default: module.SidebarSwitch,
-  }))
-);
-
 export type BaseHeaderProps<
   Workspace extends AffineOfficialWorkspace = AffineOfficialWorkspace
 > = {
   workspace: Workspace;
   currentPage: Page | null;
   isPublic: boolean;
-  isPreview: boolean;
+  leftSlot?: ReactNode;
 };
 
-export const enum HeaderRightItemName {
+export enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
   TrashButtonGroup = 'trashButtonGroup',
   SyncUser = 'syncUser',
@@ -66,7 +63,6 @@ type HeaderItem = {
     currentPage: Page | null,
     status: {
       isPublic: boolean;
-      isPreview: boolean;
     }
   ) => boolean;
 };
@@ -80,8 +76,8 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.SyncUser]: {
     Component: SyncUser,
-    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !isPublic && !isPreview;
+    availableWhen: (_, currentPage, { isPublic }) => {
+      return !isPublic;
     },
   },
   [HeaderRightItemName.ShareMenu]: {
@@ -104,38 +100,47 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
-    availableWhen: (_, currentPage, { isPublic, isPreview }) => {
-      return !isPublic && !isPreview;
+    availableWhen: (_, currentPage, { isPublic }) => {
+      return !isPublic;
     },
   },
   [HeaderRightItemName.WindowsAppControls]: {
     Component: () => {
+      const handleMinimizeApp = useCallback(() => {
+        window.apis?.ui.handleMinimizeApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
+      const handleMaximizeApp = useCallback(() => {
+        window.apis?.ui.handleMaximizeApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
+      const handleCloseApp = useCallback(() => {
+        window.apis?.ui.handleCloseApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
       return (
         <div className={styles.windowAppControlsWrapper}>
           <button
             data-type="minimize"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleMinimizeApp();
-            }}
+            onClick={handleMinimizeApp}
           >
             <MinusIcon />
           </button>
           <button
             data-type="maximize"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleMaximizeApp();
-            }}
+            onClick={handleMaximizeApp}
           >
             <RoundedRectangleIcon />
           </button>
           <button
             data-type="close"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleCloseApp();
-            }}
+            onClick={handleCloseApp}
           >
             <CloseIcon />
           </button>
@@ -149,6 +154,43 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
 };
 
 export type HeaderProps = BaseHeaderProps;
+
+const PluginHeaderItemAdapter = memo<{
+  headerItem: PluginUIAdapter['headerItem'];
+}>(function PluginHeaderItemAdapter({ headerItem }) {
+  return (
+    <div>
+      {headerItem({
+        contentLayoutAtom,
+      })}
+    </div>
+  );
+});
+
+const PluginHeader = () => {
+  const affinePluginsMap = useAtomValue(affinePluginsAtom);
+  const plugins = useMemo(
+    () => Object.values(affinePluginsMap),
+    [affinePluginsMap]
+  );
+
+  return (
+    <div>
+      {plugins
+        .filter(plugin => plugin.uiAdapter.headerItem != null)
+        .map(plugin => {
+          const headerItem = plugin.uiAdapter
+            .headerItem as PluginUIAdapter['headerItem'];
+          return (
+            <PluginHeaderItemAdapter
+              key={plugin.definition.id}
+              headerItem={headerItem}
+            />
+          );
+        })}
+    </div>
+  );
+};
 
 export const Header = forwardRef<
   HTMLDivElement,
@@ -165,11 +207,10 @@ export const Header = forwardRef<
     setShowGuideDownloadClientTip(shouldShowGuideDownloadClientTip);
   }, [shouldShowGuideDownloadClientTip]);
   const open = useAtomValue(appSidebarOpenAtom);
-  const t = useAFFiNEI18N();
-
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
   const mode = useCurrentMode();
+
   return (
     <div
       className={styles.headerContainer}
@@ -177,7 +218,6 @@ export const Header = forwardRef<
       data-has-warning={showWarning}
       data-open={open}
       data-sidebar-floating={appSidebarFloating}
-      {...props}
     >
       {showGuideDownloadClientTip ? (
         <DownloadClientTip />
@@ -197,22 +237,19 @@ export const Header = forwardRef<
         data-testid="editor-header-items"
         data-is-edgeless={mode === 'edgeless'}
       >
-        <Suspense>
-          <SidebarSwitch
-            visible={!open}
-            tooltipContent={t['Expand sidebar']()}
-            data-testid="sliderBar-arrowButton-expand"
-          />
-        </Suspense>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {!open && <SidebarSwitch />}
+          {props.leftSlot}
+        </div>
 
         {props.children}
         <div className={styles.headerRightSide}>
+          <PluginHeader />
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
               ([name, { availableWhen, Component }]) => {
                 if (
                   availableWhen(props.workspace, props.currentPage, {
-                    isPreview: props.isPreview,
                     isPublic: props.isPublic,
                   })
                 ) {
@@ -220,7 +257,6 @@ export const Header = forwardRef<
                     <Component
                       workspace={props.workspace}
                       currentPage={props.currentPage}
-                      isPreview={props.isPreview}
                       isPublic={props.isPublic}
                       key={name}
                     />

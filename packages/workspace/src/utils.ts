@@ -1,17 +1,29 @@
-import type { createWorkspaceApis } from '@affine/workspace/affine/api';
-import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { createAffineBlobStorage } from '@affine/workspace/blob';
+import type { BlockSuiteFeatureFlags } from '@affine/env';
+import { config } from '@affine/env';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Generator, StoreOptions } from '@blocksuite/store';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 
+import type { createWorkspaceApis } from './affine/api';
+import { rootWorkspacesMetadataAtom } from './atom';
+import { createAffineBlobStorage } from './blob';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
-import { WorkspaceFlavour } from './type';
 
 export function cleanupWorkspace(flavour: WorkspaceFlavour) {
   rootStore.set(rootWorkspacesMetadataAtom, metas =>
     metas.filter(meta => meta.flavour !== flavour)
   );
+}
+
+function setEditorFlags(workspace: Workspace) {
+  Object.entries(config.editorFlags).forEach(([key, value]) => {
+    workspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
 }
 
 const hashMap = new Map<string, Workspace>();
@@ -65,9 +77,10 @@ export function createEmptyBlockSuiteWorkspace(
   const blobStorages: StoreOptions['blobStorages'] = [];
 
   if (flavour === WorkspaceFlavour.AFFINE) {
-    blobStorages.push(id =>
-      createAffineBlobStorage(id, config!.workspaceApis!)
-    );
+    if (config && config.workspaceApis) {
+      const workspaceApis = config.workspaceApis;
+      blobStorages.push(id => createAffineBlobStorage(id, workspaceApis));
+    }
   } else {
     if (typeof window !== 'undefined') {
       blobStorages.push(createIndexeddbStorage);
@@ -85,6 +98,7 @@ export function createEmptyBlockSuiteWorkspace(
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
+  setEditorFlags(workspace);
   hashMap.set(cacheKey, workspace);
   return workspace;
 }
@@ -100,7 +114,7 @@ export class CallbackSet extends Set<() => void> {
     this.#ready = v;
   }
 
-  add(cb: () => void) {
+  override add(cb: () => void) {
     if (this.ready) {
       cb();
       return this;
@@ -111,7 +125,7 @@ export class CallbackSet extends Set<() => void> {
     return super.add(cb);
   }
 
-  delete(cb: () => void) {
+  override delete(cb: () => void) {
     if (this.has(cb)) {
       return super.delete(cb);
     }

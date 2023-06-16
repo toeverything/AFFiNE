@@ -1,17 +1,53 @@
 /// <reference types="@blocksuite/global" />
 import { assertEquals } from '@blocksuite/global/utils';
+import type {
+  DBHandlerManager,
+  DebugHandlerManager,
+  DialogHandlerManager,
+  ExportHandlerManager,
+  UIHandlerManager,
+  UnwrapManagerHandlerToClientSide,
+  UpdaterHandlerManager,
+  WorkspaceHandlerManager,
+} from '@toeverything/infra';
 import getConfig from 'next/config';
 import { z } from 'zod';
 
-import { getUaHelper } from './ua-helper';
+import { UaHelper } from './ua-helper';
+
+declare global {
+  interface Window {
+    appInfo: {
+      electron: boolean;
+    };
+    apis: {
+      db: UnwrapManagerHandlerToClientSide<DBHandlerManager>;
+      debug: UnwrapManagerHandlerToClientSide<DebugHandlerManager>;
+      dialog: UnwrapManagerHandlerToClientSide<DialogHandlerManager>;
+      export: UnwrapManagerHandlerToClientSide<ExportHandlerManager>;
+      ui: UnwrapManagerHandlerToClientSide<UIHandlerManager>;
+      updater: UnwrapManagerHandlerToClientSide<UpdaterHandlerManager>;
+      workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
+    };
+    events: any;
+  }
+}
 
 export const buildFlagsSchema = z.object({
+  /**
+   * todo: remove this build flag when filter feature is ready.
+   *
+   * filter feature in the all pages.
+   */
+  enableAllPageFilter: z.boolean(),
+  enablePlugin: z.boolean(),
   enableImagePreviewModal: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadCastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   enableLegacyCloud: z.boolean(),
   changelogUrl: z.string(),
+  enablePreloading: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({
@@ -22,6 +58,7 @@ export const blockSuiteFeatureFlags = z.object({
   enable_slash_menu: z.boolean(),
   enable_edgeless_toolbar: z.boolean(),
   enable_linked_page: z.boolean(),
+  enable_bookmark_operation: z.boolean(),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;
@@ -97,14 +134,10 @@ interface Desktop extends ChromeBrowser {
 
 export type Environment = Browser | Server | Desktop;
 
-let environment: Environment | null = null;
-
-export function getEnvironment() {
-  if (environment) {
-    return environment;
-  }
+export const env: Environment = (() => {
+  let environment = null;
   const isDebug = process.env.NODE_ENV === 'development';
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     environment = {
       isDesktop: false,
       isBrowser: false,
@@ -112,7 +145,7 @@ export function getEnvironment() {
       isDebug,
     } satisfies Server;
   } else {
-    const uaHelper = getUaHelper();
+    const uaHelper = new UaHelper(navigator);
 
     environment = {
       origin: window.location.origin,
@@ -144,7 +177,7 @@ export function getEnvironment() {
   }
   globalThis.environment = environment;
   return environment;
-}
+})();
 
 function printBuildInfo() {
   console.group('Build info');
@@ -176,8 +209,8 @@ export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-  globalThis.environment = getEnvironment();
-  if (getEnvironment().isBrowser) {
+  globalThis.environment = env;
+  if (env.isBrowser) {
     printBuildInfo();
     globalThis.editorVersion = config.editorVersion;
   }

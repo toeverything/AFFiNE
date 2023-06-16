@@ -1,0 +1,25 @@
+{
+  "name": "@affine/bookmark-block",
+  "private": true,
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@toeverything/plugin-infra": "workspace:*",
+    "foxact": "^0.2.8",
+    "link-preview-js": "^3.0.4"
+  },
+  "devDependencies": {
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-dom": "*"
+  },
+  "version": "0.7.0-canary.18"
+}

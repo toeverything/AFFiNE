@@ -1,4 +1,4 @@
-import { getEnvironment } from '@affine/env/config';
+import { env } from '@affine/env/config';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { Observable } from 'rxjs';
 
@@ -21,40 +21,37 @@ function rpcToObservable<
 ) {
   return new Observable<T>(subscriber => {
     subscriber.next(initialValue);
-    const environment = getEnvironment();
     onSubscribe?.();
-    if (typeof window === 'undefined' || !environment.isDesktop || !event) {
+    if (typeof window === 'undefined' || !env.isDesktop || !event) {
       subscriber.complete();
-      return () => {};
+      return;
     }
-    handler?.().then(t => {
-      subscriber.next(t);
-    });
+    handler?.()
+      .then(t => {
+        subscriber.next(t);
+      })
+      .catch(err => {
+        subscriber.error(err);
+      });
     return event(t => {
       subscriber.next(t);
     });
   });
 }
 
-type InferTFromEvent<E> = E extends (
-  callback: (t: infer T) => void
-) => () => void
-  ? T
-  : never;
-
-type UpdateMeta = InferTFromEvent<typeof window.events.updater.onUpdateReady>;
-
 export const updateReadyAtom = atomWithObservable(() => {
-  return rpcToObservable(null as UpdateMeta | null, {
+  return rpcToObservable(null as any | null, {
     event: window.events?.updater.onUpdateReady,
   });
 });
 
 export const updateAvailableAtom = atomWithObservable(() => {
-  return rpcToObservable(null as UpdateMeta | null, {
+  return rpcToObservable(null as any | null, {
     event: window.events?.updater.onUpdateAvailable,
     onSubscribe: () => {
-      window.apis?.updater.checkForUpdatesAndNotify();
+      window.apis?.updater.checkForUpdatesAndNotify().catch(err => {
+        console.error(err);
+      });
     },
   });
 });

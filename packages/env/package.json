@@ -4,23 +4,29 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230517102216-36bda4ab-nightly",
-    "next": "^13.4.2",
+    "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "next": "=13.4.2",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "zod": "^3.21.4"
   },
   "exports": {
     ".": "./src/index.ts",
+    "./api": "./src/api.ts",
     "./config": "./src/config.ts",
     "./constant": "./src/constant.ts",
-    "./blocksuite": "./src/blocksuite.ts"
+    "./workspace": "./src/workspace.ts",
+    "./workspace/legacy-cloud": "./src/workspace/legacy-cloud/index.ts",
+    "./filter": "./src/filter.ts",
+    "./blocksuite": "./src/blocksuite/index.ts"
   },
   "peerDependencies": {
-    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
+    "@affine/templates": "workspace:*",
+    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly",
+    "@toeverything/infra": "workspace:*"
   },
   "dependencies": {
-    "lit": "^2.7.4"
+    "lit": "^2.7.5"
   },
-  "version": "0.6.0-canary.3"
+  "version": "0.7.0-canary.18"
 }

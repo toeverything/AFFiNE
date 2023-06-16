@@ -1,4 +1,4 @@
-import { CallbackSet } from '@affine/workspace/utils';
+import type { BroadCastChannelProvider } from '@affine/env/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import type { Awareness } from 'y-protocols/awareness';
@@ -7,7 +7,7 @@ import {
   encodeAwarenessUpdate,
 } from 'y-protocols/awareness';
 
-import type { BroadCastChannelProvider } from '../../type';
+import { CallbackSet } from '../../utils';
 import { localProviderLogger } from '../logger';
 import type {
   AwarenessChanges,
@@ -33,7 +33,7 @@ export const createBroadCastChannelProvider = (
       case 'doc:diff': {
         const [, diff, clientId] = event.data;
         const update = Y.encodeStateAsUpdate(doc, diff);
-        broadcastChannel!.postMessage(['doc:update', update, clientId]);
+        broadcastChannel?.postMessage(['doc:update', update, clientId]);
         break;
       }
       case 'doc:update': {
@@ -47,7 +47,7 @@ export const createBroadCastChannelProvider = (
         const [, clientId] = event.data;
         const clients = getClients(awareness);
         const update = encodeAwarenessUpdate(awareness, clients);
-        broadcastChannel!.postMessage(['awareness:update', update, clientId]);
+        broadcastChannel?.postMessage(['awareness:update', update, clientId]);
         break;
       }
       case 'awareness:update': {

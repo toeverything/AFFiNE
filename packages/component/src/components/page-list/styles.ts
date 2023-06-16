@@ -1,17 +1,30 @@
-import { displayFlex, styled } from '@affine/component';
-import { TableRow } from '@affine/component';
+import { displayFlex, styled } from '../../styles';
+import { Content } from '../../ui/layout/content';
+import { TableBodyRow } from '../../ui/table/table-row';
 
 export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
-    height: 'calc(100vh - 52px)',
-    padding: '78px 72px',
+    height: '100%',
+    padding: '0 32px 180px 32px',
     maxWidth: '100%',
-    overflowY: 'auto',
-    [theme.breakpoints.down('md')]: {
-      padding: '12px 24px',
+    overflowY: 'scroll',
+    [theme.breakpoints.down('sm')]: {
+      padding: '52px 0px',
+      'tr > td:first-of-type': {
+        borderTopLeftRadius: '0px',
+        borderBottomLeftRadius: '0px',
+      },
+      'tr > td:last-of-type': {
+        borderTopRightRadius: '0px',
+        borderBottomRightRadius: '0px',
+      },
     },
   };
 });
+
+/**
+ * @deprecated
+ */
 export const StyledTitleWrapper = styled('div')(() => {
   return {
     ...displayFlex('flex-start', 'center'),
@@ -28,8 +41,6 @@ export const StyledTitleWrapper = styled('div')(() => {
 });
 export const StyledTitleLink = styled('div')(() => {
   return {
-    maxWidth: '80%',
-    marginRight: '18px',
     ...displayFlex('flex-start', 'center'),
     color: 'var(--affine-text-primary-color)',
     '>svg': {
@@ -40,7 +51,25 @@ export const StyledTitleLink = styled('div')(() => {
   };
 });
 
-export const StyledTableRow = styled(TableRow)(() => {
+export const StyledTitleContentWrapper = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    width: '100%',
+    overflow: 'hidden',
+  };
+});
+
+export const StyledTitlePreview = styled(Content)(() => {
+  return {
+    fontWeight: 400,
+    fontSize: 'var(--affine-font-xs)',
+    maxWidth: '100%',
+  };
+});
+
+export const StyledTableBodyRow = styled(TableBodyRow)(() => {
   return {
     cursor: 'pointer',
     '.favorite-button': {

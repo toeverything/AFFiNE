@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "composite": true,
     "skipLibCheck": true,
     "target": "ESNext",
     "module": "ESNext",
@@ -9,17 +10,30 @@
     "types": ["node"],
     "outDir": "dist",
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "noImplicitOverride": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "package.json"],
-  "exclude": ["out", "dist", "node_modules"],
+  "include": ["./src"],
+  "exclude": ["node_modules", "out", "dist"],
   "references": [
+    {
+      "path": "../../packages/plugin-infra"
+    },
+    {
+      "path": "../../packages/native"
+    },
+    {
+      "path": "../../packages/infra"
+    },
+
+    // Tests
     {
       "path": "./tsconfig.node.json"
     },
     {
-      "path": "../../packages/native"
-    }
+      "path": "./tests/tsconfig.json"
+    },
+    { "path": "../../tests/kit" }
   ],
   "ts-node": {
     "esm": true,

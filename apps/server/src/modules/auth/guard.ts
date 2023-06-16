@@ -1,10 +1,5 @@
-import {
-  CanActivate,
-  createParamDecorator,
-  ExecutionContext,
-  Injectable,
-  UseGuards,
-} from '@nestjs/common';
+import type { CanActivate, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, Injectable, UseGuards } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma';
 import { getRequestResponseFromContext } from '../../utils/nestjs';

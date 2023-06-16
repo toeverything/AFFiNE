@@ -3,13 +3,13 @@
  */
 import 'fake-indexeddb/auto';
 
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   _cleanupBlockSuiteWorkspaceCache,
   createEmptyBlockSuiteWorkspace,
@@ -19,8 +19,45 @@ import type { Page } from '@blocksuite/store';
 import { createStore } from 'jotai';
 import { describe, expect, test } from 'vitest';
 
-import { WorkspaceAdapters } from '../../plugins';
+import { WorkspaceAdapters } from '../../adapters/workspace';
+import {
+  pageSettingFamily,
+  pageSettingsAtom,
+  recentPageSettingsAtom,
+} from '../index';
 import { rootCurrentWorkspaceAtom } from '../root';
+
+describe('page mode atom', () => {
+  test('basic', () => {
+    const store = createStore();
+    const page0SettingAtom = pageSettingFamily('page0');
+    store.set(page0SettingAtom, {
+      mode: 'page',
+    });
+
+    expect(store.get(pageSettingsAtom)).toEqual({
+      page0: {
+        mode: 'page',
+      },
+    });
+
+    expect(store.get(recentPageSettingsAtom)).toEqual([
+      {
+        id: 'page0',
+        mode: 'page',
+      },
+    ]);
+
+    const page1SettingAtom = pageSettingFamily('page1');
+    store.set(page1SettingAtom, {
+      mode: 'edgeless',
+    });
+    expect(store.get(recentPageSettingsAtom)).toEqual([
+      { id: 'page1', mode: 'edgeless' },
+      { id: 'page0', mode: 'page' },
+    ]);
+  });
+});
 
 describe('currentWorkspace atom', () => {
   test('should be defined', async () => {
@@ -32,7 +69,7 @@ describe('currentWorkspace atom', () => {
         WorkspaceFlavour.LOCAL
       );
       const page = workspace.createPage({ id: 'page0' });
-      initPage(page);
+      initEmptyPage(page);
       const frameId = page.getBlockByFlavour('affine:frame').at(0)
         ?.id as string;
       id = page.addBlock(

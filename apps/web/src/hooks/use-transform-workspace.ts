@@ -1,10 +1,10 @@
+import type { WorkspaceFlavour } from '@affine/env/workspace';
+import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import type { WorkspaceFlavour } from '@affine/workspace/type';
-import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { WorkspaceAdapters } from '../plugins';
+import { WorkspaceAdapters } from '../adapters/workspace';
 
 /**
  * Transform workspace from one flavour to another

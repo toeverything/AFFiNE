@@ -8,9 +8,10 @@ export const StyledEmptyContainer = styled('div')<{ style?: CSSProperties }>(
       height: '100%',
       ...displayFlex('center', 'center'),
       flexDirection: 'column',
+      color: 'var(--affine-text-secondary-color)',
       svg: {
-        width: style?.width ?? '320px',
-        height: style?.height ?? '280px',
+        width: style?.width ?? '248px',
+        height: style?.height ?? '216px',
         fontSize: style?.fontSize ?? 'inherit',
       },
     };

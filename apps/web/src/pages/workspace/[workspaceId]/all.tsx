@@ -1,22 +1,22 @@
-import { QueryParamError, Unreachable } from '@affine/env/constant';
+import { useAllPageSetting } from '@affine/component/page-list';
+import { QueryParamError } from '@affine/env/constant';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { WorkspaceFlavour } from '@affine/workspace/type';
-import { FolderIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
+import { getUIAdapter } from '../../../adapters/workspace';
 import { PageLoading } from '../../../components/pure/loading';
-import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
-import { WorkspaceAdapters } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
+  const setting = useAllPageSetting();
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();
@@ -26,7 +26,7 @@ const AllPage: NextPageWithLayout = () => {
       if (newTab) {
         window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
       } else {
-        jumpToPage(currentWorkspace.id, pageId);
+        jumpToPage(currentWorkspace.id, pageId).catch(console.error);
       }
     },
     [currentWorkspace, jumpToPage]
@@ -37,52 +37,26 @@ const AllPage: NextPageWithLayout = () => {
   if (typeof router.query.workspaceId !== 'string') {
     throw new QueryParamError('workspaceId', router.query.workspaceId);
   }
-  if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
-    const PageList = WorkspaceAdapters[currentWorkspace.flavour].UI.PageList;
-    return (
-      <>
-        <Head>
-          <title>{t['All pages']()} - AFFiNE</title>
-        </Head>
-        <WorkspaceTitle
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPreview={false}
-          isPublic={false}
-          icon={<FolderIcon />}
-        >
-          {t['All pages']()}
-        </WorkspaceTitle>
-        <PageList
-          onOpenPage={onClickPage}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
-      </>
-    );
-  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
-    const PageList = WorkspaceAdapters[currentWorkspace.flavour].UI.PageList;
-    return (
-      <>
-        <Head>
-          <title>{t['All pages']()} - AFFiNE</title>
-        </Head>
-        <WorkspaceTitle
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPreview={false}
-          isPublic={false}
-          icon={<FolderIcon />}
-        >
-          {t['All pages']()}
-        </WorkspaceTitle>
-        <PageList
-          onOpenPage={onClickPage}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
-      </>
-    );
-  }
-  throw new Unreachable();
+
+  const { PageList, Header } = getUIAdapter(currentWorkspace.flavour);
+  return (
+    <>
+      <Head>
+        <title>{t['All pages']()} - AFFiNE</title>
+      </Head>
+      <Header
+        currentWorkspace={currentWorkspace}
+        currentEntry={{
+          subPath: WorkspaceSubPath.ALL,
+        }}
+      />
+      <PageList
+        view={setting.currentView}
+        onOpenPage={onClickPage}
+        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+      />
+    </>
+  );
 };
 
 export default AllPage;

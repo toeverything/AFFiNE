@@ -23,6 +23,7 @@ on:
 env:
   DEBUG: napi:*
   APP_NAME: affine
+  COVERAGE: true
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
@@ -35,7 +36,12 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - run: yarn lint --max-warnings=0
+      - name: Run checks
+        run: |
+          yarn i18n-codegen gen
+          yarn typecheck
+          yarn lint --max-warnings=0
+          yarn circular
 
   build-storybook:
     name: Build Storybook
@@ -46,15 +52,15 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - run: yarn build:storybook
+      - run: yarn nx build @affine/storybook
       - name: Upload storybook artifact
         uses: actions/upload-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
           if-no-files-found: error
 
-  build:
+  build-web:
     name: Build @affine/web
     runs-on: ubuntu-latest
     environment: development
@@ -71,20 +77,15 @@ jobs:
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
-      - name: Build
-        run: yarn build
+      - name: Build Web
+        run: yarn nx build @affine/web
         env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: local
-          ENABLE_DEBUG_PAGE: true
+          ENABLE_DEBUG_PAGE: 1
+          ENABLE_PLUGIN: true
+          ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: true
-          COVERAGE: true
+          ENABLE_PRELOADING: false
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -93,24 +94,18 @@ jobs:
           path: ./apps/web/.next
           if-no-files-found: error
 
-      - name: Build @affine/web for desktop
-        run: yarn build
+      - name: Build Web (Desktop)
+        run: yarn nx build @affine/web
         env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           API_SERVER_PROFILE: affine
-          ENABLE_DEBUG_PAGE: true
+          ENABLE_DEBUG_PAGE: 1
+          ENABLE_PLUGIN: true
+          ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: false
-          COVERAGE: true
+          ENABLE_PRELOADING: false
 
       - name: Export static resources
-        run: yarn export
-        working-directory: apps/web
+        run: yarn workspace @affine/web export
 
       - name: Upload static resources artifact
         uses: actions/upload-artifact@v3
@@ -159,8 +154,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Run server tests
-        run: yarn test:coverage
-        working-directory: apps/server
+        run: yarn nx test:coverage @affine/server
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Upload server test coverage results
@@ -187,19 +181,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
       - name: Run storybook tests
-        working-directory: ./packages/component
+        working-directory: ./packages/storybook
         run: |
-          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test-storybook --coverage"
-      - name: Upload storybook test coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./packages/component/coverage/storybook/coverage-storybook.json
-          flags: storybook-test
-          name: affine
-          fail_ci_if_error: true
+          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test"
 
   e2e-test:
     name: E2E Test
@@ -209,7 +195,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: [build, build-storybook]
+    needs: [build-web, build-storybook]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -236,14 +222,14 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/component/storybook-static
+          path: ./packages/storybook/storybook-static
 
       - name: Wait for Octobase Ready
         run: |
           node ./scripts/wait-3000-healthz.mjs
 
       - name: Run playwright tests
-        run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
 
@@ -267,7 +253,7 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
-  dekstop-test:
+  desktop-test:
     name: Desktop Test
     runs-on: ${{ matrix.spec.os }}
     environment: development
@@ -304,7 +290,7 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
-    needs: [build]
+    needs: [build-web]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -318,26 +304,16 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: |
-          rm -rf apps/electron/node_modules/better-sqlite3/build
-          yarn --cwd apps/electron/node_modules/better-sqlite3 run install
-          yarn test:unit
+        run: yarn nx test @affine/monorepo
         env:
           NATIVE_TEST: 'true'
       - name: Build layers
-        run: yarn workspace @affine/electron build-layers
-
+        run: yarn workspace @affine/electron build
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
         with:
           name: next-js-static
           path: ./apps/electron/resources/web-static
-
-      - name: Rebuild Electron dependences
-        shell: bash
-        run: |
-          rm -rf apps/electron/node_modules/better-sqlite3/build
-          yarn workspace @affine/electron rebuild:for-electron --arch=${{ matrix.spec.arch }}
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
@@ -393,7 +369,7 @@ jobs:
         uses: ./.github/actions/setup-node
 
       - name: Unit Test
-        run: yarn run test:unit:coverage
+        run: yarn nx test:coverage @affine/monorepo
 
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3

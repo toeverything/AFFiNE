@@ -10,8 +10,8 @@ import {
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { config } from '@affine/env';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
@@ -19,10 +19,10 @@ import {
   ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { useDroppable } from '@dnd-kit/core';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import type React from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 
 import { useHistoryAtom } from '../../atoms/history';
 import type { AllWorkspace } from '../../shared';
@@ -45,25 +45,34 @@ export type RootAppSidebarProps = {
   };
 };
 
-const RouteMenuLinkItem = ({
-  currentPath,
-  path,
-  icon,
-  children,
-  ...props
-}: {
-  currentPath: string; // todo: pass through useRouter?
-  path?: string | null;
-  icon: ReactElement;
-  children?: ReactElement;
-} & React.HTMLAttributes<HTMLDivElement>) => {
-  const active = currentPath === path;
+const RouteMenuLinkItem = React.forwardRef<
+  HTMLDivElement,
+  {
+    currentPath: string; // todo: pass through useRouter?
+    path?: string | null;
+    icon: ReactElement;
+    children?: ReactElement;
+    isDraggedOver?: boolean;
+  } & React.HTMLAttributes<HTMLDivElement>
+>(({ currentPath, path, icon, children, isDraggedOver, ...props }, ref) => {
+  // Force active style when a page is dragged over
+  const active = isDraggedOver || currentPath === path;
   return (
-    <MenuLinkItem {...props} active={active} href={path ?? ''} icon={icon}>
+    <MenuLinkItem
+      ref={ref}
+      {...props}
+      active={active}
+      href={path ?? ''}
+      icon={icon}
+    >
       {children}
     </MenuLinkItem>
   );
-};
+});
+RouteMenuLinkItem.displayName = 'RouteMenuLinkItem';
+
+// Unique droppable IDs
+export const DROPPABLE_SIDEBAR_TRASH = 'trash-folder';
 
 /**
  * This is for the whole affine app sidebar.
@@ -84,7 +93,7 @@ export const RootAppSidebar = ({
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
-    const page = await createPage();
+    const page = createPage();
     openPage(page.id);
   }, [createPage, openPage]);
 
@@ -98,7 +107,9 @@ export const RootAppSidebar = ({
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
     if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
-      window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen);
+      window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
+        console.error(err);
+      });
     }
   }, [sidebarOpen]);
 
@@ -125,6 +136,10 @@ export const RootAppSidebar = ({
       history,
     };
   }, [history, setHistory]);
+
+  const trashDroppable = useDroppable({
+    id: DROPPABLE_SIDEBAR_TRASH,
+  });
 
   return (
     <>
@@ -182,6 +197,8 @@ export const RootAppSidebar = ({
 
           <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem
+            ref={trashDroppable.setNodeRef}
+            isDraggedOver={trashDroppable.isOver}
             icon={<DeleteTemporarilyIcon />}
             currentPath={currentPath}
             path={currentWorkspaceId && paths.trash(currentWorkspaceId)}

@@ -1,27 +1,35 @@
 import { Empty } from '@affine/component';
 import type { ListData, TrashListData } from '@affine/component/page-list';
-import { PageList, PageListTrashView } from '@affine/component/page-list';
+import {
+  filterByFilterList,
+  PageList,
+  PageListTrashView,
+} from '@affine/component/page-list';
+import { env } from '@affine/env';
+import type { View } from '@affine/env/filter';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import dayjs from 'dayjs';
-import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { useAtomValue } from 'jotai';
+import { getPagePreviewText } from '@toeverything/hooks/use-block-suite-page-preview';
+import { useAtom } from 'jotai';
 import type React from 'react';
 import { useMemo } from 'react';
 
-import { workspacePreferredModeAtom } from '../../../atoms';
+import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
-import { pageListEmptyStyle } from './index.css';
+import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
+import { usePageHelper } from './utils';
 
 export type BlockSuitePageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   listType: 'all' | 'trash' | 'shared' | 'public';
   isPublic?: true;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
+  view?: View;
 };
 
 const filter = {
@@ -34,22 +42,37 @@ const filter = {
   shared: (pageMeta: PageMeta) => pageMeta.isPublic && !pageMeta.trash,
 };
 
-dayjs.extend(localizedFormat);
-const formatDate = (date?: number | unknown) => {
-  const dateStr =
-    typeof date === 'number' ? dayjs(date).format('YYYY-MM-DD HH:mm') : '--';
-  return dateStr;
-};
-
 const PageListEmpty = (props: {
+  createPage?: () => void;
   listType: BlockSuitePageListProps['listType'];
 }) => {
-  const { listType } = props;
+  const { listType, createPage } = props;
   const t = useAFFiNEI18N();
 
   const getEmptyDescription = () => {
     if (listType === 'all') {
-      return t['emptyAllPages']();
+      const CreateNewPageButton = () => (
+        <button className={emptyDescButton} onClick={createPage}>
+          New Page
+        </button>
+      );
+      if (env.isDesktop) {
+        const shortcut = env.isMacOs ? '⌘ + N' : 'Ctrl + N';
+        return (
+          <Trans i18nKey="emptyAllPagesClient">
+            Click on the <CreateNewPageButton /> button Or press
+            <kbd className={emptyDescKbd}>{{ shortcut } as any}</kbd> to create
+            your first page.
+          </Trans>
+        );
+      }
+      return (
+        <Trans i18nKey="emptyAllPages">
+          Click on the
+          <CreateNewPageButton />
+          button to create your first page.
+        </Trans>
+      );
     }
     if (listType === 'trash') {
       return t['emptyTrash']();
@@ -57,11 +80,15 @@ const PageListEmpty = (props: {
     if (listType === 'shared') {
       return t['emptySharedPages']();
     }
+    return;
   };
 
   return (
     <div className={pageListEmptyStyle}>
-      <Empty description={getEmptyDescription()} />
+      <Empty
+        title={t['com.affine.emptyDesc']()}
+        description={getEmptyDescription()}
+      />
     </div>
   );
 };
@@ -71,6 +98,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   onOpenPage,
   listType,
   isPublic = false,
+  view,
 }) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const {
@@ -80,25 +108,59 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     permanentlyDeletePage,
     cancelPublicPage,
   } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const [filterMode] = useAtom(allPageModeSelectAtom);
+  const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
+    usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const list = useMemo(
-    () => pageMetas.filter(pageMeta => filter[listType](pageMeta, pageMetas)),
-    [pageMetas, listType]
+    () =>
+      pageMetas
+        .filter(pageMeta => {
+          if (filterMode === 'all') {
+            return true;
+          }
+          if (filterMode === 'edgeless') {
+            return isPreferredEdgeless(pageMeta.id);
+          }
+          if (filterMode === 'page') {
+            return !isPreferredEdgeless(pageMeta.id);
+          }
+          console.error('unknown filter mode', pageMeta, filterMode);
+          return true;
+        })
+        .filter(pageMeta => {
+          if (!filter[listType](pageMeta, pageMetas)) {
+            return false;
+          }
+          if (!view) {
+            return true;
+          }
+          return filterByFilterList(view.filterList, {
+            'Is Favourited': !!pageMeta.favorite,
+            Created: pageMeta.createDate,
+            Updated: pageMeta.updatedDate ?? pageMeta.createDate,
+          });
+        }),
+    [pageMetas, filterMode, isPreferredEdgeless, listType, view]
   );
-  const record = useAtomValue(workspacePreferredModeAtom);
-  if (list.length === 0) {
-    return <PageListEmpty listType={listType} />;
-  }
 
   if (listType === 'trash') {
     const pageList: TrashListData[] = list.map(pageMeta => {
+      const page = blockSuiteWorkspace.getPage(pageMeta.id);
+      const preview = page ? getPagePreviewText(page) : undefined;
       return {
-        icon:
-          record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
+        icon: isPreferredEdgeless(pageMeta.id) ? (
+          <EdgelessIcon />
+        ) : (
+          <PageIcon />
+        ),
         pageId: pageMeta.id,
         title: pageMeta.title,
-        createDate: formatDate(pageMeta.createDate),
-        updatedDate: formatDate(pageMeta.updatedDate ?? pageMeta.createDate),
+        preview,
+        createDate: new Date(pageMeta.createDate),
+        trashDate: pageMeta.trashDate
+          ? new Date(pageMeta.trashDate)
+          : undefined,
         onClickPage: () => onOpenPage(pageMeta.id),
         onClickRestore: () => {
           restoreFromTrash(pageMeta.id);
@@ -113,19 +175,26 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         },
       };
     });
-    return <PageListTrashView list={pageList} />;
+    return (
+      <PageListTrashView
+        list={pageList}
+        fallback={<PageListEmpty listType={listType} />}
+      />
+    );
   }
 
   const pageList: ListData[] = list.map(pageMeta => {
+    const page = blockSuiteWorkspace.getPage(pageMeta.id);
+    const preview = page ? getPagePreviewText(page) : undefined;
     return {
-      icon:
-        record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
+      icon: isPreferredEdgeless(pageMeta.id) ? <EdgelessIcon /> : <PageIcon />,
       pageId: pageMeta.id,
       title: pageMeta.title,
+      preview,
       favorite: !!pageMeta.favorite,
       isPublicPage: !!pageMeta.isPublic,
-      createDate: formatDate(pageMeta.createDate),
-      updatedDate: formatDate(pageMeta.updatedDate ?? pageMeta.createDate),
+      createDate: new Date(pageMeta.createDate),
+      updatedDate: new Date(pageMeta.updatedDate ?? pageMeta.createDate),
       onClickPage: () => onOpenPage(pageMeta.id),
       onOpenPageInNewTab: () => onOpenPage(pageMeta.id, true),
       onClickRestore: () => {
@@ -158,10 +227,12 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
 
   return (
     <PageList
-      onClickPage={onOpenPage}
+      onCreateNewPage={createPage}
+      onCreateNewEdgeless={createEdgeless}
+      onImportFile={importFile}
       isPublicWorkspace={isPublic}
       list={pageList}
-      listType={listType}
+      fallback={<PageListEmpty createPage={createPage} listType={listType} />}
     />
   );
 };

@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
+const pluginOutputDir = resolve(rootDir, './apps/electron/dist/plugins');
 
 export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
@@ -16,6 +17,9 @@ export default defineConfig({
       'next/config': resolve(rootDir, './scripts/vitest/next-config-mock.ts'),
     },
   },
+  define: {
+    'process.env.PLUGIN_DIR': JSON.stringify(pluginOutputDir),
+  },
   test: {
     setupFiles: [
       resolve(rootDir, './scripts/setup/lit.ts'),
@@ -25,7 +29,7 @@ export default defineConfig({
     ],
     // split tests that include native addons or not
     include: process.env.NATIVE_TEST
-      ? ['apps/electron/layers/**/*.spec.ts']
+      ? ['apps/electron/src/**/*.spec.ts']
       : [
           'packages/**/*.spec.ts',
           'packages/**/*.spec.tsx',

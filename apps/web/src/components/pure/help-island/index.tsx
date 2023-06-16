@@ -1,7 +1,7 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { config, getEnvironment } from '@affine/env';
+import { config, env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon, NewIcon } from '@blocksuite/icons';
+import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
 import { lazy, Suspense, useState } from 'react';
 
@@ -15,7 +15,6 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-const env = getEnvironment();
 const ContactModal = lazy(() =>
   import('@affine/component/contact-modal').then(({ ContactModal }) => ({
     default: ContactModal,
@@ -108,7 +107,10 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('guide') && (
-            <Tooltip content={'Easy Guide'} placement="left-end">
+            <Tooltip
+              content={t['com.affine.helpIsland.gettingStarted']()}
+              placement="left-end"
+            >
               <StyledIconWrapper
                 data-testid="easy-guide"
                 onClick={() => {
@@ -116,7 +118,7 @@ export const HelpIsland = ({
                   setOpenOnboarding(true);
                 }}
               >
-                <HelpIcon />
+                <UserGuideIcon />
               </StyledIconWrapper>
             </Tooltip>
           )}

@@ -3,8 +3,8 @@
  */
 import 'fake-indexeddb/auto';
 
-import type { LocalWorkspace, WorkspaceCRUD } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
 import { afterEach, assertType, describe, expect, test } from 'vitest';
@@ -28,7 +28,7 @@ describe('crud', () => {
   });
 
   test('delete not exist', async () => {
-    expect(async () =>
+    await expect(async () =>
       CRUD.delete({
         id: 'not_exist',
         flavour: WorkspaceFlavour.LOCAL,

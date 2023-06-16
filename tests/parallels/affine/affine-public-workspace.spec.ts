@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../../libs/load-page';
-import { waitMarkdownImported } from '../../libs/page-logic';
+import { waitEditorLoad } from '../../libs/page-logic';
 import { clickPublishPanel } from '../../libs/setting';
 import {
   clickSideBarAllPageButton,
@@ -15,10 +15,10 @@ test('enable public workspace', async ({ page, context }) => {
   await openHomePage(page);
   const [a] = await createFakeUser();
   await loginUser(page, a);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const name = `test-${Date.now()}`;
   await createWorkspace({ name }, page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarSettingButton(page);
   await page.waitForTimeout(50);
   await clickPublishPanel(page);
@@ -38,17 +38,17 @@ test('enable public workspace', async ({ page, context }) => {
   await page2.waitForSelector('thead', {
     timeout: 10000,
   });
-  await page2.getByText('AFFiNE - not just a note taking app').click();
+  await page2.getByText('Untitled').click();
 });
 
 test('access public workspace page', async ({ page, browser }) => {
   await openHomePage(page);
   const [a] = await createFakeUser();
   await loginUser(page, a);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const name = `test-${Date.now()}`;
   await createWorkspace({ name }, page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarSettingButton(page);
   await page.waitForTimeout(50);
   await clickPublishPanel(page);
@@ -62,7 +62,7 @@ test('access public workspace page', async ({ page, browser }) => {
     timeout: 10000,
   });
   await clickSideBarAllPageButton(page);
-  await page.locator('tr').nth(1).click();
+  await page.locator('tr').nth(2).click();
   const url = page.url();
   const context = await browser.newContext();
   const page2 = await context.newPage();

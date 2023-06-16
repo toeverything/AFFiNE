@@ -3,16 +3,15 @@
   "private": true,
   "main": "./src/index.ts",
   "dependencies": {
-    "@affine/env": "workspace:*",
-    "jotai": "^2.1.0"
+    "jotai": "^2.2.0"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230517102216-36bda4ab-nightly",
-    "@blocksuite/editor": "0.0.0-20230517102216-36bda4ab-nightly",
-    "@blocksuite/global": "0.0.0-20230517102216-36bda4ab-nightly",
-    "@blocksuite/lit": "0.0.0-20230517102216-36bda4ab-nightly",
-    "@blocksuite/store": "0.0.0-20230517102216-36bda4ab-nightly",
-    "lottie-web": "^5.11.0"
+    "@blocksuite/blocks": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/editor": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/lit": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "lottie-web": "^5.12.2"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
@@ -22,5 +21,5 @@
     "@blocksuite/store": "*",
     "lottie-web": "*"
   },
-  "version": "0.6.0-canary.3"
+  "version": "0.7.0-canary.18"
 }

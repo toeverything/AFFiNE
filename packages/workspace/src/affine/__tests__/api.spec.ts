@@ -6,10 +6,11 @@ import 'fake-indexeddb/auto';
 import { readFile } from 'node:fs/promises';
 
 import { MessageCode } from '@affine/env/constant';
-import { createStatusApis } from '@affine/workspace/affine/api/status';
-import { KeckProvider } from '@affine/workspace/affine/keck';
-import { WorkspaceFlavour } from '@affine/workspace/type';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import {
+  createWorkspaceResponseSchema,
+  usageResponseSchema,
+} from '@affine/env/workspace/legacy-cloud';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
@@ -17,24 +18,26 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, PageMeta } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
-import type {} from '@toeverything/hooks/use-block-suite-page-meta';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { applyUpdate } from 'yjs';
 
-import {
-  createUserApis,
-  createWorkspaceApis,
-  createWorkspaceResponseSchema,
-  RequestError,
-  usageResponseSchema,
-} from '../api';
+import { createEmptyBlockSuiteWorkspace } from '../../utils';
+import { createUserApis, createWorkspaceApis, RequestError } from '../api';
+import { createStatusApis } from '../api/status';
+import { KeckProvider } from '../keck';
 import {
   createAffineAuth,
   getLoginStorage,
   loginResponseSchema,
   setLoginStorage,
 } from '../login';
+
+declare module '@blocksuite/store' {
+  interface PageMeta {
+    isPublic?: boolean;
+  }
+}
 
 // @ts-expect-error
 globalThis.WebSocket = WebSocket;
@@ -110,7 +113,7 @@ beforeEach(async () => {
 declare global {
   interface DocumentEventMap {
     'affine-error': CustomEvent<{
-      code: MessageCode;
+      code: (typeof MessageCode)[keyof typeof MessageCode];
     }>;
   }
 }
@@ -165,7 +168,7 @@ describe('api', () => {
     const listener = vi.fn(
       (
         e: CustomEvent<{
-          code: MessageCode;
+          code: (typeof MessageCode)[keyof typeof MessageCode];
         }>
       ) => {
         expect(e.detail.code).toBe(MessageCode.loadListFailed);

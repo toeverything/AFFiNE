@@ -31,13 +31,13 @@ nvm use 18
 
 ## Setup Environment
 
-This setup requires modern yarn (currently `3.5.0`), run this if your yarn version is `1.x`
+This setup requires modern yarn (currently `3.x`), run this if your yarn version is `1.x`
 
 Reference: [Yarn installation doc](https://yarnpkg.com/getting-started/install)
 
 ```sh
 corepack enable
-corepack prepare yarn@3.5.0 --activate
+corepack prepare yarn@stable --activate
 ```
 
 ```sh
@@ -52,7 +52,7 @@ yarn install
 ```shell
 # Run OctoBase container in background
 docker pull ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-docker run --env=SIGN_KEY=test123 --env=RUST_LOG=debug --env=JWST_DEV=1 --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --workdir=/app -p 3000:3000 --runtime=runc -d ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+docker run --env=SIGN_KEY=test123 --env=RUST_LOG=debug --env=JWST_DEV=1 --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --workdir=/app -p 127.0.0.1:3000:3000 --runtime=runc -d ghcr.io/toeverything/cloud-self-hosted:nightly-latest
 ```
 
 ```shell
@@ -80,10 +80,17 @@ For more details, see [apps/web/README.md](../apps/web/README.md)
 Adding test cases is strongly encouraged when you contribute new features and bug fixes.
 
 We use [Playwright](https://playwright.dev/) for E2E test, and [vitest](https://vitest.dev/) for unit test.
-
-To test locally, please make sure browser binaries are already installed via `npx playwright install`. Then there are multi commands to choose from:
+To test locally, please make sure browser binaries are already installed via `npx playwright install`.
+Also make sure you have built the `@affine/web` workspace before running E2E tests.
 
 ```sh
+yarn  build
 # run tests in headless mode in another terminal window
 yarn test
 ```
+
+## Troubleshooting
+
+> I ran `yarn start -p 8080` after `yarn build` but the index page returned 404.
+
+Try stopping your development server (initialized by `yarn dev:local` or something) and running `yarn build` again.

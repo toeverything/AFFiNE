@@ -1,11 +1,5 @@
-import type { HTMLAttributes, PropsWithChildren } from 'react';
+import { StyledTBodyRow, StyledTHeadRow } from './styles';
+export const TableHeadRow = StyledTHeadRow;
+export const TableBodyRow = StyledTBodyRow;
 
-import { StyledTableRow } from './styles';
-export const TableRow = ({
-  children,
-  ...props
-}: PropsWithChildren<HTMLAttributes<HTMLTableRowElement>>) => {
-  return <StyledTableRow {...props}>{children}</StyledTableRow>;
-};
-
-export default TableRow;
+export default TableHeadRow;

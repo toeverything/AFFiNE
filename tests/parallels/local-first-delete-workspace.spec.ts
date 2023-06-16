@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 import {
   clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
@@ -11,7 +11,7 @@ import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('Create new workspace, then delete it', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
   await page
@@ -47,9 +47,9 @@ test('Create new workspace, then delete it', async ({ page }) => {
   await assertCurrentWorkspaceFlavour('local', page);
 });
 
-test('Should not delete the last one workspace', async ({ page }) => {
+test('Delete last workspace', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await clickSideBarSettingButton(page);
   await page.getByTestId('delete-workspace-button').click();
   const workspaceNameDom = await page.getByTestId('workspace-name');
@@ -65,9 +65,13 @@ test('Should not delete the last one workspace', async ({ page }) => {
   await page.getByTestId('delete-workspace-confirm-button').click();
   await promise;
   await page.reload();
+  await expect(page.getByTestId('new-workspace')).toBeVisible();
+  await page.getByTestId('new-workspace').click();
+  await page.type('[data-testid="create-workspace-input"]', 'Test Workspace');
+  await page.getByTestId('create-workspace-create-button').click();
+  await page.waitForTimeout(1000);
   await page.waitForSelector('[data-testid="workspace-name"]');
   expect(await page.getByTestId('workspace-name').textContent()).toBe(
-    'Demo Workspace'
+    'Test Workspace'
   );
-  await assertCurrentWorkspaceFlavour('local', page);
 });

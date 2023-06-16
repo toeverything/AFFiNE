@@ -4,8 +4,8 @@ import { Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+} from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import type { Page } from '@blocksuite/store';
 import { assertEquals } from '@blocksuite/store';
 import { useRouter } from 'next/router';
@@ -15,7 +15,6 @@ import { useCallback, useState } from 'react';
 import { useToggleWorkspacePublish } from '../../../../hooks/affine/use-toggle-workspace-publish';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import { useRouterHelper } from '../../../../hooks/use-router-helper';
-import { WorkspaceSubPath } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 import type { BaseHeaderProps } from '../header';
 
@@ -97,8 +96,8 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
         onClose={() => {
           setOpen(false);
         }}
-        onConform={() => {
-          onTransformWorkspace(
+        onConform={async () => {
+          await onTransformWorkspace(
             WorkspaceFlavour.LOCAL,
             WorkspaceFlavour.AFFINE,
             props.workspace as LocalWorkspace

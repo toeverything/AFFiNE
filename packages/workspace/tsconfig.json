@@ -1,4 +1,16 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"]
+  "include": ["./src"],
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "references": [
+    { "path": "../../tests/fixtures" },
+    { "path": "../y-indexeddb" },
+    { "path": "../env" },
+    { "path": "../debug" },
+    { "path": "../hooks" },
+    { "path": "../plugin-infra" }
+  ]
 }

@@ -1,27 +1,24 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+// bootstrap code before everything
+import '../bootstrap';
 
+import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { config, setupGlobal } from '@affine/env';
+import { config } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
-import { rootStore } from '@affine/workspace/atom';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
-import { Provider } from 'jotai';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { PropsWithChildren, ReactElement } from 'react';
-import React, { lazy, Suspense, useEffect, useMemo } from 'react';
+import React, { lazy, Suspense } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
-import { ProviderComposer } from '../components/provider-composer';
 import { MessageCenter } from '../components/pure/message-center';
-import { ThemeProvider } from '../providers/theme-provider';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
-
-setupGlobal();
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
@@ -44,6 +41,11 @@ const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
   );
 };
 
+const i18n = createI18n();
+if (process.env.NODE_ENV === 'development') {
+  console.log('Runtime Preset', config);
+}
+
 const App = function App({
   Component,
   pageProps,
@@ -52,14 +54,6 @@ const App = function App({
   emotionCache?: EmotionCache;
 }) {
   const getLayout = Component.getLayout || EmptyLayout;
-  const i18n = useMemo(() => createI18n(), []);
-  if (process.env.NODE_ENV === 'development') {
-    // I know what I'm doing
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      console.log('Runtime Preset', config);
-    }, []);
-  }
 
   return (
     <CacheProvider value={emotionCache}>
@@ -67,17 +61,7 @@ const App = function App({
         <MessageCenter />
         <AffineErrorBoundary router={useRouter()}>
           <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
-            <ProviderComposer
-              contexts={useMemo(
-                () =>
-                  [
-                    <Provider key="JotaiProvider" store={rootStore} />,
-                    <DebugProvider key="DebugProvider" />,
-                    <ThemeProvider key="ThemeProvider" />,
-                  ].filter(Boolean),
-                []
-              )}
-            >
+            <AffineContext>
               <Head>
                 <title>AFFiNE</title>
                 <meta
@@ -85,8 +69,10 @@ const App = function App({
                   content="initial-scale=1, width=device-width"
                 />
               </Head>
-              {getLayout(<Component {...pageProps} />)}
-            </ProviderComposer>
+              <DebugProvider>
+                {getLayout(<Component {...pageProps} />)}
+              </DebugProvider>
+            </AffineContext>
           </Suspense>
         </AffineErrorBoundary>
       </I18nextProvider>

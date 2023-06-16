@@ -1,19 +1,18 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
+import type {
+  NecessaryProvider,
+  WorkspaceRegistry,
+} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type {
-  NecessaryProvider,
-  WorkspaceRegistry,
-} from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
-import { WorkspaceAdapters } from '../plugins';
 import type { AllWorkspace } from '../shared';
 
 const logger = new DebugLogger('web:atoms:root');
@@ -22,6 +21,7 @@ const logger = new DebugLogger('web:atoms:root');
  * Fetch all workspaces from the Plugin CRUD
  */
 export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
+  const { WorkspaceAdapters } = await import('../adapters/workspace');
   const flavours: string[] = Object.values(WorkspaceAdapters).map(
     plugin => plugin.flavour
   );
@@ -82,6 +82,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
  */
 export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
   async get => {
+    const { WorkspaceAdapters } = await import('../adapters/workspace');
     const metadata = get(rootWorkspacesMetadataAtom);
     const targetId = get(rootCurrentWorkspaceIdAtom);
     if (targetId === null) {

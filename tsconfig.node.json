@@ -1,9 +1,11 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
     "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "outDir": "lib"
   },
   "include": ["vitest.config.ts", "scripts"]
 }

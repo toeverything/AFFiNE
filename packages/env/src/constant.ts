@@ -5,24 +5,25 @@ export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';
 export const DEFAULT_HELLO_WORLD_PAGE_ID = 'hello-world';
 
-export const enum MessageCode {
-  loginError,
-  noPermission,
-  loadListFailed,
-  getDetailFailed,
-  createWorkspaceFailed,
-  getMembersFailed,
-  updateWorkspaceFailed,
-  deleteWorkspaceFailed,
-  inviteMemberFailed,
-  removeMemberFailed,
-  acceptInvitingFailed,
-  getBlobFailed,
-  leaveWorkspaceFailed,
-  downloadWorkspaceFailed,
-  refreshTokenError,
-  blobTooLarge,
-}
+export const DEFAULT_SORT_KEY = 'updatedDate';
+export const MessageCode = {
+  loginError: 0,
+  noPermission: 1,
+  loadListFailed: 2,
+  getDetailFailed: 3,
+  createWorkspaceFailed: 4,
+  getMembersFailed: 5,
+  updateWorkspaceFailed: 6,
+  deleteWorkspaceFailed: 7,
+  inviteMemberFailed: 8,
+  removeMemberFailed: 9,
+  acceptInvitingFailed: 10,
+  getBlobFailed: 11,
+  leaveWorkspaceFailed: 12,
+  downloadWorkspaceFailed: 13,
+  refreshTokenError: 14,
+  blobTooLarge: 15,
+} as const;
 
 export const Messages = {
   [MessageCode.loginError]: {
@@ -74,7 +75,7 @@ export const Messages = {
     message: 'Blob too large',
   },
 } as const satisfies {
-  [key in MessageCode]: {
+  [key in (typeof MessageCode)[keyof typeof MessageCode]]: {
     message: string;
   };
 };

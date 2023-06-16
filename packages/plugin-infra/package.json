@@ -1,0 +1,44 @@
+{
+  "name": "@toeverything/plugin-infra",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "exports": {
+    "./manager": {
+      "type": "./dist/manager.d.ts",
+      "import": "./dist/manager.js",
+      "require": "./dist/manager.cjs"
+    },
+    "./type": {
+      "type": "./dist/type.d.ts",
+      "import": "./dist/type.js",
+      "require": "./dist/type.cjs"
+    }
+  },
+  "dependencies": {
+    "@blocksuite/blocks": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/editor": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/lit": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly",
+    "jotai": "^2.2.0"
+  },
+  "devDependencies": {
+    "jotai": "^2.2.0",
+    "vite": "^4.3.9",
+    "vite-plugin-dts": "^2.3.0"
+  },
+  "peerDependencies": {
+    "@blocksuite/blocks": "*",
+    "@blocksuite/editor": "*",
+    "@blocksuite/global": "*",
+    "@blocksuite/lit": "*",
+    "@blocksuite/store": "*",
+    "jotai": "*",
+    "react": "*",
+    "react-dom": "*"
+  },
+  "version": "0.7.0-canary.18"
+}

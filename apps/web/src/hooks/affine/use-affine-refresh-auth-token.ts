@@ -6,9 +6,8 @@ import {
   setLoginStorage,
   storageChangeSlot,
 } from '@affine/workspace/affine/login';
+import { affineAuth } from '@affine/workspace/affine/shared';
 import useSWR from 'swr';
-
-import { affineAuth } from '../../plugins/affine';
 
 const logger = new DebugLogger('auth-token');
 

@@ -14,6 +14,7 @@ export const navWrapperStyle = style({
   minWidth: navWidthVar,
   height: '100%',
   zIndex: 2,
+  paddingBottom: '8px',
   backgroundColor: 'transparent',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
@@ -25,6 +26,10 @@ export const navWrapperStyle = style({
           marginLeft: `calc((10vw + ${navWidthVar}) * -1)`,
         },
       },
+    },
+    print: {
+      display: 'none',
+      zIndex: -1,
     },
   },
   selectors: {
@@ -71,9 +76,9 @@ export const navBodyStyle = style({
 });
 
 export const sidebarButtonStyle = style({
-  width: 'auto',
   height: '32px',
   color: 'var(--affine-icon-color)',
+  zIndex: 1,
 });
 
 export const sidebarFloatMaskStyle = style({
@@ -96,6 +101,9 @@ export const sidebarFloatMaskStyle = style({
           right: '0',
         },
       },
+    },
+    print: {
+      display: 'none',
     },
   },
 });

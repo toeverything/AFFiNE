@@ -7,13 +7,13 @@ import {
   Tooltip,
 } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { HelpIcon, ImportIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useCallback, useRef } from 'react';
@@ -148,7 +148,7 @@ export const WorkspaceListModal = ({
           {environment.isDesktop && (
             <Menu
               placement="auto"
-              trigger={['click', 'hover']}
+              trigger={['click']}
               zIndex={1000}
               content={
                 <StyledCreateWorkspaceCardPillContainer>

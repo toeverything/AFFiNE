@@ -1,11 +1,3 @@
-import {
-  Confirm,
-  FlexWrapper,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
-} from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeletePermanentlyIcon,
@@ -18,6 +10,14 @@ import {
 import type React from 'react';
 import { useState } from 'react';
 
+import {
+  Confirm,
+  FlexWrapper,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+} from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export type OperationCellProps = {
@@ -47,7 +47,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
     <>
       {isPublic && (
         <DisablePublicSharing
-          testId="disable-public-sharing"
+          data-testid="disable-public-sharing"
           onItemClick={() => {
             setOpenDisableShared(true);
           }}
@@ -71,7 +71,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         </MenuItem>
       )}
       <MoveToTrash
-        testId="move-to-trash"
+        data-testid="move-to-trash"
         onItemClick={() => {
           setOpen(true);
         }}

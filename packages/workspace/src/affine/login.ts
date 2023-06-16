@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { getEnvironment } from '@affine/env';
+import { env } from '@affine/env';
 import { assertExists } from '@blocksuite/global/utils';
 import { Slot } from '@blocksuite/store';
 import { initializeApp } from 'firebase/app';
@@ -75,6 +75,7 @@ const signInWithElectron = async (firebaseAuth: FirebaseAuth) => {
     const user = await signInWithCredential(firebaseAuth, credential);
     return await user.user.getIdToken();
   }
+  return void 0;
 };
 
 export const clearLoginStorage = () => {
@@ -119,7 +120,7 @@ export const checkLoginStorage = async (
   return getLoginStorage() as LoginResponse;
 };
 
-export const enum SignMethod {
+export enum SignMethod {
   Google = 'Google',
   GitHub = 'GitHub',
   // Twitter = 'Twitter',
@@ -165,7 +166,6 @@ export function createAffineAuth(prefix = '/') {
       method: SignMethod
     ): Promise<LoginResponse | null> => {
       const auth = getAuth();
-      const environment = getEnvironment();
       if (!auth) {
         throw new Error('Failed to initialize firebase');
       }
@@ -189,7 +189,7 @@ export function createAffineAuth(prefix = '/') {
       }
       try {
         let idToken: string | undefined;
-        if (environment.isDesktop) {
+        if (env.isDesktop) {
           idToken = await signInWithElectron(auth);
         } else {
           const response = await signInWithPopup(auth, provider);
@@ -207,10 +207,12 @@ export function createAffineAuth(prefix = '/') {
           }),
         }).then(r => r.json()) as Promise<LoginResponse>;
       } catch (error) {
-        if (error instanceof Error && 'code' in error) {
-          if (error.code === 'auth/popup-closed-by-user') {
-            return null;
-          }
+        if (
+          error instanceof Error &&
+          'code' in error &&
+          error.code === 'auth/popup-closed-by-user'
+        ) {
+          return null;
         }
         logger.error('Failed to sign in', error);
       }

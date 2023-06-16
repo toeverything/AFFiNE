@@ -1,9 +1,8 @@
+import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
-import { atom, createStore } from 'jotai';
-import { atomWithStorage, createJSONStorage } from 'jotai/utils';
+import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import Router from 'next/router';
-
-import type { WorkspaceFlavour } from './type';
 
 export type RootWorkspaceMetadata = {
   id: string;
@@ -36,6 +35,9 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
       const value = url.split('/')[2];
       if (value) {
         set(value);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('last_workspace_id', value);
+        }
       } else {
         set(null);
       }
@@ -46,6 +48,7 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
       Router.events.off('routeChangeStart', callback);
     };
   }
+  return;
 };
 
 export const rootCurrentPageIdAtom = atom<string | null>(null);
@@ -66,6 +69,7 @@ rootCurrentPageIdAtom.onMount = set => {
       Router.events.off('routeChangeStart', callback);
     };
   }
+  return;
 };
 
 // current editor atom, each app should have only one editor in the same time
@@ -73,13 +77,3 @@ export const rootCurrentEditorAtom = atom<Readonly<EditorContainer> | null>(
   null
 );
 //#endregion
-
-const getStorage = () => createJSONStorage(() => localStorage);
-
-export const getStoredWorkspaceMeta = () => {
-  const storage = getStorage();
-  return storage.getItem('jotai-workspaces', []) as RootWorkspaceMetadata[];
-};
-
-// global store
-export const rootStore = createStore();

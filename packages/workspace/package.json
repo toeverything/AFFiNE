@@ -10,8 +10,8 @@
     "./providers": "./src/providers/index.ts",
     "./affine/*": "./src/affine/*.ts",
     "./affine/api": "./src/affine/api/index.ts",
-    "./affine/sync": "./src/affine/sync.js",
-    "./affine/keck": "./src/affine/keck/index.ts"
+    "./affine/keck": "./src/affine/keck/index.ts",
+    "./affine/shared": "./src/affine/shared.ts"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
@@ -19,26 +19,26 @@
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
-    "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@toeverything/hooks": "workspace:*",
+    "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
-    "firebase": "^9.22.0",
-    "jotai": "^2.1.0",
+    "firebase": "^9.22.2",
+    "jotai": "^2.2.0",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
-    "lib0": "^0.2.74",
+    "lib0": "^0.2.78",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.1",
+    "yjs": "^13.6.2",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/ws": "^8.5.4",
-    "next": "^13.4.2",
+    "@types/ws": "^8.5.5",
+    "next": "=13.4.2",
     "ws": "^8.13.0"
   },
-  "version": "0.6.0-canary.3"
+  "version": "0.7.0-canary.18"
 }

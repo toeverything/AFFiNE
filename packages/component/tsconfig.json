@@ -1,9 +1,29 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src", "./.storybook/*.ts"],
+  "exclude": ["lib"],
+  "include": ["./src/**/*", "./src/**/*.json"],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib"
+  },
   "references": [
     {
-      "path": "./tsconfig.node.json"
-    }
+      "path": "../debug"
+    },
+    {
+      "path": "../i18n"
+    },
+    {
+      "path": "../jotai"
+    },
+    {
+      "path": "../hooks"
+    },
+    {
+      "path": "../plugin-infra"
+    },
+    { "path": "../workspace" },
+    { "path": "../../tests/fixtures" }
   ]
 }

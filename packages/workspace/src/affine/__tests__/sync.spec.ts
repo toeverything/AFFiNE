@@ -3,16 +3,9 @@
  */
 import 'fake-indexeddb/auto';
 
-import type { Workspace } from '@affine/workspace/affine/api';
-import {
-  createWorkspaceApis,
-  PermissionType,
-} from '@affine/workspace/affine/api';
-import { KeckProvider } from '@affine/workspace/affine/keck';
-import type { LoginResponse } from '@affine/workspace/affine/login';
-import { loginResponseSchema } from '@affine/workspace/affine/login';
-import { WorkspaceFlavour } from '@affine/workspace/type';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import type { Workspace } from '@affine/env/workspace/legacy-cloud';
+import { PermissionType } from '@affine/env/workspace/legacy-cloud';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
 import type { ParagraphBlockModel } from '@blocksuite/blocks/models';
@@ -20,6 +13,18 @@ import type { Page, Text } from '@blocksuite/store';
 import { uuidv4, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { WebSocket } from 'ws';
+
+import type { LoginResponse } from '../../affine/login';
+import { loginResponseSchema } from '../../affine/login';
+import { createEmptyBlockSuiteWorkspace } from '../../utils';
+import { createWorkspaceApis } from '../api';
+import { KeckProvider } from '../keck';
+
+declare module '@blocksuite/store' {
+  interface PageMeta {
+    foo: string;
+  }
+}
 
 // @ts-expect-error
 globalThis.WebSocket = WebSocket;

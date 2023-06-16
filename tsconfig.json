@@ -1,49 +1,94 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    // Classification follows https://www.typescriptlang.org/tsconfig
+
+    // Type Checking
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "node",
+    // exactOptionalPropertyTypes: false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    // noPropertyAccessFromIndexSignature: false,
+    // noUncheckedIndexedAccess: false,
+    // noUnusedLocals: false,
+    // noUnusedParameters: false,
+    "useUnknownInCatchVariables": true,
+
+    // Modules
+    "module": "ES2022",
+    "moduleResolution": "Node",
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
+
+    // Emit
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    // skip type emit for @internal types
+    // "stripInternal": true,
+
+    // JavaScript Support
+    "allowJs": false,
+    "checkJs": false,
+
+    // Interop Constraints
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+
+    // Language and Environment
+    "jsx": "react-jsx",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "useDefineForClassFields": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "baseUrl": ".",
+
+    // Projects
+    "composite": true,
+    "incremental": true,
+
+    // Completeness
+    "skipLibCheck": true, // skip all type checks for .d.ts files
+
     "paths": {
       "@affine/component": ["./packages/component/src/index"],
-      "@affine/component/*": ["./packages/component/src/components/*/index"],
-      "@affine/templates/*": ["./packages/templates/src/*"],
+      "@affine/component/*": [
+        "./packages/component/src/components/*/index",
+        "./packages/component/src/components/*"
+      ],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/i18n/hooks": ["./packages/i18n/src/i18n-generated"],
       "@affine/debug": ["./packages/debug"],
       "@affine/jotai": ["./packages/jotai"],
-      "@affine/env": ["./packages/env"],
+      "@affine/env": ["./packages/env/src"],
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
       "@affine/graphql": ["./packages/graphql/src"],
+      "@affine/copilot": ["./plugins/copilot/src"],
+      "@affine/copilot/*": ["./plugins/copilot/src/*"],
+      "@affine/electron/scripts/*": ["./apps/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
+      "@toeverything/infra": ["./packages/infra/src"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"],
+      "@toeverything/plugin-infra": ["./packages/plugin-infra/src"],
+      "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
-      "@affine/native/*": ["./packages/native/*"]
+      "@affine/native/*": ["./packages/native/*"],
+
+      // Development only
+      "@affine/electron/*": ["./apps/electron/src/*"]
     }
   },
+  "include": [],
   "references": [
+    // Apps
     {
-      "path": "./tests"
-    },
-    {
-      "path": "./apps/electron/tests"
+      "path": "./apps/electron"
     },
     {
       "path": "./apps/web"
@@ -51,6 +96,32 @@
     {
       "path": "./apps/server"
     },
+    // Top level packages
+    {
+      "path": "./packages/infra"
+    },
+    {
+      "path": "./packages/graphql"
+    },
+    {
+      "path": "./packages/debug"
+    },
+    // Plugins
+    {
+      "path": "./packages/plugin-infra"
+    },
+    {
+      "path": "./plugins/bookmark-block"
+    },
+    {
+      "path": "./plugins/copilot"
+    },
+
+    // Tests
+    {
+      "path": "./tests"
+    },
+
     {
       "path": "./packages/component"
     },
@@ -64,17 +135,12 @@
       "path": "./packages/env"
     },
     {
-      "path": "./packages/graphql"
-    },
-    {
-      "path": "./packages/debug"
-    },
-    {
       "path": "./packages/workspace"
     },
     {
       "path": "./packages/y-indexeddb"
     },
+
     {
       "path": "./tests/fixtures"
     },
@@ -83,11 +149,8 @@
     },
     {
       "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./apps/electron"
     }
   ],
   "files": [],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "target", "lib", "test-results"]
 }

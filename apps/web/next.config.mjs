@@ -110,8 +110,11 @@ const nextConfig = {
     '@affine/templates',
     '@affine/workspace',
     '@affine/jotai',
+    '@affine/copilot',
     '@toeverything/hooks',
     '@toeverything/y-indexeddb',
+    '@toeverything/infra',
+    '@toeverything/plugin-infra',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
