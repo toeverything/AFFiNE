@@ -55,6 +55,9 @@ export class IndexedDBChatMessageHistory extends ChatMessageHistory {
           database.createObjectStore('chat', {
             keyPath: 'id',
           });
+          database.createObjectStore('followingUp', {
+            keyPath: 'id',
+          });
         } else if (oldVersion === 1) {
           database.createObjectStore('followingUp', {
             keyPath: 'id',
