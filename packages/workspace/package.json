@@ -32,7 +32,7 @@
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.2",
+    "yjs": "^13.6.4",
     "zod": "^3.21.4"
   },
   "devDependencies": {
