@@ -271,8 +271,6 @@ export class WorkspaceResolver {
     @CurrentUser() user: User,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.permissionProvider.check(workspaceId, user.id);
-
     return this.permissionProvider.accept(workspaceId, user.id);
   }
 

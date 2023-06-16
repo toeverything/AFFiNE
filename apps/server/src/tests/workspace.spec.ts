@@ -24,6 +24,7 @@ describe('AppModule', () => {
     const client = new PrismaClient();
     await client.$connect();
     await client.user.deleteMany({});
+    await client.$disconnect();
   });
 
   beforeEach(async () => {
@@ -75,25 +76,80 @@ describe('AppModule', () => {
     return res.body.data.createWorkspace;
   }
 
+  async function inviteUser(
+    token: string,
+    workspaceId: string,
+    email: string,
+    permission: string
+  ): Promise<boolean> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .set({ Authorization: token })
+      .send({
+        query: `
+          mutation {
+            invite(workspaceId: "${workspaceId}", email: "${email}", permission: ${permission})
+          }
+        `,
+      })
+      .expect(200);
+    return res.body.data.invite;
+  }
+
+  async function acceptInvite(
+    token: string,
+    workspaceId: string
+  ): Promise<boolean> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .set({ Authorization: token })
+      .send({
+        query: `
+          mutation {
+            acceptInvite(workspaceId: "${workspaceId}")
+          }
+        `,
+      })
+      .expect(200);
+    return res.body.data.acceptInvite;
+  }
   test('should register a user', async () => {
-    const user = await registerUser(
-      'affiner1',
-      'affiner1@affine.pro',
-      '123456'
-    );
+    const user = await registerUser('u1', 'u1@affine.pro', '123456');
     ok(typeof user.id === 'string', 'user.id is not a string');
     ok(user.name === 'affiner1', 'user.name is not valid');
     ok(user.email === 'affiner1@affine.pro', 'user.email is not valid');
   });
 
   test('should create a workspace', async () => {
-    const user = await registerUser(
-      'affiner1',
-      'affiner1@affine.pro',
-      '123456'
-    );
+    const user = await registerUser('u1', 'u1@affine.pro', '1');
 
     const workspace = await createWorkspace(user.token.token);
     ok(typeof workspace.id === 'string', 'workspace.id is not a string');
+  });
+
+  test('should invite a user', async () => {
+    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
+    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+
+    const workspace = await createWorkspace(u1.token.token);
+
+    const invite = await inviteUser(
+      u1.token.token,
+      workspace.id,
+      u2.email,
+      'Admin'
+    );
+    ok(invite === true, 'failed to invite user');
+  });
+
+  test('should accept an invite', async () => {
+    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
+    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+
+    const workspace = await createWorkspace(u1.token.token);
+    await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
+
+    const accept = await acceptInvite(u2.token.token, workspace.id);
+    ok(accept === true, 'failed to accept invite');
   });
 });
