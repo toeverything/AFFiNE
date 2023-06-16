@@ -12,15 +12,19 @@
 
 ## Prerequisites
 
+AFFiNE client has both **Node.js** & **Rust** toolchains.
+
+### Install Node.js
+
 We suggest develop our product under node.js LTS(Long-term support) version
 
-### Option 1: Manually install node.js
+#### Option 1: Manually install node.js
 
 install [Node LTS version](https://nodejs.org/en/download)
 
 > Up to now, the major node.js version is 18.x
 
-### Option 2: Use node version manager
+#### Option 2: Use node version manager
 
 install [nvm](https://github.com/nvm-sh/nvm)
 
@@ -29,7 +33,11 @@ nvm install 18
 nvm use 18
 ```
 
-## Setup Environment
+### Install Rust Tools
+
+Please follow the official guide at https://www.rust-lang.org/tools/install.
+
+### Setup Node.js Environment
 
 This setup requires modern yarn (currently `3.x`), run this if your yarn version is `1.x`
 
@@ -45,37 +53,33 @@ corepack prepare yarn@stable --activate
 yarn install
 ```
 
-## Start Development Server
+### Build Native Dependencies
 
-### Option 1: Local OctoBase
+Run the following script. It will build the native module at [`/packages/native`](/packages/native) and build Node.js binding using [NAPI.rs](https://napi.rs/).
+This could take a while if you build it for the first time.
 
-```shell
-# Run OctoBase container in background
-docker pull ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-docker run --env=SIGN_KEY=test123 --env=RUST_LOG=debug --env=JWST_DEV=1 --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --workdir=/app -p 127.0.0.1:3000:3000 --runtime=runc -d ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+```
+yarn workspace @affine/native build
 ```
 
-```shell
-# Run AFFiNE Web in development mode
-yarn dev:local
+## Debugging the Electron App 
+
+You need to run two scripts to run the app in development mode
+
+Firstly, run the web app which is served at :8080
+```
+yarn dev # you may want to chose `dev - 100.84.105.99:11001` when selecting the dev server 
 ```
 
-### Option 2: Remote OctoBase
+Secondly, bring up the electron app
 
-```shell
-yarn dev
+```
+yarn workspace @affine/electron dev
 ```
 
-you might need set environment variables in `.env.local` file.
-See our [template](../apps/web/.env.local.template).
-
-Then, the playground page should work at [http://localhost:8080/](http://localhost:8080/)
-
-For more details, see [apps/web/README.md](../apps/web/README.md)
+If everything goes well, you should see the AFFiNE App window popping up in a few seconds. 🎉
 
 ## Testing
-
-> Local OctoBase is required for testing. Otherwise, the affine part of the tests will fail.
 
 Adding test cases is strongly encouraged when you contribute new features and bug fixes.
 
