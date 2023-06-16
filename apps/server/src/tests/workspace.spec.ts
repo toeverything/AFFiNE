@@ -113,6 +113,44 @@ describe('AppModule', () => {
       .expect(200);
     return res.body.data.acceptInvite;
   }
+
+  async function leaveWorkspace(
+    token: string,
+    workspaceId: string
+  ): Promise<boolean> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .set({ Authorization: token })
+      .send({
+        query: `
+          mutation {
+            leaveWorkspace(workspaceId: "${workspaceId}")
+          }
+        `,
+      })
+      .expect(200);
+    return res.body.data.leaveWorkspace;
+  }
+
+  async function revokeUser(
+    token: string,
+    workspaceId: string,
+    userId: string
+  ): Promise<boolean> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .set({ Authorization: token })
+      .send({
+        query: `
+          mutation {
+            revoke(workspaceId: "${workspaceId}", userId: "${userId}")
+          }
+        `,
+      })
+      .expect(200);
+    return res.body.data.revoke;
+  }
+
   test('should register a user', async () => {
     const user = await registerUser('u1', 'u1@affine.pro', '123456');
     ok(typeof user.id === 'string', 'user.id is not a string');
@@ -151,5 +189,28 @@ describe('AppModule', () => {
 
     const accept = await acceptInvite(u2.token.token, workspace.id);
     ok(accept === true, 'failed to accept invite');
+  });
+
+  test('should leave a workspace', async () => {
+    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
+    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+
+    const workspace = await createWorkspace(u1.token.token);
+    await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
+    await acceptInvite(u2.token.token, workspace.id);
+
+    const leave = await leaveWorkspace(u2.token.token, workspace.id);
+    ok(leave === true, 'failed to leave workspace');
+  });
+
+  test('should revoke a user', async () => {
+    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
+    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+
+    const workspace = await createWorkspace(u1.token.token);
+    await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
+
+    const revoke = await revokeUser(u1.token.token, workspace.id, u2.id);
+    ok(revoke === true, 'failed to revoke user');
   });
 });
