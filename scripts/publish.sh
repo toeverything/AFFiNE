@@ -2,13 +2,13 @@
 
 packages=(
   "y-indexeddb"
-  "infra",
+  "infra"
   "plugin-infra"
 )
 
 for package in "${packages[@]}"; do
+  nx build $package
   cd "packages/$package"
-  yarn build
 
   if [ "$NIGHTLY" = "true" ]; then
     yarn npm publish --no-git-checks --tag nightly
