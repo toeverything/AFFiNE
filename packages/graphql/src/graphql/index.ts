@@ -11,10 +11,10 @@ export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',
   definitionName: 'createWorkspace',
-  containsFile: false,
+  containsFile: true,
   query: `
-mutation createWorkspace {
-  createWorkspace {
+mutation createWorkspace($init: Upload!) {
+  createWorkspace(init: $init) {
     id
     public
     createdAt

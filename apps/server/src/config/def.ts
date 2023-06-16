@@ -133,6 +133,13 @@ export interface AFFiNEConfig {
   get origin(): string;
 
   /**
+   * the database config
+   */
+  db: {
+    url: string;
+  };
+
+  /**
    * the apollo driver config
    */
   graphql: ApolloDriverConfig;

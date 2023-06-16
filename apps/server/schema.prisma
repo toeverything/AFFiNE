@@ -8,10 +8,13 @@ datasource db {
 }
 
 model Workspace {
-  id        String                    @id @default(uuid()) @db.VarChar
-  public    Boolean
-  createdAt DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  users     UserWorkspacePermission[]
+  id             String                    @id @default(uuid()) @db.VarChar
+  public         Boolean
+  createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  users          UserWorkspacePermission[]
+  blobs          Blob[]
+  docs           Doc[]
+  optimizedBlobs OptimizedBlob[]
 
   @@map("workspaces")
 }
@@ -85,4 +88,45 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verificationtokens")
+}
+
+model Blob {
+  hash        String   @id @default(uuid()) @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  blob        Bytes    @db.ByteA
+  length      Int
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, hash])
+  @@map("blobs")
+}
+
+model OptimizedBlob {
+  hash        String   @id @default(uuid()) @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  params      String   @db.VarChar
+  blob        Bytes    @db.ByteA
+  length      Int
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, hash, params])
+  @@map("optimized_blobs")
+}
+
+model Doc {
+  id           Int      @id @default(autoincrement()) @db.Integer
+  workspaceId  String   @map("workspace_id") @db.VarChar
+  guid         String   @db.VarChar
+  is_workspace Boolean  @default(true) @db.Boolean
+  blob         Bytes    @db.ByteA
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, guid])
+  @@map("docs")
 }
