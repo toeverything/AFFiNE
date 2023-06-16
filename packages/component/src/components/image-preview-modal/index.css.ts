@@ -35,25 +35,6 @@ export const imagePreviewModalCloseButtonStyle = style({
   zIndex: 1,
 });
 
-export const imagePreviewModalGoStyle = style({
-  color: 'var(--affine-white)',
-  position: 'absolute',
-  fontSize: '60px',
-  lineHeight: '60px',
-  fontWeight: 'bold',
-  opacity: '0.2',
-  padding: '0 15px',
-  cursor: 'pointer',
-});
-
-export const imageNavigationControlStyle = style({
-  display: 'flex',
-  height: '100%',
-  zIndex: 0,
-  justifyContent: 'space-between',
-  alignItems: 'center',
-});
-
 export const imagePreviewModalContainerStyle = style({
   display: 'flex',
   flexDirection: 'column',
@@ -86,18 +67,17 @@ export const imagePreviewActionBarStyle = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  padding: '16px 0',
   backgroundColor: 'var(--affine-white)',
   borderRadius: '8px',
   boxShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
   maxWidth: 'max-content',
+  minHeight: '44px',
 });
 
 export const groupStyle = style({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: 'var(--affine-white)',
   borderLeft: '1px solid #E3E2E4',
 });
 
