@@ -38,7 +38,7 @@ export function registerPlugin() {
         './bookmark-block/index.mjs'
       );
       logger.info('bookmark plugin path:', bookmarkPluginPath);
-      import(bookmarkPluginPath);
+      import('file://' + bookmarkPluginPath);
       let dispose: () => void = () => {
         // noop
       };

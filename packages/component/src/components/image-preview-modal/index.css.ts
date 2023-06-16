@@ -49,7 +49,7 @@ export const imagePreviewModalGoStyle = style({
 export const imageNavigationControlStyle = style({
   display: 'flex',
   height: '100%',
-  zIndex: 0,
+  zIndex: 2,
   justifyContent: 'space-between',
   alignItems: 'center',
 });

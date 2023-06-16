@@ -2,6 +2,9 @@ import { style } from '@vanilla-extract/css';
 
 export const conversationStyle = style({
   padding: '10px 18px',
+  border: '1px solid var(--affine-border-color)',
+  fontSize: 'var(--affine-font-xs)',
+  lineHeight: '16px',
 });
 
 export const aiMessageStyle = style({
@@ -11,5 +14,5 @@ export const aiMessageStyle = style({
 
 export const humanMessageStyle = style({
   borderRadius: '18px 18px 2px 18px',
-  backgroundColor: 'white',
+  backgroundColor: 'var(--affine-white-90)',
 });
