@@ -1,6 +1,7 @@
 /// <reference types="react/experimental" />
 import '@blocksuite/blocks';
 
+import { Button, Tooltip } from '@affine/component';
 import type { EmbedBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -21,20 +22,17 @@ import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
-import Button from '../../ui/button/button';
 import { useZoomControls } from './hooks/use-zoom';
 import {
   buttonStyle,
   captionStyle,
   groupStyle,
   imageBottomContainerStyle,
-  imageNavigationControlStyle,
   imagePreviewActionBarStyle,
   imagePreviewModalCaptionStyle,
   imagePreviewModalCenterStyle,
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
-  imagePreviewModalGoStyle,
   imagePreviewModalStyle,
   scaleIndicatorStyle,
 } from './index.css';
@@ -88,6 +86,7 @@ const ImagePreviewModalImpl = (
     handleDragStart,
     handleDragEnd,
     resetZoom,
+    resetScale,
     currentScale,
   } = useZoomControls({ zoomRef, imageRef });
   const [prevData, setPrevData] = useState<string | null>(() => data);
@@ -105,6 +104,7 @@ const ImagePreviewModalImpl = (
   if (!url) {
     return null;
   }
+
   const nextImageHandler = (blockId: string | null) => {
     assertExists(blockId);
     const workspace = props.workspace;
@@ -120,12 +120,6 @@ const ImagePreviewModalImpl = (
       );
     if (nextBlock) {
       setBlockId(nextBlock.id);
-      const image = imageRef.current;
-      resetZoom();
-      if (image) {
-        image.style.width = '50%'; // Reset the width to its original size
-        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-      }
     }
   };
 
@@ -143,12 +137,6 @@ const ImagePreviewModalImpl = (
       );
     if (prevBlock) {
       setBlockId(prevBlock.id);
-      const image = imageRef.current;
-      if (image) {
-        resetZoom();
-        image.style.width = '50%'; // Reset the width to its original size
-        image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-      }
     }
   };
 
@@ -173,12 +161,6 @@ const ImagePreviewModalImpl = (
         );
       if (prevBlock) {
         setBlockId(prevBlock.id);
-        const image = imageRef.current;
-        resetZoom();
-        if (image) {
-          image.style.width = '100%'; // Reset the width to its original size
-          image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-        }
       }
     } else if (
       page
@@ -278,33 +260,13 @@ const ImagePreviewModalImpl = (
   };
 
   return (
-    <div data-testid="image-preview-modal" className={imagePreviewModalStyle}>
-      <div className={imageNavigationControlStyle}>
-        <span
-          className={imagePreviewModalGoStyle}
-          style={{
-            left: 0,
-          }}
-          onClick={() => {
-            assertExists(blockId);
-            previousImageHandler(blockId);
-          }}
-        >
-          ❮
-        </span>
-        <span
-          className={imagePreviewModalGoStyle}
-          style={{
-            right: 0,
-          }}
-          onClick={() => {
-            assertExists(blockId);
-            nextImageHandler(blockId);
-          }}
-        >
-          ❯
-        </span>
-      </div>
+    <div
+      data-testid="image-preview-modal"
+      className={imagePreviewModalStyle}
+      onClick={event =>
+        event.target === event.currentTarget ? props.onClose() : null
+      }
+    >
       <div className={imagePreviewModalContainerStyle}>
         <div
           className={clsx('zoom-area', { 'zoomed-bigger': isZoomedBigger })}
@@ -322,7 +284,7 @@ const ImagePreviewModalImpl = (
               onMouseUp={handleDragEnd}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
-              width={'50%'}
+              onLoad={resetZoom}
             />
             {isZoomedBigger ? null : (
               <p className={imagePreviewModalCaptionStyle}>{caption}</p>
@@ -356,113 +318,138 @@ const ImagePreviewModalImpl = (
           className={imageBottomContainerStyle}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
+          onClick={event => event.stopPropagation()}
         >
           {isZoomedBigger && caption !== '' ? (
             <p className={captionStyle}>{caption}</p>
           ) : null}
           <div className={imagePreviewActionBarStyle}>
             <div>
-              <Button
-                icon={<ArrowLeftSmallIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => {
-                  assertExists(blockId);
-                  previousImageHandler(blockId);
-                }}
-              />
-              <Button
-                icon={<ArrowRightSmallIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => {
-                  assertExists(blockId);
-                  nextImageHandler(blockId);
-                }}
-              />
+              <Tooltip content={'Previous Image'} disablePortal={false}>
+                <Button
+                  icon={<ArrowLeftSmallIcon />}
+                  noBorder={true}
+                  className={buttonStyle}
+                  onClick={() => {
+                    assertExists(blockId);
+                    previousImageHandler(blockId);
+                  }}
+                />
+              </Tooltip>
+              <Tooltip content={'Next Image'} disablePortal={false}>
+                <Button
+                  icon={<ArrowRightSmallIcon />}
+                  noBorder={true}
+                  className={buttonStyle}
+                  onClick={() => {
+                    assertExists(blockId);
+                    nextImageHandler(blockId);
+                  }}
+                />
+              </Tooltip>
             </div>
             <div className={groupStyle}>
-              <Button
-                icon={<ViewBarIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => resetZoom()}
-              />
-              <Button
-                icon={<MinusIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={zoomOut}
-              />
-              <span className={scaleIndicatorStyle}>{`${(
-                currentScale * 100
-              ).toFixed(0)}%`}</span>
-              <Button
-                icon={<PlusIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => zoomIn()}
-              />
+              <Tooltip
+                content={'Fit Screen'}
+                disablePortal={true}
+                showArrow={false}
+              >
+                <Button
+                  icon={<ViewBarIcon />}
+                  noBorder={true}
+                  className={buttonStyle}
+                  onClick={() => resetZoom()}
+                />
+              </Tooltip>
+              <Tooltip content={'Zoom out'} disablePortal={false}>
+                <Button
+                  icon={<MinusIcon />}
+                  noBorder={true}
+                  className={buttonStyle}
+                  onClick={zoomOut}
+                />
+              </Tooltip>
+              <Tooltip content={'Reset Scale'} disablePortal={false}>
+                <Button onClick={resetScale} noBorder={true}>
+                  <span className={scaleIndicatorStyle}>{`${(
+                    currentScale * 100
+                  ).toFixed(0)}%`}</span>
+                </Button>
+              </Tooltip>
+              <Tooltip content={'Zoom in'} disablePortal={false}>
+                <Button
+                  icon={<PlusIcon />}
+                  noBorder={true}
+                  className={buttonStyle}
+                  onClick={() => zoomIn()}
+                />
+              </Tooltip>
             </div>
             <div className={groupStyle}>
-              <Button
-                icon={<DownloadIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => {
-                  assertExists(blockId);
-                  downloadHandler(blockId).catch(err => {
-                    console.error('Could not download image', err);
-                  });
-                }}
-              />
-              <Button
-                icon={<CopyIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => {
-                  if (!imageRef.current) {
-                    return;
-                  }
-                  const canvas = document.createElement('canvas');
-                  canvas.width = imageRef.current.naturalWidth;
-                  canvas.height = imageRef.current.naturalHeight;
-                  const context = canvas.getContext('2d');
-                  if (!context) {
-                    console.warn('Could not get canvas context');
-                    return;
-                  }
-                  context.drawImage(imageRef.current, 0, 0);
-                  canvas.toBlob(blob => {
-                    if (!blob) {
-                      console.warn('Could not get blob');
+              <Tooltip content={'Download'} disablePortal={false}>
+                <Button
+                  icon={<DownloadIcon />}
+                  noBorder={true}
+                  className={buttonStyle}
+                  onClick={() => {
+                    assertExists(blockId);
+                    downloadHandler(blockId).catch(err => {
+                      console.error('Could not download image', err);
+                    });
+                  }}
+                />
+              </Tooltip>
+              <Tooltip content={'Copy'} disablePortal={false}>
+                <Button
+                  icon={<CopyIcon />}
+                  noBorder={true}
+                  className={buttonStyle}
+                  onClick={() => {
+                    if (!imageRef.current) {
                       return;
                     }
-                    const dataUrl = URL.createObjectURL(blob);
-                    navigator.clipboard
-                      .write([new ClipboardItem({ 'image/png': blob })])
-                      .then(() => {
-                        console.log('Image copied to clipboard');
-                        URL.revokeObjectURL(dataUrl);
-                      })
-                      .catch(error => {
-                        console.error(
-                          'Error copying image to clipboard',
-                          error
-                        );
-                        URL.revokeObjectURL(dataUrl);
-                      });
-                  }, 'image/png');
-                }}
-              />
+                    const canvas = document.createElement('canvas');
+                    canvas.width = imageRef.current.naturalWidth;
+                    canvas.height = imageRef.current.naturalHeight;
+                    const context = canvas.getContext('2d');
+                    if (!context) {
+                      console.warn('Could not get canvas context');
+                      return;
+                    }
+                    context.drawImage(imageRef.current, 0, 0);
+                    canvas.toBlob(blob => {
+                      if (!blob) {
+                        console.warn('Could not get blob');
+                        return;
+                      }
+                      const dataUrl = URL.createObjectURL(blob);
+                      navigator.clipboard
+                        .write([new ClipboardItem({ 'image/png': blob })])
+                        .then(() => {
+                          console.log('Image copied to clipboard');
+                          URL.revokeObjectURL(dataUrl);
+                        })
+                        .catch(error => {
+                          console.error(
+                            'Error copying image to clipboard',
+                            error
+                          );
+                          URL.revokeObjectURL(dataUrl);
+                        });
+                    }, 'image/png');
+                  }}
+                />
+              </Tooltip>
             </div>
             <div className={groupStyle}>
-              <Button
-                icon={<DeleteIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => blockId && deleteHandler(blockId)}
-              />
+              <Tooltip content={'Delete'} disablePortal={false}>
+                <Button
+                  icon={<DeleteIcon />}
+                  noBorder={true}
+                  className={buttonStyle}
+                  onClick={() => blockId && deleteHandler(blockId)}
+                />
+              </Tooltip>
             </div>
           </div>
         </div>
