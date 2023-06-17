@@ -150,6 +150,12 @@ type SubDocsEvent = {
 
 /**
  * We use `doc.guid` as the unique key, please make sure it not changes.
+ *
+ * createIndexedDBProvider will create a new IndexedDBProvider instance,
+ * which will connect to the IndexedDB, allowing pushing doc updates to the IndexedDB, including subdocs,
+ * but will NOT pull data from IDB to yDoc on connect.
+ *
+ * If you want to sync the data on connect, please use `createIndexedDBDownloadProvider`.
  */
 export const createIndexedDBProvider = (
   doc: Doc,
@@ -265,6 +271,9 @@ export const createIndexedDBProvider = (
   };
 
   function trackDoc(id: string, doc: Doc) {
+    if (!connected) {
+      return;
+    }
     doc.on('update', createOrGetHandleUpdate(id, doc));
     doc.on('destroy', createOrGetHandleDestroy(id, doc));
     doc.on('subdocs', createOrGetHandleSubDocs(id, doc));
@@ -343,6 +352,19 @@ export const createIndexedDBProvider = (
       });
       connected = true;
       trackDoc(doc.guid, doc);
+
+      // also track all loaded subdocs
+      doc.subdocs.forEach(subdoc => {
+        // TODO: may need to untrack the subdoc when disconnected?
+        subdoc.whenLoaded
+          .then(() => {
+            trackDoc(subdoc.guid, subdoc);
+          })
+          .catch(err => {
+            console.error(err);
+          });
+      });
+
       // only the runs `await` below, otherwise the logic is incorrect
       const db = await dbPromise;
       if (migrate) {

@@ -13,10 +13,11 @@ import {
   Workspace as BlockSuiteWorkspace,
 } from '@blocksuite/store';
 import {
-  createIndexedDBProvider as create,
+  createIndexedDBProvider,
   downloadBinary,
   EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
+import type { Doc } from 'yjs';
 
 import { KeckProvider } from '../affine/keck';
 import { getLoginStorage, storageChangeSlot } from '../affine/login';
@@ -82,7 +83,7 @@ const createAffineWebSocketProvider = (
 const createIndexedDBBackgroundProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBBackgroundProvider => {
-  const indexeddbProvider = create(blockSuiteWorkspace.doc);
+  const indexeddbProvider = createIndexedDBProvider(blockSuiteWorkspace.doc);
   const callbacks = new CallbackSet();
   return {
     flavour: 'local-indexeddb-background',
@@ -129,6 +130,30 @@ const createIndexedDBDownloadProvider = (
     _resolve = resolve;
     _reject = reject;
   });
+
+  async function loadDocFromIDB(doc: Doc) {
+    const binary = await downloadBinary(doc.guid);
+    if (binary !== false) {
+      Y.applyUpdate(doc, binary);
+      // load event will
+      // - change isLoaded to true
+      // - resolve doc.whenLoaded
+      doc.emit('load', []);
+      return true;
+    }
+    return false;
+  }
+
+  // load root & shouldLoad subdocs
+  async function loadAllDocFromIDB(doc: Doc) {
+    if (await loadDocFromIDB(doc)) {
+      const subdocs = Array.from(doc.subdocs).filter(
+        subdoc => subdoc.shouldLoad
+      );
+      await Promise.all(subdocs.map(loadDocFromIDB));
+    }
+  }
+
   return {
     flavour: 'local-indexeddb',
     necessary: true,
@@ -139,12 +164,12 @@ const createIndexedDBDownloadProvider = (
       // todo: cleanup data
     },
     sync: () => {
-      logger.info('connect indexeddb provider', blockSuiteWorkspace.id);
-      downloadBinary(blockSuiteWorkspace.id)
-        .then(binary => {
-          if (binary !== false) {
-            Y.applyUpdate(blockSuiteWorkspace.doc, binary);
-          }
+      logger.info(
+        'connect indexeddb download provider',
+        blockSuiteWorkspace.id
+      );
+      loadAllDocFromIDB(blockSuiteWorkspace.doc)
+        .then(() => {
           _resolve();
         })
         .catch(error => {

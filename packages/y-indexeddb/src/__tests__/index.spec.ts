@@ -29,12 +29,12 @@ function initEmptyPage(page: Page) {
     title: new page.Text(''),
   });
   const surfaceBlockId = page.addBlock('affine:surface', {}, pageBlockId);
-  const frameBLockId = page.addBlock('affine:frame', {}, pageBlockId);
-  const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBLockId);
+  const frameBlockId = page.addBlock('affine:frame', {}, pageBlockId);
+  const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBlockId);
   return {
     pageBlockId,
     surfaceBlockId,
-    frameBLockId,
+    frameBlockId,
     paragraphBlockId,
   };
 }
@@ -107,24 +107,26 @@ describe('indexeddb provider', () => {
       })
         .register(AffineSchemas)
         .register(__unstableSchemas);
+      // data should only contain updates for the root doc
       data.updates.forEach(({ update }) => {
         Workspace.Y.applyUpdate(testWorkspace.doc, update);
       });
-      const binary = Workspace.Y.encodeStateAsUpdate(testWorkspace.doc);
-      expect(binary).toEqual(Workspace.Y.encodeStateAsUpdate(workspace.doc));
-    }
 
-    const secondWorkspace = new Workspace({
-      id,
-    })
-      .register(AffineSchemas)
-      .register(__unstableSchemas);
-    const provider2 = createIndexedDBProvider(secondWorkspace.doc, rootDBName);
-    provider2.connect();
-    await provider2.whenSynced;
-    expect(Workspace.Y.encodeStateAsUpdate(secondWorkspace.doc)).toEqual(
-      Workspace.Y.encodeStateAsUpdate(workspace.doc)
-    );
+      // subdocs should not be synced yet because we are not using provider
+      expect(testWorkspace.doc.toJSON()).not.toEqual(workspace.doc.toJSON());
+
+      // sync subdocs
+      const page = testWorkspace.getPage('page0');
+      assertExists(page);
+      const pageData = (await store.get(page.spaceDoc.guid)) as
+        | WorkspacePersist
+        | undefined;
+      assertExists(pageData);
+      pageData.updates.forEach(({ update }) => {
+        Workspace.Y.applyUpdate(page.spaceDoc, update);
+      });
+      expect(testWorkspace.doc.toJSON()).toEqual(workspace.doc.toJSON());
+    }
   });
 
   test('disconnect suddenly', async () => {
@@ -410,6 +412,7 @@ describe('subDoc', () => {
       provider.disconnect();
       json2 = doc.toJSON();
     }
+    // the following line compares {} with {}
     expect(json1['']['1'].toJSON()).toEqual(json2['']['1'].toJSON());
     expect(json1['']['2']).toEqual(json2['']['2']);
   });
