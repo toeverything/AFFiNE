@@ -82,10 +82,7 @@ const createAffineWebSocketProvider = (
 const createIndexedDBBackgroundProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBBackgroundProvider => {
-  const indexeddbProvider = create(
-    blockSuiteWorkspace.id,
-    blockSuiteWorkspace.doc
-  );
+  const indexeddbProvider = create(blockSuiteWorkspace.doc);
   const callbacks = new CallbackSet();
   return {
     flavour: 'local-indexeddb-background',

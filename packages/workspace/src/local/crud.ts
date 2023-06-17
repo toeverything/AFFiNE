@@ -66,7 +66,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
       WorkspaceFlavour.LOCAL
     );
     BlockSuiteWorkspace.Y.applyUpdateV2(blockSuiteWorkspace.doc, binary);
-    const persistence = createIndexedDBProvider(id, blockSuiteWorkspace.doc);
+    const persistence = createIndexedDBProvider(blockSuiteWorkspace.doc);
     persistence.connect();
     await persistence.whenSynced.then(() => {
       persistence.disconnect();
