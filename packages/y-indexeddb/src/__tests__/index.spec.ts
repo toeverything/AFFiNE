@@ -70,7 +70,7 @@ afterEach(() => {
 
 describe('indexeddb provider', () => {
   test('connect', async () => {
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(workspace.doc);
     provider.connect();
     await provider.whenSynced;
     const db = await openDB(rootDBName, dbVersion);
@@ -119,11 +119,7 @@ describe('indexeddb provider', () => {
     })
       .register(AffineSchemas)
       .register(__unstableSchemas);
-    const provider2 = createIndexedDBProvider(
-      secondWorkspace.id,
-      secondWorkspace.doc,
-      rootDBName
-    );
+    const provider2 = createIndexedDBProvider(secondWorkspace.doc, rootDBName);
     provider2.connect();
     await provider2.whenSynced;
     expect(Workspace.Y.encodeStateAsUpdate(secondWorkspace.doc)).toEqual(
@@ -132,11 +128,7 @@ describe('indexeddb provider', () => {
   });
 
   test('disconnect suddenly', async () => {
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     const fn = vi.fn();
     provider.connect();
     provider.disconnect();
@@ -146,11 +138,7 @@ describe('indexeddb provider', () => {
   });
 
   test('connect and disconnect', async () => {
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     expect(provider.connected).toBe(true);
     const p1 = provider.whenSynced;
@@ -186,7 +174,7 @@ describe('indexeddb provider', () => {
   });
 
   test('cleanup', async () => {
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(workspace.doc);
     provider.connect();
     await provider.whenSynced;
     const db = await openDB(rootDBName, dbVersion);
@@ -212,7 +200,7 @@ describe('indexeddb provider', () => {
   });
 
   test('cleanup when connecting', async () => {
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(workspace.doc);
     provider.connect();
     await expect(() => provider.cleanup()).rejects.toThrowError(
       CleanupWhenConnectingError
@@ -224,11 +212,7 @@ describe('indexeddb provider', () => {
 
   test('merge', async () => {
     setMergeCount(5);
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     {
       const page = workspace.createPage({ id: 'page0' });
@@ -247,21 +231,20 @@ describe('indexeddb provider', () => {
   });
 
   test("data won't be lost", async () => {
-    const id = uuidv4();
     const doc = new Workspace.Y.Doc();
     const map = doc.getMap('map');
     for (let i = 0; i < 100; i++) {
       map.set(`${i}`, i);
     }
     {
-      const provider = createIndexedDBProvider(id, doc, rootDBName);
+      const provider = createIndexedDBProvider(doc, rootDBName);
       provider.connect();
       await provider.whenSynced;
       provider.disconnect();
     }
     {
       const newDoc = new Workspace.Y.Doc();
-      const provider = createIndexedDBProvider(id, newDoc, rootDBName);
+      const provider = createIndexedDBProvider(newDoc, rootDBName);
       provider.connect();
       await provider.whenSynced;
       provider.disconnect();
@@ -280,8 +263,10 @@ describe('indexeddb provider', () => {
       await persistence.destroy();
     }
     {
-      const yDoc = new Doc();
-      const provider = createIndexedDBProvider('test', yDoc);
+      const yDoc = new Doc({
+        guid: 'test',
+      });
+      const provider = createIndexedDBProvider(yDoc);
       provider.connect();
       await provider.whenSynced;
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -293,9 +278,11 @@ describe('indexeddb provider', () => {
         throw new Error('not supported');
       });
       await expect(indexedDB.databases).rejects.toThrow('not supported');
-      const yDoc = new Doc();
+      const yDoc = new Doc({
+        guid: 'test',
+      });
       expect(indexedDB.databases).toBeCalledTimes(1);
-      const provider = createIndexedDBProvider('test', yDoc);
+      const provider = createIndexedDBProvider(yDoc);
       provider.connect();
       await provider.whenSynced;
       expect(indexedDB.databases).toBeCalledTimes(2);
@@ -314,8 +301,10 @@ describe('indexeddb provider', () => {
       expect(event).toBe('beforeunload');
       return oldRemoveEventListener(event, fn, options);
     });
-    const doc = new Doc();
-    const provider = createIndexedDBProvider('1', doc);
+    const doc = new Doc({
+      guid: '1',
+    });
+    const provider = createIndexedDBProvider(doc);
     const map = doc.getMap('map');
     map.set('1', 1);
     provider.connect();
@@ -394,21 +383,25 @@ describe('subDoc', () => {
   test('basic', async () => {
     let json1: any, json2: any;
     {
-      const doc = new Doc();
+      const doc = new Doc({
+        guid: 'test',
+      });
       const map = doc.getMap();
       const subDoc = new Doc();
       subDoc.load();
       map.set('1', subDoc);
       map.set('2', 'test');
-      const provider = createIndexedDBProvider('test', doc);
+      const provider = createIndexedDBProvider(doc);
       provider.connect();
       await provider.whenSynced;
       provider.disconnect();
       json1 = doc.toJSON();
     }
     {
-      const doc = new Doc();
-      const provider = createIndexedDBProvider('test', doc);
+      const doc = new Doc({
+        guid: 'test',
+      });
+      const provider = createIndexedDBProvider(doc);
       provider.connect();
       await provider.whenSynced;
       const map = doc.getMap();
@@ -427,11 +420,7 @@ describe('subDoc', () => {
     });
     await page0.waitForLoaded();
     const { paragraphBlockId: paragraphBlockIdPage1 } = initEmptyPage(page0);
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     const page1 = workspace.createPage({
       id: 'page1',
@@ -446,11 +435,7 @@ describe('subDoc', () => {
         isSSR: true,
       });
       newWorkspace.register(AffineSchemas).register(__unstableSchemas);
-      const provider = createIndexedDBProvider(
-        newWorkspace.id,
-        newWorkspace.doc,
-        rootDBName
-      );
+      const provider = createIndexedDBProvider(newWorkspace.doc, rootDBName);
       provider.connect();
       await provider.whenSynced;
       const page0 = newWorkspace.getPage('page0') as Page;
@@ -474,11 +459,7 @@ describe('utils', () => {
     const page = workspace.createPage({ id: 'page0' });
     await page.waitForLoaded();
     initEmptyPage(page);
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     await provider.whenSynced;
     provider.disconnect();
