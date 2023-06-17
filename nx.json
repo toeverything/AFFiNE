@@ -3,9 +3,10 @@
   "npmScope": "toeverything",
   "tasksRunnerOptions": {
     "default": {
-      "runner": "nx/tasks-runners/default",
+      "runner": "nx-cloud",
       "options": {
-        "cacheableOperations": ["build", "test"]
+        "cacheableOperations": ["build", "test"],
+        "accessToken": "MjNlN2ViZmMtNDM4NS00MDViLWE0NjUtNGFhNmIyMTc1ZDVhfHJlYWQtd3JpdGU="
       }
     }
   },
@@ -65,8 +66,12 @@
     "e2e": {
       "dependsOn": ["^build"],
       "inputs": [
-        { "runtime": "node -v" },
-        { "runtime": "yarn playwright --version" }
+        {
+          "runtime": "node -v"
+        },
+        {
+          "runtime": "yarn playwright --version"
+        }
       ]
     },
     "dev": {
