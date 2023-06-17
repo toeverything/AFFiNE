@@ -52,7 +52,7 @@
     "rxjs": "^7.8.1",
     "swr": "^2.1.5",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.2",
+    "yjs": "^13.6.4",
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -69,7 +69,7 @@
     "@vanilla-extract/next-plugin": "=2.1.2",
     "dotenv": "^16.1.4",
     "eslint": "^8.42.0",
-    "eslint-config-next": "^13.4.5",
+    "eslint-config-next": "^13.4.6",
     "eslint-plugin-unicorn": "^47.0.0",
     "next": "=13.4.2",
     "next-debug-local": "^0.1.5",

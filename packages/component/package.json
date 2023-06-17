@@ -64,7 +64,7 @@
     "@vanilla-extract/css": "^1.11.1",
     "typescript": "^5.1.3",
     "vite": "^4.3.9",
-    "yjs": "^13.6.2"
+    "yjs": "^13.6.4"
   },
   "version": "0.7.0-canary.18"
 }
