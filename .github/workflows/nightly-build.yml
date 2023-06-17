@@ -11,6 +11,7 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/nightly-build.yml'
+      - '!.github/actions/setup-node/action.yml'
 
 permissions:
   actions: write

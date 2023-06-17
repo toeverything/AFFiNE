@@ -10,6 +10,8 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/build.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-node/action.yml'
   pull_request:
     branches:
       - master
@@ -19,6 +21,8 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/build.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-node/action.yml'
 
 env:
   DEBUG: napi:*
