@@ -116,8 +116,31 @@ describe('AppModule', () => {
   });
 
   test('should find default user', async () => {
+    let token;
     await request(app.getHttpServer())
       .post(gql)
+      .send({
+        query: `
+          mutation {
+            signIn(email: "alex.yang@example.org", password: "123456") {
+              token {
+                token
+              }
+            }
+          }
+        `,
+      })
+      .expect(200)
+      .expect(res => {
+        ok(
+          typeof res.body.data.signIn.token.token === 'string',
+          'res.body.data.signIn.token.token is not a string'
+        );
+        token = res.body.data.signIn.token.token;
+      });
+    await request(app.getHttpServer())
+      .post(gql)
+      .set({ Authorization: token })
       .send({
         query: `
       query {

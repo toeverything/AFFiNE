@@ -15,7 +15,22 @@ mutation createWorkspace {
   createWorkspace {
     id
     public
-    created_at
+    createdAt
+  }
+}`,
+};
+
+export const uploadAvatarMutation = {
+  id: 'uploadAvatarMutation' as const,
+  operationName: 'uploadAvatar',
+  definitionName: 'uploadAvatar',
+  query: `
+mutation uploadAvatar($id: String!) {
+  uploadAvatar(id: $id) {
+    id
+    name
+    avatarUrl
+    email
   }
 }`,
 };
@@ -28,9 +43,8 @@ export const workspaceByIdQuery = {
 query workspaceById($id: String!) {
   workspace(id: $id) {
     id
-    type
     public
-    created_at
+    createdAt
   }
 }`,
 };

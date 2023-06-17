@@ -37,7 +37,7 @@ model User {
   email         String?                   @unique
   emailVerified DateTime?                 @map("email_verified")
   // image field is for the next-auth
-  image         String?                   @map("avatar_url") @db.VarChar
+  avatarUrl     String?                   @map("image") @db.VarChar
   accounts      Account[]
   sessions      Session[]
   workspaces    UserWorkspacePermission[]

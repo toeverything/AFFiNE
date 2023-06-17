@@ -9,7 +9,7 @@
     "moduleResolution": "bundler",
     "isolatedModules": false,
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["node", "multer"],
     "outDir": "dist",
     "noEmit": false,
     "verbatimModuleSyntax": false

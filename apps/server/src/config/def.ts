@@ -163,6 +163,12 @@ export interface AFFiNEConfig {
      * }
      */
     config: Record<string, string>;
+    /**
+     * Only used when `enable` is `false`
+     */
+    fs: {
+      path: string;
+    };
   };
 
   /**

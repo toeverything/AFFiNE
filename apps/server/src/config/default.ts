@@ -1,5 +1,8 @@
 /// <reference types="../global.d.ts" />
 
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 import parse from 'parse-duration';
 
 import pkg from '../../package.json' assert { type: 'json' };
@@ -73,5 +76,8 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
   objectStorage: {
     enable: false,
     config: {},
+    fs: {
+      path: join(homedir(), '.affine-storage'),
+    },
   },
 });

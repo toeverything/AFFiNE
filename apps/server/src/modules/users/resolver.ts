@@ -1,7 +1,20 @@
-import { Args, Field, ID, ObjectType, Query, Resolver } from '@nestjs/graphql';
+import { UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Args,
+  Field,
+  ID,
+  Mutation,
+  ObjectType,
+  Query,
+  Resolver,
+} from '@nestjs/graphql';
+import { FileInterceptor } from '@nestjs/platform-express/multer';
 import type { User } from '@prisma/client';
+import { memoryStorage } from 'multer';
 
 import { PrismaService } from '../../prisma/service';
+import { Auth } from '../auth/guard';
+import { StorageService } from '../storage/storage.service';
 
 @ObjectType()
 export class UserType implements Partial<User> {
@@ -21,9 +34,13 @@ export class UserType implements Partial<User> {
   createdAt!: Date;
 }
 
+@Auth()
 @Resolver(() => UserType)
 export class UserResolver {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService
+  ) {}
 
   @Query(() => UserType, {
     name: 'user',
@@ -32,6 +49,27 @@ export class UserResolver {
   async user(@Args('email') email: string) {
     return this.prisma.user.findUnique({
       where: { email },
+    });
+  }
+
+  @Mutation(() => UserType, {
+    name: 'uploadAvatar',
+    description: 'Upload user avatar',
+  })
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: memoryStorage(),
+      limits: { fileSize: 1024 * 1024 * 10, files: 1 },
+    })
+  )
+  async uploadAvatar(
+    @Args('id') id: string,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    const url = await this.storage.uploadFile(`avatars/${id}`, file.buffer);
+    return this.prisma.user.update({
+      where: { id },
+      data: { avatarUrl: url },
     });
   }
 }
