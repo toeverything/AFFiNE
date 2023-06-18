@@ -46,7 +46,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   getWorkspaceName = () => {
-    return this.yDoc.getMap('space:meta').get('name') as string;
+    return this.yDoc.getMap('meta').get('name') as string;
   };
 
   setupListener(docId?: string) {
