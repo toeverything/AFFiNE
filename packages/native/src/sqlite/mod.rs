@@ -17,8 +17,15 @@ pub struct BlobRow {
 #[napi(object)]
 pub struct UpdateRow {
   pub id: i64,
+  pub doc_id: Option<String>,
   pub timestamp: NaiveDateTime,
   pub data: Buffer,
+}
+
+#[napi(object)]
+pub struct InsertRow {
+  pub doc_id: Option<String>,
+  pub data: Uint8Array,
 }
 
 #[napi]
@@ -53,6 +60,7 @@ impl SqliteConnection {
       .execute(connection.as_mut())
       .await
       .map_err(anyhow::Error::from)?;
+    self.migrate_add_doc_id().await?;
     connection.detach();
     Ok(())
   }
@@ -100,7 +108,16 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn get_updates(&self) -> napi::Result<Vec<UpdateRow>> {
+  pub async fn get_updates(&self, doc_id: Option<String>) -> napi::Result<Vec<UpdateRow>> {
+    let updates = sqlx::query_as!(UpdateRow, "SELECT * FROM updates WHERE doc_id = ?", doc_id)
+      .fetch_all(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(updates)
+  }
+
+  #[napi]
+  pub async fn get_all_updates(&self) -> napi::Result<Vec<UpdateRow>> {
     let updates = sqlx::query_as!(UpdateRow, "SELECT * FROM updates")
       .fetch_all(&self.pool)
       .await
@@ -109,14 +126,48 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn insert_updates(&self, updates: Vec<Uint8Array>) -> napi::Result<()> {
+  pub async fn insert_updates(&self, updates: Vec<InsertRow>) -> napi::Result<()> {
     let mut transaction = self.pool.begin().await.map_err(anyhow::Error::from)?;
-    for update in updates.into_iter() {
-      let update = update.as_ref();
-      sqlx::query_as!(UpdateRow, "INSERT INTO updates (data) VALUES ($1)", update)
-        .execute(&mut *transaction)
-        .await
-        .map_err(anyhow::Error::from)?;
+    for InsertRow { data, doc_id } in updates {
+      let update = data.as_ref();
+      sqlx::query_as!(
+        UpdateRow,
+        "INSERT INTO updates (data, doc_id) VALUES ($1, $2)",
+        update,
+        doc_id
+      )
+      .execute(&mut *transaction)
+      .await
+      .map_err(anyhow::Error::from)?;
+    }
+    transaction.commit().await.map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn replace_updates(
+    &self,
+    doc_id: Option<String>,
+    updates: Vec<InsertRow>,
+  ) -> napi::Result<()> {
+    let mut transaction = self.pool.begin().await.map_err(anyhow::Error::from)?;
+
+    sqlx::query!("DELETE FROM updates where doc_id = ?", doc_id)
+      .execute(&mut *transaction)
+      .await
+      .map_err(anyhow::Error::from)?;
+
+    for InsertRow { data, doc_id } in updates {
+      let update = data.as_ref();
+      sqlx::query_as!(
+        UpdateRow,
+        "INSERT INTO updates (data, doc_id) VALUES ($1, $2)",
+        update,
+        doc_id
+      )
+      .execute(&mut *transaction)
+      .await
+      .map_err(anyhow::Error::from)?;
     }
     transaction.commit().await.map_err(anyhow::Error::from)?;
     Ok(())
@@ -156,6 +207,24 @@ impl SqliteConnection {
       }
     } else {
       false
+    }
+  }
+
+  // todo: have a better way to handle migration
+  async fn migrate_add_doc_id(&self) -> Result<(), anyhow::Error> {
+    // ignore errors
+    match sqlx::query("ALTER TABLE updates ADD COLUMN doc_id TEXT")
+      .execute(&self.pool)
+      .await
+    {
+      Ok(_) => Ok(()),
+      Err(err) => {
+        if err.to_string().contains("duplicate column name") {
+          Ok(()) // Ignore error if it's due to duplicate column
+        } else {
+          Err(anyhow::Error::from(err)) // Propagate other errors
+        }
+      }
     }
   }
 }
