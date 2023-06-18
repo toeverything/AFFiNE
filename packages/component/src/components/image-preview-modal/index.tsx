@@ -20,6 +20,7 @@ import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import useSWR from 'swr';
 
 import { useZoomControls } from './hooks/use-zoom';
 import {
@@ -34,9 +35,11 @@ import {
   imagePreviewModalContainerStyle,
   imagePreviewModalStyle,
   loaded,
+  scaleIndicatorButtonStyle,
   unloaded,
 } from './index.css';
 import { previewBlockIdAtom } from './index.jotai';
+import { toast } from './toast';
 
 export type ImagePreviewModalProps = {
   workspace: Workspace;
@@ -103,37 +106,14 @@ const ImagePreviewModalImpl = (
     [props.pageId, props.workspace, setBlockId]
   );
 
-  const previousImageHandler = (blockId: string | null) => {
-    assertExists(blockId);
-    const workspace = props.workspace;
-    const page = workspace.getPage(props.pageId);
-    assertExists(page);
-    const block = page.getBlockById(blockId);
-    assertExists(block);
-    const prevBlock = page
-      .getPreviousSiblings(block)
-      .findLast(
-        (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
-      );
-    if (prevBlock) {
-      setBlockId(prevBlock.id);
-    }
-  };
-
-  const deleteHandler = (blockId: string) => {
-    const workspace = props.workspace;
-
-    const page = workspace.getPage(props.pageId);
-    assertExists(page);
-    const block = page.getBlockById(blockId);
-    assertExists(block);
-    if (
-      page
-        .getPreviousSiblings(block)
-        .findLast(
-          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
-        )
-    ) {
+  const previousImageHandler = useCallback(
+    (blockId: string | null) => {
+      assertExists(blockId);
+      const workspace = props.workspace;
+      const page = workspace.getPage(props.pageId);
+      assertExists(page);
+      const block = page.getBlockById(blockId);
+      assertExists(block);
       const prevBlock = page
         .getPreviousSiblings(block)
         .findLast(
@@ -142,90 +122,158 @@ const ImagePreviewModalImpl = (
       if (prevBlock) {
         setBlockId(prevBlock.id);
       }
-    } else if (
-      page
-        .getNextSiblings(block)
-        .find(
-          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
-        )
-    ) {
-      const nextBlock = page
-        .getNextSiblings(block)
-        .find(
-          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
-        );
-      if (nextBlock) {
-        const image = imageRef.current;
-        resetZoom();
-        if (image) {
-          image.style.width = '100%'; // Reset the width to its original size
-          image.style.height = 'auto'; // Reset the height to maintain aspect ratio
-        }
-        setBlockId(nextBlock.id);
-      }
-    } else {
-      props.onClose();
-    }
-    page.deleteBlock(block);
-  };
+      resetZoom();
+    },
+    [props.pageId, props.workspace, setBlockId, resetZoom]
+  );
 
-  const downloadHandler = async (blockId: string | null) => {
-    const workspace = props.workspace;
-    const page = workspace.getPage(props.pageId);
+  const deleteHandler = useCallback(
+    (blockId: string) => {
+      const { pageId, workspace, onClose } = props;
+
+      const page = workspace.getPage(pageId);
+      assertExists(page);
+      const block = page.getBlockById(blockId);
+      assertExists(block);
+      if (
+        page
+          .getPreviousSiblings(block)
+          .findLast(
+            (block): block is EmbedBlockModel =>
+              block.flavour === 'affine:embed'
+          )
+      ) {
+        const prevBlock = page
+          .getPreviousSiblings(block)
+          .findLast(
+            (block): block is EmbedBlockModel =>
+              block.flavour === 'affine:embed'
+          );
+        if (prevBlock) {
+          setBlockId(prevBlock.id);
+        }
+      } else if (
+        page
+          .getNextSiblings(block)
+          .find(
+            (block): block is EmbedBlockModel =>
+              block.flavour === 'affine:embed'
+          )
+      ) {
+        const nextBlock = page
+          .getNextSiblings(block)
+          .find(
+            (block): block is EmbedBlockModel =>
+              block.flavour === 'affine:embed'
+          );
+        if (nextBlock) {
+          setBlockId(nextBlock.id);
+        }
+      } else {
+        onClose();
+      }
+      page.deleteBlock(block);
+    },
+    [props, setBlockId]
+  );
+
+  const downloadHandler = useCallback(
+    async (blockId: string | null) => {
+      const workspace = props.workspace;
+      const page = workspace.getPage(props.pageId);
+      assertExists(page);
+      if (typeof blockId === 'string') {
+        const block = page.getBlockById(blockId) as EmbedBlockModel;
+        assertExists(block);
+        const store = await block.page.blobs;
+        const url = store?.get(block.sourceId);
+        const img = await url;
+        if (!img) {
+          return;
+        }
+        const arrayBuffer = await img.arrayBuffer();
+        const buffer = new Uint8Array(arrayBuffer);
+        let fileType: string;
+        if (
+          buffer[0] === 0x47 &&
+          buffer[1] === 0x49 &&
+          buffer[2] === 0x46 &&
+          buffer[3] === 0x38
+        ) {
+          fileType = 'image/gif';
+        } else if (
+          buffer[0] === 0x89 &&
+          buffer[1] === 0x50 &&
+          buffer[2] === 0x4e &&
+          buffer[3] === 0x47
+        ) {
+          fileType = 'image/png';
+        } else if (
+          buffer[0] === 0xff &&
+          buffer[1] === 0xd8 &&
+          buffer[2] === 0xff &&
+          buffer[3] === 0xe0
+        ) {
+          fileType = 'image/jpeg';
+        } else {
+          // unknown, fallback to png
+          console.error('unknown image type');
+          fileType = 'image/png';
+        }
+        const downloadUrl = URL.createObjectURL(
+          new Blob([arrayBuffer], { type: fileType })
+        );
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = block.id ?? 'image';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    },
+    [props.pageId, props.workspace]
+  );
+  const [caption, setCaption] = useState(() => {
+    const page = props.workspace.getPage(props.pageId);
     assertExists(page);
-    if (typeof blockId === 'string') {
+    const block = page.getBlockById(props.blockId) as EmbedBlockModel;
+    assertExists(block);
+    return block?.caption;
+  });
+  useEffect(() => {
+    const page = props.workspace.getPage(props.pageId);
+    assertExists(page);
+    const block = page.getBlockById(props.blockId) as EmbedBlockModel;
+    assertExists(block);
+    setCaption(block?.caption);
+  }, [props.blockId, props.pageId, props.workspace]);
+  const { data } = useSWR(['workspace', 'embed', props.pageId, props.blockId], {
+    fetcher: ([_, __, pageId, blockId]) => {
+      const page = props.workspace.getPage(pageId);
+      assertExists(page);
       const block = page.getBlockById(blockId) as EmbedBlockModel;
       assertExists(block);
-      const store = await block.page.blobs;
-      const url = store?.get(block.sourceId);
-      const img = await url;
-      if (!img) {
-        return;
-      }
-      const arrayBuffer = await img.arrayBuffer();
-      const buffer = new Uint8Array(arrayBuffer);
-      let fileType: string;
-      if (
-        buffer[0] === 0x47 &&
-        buffer[1] === 0x49 &&
-        buffer[2] === 0x46 &&
-        buffer[3] === 0x38
-      ) {
-        fileType = 'image/gif';
-      } else if (
-        buffer[0] === 0x89 &&
-        buffer[1] === 0x50 &&
-        buffer[2] === 0x4e &&
-        buffer[3] === 0x47
-      ) {
-        fileType = 'image/png';
-      } else if (
-        buffer[0] === 0xff &&
-        buffer[1] === 0xd8 &&
-        buffer[2] === 0xff &&
-        buffer[3] === 0xe0
-      ) {
-        fileType = 'image/jpeg';
-      } else {
-        // unknown, fallback to png
-        console.error('unknown image type');
-        fileType = 'image/png';
-      }
-      const downloadUrl = URL.createObjectURL(
-        new Blob([arrayBuffer], { type: fileType })
-      );
-      const a = document.createElement('a');
-      const event = new MouseEvent('click');
-      a.download = block.id;
-      a.href = downloadUrl;
-      a.dispatchEvent(event);
+      return props.workspace.blobs.get(block?.sourceId);
+    },
+    suspense: true,
+  });
 
-      // cleanup
-      a.remove();
-      URL.revokeObjectURL(downloadUrl);
+  const [prevData, setPrevData] = useState<string | null>(() => data);
+  const [url, setUrl] = useState<string | null>(null);
+
+  if (prevData !== data) {
+    if (url) {
+      URL.revokeObjectURL(url);
     }
-  };
+    setUrl(URL.createObjectURL(data));
 
+    setPrevData(data);
+  } else if (!url) {
+    setUrl(URL.createObjectURL(data));
+  }
+  if (!url) {
+    return null;
+  }
   return (
     <div
       data-testid="image-preview-modal"
@@ -291,7 +339,7 @@ const ImagePreviewModalImpl = (
         ) : null}
         <div className={imagePreviewActionBarStyle}>
           <div>
-            <Tooltip content={'Previous Image'} disablePortal={false}>
+            <Tooltip content={'Previous'} disablePortal={false}>
               <Button
                 icon={<ArrowLeftSmallIcon />}
                 noBorder={true}
@@ -302,7 +350,7 @@ const ImagePreviewModalImpl = (
                 }}
               />
             </Tooltip>
-            <Tooltip content={'Next Image'} disablePortal={false}>
+            <Tooltip content={'Next'} disablePortal={false}>
               <Button
                 icon={<ArrowRightSmallIcon />}
                 noBorder={true}
@@ -316,7 +364,7 @@ const ImagePreviewModalImpl = (
           </div>
           <div className={groupStyle}>
             <Tooltip
-              content={'Fit Screen'}
+              content={'Fit to Screen'}
               disablePortal={true}
               showArrow={false}
             >
@@ -336,10 +384,13 @@ const ImagePreviewModalImpl = (
               />
             </Tooltip>
             <Tooltip content={'Reset Scale'} disablePortal={false}>
-              <Button onClick={resetScale} noBorder={true}>
-                <span className={scaleIndicatorStyle}>{`${(
-                  currentScale * 100
-                ).toFixed(0)}%`}</span>
+              <Button
+                noBorder={true}
+                size={'middle'}
+                className={scaleIndicatorButtonStyle}
+                onClick={resetScale}
+              >
+                {`${(currentScale * 100).toFixed(0)}%`}
               </Button>
             </Tooltip>
             <Tooltip content={'Zoom in'} disablePortal={false}>
@@ -365,7 +416,7 @@ const ImagePreviewModalImpl = (
                 }}
               />
             </Tooltip>
-            <Tooltip content={'Copy'} disablePortal={false}>
+            <Tooltip content={'Copy to clipboard'} disablePortal={false}>
               <Button
                 icon={<CopyIcon />}
                 noBorder={true}
@@ -403,6 +454,7 @@ const ImagePreviewModalImpl = (
                         URL.revokeObjectURL(dataUrl);
                       });
                   }, 'image/png');
+                  toast('Copied to clipboard.');
                 }}
               />
             </Tooltip>
