@@ -7,6 +7,7 @@ import {
   assertExists,
   Workspace as BlockSuiteWorkspace,
 } from '@blocksuite/store';
+import type { Doc } from 'yjs';
 
 import { CallbackSet } from '../utils';
 import { localProviderLogger as logger } from './logger';
@@ -14,6 +15,12 @@ import { localProviderLogger as logger } from './logger';
 const Y = BlockSuiteWorkspace.Y;
 
 const sqliteOrigin = Symbol('sqlite-provider-origin');
+
+type SubDocsEvent = {
+  added: Set<Doc>;
+  removed: Set<Doc>;
+  loaded: Set<Doc>;
+};
 
 /**
  * A provider that is responsible for syncing updates the workspace with the local SQLite database.
@@ -26,23 +33,83 @@ export const createSQLiteProvider = (
   assertExists(apis);
   assertExists(events);
 
-  function handleUpdate(update: Uint8Array, origin: unknown) {
-    if (origin === sqliteOrigin) {
-      return;
+  const updateHandlerMap = new WeakMap<
+    Doc,
+    (update: Uint8Array, origin: unknown) => void
+  >();
+  const subDocsHandlerMap = new WeakMap<Doc, (event: SubDocsEvent) => void>();
+
+  const createOrHandleUpdate = (doc: Doc) => {
+    if (updateHandlerMap.has(doc)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return updateHandlerMap.get(doc)!;
     }
-    apis.db.applyDocUpdate(blockSuiteWorkspace.id, update).catch(err => {
-      console.error(err);
+
+    function handleUpdate(update: Uint8Array, origin: unknown) {
+      if (origin === sqliteOrigin) {
+        return;
+      }
+      const workspaceId = blockSuiteWorkspace.id;
+      const subdocId = doc.guid === workspaceId ? undefined : doc.guid;
+      apis.db
+        .applyDocUpdate(blockSuiteWorkspace.id, update, subdocId)
+        .catch(err => {
+          console.error(err);
+        });
+    }
+    updateHandlerMap.set(doc, handleUpdate);
+    return handleUpdate;
+  };
+
+  const createOrGetHandleSubDocs = (doc: Doc) => {
+    if (subDocsHandlerMap.has(doc)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return subDocsHandlerMap.get(doc)!;
+    }
+    function handleSubdocs(event: SubDocsEvent) {
+      event.removed.forEach(doc => {
+        untrackDoc(doc);
+      });
+      event.loaded.forEach(doc => {
+        trackDoc(doc);
+      });
+    }
+    subDocsHandlerMap.set(doc, handleSubdocs);
+    return handleSubdocs;
+  };
+
+  function trackDoc(doc: Doc) {
+    doc.on('update', createOrHandleUpdate(doc));
+    doc.on('subdocs', createOrGetHandleSubDocs(doc));
+  }
+
+  function untrackDoc(doc: Doc) {
+    doc.subdocs.forEach(doc => {
+      untrackDoc(doc);
     });
+    doc.off('update', createOrHandleUpdate(doc));
+    doc.off('subdocs', createOrGetHandleSubDocs(doc));
   }
 
   let unsubscribe = () => {};
   let connected = false;
 
-  const callbacks = new CallbackSet();
-
   const connect = () => {
     logger.info('connecting sqlite provider', blockSuiteWorkspace.id);
-    blockSuiteWorkspace.doc.on('update', handleUpdate);
+    const doc = blockSuiteWorkspace.doc;
+    trackDoc(doc);
+    doc.subdocs.forEach(subdoc => {
+      if (subdoc.shouldLoad) {
+        subdoc.whenLoaded
+          .then(() => {
+            trackDoc(subdoc);
+          })
+          .catch(err => {
+            console.error(err);
+          });
+      }
+    });
+
     unsubscribe = events.db.onExternalUpdate(
       ({
         update,
@@ -63,14 +130,14 @@ export const createSQLiteProvider = (
   const cleanup = () => {
     logger.info('disconnecting sqlite provider', blockSuiteWorkspace.id);
     unsubscribe();
-    blockSuiteWorkspace.doc.off('update', handleUpdate);
+    untrackDoc(blockSuiteWorkspace.doc);
     connected = false;
   };
 
   return {
     flavour: 'sqlite',
     background: true,
-    callbacks,
+    callbacks: new CallbackSet(),
     get connected(): boolean {
       return connected;
     },
@@ -96,28 +163,32 @@ export const createSQLiteDBDownloadProvider = (
     _reject = reject;
   });
 
-  async function syncUpdates() {
+  async function syncUpdates(doc: Doc) {
     logger.info('syncing updates from sqlite', blockSuiteWorkspace.id);
-    const updates = await apis.db.getDocAsUpdates(blockSuiteWorkspace.id);
+    const subdocId = doc.guid === blockSuiteWorkspace.id ? undefined : doc.guid;
+    const updates = await apis.db.getDocAsUpdates(
+      blockSuiteWorkspace.id,
+      subdocId
+    );
 
     if (disconnected) {
-      return;
+      return false;
     }
 
     if (updates) {
-      Y.applyUpdate(blockSuiteWorkspace.doc, updates, sqliteOrigin);
+      Y.applyUpdate(doc, updates, sqliteOrigin);
+      // load event will
+      // - change isLoaded to true
+      // - resolve doc.whenLoaded
+      doc.emit('load', []);
     }
 
-    const diff = Y.encodeStateAsUpdate(blockSuiteWorkspace.doc, updates);
+    const diff = Y.encodeStateAsUpdate(doc, updates);
 
     // also apply updates to sqlite
-    await apis.db.applyDocUpdate(blockSuiteWorkspace.id, diff);
+    await apis.db.applyDocUpdate(blockSuiteWorkspace.id, diff, subdocId);
 
-    const bs = blockSuiteWorkspace.blobs;
-
-    if (bs && !disconnected) {
-      await syncBlobIntoSQLite(bs);
-    }
+    return true;
   }
 
   async function syncBlobIntoSQLite(bs: BlobManager) {
@@ -152,6 +223,13 @@ export const createSQLiteDBDownloadProvider = (
     );
   }
 
+  async function syncAllUpdates(doc: Doc) {
+    if (await syncUpdates(doc)) {
+      const subdocs = Array.from(doc.subdocs).filter(d => d.shouldLoad);
+      await Promise.all(subdocs.map(syncUpdates));
+    }
+  }
+
   return {
     flavour: 'sqlite-download',
     necessary: true,
@@ -164,7 +242,11 @@ export const createSQLiteDBDownloadProvider = (
     sync: async () => {
       logger.info('connect indexeddb provider', blockSuiteWorkspace.id);
       try {
-        await syncUpdates();
+        await syncAllUpdates(blockSuiteWorkspace.doc);
+        const bs = blockSuiteWorkspace.blobs;
+        if (bs && !disconnected) {
+          await syncBlobIntoSQLite(bs);
+        }
         _resolve();
       } catch (error) {
         _reject(error);

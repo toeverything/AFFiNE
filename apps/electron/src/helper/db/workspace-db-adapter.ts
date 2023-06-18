@@ -171,6 +171,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
         const insertRows = [{ data: update, docId }];
         await this.db?.replaceUpdates(docId, insertRows);
         this.counter.set(docId, 1);
+        logger.debug(`trim ${this.workspaceId}:${docId} successfully`);
       }
     }
   }, 1000);

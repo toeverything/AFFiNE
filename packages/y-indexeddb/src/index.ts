@@ -355,14 +355,15 @@ export const createIndexedDBProvider = (
 
       // also track all loaded subdocs
       doc.subdocs.forEach(subdoc => {
-        // TODO: may need to untrack the subdoc when disconnected?
-        subdoc.whenLoaded
-          .then(() => {
-            trackDoc(subdoc.guid, subdoc);
-          })
-          .catch(err => {
-            console.error(err);
-          });
+        if (subdoc.shouldLoad) {
+          subdoc.whenLoaded
+            .then(() => {
+              trackDoc(subdoc.guid, subdoc);
+            })
+            .catch(err => {
+              console.error(err);
+            });
+        }
       });
 
       // only the runs `await` below, otherwise the logic is incorrect
