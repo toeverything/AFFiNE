@@ -1,5 +1,15 @@
 import { baseTheme } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { keyframes, style } from '@vanilla-extract/css';
+
+const fadeInAnimation = keyframes({
+  from: { opacity: 0 },
+  to: { opacity: 1 },
+});
+
+const fadeOutAnimation = keyframes({
+  from: { opacity: 1 },
+  to: { opacity: 0 },
+});
 
 export const imagePreviewModalStyle = style({
   position: 'fixed',
@@ -11,8 +21,21 @@ export const imagePreviewModalStyle = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  // background: 'var(--affine-background-modal-color)',
-  background: 'rgba(0,0,0,0.75)',
+  background: 'rgba(0, 0, 0, 0.75)',
+});
+
+export const loaded = style({
+  opacity: 0,
+  animationName: fadeInAnimation,
+  animationDuration: '0.25s',
+  animationFillMode: 'forwards',
+});
+
+export const unloaded = style({
+  opacity: 1,
+  animationName: fadeOutAnimation,
+  animationDuration: '0.25s',
+  animationFillMode: 'forwards',
 });
 
 export const imagePreviewModalCloseButtonStyle = style({
@@ -33,6 +56,8 @@ export const imagePreviewModalCloseButtonStyle = style({
   color: 'var(--affine-icon-color)',
   transition: 'background 0.2s ease-in-out',
   zIndex: 1,
+  marginTop: '38px',
+  marginRight: '38px',
 });
 
 export const imagePreviewModalContainerStyle = style({
@@ -84,10 +109,17 @@ export const groupStyle = style({
 export const buttonStyle = style({
   paddingLeft: '10px',
   paddingRight: '10px',
+  ':hover': {
+    backgroundColor: 'var(--affine-hover-color)',
+  },
 });
 
-export const scaleIndicatorStyle = style({
-  margin: '0 8px',
+export const scaleIndicatorButtonStyle = style({
+  minHeight: '100%',
+  minWidth: 'max-content',
+  ':hover': {
+    backgroundColor: 'var(--affine-hover-color)',
+  },
 });
 
 export const imageBottomContainerStyle = style({
@@ -105,4 +137,9 @@ export const captionStyle = style({
   background: 'rgba(0,0,0,0.75)',
   padding: '10px',
   marginBottom: '21px',
+});
+
+export const suspenseFallbackStyle = style({
+  opacity: 0,
+  transition: 'opacity 2s ease-in-out',
 });

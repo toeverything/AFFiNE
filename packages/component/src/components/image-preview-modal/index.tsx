@@ -20,7 +20,6 @@ import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import useSWR from 'swr';
 
 import { useZoomControls } from './hooks/use-zoom';
 import {
@@ -34,7 +33,8 @@ import {
   imagePreviewModalCloseButtonStyle,
   imagePreviewModalContainerStyle,
   imagePreviewModalStyle,
-  scaleIndicatorStyle,
+  loaded,
+  unloaded,
 } from './index.css';
 import { previewBlockIdAtom } from './index.jotai';
 
@@ -50,77 +50,58 @@ const ImagePreviewModalImpl = (
   }
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
-
-  const [caption, setCaption] = useState(() => {
-    const page = props.workspace.getPage(props.pageId);
-    assertExists(page);
-    const block = page.getBlockById(props.blockId) as EmbedBlockModel;
-    assertExists(block);
-    return block?.caption;
-  });
-  useEffect(() => {
-    const page = props.workspace.getPage(props.pageId);
-    assertExists(page);
-    const block = page.getBlockById(props.blockId) as EmbedBlockModel;
-    assertExists(block);
-    setCaption(block?.caption);
-  }, [props.blockId, props.pageId, props.workspace]);
-  const { data } = useSWR(['workspace', 'embed', props.pageId, props.blockId], {
-    fetcher: ([_, __, pageId, blockId]) => {
-      const page = props.workspace.getPage(pageId);
-      assertExists(page);
-      const block = page.getBlockById(blockId) as EmbedBlockModel;
-      assertExists(block);
-      return props.workspace.blobs.get(block?.sourceId);
-    },
-    suspense: true,
-  });
   const zoomRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const {
-    zoomIn,
-    zoomOut,
     isZoomedBigger,
     handleDrag,
     handleDragStart,
     handleDragEnd,
     resetZoom,
+    zoomIn,
+    zoomOut,
     resetScale,
     currentScale,
   } = useZoomControls({ zoomRef, imageRef });
-  const [prevData, setPrevData] = useState<string | null>(() => data);
-  const [url, setUrl] = useState<string | null>(null);
-  if (prevData !== data) {
-    if (url) {
-      URL.revokeObjectURL(url);
+  const [isOpen, setIsOpen] = useState<boolean | null>(true);
+  const [hasPlayedAnimation, setHasPlayedAnimation] = useState<boolean>(false);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (!isOpen) {
+      timeoutId = setTimeout(() => {
+        props.onClose();
+      }, 300);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
     }
-    setUrl(URL.createObjectURL(data));
 
-    setPrevData(data);
-  } else if (!url) {
-    setUrl(URL.createObjectURL(data));
-  }
-  if (!url) {
-    return null;
-  }
+    return () => {};
+  }, [isOpen, props]);
 
-  const nextImageHandler = (blockId: string | null) => {
-    assertExists(blockId);
-    const workspace = props.workspace;
-
-    const page = workspace.getPage(props.pageId);
-    assertExists(page);
-    const block = page.getBlockById(blockId);
-    assertExists(block);
-    const nextBlock = page
-      .getNextSiblings(block)
-      .find(
-        (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
-      );
-    if (nextBlock) {
-      setBlockId(nextBlock.id);
-    }
-  };
+  const nextImageHandler = useCallback(
+    (blockId: string | null) => {
+      assertExists(blockId);
+      const workspace = props.workspace;
+      setHasPlayedAnimation(true);
+      const page = workspace.getPage(props.pageId);
+      assertExists(page);
+      const block = page.getBlockById(blockId);
+      assertExists(block);
+      const nextBlock = page
+        .getNextSiblings(block)
+        .find(
+          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+        );
+      if (nextBlock) {
+        setBlockId(nextBlock.id);
+      }
+    },
+    [props.pageId, props.workspace, setBlockId]
+  );
 
   const previousImageHandler = (blockId: string | null) => {
     assertExists(blockId);
@@ -248,10 +229,14 @@ const ImagePreviewModalImpl = (
   return (
     <div
       data-testid="image-preview-modal"
-      className={imagePreviewModalStyle}
-      onClick={event =>
-        event.target === event.currentTarget ? props.onClose() : null
-      }
+      className={`${imagePreviewModalStyle} ${
+        isOpen && hasPlayedAnimation ? null : isOpen ? loaded : unloaded
+      }`}
+      onClick={event => {
+        if (event.target === event.currentTarget) {
+          setIsOpen(false);
+        }
+      }}
     >
       <div className={imagePreviewModalContainerStyle}>
         <div
@@ -278,7 +263,7 @@ const ImagePreviewModalImpl = (
       </div>
       <button
         onClick={() => {
-          props.onClose();
+          setIsOpen(false);
         }}
         className={imagePreviewModalCloseButtonStyle}
       >
