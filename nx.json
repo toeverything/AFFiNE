@@ -30,7 +30,8 @@
         "{projectRoot}/out",
         "{projectRoot}/node_modules/.cache",
         "apps/web/.next/cache",
-        "packages/storybook/storybook-static"
+        "packages/storybook/storybook-static",
+        "packages/native/affine.*.node"
       ],
       "inputs": [
         {
