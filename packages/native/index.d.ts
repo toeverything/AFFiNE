@@ -30,9 +30,9 @@ export interface BlobRow {
 }
 export interface UpdateRow {
   id: number;
-  docId?: string;
   timestamp: Date;
   data: Buffer;
+  docId?: string;
 }
 export interface InsertRow {
   docId?: string;

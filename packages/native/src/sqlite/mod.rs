@@ -17,9 +17,9 @@ pub struct BlobRow {
 #[napi(object)]
 pub struct UpdateRow {
   pub id: i64,
-  pub doc_id: Option<String>,
   pub timestamp: NaiveDateTime,
   pub data: Buffer,
+  pub doc_id: Option<String>,
 }
 
 #[napi(object)]
@@ -82,10 +82,14 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn get_blob(&self, key: String) -> Option<BlobRow> {
-    sqlx::query_as!(BlobRow, "SELECT * FROM blobs WHERE key = ?", key)
-      .fetch_one(&self.pool)
-      .await
-      .ok()
+    sqlx::query_as!(
+      BlobRow,
+      "SELECT key, data, timestamp FROM blobs WHERE key = ?",
+      key
+    )
+    .fetch_one(&self.pool)
+    .await
+    .ok()
   }
 
   #[napi]
@@ -109,16 +113,20 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn get_updates(&self, doc_id: Option<String>) -> napi::Result<Vec<UpdateRow>> {
-    let updates = sqlx::query_as!(UpdateRow, "SELECT * FROM updates WHERE doc_id = ?", doc_id)
-      .fetch_all(&self.pool)
-      .await
-      .map_err(anyhow::Error::from)?;
+    let updates = sqlx::query_as!(
+      UpdateRow,
+      "SELECT id, timestamp, data, doc_id FROM updates WHERE doc_id = ?",
+      doc_id
+    )
+    .fetch_all(&self.pool)
+    .await
+    .map_err(anyhow::Error::from)?;
     Ok(updates)
   }
 
   #[napi]
   pub async fn get_all_updates(&self) -> napi::Result<Vec<UpdateRow>> {
-    let updates = sqlx::query_as!(UpdateRow, "SELECT * FROM updates")
+    let updates = sqlx::query_as!(UpdateRow, "SELECT id, timestamp, data, doc_id FROM updates")
       .fetch_all(&self.pool)
       .await
       .map_err(anyhow::Error::from)?;
