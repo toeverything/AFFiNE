@@ -24,6 +24,14 @@
   "targetDefaults": {
     "build": {
       "dependsOn": ["^build"],
+      "outputs": [
+        "{projectRoot}/dist",
+        "{projectRoot}/build",
+        "{projectRoot}/out",
+        "{projectRoot}/node_modules/.cache",
+        "apps/web/.next/cache",
+        "packages/storybook/storybook-static"
+      ],
       "inputs": [
         {
           "runtime": "node -v"
