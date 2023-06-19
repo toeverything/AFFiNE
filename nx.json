@@ -84,7 +84,7 @@
       ]
     },
     "export": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["build"]
     },
     "dev": {
       "dependsOn": ["^build"]
