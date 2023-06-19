@@ -9,7 +9,7 @@ function runBlockMigration(
     data.set('sys:flavour', 'affine:note');
     return;
   }
-  if (flavour === 'affine:surface' && version <= 3) {
+  if (flavour === 'affine:surface' && version <= 3 && data.has('elements')) {
     const elements = data.get('elements') as Y.Map<unknown>;
     data.set('prop:elements', elements.clone());
     data.delete('elements');
