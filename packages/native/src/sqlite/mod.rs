@@ -113,15 +113,48 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn get_updates(&self, doc_id: Option<String>) -> napi::Result<Vec<UpdateRow>> {
-    let updates = sqlx::query_as!(
-      UpdateRow,
-      "SELECT id, timestamp, data, doc_id FROM updates WHERE doc_id = ?",
-      doc_id
-    )
-    .fetch_all(&self.pool)
-    .await
-    .map_err(anyhow::Error::from)?;
+    let updates = match doc_id {
+      Some(doc_id) => sqlx::query_as!(
+        UpdateRow,
+        "SELECT id, timestamp, data, doc_id FROM updates WHERE doc_id = ?",
+        doc_id
+      )
+      .fetch_all(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?,
+      None => sqlx::query_as!(
+        UpdateRow,
+        "SELECT id, timestamp, data, doc_id FROM updates WHERE doc_id is NULL",
+      )
+      .fetch_all(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?,
+    };
     Ok(updates)
+  }
+
+  #[napi]
+  pub async fn get_updates_count(&self, doc_id: Option<String>) -> napi::Result<i32> {
+    let count = match doc_id {
+      Some(doc_id) => {
+        sqlx::query!(
+          "SELECT COUNT(*) as count FROM updates WHERE doc_id = ?",
+          doc_id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(anyhow::Error::from)?
+        .count
+      }
+      None => {
+        sqlx::query!("SELECT COUNT(*) as count FROM updates WHERE doc_id is NULL")
+          .fetch_one(&self.pool)
+          .await
+          .map_err(anyhow::Error::from)?
+          .count
+      }
+    };
+    Ok(count)
   }
 
   #[napi]
@@ -160,10 +193,16 @@ impl SqliteConnection {
   ) -> napi::Result<()> {
     let mut transaction = self.pool.begin().await.map_err(anyhow::Error::from)?;
 
-    sqlx::query!("DELETE FROM updates where doc_id = ?", doc_id)
-      .execute(&mut *transaction)
-      .await
-      .map_err(anyhow::Error::from)?;
+    match doc_id {
+      Some(doc_id) => sqlx::query!("DELETE FROM updates where doc_id = ?", doc_id)
+        .execute(&mut *transaction)
+        .await
+        .map_err(anyhow::Error::from)?,
+      None => sqlx::query!("DELETE FROM updates where doc_id is NULL",)
+        .execute(&mut *transaction)
+        .await
+        .map_err(anyhow::Error::from)?,
+    };
 
     for InsertRow { data, doc_id } in updates {
       let update = data.as_ref();

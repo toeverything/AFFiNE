@@ -62,6 +62,7 @@ export class SqliteConnection {
   deleteBlob(key: string): Promise<void>;
   getBlobKeys(): Promise<Array<string>>;
   getUpdates(docId?: string | undefined | null): Promise<Array<UpdateRow>>;
+  getUpdatesCount(docId?: string | undefined | null): Promise<number>;
   getAllUpdates(): Promise<Array<UpdateRow>>;
   insertUpdates(updates: Array<InsertRow>): Promise<void>;
   replaceUpdates(

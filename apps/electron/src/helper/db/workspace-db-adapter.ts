@@ -17,7 +17,6 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   firstConnected = false;
 
   update$ = new Subject<void>();
-  counter = new Map<string | undefined, number>();
 
   constructor(public override path: string, public workspaceId: string) {
     super(path);
@@ -91,8 +90,6 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     // apply root first (without ID).
     // subdoc will be available after root is applied
     updates.forEach(update => {
-      // init update counter so that we can trim the db later
-      this.counter.set(update.docId, (this.counter.get(update.docId) ?? 0) + 1);
       if (!update.docId) {
         this.applyUpdate(update.data, 'self');
       }
@@ -153,8 +150,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   override async addUpdateToSQLite(data: InsertRow[]) {
     this.update$.next();
     data.forEach(row => {
-      this.counter.set(row.docId, (this.counter.get(row.docId) ?? 0) + 1);
-      this.trimWhenNecessary(data[0].docId)?.catch(err => {
+      this.trimWhenNecessary(row.docId)?.catch(err => {
         logger.error('trimWhenNecessary failed', err);
       });
     });
@@ -162,13 +158,16 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   trimWhenNecessary = debounce(async (docId?: string) => {
-    if ((this.counter.get(docId) || 0) > TRIM_SIZE && this.firstConnected) {
-      const update = this.getDocAsUpdates(docId);
-      if (update) {
-        const insertRows = [{ data: update, docId }];
-        await this.db?.replaceUpdates(docId, insertRows);
-        this.counter.set(docId, 1);
-        logger.debug(`trim ${this.workspaceId}:${docId} successfully`);
+    if (this.firstConnected) {
+      const count = (await this.db?.getUpdatesCount(docId)) ?? 0;
+      if (count > TRIM_SIZE) {
+        logger.debug(`trim ${this.workspaceId}:${docId} ${count}`);
+        const update = this.getDocAsUpdates(docId);
+        if (update) {
+          const insertRows = [{ data: update, docId }];
+          await this.db?.replaceUpdates(docId, insertRows);
+          logger.debug(`trim ${this.workspaceId}:${docId} successfully`);
+        }
       }
     }
   }, 1000);
