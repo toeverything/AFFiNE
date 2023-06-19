@@ -51,7 +51,7 @@ function migrateBlocks(oldDoc: Y.Doc, newDoc: Y.Doc) {
     const spaceId = id.startsWith('space:') ? id : `space:${id}`;
     const originalBlocks = oldDoc.get(spaceId) as Y.Map<unknown>;
     const subdoc = new Y.Doc();
-    spaces.set(id, subdoc);
+    spaces.set(spaceId, subdoc);
     const blocks = subdoc.getMap('blocks');
     Array.from(originalBlocks.entries()).forEach(([key, value]) => {
       const blockData = value.clone();
