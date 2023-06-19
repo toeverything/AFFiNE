@@ -101,10 +101,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     // then, for all subdocs, apply the updates
     updates.forEach(update => {
       if (update.docId) {
-        const subdoc = this.getDoc(update.docId);
-        if (subdoc) {
-          this.applyUpdate(update.data, 'self', update.docId);
-        }
+        this.applyUpdate(update.data, 'self', update.docId);
       }
     });
 

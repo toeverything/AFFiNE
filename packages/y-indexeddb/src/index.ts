@@ -1,3 +1,4 @@
+import { Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import {
   applyUpdate,
@@ -14,7 +15,7 @@ import type {
   WorkspaceMilestone,
 } from './shared';
 import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
-import { tryMigrate } from './utils';
+import { downloadBinary, tryMigrate } from './utils';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
@@ -263,7 +264,17 @@ export const createIndexedDBProvider = (
         unTrackDoc(doc.guid, doc);
       });
       event.loaded.forEach(doc => {
-        trackDoc(doc.guid, doc);
+        // download the doc
+        downloadBinary(doc.guid)
+          .then(binary => {
+            if (binary) {
+              Workspace.Y.applyUpdate(doc, binary);
+              doc.emit('loaded', []);
+            }
+          })
+          .finally(() => {
+            trackDoc(doc.guid, doc);
+          });
       });
     };
     subDocsHandlerMap.set(doc, fn);

@@ -8,12 +8,12 @@ import { logger } from '../logger';
 import type { YOrigin } from '../type';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
-import { mergeUpdate } from './merge-update';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 
 const FLUSH_WAIT_TIME = 5000;
 const FLUSH_MAX_WAIT_TIME = 10000;
 
+// todo: trim db when it is too big
 export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   role = 'secondary';
   yDoc = new Y.Doc();
@@ -226,23 +226,33 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   async pull() {
     const start = performance.now();
     assert(this.upstream.db, 'upstream db should be connected');
-    const updates = await this.run(async () => {
+    const rows = await this.run(async () => {
       // TODO: no need to get all updates, just get the latest ones (using a cursor, etc)?
       await this.syncBlobs();
-      return (await this.getUpdates()).map(update => update.data);
+      return await this.getAllUpdates();
     });
 
-    if (!updates || this.destroyed) {
+    if (!rows || this.destroyed) {
       return;
     }
 
-    const merged = mergeUpdate(updates);
-    this.applyUpdate(merged, 'self');
+    // apply root doc first
+    rows.forEach(row => {
+      if (!row.docId) {
+        this.applyUpdate(row.data, 'self');
+      }
+    });
+
+    rows.forEach(row => {
+      if (row.docId) {
+        this.applyUpdate(row.data, 'self', row.docId);
+      }
+    });
 
     logger.debug(
       'pull external updates',
       this.path,
-      updates.length,
+      rows.length,
       (performance.now() - start).toFixed(2),
       'ms'
     );
