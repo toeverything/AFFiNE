@@ -1,29 +1,7 @@
-import type { EventBasedChannel } from 'async-call-rpc';
 import { AsyncCall } from 'async-call-rpc';
 
 import { events, handlers } from './exposed';
 import { logger } from './logger';
-
-const createMessagePortMainChannel = (
-  connection: Electron.MessagePortMain
-): EventBasedChannel => {
-  return {
-    on(listener) {
-      const f = (e: Electron.MessageEvent) => {
-        listener(e.data);
-      };
-      connection.on('message', f);
-      // MUST start the connection to receive messages
-      connection.start();
-      return () => {
-        connection.off('message', f);
-      };
-    },
-    send(data) {
-      connection.postMessage(data);
-    },
-  };
-};
 
 function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
   const flattenedHandlers = Object.entries(handlers).flatMap(
@@ -55,7 +33,22 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
   const rpc = AsyncCall<PeersAPIs.RendererToHelper>(
     Object.fromEntries(flattenedHandlers),
     {
-      channel: createMessagePortMainChannel(rendererPort),
+      channel: {
+        on(listener) {
+          const f = (e: Electron.MessageEvent) => {
+            listener(e.data);
+          };
+          rendererPort.on('message', f);
+          // MUST start the connection to receive messages
+          rendererPort.start();
+          return () => {
+            rendererPort.off('message', f);
+          };
+        },
+        send(data) {
+          rendererPort.postMessage(data);
+        },
+      },
       log: false,
     }
   );
