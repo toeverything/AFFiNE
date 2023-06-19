@@ -24,6 +24,12 @@
   "targetDefaults": {
     "build": {
       "dependsOn": ["^build"],
+      "outputs": [
+        "{projectRoot}/dist",
+        "{projectRoot}/build",
+        "{projectRoot}/out",
+        "{projectRoot}/.next"
+      ],
       "inputs": [
         {
           "runtime": "node -v"
