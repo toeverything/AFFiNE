@@ -57,6 +57,8 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - run: yarn nx build @affine/storybook
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload storybook artifact
         uses: actions/upload-artifact@v3
         with:
@@ -107,6 +109,7 @@ jobs:
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: false
           ENABLE_PRELOADING: false
+          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
       - name: Export static resources
         run: yarn workspace @affine/web export
@@ -305,6 +308,7 @@ jobs:
         uses: ./.github/actions/build-rust
         with:
           target: ${{ matrix.spec.target }}
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
