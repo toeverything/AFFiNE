@@ -83,6 +83,9 @@
         }
       ]
     },
+    "export": {
+      "dependsOn": ["^build"]
+    },
     "dev": {
       "dependsOn": ["^build"]
     },
