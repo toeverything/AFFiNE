@@ -112,7 +112,7 @@ jobs:
           NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
       - name: Export static resources
-        run: nx export @affine/web
+        run: yarn nx export @affine/web
 
       - name: Upload static resources artifact
         uses: actions/upload-artifact@v3
