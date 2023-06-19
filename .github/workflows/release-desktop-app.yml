@@ -111,6 +111,7 @@ jobs:
         uses: ./.github/actions/build-rust
         with:
           target: ${{ matrix.spec.target }}
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static

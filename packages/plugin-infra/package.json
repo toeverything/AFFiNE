@@ -5,6 +5,9 @@
     "build": "vite build",
     "dev": "vite build --watch"
   },
+  "files": [
+    "dist"
+  ],
   "exports": {
     "./manager": {
       "type": "./dist/manager.d.ts",
