@@ -28,7 +28,8 @@
         "{projectRoot}/dist",
         "{projectRoot}/build",
         "{projectRoot}/out",
-        "{projectRoot}/.next"
+        "apps/web/.next/cache",
+        "packages/storybook/storybook-static"
       ],
       "inputs": [
         {
