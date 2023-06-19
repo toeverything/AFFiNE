@@ -38,7 +38,7 @@ import {
   scaleIndicatorButtonStyle,
   unloaded,
 } from './index.css';
-import { previewBlockIdAtom } from './index.jotai';
+import { hasAnimationPlayedAtom, previewBlockIdAtom } from './index.jotai';
 import { toast } from './toast';
 
 export type ImagePreviewModalProps = {
@@ -66,7 +66,7 @@ const ImagePreviewModalImpl = (
     resetScale,
     currentScale,
   } = useZoomControls({ zoomRef, imageRef });
-  const [isOpen, setIsOpen] = useState<boolean | null>(true);
+  const [isOpen, setIsOpen] = useAtom(hasAnimationPlayedAtom);
   const [hasPlayedAnimation, setHasPlayedAnimation] = useState<boolean>(false);
 
   useEffect(() => {
@@ -75,6 +75,7 @@ const ImagePreviewModalImpl = (
     if (!isOpen) {
       timeoutId = setTimeout(() => {
         props.onClose();
+        setIsOpen(true);
       }, 300);
 
       return () => {
@@ -83,7 +84,7 @@ const ImagePreviewModalImpl = (
     }
 
     return () => {};
-  }, [isOpen, props]);
+  }, [isOpen, props, setIsOpen]);
 
   const nextImageHandler = useCallback(
     (blockId: string | null) => {
@@ -479,13 +480,16 @@ export const ImagePreviewModal = (
   props: ImagePreviewModalProps
 ): ReactElement | null => {
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
+  const [isOpen, setIsOpen] = useAtom(hasAnimationPlayedAtom);
 
   const handleKeyUp = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
-        setBlockId(null);
+        if (isOpen) {
+          setIsOpen(false);
+        }
         return;
       }
 
@@ -526,7 +530,7 @@ export const ImagePreviewModal = (
       event.preventDefault();
       event.stopPropagation();
     },
-    [blockId, setBlockId, props.workspace, props.pageId]
+    [blockId, setBlockId, props.workspace, props.pageId, isOpen, setIsOpen]
   );
 
   useEffect(() => {
