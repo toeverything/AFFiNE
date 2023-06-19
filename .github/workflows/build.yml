@@ -29,6 +29,7 @@ env:
   APP_NAME: affine
   COVERAGE: true
   MACOSX_DEPLOYMENT_TARGET: '10.13'
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
   lint:
@@ -109,7 +110,6 @@ jobs:
           ENABLE_ALL_PAGE_FILTER: true
           ENABLE_LEGACY_PROVIDER: false
           ENABLE_PRELOADING: false
-          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
       - name: Export static resources
         run: yarn nx export @affine/web
