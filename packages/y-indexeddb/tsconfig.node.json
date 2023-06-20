@@ -7,5 +7,5 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "lib"
   },
-  "include": ["vite.config.ts", "benchmark"]
+  "include": ["vite.config.ts"]
 }
