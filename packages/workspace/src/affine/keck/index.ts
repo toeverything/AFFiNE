@@ -1,3 +1,4 @@
+import { assertExists } from '@blocksuite/store';
 import * as encoding from 'lib0/encoding';
 import * as math from 'lib0/math';
 import { Observable } from 'lib0/observable';
@@ -5,6 +6,7 @@ import * as url from 'lib0/url';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import type * as Y from 'yjs';
+import type { Doc } from 'yjs';
 
 import { handler, Message } from './handler';
 import { readMessage } from './processor';
@@ -108,6 +110,12 @@ const broadcastMessage = (provider: KeckProvider, buf: ArrayBuffer) => {
   }
 };
 
+type SubDocsEvent = {
+  added: Set<Doc>;
+  removed: Set<Doc>;
+  loaded: Set<Doc>;
+};
+
 export class KeckProvider extends Observable<string> {
   doc: Y.Doc;
   awareness: awarenessProtocol.Awareness;
@@ -124,10 +132,14 @@ export class KeckProvider extends Observable<string> {
   _synced: boolean;
   _resyncInterval: any;
   extraToleranceTime: number;
-  _updateHandler: (update: Uint8Array, origin: any) => void;
   _awarenessUpdateHandler: ({ added, updated, removed }: any) => void;
   _unloadHandler: () => void;
   _checkInterval: NodeJS.Timer;
+  _updateHandlerMap = new WeakMap<
+    Y.Doc,
+    (update: Uint8Array, origin: unknown) => void
+  >();
+  _subDocsHandlerMap = new WeakMap<Y.Doc, (event: SubDocsEvent) => void>();
 
   constructor(
     serverUrl: string,
@@ -190,15 +202,7 @@ export class KeckProvider extends Observable<string> {
       }, resyncInterval);
     }
 
-    this._updateHandler = (update: Uint8Array, origin: any) => {
-      if (origin !== this) {
-        const encoder = encoding.createEncoder();
-        encoding.writeVarUint(encoder, Message.sync);
-        syncProtocol.writeUpdate(encoder, update);
-        broadcastMessage(this, encoding.toUint8Array(encoder));
-      }
-    };
-    this.doc.on('update', this._updateHandler);
+    this._trackDoc(this.doc.guid, this.doc);
 
     this._awarenessUpdateHandler = ({ added, updated, removed }: any) => {
       const changedClients = added.concat(updated).concat(removed);
@@ -238,6 +242,56 @@ export class KeckProvider extends Observable<string> {
     }
   }
 
+  _createOrGetHandleUpdate(id: string, doc: Doc) {
+    if (this._updateHandlerMap.has(doc)) {
+      const updateHandler = this._updateHandlerMap.get(doc);
+      assertExists(updateHandler);
+      return updateHandler;
+    }
+
+    const fn = (update: Uint8Array, origin: unknown) => {
+      if (origin !== this) {
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, Message.sync);
+        syncProtocol.writeUpdate(encoder, update);
+        broadcastMessage(this, encoding.toUint8Array(encoder));
+      }
+    };
+
+    this._updateHandlerMap.set(doc, fn);
+    return fn;
+  }
+
+  _createOrGetHandleSubDocs(_: string, doc: Doc) {
+    if (this._subDocsHandlerMap.has(doc)) {
+      const subDocsHandler = this._subDocsHandlerMap.get(doc);
+      assertExists(subDocsHandler);
+      return subDocsHandler;
+    }
+
+    const fn = (event: SubDocsEvent) => {
+      event.removed.forEach(doc => {
+        this._untrackDoc(doc.guid, doc);
+      });
+      event.loaded.forEach(doc => {
+        this._trackDoc(doc.guid, doc);
+      });
+    };
+
+    this._subDocsHandlerMap.set(doc, fn);
+    return fn;
+  }
+
+  _trackDoc(id: string, doc: Doc) {
+    doc.on('update', this._createOrGetHandleUpdate(id, doc));
+    doc.on('subdocs', this._createOrGetHandleSubDocs(id, doc));
+  }
+
+  _untrackDoc(id: string, doc: Doc) {
+    doc.off('update', this._createOrGetHandleUpdate(id, doc));
+    doc.off('subdocs', this._createOrGetHandleSubDocs(id, doc));
+  }
+
   /**
    * @type {boolean}
    */
@@ -265,7 +319,7 @@ export class KeckProvider extends Observable<string> {
       process.off('exit', this._unloadHandler);
     }
     this.awareness.off('update', this._awarenessUpdateHandler);
-    this.doc.off('update', this._updateHandler);
+    this._untrackDoc(this.doc.guid, this.doc);
     super.destroy();
   }
 

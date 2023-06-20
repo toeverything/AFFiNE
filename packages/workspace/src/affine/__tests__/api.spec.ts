@@ -20,6 +20,7 @@ import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { WebSocket } from 'ws';
+import type { Doc } from 'yjs';
 import { applyUpdate } from 'yjs';
 
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
@@ -474,6 +475,64 @@ describe('api', () => {
         const publicPage = publicWorkspace.getPage(pageId) as Page;
         expect(publicPage).not.toBeNull();
       }
+    },
+    {
+      timeout: 30000,
+      retry: 3,
+    }
+  );
+
+  test(
+    'subdoc',
+    async () => {
+      const id = await createWorkspace(workspaceApis);
+      const binary = await workspaceApis.downloadWorkspace(id, false);
+      const workspace = createEmptyBlockSuiteWorkspace(
+        id,
+        WorkspaceFlavour.LOCAL
+      );
+      Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(binary));
+      const workspace2 = createEmptyBlockSuiteWorkspace(
+        id,
+        WorkspaceFlavour.LOCAL
+      );
+
+      const wsUrl = `ws://127.0.0.1:3000/api/sync/`;
+      const provider = new KeckProvider(wsUrl, workspace.id, workspace.doc, {
+        params: { token: getLoginStorage()?.token },
+        awareness: workspace.awarenessStore.awareness,
+        connect: false,
+      });
+      const provider2 = new KeckProvider(wsUrl, workspace2.id, workspace2.doc, {
+        params: { token: getLoginStorage()?.token },
+        awareness: workspace2.awarenessStore.awareness,
+        connect: false,
+      });
+
+      provider.connect();
+      provider2.connect();
+
+      await Promise.all([
+        await waitForConnected(provider),
+        await waitForConnected(provider2),
+      ]);
+
+      const subDoc = new Workspace.Y.Doc();
+      subDoc.getText().insert(0, '2');
+      workspace.doc.getMap('subDoc-map').set('subDoc-key', subDoc);
+
+      subDoc.getText().insert(0, '1');
+
+      new Promise(resolve => setTimeout(resolve, 1000));
+
+      const binary1 = Workspace.Y.encodeStateAsUpdate(workspace.doc);
+      const binary2 = Workspace.Y.encodeStateAsUpdate(workspace2.doc);
+      expect(binary1).toEqual(binary2);
+
+      const subDoc2 = workspace2.doc
+        .getMap('subDoc-map')
+        .get('subDoc-key') as Doc;
+      expect(subDoc2.getText().toJSON()).toEqual('12');
     },
     {
       timeout: 30000,
