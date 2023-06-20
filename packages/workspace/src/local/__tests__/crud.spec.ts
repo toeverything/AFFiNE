@@ -47,7 +47,7 @@ describe('crud', () => {
       title: new page.Text(''),
     });
     page.addBlock('affine:surface', {}, pageBlockId);
-    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
 
     const id = await CRUD.create(workspace);

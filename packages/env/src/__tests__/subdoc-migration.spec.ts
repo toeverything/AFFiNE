@@ -68,9 +68,9 @@ describe('subdoc', () => {
       originalVersions.get('affine:embed')
     );
 
-    expect(blockVersions.get('affine:frame')).toBeUndefined();
+    expect(blockVersions.get('affine:note')).toBeUndefined();
     expect(blockVersions.get('affine:note')).toBe(
-      originalVersions.get('affine:frame')
+      originalVersions.get('affine:note')
     );
   });
 });

@@ -22,7 +22,7 @@ export function useReferenceLinkHelper(
           },
         },
       ]);
-      const [frame] = page.getBlockByFlavour('affine:frame');
+      const [frame] = page.getBlockByFlavour('affine:note');
 
       frame && page.addBlock('affine:paragraph', { text }, frame.id);
     },

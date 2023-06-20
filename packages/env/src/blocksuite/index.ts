@@ -11,7 +11,7 @@ export function initEmptyPage(page: Page): void {
     title: new page.Text(''),
   });
   page.addBlock('affine:surface', {}, pageBlockId);
-  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  const frameId = page.addBlock('affine:note', {}, pageBlockId);
   page.addBlock('affine:paragraph', {}, frameId);
 }
 

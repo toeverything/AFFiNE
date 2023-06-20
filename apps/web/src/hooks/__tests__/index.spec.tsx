@@ -76,7 +76,7 @@ beforeEach(async () => {
     const pageBlockId = page.addBlock('affine:page', {
       title: new page.Text(''),
     });
-    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
   initPage(

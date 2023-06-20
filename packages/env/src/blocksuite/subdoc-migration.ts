@@ -5,7 +5,7 @@ function runBlockMigration(
   data: Y.Map<unknown>,
   version: number
 ) {
-  if (flavour === 'affine:frame') {
+  if (flavour === 'affine:note') {
     data.set('sys:flavour', 'affine:note');
     return;
   }
@@ -21,10 +21,10 @@ function runBlockMigration(
 }
 
 function updateBlockVersions(versions: Y.Map<number>) {
-  const frameVersion = versions.get('affine:frame');
+  const frameVersion = versions.get('affine:note');
   if (frameVersion !== undefined) {
     versions.set('affine:note', frameVersion);
-    versions.delete('affine:frame');
+    versions.delete('affine:note');
   }
   const embedVersion = versions.get('affine:embed');
   if (embedVersion !== undefined) {

@@ -29,7 +29,7 @@ function initEmptyPage(page: Page) {
     title: new page.Text(''),
   });
   const surfaceBlockId = page.addBlock('affine:surface', {}, pageBlockId);
-  const frameBlockId = page.addBlock('affine:frame', {}, pageBlockId);
+  const frameBlockId = page.addBlock('affine:note', {}, pageBlockId);
   const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBlockId);
   return {
     pageBlockId,
@@ -91,7 +91,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -154,7 +154,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
     {
@@ -222,7 +222,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       for (let i = 0; i < 99; i++) {
         page.addBlock('affine:paragraph', {}, frameId);
       }
