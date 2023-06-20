@@ -29,9 +29,10 @@
         "{projectRoot}/build",
         "{projectRoot}/out",
         "{projectRoot}/node_modules/.cache",
-        "apps/web/.next",
-        "packages/storybook/storybook-static",
-        "packages/native/affine.*.node"
+        "{projectRoot}/target",
+        "{workspaceRoot}/apps/web/.next",
+        "{workspaceRoot}/packages/storybook/storybook-static",
+        "{workspaceRoot}/packages/native/affine.*.node"
       ],
       "inputs": [
         {
