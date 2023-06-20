@@ -1,5 +1,6 @@
 import { Workspace } from '@blocksuite/store';
-import { describe, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
+import type { Doc } from 'yjs';
 
 import { migrateToSubdoc } from '../blocksuite';
 
@@ -14,7 +15,20 @@ describe('subdoc', () => {
     }
     const doc = new Y.Doc();
     Y.applyUpdate(doc, binary);
+    {
+      // invoke data
+      doc.getMap('space:hello-world');
+      doc.getMap('space:meta');
+    }
+    const blocks = doc.getMap('space:hello-world').toJSON();
     const newDoc = migrateToSubdoc(doc);
-    console.log(newDoc.toJSON());
+    const subDoc = newDoc.getMap('spaces').get('space:hello-world') as Doc;
+    const data = (subDoc.toJSON() as any).blocks;
+    Object.keys(data).forEach(id => {
+      if (id === 'xyWNqindHH') {
+        return;
+      }
+      expect(data[id]).toEqual(blocks[id]);
+    });
   });
 });
