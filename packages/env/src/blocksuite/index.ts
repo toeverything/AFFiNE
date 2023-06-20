@@ -14,3 +14,5 @@ export function initEmptyPage(page: Page): void {
   const frameId = page.addBlock('affine:frame', {}, pageBlockId);
   page.addBlock('affine:paragraph', {}, frameId);
 }
+
+export * from './subdoc-migration';
