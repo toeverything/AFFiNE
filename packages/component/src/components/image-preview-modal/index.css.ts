@@ -11,17 +11,21 @@ const fadeOutAnimation = keyframes({
   to: { opacity: 0 },
 });
 
-export const imagePreviewModalStyle = style({
+export const imagePreviewBackgroundStyle = style({
   position: 'fixed',
   top: 0,
   left: 0,
   width: '100%',
   height: '100%',
   zIndex: baseTheme.zIndexModal,
+  background: 'rgba(0, 0, 0, 0.75)',
+});
+
+export const imagePreviewModalStyle = style({
+  height: '100%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(0, 0, 0, 0.75)',
 });
 
 export const loaded = style({
@@ -93,7 +97,7 @@ export const imagePreviewActionBarStyle = style({
   justifyContent: 'center',
   alignItems: 'center',
   backgroundColor: 'var(--affine-white)',
-  borderRadius: '8px',
+  borderRadius: '4px',
   boxShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
   maxWidth: 'max-content',
   minHeight: '44px',
