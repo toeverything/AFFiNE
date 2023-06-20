@@ -13,9 +13,9 @@ import type {
   BlockSuiteBinaryDB,
   IndexedDBProvider,
   WorkspaceMilestone,
-} from './shared';
-import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
-import { downloadBinary, tryMigrate } from './utils';
+} from './shared.js';
+import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared.js';
+import { downloadBinary, tryMigrate } from './utils.js';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
@@ -288,6 +288,10 @@ export const createIndexedDBProvider = (
     doc.on('update', createOrGetHandleUpdate(id, doc));
     doc.on('destroy', createOrGetHandleDestroy(id, doc));
     doc.on('subdocs', createOrGetHandleSubDocs(id, doc));
+
+    doc.subdocs.forEach(doc => {
+      trackDoc(doc.guid, doc);
+    });
   }
 
   function unTrackDoc(id: string, doc: Doc) {
