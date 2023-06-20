@@ -20,15 +20,32 @@ function runBlockMigration(
   }
 }
 
+function updateBlockVersions(versions: Y.Map<number>) {
+  const frameVersion = versions.get('affine:frame');
+  if (frameVersion !== undefined) {
+    versions.set('affine:note', frameVersion);
+    versions.delete('affine:frame');
+  }
+  const embedVersion = versions.get('affine:embed');
+  if (embedVersion !== undefined) {
+    versions.set('affine:image', embedVersion);
+    versions.delete('affine:embed');
+  }
+}
+
 function migrateMeta(oldDoc: Y.Doc, newDoc: Y.Doc) {
   const originalMeta = oldDoc.getMap('space:meta');
   const originalVersions = originalMeta.get('versions') as Y.Map<number>;
   const originalPages = originalMeta.get('pages') as Y.Array<Y.Map<unknown>>;
   const meta = newDoc.getMap('meta');
   const pages = new Y.Array();
+  const blockVersions = originalVersions.clone();
+
   meta.set('workspaceVersion', 1);
-  meta.set('blockVersions', originalVersions.clone());
+  meta.set('blockVersions', blockVersions);
   meta.set('pages', pages);
+
+  updateBlockVersions(blockVersions);
   const mapList = originalPages.map(page => {
     const map = new Y.Map();
     Array.from(page.entries())
@@ -49,7 +66,7 @@ function migrateBlocks(oldDoc: Y.Doc, newDoc: Y.Doc) {
   originalPages.forEach(page => {
     const id = page.get('id') as string;
     const spaceId = id.startsWith('space:') ? id : `space:${id}`;
-    const originalBlocks = oldDoc.get(spaceId) as Y.Map<unknown>;
+    const originalBlocks = oldDoc.getMap(spaceId) as Y.Map<unknown>;
     const subdoc = new Y.Doc();
     spaces.set(spaceId, subdoc);
     const blocks = subdoc.getMap('blocks');
@@ -66,7 +83,7 @@ function migrateBlocks(oldDoc: Y.Doc, newDoc: Y.Doc) {
 }
 
 export function migrateToSubdoc(doc: Y.Doc): Y.Doc {
-  const needMigration = doc.get('space:meta') instanceof Y.Map;
+  const needMigration = Array.from(doc.getMap('space:meta').keys()).length > 0;
   if (!needMigration) {
     return doc;
   }
