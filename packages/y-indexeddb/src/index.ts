@@ -12,9 +12,9 @@ import type {
   BlockSuiteBinaryDB,
   IndexedDBProvider,
   WorkspaceMilestone,
-} from './shared.js';
-import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared.js';
-import { tryMigrate } from './utils.js';
+} from './shared';
+import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
+import { tryMigrate } from './utils';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
