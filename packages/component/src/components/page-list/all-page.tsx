@@ -121,13 +121,15 @@ export const PageList = ({
   const isSmallDevices = useIsSmallDevices();
   if (isSmallDevices) {
     return (
-      <AllPageListMobileView
-        isPublicWorkspace={isPublicWorkspace}
-        createNewPage={onCreateNewPage}
-        createNewEdgeless={onCreateNewEdgeless}
-        importFile={onImportFile}
-        list={sorter.data}
-      />
+      <ScrollableContainer inTableView>
+        <AllPageListMobileView
+          isPublicWorkspace={isPublicWorkspace}
+          createNewPage={onCreateNewPage}
+          createNewEdgeless={onCreateNewEdgeless}
+          importFile={onImportFile}
+          list={sorter.data}
+        />
+      </ScrollableContainer>
     );
   }
 
@@ -140,25 +142,29 @@ export const PageList = ({
       : undefined;
 
   return (
-    <ScrollableContainer inTableView>
-    <StyledTableContainer ref={ref}>
-      <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
-        <AllPagesHead
-          isPublicWorkspace={isPublicWorkspace}
-          sorter={sorter}
-          createNewPage={onCreateNewPage}
-          createNewEdgeless={onCreateNewEdgeless}
-          importFile={onImportFile}
-        />
-        <AllPagesBody
-          
-          isPublicWorkspace={isPublicWorkspace}
-          groupKey={groupKey}
-          data={sorter.data}
-        />
-      </Table>
-      {sorter.data.length === 0 && fallback ? fallback : null}
+    sorter.data.length === 0 && fallback ?
+    <StyledTableContainer>
+     {fallback}
     </StyledTableContainer>
+   :
+    <ScrollableContainer inTableView>
+      <StyledTableContainer ref={ref}>
+        <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
+          <AllPagesHead
+            isPublicWorkspace={isPublicWorkspace}
+            sorter={sorter}
+            createNewPage={onCreateNewPage}
+            createNewEdgeless={onCreateNewEdgeless}
+            importFile={onImportFile}
+          />
+          <AllPagesBody
+            
+            isPublicWorkspace={isPublicWorkspace}
+            groupKey={groupKey}
+            data={sorter.data}
+          />
+        </Table>
+      </StyledTableContainer>
     </ScrollableContainer>
   );
 };
@@ -241,12 +247,18 @@ export const PageListTrashView: React.FC<{
   );
 
   return (
-    <StyledTableContainer ref={ref}>
-      <Table showBorder={hasScrollTop}>
-        <TrashListHead />
-        <TableBody>{ListItems}</TableBody>
-      </Table>
-      {list.length === 0 && fallback ? fallback : null}
+    list.length === 0 && fallback ?
+    <StyledTableContainer>
+    {fallback}
     </StyledTableContainer>
+  :
+    <ScrollableContainer inTableView>
+      <StyledTableContainer ref={ref}>
+        <Table showBorder={hasScrollTop}>
+          <TrashListHead />
+          <TableBody>{ListItems}</TableBody>
+        </Table>
+      </StyledTableContainer>
+    </ScrollableContainer>
   );
 };
