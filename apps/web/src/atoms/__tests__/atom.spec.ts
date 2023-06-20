@@ -4,6 +4,7 @@
 import 'fake-indexeddb/auto';
 
 import { initEmptyPage } from '@affine/env/blocksuite';
+import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
@@ -69,7 +70,7 @@ describe('currentWorkspace atom', () => {
         WorkspaceFlavour.LOCAL
       );
       const page = workspace.createPage({ id: 'page0' });
-      initEmptyPage(page);
+      await initEmptyPage(page);
       const frameId = page.getBlockByFlavour('affine:note').at(0)?.id as string;
       id = page.addBlock(
         'affine:paragraph',
@@ -78,7 +79,10 @@ describe('currentWorkspace atom', () => {
         },
         frameId
       );
-      const provider = createIndexedDBDownloadProvider(workspace);
+      const provider = createIndexedDBDownloadProvider(
+        workspace.id,
+        workspace.doc
+      ) as LocalIndexedDBDownloadProvider;
       provider.sync();
       await provider.whenReady;
       const workspaceId = await WorkspaceAdapters[
