@@ -28,7 +28,7 @@ export const dropdownBtn = style({
 export const divider = style({
   width: '0.5px',
   height: '16px',
-  background: 'var(--affine-border-color)',
+  background: 'var(--affine-divider-color)',
   // fix dropdown button click area
   margin: '0 4px',
   marginRight: 0,
