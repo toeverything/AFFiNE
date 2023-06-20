@@ -3,11 +3,15 @@ name: Build Canary Desktop App on Staging Branch
 on:
   push:
     branches:
+      # 0.6.x-staging
       - v[0-9]+.[0-9]+.x-staging
+      # 0.6.1-staging
+      - v[0-9]+.[0-9]+.[0-9]+-staging
     paths-ignore:
       - README.md
       - .github/**
       - '!.github/workflows/nightly-build.yml'
+      - '!.github/actions/setup-node/action.yml'
 
 permissions:
   actions: write
@@ -113,6 +117,7 @@ jobs:
         uses: ./.github/actions/build-rust
         with:
           target: ${{ matrix.spec.target }}
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Replace Version
         run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3

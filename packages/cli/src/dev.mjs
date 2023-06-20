@@ -89,7 +89,7 @@ runCli(
   console.error
 );
 
-spawn('yarn', ['dev'], {
+spawn('nx', ['dev', '@affine/web'], {
   env,
   cwd,
   stdio: 'inherit',

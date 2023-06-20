@@ -18,22 +18,22 @@ body:
   - type: dropdown
     id: version
     attributes:
-      label: Version
-      description: What version of our software are you running?
+      label: Distribution version
+      description: What version of AFFiNE are you using?
       options:
-        - app.affine.pro
-        - stage.affine.pro
-        - dev.affine.live
-        - affine-preview.vercel.app
         - macOS x64
         - macOS ARM 64
         - Windows x64
+        - Linux
+        - Web (app.affine.pro)
+        - Web (stage.affine.pro)
+        - Web (dev.affine.live)
     validations:
       required: true
   - type: dropdown
     id: browsers
     attributes:
-      label: What browsers are you seeing the problem on?
+      label: What browsers are you seeing the problem on if you're using web version?
       multiple: true
       options:
         - Chrome

@@ -128,7 +128,7 @@ export async function tryMigrate(
 }
 
 export async function downloadBinary(
-  id: string,
+  guid: string,
   dbName = DEFAULT_DB_NAME
 ): Promise<UpdateMessage['update'] | false> {
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
@@ -136,7 +136,7 @@ export async function downloadBinary(
   });
   const db = await dbPromise;
   const t = db.transaction('workspace', 'readonly').objectStore('workspace');
-  const doc = await t.get(id);
+  const doc = await t.get(guid);
   if (!doc) {
     return false;
   } else {
