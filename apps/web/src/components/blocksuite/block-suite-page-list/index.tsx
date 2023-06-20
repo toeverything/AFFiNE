@@ -209,11 +209,10 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
       },
       bookmarkPage: () => {
+        const status = pageMeta.favorite;
         toggleFavorite(pageMeta.id);
         toast(
-          pageMeta.favorite
-            ? t['Removed from Favorites']()
-            : t['Added to Favorites']()
+          status ? t['Removed from Favorites']() : t['Added to Favorites']()
         );
       },
       onDisablePublicSharing: () => {
