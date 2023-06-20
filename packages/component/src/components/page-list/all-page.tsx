@@ -5,7 +5,7 @@ import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
 import { type CSSProperties } from 'react';
 
-import { Table, TableBody, TableCell, TableHead, TableHeadRow } from '../..';
+import { ScrollableContainer, Table, TableBody, TableCell, TableHead, TableHeadRow } from '../..';
 import { TableBodyRow } from '../../ui/table';
 import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
 import { AllPagesBody } from './all-pages-body';
@@ -140,6 +140,7 @@ export const PageList = ({
       : undefined;
 
   return (
+    <ScrollableContainer inTableView>
     <StyledTableContainer ref={ref}>
       <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
         <AllPagesHead
@@ -150,6 +151,7 @@ export const PageList = ({
           importFile={onImportFile}
         />
         <AllPagesBody
+          
           isPublicWorkspace={isPublicWorkspace}
           groupKey={groupKey}
           data={sorter.data}
@@ -157,6 +159,7 @@ export const PageList = ({
       </Table>
       {sorter.data.length === 0 && fallback ? fallback : null}
     </StyledTableContainer>
+    </ScrollableContainer>
   );
 };
 

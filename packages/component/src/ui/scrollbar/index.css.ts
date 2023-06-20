@@ -40,7 +40,7 @@ globalStyle(`${scrollableViewport} > div`, {
 
 export const scrollableContainer = style({
   height: '100%',
-  margin: '4px 0',
+  marginBottom: '4px',
 });
 
 export const scrollbar = style({
@@ -59,6 +59,10 @@ export const scrollbar = style({
       opacity: 0,
     },
   },
+});
+export const TableScrollbar = style({
+  paddingTop: '60px',
+  paddingBottom: '60px',
 });
 
 export const scrollbarThumb = style({

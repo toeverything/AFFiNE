@@ -7,11 +7,13 @@ import * as styles from './index.css';
 
 export type ScrollableContainerProps = {
   showScrollTopBorder?: boolean;
+  inTableView?: boolean;
 };
 
 export const ScrollableContainer = ({
   children,
   showScrollTopBorder = false,
+  inTableView = false,
 }: PropsWithChildren<ScrollableContainerProps>) => {
     const [hasScrollTop, ref] = useHasScrollTop();
     return (
@@ -32,7 +34,7 @@ export const ScrollableContainer = ({
         <ScrollArea.Scrollbar
           
           orientation="vertical"
-          className={styles.scrollbar}
+          className={clsx(styles.scrollbar,{[styles.TableScrollbar]:inTableView})}
         >
           <ScrollArea.Thumb className={styles.scrollbarThumb} />
         </ScrollArea.Scrollbar>
