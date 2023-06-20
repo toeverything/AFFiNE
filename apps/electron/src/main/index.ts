@@ -66,6 +66,5 @@ app
   .then(ensureHelperProcess)
   .then(restoreOrCreateWindow)
   .then(createApplicationMenu)
-  .then()
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
