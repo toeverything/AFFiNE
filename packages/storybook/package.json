@@ -46,5 +46,6 @@
     "@blocksuite/icons": "*",
     "@blocksuite/lit": "*",
     "@blocksuite/store": "*"
-  }
+  },
+  "version": "0.6.1"
 }
