@@ -1,10 +1,10 @@
+import { readFileSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { describe, expect, test } from 'vitest';
 import * as Y from 'yjs';
 
 import { migrateToSubdoc } from '../blocksuite';
-import { readFileSync } from 'fs';
-import { dirname,resolve } from 'path';
-import { fileURLToPath } from 'url';
 
 const fixturePath = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -32,7 +32,7 @@ describe('subdoc', () => {
     }
     const blocks = doc.getMap('space:hello-world').toJSON();
     const newDoc = migrateToSubdoc(doc);
-    const subDoc = newDoc.getMap('spaces').get('space:hello-world') as Doc;
+    const subDoc = newDoc.getMap('spaces').get('space:hello-world') as Y.Doc;
     const data = (subDoc.toJSON() as any).blocks;
     Object.keys(data).forEach(id => {
       if (id === 'xyWNqindHH') {
