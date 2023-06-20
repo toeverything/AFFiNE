@@ -28,6 +28,8 @@ export interface Scalars {
   Float: { input: number; output: number };
   /** A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format. */
   DateTime: { input: string; output: string };
+  /** The `Upload` scalar type represents a file upload. */
+  Upload: { input: File; output: File };
 }
 
 /** User permission in workspace */
@@ -58,6 +60,7 @@ export type CreateWorkspaceMutation = {
 
 export type UploadAvatarMutationVariables = Exact<{
   id: Scalars['String']['input'];
+  avatar: Scalars['Upload']['input'];
 }>;
 
 export type UploadAvatarMutation = {

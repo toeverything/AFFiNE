@@ -3,6 +3,8 @@ import './prelude';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { static as staticMiddleware } from 'express';
+// @ts-expect-error graphql-upload is not typed
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';
 import { Config } from './config';
@@ -18,6 +20,13 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   },
   bodyParser: true,
 });
+
+app.use(
+  graphqlUploadExpress({
+    maxFileSize: 10 * 1024 * 1024,
+    maxFiles: 5,
+  })
+);
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ?? 3010;

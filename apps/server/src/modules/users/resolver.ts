@@ -1,4 +1,4 @@
-import { UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -8,11 +8,12 @@ import {
   Query,
   Resolver,
 } from '@nestjs/graphql';
-import { FileInterceptor } from '@nestjs/platform-express/multer';
 import type { User } from '@prisma/client';
-import { memoryStorage } from 'multer';
+// @ts-expect-error graphql-upload is not typed
+import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma/service';
+import type { FileUpload } from '../../types';
 import { Auth } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
 
@@ -56,17 +57,16 @@ export class UserResolver {
     name: 'uploadAvatar',
     description: 'Upload user avatar',
   })
-  @UseInterceptors(
-    FileInterceptor('avatar', {
-      storage: memoryStorage(),
-      limits: { fileSize: 1024 * 1024 * 10, files: 1 },
-    })
-  )
   async uploadAvatar(
     @Args('id') id: string,
-    @UploadedFile() file: Express.Multer.File
+    @Args({ name: 'avatar', type: () => GraphQLUpload })
+    avatar: FileUpload
   ) {
-    const url = await this.storage.uploadFile(`avatars/${id}`, file.buffer);
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new BadRequestException(`User ${id} not found`);
+    }
+    const url = await this.storage.uploadFile(`${id}-avatar`, avatar);
     return this.prisma.user.update({
       where: { id },
       data: { avatarUrl: url },

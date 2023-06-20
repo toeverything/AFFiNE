@@ -6,7 +6,7 @@
     "module": "ESNext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "Bundler",
     "isolatedModules": false,
     "resolveJsonModule": true,
     "types": ["node", "multer"],

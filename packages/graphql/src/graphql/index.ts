@@ -25,8 +25,8 @@ export const uploadAvatarMutation = {
   operationName: 'uploadAvatar',
   definitionName: 'uploadAvatar',
   query: `
-mutation uploadAvatar($id: String!) {
-  uploadAvatar(id: $id) {
+mutation uploadAvatar($id: String!, $avatar: Upload!) {
+  uploadAvatar(id: $id, avatar: $avatar) {
     id
     name
     avatarUrl
