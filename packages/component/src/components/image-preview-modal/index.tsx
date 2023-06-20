@@ -29,6 +29,7 @@ import {
   groupStyle,
   imageBottomContainerStyle,
   imagePreviewActionBarStyle,
+  imagePreviewBackgroundStyle,
   imagePreviewModalCaptionStyle,
   imagePreviewModalCenterStyle,
   imagePreviewModalCloseButtonStyle,
@@ -90,7 +91,9 @@ const ImagePreviewModalImpl = (
     (blockId: string | null) => {
       assertExists(blockId);
       const workspace = props.workspace;
-      setHasPlayedAnimation(true);
+      if (!hasPlayedAnimation) {
+        setHasPlayedAnimation(true);
+      }
       const page = workspace.getPage(props.pageId);
       assertExists(page);
       const block = page.getBlockById(blockId);
@@ -104,7 +107,7 @@ const ImagePreviewModalImpl = (
         setBlockId(nextBlock.id);
       }
     },
-    [props.pageId, props.workspace, setBlockId]
+    [props.pageId, props.workspace, setBlockId, hasPlayedAnimation]
   );
 
   const previousImageHandler = useCallback(
@@ -277,10 +280,7 @@ const ImagePreviewModalImpl = (
   }
   return (
     <div
-      data-testid="image-preview-modal"
-      className={`${imagePreviewModalStyle} ${
-        isOpen && hasPlayedAnimation ? null : isOpen ? loaded : unloaded
-      }`}
+      className={imagePreviewModalStyle}
       onClick={event => {
         if (event.target === event.currentTarget) {
           setIsOpen(false);
@@ -295,6 +295,7 @@ const ImagePreviewModalImpl = (
           <div className={imagePreviewModalCenterStyle}>
             <img
               data-blob-id={props.blockId}
+              data-testid="image-content"
               src={url}
               alt={caption}
               ref={imageRef}
@@ -310,27 +311,7 @@ const ImagePreviewModalImpl = (
           </div>
         </div>
       </div>
-      <button
-        onClick={() => {
-          setIsOpen(false);
-        }}
-        className={imagePreviewModalCloseButtonStyle}
-      >
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M0.286086 0.285964C0.530163 0.0418858 0.925891 0.0418858 1.16997 0.285964L5.00013 4.11613L8.83029 0.285964C9.07437 0.0418858 9.4701 0.0418858 9.71418 0.285964C9.95825 0.530041 9.95825 0.925769 9.71418 1.16985L5.88401 5.00001L9.71418 8.83017C9.95825 9.07425 9.95825 9.46998 9.71418 9.71405C9.4701 9.95813 9.07437 9.95813 8.83029 9.71405L5.00013 5.88389L1.16997 9.71405C0.925891 9.95813 0.530163 9.95813 0.286086 9.71405C0.0420079 9.46998 0.0420079 9.07425 0.286086 8.83017L4.11625 5.00001L0.286086 1.16985C0.0420079 0.925769 0.0420079 0.530041 0.286086 0.285964Z"
-            fill="#77757D"
-          />
-        </svg>
-      </button>
+
       <div
         className={imageBottomContainerStyle}
         onClick={event => event.stopPropagation()}
@@ -545,12 +526,38 @@ export const ImagePreviewModal = (
   }
 
   return (
-    <Suspense fallback={<div className={imagePreviewModalStyle} />}>
-      <ImagePreviewModalImpl
-        {...props}
-        blockId={blockId}
-        onClose={() => setBlockId(null)}
-      />
-    </Suspense>
+    <div
+      data-testid="image-preview-modal"
+      className={`${imagePreviewBackgroundStyle} ${isOpen ? loaded : unloaded}`}
+    >
+      <Suspense fallback={<div />}>
+        <ImagePreviewModalImpl
+          {...props}
+          blockId={blockId}
+          onClose={() => setBlockId(null)}
+        />
+      </Suspense>
+      <button
+        onClick={() => {
+          setIsOpen(false);
+        }}
+        className={imagePreviewModalCloseButtonStyle}
+      >
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M0.286086 0.285964C0.530163 0.0418858 0.925891 0.0418858 1.16997 0.285964L5.00013 4.11613L8.83029 0.285964C9.07437 0.0418858 9.4701 0.0418858 9.71418 0.285964C9.95825 0.530041 9.95825 0.925769 9.71418 1.16985L5.88401 5.00001L9.71418 8.83017C9.95825 9.07425 9.95825 9.46998 9.71418 9.71405C9.4701 9.95813 9.07437 9.95813 8.83029 9.71405L5.00013 5.88389L1.16997 9.71405C0.925891 9.95813 0.530163 9.95813 0.286086 9.71405C0.0420079 9.46998 0.0420079 9.07425 0.286086 8.83017L4.11625 5.00001L0.286086 1.16985C0.0420079 0.925769 0.0420079 0.530041 0.286086 0.285964Z"
+            fill="#77757D"
+          />
+        </svg>
+      </button>
+    </div>
   );
 };
