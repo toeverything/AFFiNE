@@ -92,7 +92,7 @@ class HelperProcessManager {
       ...appMethods,
     };
 
-    const server = AsyncCall<PeersAPIs.HelperToMain>(mainToHelperServer, {
+    this.rpc = AsyncCall<PeersAPIs.HelperToMain>(mainToHelperServer, {
       strict: {
         // the channel is shared for other purposes as well so that we do not want to
         // restrict to only JSONRPC messages
@@ -100,7 +100,6 @@ class HelperProcessManager {
       },
       channel: new MessageEventChannel(this.#process),
     });
-    this.rpc = server;
   }
 }
 
