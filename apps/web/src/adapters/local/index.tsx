@@ -49,7 +49,9 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           logger.error('init page with preloading failed', err);
         });
       } else {
-        initEmptyPage(page);
+        initEmptyPage(page).catch(error => {
+          logger.error('init page with empty failed', error)
+        });
       }
       blockSuiteWorkspace.setPageMeta(page.id, {
         jumpOnce: true,
