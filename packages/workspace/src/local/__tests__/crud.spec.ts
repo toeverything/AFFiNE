@@ -33,7 +33,6 @@ describe('crud', () => {
         id: 'not_exist',
         flavour: WorkspaceFlavour.LOCAL,
         blockSuiteWorkspace: new Workspace({ id: 'test' }),
-        providers: [],
       })
     ).rejects.toThrowError();
   });
@@ -47,7 +46,7 @@ describe('crud', () => {
       title: new page.Text(''),
     });
     page.addBlock('affine:surface', {}, pageBlockId);
-    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
 
     const id = await CRUD.create(workspace);

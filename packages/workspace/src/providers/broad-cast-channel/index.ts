@@ -1,7 +1,7 @@
 import type { BroadCastChannelProvider } from '@affine/env/workspace';
+import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import type { Awareness } from 'y-protocols/awareness';
 import {
   applyAwarenessUpdate,
   encodeAwarenessUpdate,
@@ -16,13 +16,16 @@ import type {
 } from './type';
 import { getClients } from './type';
 
-export const createBroadCastChannelProvider = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
+export const createBroadCastChannelProvider: DocProviderCreator = (
+  id,
+  doc,
+  { awareness } = {}
 ): BroadCastChannelProvider => {
+  if (!awareness) {
+    console.warn('awareness not found');
+    throw new Error();
+  }
   const Y = BlockSuiteWorkspace.Y;
-  const doc = blockSuiteWorkspace.doc;
-  const awareness = blockSuiteWorkspace.awarenessStore
-    .awareness as unknown as Awareness;
   let broadcastChannel: TypedBroadcastChannel | null = null;
   const callbacks = new CallbackSet();
   const handleBroadcastChannelMessage = (
@@ -82,23 +85,16 @@ export const createBroadCastChannelProvider = (
   };
   return {
     flavour: 'broadcast-channel',
-    background: true,
+    passive: true,
     get connected() {
       return callbacks.ready;
     },
-    callbacks,
     connect: () => {
-      assertExists(blockSuiteWorkspace.id);
-      broadcastChannel = Object.assign(
-        new BroadcastChannel(blockSuiteWorkspace.id),
-        {
-          onmessage: handleBroadcastChannelMessage,
-        }
-      );
-      localProviderLogger.info(
-        'connect broadcast channel',
-        blockSuiteWorkspace.id
-      );
+      assertExists(id);
+      broadcastChannel = Object.assign(new BroadcastChannel(id), {
+        onmessage: handleBroadcastChannelMessage,
+      });
+      localProviderLogger.info('connect broadcast channel', id);
       const docDiff = Y.encodeStateVector(doc);
       broadcastChannel.postMessage(['doc:diff', docDiff, awareness.clientID]);
       const docUpdateV2 = Y.encodeStateAsUpdate(doc);
@@ -114,10 +110,7 @@ export const createBroadCastChannelProvider = (
     },
     disconnect: () => {
       assertExists(broadcastChannel);
-      localProviderLogger.info(
-        'disconnect broadcast channel',
-        blockSuiteWorkspace.id
-      );
+      localProviderLogger.info('disconnect broadcast channel', id);
       doc.off('update', handleDocUpdate);
       awareness.off('update', handleAwarenessUpdate);
       broadcastChannel.close();

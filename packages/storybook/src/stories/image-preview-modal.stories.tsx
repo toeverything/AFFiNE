@@ -22,7 +22,7 @@ fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
     const id = await workspace.blobs.set(
       new Blob([buffer], { type: 'image/png' })
     );
-    const frameId = page.getBlockByFlavour('affine:frame')[0].id;
+    const frameId = page.getBlockByFlavour('affine:note')[0].id;
     page.addBlock(
       'affine:paragraph',
       {
@@ -31,7 +31,7 @@ fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
       frameId
     );
     page.addBlock(
-      'affine:embed',
+      'affine:image',
       {
         sourceId: id,
       },

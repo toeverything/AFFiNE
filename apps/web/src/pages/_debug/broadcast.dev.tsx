@@ -30,7 +30,10 @@ const BroadcastPage: React.FC = () => {
     null
   );
   useEffect(() => {
-    const provider = createBroadCastChannelProvider(blockSuiteWorkspace);
+    const provider = createBroadCastChannelProvider(
+      blockSuiteWorkspace.id,
+      blockSuiteWorkspace.doc
+    ) as BroadCastChannelProvider;
     setProvider(provider);
     globalThis.currentBroadCastChannel = provider;
     provider.connect();

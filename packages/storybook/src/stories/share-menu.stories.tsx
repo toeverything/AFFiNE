@@ -30,7 +30,7 @@ function initPage(page: Page): void {
     title: new page.Text('Hello, world!'),
   });
   page.addBlock('affine:surface', {}, pageBlockId);
-  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  const frameId = page.addBlock('affine:note', {}, pageBlockId);
   page.addBlock(
     'affine:paragraph',
     {
@@ -54,14 +54,12 @@ const localWorkspace: LocalWorkspace = {
   id: 'test-workspace',
   flavour: WorkspaceFlavour.LOCAL,
   blockSuiteWorkspace,
-  providers: [],
 };
 
 const affineWorkspace: AffineLegacyCloudWorkspace = {
   id: 'test-workspace',
   flavour: WorkspaceFlavour.AFFINE,
   blockSuiteWorkspace,
-  providers: [],
   public: false,
   type: WorkspaceType.Normal,
   permission: PermissionType.Owner,

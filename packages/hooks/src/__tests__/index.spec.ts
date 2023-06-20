@@ -30,7 +30,7 @@ beforeEach(async () => {
     const pageBlockId = page.addBlock('affine:page', {
       title: new page.Text(''),
     });
-    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
   initPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
@@ -97,7 +97,7 @@ describe('useBlockSuitePagePreview', () => {
       {
         text: new page.Text('Hello, world!'),
       },
-      page.getBlockByFlavour('affine:frame')[0].id
+      page.getBlockByFlavour('affine:note')[0].id
     );
     const hook = renderHook(() => useAtomValue(useBlockSuitePagePreview(page)));
     expect(hook.result.current).toBe('\nHello, world!');

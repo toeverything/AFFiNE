@@ -1,6 +1,10 @@
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
-import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import type {
+  ActiveDocProvider,
+  PassiveDocProvider,
+  Workspace as BlockSuiteWorkspace,
+} from '@blocksuite/store';
 import type { FC, PropsWithChildren } from 'react';
 
 import type { View } from './filter';
@@ -13,88 +17,44 @@ export enum WorkspaceSubPath {
   SHARED = 'shared',
 }
 
-export type BaseProvider = {
-  flavour: string;
-
-  // cleanup data when workspace is removed
-  cleanup: () => void;
-};
-
-/**
- * @description
- * If a provider is marked as a background provider,
- *  we will connect it in the `useEffect` in React.js.
- *
- * This means that the data might be stale when you use it.
- */
-export interface BackgroundProvider extends BaseProvider {
-  // if this is true,
-  //  we will connect the provider on the background
-  background: true;
-  get connected(): boolean;
-  connect(): void;
-  disconnect(): void;
-  callbacks: Set<() => void>;
-}
-
-/**
- * @description
- * If a provider is marked as a necessary provider,
- *  we will connect it once you read the workspace.
- *
- * This means that the data will be fresh when you use it.
- *
- * Currently, there is only on necessary provider: `local-indexeddb`.
- */
-export interface NecessaryProvider extends Omit<BaseProvider, 'disconnect'> {
-  // if this is true,
-  //  we will ensure that the provider is connected before you can use it
-  necessary: true;
-  sync(): void;
-  get whenReady(): Promise<void>;
-}
-
-export interface AffineDownloadProvider extends BackgroundProvider {
+export interface AffineDownloadProvider extends PassiveDocProvider {
   flavour: 'affine-download';
 }
 
 /**
  * Download the first binary from local indexeddb
  */
-export interface BroadCastChannelProvider extends BackgroundProvider {
+export interface BroadCastChannelProvider extends PassiveDocProvider {
   flavour: 'broadcast-channel';
 }
 
 /**
  * Long polling provider with local indexeddb
  */
-export interface LocalIndexedDBBackgroundProvider extends BackgroundProvider {
+export interface LocalIndexedDBBackgroundProvider extends PassiveDocProvider {
   flavour: 'local-indexeddb-background';
 }
 
-export interface LocalIndexedDBDownloadProvider extends NecessaryProvider {
+export interface LocalIndexedDBDownloadProvider extends ActiveDocProvider {
   flavour: 'local-indexeddb';
 }
 
-export interface SQLiteProvider extends BackgroundProvider {
+export interface SQLiteProvider extends PassiveDocProvider {
   flavour: 'sqlite';
 }
 
-export interface SQLiteDBDownloadProvider extends NecessaryProvider {
+export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
   flavour: 'sqlite-download';
 }
 
-export interface AffineWebSocketProvider extends BackgroundProvider {
+export interface AffineWebSocketProvider extends PassiveDocProvider {
   flavour: 'affine-websocket';
 }
-
-export type Provider = BackgroundProvider | NecessaryProvider;
 
 export interface AffineLegacyCloudWorkspace extends RemoteWorkspace {
   flavour: WorkspaceFlavour.AFFINE;
   // empty
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  providers: Provider[];
 }
 
 // todo: update type with nest.js
@@ -104,14 +64,12 @@ export interface LocalWorkspace {
   flavour: WorkspaceFlavour.LOCAL;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  providers: Provider[];
 }
 
 export interface AffinePublicWorkspace {
   flavour: WorkspaceFlavour.PUBLIC;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  providers: Provider[];
 }
 
 export enum ReleaseType {

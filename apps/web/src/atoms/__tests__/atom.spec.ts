@@ -70,8 +70,7 @@ describe('currentWorkspace atom', () => {
       );
       const page = workspace.createPage({ id: 'page0' });
       initEmptyPage(page);
-      const frameId = page.getBlockByFlavour('affine:frame').at(0)
-        ?.id as string;
+      const frameId = page.getBlockByFlavour('affine:note').at(0)?.id as string;
       id = page.addBlock(
         'affine:paragraph',
         {

@@ -6,7 +6,6 @@ import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import { z } from 'zod';
 
-import { createLocalProviders } from '../providers';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 
 const getStorage = () => createJSONStorage(() => localStorage);
@@ -50,7 +49,6 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
       id,
       flavour: WorkspaceFlavour.LOCAL,
       blockSuiteWorkspace: blockSuiteWorkspace,
-      providers: [...createLocalProviders(blockSuiteWorkspace)],
     };
     return workspace;
   },

@@ -53,7 +53,7 @@ function initPage(page: Page) {
     title: new page.Text(''),
   });
   page.addBlock('affine:surface', {}, pageBlockId);
-  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  const frameId = page.addBlock('affine:note', {}, pageBlockId);
   page.addBlock('affine:paragraph', {}, frameId);
   page.resetHistory();
   return {

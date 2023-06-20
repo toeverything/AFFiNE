@@ -12,7 +12,6 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { config, DEFAULT_HELLO_WORLD_PAGE_ID, env } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import type { BackgroundProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -22,6 +21,7 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import type { PassiveDocProvider } from '@blocksuite/store';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -136,9 +136,9 @@ export const AllWorkspaceContext = ({
       // ignore current workspace
       .filter(workspace => workspace.id !== currentWorkspaceId)
       .flatMap(workspace =>
-        workspace.providers.filter(
-          (provider): provider is BackgroundProvider =>
-            'background' in provider && provider.background
+        workspace.blockSuiteWorkspace.providers.filter(
+          (provider): provider is PassiveDocProvider =>
+            'passive' in provider && provider.passive
         )
       );
     providers.forEach(provider => {
@@ -305,6 +305,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
 
+  // fixme(himself65):
+  //  we should move the page into jotai atom since it's an async value
+
   //#region init workspace
   if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
     // this is a new workspace, so we should redirect to the new page
@@ -318,7 +321,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         console.error('import error:', error);
       });
     } else {
-      initEmptyPage(page);
+      initEmptyPage(page).catch(error => {
+        console.error('init empty page error', error);
+      });
     }
     if (!router.query.pageId) {
       setCurrentPageId(pageId);
@@ -330,9 +335,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   //#endregion
 
   useEffect(() => {
-    const backgroundProviders = currentWorkspace.providers.filter(
-      (provider): provider is BackgroundProvider => 'background' in provider
-    );
+    const backgroundProviders =
+      currentWorkspace.blockSuiteWorkspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive
+      );
     backgroundProviders.forEach(provider => {
       provider.connect();
     });

@@ -21,7 +21,6 @@ export const Default = () => {
           '1',
           WorkspaceFlavour.LOCAL
         ),
-        providers: [],
       },
       {
         id: '2',
@@ -30,7 +29,6 @@ export const Default = () => {
           '2',
           WorkspaceFlavour.LOCAL
         ),
-        providers: [],
       },
       {
         id: '3',
@@ -39,7 +37,6 @@ export const Default = () => {
           '3',
           WorkspaceFlavour.LOCAL
         ),
-        providers: [],
       },
     ] satisfies WorkspaceListProps['items'];
 
