@@ -126,6 +126,7 @@ export const toast = (
     element.style.margin = '0';
     element.style.padding = '0';
     // wait for transition
+    ToastContainer = null;
     element.addEventListener('transitionend', () => {
       element.remove();
     });
