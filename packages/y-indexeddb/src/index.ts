@@ -347,17 +347,9 @@ export const createIndexedDBProvider = (
       connected = true;
       trackDoc(doc.guid, doc);
 
-      // also track all loaded subdocs
+      // also track all subdocs
       doc.subdocs.forEach(subdoc => {
-        if (subdoc.shouldLoad) {
-          subdoc.whenLoaded
-            .then(() => {
-              trackDoc(subdoc.guid, subdoc);
-            })
-            .catch(err => {
-              console.error(err);
-            });
-        }
+        trackDoc(subdoc.guid, subdoc);
       });
 
       // only the runs `await` below, otherwise the logic is incorrect
