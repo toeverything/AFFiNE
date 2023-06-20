@@ -481,9 +481,11 @@ describe('api', () => {
       retry: 3,
     }
   );
+});
 
+describe('subDoc', () => {
   test(
-    'subdoc',
+    'collaboration',
     async () => {
       const id = await createWorkspace(workspaceApis);
       const binary = await workspaceApis.downloadWorkspace(id, false);
@@ -533,6 +535,45 @@ describe('api', () => {
         .getMap('subDoc-map')
         .get('subDoc-key') as Doc;
       expect(subDoc2.getText().toJSON()).toEqual('12');
+    },
+    {
+      timeout: 30000,
+      retry: 3,
+    }
+  );
+
+  test(
+    'ensure subdoc saving to storage',
+    async () => {
+      const id = await createWorkspace(workspaceApis);
+      const binary = await workspaceApis.downloadWorkspace(id, false);
+      const workspace = createEmptyBlockSuiteWorkspace(
+        id,
+        WorkspaceFlavour.LOCAL
+      );
+      Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(binary));
+
+      const wsUrl = `ws://127.0.0.1:3000/api/sync/`;
+      const provider = new KeckProvider(wsUrl, workspace.id, workspace.doc, {
+        params: { token: getLoginStorage()?.token },
+        awareness: workspace.awarenessStore.awareness,
+        connect: false,
+      });
+
+      provider.connect();
+      await waitForConnected(provider);
+
+      const subDoc = new Workspace.Y.Doc();
+      subDoc.getText().insert(0, '2');
+      workspace.doc.getMap('subDoc-map').set('subDoc-key', subDoc);
+
+      new Promise(resolve => setTimeout(resolve, 5000));
+
+      const binary1 = Workspace.Y.encodeStateAsUpdate(workspace.doc);
+      const binary2 = new Uint8Array(
+        await workspaceApis.downloadWorkspace(id, false)
+      );
+      expect(binary1).toEqual(binary2); // TODO currently this will fail
     },
     {
       timeout: 30000,
