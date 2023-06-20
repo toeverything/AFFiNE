@@ -1,7 +1,7 @@
 {
   "name": "@affine-test/kit",
   "private": true,
-  "version": "0.6.1",
+  "version": "0.6.2",
   "exports": {
     "./playwright": "./playwright.ts"
   },
