@@ -32,7 +32,7 @@ model UserWorkspacePermission {
 }
 
 model User {
-  id            String                    @id @default(uuid())
+  id            String                    @id @default(uuid()) @db.VarChar
   name          String
   email         String?                   @unique
   emailVerified DateTime?                 @map("email_verified")
