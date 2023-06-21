@@ -7,6 +7,7 @@ import type { Page } from '@blocksuite/store';
 import { createMemoryStorage, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
+import { use } from 'react';
 
 const blockSuiteWorkspace = new Workspace({
   id: 'test',
@@ -33,7 +34,6 @@ async function initPage(page: Page) {
 
 blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
 const page = blockSuiteWorkspace.createPage('page0');
-initPage(page).catch(console.error);
 
 type BlockSuiteMeta = Meta<typeof BlockSuiteEditor>;
 export default {
@@ -42,6 +42,9 @@ export default {
 } satisfies BlockSuiteMeta;
 
 const Template: StoryFn<EditorProps> = (props: Partial<EditorProps>) => {
+  if (!page.loaded) {
+    use(initPage(page));
+  }
   return (
     <div
       style={{
