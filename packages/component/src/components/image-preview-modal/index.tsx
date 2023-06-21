@@ -24,6 +24,7 @@ import useSWR from 'swr';
 
 import { useZoomControls } from './hooks/use-zoom';
 import {
+  buttonIconStyle,
   buttonStyle,
   captionStyle,
   groupStyle,
@@ -323,9 +324,10 @@ const ImagePreviewModalImpl = (
           <div>
             <Tooltip content={'Previous'} disablePortal={false}>
               <Button
-                icon={<ArrowLeftSmallIcon />}
+                icon={<ArrowLeftSmallIcon className={buttonIconStyle} />}
                 noBorder={true}
                 className={buttonStyle}
+                hoverColor={'-moz-initial'}
                 onClick={() => {
                   assertExists(blockId);
                   previousImageHandler(blockId);
@@ -334,9 +336,10 @@ const ImagePreviewModalImpl = (
             </Tooltip>
             <Tooltip content={'Next'} disablePortal={false}>
               <Button
-                icon={<ArrowRightSmallIcon />}
+                icon={<ArrowRightSmallIcon className={buttonIconStyle} />}
                 noBorder={true}
                 className={buttonStyle}
+                hoverColor={'-moz-initial'}
                 onClick={() => {
                   assertExists(blockId);
                   nextImageHandler(blockId);
@@ -344,113 +347,116 @@ const ImagePreviewModalImpl = (
               />
             </Tooltip>
           </div>
-          <div className={groupStyle}>
-            <Tooltip
-              content={'Fit to Screen'}
-              disablePortal={true}
-              showArrow={false}
+          <div className={groupStyle}></div>
+          <Tooltip
+            content={'Fit to Screen'}
+            disablePortal={true}
+            showArrow={false}
+          >
+            <Button
+              icon={<ViewBarIcon className={buttonIconStyle} />}
+              noBorder={true}
+              hoverColor={'-moz-initial'}
+              className={buttonStyle}
+              onClick={() => resetZoom()}
+            />
+          </Tooltip>
+          <Tooltip content={'Zoom out'} disablePortal={false}>
+            <Button
+              icon={<MinusIcon className={buttonIconStyle} />}
+              noBorder={true}
+              className={buttonStyle}
+              hoverColor={'-moz-initial'}
+              onClick={zoomOut}
+            />
+          </Tooltip>
+          <Tooltip content={'Reset Scale'} disablePortal={false}>
+            <Button
+              noBorder={true}
+              size={'middle'}
+              className={scaleIndicatorButtonStyle}
+              hoverColor={'-moz-initial'}
+              onClick={resetScale}
             >
-              <Button
-                icon={<ViewBarIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => resetZoom()}
-              />
-            </Tooltip>
-            <Tooltip content={'Zoom out'} disablePortal={false}>
-              <Button
-                icon={<MinusIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={zoomOut}
-              />
-            </Tooltip>
-            <Tooltip content={'Reset Scale'} disablePortal={false}>
-              <Button
-                noBorder={true}
-                size={'middle'}
-                className={scaleIndicatorButtonStyle}
-                onClick={resetScale}
-              >
-                {`${(currentScale * 100).toFixed(0)}%`}
-              </Button>
-            </Tooltip>
-            <Tooltip content={'Zoom in'} disablePortal={false}>
-              <Button
-                icon={<PlusIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => zoomIn()}
-              />
-            </Tooltip>
-          </div>
-          <div className={groupStyle}>
-            <Tooltip content={'Download'} disablePortal={false}>
-              <Button
-                icon={<DownloadIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => {
-                  assertExists(blockId);
-                  downloadHandler(blockId).catch(err => {
-                    console.error('Could not download image', err);
-                  });
-                }}
-              />
-            </Tooltip>
-            <Tooltip content={'Copy to clipboard'} disablePortal={false}>
-              <Button
-                icon={<CopyIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => {
-                  if (!imageRef.current) {
+              {`${(currentScale * 100).toFixed(0)}%`}
+            </Button>
+          </Tooltip>
+          <Tooltip content={'Zoom in'} disablePortal={false}>
+            <Button
+              icon={<PlusIcon className={buttonIconStyle} />}
+              noBorder={true}
+              className={buttonStyle}
+              hoverColor={'-moz-initial'}
+              onClick={() => zoomIn()}
+            />
+          </Tooltip>
+          <div className={groupStyle}></div>
+          <Tooltip content={'Download'} disablePortal={false}>
+            <Button
+              icon={<DownloadIcon className={buttonIconStyle} />}
+              noBorder={true}
+              className={buttonStyle}
+              hoverColor={'-moz-initial'}
+              onClick={() => {
+                assertExists(blockId);
+                downloadHandler(blockId).catch(err => {
+                  console.error('Could not download image', err);
+                });
+              }}
+            />
+          </Tooltip>
+          <Tooltip content={'Copy to clipboard'} disablePortal={false}>
+            <Button
+              icon={<CopyIcon className={buttonIconStyle} />}
+              noBorder={true}
+              className={buttonStyle}
+              hoverColor={'-moz-initial'}
+              width={'24px'}
+              height={'24px'}
+              onClick={() => {
+                if (!imageRef.current) {
+                  return;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = imageRef.current.naturalWidth;
+                canvas.height = imageRef.current.naturalHeight;
+                const context = canvas.getContext('2d');
+                if (!context) {
+                  console.warn('Could not get canvas context');
+                  return;
+                }
+                context.drawImage(imageRef.current, 0, 0);
+                canvas.toBlob(blob => {
+                  if (!blob) {
+                    console.warn('Could not get blob');
                     return;
                   }
-                  const canvas = document.createElement('canvas');
-                  canvas.width = imageRef.current.naturalWidth;
-                  canvas.height = imageRef.current.naturalHeight;
-                  const context = canvas.getContext('2d');
-                  if (!context) {
-                    console.warn('Could not get canvas context');
-                    return;
-                  }
-                  context.drawImage(imageRef.current, 0, 0);
-                  canvas.toBlob(blob => {
-                    if (!blob) {
-                      console.warn('Could not get blob');
-                      return;
-                    }
-                    const dataUrl = URL.createObjectURL(blob);
-                    navigator.clipboard
-                      .write([new ClipboardItem({ 'image/png': blob })])
-                      .then(() => {
-                        console.log('Image copied to clipboard');
-                        URL.revokeObjectURL(dataUrl);
-                      })
-                      .catch(error => {
-                        console.error(
-                          'Error copying image to clipboard',
-                          error
-                        );
-                        URL.revokeObjectURL(dataUrl);
-                      });
-                  }, 'image/png');
-                  toast('Copied to clipboard.');
-                }}
-              />
-            </Tooltip>
-          </div>
-          <div className={groupStyle}>
-            <Tooltip content={'Delete'} disablePortal={false}>
-              <Button
-                icon={<DeleteIcon />}
-                noBorder={true}
-                className={buttonStyle}
-                onClick={() => blockId && deleteHandler(blockId)}
-              />
-            </Tooltip>
-          </div>
+                  const dataUrl = URL.createObjectURL(blob);
+                  navigator.clipboard
+                    .write([new ClipboardItem({ 'image/png': blob })])
+                    .then(() => {
+                      console.log('Image copied to clipboard');
+                      URL.revokeObjectURL(dataUrl);
+                    })
+                    .catch(error => {
+                      console.error('Error copying image to clipboard', error);
+                      URL.revokeObjectURL(dataUrl);
+                    });
+                }, 'image/png');
+                toast('Copied to clipboard.');
+              }}
+            />
+          </Tooltip>
+          <div className={groupStyle}></div>
+          <Tooltip content={'Delete'} disablePortal={false}>
+            <Button
+              icon={<DeleteIcon className={buttonIconStyle} />}
+              noBorder={true}
+              className={buttonStyle}
+              onClick={() => blockId && deleteHandler(blockId)}
+              hoverColor={'-moz-initial'}
+            />
+          </Tooltip>
         </div>
       </div>
     </div>
