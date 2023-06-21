@@ -156,7 +156,7 @@ describe('AppModule', () => {
         })
       )
 
-      .field('map', JSON.stringify([['variables.avatar']]))
+      .field('map', JSON.stringify({ '0': ['variables.avatar'] }))
       .attach('0', png, 'avatar.png')
       .expect(200)
       .expect(res => {
