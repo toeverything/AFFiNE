@@ -411,8 +411,6 @@ const ImagePreviewModalImpl = (
               noBorder={true}
               className={buttonStyle}
               hoverColor={'-moz-initial'}
-              width={'24px'}
-              height={'24px'}
               onClick={() => {
                 if (!imageRef.current) {
                   return;
