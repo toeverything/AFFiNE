@@ -94,7 +94,7 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
       return callbacks.ready;
     },
     cleanup: () => {
-      // todo: cleanup data
+      indexeddbProvider.cleanup().catch(console.error);
     },
     connect: () => {
       logger.info('connect indexeddb provider', id);

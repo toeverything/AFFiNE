@@ -4,13 +4,13 @@
 import 'fake-indexeddb/auto';
 
 import { initEmptyPage } from '@affine/env/blocksuite';
-import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
+import type { LocalIndexedDBBackgroundProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
+import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
 import {
   _cleanupBlockSuiteWorkspaceCache,
   createEmptyBlockSuiteWorkspace,
@@ -79,12 +79,13 @@ describe('currentWorkspace atom', () => {
         },
         frameId
       );
-      const provider = createIndexedDBDownloadProvider(
+      const provider = createIndexedDBBackgroundProvider(
         workspace.id,
         workspace.doc
-      ) as LocalIndexedDBDownloadProvider;
-      provider.sync();
-      await provider.whenReady;
+      ) as LocalIndexedDBBackgroundProvider;
+      provider.connect();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      provider.disconnect();
       const workspaceId = await WorkspaceAdapters[
         WorkspaceFlavour.LOCAL
       ].CRUD.create(workspace);
@@ -103,7 +104,7 @@ describe('currentWorkspace atom', () => {
     const workspace = await store.get(rootCurrentWorkspaceAtom);
     expect(workspace).toBeDefined();
     const page = workspace.blockSuiteWorkspace.getPage('page0') as Page;
-    await page.waitForLoaded()
+    await page.waitForLoaded();
     expect(page).not.toBeNull();
     const paragraphBlock = page.getBlockById(id) as ParagraphBlockModel;
     expect(paragraphBlock).not.toBeNull();

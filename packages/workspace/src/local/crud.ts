@@ -57,13 +57,13 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     const storage = getStorage();
     !Array.isArray(storage.getItem(kStoreKey, [])) &&
       storage.setItem(kStoreKey, []);
-    const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdateV2(doc);
+    const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(doc);
     const id = nanoid();
     const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
       id,
       WorkspaceFlavour.LOCAL
     );
-    BlockSuiteWorkspace.Y.applyUpdateV2(blockSuiteWorkspace.doc, binary);
+    BlockSuiteWorkspace.Y.applyUpdate(blockSuiteWorkspace.doc, binary);
     const persistence = createIndexedDBProvider(blockSuiteWorkspace.doc);
     persistence.connect();
     await persistence.whenSynced.then(() => {
