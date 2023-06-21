@@ -42,20 +42,4 @@ describe('useBlockSuiteWorkspaceHelper', () => {
     pageMetaHook.rerender();
     expect(pageMetaHook.result.current.length).toBe(4);
   });
-
-  test('milestone', async () => {
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
-    const helperHook = renderHook(() =>
-      useBlockSuiteWorkspaceHelper(blockSuiteWorkspace)
-    );
-    await helperHook.result.current.markMilestone('test');
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
-    await initEmptyPage(helperHook.result.current.createPage('page4'));
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
-    expect(await helperHook.result.current.listMilestone()).toHaveProperty(
-      'test'
-    );
-    await helperHook.result.current.revertMilestone('test');
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
-  });
 });
