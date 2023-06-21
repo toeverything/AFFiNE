@@ -1,9 +1,9 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { finished } from 'node:stream/promises';
+import { pipeline } from 'node:stream/promises';
 
 import { Injectable } from '@nestjs/common';
-import { crc32 } from '@node-rs/crc32';
 
 import { Config } from '../../config';
 import { FileUpload } from '../../types';
@@ -15,17 +15,8 @@ export class FSService {
   async writeFile(key: string, file: FileUpload) {
     const dest = this.config.objectStorage.fs.path;
     await mkdir(dest, { recursive: true });
-    let crc = 0;
-    let buffer = Buffer.alloc(0);
-    await finished(
-      file.createReadStream().on('data', chunk => {
-        crc = crc32(chunk, crc);
-        buffer = Buffer.concat([buffer, chunk]);
-      })
-    );
-    const destFile = join(dest, `${crc}-${key}`);
-
-    await writeFile(destFile, buffer);
+    const destFile = join(dest, key);
+    await pipeline(file.createReadStream(), createWriteStream(destFile));
 
     return `/assets/${destFile}`;
   }

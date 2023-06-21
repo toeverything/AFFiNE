@@ -28,7 +28,6 @@ describe('AppModule', () => {
     await client.user.deleteMany({});
     await client.user.create({
       data: {
-        id: '1',
         name: 'Alex Yang',
         email: 'alex.yang@example.org',
         password: await hash('123456'),

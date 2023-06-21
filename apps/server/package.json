@@ -34,7 +34,7 @@
     "lodash-es": "^4.17.21",
     "next-auth": "^4.22.1",
     "parse-duration": "^1.1.0",
-    "prisma": "^4.15.0",
+    "prisma": "^4.16.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1"
   },

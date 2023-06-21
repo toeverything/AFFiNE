@@ -378,7 +378,7 @@ __metadata:
     next-auth: ^4.22.1
     nodemon: ^2.0.22
     parse-duration: ^1.1.0
-    prisma: ^4.15.0
+    prisma: ^4.16.0
     reflect-metadata: ^0.1.13
     rxjs: ^7.8.1
     supertest: ^6.3.3
@@ -8666,10 +8666,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prisma/engines@npm:4.15.0":
-  version: 4.15.0
-  resolution: "@prisma/engines@npm:4.15.0"
-  checksum: 61b53fe5ad7b0927de9aa4f51027e281788258d3fb5e389c3ae940829fdc5428a7108ce0cae5b329ddac0ee3206b0b9f8e8adae401c456f77d912c96368cfa5f
+"@prisma/engines@npm:4.16.0":
+  version: 4.16.0
+  resolution: "@prisma/engines@npm:4.16.0"
+  checksum: 60ef1c3720720cf5a9d23f52c668669736716afd1862c4ac61e8ebcd3ca896e3453f80dfab77f3b68b001c5d499a895f28e54cc5025eae61878b40c1ec5d99c3
   languageName: node
   linkType: hard
 
@@ -25527,15 +25527,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prisma@npm:^4.15.0":
-  version: 4.15.0
-  resolution: "prisma@npm:4.15.0"
+"prisma@npm:^4.16.0":
+  version: 4.16.0
+  resolution: "prisma@npm:4.16.0"
   dependencies:
-    "@prisma/engines": 4.15.0
+    "@prisma/engines": 4.16.0
   bin:
     prisma: build/index.js
     prisma2: build/index.js
-  checksum: a42b940396f5f101d44effad9bfccca4b062ae80a369dc44961cbc074326239340f05c5af49981b1cddb08d9155c4bcc93c4d69ed2ae4a634e1742159204cb89
+  checksum: 831a4d14a48474fa144ae0648ed5e3766756b991f1997ecca813a044ef9bd7f2a5794c603adc9d23d867d8f4a0f51cedadaebfd8a841e6923ef9b804ed8bcbbb
   languageName: node
   linkType: hard
 
