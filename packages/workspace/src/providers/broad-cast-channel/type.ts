@@ -20,7 +20,6 @@ type RoomScope = 'room';
 type YDocScope = 'doc';
 type AwarenessScope = 'awareness';
 type ObservableScope = YDocScope | AwarenessScope;
-type ObservableEventName = EventNameWithScope<ObservableScope>;
 
 type ValidEventScope = DataScope | RoomScope | ObservableScope;
 
@@ -39,10 +38,10 @@ type ValidateEvents<
 export type DefaultServerToClientEvents<
   ClientData extends DefaultClientData = DefaultClientData
 > = ValidateEvents<{
-  ['data:update']: (data: ClientData) => void;
-  ['doc:diff']: (diff: ArrayBuffer) => void;
-  ['doc:update']: (update: ArrayBuffer) => void;
-  ['awareness:update']: (update: ArrayBuffer) => void;
+  ['data:update']: (guid: string, data: ClientData) => void;
+  ['doc:diff']: (guid: string, diff: ArrayBuffer) => void;
+  ['doc:update']: (guid: string, update: ArrayBuffer) => void;
+  ['awareness:update']: (guid: string, update: ArrayBuffer) => void;
 }>;
 
 export type ServerToClientEvents<
@@ -51,9 +50,13 @@ export type ServerToClientEvents<
 
 export type DefaultClientToServerEvents = ValidateEvents<{
   ['room:close']: () => void;
-  ['doc:diff']: (diff: Uint8Array) => void;
-  ['doc:update']: (update: Uint8Array, callback?: () => void) => void;
-  ['awareness:update']: (update: Uint8Array) => void;
+  ['doc:diff']: (guid: string, diff: Uint8Array) => void;
+  ['doc:update']: (
+    guid: string,
+    update: Uint8Array,
+    callback?: () => void
+  ) => void;
+  ['awareness:update']: (update: Uint8Array, clientId: ClientId) => void;
 }>;
 
 export type ClientToServerEvents = DefaultClientToServerEvents;
@@ -63,8 +66,16 @@ type ClientToServerEventNames = keyof ClientToServerEvents;
 export type BroadcastChannelMessageData<
   EventName extends ClientToServerEventNames = ClientToServerEventNames
 > =
-  | (EventName extends ObservableEventName
+  | (EventName extends EventNameWithScope<AwarenessScope>
       ? [eventName: EventName, payload: Uint8Array, clientId?: ClientId]
+      : never)
+  | (EventName extends EventNameWithScope<YDocScope>
+      ? [
+          eventName: EventName,
+          guid: string,
+          payload: Uint8Array,
+          clientId?: ClientId
+        ]
       : never)
   | [eventName: `${AwarenessScope}:query`, clientId: ClientId];
 
