@@ -29,12 +29,12 @@ function initEmptyPage(page: Page) {
     title: new page.Text(''),
   });
   const surfaceBlockId = page.addBlock('affine:surface', {}, pageBlockId);
-  const frameBLockId = page.addBlock('affine:frame', {}, pageBlockId);
-  const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBLockId);
+  const frameBlockId = page.addBlock('affine:note', {}, pageBlockId);
+  const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBlockId);
   return {
     pageBlockId,
     surfaceBlockId,
-    frameBLockId,
+    frameBlockId,
     paragraphBlockId,
   };
 }
@@ -91,7 +91,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -110,8 +110,20 @@ describe('indexeddb provider', () => {
       data.updates.forEach(({ update }) => {
         Workspace.Y.applyUpdate(testWorkspace.doc, update);
       });
-      const binary = Workspace.Y.encodeStateAsUpdate(testWorkspace.doc);
-      expect(binary).toEqual(Workspace.Y.encodeStateAsUpdate(workspace.doc));
+      const subPage = testWorkspace.doc.spaces.get('space:page0');
+      {
+        assertExists(subPage);
+        await store.get(subPage.guid);
+        const data = (await store.get(subPage.guid)) as
+          | WorkspacePersist
+          | undefined;
+        assertExists(data);
+        await testWorkspace.getPage('page0')?.waitForLoaded();
+        data.updates.forEach(({ update }) => {
+          Workspace.Y.applyUpdate(subPage, update);
+        });
+      }
+      expect(workspace.doc.toJSON()).toEqual(testWorkspace.doc.toJSON());
     }
 
     const secondWorkspace = new Workspace({
@@ -122,9 +134,10 @@ describe('indexeddb provider', () => {
     const provider2 = createIndexedDBProvider(secondWorkspace.doc, rootDBName);
     provider2.connect();
     await provider2.whenSynced;
-    expect(Workspace.Y.encodeStateAsUpdate(secondWorkspace.doc)).toEqual(
-      Workspace.Y.encodeStateAsUpdate(workspace.doc)
-    );
+    const page = secondWorkspace.getPage('page0');
+    assertExists(page);
+    await page.waitForLoaded();
+    expect(workspace.doc.toJSON()).toEqual(secondWorkspace.doc.toJSON());
   });
 
   test('disconnect suddenly', async () => {
@@ -150,7 +163,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
     {
@@ -218,7 +231,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       for (let i = 0; i < 99; i++) {
         page.addBlock('affine:paragraph', {}, frameId);
       }
