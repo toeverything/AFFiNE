@@ -97,30 +97,42 @@ export const imagePreviewActionBarStyle = style({
   justifyContent: 'center',
   alignItems: 'center',
   backgroundColor: 'var(--affine-white)',
-  borderRadius: '4px',
+  borderRadius: '8px',
   boxShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
   maxWidth: 'max-content',
   minHeight: '44px',
+  maxHeight: '44px',
 });
 
 export const groupStyle = style({
-  display: 'inline-flex',
+  padding: '10px 0',
+  boxSizing: 'border-box',
+  display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   borderLeft: '1px solid #E3E2E4',
 });
 
 export const buttonStyle = style({
-  paddingLeft: '10px',
-  paddingRight: '10px',
+  minWidth: '24px',
+  height: '24px',
+  margin: '10px 6px',
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
+    backgroundSize: '24px 24px',
   },
+});
+
+export const buttonIconStyle = style({
+  width: '20px',
+  height: '20px',
+  padding: '0 0',
 });
 
 export const scaleIndicatorButtonStyle = style({
   minHeight: '100%',
-  minWidth: 'max-content',
+  maxWidth: 'max-content',
+  fontSize: '12px',
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
   },
