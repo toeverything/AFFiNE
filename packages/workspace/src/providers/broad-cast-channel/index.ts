@@ -97,8 +97,8 @@ export const createBroadCastChannelProvider: DocProviderCreator = (
       localProviderLogger.info('connect broadcast channel', id);
       const docDiff = Y.encodeStateVector(doc);
       broadcastChannel.postMessage(['doc:diff', docDiff, awareness.clientID]);
-      const docUpdateV2 = Y.encodeStateAsUpdate(doc);
-      broadcastChannel.postMessage(['doc:update', docUpdateV2]);
+      const docUpdate = Y.encodeStateAsUpdate(doc);
+      broadcastChannel.postMessage(['doc:update', docUpdate]);
       broadcastChannel.postMessage(['awareness:query', awareness.clientID]);
       const awarenessUpdate = encodeAwarenessUpdate(awareness, [
         awareness.clientID,
