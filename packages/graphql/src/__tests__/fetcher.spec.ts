@@ -102,7 +102,8 @@ describe('GraphQL fetcher', () => {
       )
     );
 
-    await expect(gql({ query, variables: {} })).rejects.toMatchInlineSnapshot(`
+    await expect(gql({ query, variables: void 0 })).rejects
+      .toMatchInlineSnapshot(`
       [
         [GraphQLError: error],
       ]

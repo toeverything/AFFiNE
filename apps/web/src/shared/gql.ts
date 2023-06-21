@@ -50,7 +50,10 @@ export function useQuery<Query extends GraphQLQuery>(
     'fetcher'
   >
 ): SWRResponse<QueryResponse<Query>, GraphQLError | GraphQLError[]>;
-export function useQuery(options: QueryOptions<GraphQLQuery>, config?: any) {
+export function useQuery<Query extends GraphQLQuery>(
+  options: QueryOptions<Query>,
+  config?: any
+) {
   return useSWR(
     () => [options.query.id, options.variables],
     () => fetcher(options),
@@ -73,14 +76,14 @@ export function useQuery(options: QueryOptions<GraphQLQuery>, config?: any) {
  * trigger({ name: 'John Doe' })
  */
 export function useMutation<Mutation extends GraphQLQuery>(
-  options: Omit<MutationOptions<GraphQLQuery>, 'variables'>
+  options: Omit<MutationOptions<Mutation>, 'variables'>
 ): SWRMutationResponse<
   QueryResponse<Mutation>,
   GraphQLError | GraphQLError[],
   QueryVariables<Mutation>
 >;
 export function useMutation<Mutation extends GraphQLQuery>(
-  options: Omit<MutationOptions<GraphQLQuery>, 'variables'>,
+  options: Omit<MutationOptions<Mutation>, 'variables'>,
   config: Omit<
     SWRMutationConfiguration<
       QueryResponse<Mutation>,
@@ -100,7 +103,7 @@ export function useMutation(
 ) {
   return useSWRMutation(
     options.mutation.id,
-    (_: string, { arg }: { arg: QueryVariables<any> }) =>
+    (_: string, { arg }: { arg: any }) =>
       fetcher({ ...options, query: options.mutation, variables: arg }),
     config
   );
