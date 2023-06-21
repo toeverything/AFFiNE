@@ -70,7 +70,8 @@ beforeEach(async () => {
   blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' })
     .register(AffineSchemas)
     .register(__unstableSchemas);
-  const initPage = (page: Page) => {
+  const initPage = async (page: Page) => {
+    await page.waitForLoaded()
     expect(page).not.toBeNull();
     assertExists(page);
     const pageBlockId = page.addBlock('affine:page', {
@@ -79,13 +80,13 @@ beforeEach(async () => {
     const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
-  initPage(
+  await initPage(
     blockSuiteWorkspace.createPage({
       id: 'page0',
     })
   );
-  initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
-  initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
+  await initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  await initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('usePageMetas', async () => {

@@ -47,7 +47,8 @@ let userApis: ReturnType<typeof createUserApis>;
 let affineAuth: ReturnType<typeof createAffineAuth>;
 let statusApis: ReturnType<typeof createStatusApis>;
 
-function initPage(page: Page) {
+async function initPage(page: Page) {
+  await page.waitForLoaded()
   // Add page block and surface block at root level
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(''),
@@ -120,14 +121,14 @@ declare global {
 
 async function createWorkspace(
   workspaceApi: typeof workspaceApis,
-  callback?: (workspace: Workspace) => void
+  callback?: (workspace: Workspace) => Promise<void>
 ): Promise<string> {
   const workspace = createEmptyBlockSuiteWorkspace(
     faker.datatype.uuid(),
     WorkspaceFlavour.LOCAL
   );
   if (callback) {
-    callback(workspace);
+    await callback(workspace);
   }
   const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
   const data = await workspaceApi.createWorkspace(binary);
@@ -288,10 +289,10 @@ describe('api', () => {
   );
 
   test('workspace page binary', async () => {
-    const id = await createWorkspace(workspaceApis, workspace => {
+    const id = await createWorkspace(workspaceApis, async workspace => {
       {
         const page = workspace.createPage('page0');
-        const { frameId } = initPage(page);
+        const { frameId } = await initPage(page);
         page.addBlock(
           'affine:paragraph',
           {
@@ -302,7 +303,7 @@ describe('api', () => {
       }
       {
         const page = workspace.createPage('page1');
-        const { frameId } = initPage(page);
+        const { frameId } = await initPage(page);
         page.addBlock(
           'affine:paragraph',
           {
@@ -401,9 +402,9 @@ describe('api', () => {
   test(
     'public page',
     async () => {
-      const id = await createWorkspace(workspaceApis, workspace => {
+      const id = await createWorkspace(workspaceApis, async workspace => {
         const page = workspace.createPage('page0');
-        const { frameId } = initPage(page);
+        const { frameId } = await initPage(page);
         page.addBlock(
           'affine:paragraph',
           {

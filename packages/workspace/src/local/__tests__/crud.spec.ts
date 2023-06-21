@@ -42,6 +42,7 @@ describe('crud', () => {
       .register(AffineSchemas)
       .register(__unstableSchemas);
     const page = workspace.createPage('test');
+    await page.waitForLoaded()
     const pageBlockId = page.addBlock('affine:page', {
       title: new page.Text(''),
     });

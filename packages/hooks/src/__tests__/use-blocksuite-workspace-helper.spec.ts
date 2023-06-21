@@ -14,15 +14,15 @@ import { useBlockSuiteWorkspaceHelper } from '../use-block-suite-workspace-helpe
 
 let blockSuiteWorkspace: Workspace;
 
-beforeEach(() => {
+beforeEach(async () => {
   blockSuiteWorkspace = new Workspace({
     id: 'test',
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
-  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
-  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
-  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
+  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
+  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('useBlockSuiteWorkspaceHelper', () => {
@@ -50,7 +50,7 @@ describe('useBlockSuiteWorkspaceHelper', () => {
     );
     await helperHook.result.current.markMilestone('test');
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
-    initEmptyPage(helperHook.result.current.createPage('page4'));
+    await initEmptyPage(helperHook.result.current.createPage('page4'));
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
     expect(await helperHook.result.current.listMilestone()).toHaveProperty(
       'test'
