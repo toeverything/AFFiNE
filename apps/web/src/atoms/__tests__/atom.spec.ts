@@ -103,6 +103,7 @@ describe('currentWorkspace atom', () => {
     const workspace = await store.get(rootCurrentWorkspaceAtom);
     expect(workspace).toBeDefined();
     const page = workspace.blockSuiteWorkspace.getPage('page0') as Page;
+    await page.waitForLoaded()
     expect(page).not.toBeNull();
     const paragraphBlock = page.getBlockById(id) as ParagraphBlockModel;
     expect(paragraphBlock).not.toBeNull();
