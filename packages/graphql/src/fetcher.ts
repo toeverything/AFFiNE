@@ -7,10 +7,12 @@ import type { Mutations, Queries } from './schema';
 
 export type NotArray<T> = T extends Array<unknown> ? never : T;
 
-type _QueryVariables<Q extends GraphQLQuery> = Extract<
-  Queries | Mutations,
-  { name: Q['id'] }
->['variables'];
+export type _QueryVariables<Q extends GraphQLQuery> =
+  Q['id'] extends Queries['name']
+    ? Extract<Queries, { name: Q['id'] }>['variables']
+    : Q['id'] extends Mutations['name']
+    ? Extract<Mutations, { name: Q['id'] }>['variables']
+    : undefined;
 
 export type QueryVariables<Q extends GraphQLQuery> = _QueryVariables<Q> extends
   | never
@@ -73,11 +75,6 @@ export type RequestOptions<Q extends GraphQLQuery> = QueryVariablesOption<Q> & {
    * @default true
    */
   keepNilVariables?: boolean;
-
-  /**
-   * Whether the request contains file.
-   */
-  containsFile?: boolean;
 };
 
 export type QueryOptions<Q extends GraphQLQuery> = RequestOptions<Q> & {
@@ -150,7 +147,10 @@ function formatRequestBody<Q extends GraphQLQuery>({
     body.operationName = query.operationName;
   }
 
-  return transformToForm(body);
+  if (query.containsFile) {
+    return transformToForm(body);
+  }
+  return body;
 }
 
 export const gqlFetcherFactory = (endpoint: string) => {
