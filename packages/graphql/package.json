@@ -18,6 +18,9 @@
     "lodash-es": "^4.17.21",
     "prettier": "^2.8.8"
   },
+  "scripts": {
+    "postinstall": "gql-gen"
+  },
   "dependencies": {
     "graphql": "^16.6.0"
   }
