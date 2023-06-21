@@ -1,10 +1,12 @@
-import { AppContainer, MainContainer } from '@affine/component/workspace';
+import { MainContainer } from '@affine/component/workspace';
 import { config } from '@affine/env';
 import { NoSsr } from '@mui/material';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense } from 'react';
+
+import { AppContainer } from '../components/affine/app-container';
 
 const Plugins = () => {
   const plugins = useAtomValue(affinePluginsAtom);

@@ -4,7 +4,6 @@ import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
 import {
-  AppContainer,
   MainContainer,
   ToolContainer,
   WorkspaceFallback,
@@ -42,12 +41,17 @@ import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
-import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
+import {
+  openQuickSearchModalAtom,
+  openSettingModalAtom,
+  openWorkspacesModalAtom,
+} from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
+import { AppContainer } from '../components/affine/app-container';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import {
@@ -69,6 +73,11 @@ import { toast } from '../utils';
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
     default: module.QuickSearchModal,
+  }))
+);
+const SettingModal = lazy(() =>
+  import('../components/affine/setting-modal').then(module => ({
+    default: module.SettingModal,
   }))
 );
 
@@ -115,6 +124,25 @@ export const QuickSearch: FC = () => {
       blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
+      router={router}
+    />
+  );
+};
+export const Setting: FC = () => {
+  const [currentWorkspace] = useCurrentWorkspace();
+  const router = useRouter();
+  const [openSettingModal, setOpenSettingModalAtom] =
+    useAtom(openSettingModalAtom);
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const isPublicWorkspace =
+    router.pathname.split('/')[1] === 'public-workspace';
+  if (!blockSuiteWorkspace || isPublicWorkspace) {
+    return null;
+  }
+  return (
+    <SettingModal
+      open={openSettingModal}
+      setOpen={setOpenSettingModalAtom}
       router={router}
     />
   );
@@ -390,6 +418,12 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
+  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+
+  const handleOpenSettingModal = useCallback(() => {
+    setOpenSettingModalAtom(true);
+  }, [setOpenSettingModalAtom]);
+
   const resizing = useAtomValue(appSidebarResizingAtom);
 
   const sensors = useSensors(
@@ -444,6 +478,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           <RootAppSidebar
             isPublicWorkspace={isPublicWorkspace}
             onOpenQuickSearchModal={handleOpenQuickSearchModal}
+            onOpenSettingModal={handleOpenSettingModal}
             currentWorkspace={currentWorkspace}
             onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
             openPage={useCallback(
@@ -476,6 +511,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
+      <Setting />
     </>
   );
 };

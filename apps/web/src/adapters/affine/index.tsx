@@ -44,6 +44,7 @@ import { BlockSuiteWorkspace } from '../../shared';
 import { toast } from '../../utils';
 import {
   BlockSuitePageList,
+  NewWorkspaceSettingDetail,
   PageDetailEditor,
   WorkspaceHeader,
   WorkspaceSettingDetail,
@@ -359,6 +360,19 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
           onDeleteWorkspace={onDeleteWorkspace}
           onChangeTab={onChangeTab}
           currentTab={currentTab}
+          workspace={currentWorkspace}
+          onTransferWorkspace={onTransformWorkspace}
+        />
+      );
+    },
+    NewSettingsDetail: ({
+      currentWorkspace,
+      onDeleteWorkspace,
+      onTransformWorkspace,
+    }) => {
+      return (
+        <NewWorkspaceSettingDetail
+          onDeleteWorkspace={onDeleteWorkspace}
           workspace={currentWorkspace}
           onTransferWorkspace={onTransformWorkspace}
         />

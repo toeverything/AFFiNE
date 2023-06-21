@@ -1,5 +1,5 @@
 import { Button } from '@affine/component';
-import { AppContainer, MainContainer } from '@affine/component/workspace';
+import { MainContainer } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import type { BroadCastChannelProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -10,6 +10,7 @@ import { Typography } from '@mui/material';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { AppContainer } from '../../components/affine/app-container';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { toast } from '../../utils';
 
