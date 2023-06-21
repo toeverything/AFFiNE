@@ -201,6 +201,19 @@ type SettingProps<Flavour extends keyof WorkspaceRegistry> =
     ) => void;
   };
 
+type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
+  UIBaseProps<Flavour> & {
+    onDeleteWorkspace: () => Promise<void>;
+    onTransformWorkspace: <
+      From extends keyof WorkspaceRegistry,
+      To extends keyof WorkspaceRegistry
+    >(
+      from: From,
+      to: To,
+      workspace: WorkspaceRegistry[From]
+    ) => void;
+  };
+
 type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
     currentPageId: string;
@@ -218,6 +231,7 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   PageDetail: FC<PageDetailProps<Flavour>>;
   PageList: FC<PageListProps<Flavour>>;
   SettingsDetail: FC<SettingProps<Flavour>>;
+  NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
 }
 

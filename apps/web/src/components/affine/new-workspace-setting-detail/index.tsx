@@ -26,5 +26,11 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
   const [workspaceName] = useBlockSuiteWorkspaceName(
     workspace.blockSuiteWorkspace ?? null
   );
-  return <div>new: {workspaceName}</div>;
+  return (
+    <div>
+      <h2>New Workspace Setting Coming Soon!</h2>
+
+      {workspaceName}
+    </div>
+  );
 };

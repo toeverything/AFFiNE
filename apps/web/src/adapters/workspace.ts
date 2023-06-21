@@ -36,6 +36,7 @@ export const WorkspaceAdapters = {
       PageDetail: unimplemented,
       PageList: unimplemented,
       SettingsDetail: unimplemented,
+      NewSettingsDetail: unimplemented,
     },
   },
   [WorkspaceFlavour.PUBLIC]: {
@@ -57,6 +58,7 @@ export const WorkspaceAdapters = {
       PageDetail: unimplemented,
       PageList: unimplemented,
       SettingsDetail: unimplemented,
+      NewSettingsDetail: unimplemented,
     },
   },
 } satisfies {
