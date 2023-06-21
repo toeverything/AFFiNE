@@ -48,6 +48,7 @@ export const buildFlagsSchema = z.object({
   enableLegacyCloud: z.boolean(),
   changelogUrl: z.string(),
   enablePreloading: z.boolean(),
+  enableNewSettingModal: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({

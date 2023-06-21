@@ -23,6 +23,7 @@ export type EditorProps = {
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
+  className?: string;
 };
 
 export type ErrorBoundaryProps = {
@@ -122,7 +123,9 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   }, [editor, page]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
-  const className = `editor-wrapper ${editor.mode}-mode`;
+  const className = `editor-wrapper ${editor.mode}-mode ${
+    props.className || ''
+  }`;
   return (
     <div
       data-testid={`editor-${page.id}`}

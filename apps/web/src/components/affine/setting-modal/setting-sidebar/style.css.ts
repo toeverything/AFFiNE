@@ -69,7 +69,7 @@ globalStyle(`${settingSlideBar} .icon`, {
   marginRight: '10px',
   flexShrink: 0,
 });
-globalStyle(`${settingSlideBar} span`, {
+globalStyle(`${settingSlideBar} .workspace-name`, {
   minWidth: 0,
   overflow: 'hidden',
   textOverflow: 'ellipsis',

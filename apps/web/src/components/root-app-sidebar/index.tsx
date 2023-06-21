@@ -4,6 +4,7 @@ import {
   appSidebarOpenAtom,
   AppUpdaterButton,
   CategoryDivider,
+  MenuItem,
   MenuLinkItem,
   QuickSearchInput,
   SidebarContainer,
@@ -25,6 +26,7 @@ import type { ReactElement } from 'react';
 import React, { useCallback, useEffect, useMemo } from 'react';
 
 import { useHistoryAtom } from '../../atoms/history';
+import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
@@ -32,6 +34,7 @@ import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelecto
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
+  onOpenSettingModal: () => void;
   onOpenWorkspaceListModal: () => void;
   currentWorkspace: AllWorkspace | null;
   openPage: (pageId: string) => void;
@@ -88,8 +91,11 @@ export const RootAppSidebar = ({
   paths,
   onOpenQuickSearchModal,
   onOpenWorkspaceListModal,
+  onOpenSettingModal,
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace?.id || null;
+  const [appSettings] = useAppSetting();
+
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
@@ -143,7 +149,10 @@ export const RootAppSidebar = ({
 
   return (
     <>
-      <AppSidebar router={router}>
+      <AppSidebar
+        router={router}
+        hasBackground={!appSettings.disableBlurBackground}
+      >
         <SidebarContainer>
           <WorkspaceSelector
             currentWorkspace={currentWorkspace}
@@ -168,6 +177,25 @@ export const RootAppSidebar = ({
           >
             <span data-testid="settings">{t['Settings']()}</span>
           </RouteMenuLinkItem>
+          {config.enableNewSettingModal ? (
+            <MenuItem icon={<SettingsIcon />} onClick={onOpenSettingModal}>
+              <span data-testid="new-settings">
+                {t['Settings']()}
+                <i
+                  style={{
+                    background: 'var(--affine-palette-line-blue)',
+                    borderRadius: '2px',
+                    fontSize: '8px',
+                    padding: '0 5px',
+                    color: 'var(--affine-white)',
+                    marginLeft: '15px',
+                  }}
+                >
+                  NEW
+                </i>
+              </span>
+            </MenuItem>
+          ) : null}
         </SidebarContainer>
 
         <SidebarScrollableContainer>

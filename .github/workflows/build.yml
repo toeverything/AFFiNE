@@ -78,6 +78,7 @@ jobs:
       ENABLE_ALL_PAGE_FILTER: true
       ENABLE_LEGACY_PROVIDER: true
       ENABLE_PRELOADING: false
+      ENABLE_NEW_SETTING_MODAL: false
 
     steps:
       - uses: actions/checkout@v3
@@ -103,6 +104,7 @@ jobs:
       ENABLE_ALL_PAGE_FILTER: true
       ENABLE_LEGACY_PROVIDER: false
       ENABLE_PRELOADING: false
+      ENABLE_NEW_SETTING_MODAL: false
 
     steps:
       - uses: actions/checkout@v3

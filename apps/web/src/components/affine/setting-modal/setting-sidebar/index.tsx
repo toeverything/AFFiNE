@@ -119,7 +119,7 @@ const WorkspaceListItem = ({
       onClick={onClick}
     >
       <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
-      <span>{workspaceName}</span>
+      <span className="workspace-name">{workspaceName}</span>
       {isCurrent ? <div className="current-label">Current</div> : null}
     </div>
   );
