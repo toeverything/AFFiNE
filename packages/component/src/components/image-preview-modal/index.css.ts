@@ -117,6 +117,7 @@ export const buttonStyle = style({
   minWidth: '24px',
   height: '24px',
   margin: '10px 6px',
+  padding: '0 0',
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
     backgroundSize: '24px 24px',
@@ -126,13 +127,14 @@ export const buttonStyle = style({
 export const buttonIconStyle = style({
   width: '20px',
   height: '20px',
-  padding: '0 0',
 });
 
 export const scaleIndicatorButtonStyle = style({
   minHeight: '100%',
   maxWidth: 'max-content',
   fontSize: '12px',
+  padding: '5px 5px',
+
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
   },
