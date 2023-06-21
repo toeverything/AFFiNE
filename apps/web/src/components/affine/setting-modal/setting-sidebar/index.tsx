@@ -60,7 +60,7 @@ export const SettingSidebar = ({
               }}
             >
               {icon({ className: 'icon' })}
-              <span>{title}</span>
+              <span className="setting-name">{title}</span>
             </div>
           );
         })}
@@ -119,7 +119,7 @@ const WorkspaceListItem = ({
       onClick={onClick}
     >
       <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
-      <span className="workspace-name">{workspaceName}</span>
+      <span className="setting-name">{workspaceName}</span>
       {isCurrent ? <div className="current-label">Current</div> : null}
     </div>
   );
