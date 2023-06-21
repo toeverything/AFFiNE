@@ -22,6 +22,7 @@ import { nanoid } from '@blocksuite/store';
 
 import {
   BlockSuitePageList,
+  NewWorkspaceSettingDetail,
   PageDetailEditor,
   WorkspaceHeader,
   WorkspaceSettingDetail,
@@ -50,7 +51,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         });
       } else {
         initEmptyPage(page).catch(error => {
-          logger.error('init page with empty failed', error)
+          logger.error('init page with empty failed', error);
         });
       }
       blockSuiteWorkspace.setPageMeta(page.id, {
@@ -114,6 +115,19 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           onDeleteWorkspace={onDeleteWorkspace}
           onChangeTab={onChangeTab}
           currentTab={currentTab}
+          workspace={currentWorkspace}
+          onTransferWorkspace={onTransformWorkspace}
+        />
+      );
+    },
+    NewSettingsDetail: ({
+      currentWorkspace,
+      onDeleteWorkspace,
+      onTransformWorkspace,
+    }) => {
+      return (
+        <NewWorkspaceSettingDetail
+          onDeleteWorkspace={onDeleteWorkspace}
           workspace={currentWorkspace}
           onTransferWorkspace={onTransformWorkspace}
         />

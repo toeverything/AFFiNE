@@ -46,4 +46,8 @@ export const buildFlags = {
     process.env.ENABLE_PRELOADING === undefined
       ? true
       : process.env.ENABLE_PRELOADING === 'true',
+  enableNewSettingModal:
+    process.env.ENABLE_NEW_SETTING_MODAL === undefined
+      ? true
+      : process.env.ENABLE_PRELOADING === 'true',
 };

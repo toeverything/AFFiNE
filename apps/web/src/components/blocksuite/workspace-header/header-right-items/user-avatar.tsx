@@ -1,5 +1,5 @@
 import { Menu, MenuItem } from '@affine/component';
-import { AffineIcon, SignOutIcon } from '@blocksuite/icons';
+import { AffineLogoSBlue2_1Icon, SignOutIcon } from '@blocksuite/icons';
 import type { CSSProperties } from 'react';
 import { forwardRef } from 'react';
 
@@ -90,7 +90,7 @@ export const WorkspaceAvatar = forwardRef<HTMLDivElement, WorkspaceAvatarProps>(
             {props.name ? (
               props.name.substring(0, 1)
             ) : (
-              <AffineIcon fontSize={24} color={'#5438FF'} />
+              <AffineLogoSBlue2_1Icon fontSize={24} color={'#5438FF'} />
             )}
           </div>
         )}
