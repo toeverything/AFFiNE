@@ -165,13 +165,15 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
         // fixme:
         //  force to download workspace binary
         //  to make sure the workspace is synced
-        const provider = createAffineDownloadProvider(
-          bs.id,
-          bs.doc
-        ) as AffineDownloadProvider;
+        const provider = createAffineDownloadProvider(bs.id, bs.doc, {
+          awareness: bs.awarenessStore.awareness,
+        }) as AffineDownloadProvider;
         const indexedDBProvider = createIndexedDBDownloadProvider(
           bs.id,
-          bs.doc
+          bs.doc,
+          {
+            awareness: bs.awarenessStore.awareness,
+          }
         ) as LocalIndexedDBDownloadProvider;
         indexedDBProvider.sync();
         await indexedDBProvider.whenReady;

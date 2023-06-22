@@ -59,7 +59,10 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       });
       const provider = createIndexedDBDownloadProvider(
         blockSuiteWorkspace.id,
-        blockSuiteWorkspace.doc
+        blockSuiteWorkspace.doc,
+        {
+          awareness: blockSuiteWorkspace.awarenessStore.awareness,
+        }
       ) as LocalIndexedDBDownloadProvider;
       provider.sync();
       provider.whenReady.catch(console.error);

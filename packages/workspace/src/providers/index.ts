@@ -31,7 +31,7 @@ const Y = Workspace.Y;
 const createAffineWebSocketProvider: DocProviderCreator = (
   id,
   doc,
-  { awareness } = {}
+  { awareness }
 ): AffineWebSocketProvider => {
   let webSocketProvider: KeckProvider | null = null;
   let dispose: Disposable | undefined = undefined;
