@@ -64,13 +64,15 @@ beforeEach(() => {
     isSSR: true,
   });
   workspace.register(AffineSchemas).register(__unstableSchemas);
-  provider = createSQLiteProvider(
-    workspace.id,
-    workspace.doc
-  ) as SQLiteProvider;
+  provider = createSQLiteProvider(workspace.id, workspace.doc, {
+    awareness: workspace.awarenessStore.awareness,
+  }) as SQLiteProvider;
   downloadProvider = createSQLiteDBDownloadProvider(
     workspace.id,
-    workspace.doc
+    workspace.doc,
+    {
+      awareness: workspace.awarenessStore.awareness,
+    }
   ) as SQLiteDBDownloadProvider;
   offlineYdoc = new Y.Doc();
   offlineYdoc.getText('text').insert(0, 'sqlite-hello');
