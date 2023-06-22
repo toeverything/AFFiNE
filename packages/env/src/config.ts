@@ -14,6 +14,7 @@ import getConfig from 'next/config';
 import { z } from 'zod';
 
 import { UaHelper } from './ua-helper';
+import { isWindow } from './utils';
 
 declare global {
   interface Window {
@@ -134,8 +135,6 @@ interface Desktop extends ChromeBrowser {
 }
 
 export type Environment = Browser | Server | Desktop;
-
-export const isWindow = typeof window !== 'undefined'
 
 export const env: Environment  = (()=>{
     let environment = null
