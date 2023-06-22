@@ -20,12 +20,9 @@ import { getClients } from './type';
 export const createBroadCastChannelProvider: DocProviderCreator = (
   id,
   doc,
-  { awareness } = {}
+  config
 ): BroadCastChannelProvider => {
-  if (!awareness) {
-    console.warn('awareness not found');
-    throw new Error();
-  }
+  const awareness = config.awareness;
   const Y = BlockSuiteWorkspace.Y;
   let broadcastChannel: TypedBroadcastChannel | null = null;
   const callbacks = new CallbackSet();

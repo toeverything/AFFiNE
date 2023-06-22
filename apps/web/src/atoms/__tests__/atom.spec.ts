@@ -81,7 +81,10 @@ describe('currentWorkspace atom', () => {
       );
       const provider = createIndexedDBBackgroundProvider(
         workspace.id,
-        workspace.doc
+        workspace.doc,
+        {
+          awareness: workspace.awarenessStore.awareness,
+        }
       ) as LocalIndexedDBBackgroundProvider;
       provider.connect();
       await new Promise(resolve => setTimeout(resolve, 1000));

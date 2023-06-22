@@ -104,7 +104,7 @@ export function createEmptyBlockSuiteWorkspace(
   const workspace = new Workspace({
     id,
     isSSR: typeof window === 'undefined',
-    providerCreators,
+    providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: blobStorages,
     idGenerator,
   })
