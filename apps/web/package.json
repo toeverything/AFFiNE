@@ -38,6 +38,7 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/infra": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
+    "async-call-rpc": "^6.3.1",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
     "graphql": "^16.6.0",

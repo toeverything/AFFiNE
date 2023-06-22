@@ -1,93 +1,167 @@
-import type { BroadCastChannelProvider } from '@affine/env/workspace';
-import type { DocProviderCreator } from '@blocksuite/store';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
+import type { BroadCastChannelProvider } from '@affine/env/workspace'
+import type { DocProviderCreator } from '@blocksuite/store'
+import { Workspace } from '@blocksuite/store'
+import type { EventBasedChannel } from 'async-call-rpc'
+import { AsyncCall } from 'async-call-rpc'
 import {
   applyAwarenessUpdate,
-  encodeAwarenessUpdate,
-} from 'y-protocols/awareness';
-import type { Doc } from 'yjs';
+  encodeAwarenessUpdate
+} from 'y-protocols/awareness'
+import type { Doc } from 'yjs'
 
-import { CallbackSet } from '../../utils';
-import { localProviderLogger } from '../logger';
-import type {
-  AwarenessChanges,
-  BroadcastChannelMessageEvent,
-  TypedBroadcastChannel,
-} from './type';
-import { getClients } from './type';
+const Y = Workspace.Y
+
+export type AwarenessChanges = Record<
+  'added' | 'updated' | 'removed',
+  number[]
+>;
+
+
+type Impl = {
+  // request diff update from other clients
+  diffUpdateDoc: (guid: string, clientId: number) => Promise<Uint8Array | false>
+
+  // send update to other clients
+  sendUpdateDoc: (guid: string, update: Uint8Array, clientId: number) => Promise<void>
+
+  // request awareness from other clients
+  queryAwareness: (clientId: number) => Promise<Uint8Array | false>
+
+  // send awareness to other clients
+  sendAwareness: (awarenessUpdate: Uint8Array, clientId: number) => Promise<void>
+}
+
+
+/**
+ * BroadcastChannel support for AsyncCall.
+ * Please make sure your serializer can convert JSON RPC payload into one of the following data types:
+ * - Data that can be [structure cloned](http://mdn.io/structure-clone)
+ */
+export class BroadcastMessageChannel extends BroadcastChannel implements EventBasedChannel {
+  on(eventListener: (data: unknown) => void) {
+    const f = (e: MessageEvent): void => eventListener(e.data)
+    this.addEventListener('message', f)
+    return () => this.removeEventListener('message', f)
+  }
+  send(data: any) {
+    super.postMessage(data)
+  }
+}
+
+const docMap = new Map<string, Doc>()
 
 export const createBroadCastChannelProvider: DocProviderCreator = (
   id,
   doc,
   config
 ): BroadCastChannelProvider => {
-  const awareness = config.awareness;
-  const Y = BlockSuiteWorkspace.Y;
-  let broadcastChannel: TypedBroadcastChannel | null = null;
-  const callbacks = new CallbackSet();
-  const docMap = new Map<string, Doc>();
-  const updateHandlerWeakMap = new WeakMap<
-    Doc,
-    (updateV1: Uint8Array, origin: any) => void
-  >();
-  const handleBroadcastChannelMessage = (
-    event: BroadcastChannelMessageEvent
-  ) => {
-    const [eventName] = event.data;
-    switch (eventName) {
-      case 'doc:diff': {
-        const [, guid, diff, clientId] = event.data;
-        const doc = docMap.get(guid) as Doc;
-        const update = Y.encodeStateAsUpdate(doc, diff);
-        broadcastChannel?.postMessage(['doc:update', guid, update, clientId]);
-        break;
-      }
-      case 'doc:update': {
-        const [, guid, update, clientId] = event.data;
-        const doc = docMap.get(guid) as Doc;
-        if (!clientId || clientId === awareness.clientID) {
-          Y.applyUpdate(doc, update, broadcastChannel);
-        }
-        break;
-      }
-      case 'awareness:query': {
-        const [, clientId] = event.data;
-        const clients = getClients(awareness);
-        const update = encodeAwarenessUpdate(awareness, clients);
-        broadcastChannel?.postMessage(['awareness:update', update, clientId]);
-        break;
-      }
-      case 'awareness:update': {
-        const [, update, clientId] = event.data;
-        if (!clientId || clientId === awareness.clientID) {
-          applyAwarenessUpdate(awareness, update, broadcastChannel);
-        }
-        break;
-      }
-    }
-    if (callbacks.ready) {
-      callbacks.forEach(cb => cb());
-    }
-  };
+  const awareness = config.awareness
+  const currentClientId = awareness.clientID
+  function initDocMap(doc: Doc) {
+    // register all doc into map
+    docMap.set(doc.guid, doc)
+    doc.subdocs.forEach(initDocMap)
+  }
 
-  const createOrGetHandleWeakMap = (doc: Doc) => {
-    if (updateHandlerWeakMap.has(doc)) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return updateHandlerWeakMap.get(doc)!;
+  const impl = {
+    diffUpdateDoc: async (
+      guid,
+      clientId
+    ) => {
+      if (clientId === currentClientId) return false
+      const doc = docMap.get(guid)
+      if (!doc) {
+        return false
+      }
+      return Y.encodeStateAsUpdate(doc)
+    },
+    sendUpdateDoc: async (
+      guid,
+      update,
+      clientId
+    ) => {
+      const doc = docMap.get(guid)
+      if (clientId === currentClientId) return
+      if (!doc) {
+        throw new Error(`cannot find doc ${guid}`)
+      }
+      Y.applyUpdate(doc, update)
+    },
+    queryAwareness: async (clientId) => {
+      if (clientId === currentClientId) return false
+      return encodeAwarenessUpdate(awareness, [
+        awareness.clientID,
+      ])
+    },
+    sendAwareness: async (awarenessUpdate, clientId) => {
+      if (clientId === currentClientId) return
+      applyAwarenessUpdate(awareness, awarenessUpdate, broadcastChannel)
     }
-    const handleDocUpdate = (updateV1: Uint8Array, origin: any) => {
+  } satisfies Impl
+
+  const broadcastChannel = new BroadcastMessageChannel(id)
+  const rpc = AsyncCall<Impl>(impl, {
+    channel: broadcastChannel
+  })
+
+  type UpdateHandler = (
+    update: Uint8Array,
+    origin: any
+  ) => void
+
+  type SubdocsHandler = (
+    event: {
+      added: Set<Doc>
+      loaded: Set<Doc>
+      removed: Set<Doc>
+    }
+  ) => void
+
+  const updateHandlerWeakMap = new WeakMap<Doc, UpdateHandler>()
+  const subdocsHandlerWeakMap = new WeakMap<Doc, SubdocsHandler>()
+
+  const createOrGetUpdateHandler = (doc: Doc): UpdateHandler => {
+    if (updateHandlerWeakMap.has(doc)) {
+      return updateHandlerWeakMap.get(doc) as UpdateHandler
+    }
+    const handler: UpdateHandler = (update, origin) => {
       if (origin === broadcastChannel) {
         // not self update, ignore
         return;
       }
-      broadcastChannel?.postMessage(['doc:update', doc.guid, updateV1]);
-    };
-    updateHandlerWeakMap.set(doc, handleDocUpdate);
-    return handleDocUpdate;
-  };
 
-  const handleAwarenessUpdate = (changes: AwarenessChanges, origin: any) => {
+      rpc.sendUpdateDoc(doc.guid, update, currentClientId)
+        .catch(console.error)
+    }
+    updateHandlerWeakMap.set(doc, handler)
+    return handler
+  }
+
+  const createOrGetSubdocsHandler = (doc: Doc): SubdocsHandler => {
+    if (subdocsHandlerWeakMap.has(doc)) {
+      return subdocsHandlerWeakMap.get(doc) as SubdocsHandler
+    }
+
+    const handler: SubdocsHandler = (event) => {
+      event.added.forEach(doc => {
+        initDocMap(doc)
+        rpc.diffUpdateDoc(doc.guid, currentClientId)
+          .then(update => {
+            if (!update) {
+              console.error('cannot get update for doc', doc.guid)
+              return
+            }
+            Y.applyUpdate(doc, update, broadcastChannel)
+          })
+        doc.on('update', createOrGetUpdateHandler(doc))
+      })
+    }
+
+    subdocsHandlerWeakMap.set(doc, handler)
+    return handler
+  }
+
+  const awarenessUpdateHandler = (changes: AwarenessChanges, origin: any) => {
     if (origin === broadcastChannel) {
       return;
     }
@@ -96,91 +170,55 @@ export const createBroadCastChannelProvider: DocProviderCreator = (
       ...cur,
     ]);
     const update = encodeAwarenessUpdate(awareness, changedClients);
-    broadcastChannel?.postMessage(['awareness:update', update]);
-  };
-
-  function setMap(doc: Doc) {
-    docMap.set(doc.guid, doc);
-    doc.subdocs.forEach(setMap);
+    rpc.sendAwareness(update, currentClientId).catch(console.error);
   }
 
-  function clearMap() {
-    docMap.clear();
-  }
+  initDocMap(doc)
 
-  type SubDocsEvent = {
-    added: Set<Doc>;
-    removed: Set<Doc>;
-    loaded: Set<Doc>;
-  };
-
-  function handleSubDoc(event: SubDocsEvent) {
-    event.loaded.forEach(handleDocOn);
-  }
-
-  function handleDocOn(doc: Doc) {
-    doc.on('update', createOrGetHandleWeakMap(doc));
-    doc.on('subdocs', handleSubDoc);
-    doc.subdocs.forEach(handleDocOn);
-  }
-
-  function handleDocOff(doc: Doc) {
-    doc.off('update', createOrGetHandleWeakMap(doc));
-    doc.off('subdocs', handleSubDoc);
-    doc.subdocs.forEach(handleDocOff);
-  }
-
+  let connected = false
   return {
     flavour: 'broadcast-channel',
     passive: true,
-    get connected() {
-      return callbacks.ready;
-    },
-    connect: () => {
-      assertExists(id);
-      setMap(doc);
-      broadcastChannel = Object.assign(new BroadcastChannel(id), {
-        onmessage: handleBroadcastChannelMessage,
-      });
-      localProviderLogger.info('connect broadcast channel', id);
-      function initPostMessage(doc: Doc) {
-        assertExists(broadcastChannel);
-        assertExists(awareness);
-        const docDiff = Y.encodeStateVector(doc);
-        broadcastChannel.postMessage([
-          'doc:diff',
-          doc.guid,
-          docDiff,
-          awareness.clientID,
-        ]);
-        const docUpdate = Y.encodeStateAsUpdate(doc);
-        broadcastChannel.postMessage(['doc:update', doc.guid, docUpdate]);
-        doc.subdocs.forEach(initPostMessage);
+    connect () {
+      connected = true
+
+      async function registerDoc(doc: Doc) {
+        docMap.set(doc.guid, doc)
+        // register subdocs
+        doc.on('subdocs', createOrGetSubdocsHandler(doc))
+        doc.subdocs.forEach(registerDoc)
+        // register update
+        doc.on('update', createOrGetUpdateHandler(doc))
+
+        // query diff update
+        const update = await rpc.diffUpdateDoc(doc.guid, currentClientId)
+        if (!connected) {
+          return
+        }
+        if (update !== false) {
+          Y.applyUpdate(doc, update, broadcastChannel)
+        }
       }
-      initPostMessage(doc);
-      broadcastChannel.postMessage(['awareness:query', awareness.clientID]);
-      const awarenessUpdate = encodeAwarenessUpdate(awareness, [
-        awareness.clientID,
-      ]);
-      broadcastChannel.postMessage(['awareness:update', awarenessUpdate]);
-      handleDocOn(doc);
-      awareness.on('update', handleAwarenessUpdate);
-      callbacks.ready = true;
+      registerDoc(doc).catch(console.error)
+      rpc.queryAwareness(currentClientId).then(update => update && applyAwarenessUpdate(awareness, update, broadcastChannel))
+      awareness.on('update', awarenessUpdateHandler)
     },
-    disconnect: () => {
-      assertExists(broadcastChannel);
-      clearMap();
-      localProviderLogger.info('disconnect broadcast channel', id);
-      handleDocOff(doc);
-      awareness.off('update', handleAwarenessUpdate);
-      broadcastChannel.close();
-      callbacks.ready = false;
+    disconnect () {
+      function unregisterDoc(doc: Doc) {
+        docMap.delete(doc.guid)
+        doc.subdocs.forEach(unregisterDoc)
+        doc.off('update', createOrGetUpdateHandler(doc))
+        doc.off('subdocs', createOrGetSubdocsHandler(doc))
+      }
+      unregisterDoc(doc)
+      awareness.off('update', awarenessUpdateHandler)
+      connected = false
+    },
+    get connected (): boolean {
+      return connected
     },
     cleanup: () => {
-      assertExists(broadcastChannel);
-      doc.off('update', createOrGetHandleWeakMap(doc));
-      awareness.off('update', handleAwarenessUpdate);
-      broadcastChannel.close();
-    },
-  };
+      broadcastChannel.close()
+    }
+  }
 };

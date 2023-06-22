@@ -24,6 +24,7 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
+    "async-call-rpc": "^6.3.1",
     "firebase": "^9.22.2",
     "jotai": "^2.2.0",
     "js-base64": "^3.7.5",
