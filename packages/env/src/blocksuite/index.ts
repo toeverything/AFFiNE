@@ -13,8 +13,8 @@ export async function initEmptyPage(page: Page) {
     title: new page.Text(''),
   });
   page.addBlock('affine:surface', {}, pageBlockId);
-  const frameId = page.addBlock('affine:note', {}, pageBlockId);
-  page.addBlock('affine:paragraph', {}, frameId);
+  const noteBlockId = page.addBlock('affine:note', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, noteBlockId);
 }
 
 export * from './subdoc-migration';
