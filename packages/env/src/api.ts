@@ -1,8 +1,8 @@
-import { config, env } from './config';
+import { config, env, isWindow } from './config';
 import { isValidIPAddress } from './is-valid-ip-address';
 
 let prefixUrl = '/';
-if (typeof window === 'undefined' || env.isDesktop) {
+if (!isWindow || env.isDesktop) {
   // SSR or Desktop
   const serverAPI = config.serverAPI;
   if (isValidIPAddress(serverAPI.split(':')[0])) {

@@ -1,5 +1,5 @@
 import type { BlockSuiteFeatureFlags } from '@affine/env';
-import { config } from '@affine/env';
+import { config, isWindow } from '@affine/env';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Generator, StoreOptions } from '@blocksuite/store';
@@ -82,7 +82,7 @@ export function createEmptyBlockSuiteWorkspace(
       blobStorages.push(id => createAffineBlobStorage(id, workspaceApis));
     }
   } else {
-    if (typeof window !== 'undefined') {
+    if (isWindow) {
       blobStorages.push(createIndexeddbStorage);
       if (environment.isDesktop) {
         blobStorages.push(createSQLiteStorage);
@@ -92,7 +92,7 @@ export function createEmptyBlockSuiteWorkspace(
 
   const workspace = new Workspace({
     id,
-    isSSR: typeof window === 'undefined',
+    isSSR: !isWindow,
     blobStorages: blobStorages,
     idGenerator,
   })

@@ -5,7 +5,7 @@ import {
   Input,
   Wrapper,
 } from '@affine/component';
-import { config } from '@affine/env';
+import { config, isWindow } from '@affine/env';
 import { Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
@@ -38,7 +38,7 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
   const [origin, setOrigin] = useState('');
   useEffect(() => {
     setOrigin(
-      typeof window !== 'undefined' && window.location.origin
+      isWindow && window.location.origin
         ? window.location.origin
         : ''
     );

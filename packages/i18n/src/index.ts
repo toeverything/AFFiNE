@@ -1,3 +1,4 @@
+import { isWindow } from '@affine/env';
 import type { i18n, Resource } from 'i18next';
 import i18next from 'i18next';
 import {
@@ -92,7 +93,7 @@ export const createI18n = () => {
   return i18n;
 };
 export function setUpLanguage(i: i18n) {
-  if (typeof window !== 'undefined') {
+  if (isWindow) {
     let language;
     const localStorageLanguage = localStorage.getItem(STORAGE_KEY);
     if (localStorageLanguage) {

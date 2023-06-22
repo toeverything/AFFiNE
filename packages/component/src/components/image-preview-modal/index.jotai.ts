@@ -1,10 +1,11 @@
+import { isWindow } from '@affine/env';
 import type { EmbedBlockDoubleClickData } from '@blocksuite/blocks';
 import { atom } from 'jotai';
 
 export const previewBlockIdAtom = atom<string | null>(null);
 
 previewBlockIdAtom.onMount = set => {
-  if (typeof window !== 'undefined') {
+  if (isWindow) {
     const callback = (event: CustomEvent<EmbedBlockDoubleClickData>) => {
       set(event.detail.blockId);
     };

@@ -1,4 +1,5 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
+import { isWindow } from '@affine/env';
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
@@ -30,14 +31,12 @@ export const rootWorkspacesMetadataAtom = atomWithStorage<
 export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
 
 rootCurrentWorkspaceIdAtom.onMount = set => {
-  if (typeof window !== 'undefined') {
+  if (isWindow) {
     const callback = (url: string) => {
       const value = url.split('/')[2];
       if (value) {
         set(value);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('last_workspace_id', value);
-        }
+        localStorage.setItem('last_workspace_id', value);
       } else {
         set(null);
       }
@@ -54,7 +53,7 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
 export const rootCurrentPageIdAtom = atom<string | null>(null);
 
 rootCurrentPageIdAtom.onMount = set => {
-  if (typeof window !== 'undefined') {
+  if (isWindow) {
     const callback = (url: string) => {
       const value = url.split('/')[3];
       if (value) {

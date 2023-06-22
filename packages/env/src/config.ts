@@ -135,18 +135,20 @@ interface Desktop extends ChromeBrowser {
 
 export type Environment = Browser | Server | Desktop;
 
-export const env: Environment = (() => {
-  let environment = null;
-  const isDebug = process.env.NODE_ENV === 'development';
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-    environment = {
-      isDesktop: false,
-      isBrowser: false,
-      isServer: true,
-      isDebug,
-    } satisfies Server;
-  } else {
-    const uaHelper = new UaHelper(navigator);
+export const isWindow = typeof window !== 'undefined'
+
+export const env: Environment  = (()=>{
+    let environment = null
+    const isDebug = process.env.NODE_ENV === 'development';
+    if (!isWindow || typeof navigator === 'undefined') {
+      environment = {
+        isDesktop: false,
+        isBrowser: false,
+        isServer: true,
+        isDebug,
+      } satisfies Server;
+    } else {
+      const uaHelper = new UaHelper(navigator);
 
     environment = {
       origin: window.location.origin,

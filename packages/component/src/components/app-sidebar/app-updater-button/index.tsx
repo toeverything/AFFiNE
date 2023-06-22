@@ -1,4 +1,4 @@
-import { config } from '@affine/env/config';
+import { config, isWindow } from '@affine/env';
 import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
@@ -20,7 +20,7 @@ interface AddPageButtonProps {
 }
 
 const currentVersionAtom = atom(async () => {
-  if (typeof window === 'undefined') {
+  if (!isWindow) {
     return null;
   }
   const currentVersion = await window.apis?.updater.currentVersion();
@@ -28,7 +28,7 @@ const currentVersionAtom = atom(async () => {
 });
 
 const currentChangelogUnreadAtom = atom(async get => {
-  if (typeof window === 'undefined') {
+  if (!isWindow) {
     return false;
   }
   const mapping = get(changelogCheckedAtom);
