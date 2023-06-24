@@ -62,7 +62,7 @@ describe('GraphQL wrapper for SWR', () => {
       const el = await renderer.findByText('number: 1');
       expect(el).toMatchInlineSnapshot(`
         <div>
-          number:
+          number:${' '}
           1
         </div>
       `);
