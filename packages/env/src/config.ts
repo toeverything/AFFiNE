@@ -43,7 +43,7 @@ export const buildFlagsSchema = z.object({
   enablePlugin: z.boolean(),
   enableImagePreviewModal: z.boolean(),
   enableTestProperties: z.boolean(),
-  enableBroadCastChannelProvider: z.boolean(),
+  enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   enableLegacyCloud: z.boolean(),
   changelogUrl: z.string(),

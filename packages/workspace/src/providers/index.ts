@@ -12,6 +12,9 @@ import type {
   DocProviderCreator,
 } from '@blocksuite/store';
 import { assertExists, Workspace } from '@blocksuite/store';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
   createIndexedDBProvider as create,
   downloadBinary,
@@ -23,7 +26,6 @@ import { KeckProvider } from '../affine/keck';
 import { getLoginStorage, storageChangeSlot } from '../affine/login';
 import { CallbackSet } from '../utils';
 import { createAffineDownloadProvider } from './affine-download';
-import { createBroadCastChannelProvider } from './broad-cast-channel';
 import { localProviderLogger as logger } from './logger';
 
 const Y = Workspace.Y;
@@ -303,7 +305,7 @@ const createSQLiteDBDownloadProvider: DocProviderCreator = (
 export {
   createAffineDownloadProvider,
   createAffineWebSocketProvider,
-  createBroadCastChannelProvider,
+  createBroadcastChannelProvider,
   createIndexedDBBackgroundProvider,
   createIndexedDBDownloadProvider,
   createSQLiteDBDownloadProvider,
@@ -316,8 +318,8 @@ export const createLocalProviders = (): DocProviderCreator[] => {
     createIndexedDBDownloadProvider,
   ] as DocProviderCreator[];
 
-  if (config.enableBroadCastChannelProvider) {
-    providers.push(createBroadCastChannelProvider);
+  if (config.enableBroadcastChannelProvider) {
+    providers.push(createBroadcastChannelProvider);
   }
 
   if (environment.isDesktop) {
@@ -332,7 +334,7 @@ export const createAffineProviders = (): DocProviderCreator[] => {
     [
       createAffineDownloadProvider,
       createAffineWebSocketProvider,
-      config.enableBroadCastChannelProvider && createBroadCastChannelProvider,
+      config.enableBroadcastChannelProvider && createBroadcastChannelProvider,
       createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));

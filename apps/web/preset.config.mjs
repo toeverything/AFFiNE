@@ -33,7 +33,7 @@ export const buildFlags = {
   enableLegacyCloud: process.env.ENABLE_LEGACY_PROVIDER
     ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
     : true,
-  enableBroadCastChannelProvider: Boolean(
+  enableBroadcastChannelProvider: Boolean(
     process.env.ENABLE_BC_PROVIDER ?? '1'
   ),
   enableDebugPage: Boolean(
