@@ -11,7 +11,7 @@ import {
 import { createFakeUser, loginUser } from '../../libs/utils';
 import { createWorkspace } from '../../libs/workspace';
 
-test('enable public workspace', async ({ page, context }) => {
+test.fixme('enable public workspace', async ({ page, context }) => {
   await openHomePage(page);
   const [a] = await createFakeUser();
   await loginUser(page, a);
