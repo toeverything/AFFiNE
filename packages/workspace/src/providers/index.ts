@@ -6,11 +6,7 @@ import type {
   SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
-import type {
-  BlobManager,
-  Disposable,
-  DocProviderCreator,
-} from '@blocksuite/store';
+import type { Disposable, DocProviderCreator } from '@blocksuite/store';
 import { assertExists, Workspace } from '@blocksuite/store';
 import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
@@ -247,37 +243,37 @@ const createSQLiteDBDownloadProvider: DocProviderCreator = (
   }
 
   // fixme(pengx17): should n't sync blob in doc provider
-  async function _syncBlobIntoSQLite(bs: BlobManager) {
-    const persistedKeys = await apis.db.getBlobKeys(id);
-
-    if (disconnected) {
-      return;
-    }
-
-    const allKeys = await bs.list().catch(() => []);
-    const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
-
-    logger.info('persisting blobs', keysToPersist, 'to sqlite');
-    return Promise.all(
-      keysToPersist.map(async k => {
-        const blob = await bs.get(k);
-        if (!blob) {
-          logger.warn('blob not found for', k);
-          return;
-        }
-
-        if (disconnected) {
-          return;
-        }
-
-        return apis?.db.addBlob(
-          id,
-          k,
-          new Uint8Array(await blob.arrayBuffer())
-        );
-      })
-    );
-  }
+  // async function _syncBlobIntoSQLite(bs: BlobManager) {
+  //   const persistedKeys = await apis.db.getBlobKeys(id);
+  //
+  //   if (disconnected) {
+  //     return;
+  //   }
+  //
+  //   const allKeys = await bs.list().catch(() => []);
+  //   const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
+  //
+  //   logger.info('persisting blobs', keysToPersist, 'to sqlite');
+  //   return Promise.all(
+  //     keysToPersist.map(async k => {
+  //       const blob = await bs.get(k);
+  //       if (!blob) {
+  //         logger.warn('blob not found for', k);
+  //         return;
+  //       }
+  //
+  //       if (disconnected) {
+  //         return;
+  //       }
+  //
+  //       return apis?.db.addBlob(
+  //         id,
+  //         k,
+  //         new Uint8Array(await blob.arrayBuffer())
+  //       );
+  //     })
+  //   );
+  // }
 
   return {
     flavour: 'sqlite-download',
