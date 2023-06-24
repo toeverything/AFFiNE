@@ -12,8 +12,6 @@ import type {
   DocProviderCreator,
 } from '@blocksuite/store';
 import { assertExists, Workspace } from '@blocksuite/store';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
   createIndexedDBProvider as create,
