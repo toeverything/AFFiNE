@@ -38,8 +38,6 @@ function createPublicWorkspace(
     flavour: WorkspaceFlavour.PUBLIC,
     id: workspaceId,
     blockSuiteWorkspace,
-    // maybe we can add some sync providers here
-    providers: [],
   };
 }
 

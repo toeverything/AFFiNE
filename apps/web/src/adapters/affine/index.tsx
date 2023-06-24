@@ -5,7 +5,11 @@
 import { AFFINE_STORAGE_KEY, config } from '@affine/env';
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
-import type { AffineLegacyCloudWorkspace } from '@affine/env/workspace';
+import type {
+  AffineDownloadProvider,
+  AffineLegacyCloudWorkspace,
+  LocalIndexedDBDownloadProvider,
+} from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -22,10 +26,7 @@ import {
 } from '@affine/workspace/affine/login';
 import { affineApis, affineAuth } from '@affine/workspace/affine/shared';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import {
-  createAffineProviders,
-  createIndexedDBBackgroundProvider,
-} from '@affine/workspace/providers';
+import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { createAffineDownloadProvider } from '@affine/workspace/providers';
 import {
   cleanupWorkspace,
@@ -80,7 +81,6 @@ const getPersistenceAllWorkspace = () => {
           ...item,
           flavour: WorkspaceFlavour.AFFINE,
           blockSuiteWorkspace,
-          providers: [...createAffineProviders(blockSuiteWorkspace)],
         };
         return affineWorkspace;
       })
@@ -165,19 +165,19 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
         // fixme:
         //  force to download workspace binary
         //  to make sure the workspace is synced
-        const provider = createAffineDownloadProvider(bs);
-        const indexedDBProvider = createIndexedDBBackgroundProvider(bs);
-        await new Promise<void>(resolve => {
-          indexedDBProvider.callbacks.add(() => {
-            resolve();
-          });
-          provider.callbacks.add(() => {
-            indexedDBProvider.connect();
-          });
-          provider.connect();
-        });
+        const provider = createAffineDownloadProvider(bs.id, bs.doc, {
+          awareness: bs.awarenessStore.awareness,
+        }) as AffineDownloadProvider;
+        const indexedDBProvider = createIndexedDBDownloadProvider(
+          bs.id,
+          bs.doc,
+          {
+            awareness: bs.awarenessStore.awareness,
+          }
+        ) as LocalIndexedDBDownloadProvider;
+        indexedDBProvider.sync();
+        await indexedDBProvider.whenReady;
         provider.disconnect();
-        indexedDBProvider.disconnect();
       }
 
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
@@ -280,7 +280,6 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
               ...workspace,
               flavour: WorkspaceFlavour.AFFINE,
               blockSuiteWorkspace,
-              providers: [...createAffineProviders(blockSuiteWorkspace)],
             };
             return affineWorkspace;
           });
