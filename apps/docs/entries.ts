@@ -14,7 +14,7 @@ export default defineEntries(
   async () => {
     return {
       '/': {
-        elements: [['App', { name: 'Waku' }]],
+        elements: [['App', {}]],
       },
     };
   },
@@ -22,7 +22,7 @@ export default defineEntries(
   async pathStr => {
     switch (pathStr) {
       case '/':
-        return { element: ['App', { name: 'Waku' }] };
+        return { element: ['App', {}] };
       default:
         return null;
     }

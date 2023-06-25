@@ -5,7 +5,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "resolveJsonModule": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "Node16",
     "allowSyntheticDefaultImports": true,
     "outDir": "dist/scripts",
     "rootDir": "."

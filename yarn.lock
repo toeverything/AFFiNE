@@ -152,6 +152,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/docs@workspace:apps/docs":
+  version: 0.0.0-use.local
+  resolution: "@affine/docs@workspace:apps/docs"
+  dependencies:
+    "@types/react": ^18.2.8
+    "@types/react-dom": ^18.2.4
+    express: ^4.18.2
+    react: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-16d053d59-20230506
+    react-server-dom-webpack: 18.3.0-canary-16d053d59-20230506
+    typescript: ^5.1.3
+    waku: 0.12.1
+  languageName: unknown
+  linkType: soft
+
 "@affine/electron@workspace:apps/electron":
   version: 0.0.0-use.local
   resolution: "@affine/electron@workspace:apps/electron"
@@ -30458,21 +30473,6 @@ __metadata:
   checksum: 3a3d6c4b3d45fff2e284d314166cff17101ca6ffbfe9bb7c30c0602d89c2585ec82e37e7b07910a679dc1bde7e2cf8b1881fcd38ba9336a60b45bfe83adf8855
   languageName: node
   linkType: hard
-
-"waku-example@workspace:apps/docs":
-  version: 0.0.0-use.local
-  resolution: "waku-example@workspace:apps/docs"
-  dependencies:
-    "@types/react": ^18.2.8
-    "@types/react-dom": ^18.2.4
-    express: ^4.18.2
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
-    react-server-dom-webpack: 18.3.0-canary-16d053d59-20230506
-    typescript: ^5.1.3
-    waku: 0.12.1
-  languageName: unknown
-  linkType: soft
 
 "waku@npm:0.12.1":
   version: 0.12.1
