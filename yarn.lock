@@ -353,16 +353,16 @@ __metadata:
     "@auth/prisma-adapter": ^1.0.0
     "@aws-sdk/client-s3": ^3.359.0
     "@napi-rs/image": ^1.6.1
-    "@nestjs/apollo": ^12.0.1
-    "@nestjs/common": ^10.0.2
-    "@nestjs/core": ^10.0.2
-    "@nestjs/graphql": ^12.0.1
-    "@nestjs/platform-express": ^10.0.2
-    "@nestjs/testing": ^10.0.2
+    "@nestjs/apollo": ^12.0.3
+    "@nestjs/common": ^10.0.3
+    "@nestjs/core": ^10.0.3
+    "@nestjs/graphql": ^12.0.3
+    "@nestjs/platform-express": ^10.0.3
+    "@nestjs/testing": ^10.0.3
     "@node-rs/argon2": ^1.5.0
     "@node-rs/crc32": ^1.7.0
     "@node-rs/jsonwebtoken": ^0.2.0
-    "@prisma/client": ^4.15.0
+    "@prisma/client": ^4.16.1
     "@types/express": ^4.17.17
     "@types/jsonwebtoken": ^9.0.2
     "@types/lodash-es": ^4.17.7
@@ -7542,9 +7542,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/apollo@npm:^12.0.1":
-  version: 12.0.1
-  resolution: "@nestjs/apollo@npm:12.0.1"
+"@nestjs/apollo@npm:^12.0.3":
+  version: 12.0.3
+  resolution: "@nestjs/apollo@npm:12.0.3"
   dependencies:
     "@apollo/server-plugin-landing-page-graphql-playground": 4.0.0
     iterall: 1.3.0
@@ -7566,13 +7566,13 @@ __metadata:
       optional: true
     "@as-integrations/fastify":
       optional: true
-  checksum: d29d4291f12ac264d7ae7a0fc771deb5c605decccb9369bd44403fd07c1b4b509a589aaa42b6fce0188eae7567dee05c7bb2856e99da4d30a4ecf228b3a83733
+  checksum: 2a2f9bcdcd9ec952ec7104e3aab4029c84835cefeddd719b586c842f13eb087ff45d8a9861a96f33c5449813e259205f1a410d75b324feaae1f74b74b274af37
   languageName: node
   linkType: hard
 
-"@nestjs/common@npm:^10.0.2":
-  version: 10.0.2
-  resolution: "@nestjs/common@npm:10.0.2"
+"@nestjs/common@npm:^10.0.3":
+  version: 10.0.3
+  resolution: "@nestjs/common@npm:10.0.3"
   dependencies:
     iterare: 1.2.1
     tslib: 2.5.3
@@ -7587,13 +7587,13 @@ __metadata:
       optional: true
     class-validator:
       optional: true
-  checksum: e8b9d806f93642df0dd9adff8954bd86feac9c6e3e86350cc06df75f602fc6aeda7bfd58dc551239a6220111e414bc87a4a1076dd3d4d948bb812bde1474bfc2
+  checksum: 764e97864add0c34578ba08a9042b39239554b99ed8968e98489e314e927d6864a83cd32e227250cfbd2bf52756679faa6c0723e368ad18a8a52555e568ed1d2
   languageName: node
   linkType: hard
 
-"@nestjs/core@npm:^10.0.2":
-  version: 10.0.2
-  resolution: "@nestjs/core@npm:10.0.2"
+"@nestjs/core@npm:^10.0.3":
+  version: 10.0.3
+  resolution: "@nestjs/core@npm:10.0.3"
   dependencies:
     "@nuxtjs/opencollective": 0.3.2
     fast-safe-stringify: 2.1.1
@@ -7615,18 +7615,18 @@ __metadata:
       optional: true
     "@nestjs/websockets":
       optional: true
-  checksum: 4af53fb142251114dbba98b4b7df5ea89f6ee212640b5663ef72d6461134d8af3088f413c7a5b5bb76a4dd6c6cc4f560d9151e9da55e3f4652fb6cb29fb3f08b
+  checksum: 981c73a77d697773220da92e30645931c2090248187f5a993353eb5bf55cec09f97c5a9c585a88c5f7d7f92634bb16ba0fb767434d4bf8fd6051c399b7335db8
   languageName: node
   linkType: hard
 
-"@nestjs/graphql@npm:^12.0.1":
-  version: 12.0.1
-  resolution: "@nestjs/graphql@npm:12.0.1"
+"@nestjs/graphql@npm:^12.0.3":
+  version: 12.0.3
+  resolution: "@nestjs/graphql@npm:12.0.3"
   dependencies:
     "@graphql-tools/merge": 9.0.0
     "@graphql-tools/schema": 10.0.0
     "@graphql-tools/utils": 10.0.1
-    "@nestjs/mapped-types": 2.0.0
+    "@nestjs/mapped-types": 2.0.2
     chokidar: 3.5.3
     fast-glob: 3.2.12
     graphql-tag: 2.12.6
@@ -7655,13 +7655,13 @@ __metadata:
       optional: true
     ts-morph:
       optional: true
-  checksum: 1b01fb1f314d7f521a744974baeb2c28519c2da44f8cad13d1a7a81284396430c127c8e6d1d1486fb2fc6c09fcf2195bc6818245cdd7bbe2d7dc3015c92e7ee6
+  checksum: cf6433ee1f1b57a73cd22d3bff1e3824b5442cad2818522cd5d15ce83e36e009c0a5fa0358a2f0a0ea0bcefd4924d3e0d5ba8bf2eceffbee43f2b9d2892b07f6
   languageName: node
   linkType: hard
 
-"@nestjs/mapped-types@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@nestjs/mapped-types@npm:2.0.0"
+"@nestjs/mapped-types@npm:2.0.2":
+  version: 2.0.2
+  resolution: "@nestjs/mapped-types@npm:2.0.2"
   peerDependencies:
     "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0
     class-transformer: ^0.4.0 || ^0.5.0
@@ -7672,13 +7672,13 @@ __metadata:
       optional: true
     class-validator:
       optional: true
-  checksum: a43380f2a00f6b7aed0c171ce3e9334466782cdeb0da9b5a3d858d74cb0b96ab26afa55f3d4152907df8f512b30a3ff7f432df53b0ff952672fed7d70d503186
+  checksum: 1fb0dca3838d0dc23107233e95a711e251bfbef9017589d3764c955a1cf190c8372179cee70e3674807896f53a98ab2ba80cd769b4f072fadefb708be1cc911b
   languageName: node
   linkType: hard
 
-"@nestjs/platform-express@npm:^10.0.2":
-  version: 10.0.2
-  resolution: "@nestjs/platform-express@npm:10.0.2"
+"@nestjs/platform-express@npm:^10.0.3":
+  version: 10.0.3
+  resolution: "@nestjs/platform-express@npm:10.0.3"
   dependencies:
     body-parser: 1.20.2
     cors: 2.8.5
@@ -7688,13 +7688,13 @@ __metadata:
   peerDependencies:
     "@nestjs/common": ^10.0.0
     "@nestjs/core": ^10.0.0
-  checksum: 731d5c79a0a40c12f91592e7b84ef70429a1830312bc6c8e7600adec65b7425a0605b32340321974b15ae4b0a9ee554fd8e27d29677f136546a90614e00adda6
+  checksum: ad6b7b9d2b8d7cfab7707f9d93c6b439df0291eea914a1e3500f9ac945f9520c734ef521dabef44968be96bc4eabf9528b1f5a20b7fe9b91f45f07b6d42c10ed
   languageName: node
   linkType: hard
 
-"@nestjs/testing@npm:^10.0.2":
-  version: 10.0.2
-  resolution: "@nestjs/testing@npm:10.0.2"
+"@nestjs/testing@npm:^10.0.3":
+  version: 10.0.3
+  resolution: "@nestjs/testing@npm:10.0.3"
   dependencies:
     tslib: 2.5.3
   peerDependencies:
@@ -7707,7 +7707,7 @@ __metadata:
       optional: true
     "@nestjs/platform-express":
       optional: true
-  checksum: 06aca7e031723d517b88be093c91da33dbf83976ba3c2562533c6ed131a0b23dce6723038e29dc463335097e10b3036179f700cb0a73936ab572890f87c926a5
+  checksum: 61f7c10f64d36265175fafedc72b86d6b10bfcd4ae7a598d02a1231df6955ac9619ee1843731267bc7eced7ad94236883443d240116d48edeea715b5539bf322
   languageName: node
   linkType: hard
 
@@ -8548,24 +8548,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prisma/client@npm:^4.15.0":
-  version: 4.15.0
-  resolution: "@prisma/client@npm:4.15.0"
+"@prisma/client@npm:^4.16.1":
+  version: 4.16.1
+  resolution: "@prisma/client@npm:4.16.1"
   dependencies:
-    "@prisma/engines-version": 4.15.0-28.8fbc245156db7124f997f4cecdd8d1219e360944
+    "@prisma/engines-version": 4.16.0-66.b20ead4d3ab9e78ac112966e242ded703f4a052c
   peerDependencies:
     prisma: "*"
   peerDependenciesMeta:
     prisma:
       optional: true
-  checksum: 875eb31e702e16a50188f4762d9689a930aeb4f18a158a0a5270feefc80dc9a30935890df65d98fc9c6655d5f4f65d9943997bb86a51dd904577e7d19c6a2a7c
+  checksum: da715b6e930f56493cb7c6232b179250a4e93bbc2b5fe42a84cb9511d127b6fd89e1271f83e1d531bd4fdd7e87f6ac0701b30174cf89212ae7da88097de31026
   languageName: node
   linkType: hard
 
-"@prisma/engines-version@npm:4.15.0-28.8fbc245156db7124f997f4cecdd8d1219e360944":
-  version: 4.15.0-28.8fbc245156db7124f997f4cecdd8d1219e360944
-  resolution: "@prisma/engines-version@npm:4.15.0-28.8fbc245156db7124f997f4cecdd8d1219e360944"
-  checksum: 6da6f076746aac2db043a9f15790f51c6d0e86139e1ebd83e6e046e799c0dbfa0d2df14cd7c70cc9583ce85b4bfc02e48fe1461077b79ed31ba83ad9440bb90f
+"@prisma/engines-version@npm:4.16.0-66.b20ead4d3ab9e78ac112966e242ded703f4a052c":
+  version: 4.16.0-66.b20ead4d3ab9e78ac112966e242ded703f4a052c
+  resolution: "@prisma/engines-version@npm:4.16.0-66.b20ead4d3ab9e78ac112966e242ded703f4a052c"
+  checksum: 23183cab33f95e0711cd6cee7642f4beeeb77b8b0aa54b419f55097bfb96863a11a28f6509ab27fef0ea794522e188044ce850993a25c341333f8305711a255f
   languageName: node
   linkType: hard
 
