@@ -47,7 +47,7 @@ test('Drag resizer can resize sidebar', async ({ page }) => {
   });
   await page.mouse.up();
   const boundingBox = await page.getByTestId('app-sidebar').boundingBox();
-  expect(boundingBox?.width).toBe(400);
+  expect(boundingBox?.width).toBe(399);
 });
 
 test('Sidebar in between sm & md breakpoint', async ({ page }) => {

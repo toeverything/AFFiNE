@@ -2,7 +2,7 @@
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/index.tsx
 
-import { CloseIcon, InformationFillIcon } from '@blocksuite/icons';
+import { CloseIcon, InformationIcon } from '@blocksuite/icons';
 import * as Toast from '@radix-ui/react-toast';
 import clsx from 'clsx';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -303,7 +303,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
               [styles.lightInfoIconStyle]: notification.theme !== 'dark',
             })}
           >
-            <InformationFillIcon />
+            <InformationIcon />
           </div>
           <div className={styles.notificationTitleContactStyle}>
             {notification.title}

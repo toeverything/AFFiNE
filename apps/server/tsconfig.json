@@ -6,12 +6,13 @@
     "module": "ESNext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "Bundler",
     "isolatedModules": false,
     "resolveJsonModule": true,
     "types": ["node"],
     "outDir": "dist",
-    "noEmit": false
+    "noEmit": false,
+    "verbatimModuleSyntax": false
   },
   "include": ["src", "package.json"],
   "exclude": ["dist", "node_modules"],

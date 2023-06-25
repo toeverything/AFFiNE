@@ -268,6 +268,10 @@ export const createIndexedDBProvider = (
     doc.on('update', createOrGetHandleUpdate(id, doc));
     doc.on('destroy', createOrGetHandleDestroy(id, doc));
     doc.on('subdocs', createOrGetHandleSubDocs(id, doc));
+
+    doc.subdocs.forEach(doc => {
+      trackDoc(doc.guid, doc);
+    });
   }
 
   function unTrackDoc(id: string, doc: Doc) {
@@ -343,6 +347,7 @@ export const createIndexedDBProvider = (
       });
       connected = true;
       trackDoc(doc.guid, doc);
+
       // only the runs `await` below, otherwise the logic is incorrect
       const db = await dbPromise;
       if (migrate) {

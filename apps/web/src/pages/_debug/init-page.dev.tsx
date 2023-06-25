@@ -1,7 +1,8 @@
-import { AppContainer, MainContainer } from '@affine/component/workspace';
+import { MainContainer } from '@affine/component/workspace';
 import { useRouter } from 'next/router';
 import { lazy, Suspense } from 'react';
 
+import { AppContainer } from '../../components/affine/app-container';
 import type { NextPageWithLayout } from '../../shared';
 
 const Editor = lazy(() =>

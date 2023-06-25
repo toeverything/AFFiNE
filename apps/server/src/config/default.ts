@@ -1,5 +1,10 @@
 /// <reference types="../global.d.ts" />
 
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
+import parse from 'parse-duration';
+
 import pkg from '../../package.json' assert { type: 'json' };
 import type { AFFiNEConfig } from './def';
 
@@ -56,16 +61,23 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
     debug: true,
   },
   auth: {
-    accessTokenExpiresIn: '1h',
-    refreshTokenExpiresIn: '7d',
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    accessTokenExpiresIn: parse('1h')! / 1000,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    refreshTokenExpiresIn: parse('7d')! / 1000,
+    leeway: 60,
     publicKey: examplePublicKey,
     privateKey: examplePrivateKey,
     enableSignup: true,
     enableOauth: false,
+    nextAuthSecret: '',
     oauthProviders: {},
   },
   objectStorage: {
     enable: false,
     config: {},
+    fs: {
+      path: join(homedir(), '.affine-storage'),
+    },
   },
 });

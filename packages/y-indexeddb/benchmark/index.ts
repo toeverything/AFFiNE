@@ -17,7 +17,13 @@ import { IndexeddbPersistence } from 'y-indexeddb';
 const Y = Workspace.Y;
 
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { createIndexedDBProvider } from '../src/index.js';
+import { createIndexedDBProvider } from '../dist/index.js';
+
+// @ts-expect-error
+globalThis.window = {
+  addEventListener: () => void 0,
+  removeEventListener: () => void 0,
+};
 
 async function yjs_create_persistence(n = 1e3) {
   for (let i = 0; i < n; i++) {
@@ -48,20 +54,24 @@ async function yjs_single_persistence(n = 1e5) {
 
 async function toeverything_create_provider(n = 1e3) {
   for (let i = 0; i < n; i++) {
-    const yDoc = new Y.Doc();
-    const provider = createIndexedDBProvider('test', yDoc);
+    const yDoc = new Y.Doc({
+      guid: 'test',
+    });
+    const provider = createIndexedDBProvider(yDoc);
     provider.connect();
     await provider.whenSynced;
     provider.disconnect();
   }
 }
 async function toeverything_single_persistence(n = 1e5) {
-  const yDoc = new Y.Doc();
+  const yDoc = new Y.Doc({
+    guid: 'test',
+  });
   const map = yDoc.getMap();
   for (let i = 0; i < n; i++) {
     map.set(`${i}`, i);
   }
-  const provider = createIndexedDBProvider('test', yDoc, 'test');
+  const provider = createIndexedDBProvider(yDoc, 'test');
   provider.connect();
   await provider.whenSynced;
   provider.disconnect();

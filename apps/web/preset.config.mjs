@@ -33,7 +33,7 @@ export const buildFlags = {
   enableLegacyCloud: process.env.ENABLE_LEGACY_PROVIDER
     ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
     : true,
-  enableBroadCastChannelProvider: Boolean(
+  enableBroadcastChannelProvider: Boolean(
     process.env.ENABLE_BC_PROVIDER ?? '1'
   ),
   enableDebugPage: Boolean(
@@ -41,9 +41,13 @@ export const buildFlags = {
   ),
   changelogUrl:
     process.env.CHANGELOG_URL ??
-    'https://affine.pro/blog/what-is-new-affine-0615',
+    'https://affine.pro/blog/what-is-new-affine-0620',
   enablePreloading:
     process.env.ENABLE_PRELOADING === undefined
+      ? true
+      : process.env.ENABLE_PRELOADING === 'true',
+  enableNewSettingModal:
+    process.env.ENABLE_NEW_SETTING_MODAL === undefined
       ? true
       : process.env.ENABLE_PRELOADING === 'true',
 };

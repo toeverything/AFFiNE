@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 
 import { displayFlex, styled, textEllipsis } from '../../styles';
+import { Button } from '../button';
 import StyledPopperContainer from '../shared/container';
 
 export const StyledMenuWrapper = styled(StyledPopperContainer, {
@@ -100,3 +101,16 @@ export const StyledMenuItem = styled('button')<{
     };
   }
 );
+
+export const StyledButton = styled(Button)(() => {
+  return {
+    width: '100%',
+    height: '32px',
+    borderRadius: '8px',
+    backgroundColor: 'transparent',
+    ...displayFlex('space-between', 'center'),
+    border: `1px solid var(--affine-border-color)`,
+    padding: '0 10px',
+    fontSize: 'var(--affine-font-base)',
+  };
+});

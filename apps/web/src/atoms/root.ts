@@ -1,15 +1,13 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
-import type {
-  NecessaryProvider,
-  WorkspaceRegistry,
-} from '@affine/env/workspace';
+import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import type { ActiveDocProvider } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
@@ -57,9 +55,9 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
     )
   );
   const workspaceProviders = workspaces.map(workspace =>
-    workspace.providers.filter(
-      (provider): provider is NecessaryProvider =>
-        'necessary' in provider && provider.necessary
+    workspace.blockSuiteWorkspace.providers.filter(
+      (provider): provider is ActiveDocProvider =>
+        'active' in provider && provider.active
     )
   );
   const promises: Promise<void>[] = [];
@@ -102,9 +100,10 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
         `cannot find the workspace with id ${targetId} in the plugin ${targetWorkspace.flavour}.`
       );
     }
-    const providers = workspace.providers.filter(
-      (provider): provider is NecessaryProvider =>
-        'necessary' in provider && provider.necessary === true
+
+    const providers = workspace.blockSuiteWorkspace.providers.filter(
+      (provider): provider is ActiveDocProvider =>
+        'active' in provider && provider.active === true
     );
     for (const provider of providers) {
       provider.sync();

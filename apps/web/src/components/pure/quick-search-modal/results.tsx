@@ -39,9 +39,10 @@ export const Results: FC<ResultsProps> = ({
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
   const { jumpToPage } = useRouterHelper(router);
-  const results = blockSuiteWorkspace.search(query);
+  const results = blockSuiteWorkspace.search({ query });
 
-  const pageIds = [...results.values()];
+  // remove `space:` prefix
+  const pageIds = [...results.values()].map(id => id.slice(6));
 
   const resultsPageMeta = pageList.filter(
     page => pageIds.indexOf(page.id) > -1 && !page.trash
