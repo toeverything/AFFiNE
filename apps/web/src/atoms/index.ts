@@ -60,7 +60,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
         const newMetadata = workspaceIDs.map(w => ({
           id: w[0],
           flavour: WorkspaceFlavour.LOCAL,
-          version: WorkspaceVersion.SubDoc,
+          version: undefined,
         }));
         setAtom(metadata => {
           return [

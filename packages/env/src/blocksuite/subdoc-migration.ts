@@ -31,6 +31,11 @@ function updateBlockVersions(versions: Y.Map<number>) {
     versions.set('affine:image', embedVersion);
     versions.delete('affine:embed');
   }
+  const databaseVersion = versions.get('affine:database');
+  if (databaseVersion) {
+    versions.set('affine:database', 2);
+    versions.delete('affine:database');
+  }
 }
 
 function migrateMeta(oldDoc: Y.Doc, newDoc: Y.Doc) {
