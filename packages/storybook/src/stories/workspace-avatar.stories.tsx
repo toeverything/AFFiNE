@@ -32,7 +32,6 @@ export const Basic: StoryFn<WorkspaceAvatarProps> = props => {
         flavour: WorkspaceFlavour.LOCAL,
         id: 'local',
         blockSuiteWorkspace: basicBlockSuiteWorkspace,
-        providers: [],
       }}
     />
   );
@@ -68,7 +67,6 @@ export const BlobExample: StoryFn<WorkspaceAvatarProps> = props => {
         flavour: WorkspaceFlavour.LOCAL,
         id: 'local',
         blockSuiteWorkspace: avatarBlockSuiteWorkspace,
-        providers: [],
       }}
     />
   );

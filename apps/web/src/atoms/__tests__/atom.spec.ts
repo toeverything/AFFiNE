@@ -4,12 +4,13 @@
 import 'fake-indexeddb/auto';
 
 import { initEmptyPage } from '@affine/env/blocksuite';
+import type { LocalIndexedDBBackgroundProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
+import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
 import {
   _cleanupBlockSuiteWorkspaceCache,
   createEmptyBlockSuiteWorkspace,
@@ -69,9 +70,8 @@ describe('currentWorkspace atom', () => {
         WorkspaceFlavour.LOCAL
       );
       const page = workspace.createPage({ id: 'page0' });
-      initEmptyPage(page);
-      const frameId = page.getBlockByFlavour('affine:frame').at(0)
-        ?.id as string;
+      await initEmptyPage(page);
+      const frameId = page.getBlockByFlavour('affine:note').at(0)?.id as string;
       id = page.addBlock(
         'affine:paragraph',
         {
@@ -79,9 +79,16 @@ describe('currentWorkspace atom', () => {
         },
         frameId
       );
-      const provider = createIndexedDBDownloadProvider(workspace);
-      provider.sync();
-      await provider.whenReady;
+      const provider = createIndexedDBBackgroundProvider(
+        workspace.id,
+        workspace.doc,
+        {
+          awareness: workspace.awarenessStore.awareness,
+        }
+      ) as LocalIndexedDBBackgroundProvider;
+      provider.connect();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      provider.disconnect();
       const workspaceId = await WorkspaceAdapters[
         WorkspaceFlavour.LOCAL
       ].CRUD.create(workspace);
@@ -100,6 +107,7 @@ describe('currentWorkspace atom', () => {
     const workspace = await store.get(rootCurrentWorkspaceAtom);
     expect(workspace).toBeDefined();
     const page = workspace.blockSuiteWorkspace.getPage('page0') as Page;
+    await page.waitForLoaded();
     expect(page).not.toBeNull();
     const paragraphBlock = page.getBlockById(id) as ParagraphBlockModel;
     expect(paragraphBlock).not.toBeNull();
