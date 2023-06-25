@@ -1,6 +1,10 @@
 /// <reference types="react/experimental" />
 
-import { Editor } from './components/editor.js';
+import { lazy } from 'react';
+
+const Editor = lazy(() =>
+  import('./components/editor.js').then(({ Editor }) => ({ default: Editor }))
+);
 
 const App = () => {
   return (

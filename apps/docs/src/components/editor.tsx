@@ -1,4 +1,6 @@
 'use client';
+import '@blocksuite/editor/themes/affine.css';
+
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
