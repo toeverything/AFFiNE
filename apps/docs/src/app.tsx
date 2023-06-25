@@ -1,24 +1,34 @@
+/// <reference types="vite/client" />
 'use server';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-
 import type { ReactElement } from 'react';
 import { lazy } from 'react';
+
+import { Sidebar } from './components/sidebar.js';
 
 const Editor = lazy(() =>
   import('./components/editor.js').then(({ Editor }) => ({ default: Editor }))
 );
 
-const markdown = await fs.readFile(path.join('./src/pages/index.md'), {
-  encoding: 'utf-8',
-});
+const markdown = `---
+title: AFFiNE Developer Documentation
+---
+
+## To Shape, not to adapt
+
+---
+
+**Powered by BlockSuite**
+`;
 
 const App = (): ReactElement => {
   return (
-    <div>
-      <div className="mt-5">
+    <div className="flex flex-col-reverse sm:flex-row">
+      <nav className="w-full sm:w-64">
+        <Sidebar />
+      </nav>
+      <main className="flex-1 p-6 w-full sm:w-[calc(100%-16rem)]">
         <Editor text={markdown} />
-      </div>
+      </main>
     </div>
   );
 };

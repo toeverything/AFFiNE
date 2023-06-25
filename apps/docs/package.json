@@ -17,6 +17,7 @@
     "@blocksuite/lit": "0.0.0-20230624163241-751f7170-nightly",
     "@blocksuite/store": "0.0.0-20230624163241-751f7170-nightly",
     "express": "^4.18.2",
+    "jotai": "^2.2.1",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
     "react-server-dom-webpack": "18.3.0-canary-16d053d59-20230506",

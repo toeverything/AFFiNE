@@ -169,6 +169,7 @@ __metadata:
     "@vanilla-extract/vite-plugin": ^3.8.2
     autoprefixer: ^10.4.14
     express: ^4.18.2
+    jotai: ^2.2.1
     react: 18.3.0-canary-16d053d59-20230506
     react-dom: 18.3.0-canary-16d053d59-20230506
     react-server-dom-webpack: 18.3.0-canary-16d053d59-20230506
@@ -22015,6 +22016,18 @@ __metadata:
     react:
       optional: true
   checksum: 9925a0ced9615773302a2e6262e06f6f31524b8328eb57f07c12eddf4284ad8f9a472ae6d2dc1e1ecdf734e8862be7239cab176aa45eb999741e12d411e46f9e
+  languageName: node
+  linkType: hard
+
+"jotai@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "jotai@npm:2.2.1"
+  peerDependencies:
+    react: ">=17.0.0"
+  peerDependenciesMeta:
+    react:
+      optional: true
+  checksum: 1400d0320516966e23ff4d134e7ff525e32987f3a63e75246a49fed21790b9ff567c480e69a86b74d1bbfa354015de1581ab622664fdfe8a38d0fb8de00e424c
   languageName: node
   linkType: hard
 

@@ -42,10 +42,11 @@ export const Editor = (props: EditorProps): ReactElement => {
           page.addBlock('affine:surface', {}, pageBlockId);
           const noteBlockId = page.addBlock('affine:note', {}, pageBlockId);
           const contentParser = new ContentParser(page);
-          const content = text.split('---\n')[2];
+          const content = text.split('---\n').splice(2).join('---\n');
           assertExists(content);
-          console.log('metadata', title, content);
           await contentParser.importMarkdown(content, noteBlockId);
+          page.awarenessStore.setReadonly(page, true);
+          page.awarenessStore.setFlag('enable_drag_handle', false);
         },
         [props.text]
       )}
