@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "waku dev",
-    "build": "waku build"
+    "build": "waku build",
+    "build:vercel": "waku build && cp -Lr ./dist/.vercel/output ./.vercel/"
   },
   "dependencies": {
     "@affine/component": "workspace:*",
