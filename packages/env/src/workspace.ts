@@ -10,7 +10,11 @@ import type { FC, PropsWithChildren } from 'react';
 import type { View } from './filter';
 import type { Workspace as RemoteWorkspace } from './workspace/legacy-cloud';
 
-export enum WorkspaceSubPath {
+export const enum WorkspaceVersion {
+  SubDoc = 2,
+}
+
+export const enum WorkspaceSubPath {
   ALL = 'all',
   SETTING = 'setting',
   TRASH = 'trash',
@@ -72,19 +76,19 @@ export interface AffinePublicWorkspace {
   blockSuiteWorkspace: BlockSuiteWorkspace;
 }
 
-export enum ReleaseType {
+export const enum ReleaseType {
   // if workspace is not released yet, we will not show it in the workspace list
   UNRELEASED = 'unreleased',
   STABLE = 'stable',
 }
 
-export enum LoadPriority {
+export const enum LoadPriority {
   HIGH = 1,
   MEDIUM = 2,
   LOW = 3,
 }
 
-export enum WorkspaceFlavour {
+export const enum WorkspaceFlavour {
   /**
    * AFFiNE Workspace is the workspace
    * that hosted on the Legacy AFFiNE Cloud Server.

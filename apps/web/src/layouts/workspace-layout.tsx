@@ -11,7 +11,7 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { config, DEFAULT_HELLO_WORLD_PAGE_ID, env } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
@@ -267,7 +267,13 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
                 );
               });
             }
-            items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
+            items.push(
+              ...item.map(x => ({
+                id: x.id,
+                flavour: x.flavour,
+                version: WorkspaceVersion.SubDoc,
+              }))
+            );
           } catch (e) {
             logger.error('list data error:', e);
           }

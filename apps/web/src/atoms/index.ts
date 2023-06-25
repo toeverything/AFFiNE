@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import type { RootWorkspaceMetadataV2 } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { atom } from 'jotai';
 import { atomFamily, atomWithStorage } from 'jotai/utils';
@@ -13,7 +13,7 @@ const logger = new DebugLogger('web:atoms');
 // workspace necessary atoms
 // todo(himself65): move this to the workspace package
 rootWorkspacesMetadataAtom.onMount = setAtom => {
-  function createFirst(): RootWorkspaceMetadata[] {
+  function createFirst(): RootWorkspaceMetadataV2[] {
     const Plugins = Object.values(WorkspaceAdapters).sort(
       (a, b) => a.loadPriority - b.loadPriority
     );
@@ -24,9 +24,11 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
           ({
             id,
             flavour: Plugin.flavour,
-          } satisfies RootWorkspaceMetadata)
+            // new workspace should all support sub-doc feature
+            version: WorkspaceVersion.SubDoc,
+          } satisfies RootWorkspaceMetadataV2)
       );
-    }).filter((ids): ids is RootWorkspaceMetadata => !!ids);
+    }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
   }
 
   const abortController = new AbortController();
@@ -56,6 +58,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
         const newMetadata = workspaceIDs.map(w => ({
           id: w[0],
           flavour: WorkspaceFlavour.LOCAL,
+          version: WorkspaceVersion.SubDoc,
         }));
         setAtom(metadata => {
           return [
