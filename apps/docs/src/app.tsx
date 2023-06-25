@@ -1,5 +1,4 @@
 'use server';
-/// <reference types="react/experimental" />
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

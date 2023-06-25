@@ -1,4 +1,3 @@
-
 import { defineEntries } from 'waku/server';
 
 export default defineEntries(
