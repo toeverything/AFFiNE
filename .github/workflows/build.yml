@@ -48,6 +48,19 @@ jobs:
           yarn lint --max-warnings=0
           yarn circular
 
+  build-docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn nx build @affine/docs
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
   build-storybook:
     name: Build Storybook
     runs-on: ubuntu-latest
