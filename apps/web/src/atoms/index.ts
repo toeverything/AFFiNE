@@ -33,22 +33,24 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
 
   const abortController = new AbortController();
 
-  // next tick to make sure the hydration is correct
-  const id = setTimeout(() => {
-    setAtom(metadata => {
-      if (abortController.signal.aborted) return metadata;
-      if (
-        metadata.length === 0 &&
-        localStorage.getItem('is-first-open') === null
-      ) {
-        localStorage.setItem('is-first-open', 'false');
-        const newMetadata = createFirst();
-        logger.info('create first workspace', newMetadata);
-        return newMetadata;
-      }
-      return metadata;
-    });
-  }, 0);
+  if (!environment.isServer) {
+    // next tick to make sure the hydration is correct
+    setTimeout(() => {
+      setAtom(metadata => {
+        if (abortController.signal.aborted) return metadata;
+        if (
+          metadata.length === 0 &&
+          localStorage.getItem('is-first-open') === null
+        ) {
+          localStorage.setItem('is-first-open', 'false');
+          const newMetadata = createFirst();
+          logger.info('create first workspace', newMetadata);
+          return newMetadata;
+        }
+        return metadata;
+      });
+    }, 0);
+  }
 
   if (environment.isDesktop) {
     window.apis?.workspace
@@ -73,7 +75,6 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
   }
 
   return () => {
-    clearTimeout(id);
     abortController.abort();
   };
 };
