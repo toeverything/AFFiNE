@@ -1,4 +1,3 @@
-import { config } from '@affine/env';
 import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
@@ -195,7 +194,7 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
       <Suspense fallback={<BlockSuiteFallback />}>
         <BlockSuiteEditorImpl {...props} />
       </Suspense>
-      {config.enableImagePreviewModal && props.page && (
+      {props.page && (
         <Suspense fallback={null}>
           {createPortal(
             <ImagePreviewModal

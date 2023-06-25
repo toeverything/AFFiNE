@@ -156,8 +156,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/docs@workspace:apps/docs"
   dependencies:
-    "@types/react": ^18.2.8
-    "@types/react-dom": ^18.2.4
+    "@affine/component": "workspace:*"
+    "@blocksuite/block-std": 0.0.0-20230624163241-751f7170-nightly
+    "@blocksuite/blocks": 0.0.0-20230624163241-751f7170-nightly
+    "@blocksuite/editor": 0.0.0-20230624163241-751f7170-nightly
+    "@blocksuite/global": 0.0.0-20230624163241-751f7170-nightly
+    "@blocksuite/lit": 0.0.0-20230624163241-751f7170-nightly
+    "@blocksuite/store": 0.0.0-20230624163241-751f7170-nightly
+    "@types/react": ^18.2.12
+    "@types/react-dom": ^18.2.5
+    "@vanilla-extract/css": ^1.11.1
+    "@vanilla-extract/vite-plugin": ^3.8.2
     autoprefixer: ^10.4.14
     express: ^4.18.2
     react: 18.3.0-canary-16d053d59-20230506
@@ -12184,15 +12193,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:^18.2.4":
-  version: 18.2.6
-  resolution: "@types/react-dom@npm:18.2.6"
-  dependencies:
-    "@types/react": "*"
-  checksum: b56e42efab121a3a8013d2eb8c1688e6028a25ea6d33c4362d2846f0af3760b164b4d7c34846614024cfb8956cca70dd1743487f152e32ff89a00fe6fbd2be54
-  languageName: node
-  linkType: hard
-
 "@types/react-is@npm:^18.2.0":
   version: 18.2.0
   resolution: "@types/react-is@npm:18.2.0"
@@ -12219,17 +12219,6 @@ __metadata:
     "@types/scheduler": "*"
     csstype: ^3.0.2
   checksum: ad85a7eadaf1b35cfeee9f715b39311420ff46d46e0650377d918b3f888c2e47416037da4a765e1dccd3d1916abd54c105a3bee803c971ba56c955a7768ce976
-  languageName: node
-  linkType: hard
-
-"@types/react@npm:^18.2.8":
-  version: 18.2.14
-  resolution: "@types/react@npm:18.2.14"
-  dependencies:
-    "@types/prop-types": "*"
-    "@types/scheduler": "*"
-    csstype: ^3.0.2
-  checksum: a6a5e8cc78f486b9020d1ad009aa6c56943c68c7c6376e0f8399e9cbcd950b7b8f5d73f00200f5379f5e58d31d57d8aed24357f301d8e86108cd438ce6c8b3dd
   languageName: node
   linkType: hard
 
