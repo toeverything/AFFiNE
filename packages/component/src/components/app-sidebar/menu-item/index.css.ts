@@ -39,6 +39,7 @@ export const content = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  width: '100%',
 });
 
 export const icon = style({

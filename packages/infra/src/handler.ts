@@ -65,6 +65,10 @@ type UIHandlers = {
   handleMinimizeApp: () => Promise<any>;
   handleMaximizeApp: () => Promise<any>;
   handleCloseApp: () => Promise<any>;
+  handleShowQuickNote: () => Promise<any>;
+  handleHideQuickNote: () => Promise<any>;
+  handleQuickNoteHeightChange: (height: number) => Promise<any>;
+  // todo: add others
   getGoogleOauthCode: () => Promise<any>;
 };
 

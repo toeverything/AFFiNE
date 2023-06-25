@@ -21,6 +21,8 @@ function toAbsolutePath(url: string) {
     // if is a file type, load the file in resources
     if (url.split('/').at(-1)?.includes('.')) {
       realpath = join(webStaticDir, decodeURIComponent(url));
+    } else if (url.endsWith('quick-note')) {
+      realpath = join(webStaticDir, 'quick-note.html');
     } else {
       // else, fallback to load the index.html instead
       realpath = join(webStaticDir, 'index.html');

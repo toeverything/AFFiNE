@@ -7,10 +7,10 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
-import { restoreOrCreateWindow } from './main-window';
 import { registerPlugin } from './plugin';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
+import { restoreOrCreateMainWindow } from './window';
 
 if (require('electron-squirrel-startup')) app.quit();
 // allow tests to overwrite app name through passing args
@@ -31,7 +31,7 @@ if (!isSingleInstance) {
 }
 
 app.on('second-instance', () => {
-  restoreOrCreateWindow().catch(e =>
+  restoreOrCreateMainWindow().catch(e =>
     console.error('Failed to restore or create window:', e)
   );
 });
@@ -49,10 +49,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-/**
- * @see https://www.electronjs.org/docs/v14-x-y/api/app#event-activate-macos Event: 'activate'
- */
-app.on('activate', restoreOrCreateWindow);
+app.on('activate', restoreOrCreateMainWindow);
 
 /**
  * Create app window when background process will be ready
@@ -64,7 +61,9 @@ app
   .then(registerHandlers)
   .then(registerEvents)
   .then(ensureHelperProcess)
-  .then(restoreOrCreateWindow)
+  .then(restoreOrCreateMainWindow)
   .then(createApplicationMenu)
   .then(registerUpdater)
-  .catch(e => console.error('Failed create window:', e));
+  .catch(err => {
+    console.error('Failed create window:', err);
+  });

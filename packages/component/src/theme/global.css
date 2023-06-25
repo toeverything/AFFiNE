@@ -208,6 +208,18 @@ input[type='number']::-webkit-outer-spin-button {
   transition: margin-top 0.2s;
 }
 
+.editor-wrapper[data-quick-note] {
+  padding: 0;
+}
+
+.editor-wrapper[data-quick-note] .affine-default-page-block-title-container {
+  display: none;
+}
+
+.editor-wrapper[data-quick-note] .affine-default-page-block-container {
+  padding: 0 40px 48px 40px;
+}
+
 .affine-default-page-block-container {
   transition: max-width 0.2s;
   min-width: 550px;

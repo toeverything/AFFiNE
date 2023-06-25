@@ -152,3 +152,5 @@ export const setPageModeAtom = atom(
 
 export type PageModeOption = 'all' | 'page' | 'edgeless';
 export const allPageModeSelectAtom = atom<PageModeOption>('all');
+
+export { quickNotePageAtom } from './quick-note';

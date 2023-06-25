@@ -297,5 +297,9 @@
   "Update Available": "Update available",
   "dark": "Dark",
   "system": "System",
-  "light": "Light"
+  "light": "Light",
+  "com.affine.daily-notes": "Daily Notes",
+  "com.affine.quick-note": "Quick Note",
+  "com.affine.quick-note.create": "Create Quick Note",
+  "com.affine.quick-note.append-to-today": "Append To Today"
 }

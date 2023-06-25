@@ -15,4 +15,13 @@ export function initEmptyPage(page: Page): void {
   page.addBlock('affine:paragraph', {}, frameId);
 }
 
+export function initEmptyQuickNotePage(page: Page): void {
+  const pageBlockId = page.addBlock('affine:page', {
+    title: new page.Text('Quick Note'), // todo(pengx17): this shall be localized && readonly
+  });
+  page.addBlock('affine:surface', {}, pageBlockId);
+  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, frameId);
+}
+
 export * from './subdoc-migration';

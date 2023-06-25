@@ -20,6 +20,7 @@ import {
 export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
+  quickNote?: boolean;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
@@ -126,6 +127,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   return (
     <div
       data-testid={`editor-${page.id}`}
+      data-quick-note={props.quickNote || undefined}
       className={className}
       style={style}
       ref={ref}

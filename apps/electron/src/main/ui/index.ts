@@ -1,7 +1,9 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
+import { logger } from '../logger';
 import type { NamespaceHandlers } from '../type';
 import { isMacOS } from '../utils';
+import { quickNoteWindow } from '../window';
 import { getGoogleOauthCode } from './google-auth';
 
 export const uiHandlers = {
@@ -46,5 +48,26 @@ export const uiHandlers = {
     return globalThis.asyncCall[
       'com.blocksuite.bookmark-block.get-bookmark-data-by-link'
     ](link);
+  },
+  handleShowQuickNote: async () => {
+    if (quickNoteWindow) {
+      quickNoteWindow.show();
+    } else {
+      logger.error('quickNoteWindow is not defined');
+    }
+  },
+  handleHideQuickNote: async () => {
+    if (quickNoteWindow) {
+      quickNoteWindow.hide();
+    } else {
+      logger.error('quickNoteWindow is not defined');
+    }
+  },
+  handleQuickNoteHeightChange: async (_, height: number) => {
+    if (quickNoteWindow) {
+      quickNoteWindow.setSize(quickNoteWindow.getSize()[0], height);
+    } else {
+      logger.error('quickNoteWindow is not defined');
+    }
   },
 } satisfies NamespaceHandlers;

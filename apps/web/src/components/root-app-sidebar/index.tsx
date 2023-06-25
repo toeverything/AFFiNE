@@ -1,9 +1,11 @@
+import { IconButton, Tooltip } from '@affine/component';
 import {
   AddPageButton,
   AppSidebar,
   appSidebarOpenAtom,
   AppUpdaterButton,
   CategoryDivider,
+  MenuItem,
   MenuLinkItem,
   QuickSearchInput,
   SidebarContainer,
@@ -15,8 +17,10 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
+  PlusIcon,
   SettingsIcon,
   ShareIcon,
+  YesterdayIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
@@ -141,6 +145,15 @@ export const RootAppSidebar = ({
     id: DROPPABLE_SIDEBAR_TRASH,
   });
 
+  const handleCreateQuickNote: React.MouseEventHandler<HTMLButtonElement> =
+    useCallback(e => {
+      e.stopPropagation();
+      // fixme(pengx17): support web as well
+      window.apis?.ui.handleShowQuickNote().catch(err => {
+        console.error(err);
+      });
+    }, []);
+
   return (
     <>
       <AppSidebar router={router}>
@@ -168,6 +181,28 @@ export const RootAppSidebar = ({
           >
             <span data-testid="settings">{t['Settings']()}</span>
           </RouteMenuLinkItem>
+          <MenuItem icon={<YesterdayIcon />}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span data-testid="daily-notes">
+                {t['com.affine.daily-notes']()}
+              </span>
+              <Tooltip
+                content={t['com.affine.quick-note.create']()}
+                placement="right"
+                zIndex={1000}
+              >
+                <IconButton onClick={handleCreateQuickNote} size={[16, 16]}>
+                  <PlusIcon width={12} height={12} />
+                </IconButton>
+              </Tooltip>
+            </div>
+          </MenuItem>
         </SidebarContainer>
 
         <SidebarScrollableContainer>
