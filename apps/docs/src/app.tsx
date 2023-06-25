@@ -1,8 +1,8 @@
 const App = () => {
   return (
     <div>
-      <h1>Hello, world!</h1>
-      <h3>This is AFFiNE Developer Document.</h3>
+      <h2 className="text-xl font-bold">AFFiNE Developer Document</h2>
+      <p>Hello, world!</p>
     </div>
   );
 };
