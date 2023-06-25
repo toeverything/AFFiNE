@@ -75,7 +75,6 @@
     "eslint-plugin-unicorn": "^47.0.0",
     "next": "=13.4.2",
     "next-debug-local": "^0.1.5",
-    "next-router-mock": "^0.9.7",
     "raw-loader": "^4.0.2",
     "redux": "^4.2.1",
     "swc-plugin-coverage-instrument": "^0.0.18",

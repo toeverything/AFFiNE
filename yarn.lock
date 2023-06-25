@@ -313,6 +313,7 @@ __metadata:
     marked-mangle: ^1.0.1
     msw: ^1.2.2
     nanoid: ^4.0.2
+    next-router-mock: ^0.9.7
     nx: 16.3.2
     nx-cloud: latest
     nyc: ^15.1.0
@@ -498,7 +499,6 @@ __metadata:
     lottie-web: ^5.12.2
     next: =13.4.2
     next-debug-local: ^0.1.5
-    next-router-mock: ^0.9.7
     next-themes: ^0.2.1
     raw-loader: ^4.0.2
     react: 18.3.0-canary-16d053d59-20230506
