@@ -1,4 +1,3 @@
-import { tryMigrate } from '@blocksuite/store';
 import * as Y from 'yjs';
 
 function runBlockMigration(
@@ -93,7 +92,6 @@ export function migrateToSubdoc(doc: Y.Doc): Y.Doc {
   if (!needMigration) {
     return doc;
   }
-  tryMigrate(doc);
   const output = new Y.Doc();
   migrateMeta(doc, output);
   migrateBlocks(doc, output);
