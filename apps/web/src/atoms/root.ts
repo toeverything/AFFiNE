@@ -7,7 +7,7 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { ActiveDocProvider } from '@blocksuite/store';
+import type { ActiveDocProvider, PassiveDocProvider } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
@@ -54,6 +54,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
         workspace !== null
     )
   );
+  // only load active providers
   const workspaceProviders = workspaces.map(workspace =>
     workspace.blockSuiteWorkspace.providers.filter(
       (provider): provider is ActiveDocProvider =>
@@ -79,7 +80,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
  * use `rootCurrentWorkspaceIdAtom` instead
  */
 export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
-  async get => {
+  async (get, { signal }) => {
     const { WorkspaceAdapters } = await import('../adapters/workspace');
     const metadata = get(rootWorkspacesMetadataAtom);
     const targetId = get(rootCurrentWorkspaceIdAtom);
@@ -101,11 +102,15 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
       );
     }
 
-    const providers = workspace.blockSuiteWorkspace.providers.filter(
+    const activeProviders = workspace.blockSuiteWorkspace.providers.filter(
       (provider): provider is ActiveDocProvider =>
         'active' in provider && provider.active === true
     );
-    for (const provider of providers) {
+    const passiveProviders = workspace.blockSuiteWorkspace.providers.filter(
+      (provider): provider is PassiveDocProvider =>
+        'passive' in provider && provider.passive === true
+    );
+    for (const provider of activeProviders) {
       provider.sync();
       // we will wait for the necessary providers to be ready
       await provider.whenReady;
@@ -117,6 +122,10 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
         detail: { id: workspace.id },
       })
     );
+    passiveProviders.forEach(provider => provider.connect());
+    signal.addEventListener('abort', () => {
+      passiveProviders.forEach(provider => provider.disconnect());
+    });
     return workspace;
   }
 );

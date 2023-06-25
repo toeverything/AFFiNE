@@ -20,7 +20,6 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { PassiveDocProvider } from '@blocksuite/store';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -157,27 +156,7 @@ const affineGlobalChannel = createAffineGlobalChannel(
 export const AllWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
-  const workspaces = useWorkspaces();
-  useEffect(() => {
-    const providers = workspaces
-      // ignore current workspace
-      .filter(workspace => workspace.id !== currentWorkspaceId)
-      .flatMap(workspace =>
-        workspace.blockSuiteWorkspace.providers.filter(
-          (provider): provider is PassiveDocProvider =>
-            'passive' in provider && provider.passive
-        )
-      );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspaceId, workspaces]);
+  useWorkspaces();
   return <>{children}</>;
 };
 
@@ -361,22 +340,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     }
   }
   //#endregion
-
-  useEffect(() => {
-    const backgroundProviders =
-      currentWorkspace.blockSuiteWorkspace.providers.filter(
-        (provider): provider is PassiveDocProvider =>
-          'passive' in provider && provider.passive
-      );
-    backgroundProviders.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      backgroundProviders.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspace]);
 
   useEffect(() => {
     if (!currentWorkspace) {
