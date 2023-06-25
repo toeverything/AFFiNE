@@ -4,10 +4,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { serve } from 'waku/client';
 
-const App = serve<{ name: string }>('App');
+const App = serve<{ markdown: string }>('App');
 const rootElement = (
   <StrictMode>
-    <App name="Waku" />
+    <App markdown="" />
   </StrictMode>
 );
 

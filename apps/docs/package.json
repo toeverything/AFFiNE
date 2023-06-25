@@ -5,8 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "waku dev",
-    "build": "waku build",
-    "start": "waku start --config vite.prod.config.ts"
+    "build": "waku build"
   },
   "dependencies": {
     "@affine/component": "workspace:*",

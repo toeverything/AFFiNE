@@ -1,3 +1,4 @@
+
 import { defineEntries } from 'waku/server';
 
 export default defineEntries(
@@ -5,7 +6,7 @@ export default defineEntries(
   async id => {
     switch (id) {
       case 'App':
-        return import('./src/app.js');
+        return import('./src/app.js') as any;
       default:
         return null;
     }
@@ -17,14 +18,5 @@ export default defineEntries(
         elements: [['App', {}]],
       },
     };
-  },
-  // getSsrConfig
-  async pathStr => {
-    switch (pathStr) {
-      case '/':
-        return { element: ['App', {}] };
-      default:
-        return null;
-    }
   }
 );

@@ -1,17 +1,23 @@
 /// <reference types="react/experimental" />
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
+import type { ReactElement } from 'react';
 import { lazy } from 'react';
 
 const Editor = lazy(() =>
   import('./components/editor.js').then(({ Editor }) => ({ default: Editor }))
 );
 
-const App = () => {
+const markdown = await fs.readFile(path.join('./src/pages/index.md'), {
+  encoding: 'utf-8',
+});
+
+const App = (): ReactElement => {
   return (
     <div>
-      <h1 className="text-4xl font-bold">AFFiNE Developer Document</h1>
-      <div className="mt-2 mx-3 border-blue-300 border-2">
-        <Editor />
+      <div className="mt-5">
+        <Editor text={markdown} />
       </div>
     </div>
   );
