@@ -7,4 +7,7 @@ import { defineConfig } from 'waku/config';
 export default defineConfig({
   root: path.dirname(url.fileURLToPath(import.meta.url)),
   plugins: [vanillaExtractPlugin()],
+  build: {
+    target: 'esnext',
+  },
 });
