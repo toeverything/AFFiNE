@@ -52,6 +52,8 @@
     // Completeness
     "skipLibCheck": true, // skip all type checks for .d.ts files
 
+    "types": ["react/next"],
+
     "paths": {
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [
