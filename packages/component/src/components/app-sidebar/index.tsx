@@ -1,6 +1,7 @@
 import { env } from '@affine/env';
 import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
+import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -25,7 +26,11 @@ import { ResizeIndicator } from './resize-indicator';
 import type { SidebarHeaderProps } from './sidebar-header';
 import { SidebarHeader } from './sidebar-header';
 
-export type AppSidebarProps = PropsWithChildren<SidebarHeaderProps>;
+export type AppSidebarProps = PropsWithChildren<
+  SidebarHeaderProps & {
+    hasBackground?: boolean;
+  }
+>;
 
 function useEnableAnimation() {
   const [enable, setEnable] = useState(false);
@@ -91,7 +96,9 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         style={assignInlineVars({
           [navWidthVar]: `${appSidebarWidth}px`,
         })}
-        className={navWrapperStyle}
+        className={clsx(navWrapperStyle, {
+          'has-background': env.isDesktop && props.hasBackground,
+        })}
         data-open={open}
         data-is-macos-electron={isMacosDesktop}
         data-enable-animation={enableAnimation && !isResizing}

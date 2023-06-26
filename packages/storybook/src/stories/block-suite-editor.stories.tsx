@@ -7,20 +7,21 @@ import type { Page } from '@blocksuite/store';
 import { createMemoryStorage, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
-import { useState } from 'react';
+import { use } from 'react';
 
 const blockSuiteWorkspace = new Workspace({
   id: 'test',
   blobStorages: [createMemoryStorage],
 });
 
-function initPage(page: Page): void {
+async function initPage(page: Page) {
+  await page.waitForLoaded();
   // Add page block and surface block at root level
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text('Hello, world!'),
   });
   page.addBlock('affine:surface', {}, pageBlockId);
-  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  const frameId = page.addBlock('affine:note', {}, pageBlockId);
   page.addBlock(
     'affine:paragraph',
     {
@@ -33,7 +34,6 @@ function initPage(page: Page): void {
 
 blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
 const page = blockSuiteWorkspace.createPage('page0');
-initPage(page);
 
 type BlockSuiteMeta = Meta<typeof BlockSuiteEditor>;
 export default {
@@ -42,6 +42,9 @@ export default {
 } satisfies BlockSuiteMeta;
 
 const Template: StoryFn<EditorProps> = (props: Partial<EditorProps>) => {
+  if (!page.loaded) {
+    use(initPage(page));
+  }
   return (
     <div
       style={{
@@ -80,46 +83,4 @@ Empty.play = async ({ canvasElement }) => {
 
 Empty.args = {
   mode: 'page',
-};
-
-export const Error: StoryFn = () => {
-  const [props, setProps] = useState<Pick<EditorProps, 'page' | 'onInit'>>({
-    page: null!,
-    onInit: null!,
-  });
-  return (
-    <BlockSuiteEditor
-      {...props}
-      mode="page"
-      onReset={() => {
-        setProps({
-          page,
-          onInit: initPage,
-        });
-      }}
-    />
-  );
-};
-
-Error.play = async ({ canvasElement }) => {
-  {
-    const editorContainer = canvasElement.querySelector(
-      '[data-testid="editor-page0"]'
-    );
-    expect(editorContainer).toBeNull();
-  }
-  {
-    const button = canvasElement.querySelector(
-      '[data-testid="error-fallback-reset-button"]'
-    ) as HTMLButtonElement;
-    expect(button).not.toBeNull();
-    button.click();
-    await new Promise<void>(resolve => setTimeout(() => resolve(), 50));
-  }
-  {
-    const editorContainer = canvasElement.querySelector(
-      '[data-testid="editor-page0"]'
-    );
-    expect(editorContainer).not.toBeNull();
-  }
 };

@@ -12,11 +12,14 @@
   "devDependencies": {
     "@graphql-codegen/add": "^5.0.0",
     "@graphql-codegen/cli": "4.0.1",
-    "@graphql-codegen/typescript": "^4.0.0",
-    "@graphql-codegen/typescript-operations": "^4.0.0",
+    "@graphql-codegen/typescript": "^4.0.1",
+    "@graphql-codegen/typescript-operations": "^4.0.1",
     "@types/lodash-es": "^4.17.7",
     "lodash-es": "^4.17.21",
     "prettier": "^2.8.8"
+  },
+  "scripts": {
+    "postinstall": "gql-gen"
   },
   "dependencies": {
     "graphql": "^16.6.0"

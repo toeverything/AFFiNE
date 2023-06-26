@@ -63,12 +63,6 @@ export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
       getPageMeta: (pageId: string) => {
         return blockSuiteWorkspace.meta.getPageMeta(pageId);
       },
-      /**
-       * @deprecated
-       */
-      shiftPageMeta: (pageId: string, index: number) => {
-        return blockSuiteWorkspace.meta.shiftPageMeta(pageId, index);
-      },
     }),
     [blockSuiteWorkspace]
   );

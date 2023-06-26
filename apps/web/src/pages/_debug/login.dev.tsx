@@ -1,5 +1,5 @@
 import { Button } from '@affine/component';
-import { AppContainer, MainContainer } from '@affine/component/workspace';
+import { MainContainer } from '@affine/component/workspace';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
@@ -14,6 +14,7 @@ import { useAtom } from 'jotai';
 import type { NextPage } from 'next';
 import { lazy, Suspense, useMemo } from 'react';
 
+import { AppContainer } from '../../components/affine/app-container';
 import { toast } from '../../utils';
 
 const Viewer = lazy(() =>

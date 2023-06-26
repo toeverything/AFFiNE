@@ -14,7 +14,10 @@ export const appStyle = style({
     '&[data-is-resizing="true"]': {
       cursor: 'col-resize',
     },
-    '&:before': {
+    '&.blur-background': {
+      backgroundColor: 'var(--affine-background-primary-color)',
+    },
+    '&.noisy-background::before': {
       content: '""',
       position: 'absolute',
       inset: 0,

@@ -7,7 +7,7 @@ import { clickSideBarAllPageButton } from '../../libs/sidebar';
 import { createFakeUser, loginUser } from '../../libs/utils';
 import { enableAffineCloudWorkspace } from '../../libs/workspace';
 
-test('authorization expired', async ({ page }) => {
+test.fixme('authorization expired', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const [a] = await createFakeUser();

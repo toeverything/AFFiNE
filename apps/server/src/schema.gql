@@ -1,0 +1,128 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type UserType {
+  id: ID!
+
+  """
+  User name
+  """
+  name: String!
+
+  """
+  User email
+  """
+  email: String!
+
+  """
+  User avatar url
+  """
+  avatarUrl: String
+
+  """
+  User created date
+  """
+  createdAt: DateTime
+  token: TokenType!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type TokenType {
+  token: String!
+  refresh: String!
+}
+
+type WorkspaceType {
+  id: ID!
+
+  """
+  is Public workspace
+  """
+  public: Boolean!
+
+  """
+  Workspace created date
+  """
+  createdAt: DateTime!
+
+  """
+  Permission of current signed in user in workspace
+  """
+  permission: Permission!
+
+  """
+  member count of workspace
+  """
+  memberCount: Int!
+
+  """
+  Owner of workspace
+  """
+  owner: UserType!
+}
+
+"""
+User permission in workspace
+"""
+enum Permission {
+  Read
+  Write
+  Admin
+  Owner
+}
+
+type Query {
+  """
+  Get all accessible workspaces for current user
+  """
+  workspaces: [WorkspaceType!]!
+
+  """
+  Get workspace by id
+  """
+  workspace(id: String!): WorkspaceType!
+
+  """
+  Get user by email
+  """
+  user(email: String!): UserType!
+}
+
+type Mutation {
+  signIn(email: String!, password: String!): UserType!
+  signUp(email: String!, password: String!, name: String!): UserType!
+
+  """
+  Create a new workspace
+  """
+  createWorkspace: WorkspaceType!
+
+  """
+  Update workspace
+  """
+  updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
+  deleteWorkspace(id: String!): Boolean!
+
+  """
+  Upload user avatar
+  """
+  uploadAvatar(id: String!, avatar: Upload!): UserType!
+}
+
+input UpdateWorkspaceInput {
+  """
+  is Public workspace
+  """
+  public: Boolean
+  id: ID!
+}
+
+"""
+The `Upload` scalar type represents a file upload.
+"""
+scalar Upload

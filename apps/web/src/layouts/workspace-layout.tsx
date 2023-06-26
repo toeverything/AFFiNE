@@ -4,7 +4,6 @@ import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
 import {
-  AppContainer,
   MainContainer,
   ToolContainer,
   WorkspaceFallback,
@@ -12,7 +11,6 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { config, DEFAULT_HELLO_WORLD_PAGE_ID, env } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import type { BackgroundProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -22,6 +20,7 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import type { PassiveDocProvider } from '@blocksuite/store';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -42,12 +41,17 @@ import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
-import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
+import {
+  openQuickSearchModalAtom,
+  openSettingModalAtom,
+  openWorkspacesModalAtom,
+} from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
+import { AppContainer } from '../components/affine/app-container';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import {
@@ -69,6 +73,11 @@ import { toast } from '../utils';
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
     default: module.QuickSearchModal,
+  }))
+);
+const SettingModal = lazy(() =>
+  import('../components/affine/setting-modal').then(module => ({
+    default: module.SettingModal,
   }))
 );
 
@@ -119,6 +128,25 @@ export const QuickSearch: FC = () => {
     />
   );
 };
+export const Setting: FC = () => {
+  const [currentWorkspace] = useCurrentWorkspace();
+  const router = useRouter();
+  const [openSettingModal, setOpenSettingModalAtom] =
+    useAtom(openSettingModalAtom);
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const isPublicWorkspace =
+    router.pathname.split('/')[1] === 'public-workspace';
+  if (!blockSuiteWorkspace || isPublicWorkspace) {
+    return null;
+  }
+  return (
+    <SettingModal
+      open={openSettingModal}
+      setOpen={setOpenSettingModalAtom}
+      router={router}
+    />
+  );
+};
 
 const logger = new DebugLogger('workspace-layout');
 
@@ -136,9 +164,9 @@ export const AllWorkspaceContext = ({
       // ignore current workspace
       .filter(workspace => workspace.id !== currentWorkspaceId)
       .flatMap(workspace =>
-        workspace.providers.filter(
-          (provider): provider is BackgroundProvider =>
-            'background' in provider && provider.background
+        workspace.blockSuiteWorkspace.providers.filter(
+          (provider): provider is PassiveDocProvider =>
+            'passive' in provider && provider.passive
         )
       );
     providers.forEach(provider => {
@@ -305,6 +333,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
 
+  // fixme(himself65):
+  //  we should move the page into jotai atom since it's an async value
+
   //#region init workspace
   if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
     // this is a new workspace, so we should redirect to the new page
@@ -318,7 +349,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         console.error('import error:', error);
       });
     } else {
-      initEmptyPage(page);
+      initEmptyPage(page).catch(error => {
+        console.error('init empty page error', error);
+      });
     }
     if (!router.query.pageId) {
       setCurrentPageId(pageId);
@@ -330,9 +363,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   //#endregion
 
   useEffect(() => {
-    const backgroundProviders = currentWorkspace.providers.filter(
-      (provider): provider is BackgroundProvider => 'background' in provider
-    );
+    const backgroundProviders =
+      currentWorkspace.blockSuiteWorkspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive
+      );
     backgroundProviders.forEach(provider => {
       provider.connect();
     });
@@ -390,6 +425,12 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
+  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+
+  const handleOpenSettingModal = useCallback(() => {
+    setOpenSettingModalAtom(true);
+  }, [setOpenSettingModalAtom]);
+
   const resizing = useAtomValue(appSidebarResizingAtom);
 
   const sensors = useSensors(
@@ -444,6 +485,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           <RootAppSidebar
             isPublicWorkspace={isPublicWorkspace}
             onOpenQuickSearchModal={handleOpenQuickSearchModal}
+            onOpenSettingModal={handleOpenSettingModal}
             currentWorkspace={currentWorkspace}
             onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
             openPage={useCallback(
@@ -476,6 +518,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
+      <Setting />
     </>
   );
 };
