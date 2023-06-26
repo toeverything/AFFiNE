@@ -130,6 +130,7 @@ function migrateMeta(oldDoc: Y.Doc, newDoc: Y.Doc) {
   meta.set('workspaceVersion', 1);
   meta.set('blockVersions', blockVersions);
   meta.set('pages', pages);
+  meta.set('name', originalMeta.get('name') as string);
 
   updateBlockVersions(blockVersions);
   const mapList = originalPages.map(page => {

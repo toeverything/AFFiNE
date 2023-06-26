@@ -267,7 +267,13 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
                 );
               });
             }
-            items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
+            items.push(
+              ...item.map(x => ({
+                id: x.id,
+                flavour: x.flavour,
+                version: undefined,
+              }))
+            );
           } catch (e) {
             logger.error('list data error:', e);
           }
