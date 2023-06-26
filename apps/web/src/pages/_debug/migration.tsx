@@ -1,51 +1,68 @@
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
-import { migrateToSubdoc } from '@affine/env/blocksuite';
+import type {
+  LocalIndexedDBDownloadProvider,
+  LocalWorkspace,
+} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { upgradeV1ToV2 } from '@affine/workspace/migration';
+import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
+import { atom, createStore, Provider, useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
-import { use, useCallback } from 'react';
-import * as Y from 'yjs';
-const { default: json } = await import('@affine-test/fixtures/output.json');
+import { Suspense, use, useCallback } from 'react';
 
-const workspace = new Workspace({
-  id: 'test-migration',
-  isSSR: typeof window === 'undefined',
+const store = createStore();
+
+const workspaceIdsAtom = atom<Promise<string[]>>(async () => {
+  if (typeof window === 'undefined') {
+    return [];
+  } else {
+    const idb = await import('idb');
+    const db = await idb.openDB('affine-local', 1);
+    return (await db
+      .transaction('workspace')
+      .objectStore('workspace')
+      .getAllKeys()) as string[];
+  }
 });
 
-const finalWorkspace = new Workspace({
-  id: 'test-migration-final',
-  isSSR: typeof window === 'undefined',
-});
+const targetIdAtom = atom<string | null>(null);
 
-finalWorkspace.register(AffineSchemas).register(__unstableSchemas);
-workspace.register(AffineSchemas).register(__unstableSchemas);
-
-if (typeof window !== 'undefined') {
-  const length = Object.keys(json).length;
-  const binary = new Uint8Array(length);
-  for (let i = 0; i < length; i++) {
-    binary[i] = (json as any)[i];
+const workspaceAtom = atom<Promise<Workspace>>(async get => {
+  const id = get(targetIdAtom);
+  if (!id) {
+    throw new Error('no id');
   }
-  Y.applyUpdate(workspace.doc, binary);
-  {
-    // invoke data
-    workspace.doc.getMap('space:hello-world');
-    workspace.doc.getMap('space:meta');
-  }
-  const newDoc = migrateToSubdoc(workspace.doc);
-  Y.applyUpdate(finalWorkspace.doc, Y.encodeStateAsUpdate(newDoc));
-  finalWorkspace.doc.subdocs.forEach(finalSubdoc => {
-    newDoc.subdocs.forEach(subdoc => {
-      if (subdoc.guid === finalSubdoc.guid) {
-        Y.applyUpdate(finalSubdoc, Y.encodeStateAsUpdate(subdoc));
-      }
-    });
+  const workspace = new Workspace({
+    id,
+    isSSR: typeof window === 'undefined',
   });
-}
 
-const MigrationInner = () => {
-  const page = finalWorkspace.getPage('hello-world');
+  workspace.register(AffineSchemas).register(__unstableSchemas);
+  const provider = createIndexedDBDownloadProvider(
+    workspace.id,
+    workspace.doc,
+    {
+      awareness: workspace.awarenessStore.awareness,
+    }
+  ) as LocalIndexedDBDownloadProvider;
+  provider.sync();
+  await provider.whenReady;
+  const localWorkspace = {
+    id: 'wMORwDSLkb',
+    blockSuiteWorkspace: workspace,
+    flavour: WorkspaceFlavour.LOCAL,
+  } satisfies LocalWorkspace;
+  const newWorkspace = upgradeV1ToV2(localWorkspace);
+  newWorkspace.blockSuiteWorkspace;
+  return newWorkspace.blockSuiteWorkspace;
+});
+
+const WorkspaceInner = () => {
+  const workspace = useAtomValue(workspaceAtom);
+  const page = workspace.getPage('hello-world');
   const onInit = useCallback(() => {}, []);
   if (!page) {
     return <>loading...</>;
@@ -53,6 +70,12 @@ const MigrationInner = () => {
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
+  return <BlockSuiteEditor page={page} mode="page" onInit={onInit} />;
+};
+
+const MigrationInner = () => {
+  const ids = useAtomValue(workspaceIdsAtom);
+  const [id, setId] = useAtom(targetIdAtom);
   return (
     <div
       style={{
@@ -60,15 +83,31 @@ const MigrationInner = () => {
         height: '100vh',
       }}
     >
-      <BlockSuiteEditor page={page} mode="page" onInit={onInit} />
+      <ul>
+        {ids.map(id => (
+          <li
+            onClick={() => {
+              setId(id);
+            }}
+            key={id}
+          >
+            {id}
+          </li>
+        ))}
+      </ul>
+      <Suspense fallback="loading...">{id && <WorkspaceInner />}</Suspense>
     </div>
   );
 };
 
 export default function MigrationPage(): ReactElement {
   return (
-    <NoSsr>
-      <MigrationInner />
-    </NoSsr>
+    <Provider store={store}>
+      <NoSsr>
+        <Suspense>
+          <MigrationInner />
+        </Suspense>
+      </NoSsr>
+    </Provider>
   );
 }

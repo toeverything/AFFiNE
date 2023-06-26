@@ -1,18 +1,13 @@
 import { migrateToSubdoc } from '@affine/env/blocksuite';
 import { config, setupGlobal } from '@affine/env/config';
-import type {
-  LocalIndexedDBDownloadProvider,
-  WorkspaceFlavour,
-} from '@affine/env/workspace';
-import { WorkspaceVersion } from '@affine/env/workspace';
+import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { upgradeV1ToV2 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/global/utils';
-import { nanoid, Workspace } from '@blocksuite/store';
 import { rootStore } from '@toeverything/plugin-infra/manager';
-import type { Doc } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -61,6 +56,10 @@ rootStore.sub(rootWorkspacesMetadataAtom, () => {
           console.warn('cannot find workspace', oldMeta.id);
           return;
         }
+        if (workspace.flavour !== WorkspaceFlavour.LOCAL) {
+          console.warn('not supported');
+          return;
+        }
         const doc = workspace.blockSuiteWorkspace.doc;
         const provider = createIndexedDBDownloadProvider(workspace.id, doc, {
           awareness: workspace.blockSuiteWorkspace.awarenessStore.awareness,
@@ -82,36 +81,16 @@ rootStore.sub(rootWorkspacesMetadataAtom, () => {
           );
           return;
         }
-        // remove old workspace from metadata
-        rootStore.set(rootWorkspacesMetadataAtom, metadata =>
-          metadata
-            .map(newMeta => (newMeta.id === oldMeta.id ? null : newMeta))
-            .filter((meta): meta is RootWorkspaceMetadata => !!meta)
-        );
-        const newBlockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-          nanoid(),
-          oldMeta.flavour as WorkspaceFlavour.LOCAL
-        );
-        const applyUpdateRecursive = (doc: Doc, dataDoc: Doc) => {
-          Workspace.Y.applyUpdate(
-            doc,
-            Workspace.Y.encodeStateAsUpdate(dataDoc)
-          );
-          doc.subdocs.forEach(subdoc => {
-            dataDoc.subdocs.forEach(dataSubdoc => {
-              if (subdoc.guid === dataSubdoc.guid) {
-                applyUpdateRecursive(subdoc, dataSubdoc);
-              }
-            });
-          });
-        };
+        const newWorkspace = upgradeV1ToV2(workspace);
 
-        applyUpdateRecursive(newBlockSuiteWorkspace.doc, newDoc);
-
-        const newId = await adapter.CRUD.create(newBlockSuiteWorkspace);
+        const newId = await adapter.CRUD.create(
+          newWorkspace.blockSuiteWorkspace
+        );
         await adapter.CRUD.delete(workspace as any);
         rootStore.set(rootWorkspacesMetadataAtom, metadata => [
-          ...metadata,
+          ...metadata
+            .map(newMeta => (newMeta.id === oldMeta.id ? null : newMeta))
+            .filter((meta): meta is RootWorkspaceMetadata => !!meta),
           {
             id: newId,
             flavour: oldMeta.flavour,
@@ -119,6 +98,7 @@ rootStore.sub(rootWorkspacesMetadataAtom, () => {
           },
         ]);
       };
+
       // create a new workspace and push it to metadata
       upgrade().catch(console.error);
     }
