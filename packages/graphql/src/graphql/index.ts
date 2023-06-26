@@ -1,10 +1,10 @@
 /* do not manipulate this file manually. */
 export interface GraphQLQuery {
-  id: string;
-  operationName: string;
-  definitionName: string;
-  query: string;
-  containsFile?: boolean;
+  id: string
+  operationName: string
+  definitionName: string
+  query: string
+  containsFile?: boolean
 }
 
 export const createWorkspaceMutation = {
@@ -20,7 +20,7 @@ mutation createWorkspace {
     createdAt
   }
 }`,
-};
+}
 
 export const uploadAvatarMutation = {
   id: 'uploadAvatarMutation' as const,
@@ -36,7 +36,7 @@ mutation uploadAvatar($id: String!, $avatar: Upload!) {
     email
   }
 }`,
-};
+}
 
 export const workspaceByIdQuery = {
   id: 'workspaceByIdQuery' as const,
@@ -51,4 +51,4 @@ query workspaceById($id: String!) {
     createdAt
   }
 }`,
-};
+}
