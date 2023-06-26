@@ -1,21 +1,15 @@
-import { defineEntries } from 'waku/server';
+import { defineRouter } from 'waku/router/server';
 
-export default defineEntries(
-  // getEntry
+export default defineRouter(
   async id => {
     switch (id) {
-      case 'App':
+      case 'index':
         return import('./src/app.js') as any;
       default:
         return null;
     }
   },
-  // getBuildConfig
   async () => {
-    return {
-      '/': {
-        elements: [['App', {}]],
-      },
-    };
+    return ['index'];
   }
 );

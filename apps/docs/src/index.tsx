@@ -2,13 +2,12 @@ import './index.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { serve } from 'waku/client';
+import { Router } from 'waku/router/client';
 
-const App = serve('App');
-const rootElement = (
+const root = createRoot(document.getElementById('root') as HTMLElement);
+
+root.render(
   <StrictMode>
-    <App />
+    <Router />
   </StrictMode>
 );
-
-createRoot(document.getElementById('root') as HTMLElement).render(rootElement);
