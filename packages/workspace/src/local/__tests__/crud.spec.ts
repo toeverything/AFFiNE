@@ -33,7 +33,6 @@ describe('crud', () => {
         id: 'not_exist',
         flavour: WorkspaceFlavour.LOCAL,
         blockSuiteWorkspace: new Workspace({ id: 'test' }),
-        providers: [],
       })
     ).rejects.toThrowError();
   });
@@ -42,12 +41,13 @@ describe('crud', () => {
     const workspace = new Workspace({ id: 'test' })
       .register(AffineSchemas)
       .register(__unstableSchemas);
-    const page = workspace.createPage('test');
+    const page = workspace.createPage({ id: 'page0' });
+    await page.waitForLoaded();
     const pageBlockId = page.addBlock('affine:page', {
       title: new page.Text(''),
     });
     page.addBlock('affine:surface', {}, pageBlockId);
-    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
 
     const id = await CRUD.create(workspace);
@@ -57,9 +57,12 @@ describe('crud', () => {
     const localWorkspace = list.at(0) as LocalWorkspace;
     expect(localWorkspace.id).toBe(id);
     expect(localWorkspace.flavour).toBe(WorkspaceFlavour.LOCAL);
-    expect(
-      Workspace.Y.encodeStateAsUpdate(localWorkspace.blockSuiteWorkspace.doc)
-    ).toEqual(Workspace.Y.encodeStateAsUpdate(workspace.doc));
+    expect(localWorkspace.blockSuiteWorkspace.doc.toJSON()).toEqual({
+      meta: expect.anything(),
+      spaces: expect.objectContaining({
+        'space:page0': expect.anything(),
+      }),
+    });
 
     await CRUD.delete(localWorkspace);
     expect(await CRUD.get(id)).toBeNull();

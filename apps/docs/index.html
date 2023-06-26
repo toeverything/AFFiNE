@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AFFiNE Developer Documentation</title>
+    <style>
+      @keyframes spinner {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        width: 36px;
+        height: 36px;
+        margin: auto;
+        border: 2px solid #ddd;
+        border-top-color: #222;
+        border-radius: 50%;
+        animation: spinner 1s linear infinite;
+      }
+      #root > .spinner {
+        margin-top: calc(50% - 18px);
+      }
+    </style>
+  </head>
+  <body>
+    <!--placeholder1-->
+    <div id="root">
+      <div class="spinner"></div>
+    </div>
+    <!--/placeholder1-->
+    <script src="./src/index.tsx" async type="module"></script>
+    <!--placeholder2-->
+    <!--/placeholder2-->
+  </body>
+</html>
