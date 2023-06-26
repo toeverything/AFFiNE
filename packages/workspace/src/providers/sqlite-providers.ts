@@ -51,7 +51,7 @@ export const createSQLiteProvider: DocProviderCreator = (
       }
       const subdocId = doc.guid === id ? undefined : doc.guid;
       apis.db.applyDocUpdate(id, update, subdocId).catch(err => {
-        console.error(err);
+        logger.error(err);
       });
     }
     updateHandlerMap.set(doc, handleUpdate);
@@ -78,6 +78,9 @@ export const createSQLiteProvider: DocProviderCreator = (
   function trackDoc(doc: Doc) {
     doc.on('update', createOrHandleUpdate(doc));
     doc.on('subdocs', createOrGetHandleSubDocs(doc));
+    doc.subdocs.forEach(doc => {
+      trackDoc(doc);
+    });
   }
 
   function untrackDoc(doc: Doc) {
@@ -94,17 +97,6 @@ export const createSQLiteProvider: DocProviderCreator = (
   const connect = () => {
     logger.info('connecting sqlite provider', id);
     trackDoc(rootDoc);
-    rootDoc.subdocs.forEach(subdoc => {
-      if (subdoc.shouldLoad) {
-        subdoc.whenLoaded
-          .then(() => {
-            trackDoc(subdoc);
-          })
-          .catch(err => {
-            console.error(err);
-          });
-      }
-    });
 
     unsubscribe = events.db.onExternalUpdate(
       ({
@@ -181,10 +173,6 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
 
     if (updates) {
       Y.applyUpdate(doc, updates, sqliteOrigin);
-      // load event will
-      // - change isLoaded to true
-      // - resolve doc.whenLoaded
-      doc.emit('load', []);
     }
 
     const diff = Y.encodeStateAsUpdate(doc, updates);
@@ -198,7 +186,7 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
   async function syncAllUpdates(doc: Doc) {
     if (await syncUpdates(doc)) {
       const subdocs = Array.from(doc.subdocs).filter(d => d.shouldLoad);
-      await Promise.all(subdocs.map(syncUpdates));
+      await Promise.all(subdocs.map(syncAllUpdates));
     }
   }
 
