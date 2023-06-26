@@ -4,7 +4,8 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
-    "outDir": "lib"
+    "outDir": "lib",
+    "types": ["react/next"]
   },
   "references": [{ "path": "../env" }, { "path": "../y-indexeddb" }]
 }
