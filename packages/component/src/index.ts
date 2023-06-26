@@ -10,6 +10,7 @@ export * from './ui/menu';
 export * from './ui/modal';
 export * from './ui/mui';
 export * from './ui/popper';
+export * from './ui/scrollbar';
 export * from './ui/shared/container';
 export * from './ui/switch';
 export * from './ui/table';
