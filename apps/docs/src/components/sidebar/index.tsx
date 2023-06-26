@@ -1,7 +1,14 @@
 'use server';
 
+import { lazy } from 'react';
+
 import { saveFile } from '../../server-fns.js';
-import { SaveToLocal } from './save-to-local.js';
+
+const SaveToLocal = lazy(() =>
+  import('./save-to-local.js').then(({ SaveToLocal }) => ({
+    default: SaveToLocal,
+  }))
+);
 
 export const Sidebar = () => {
   return (
