@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 'use server';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,10 +19,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const AppCreator = (pathname: string) =>
   function App(): ReactElement {
     const path = resolve(__dirname, 'pages', 'binary');
-    let buffer: any = undefined;
-    if (existsSync(path)) {
-      buffer = [...readFileSync(path)];
-    }
+    const buffer = [...readFileSync(path)];
 
     return (
       <div className="flex flex-col-reverse sm:flex-row">
