@@ -11,7 +11,7 @@ import { Workspace } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
 import { atom, createStore, Provider, useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
-import { Suspense, use, useCallback } from 'react';
+import { Suspense, use, useCallback, useState } from 'react';
 
 const store = createStore();
 
@@ -62,7 +62,8 @@ const workspaceAtom = atom<Promise<Workspace>>(async get => {
 
 const WorkspaceInner = () => {
   const workspace = useAtomValue(workspaceAtom);
-  const page = workspace.getPage('hello-world');
+  const [pageId, setPageId] = useState('hello-world');
+  const page = workspace.getPage(pageId);
   const onInit = useCallback(() => {}, []);
   if (!page) {
     return <>loading...</>;
@@ -70,7 +71,23 @@ const WorkspaceInner = () => {
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
-  return <BlockSuiteEditor page={page} mode="page" onInit={onInit} />;
+  return (
+    <>
+      <ul>
+        {workspace.meta.pageMetas.map(meta => (
+          <li
+            key={meta.id}
+            onClick={() => {
+              setPageId(meta.id);
+            }}
+          >
+            {meta.id}
+          </li>
+        ))}
+      </ul>
+      <BlockSuiteEditor page={page} mode="page" onInit={onInit} />;
+    </>
+  );
 };
 
 const MigrationInner = () => {
