@@ -3,15 +3,14 @@ import type {
   AffineWebSocketProvider,
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
-  Provider,
+  SQLiteDBDownloadProvider,
+  SQLiteProvider,
 } from '@affine/env/workspace';
-import type { Disposable } from '@blocksuite/store';
+import type { Disposable, DocProviderCreator } from '@blocksuite/store';
+import { assertExists, Workspace } from '@blocksuite/store';
+import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
-  assertExists,
-  Workspace as BlockSuiteWorkspace,
-} from '@blocksuite/store';
-import {
-  createIndexedDBProvider,
+  createIndexedDBProvider as create,
   downloadBinary,
   EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
@@ -21,29 +20,25 @@ import { KeckProvider } from '../affine/keck';
 import { getLoginStorage, storageChangeSlot } from '../affine/login';
 import { CallbackSet } from '../utils';
 import { createAffineDownloadProvider } from './affine-download';
-import { createBroadCastChannelProvider } from './broad-cast-channel';
 import { localProviderLogger as logger } from './logger';
-import {
-  createSQLiteDBDownloadProvider,
-  createSQLiteProvider,
-} from './sqlite-providers';
 
-const Y = BlockSuiteWorkspace.Y;
+const Y = Workspace.Y;
 
-const createAffineWebSocketProvider = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
+const createAffineWebSocketProvider: DocProviderCreator = (
+  id,
+  doc,
+  { awareness }
 ): AffineWebSocketProvider => {
   let webSocketProvider: KeckProvider | null = null;
   let dispose: Disposable | undefined = undefined;
   const callbacks = new CallbackSet();
   const cb = () => callbacks.forEach(cb => cb());
-  const apis: AffineWebSocketProvider = {
+  const apis = {
     flavour: 'affine-websocket',
-    background: true,
+    passive: true,
     get connected() {
       return callbacks.ready;
     },
-    callbacks,
     cleanup: () => {
       assertExists(webSocketProvider);
       webSocketProvider.destroy();
@@ -57,11 +52,11 @@ const createAffineWebSocketProvider = (
       });
       webSocketProvider = new KeckProvider(
         websocketPrefixUrl + '/api/sync/',
-        blockSuiteWorkspace.id,
-        blockSuiteWorkspace.doc,
+        id,
+        doc,
         {
           params: { token: getLoginStorage()?.token ?? '' },
-          awareness: blockSuiteWorkspace.awarenessStore.awareness,
+          awareness,
           // we maintain a broadcast channel by ourselves
           connect: false,
         }
@@ -77,28 +72,28 @@ const createAffineWebSocketProvider = (
       webSocketProvider.off('synced', cb);
       dispose?.dispose();
     },
-  };
+  } satisfies AffineWebSocketProvider;
 
   return apis;
 };
 
-const createIndexedDBBackgroundProvider = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
+const createIndexedDBBackgroundProvider: DocProviderCreator = (
+  id,
+  blockSuiteWorkspace
 ): LocalIndexedDBBackgroundProvider => {
-  const indexeddbProvider = createIndexedDBProvider(blockSuiteWorkspace.doc);
+  const indexeddbProvider = create(blockSuiteWorkspace);
   const callbacks = new CallbackSet();
   return {
     flavour: 'local-indexeddb-background',
-    background: true,
+    passive: true,
     get connected() {
       return callbacks.ready;
     },
-    callbacks,
     cleanup: () => {
-      // todo: cleanup data
+      indexeddbProvider.cleanup().catch(console.error);
     },
     connect: () => {
-      logger.info('connect indexeddb provider', blockSuiteWorkspace.id);
+      logger.info('connect indexeddb provider', id);
       indexeddbProvider.connect();
       indexeddbProvider.whenSynced
         .then(() => {
@@ -116,15 +111,16 @@ const createIndexedDBBackgroundProvider = (
     },
     disconnect: () => {
       assertExists(indexeddbProvider);
-      logger.info('disconnect indexeddb provider', blockSuiteWorkspace.id);
+      logger.info('disconnect indexeddb provider', id);
       indexeddbProvider.disconnect();
       callbacks.ready = false;
     },
   };
 };
 
-const createIndexedDBDownloadProvider = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
+const createIndexedDBDownloadProvider: DocProviderCreator = (
+  id,
+  doc
 ): LocalIndexedDBDownloadProvider => {
   let _resolve: () => void;
   let _reject: (error: unknown) => void;
@@ -132,34 +128,16 @@ const createIndexedDBDownloadProvider = (
     _resolve = resolve;
     _reject = reject;
   });
-
-  async function loadDocFromIDB(doc: Doc) {
+  async function downloadBinaryRecursively(doc: Doc) {
     const binary = await downloadBinary(doc.guid);
-    if (binary !== false) {
+    if (binary) {
       Y.applyUpdate(doc, binary);
-      // load event will
-      // - change isLoaded to true
-      // - resolve doc.whenLoaded
-      doc.emit('load', []);
-      return true;
-    }
-    return false;
-  }
-
-  // load root & shouldLoad subdocs
-  async function loadAllDocFromIDB(doc: Doc) {
-    if (await loadDocFromIDB(doc)) {
-      // hmm, subdoc may not have children subdoc as well?
-      const subdocs = Array.from(doc.subdocs).filter(
-        subdoc => subdoc.shouldLoad
-      );
-      await Promise.all(subdocs.map(loadDocFromIDB));
+      await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
     }
   }
-
   return {
     flavour: 'local-indexeddb',
-    necessary: true,
+    active: true,
     get whenReady() {
       return promise;
     },
@@ -167,17 +145,153 @@ const createIndexedDBDownloadProvider = (
       // todo: cleanup data
     },
     sync: () => {
-      logger.info(
-        'connect indexeddb download provider',
-        blockSuiteWorkspace.id
-      );
-      loadAllDocFromIDB(blockSuiteWorkspace.doc)
-        .then(() => {
-          _resolve();
-        })
-        .catch(error => {
-          _reject(error);
-        });
+      logger.info('connect indexeddb provider', id);
+      downloadBinaryRecursively(doc).then(_resolve).catch(_reject);
+    },
+  };
+};
+
+const sqliteOrigin = Symbol('sqlite-provider-origin');
+
+const createSQLiteProvider: DocProviderCreator = (id, doc): SQLiteProvider => {
+  const { apis, events } = window;
+  // make sure it is being used in Electron with APIs
+  assertExists(apis);
+  assertExists(events);
+
+  function handleUpdate(update: Uint8Array, origin: unknown) {
+    if (origin === sqliteOrigin) {
+      return;
+    }
+    apis.db.applyDocUpdate(id, update).catch(err => {
+      console.error(err);
+    });
+  }
+
+  let unsubscribe = () => {};
+  let connected = false;
+
+  const connect = () => {
+    logger.info('connecting sqlite provider', id);
+    doc.on('update', handleUpdate);
+    unsubscribe = events.db.onExternalUpdate(
+      ({
+        update,
+        workspaceId,
+      }: {
+        workspaceId: string;
+        update: Uint8Array;
+      }) => {
+        if (workspaceId === id) {
+          Y.applyUpdate(doc, update, sqliteOrigin);
+        }
+      }
+    );
+    connected = true;
+    logger.info('connecting sqlite done', id);
+  };
+
+  const cleanup = () => {
+    logger.info('disconnecting sqlite provider', id);
+    unsubscribe();
+    doc.off('update', handleUpdate);
+    connected = false;
+  };
+
+  return {
+    flavour: 'sqlite',
+    passive: true,
+    get connected(): boolean {
+      return connected;
+    },
+    cleanup,
+    connect,
+    disconnect: cleanup,
+  };
+};
+
+const createSQLiteDBDownloadProvider: DocProviderCreator = (
+  id,
+  doc
+): SQLiteDBDownloadProvider => {
+  const { apis } = window;
+  let disconnected = false;
+
+  let _resolve: () => void;
+  let _reject: (error: unknown) => void;
+  const promise = new Promise<void>((resolve, reject) => {
+    _resolve = resolve;
+    _reject = reject;
+  });
+
+  async function syncUpdates() {
+    logger.info('syncing updates from sqlite', id);
+    const updates = await apis.db.getDocAsUpdates(id);
+
+    if (disconnected) {
+      return;
+    }
+
+    if (updates) {
+      Y.applyUpdate(doc, updates, sqliteOrigin);
+    }
+
+    const diff = Y.encodeStateAsUpdate(doc, updates);
+
+    // also apply updates to sqlite
+    await apis.db.applyDocUpdate(id, diff);
+  }
+
+  // fixme(pengx17): should n't sync blob in doc provider
+  // async function _syncBlobIntoSQLite(bs: BlobManager) {
+  //   const persistedKeys = await apis.db.getBlobKeys(id);
+  //
+  //   if (disconnected) {
+  //     return;
+  //   }
+  //
+  //   const allKeys = await bs.list().catch(() => []);
+  //   const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
+  //
+  //   logger.info('persisting blobs', keysToPersist, 'to sqlite');
+  //   return Promise.all(
+  //     keysToPersist.map(async k => {
+  //       const blob = await bs.get(k);
+  //       if (!blob) {
+  //         logger.warn('blob not found for', k);
+  //         return;
+  //       }
+  //
+  //       if (disconnected) {
+  //         return;
+  //       }
+  //
+  //       return apis?.db.addBlob(
+  //         id,
+  //         k,
+  //         new Uint8Array(await blob.arrayBuffer())
+  //       );
+  //     })
+  //   );
+  // }
+
+  return {
+    flavour: 'sqlite-download',
+    active: true,
+    get whenReady() {
+      return promise;
+    },
+    cleanup: () => {
+      disconnected = true;
+    },
+    sync: async () => {
+      logger.info('connect indexeddb provider', id);
+      try {
+        await syncUpdates();
+        _resolve();
+      } catch (error) {
+        _reject(error);
+      }
     },
   };
 };
@@ -185,45 +299,37 @@ const createIndexedDBDownloadProvider = (
 export {
   createAffineDownloadProvider,
   createAffineWebSocketProvider,
-  createBroadCastChannelProvider,
+  createBroadcastChannelProvider,
   createIndexedDBBackgroundProvider,
   createIndexedDBDownloadProvider,
   createSQLiteDBDownloadProvider,
   createSQLiteProvider,
 };
 
-export const createLocalProviders = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
-): Provider[] => {
+export const createLocalProviders = (): DocProviderCreator[] => {
   const providers = [
-    createIndexedDBBackgroundProvider(blockSuiteWorkspace),
-    createIndexedDBDownloadProvider(blockSuiteWorkspace),
-  ] as Provider[];
+    createIndexedDBBackgroundProvider,
+    createIndexedDBDownloadProvider,
+  ] as DocProviderCreator[];
 
-  if (config.enableBroadCastChannelProvider) {
-    providers.push(createBroadCastChannelProvider(blockSuiteWorkspace));
+  if (config.enableBroadcastChannelProvider) {
+    providers.push(createBroadcastChannelProvider);
   }
 
   if (environment.isDesktop) {
-    providers.push(
-      createSQLiteProvider(blockSuiteWorkspace),
-      createSQLiteDBDownloadProvider(blockSuiteWorkspace)
-    );
+    providers.push(createSQLiteProvider, createSQLiteDBDownloadProvider);
   }
 
   return providers;
 };
 
-export const createAffineProviders = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
-): Provider[] => {
+export const createAffineProviders = (): DocProviderCreator[] => {
   return (
     [
-      createAffineDownloadProvider(blockSuiteWorkspace),
-      createAffineWebSocketProvider(blockSuiteWorkspace),
-      config.enableBroadCastChannelProvider &&
-        createBroadCastChannelProvider(blockSuiteWorkspace),
-      createIndexedDBDownloadProvider(blockSuiteWorkspace),
-    ] as any[]
+      createAffineDownloadProvider,
+      createAffineWebSocketProvider,
+      config.enableBroadcastChannelProvider && createBroadcastChannelProvider,
+      createIndexedDBDownloadProvider,
+    ] as DocProviderCreator[]
   ).filter(v => Boolean(v));
 };

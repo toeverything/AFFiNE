@@ -46,8 +46,8 @@
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/cli": "workspace:*",
-    "@commitlint/cli": "^17.6.5",
-    "@commitlint/config-conventional": "^17.6.5",
+    "@commitlint/cli": "^17.6.6",
+    "@commitlint/config-conventional": "^17.6.6",
     "@faker-js/faker": "^8.0.2",
     "@istanbuljs/schema": "^0.1.3",
     "@magic-works/i18n-codegen": "^0.5.0",

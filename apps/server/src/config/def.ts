@@ -163,6 +163,12 @@ export interface AFFiNEConfig {
      * }
      */
     config: Record<string, string>;
+    /**
+     * Only used when `enable` is `false`
+     */
+    fs: {
+      path: string;
+    };
   };
 
   /**
@@ -172,11 +178,16 @@ export interface AFFiNEConfig {
     /**
      * Application access token expiration time
      */
-    readonly accessTokenExpiresIn: string;
+    readonly accessTokenExpiresIn: number;
     /**
      * Application refresh token expiration time
      */
-    readonly refreshTokenExpiresIn: string;
+    readonly refreshTokenExpiresIn: number;
+    /**
+     * Add some leeway (in seconds) to the exp and nbf validation to account for clock skew.
+     * Defaults to 60 if omitted.
+     */
+    readonly leeway: number;
     /**
      * Application public key
      *
@@ -195,6 +206,10 @@ export interface AFFiNEConfig {
      * whether allow user to signup by oauth providers
      */
     enableOauth: boolean;
+    /**
+     * NEXTAUTH_SECRET
+     */
+    nextAuthSecret: string;
     /**
      * all available oauth providers
      */

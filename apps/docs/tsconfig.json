@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "moduleResolution": "Node16",
+    "strict": true,
+    "target": "esnext",
+    "downlevelIteration": true,
+    "esModuleInterop": true,
+    "module": "NodeNext",
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src", "entries.ts"],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "../../packages/component"
+    }
+  ]
+}

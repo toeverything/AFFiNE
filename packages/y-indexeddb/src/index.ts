@@ -1,4 +1,3 @@
-import { Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import {
   applyUpdate,
@@ -13,9 +12,9 @@ import type {
   BlockSuiteBinaryDB,
   IndexedDBProvider,
   WorkspaceMilestone,
-} from './shared.js';
-import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared.js';
-import { downloadBinary, tryMigrate } from './utils.js';
+} from './shared';
+import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
+import { tryMigrate } from './utils';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 const snapshotOrigin = Symbol('snapshot-origin');
@@ -151,12 +150,6 @@ type SubDocsEvent = {
 
 /**
  * We use `doc.guid` as the unique key, please make sure it not changes.
- *
- * createIndexedDBProvider will create a new IndexedDBProvider instance,
- * which will connect to the IndexedDB, allowing pushing doc updates to the IndexedDB, including subdocs,
- * but will NOT pull data from IDB to yDoc on connect.
- *
- * If you want to sync the data on connect, please use `createIndexedDBDownloadProvider`.
  */
 export const createIndexedDBProvider = (
   doc: Doc,
@@ -264,17 +257,7 @@ export const createIndexedDBProvider = (
         unTrackDoc(doc.guid, doc);
       });
       event.loaded.forEach(doc => {
-        // download the doc
-        downloadBinary(doc.guid)
-          .then(binary => {
-            if (binary) {
-              Workspace.Y.applyUpdate(doc, binary);
-              doc.emit('loaded', []);
-            }
-          })
-          .finally(() => {
-            trackDoc(doc.guid, doc);
-          });
+        trackDoc(doc.guid, doc);
       });
     };
     subDocsHandlerMap.set(doc, fn);
@@ -282,9 +265,6 @@ export const createIndexedDBProvider = (
   };
 
   function trackDoc(id: string, doc: Doc) {
-    if (!connected) {
-      return;
-    }
     doc.on('update', createOrGetHandleUpdate(id, doc));
     doc.on('destroy', createOrGetHandleDestroy(id, doc));
     doc.on('subdocs', createOrGetHandleSubDocs(id, doc));
@@ -367,19 +347,6 @@ export const createIndexedDBProvider = (
       });
       connected = true;
       trackDoc(doc.guid, doc);
-
-      // also track all loaded subdocs
-      doc.subdocs.forEach(subdoc => {
-        if (subdoc.shouldLoad) {
-          subdoc.whenLoaded
-            .then(() => {
-              trackDoc(subdoc.guid, subdoc);
-            })
-            .catch(err => {
-              console.error(err);
-            });
-        }
-      });
 
       // only the runs `await` below, otherwise the logic is incorrect
       const db = await dbPromise;

@@ -2,6 +2,6 @@ mutation createWorkspace {
   createWorkspace {
     id
     public
-    created_at
+    createdAt
   }
 }

@@ -19,9 +19,9 @@
         "affine:paragraph": 1,
         "affine:page": 2,
         "affine:list": 1,
-        "affine:frame": 1,
+        "affine:note": 1,
         "affine:divider": 1,
-        "affine:embed": 1,
+        "affine:image": 1,
         "affine:surface": 3,
         "affine:bookmark": 1,
         "affine:database": 1
@@ -49,7 +49,7 @@
       },
       "4-IQVC-U5A": {
         "sys:id": "4-IQVC-U5A",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": [
           "1906676326:0",
           "QWiWzO9705",
@@ -64,7 +64,7 @@
       },
       "VNbg-Wz6Vs": {
         "sys:id": "VNbg-Wz6Vs",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["hiVj6pUziI", "6rgGQmAmfb", "KRefAQRNnh"],
         "prop:index": "a0",
         "prop:background": "--affine-tag-green",
@@ -5909,7 +5909,7 @@
       },
       "Y4oz3g1LB6": {
         "sys:id": "Y4oz3g1LB6",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["Prrnq7ruGC"],
         "prop:xywh": "[855.7586305793726,-38.93174493636967,1488.043436415603,104]",
         "prop:index": "a0",
@@ -5917,7 +5917,7 @@
       },
       "1cFTd-rwDr": {
         "sys:id": "1cFTd-rwDr",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["aPk03I3k9L", "4_plt-pF5i", "5O-z_KtfdV"],
         "prop:xywh": "[1782.1527708473825,83.59728260421294,554.4267667459387,668]",
         "prop:index": "a0",
@@ -5925,7 +5925,7 @@
       },
       "A2hTNhHJSo": {
         "sys:id": "A2hTNhHJSo",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["1t5gAmmDk1", "Ru5RZxl2cw", "m09CQTVNta"],
         "prop:xywh": "[1862.2162713385649,667.8687461185463,471.2475208977704,724]",
         "prop:index": "a0",
@@ -5933,7 +5933,7 @@
       },
       "JSoC9zIZDz": {
         "sys:id": "JSoC9zIZDz",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["RYwAAsT0jt", "yui0v4a-DG", "CuW0As_WD5"],
         "prop:index": "a0",
         "prop:background": "--affine-tag-purple",
@@ -5941,7 +5941,7 @@
       },
       "Vq_8QO3ruz": {
         "sys:id": "Vq_8QO3ruz",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["Z6tZpqYD1i", "cSq4fYa62E", "e-ekSJPKh0"],
         "prop:xywh": "[824.3933427871591,677.7709857969486,475.6451530544002,724]",
         "prop:index": "a0",
@@ -5949,7 +5949,7 @@
       },
       "g5OrKM5Fb6": {
         "sys:id": "g5OrKM5Fb6",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": [
           "YQPpZUitL9",
           "jNb1ieggGw",
@@ -5962,7 +5962,7 @@
       },
       "3An3wRFKN_": {
         "sys:id": "3An3wRFKN_",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["KZrhdN52ZD", "3MnKwqEw_Q"],
         "prop:xywh": "[-264.94381566608683,389.00823320424837,494.2811077047478,314]",
         "prop:index": "a2",
@@ -5970,7 +5970,7 @@
       },
       "U2hR9Lu1E7": {
         "sys:id": "U2hR9Lu1E7",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["LYes52XNDN"],
         "prop:xywh": "[2918.2644723261433,881.0630462339941,539.4086027654356,655]",
         "prop:index": "a2",
@@ -5978,7 +5978,7 @@
       },
       "nOERveFG0j": {
         "sys:id": "nOERveFG0j",
-        "sys:flavour": "affine:frame",
+        "sys:flavour": "affine:note",
         "sys:children": ["SjyfxmcAjc"],
         "prop:xywh": "[2919.8341116576826,1349.0080470072992,535.7138283708327,632]",
         "prop:index": "a2",
@@ -6308,7 +6308,7 @@
       },
       "KRefAQRNnh": {
         "sys:id": "KRefAQRNnh",
-        "sys:flavour": "affine:embed",
+        "sys:flavour": "affine:image",
         "sys:children": [],
         "prop:type": "image",
         "prop:sourceId": "https://cdn.affine.pro/27f983d0765289c19d10ee0b51c00c3c7665236a1a82406370d46e0a.gif",
@@ -6318,7 +6318,7 @@
       },
       "5O-z_KtfdV": {
         "sys:id": "5O-z_KtfdV",
-        "sys:flavour": "affine:embed",
+        "sys:flavour": "affine:image",
         "sys:children": [],
         "prop:type": "image",
         "prop:sourceId": "https://cdn.affine.pro/1326bc48553a572c6756d9ee1b30a0dfdda26222fc2d2c872b14e609.gif",
@@ -6328,7 +6328,7 @@
       },
       "m09CQTVNta": {
         "sys:id": "m09CQTVNta",
-        "sys:flavour": "affine:embed",
+        "sys:flavour": "affine:image",
         "sys:children": [],
         "prop:type": "image",
         "prop:sourceId": "https://cdn.affine.pro/28516717d63e469cd98729ff46be6595711898bab3dc43302319a987.gif",
@@ -6338,7 +6338,7 @@
       },
       "CuW0As_WD5": {
         "sys:id": "CuW0As_WD5",
-        "sys:flavour": "affine:embed",
+        "sys:flavour": "affine:image",
         "sys:children": [],
         "prop:type": "image",
         "prop:sourceId": "https://cdn.affine.pro/9288be57321c8772d04e05dbb69a22742372b3534442607a2d6a9998.gif",
@@ -6348,7 +6348,7 @@
       },
       "e-ekSJPKh0": {
         "sys:id": "e-ekSJPKh0",
-        "sys:flavour": "affine:embed",
+        "sys:flavour": "affine:image",
         "sys:children": [],
         "prop:type": "image",
         "prop:sourceId": "https://cdn.affine.pro/c820edeeba50006b531883903f5bb0b96bf523c9a6b3ce5868f03db5.gif",
@@ -6358,7 +6358,7 @@
       },
       "rY1fVETRzE": {
         "sys:id": "rY1fVETRzE",
-        "sys:flavour": "affine:embed",
+        "sys:flavour": "affine:image",
         "sys:children": [],
         "prop:type": "image",
         "prop:sourceId": "https://cdn.affine.pro/e93536e1be97e3b5206d43bf0793fdef24e60044d174f0abdefebe08.gif",
@@ -6368,7 +6368,7 @@
       },
       "LYes52XNDN": {
         "sys:id": "LYes52XNDN",
-        "sys:flavour": "affine:embed",
+        "sys:flavour": "affine:image",
         "sys:children": [],
         "prop:type": "image",
         "prop:sourceId": "https://cdn.affine.pro/047ebf2c9a5c7c9d8521c2ea5e6140ff7732ef9e28a9f944e9bf3ca4.png",
@@ -6378,7 +6378,7 @@
       },
       "SjyfxmcAjc": {
         "sys:id": "SjyfxmcAjc",
-        "sys:flavour": "affine:embed",
+        "sys:flavour": "affine:image",
         "sys:children": [],
         "prop:type": "image",
         "prop:sourceId": "https://cdn.affine.pro/6aa785ee927547ce9dd9d7b43e01eac948337fe57571443e87bc3a60.png",

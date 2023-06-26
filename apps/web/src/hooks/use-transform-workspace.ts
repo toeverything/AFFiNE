@@ -1,5 +1,6 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type { WorkspaceRegistry } from '@affine/env/workspace';
+import { WorkspaceVersion } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
@@ -7,7 +8,7 @@ import { useCallback } from 'react';
 import { WorkspaceAdapters } from '../adapters/workspace';
 
 /**
- * Transform workspace from one flavour to another
+ * Transform workspace from one flavor to another
  *
  * The logic here is to delete the old workspace and create a new one.
  */
@@ -29,6 +30,7 @@ export function useTransformWorkspace() {
         workspaces.splice(idx, 1, {
           id: newId,
           flavour: to,
+          version: WorkspaceVersion.SubDoc,
         });
         return [...workspaces];
       });

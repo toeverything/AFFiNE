@@ -48,3 +48,5 @@ app:web: 'apps/web/**/*'
 app:electron: 'apps/electron/**/*'
 
 app:server: 'apps/server/**/*'
+
+app:docs: 'apps/docs/**/*'

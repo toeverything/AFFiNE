@@ -1,0 +1,8 @@
+mutation uploadAvatar($id: String!, $avatar: Upload!) {
+  uploadAvatar(id: $id, avatar: $avatar) {
+    id
+    name
+    avatarUrl
+    email
+  }
+}
