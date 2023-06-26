@@ -9,9 +9,16 @@ import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
-import { atom, createStore, Provider, useAtom, useAtomValue } from 'jotai';
+import {
+  atom,
+  createStore,
+  Provider,
+  useAtom,
+  useAtomValue,
+  useSetAtom,
+} from 'jotai';
 import type { ReactElement } from 'react';
-import { Suspense, use, useCallback, useState } from 'react';
+import { Suspense, use, useCallback } from 'react';
 
 const store = createStore();
 
@@ -60,31 +67,41 @@ const workspaceAtom = atom<Promise<Workspace>>(async get => {
   return newWorkspace.blockSuiteWorkspace;
 });
 
+const pageIdAtom = atom('hello-world');
+
+const PageListSelect = () => {
+  const workspace = useAtomValue(workspaceAtom);
+  const setPageId = useSetAtom(pageIdAtom);
+  return (
+    <ul>
+      {workspace.meta.pageMetas.map(meta => (
+        <li
+          key={meta.id}
+          onClick={() => {
+            setPageId(meta.id);
+          }}
+        >
+          {meta.id}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 const WorkspaceInner = () => {
   const workspace = useAtomValue(workspaceAtom);
-  const [pageId, setPageId] = useState('hello-world');
+  const pageId = useAtomValue(pageIdAtom);
   const page = workspace.getPage(pageId);
   const onInit = useCallback(() => {}, []);
   if (!page) {
-    return <>loading...</>;
+    return <PageListSelect />;
   }
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
   return (
     <>
-      <ul>
-        {workspace.meta.pageMetas.map(meta => (
-          <li
-            key={meta.id}
-            onClick={() => {
-              setPageId(meta.id);
-            }}
-          >
-            {meta.id}
-          </li>
-        ))}
-      </ul>
+      <PageListSelect />
       <BlockSuiteEditor page={page} mode="page" onInit={onInit} />;
     </>
   );
