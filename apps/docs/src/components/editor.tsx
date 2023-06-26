@@ -34,6 +34,9 @@ export const Editor = (props: EditorProps): ReactElement => {
         applyUpdate(page._ySpaceDoc, new Uint8Array(props.binary as number[]));
       })
     );
+    if (import.meta.env.MODE === 'production') {
+      page.awarenessStore.setReadonly(page, true);
+    }
   } else if (!page.root) {
     use(
       page.waitForLoaded().then(() => {
