@@ -6,6 +6,7 @@
     "./blob": "./src/blob/index.ts",
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
+    "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
     "./providers": "./src/providers/index.ts",
     "./affine/*": "./src/affine/*.ts",
