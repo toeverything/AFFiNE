@@ -12,6 +12,7 @@ import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/global/utils';
 import { nanoid, Workspace } from '@blocksuite/store';
 import { rootStore } from '@toeverything/plugin-infra/manager';
+import type { Doc } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -91,10 +92,22 @@ rootStore.sub(rootWorkspacesMetadataAtom, () => {
           nanoid(),
           oldMeta.flavour as WorkspaceFlavour.LOCAL
         );
-        Workspace.Y.applyUpdate(
-          newBlockSuiteWorkspace.doc,
-          Workspace.Y.encodeStateAsUpdate(newDoc)
-        );
+        const applyUpdateRecursive = (doc: Doc, dataDoc: Doc) => {
+          Workspace.Y.applyUpdate(
+            doc,
+            Workspace.Y.encodeStateAsUpdate(dataDoc)
+          );
+          doc.subdocs.forEach(subdoc => {
+            dataDoc.subdocs.forEach(dataSubdoc => {
+              if (subdoc.guid === dataSubdoc.guid) {
+                applyUpdateRecursive(subdoc, dataSubdoc);
+              }
+            });
+          });
+        };
+
+        applyUpdateRecursive(newBlockSuiteWorkspace.doc, newDoc);
+
         const newId = await adapter.CRUD.create(newBlockSuiteWorkspace);
         rootStore.set(rootWorkspacesMetadataAtom, metadata => [
           ...metadata,
