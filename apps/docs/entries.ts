@@ -3,8 +3,10 @@ import { defineRouter } from 'waku/router/server';
 export default defineRouter(
   async id => {
     switch (id) {
-      case 'index':
-        return import('./src/app.js') as any;
+      case 'index': {
+        const { default: AppCreator } = await import('./src/app.js');
+        return AppCreator(id);
+      }
       default:
         return null;
     }
