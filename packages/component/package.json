@@ -40,7 +40,7 @@
     "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^1.2.1",
     "dayjs": "^1.11.8",
-    "jotai": "^2.2.0",
+    "jotai": "^2.2.1",
     "lit": "^2.7.5",
     "lottie-web": "^5.12.2",
     "react": "18.3.0-canary-16d053d59-20230506",
@@ -64,7 +64,7 @@
     "@vanilla-extract/css": "^1.11.1",
     "typescript": "^5.1.3",
     "vite": "^4.3.9",
-    "yjs": "^13.6.4"
+    "yjs": "^13.6.6"
   },
   "version": "0.7.0-canary.18"
 }

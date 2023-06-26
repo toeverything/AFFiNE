@@ -28,7 +28,7 @@
     "@prisma/client": "^4.16.1",
     "dotenv": "^16.1.4",
     "express": "^4.18.2",
-    "graphql": "^16.6.0",
+    "graphql": "^16.7.1",
     "graphql-type-json": "^0.3.2",
     "graphql-upload": "^16.0.2",
     "lodash-es": "^4.17.21",
