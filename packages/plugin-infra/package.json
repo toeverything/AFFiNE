@@ -26,12 +26,12 @@
     "@blocksuite/global": "0.0.0-20230624163241-751f7170-nightly",
     "@blocksuite/lit": "0.0.0-20230624163241-751f7170-nightly",
     "@blocksuite/store": "0.0.0-20230624163241-751f7170-nightly",
-    "jotai": "^2.2.0"
+    "jotai": "^2.2.1"
   },
   "devDependencies": {
-    "jotai": "^2.2.0",
+    "jotai": "^2.2.1",
     "vite": "^4.3.9",
-    "vite-plugin-dts": "^2.3.0"
+    "vite-plugin-dts": "2.3.0"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
