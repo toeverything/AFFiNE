@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 
 import { initEmptyPage } from '@affine/env/blocksuite';
 import type { LocalIndexedDBBackgroundProvider } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -96,6 +96,7 @@ describe('currentWorkspace atom', () => {
         {
           id: workspaceId,
           flavour: WorkspaceFlavour.LOCAL,
+          version: WorkspaceVersion.SubDoc,
         },
       ]);
       _cleanupBlockSuiteWorkspaceCache();
