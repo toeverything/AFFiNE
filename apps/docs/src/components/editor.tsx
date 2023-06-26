@@ -2,11 +2,13 @@
 import '@blocksuite/editor/themes/affine.css';
 
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { Workspace } from '@blocksuite/store';
+import type { Page } from '@blocksuite/store';
+import { useAtomValue } from 'jotai/react';
 import type { ReactElement } from 'react';
-import { use, useCallback } from 'react';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+import { use } from 'react';
+import { applyUpdate } from 'yjs';
+
+import { workspaceAtom } from '../atom.js';
 
 export type EditorProps = {
   workspaceId: string;
@@ -15,21 +17,15 @@ export type EditorProps = {
   onSave: (binary: any) => Promise<void>;
 };
 
-const workspace = new Workspace({
-  id: 'test-workspace',
-})
-  .register(AffineSchemas)
-  .register(__unstableSchemas);
-
-const page = workspace.createPage({
-  id: 'page0',
-});
-
-globalThis.workspace = workspace;
-globalThis.page = page;
-
 export const Editor = (props: EditorProps): ReactElement => {
-  const save = props.onSave;
+  const workspace = useAtomValue(workspaceAtom);
+  let page = workspace.getPage('page0') as Page;
+  if (!page) {
+    page = workspace.createPage({
+      id: 'page0',
+    });
+  }
+
   if (props.binary && !page.root) {
     use(
       page.waitForLoaded().then(() => {
@@ -50,15 +46,5 @@ export const Editor = (props: EditorProps): ReactElement => {
       })
     );
   }
-  const onSave = useCallback(() => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    save(encodeStateAsUpdate(page._ySpaceDoc));
-  }, [save]);
-  return (
-    <>
-      <button onClick={onSave}>save</button>
-      <BlockSuiteEditor page={page} mode="page" onInit={() => {}} />
-    </>
-  );
+  return <BlockSuiteEditor page={page} mode="page" onInit={() => {}} />;
 };

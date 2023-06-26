@@ -1,3 +1,8 @@
+'use server';
+
+import { saveFile } from '../../server-fns.js';
+import { SaveToLocal } from './save-to-local.js';
+
 export const Sidebar = () => {
   return (
     <div
@@ -11,6 +16,9 @@ export const Sidebar = () => {
           AFFiNE
         </div>
       </a>
+      {import.meta.env.MODE === 'development' && (
+        <SaveToLocal saveFile={saveFile} />
+      )}
     </div>
   );
 };

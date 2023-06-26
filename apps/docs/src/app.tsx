@@ -1,13 +1,13 @@
 /// <reference types="vite/client" />
 'use server';
-import { existsSync,readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { ReactElement } from 'react';
 import { lazy } from 'react';
 
-import { Sidebar } from './components/sidebar.js';
+import { Sidebar } from './components/sidebar/index.js';
 import { saveFile } from './server-fns.js';
 
 const Editor = lazy(() =>
