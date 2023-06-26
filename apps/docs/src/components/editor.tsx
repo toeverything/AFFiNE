@@ -1,4 +1,6 @@
 'use client';
+import '@blocksuite/editor/themes/affine.css';
+
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
 import type { Page } from '@blocksuite/store';
 import { useAtomValue } from 'jotai/react';
