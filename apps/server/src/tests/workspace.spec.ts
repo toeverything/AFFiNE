@@ -62,7 +62,7 @@ describe('AppModule', () => {
   async function createWorkspace(token: string): Promise<WorkspaceType> {
     const res = await request(app.getHttpServer())
       .post(gql)
-      .set({ Authorization: token })
+      .auth(token, { type: 'bearer' })
       .send({
         query: `
           mutation {
@@ -84,7 +84,7 @@ describe('AppModule', () => {
   ): Promise<boolean> {
     const res = await request(app.getHttpServer())
       .post(gql)
-      .set({ Authorization: token })
+      .auth(token, { type: 'bearer' })
       .send({
         query: `
           mutation {
@@ -102,7 +102,7 @@ describe('AppModule', () => {
   ): Promise<boolean> {
     const res = await request(app.getHttpServer())
       .post(gql)
-      .set({ Authorization: token })
+      .auth(token, { type: 'bearer' })
       .send({
         query: `
           mutation {
@@ -120,7 +120,7 @@ describe('AppModule', () => {
   ): Promise<boolean> {
     const res = await request(app.getHttpServer())
       .post(gql)
-      .set({ Authorization: token })
+      .auth(token, { type: 'bearer' })
       .send({
         query: `
           mutation {
@@ -139,7 +139,7 @@ describe('AppModule', () => {
   ): Promise<boolean> {
     const res = await request(app.getHttpServer())
       .post(gql)
-      .set({ Authorization: token })
+      .auth(token, { type: 'bearer' })
       .send({
         query: `
           mutation {
@@ -154,8 +154,8 @@ describe('AppModule', () => {
   test('should register a user', async () => {
     const user = await registerUser('u1', 'u1@affine.pro', '123456');
     ok(typeof user.id === 'string', 'user.id is not a string');
-    ok(user.name === 'affiner1', 'user.name is not valid');
-    ok(user.email === 'affiner1@affine.pro', 'user.email is not valid');
+    ok(user.name === 'u1', 'user.name is not valid');
+    ok(user.email === 'u1@affine.pro', 'user.email is not valid');
   });
 
   test('should create a workspace', async () => {
