@@ -1,3 +1,15 @@
+'use server';
+
+import { lazy } from 'react';
+
+import { saveFile } from '../../server-fns.js';
+
+const SaveToLocal = lazy(() =>
+  import('./save-to-local.js').then(({ SaveToLocal }) => ({
+    default: SaveToLocal,
+  }))
+);
+
 export const Sidebar = () => {
   return (
     <div
@@ -11,6 +23,9 @@ export const Sidebar = () => {
           AFFiNE
         </div>
       </a>
+      {import.meta.env.MODE === 'development' && (
+        <SaveToLocal saveFile={saveFile} />
+      )}
     </div>
   );
 };
