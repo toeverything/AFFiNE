@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import type { RootWorkspaceMetadataV2 } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { atom } from 'jotai';
 import { atomFamily, atomWithStorage } from 'jotai/utils';
@@ -13,7 +13,7 @@ const logger = new DebugLogger('web:atoms');
 // workspace necessary atoms
 // todo(himself65): move this to the workspace package
 rootWorkspacesMetadataAtom.onMount = setAtom => {
-  function createFirst(): RootWorkspaceMetadata[] {
+  function createFirst(): RootWorkspaceMetadataV2[] {
     const Plugins = Object.values(WorkspaceAdapters).sort(
       (a, b) => a.loadPriority - b.loadPriority
     );
@@ -24,29 +24,33 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
           ({
             id,
             flavour: Plugin.flavour,
-          } satisfies RootWorkspaceMetadata)
+            // new workspace should all support sub-doc feature
+            version: WorkspaceVersion.SubDoc,
+          } satisfies RootWorkspaceMetadataV2)
       );
-    }).filter((ids): ids is RootWorkspaceMetadata => !!ids);
+    }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
   }
 
   const abortController = new AbortController();
 
-  // next tick to make sure the hydration is correct
-  const id = setTimeout(() => {
-    setAtom(metadata => {
-      if (abortController.signal.aborted) return metadata;
-      if (
-        metadata.length === 0 &&
-        localStorage.getItem('is-first-open') === null
-      ) {
-        localStorage.setItem('is-first-open', 'false');
-        const newMetadata = createFirst();
-        logger.info('create first workspace', newMetadata);
-        return newMetadata;
-      }
-      return metadata;
-    });
-  }, 0);
+  if (!environment.isServer) {
+    // next tick to make sure the hydration is correct
+    setTimeout(() => {
+      setAtom(metadata => {
+        if (abortController.signal.aborted) return metadata;
+        if (
+          metadata.length === 0 &&
+          localStorage.getItem('is-first-open') === null
+        ) {
+          localStorage.setItem('is-first-open', 'false');
+          const newMetadata = createFirst();
+          logger.info('create first workspace', newMetadata);
+          return newMetadata;
+        }
+        return metadata;
+      });
+    }, 0);
+  }
 
   if (environment.isDesktop) {
     window.apis?.workspace
@@ -56,6 +60,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
         const newMetadata = workspaceIDs.map(w => ({
           id: w[0],
           flavour: WorkspaceFlavour.LOCAL,
+          version: undefined,
         }));
         setAtom(metadata => {
           return [
@@ -70,7 +75,6 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
   }
 
   return () => {
-    clearTimeout(id);
     abortController.abort();
   };
 };

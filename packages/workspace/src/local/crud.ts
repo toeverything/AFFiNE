@@ -64,6 +64,18 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
       WorkspaceFlavour.LOCAL
     );
     BlockSuiteWorkspace.Y.applyUpdate(blockSuiteWorkspace.doc, binary);
+
+    doc.getSubdocs().forEach(subdoc => {
+      blockSuiteWorkspace.doc.getSubdocs().forEach(newDoc => {
+        if (subdoc.guid === newDoc.guid) {
+          BlockSuiteWorkspace.Y.applyUpdate(
+            newDoc,
+            BlockSuiteWorkspace.Y.encodeStateAsUpdate(subdoc)
+          );
+        }
+      });
+    });
+
     const persistence = createIndexedDBProvider(blockSuiteWorkspace.doc);
     persistence.connect();
     await persistence.whenSynced.then(() => {
