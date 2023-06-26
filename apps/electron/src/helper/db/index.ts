@@ -42,7 +42,11 @@ export const dbHandlers = {
 
 export const dbEvents = {
   onExternalUpdate: (
-    fn: (update: { workspaceId: string; update: Uint8Array }) => void
+    fn: (update: {
+      workspaceId: string;
+      update: Uint8Array;
+      docId?: string;
+    }) => void
   ) => {
     const sub = dbSubjects.externalUpdate.subscribe(fn);
     return () => {
