@@ -1,4 +1,7 @@
 import { RadioButton, RadioButtonGroup, Switch } from '@affine/component';
+import { SettingHeader } from '@affine/component/setting-components';
+import { SettingRow } from '@affine/component/setting-components';
+import { SettingWrapper } from '@affine/component/setting-components';
 import { env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useTheme } from 'next-themes';
@@ -10,9 +13,6 @@ import {
   windowFrameStyleOptions,
 } from '../../../../../atoms/settings';
 import { LanguageMenu } from '../../../language-menu';
-import { SettingHeader } from '../../common/setting-header';
-import { SettingRow } from '../../common/setting-row';
-import { Wrapper } from '../../common/wrapper';
 import { IS_EXHIBITION } from '../../config';
 import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
@@ -56,7 +56,7 @@ export const AppearanceSettings = () => {
         subtitle={t['Customize your  AFFiNE Appearance']()}
       />
 
-      <Wrapper title={t['Theme']()}>
+      <SettingWrapper title={t['Theme']()}>
         <SettingRow
           name={t['Color Scheme']()}
           desc={t['Choose your color scheme']()}
@@ -114,9 +114,9 @@ export const AppearanceSettings = () => {
             </RadioButtonGroup>
           </SettingRow>
         ) : null}
-      </Wrapper>
+      </SettingWrapper>
       {IS_EXHIBITION ? (
-        <Wrapper title={t['Date']()}>
+        <SettingWrapper title={t['Date']()}>
           <SettingRow
             name={t['Date Format']()}
             desc={t['Customize your date style.']()}
@@ -134,11 +134,11 @@ export const AppearanceSettings = () => {
               onChange={checked => changeSwitch('startWeekOnMonday', checked)}
             />
           </SettingRow>
-        </Wrapper>
+        </SettingWrapper>
       ) : null}
 
       {env.isDesktop ? (
-        <Wrapper title={t['Sidebar']()}>
+        <SettingWrapper title={t['Sidebar']()}>
           <SettingRow
             name={t['Disable the noise background on the sidebar']()}
             desc={t['None yet']()}
@@ -161,7 +161,7 @@ export const AppearanceSettings = () => {
               }
             />
           </SettingRow>
-        </Wrapper>
+        </SettingWrapper>
       ) : null}
     </>
   );

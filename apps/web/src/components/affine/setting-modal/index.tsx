@@ -1,4 +1,7 @@
-import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
+import {
+  SettingModal as SettingModalBase,
+  type SettingModalProps,
+} from '@affine/component/setting-components';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
@@ -6,13 +9,11 @@ import type {
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import type { NextRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useWorkspaces } from '../../../hooks/use-workspaces';
-import type { BlockSuiteWorkspace } from '../../../shared';
 import { AccountSetting } from './account-setting';
 import {
   GeneralSetting,
@@ -24,15 +25,7 @@ import { settingContent } from './style.css';
 import type { Workspace } from './type';
 import { WorkSpaceSetting } from './workspace-setting';
 
-export type QuickSearchModalProps = {
-  currentWorkspace?: BlockSuiteWorkspace;
-  workspaceList?: BlockSuiteWorkspace[];
-  open: boolean;
-  setOpen: (value: boolean) => void;
-  router: NextRouter;
-};
-
-export const SettingModal: React.FC<QuickSearchModalProps> = ({
+export const SettingModal: React.FC<SettingModalProps> = ({
   open,
   setOpen,
 }) => {
@@ -55,9 +48,6 @@ export const SettingModal: React.FC<QuickSearchModalProps> = ({
     generalKey: generalSettingList[0].key,
     isAccount: false,
   });
-  const handleClose = useCallback(() => {
-    setOpen(false);
-  }, [setOpen]);
 
   const onGeneralSettingClick = useCallback((key: GeneralSettingKeys) => {
     setCurrentRef({
@@ -82,59 +72,41 @@ export const SettingModal: React.FC<QuickSearchModalProps> = ({
   }, []);
 
   return (
-    <Modal
-      open={open}
-      onClose={handleClose}
-      wrapperPosition={['center', 'center']}
-      data-testid="setting-modal"
-    >
-      <ModalWrapper
-        width={1080}
-        height={760}
-        style={{
-          maxHeight: '85vh',
-          maxWidth: '70vw',
-          overflow: 'hidden',
-          display: 'flex',
-        }}
-      >
-        <ModalCloseButton top={16} right={20} onClick={handleClose} />
+    <SettingModalBase open={open} setOpen={setOpen}>
+      <SettingSidebar
+        generalSettingList={generalSettingList}
+        onGeneralSettingClick={onGeneralSettingClick}
+        currentWorkspace={
+          currentWorkspace as AffineLegacyCloudWorkspace | LocalWorkspace
+        }
+        workspaceList={workspaceList}
+        onWorkspaceSettingClick={onWorkspaceSettingClick}
+        selectedGeneralKey={currentRef.generalKey}
+        selectedWorkspace={currentRef.workspace}
+        onAccountSettingClick={onAccountSettingClick}
+      />
 
-        <SettingSidebar
-          generalSettingList={generalSettingList}
-          onGeneralSettingClick={onGeneralSettingClick}
-          currentWorkspace={
-            currentWorkspace as AffineLegacyCloudWorkspace | LocalWorkspace
-          }
-          workspaceList={workspaceList}
-          onWorkspaceSettingClick={onWorkspaceSettingClick}
-          selectedGeneralKey={currentRef.generalKey}
-          selectedWorkspace={currentRef.workspace}
-          onAccountSettingClick={onAccountSettingClick}
-        />
-
-        <div className={settingContent}>
-          <div className="wrapper">
-            <div className="content">
-              {currentRef.workspace ? (
-                <WorkSpaceSetting workspace={currentRef.workspace} />
-              ) : null}
-              {currentRef.generalKey ? (
-                <GeneralSetting generalKey={currentRef.generalKey} />
-              ) : null}
-              {currentRef.isAccount ? <AccountSetting /> : null}
-            </div>
-            <div className="footer">
-              <ContactWithUsIcon />
-              <a href="https://community.affine.pro/home" target="_blank">
-                {t[
-                  'Need more customization options? You can suggest them to us in the community.'
-                ]()}
-              </a>
-            </div>
+      <div className={settingContent}>
+        <div className="wrapper">
+          <div className="content">
+            {currentRef.workspace ? (
+              <WorkSpaceSetting workspace={currentRef.workspace} />
+            ) : null}
+            {currentRef.generalKey ? (
+              <GeneralSetting generalKey={currentRef.generalKey} />
+            ) : null}
+            {currentRef.isAccount ? <AccountSetting /> : null}
+          </div>
+          <div className="footer">
+            <ContactWithUsIcon />
+            <a href="https://community.affine.pro/home" target="_blank">
+              {t[
+                'Need more customization options? You can suggest them to us in the community.'
+              ]()}
+            </a>
           </div>
         </div>
-      </ModalWrapper>
-    </Modal>
+      </div>
+    </SettingModalBase>
   );
 };
