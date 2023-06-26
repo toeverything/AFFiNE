@@ -1,4 +1,3 @@
-import { config } from '@affine/env';
 import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
@@ -7,7 +6,15 @@ import type { Page } from '@blocksuite/store';
 import { Skeleton } from '@mui/material';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { lazy, memo, Suspense, useCallback, useEffect, useRef } from 'react';
+import {
+  lazy,
+  memo,
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react';
 import { createPortal } from 'react-dom';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -23,6 +30,7 @@ export type EditorProps = {
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
+  className?: string;
 };
 
 export type ErrorBoundaryProps = {
@@ -44,6 +52,9 @@ const ImagePreviewModal = lazy(() =>
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const { onLoad, page, mode, style, onInit } = props;
+  if (!page.loaded) {
+    use(page.waitForLoaded());
+  }
   const JotaiEditorContainer = useAtomValue(
     editorContainerModuleAtom
   ) as typeof EditorContainer;
@@ -122,7 +133,9 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   }, [editor, page]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
-  const className = `editor-wrapper ${editor.mode}-mode`;
+  const className = `editor-wrapper ${editor.mode}-mode ${
+    props.className || ''
+  }`;
   return (
     <div
       data-testid={`editor-${page.id}`}
@@ -181,7 +194,7 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
       <Suspense fallback={<BlockSuiteFallback />}>
         <BlockSuiteEditorImpl {...props} />
       </Suspense>
-      {config.enableImagePreviewModal && props.page && (
+      {props.page && (
         <Suspense fallback={null}>
           {createPortal(
             <ImagePreviewModal

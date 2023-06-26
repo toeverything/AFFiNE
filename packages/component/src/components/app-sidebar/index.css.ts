@@ -16,6 +16,7 @@ export const navWrapperStyle = style({
   zIndex: 2,
   paddingBottom: '8px',
   backgroundColor: 'transparent',
+  borderRight: '1px solid var(--affine-border-color)',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
@@ -38,6 +39,9 @@ export const navWrapperStyle = style({
     },
     '&[data-enable-animation="true"]': {
       transition: 'margin-left .3s, width .3s',
+    },
+    '&.has-background': {
+      backgroundColor: 'var(--affine-white-60)',
     },
   },
 });

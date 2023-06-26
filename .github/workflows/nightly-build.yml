@@ -11,6 +11,7 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/nightly-build.yml'
+      - '!.github/actions/setup-node/action.yml'
 
 permissions:
   actions: write
@@ -116,6 +117,7 @@ jobs:
         uses: ./.github/actions/build-rust
         with:
           target: ${{ matrix.spec.target }}
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Replace Version
         run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3

@@ -1,22 +1,33 @@
 import { clsx } from 'clsx';
-import type { PropsWithChildren, ReactElement } from 'react';
+import type { FC, PropsWithChildren, ReactElement } from 'react';
 
 import { AppSidebarFallback } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
 export type WorkspaceRootProps = PropsWithChildren<{
   resizing?: boolean;
+  useNoisyBackground?: boolean;
+  useBlurBackground?: boolean;
 }>;
 
-export const AppContainer = (props: WorkspaceRootProps): ReactElement => {
-  const noisyBackground = environment.isDesktop && environment.isMacOs;
+export const AppContainer: FC<WorkspaceRootProps> = ({
+  resizing,
+  useNoisyBackground,
+  useBlurBackground,
+  children,
+}) => {
+  const noisyBackground =
+    useNoisyBackground && environment.isDesktop && environment.isMacOs;
   return (
     <div
-      className={appStyle}
+      className={clsx(appStyle, {
+        'noisy-background': noisyBackground,
+        'blur-background': environment.isDesktop && useBlurBackground,
+      })}
       data-noise-background={noisyBackground}
-      data-is-resizing={props.resizing}
+      data-is-resizing={resizing}
     >
-      {props.children}
+      {children}
     </div>
   );
 };

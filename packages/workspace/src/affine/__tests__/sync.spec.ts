@@ -139,12 +139,13 @@ describe('ydoc sync', () => {
       ]);
 
       const pageId = uuidv4();
-      const page1 = workspace1.createPage(pageId);
+      const page1 = workspace1.createPage({ id: pageId });
+      await page1.waitForLoaded()
       const pageBlockId = page1.addBlock('affine:page', {
         title: new page1.Text(''),
       });
       page1.addBlock('affine:surface', {}, pageBlockId);
-      const frameId = page1.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page1.addBlock('affine:note', {}, pageBlockId);
       const paragraphId = page1.addBlock('affine:paragraph', {}, frameId);
       await new Promise(resolve => setTimeout(resolve, 1000));
       expect(workspace2.getPage(pageId)).toBeDefined();
@@ -152,6 +153,7 @@ describe('ydoc sync', () => {
         workspace1.doc.getMap(`space:${pageId}`).toJSON()
       );
       const page2 = workspace2.getPage(pageId) as Page;
+      await page2.waitForLoaded()
       page1.updateBlock(
         page1.getBlockById(paragraphId) as ParagraphBlockModel,
         {

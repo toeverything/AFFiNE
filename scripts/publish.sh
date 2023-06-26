@@ -7,7 +7,7 @@ packages=(
 )
 
 for package in "${packages[@]}"; do
-  nx build $package
+  yarn nx build $package
   cd "packages/$package"
 
   if [ "$NIGHTLY" = "true" ]; then

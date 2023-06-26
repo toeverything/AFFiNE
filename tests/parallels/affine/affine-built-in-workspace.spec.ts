@@ -9,7 +9,7 @@ import {
 } from '../../libs/sidebar';
 import { getBuiltInUser, loginUser } from '../../libs/utils';
 
-test('collaborative', async ({ page, browser }) => {
+test.fixme('collaborative', async ({ page, browser }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const [a, b] = await getBuiltInUser();

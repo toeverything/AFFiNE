@@ -1,6 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
+import { uploadAvatarMutation } from '@affine/graphql';
 import { render } from '@testing-library/react';
 import type { Mock } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -60,11 +61,11 @@ describe('GraphQL wrapper for SWR', () => {
       const renderer = render(component);
       const el = await renderer.findByText('number: 1');
       expect(el).toMatchInlineSnapshot(`
-      <div>
-        number: 
-        1
-      </div>
-    `);
+        <div>
+          number: 
+          1
+        </div>
+      `);
     });
 
     it('should not send request if cache hit', async () => {
@@ -134,6 +135,19 @@ describe('GraphQL wrapper for SWR', () => {
           </div>
         </DocumentFragment>
       `);
+    });
+
+    it('should get rid of generated types', async () => {
+      function _NotActuallyRunDefinedForTypeTesting() {
+        const { trigger } = useMutation({
+          mutation: uploadAvatarMutation,
+        });
+        trigger({
+          id: '1',
+          avatar: new File([''], 'avatar.png'),
+        });
+      }
+      expect(_NotActuallyRunDefinedForTypeTesting).toBeTypeOf('function');
     });
   });
 });

@@ -148,10 +148,16 @@ type SubDocsEvent = {
   loaded: Set<Doc>;
 };
 
+/**
+ * We use `doc.guid` as the unique key, please make sure it not changes.
+ */
 export const createIndexedDBProvider = (
-  id: string,
   doc: Doc,
-  dbName: string = DEFAULT_DB_NAME
+  dbName: string = DEFAULT_DB_NAME,
+  /**
+   * In the future, migrate will be removed and there will be a separate function
+   */
+  migrate = true
 ): IndexedDBProvider => {
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
@@ -262,6 +268,10 @@ export const createIndexedDBProvider = (
     doc.on('update', createOrGetHandleUpdate(id, doc));
     doc.on('destroy', createOrGetHandleDestroy(id, doc));
     doc.on('subdocs', createOrGetHandleSubDocs(id, doc));
+
+    doc.subdocs.forEach(doc => {
+      trackDoc(doc.guid, doc);
+    });
   }
 
   function unTrackDoc(id: string, doc: Doc) {
@@ -336,15 +346,22 @@ export const createIndexedDBProvider = (
         reject = _reject;
       });
       connected = true;
-      trackDoc(id, doc);
+      trackDoc(doc.guid, doc);
+
       // only the runs `await` below, otherwise the logic is incorrect
       const db = await dbPromise;
-      await tryMigrate(db, id, dbName);
+      if (migrate) {
+        // Tips:
+        //  this is only backward compatible with the yjs official version of y-indexeddb
+        await tryMigrate(db, doc.guid, dbName);
+      }
       if (!connected) {
         return;
       }
+
+      // recursively save all docs into indexeddb
       const docs: [string, Doc][] = [];
-      docs.push([id, doc]);
+      docs.push([doc.guid, doc]);
       while (docs.length > 0) {
         const [id, doc] = docs.pop() as [string, Doc];
         await saveDocOperation(id, doc);
@@ -361,13 +378,13 @@ export const createIndexedDBProvider = (
       if (early) {
         reject(new EarlyDisconnectError());
       }
-      unTrackDoc(id, doc);
+      unTrackDoc(doc.guid, doc);
     },
     async cleanup() {
       if (connected) {
         throw new CleanupWhenConnectingError();
       }
-      await (await dbPromise).delete('workspace', id);
+      await (await dbPromise).delete('workspace', doc.guid);
     },
     whenSynced: Promise.resolve(),
     get connected() {

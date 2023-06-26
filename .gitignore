@@ -55,6 +55,7 @@ Thumbs.db
 .history
 
 .next
+.vercel
 out/
 storybook-static
 i18n-generated.ts

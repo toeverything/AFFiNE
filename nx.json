@@ -3,9 +3,10 @@
   "npmScope": "toeverything",
   "tasksRunnerOptions": {
     "default": {
-      "runner": "nx/tasks-runners/default",
+      "runner": "nx-cloud",
       "options": {
-        "cacheableOperations": ["build", "test"]
+        "cacheableOperations": ["build", "test"],
+        "accessToken": "YmQ2NTg1ODktZTk5Mi00YzhiLTk2ZmUtNWQzMDg0NDBkOWM3fHJlYWQtb25seQ=="
       }
     }
   },
@@ -23,6 +24,17 @@
   "targetDefaults": {
     "build": {
       "dependsOn": ["^build"],
+      "outputs": [
+        "{projectRoot}/dist",
+        "{projectRoot}/build",
+        "{projectRoot}/out",
+        "{projectRoot}/node_modules/.cache",
+        "{projectRoot}/target",
+        "{workspaceRoot}/apps/web/.next",
+        "{workspaceRoot}/packages/storybook/storybook-static",
+        "{workspaceRoot}/packages/native/affine.*.node",
+        "{workspaceRoot}/affine.db"
+      ],
       "inputs": [
         {
           "runtime": "node -v"
@@ -65,9 +77,16 @@
     "e2e": {
       "dependsOn": ["^build"],
       "inputs": [
-        { "runtime": "node -v" },
-        { "runtime": "yarn playwright --version" }
+        {
+          "runtime": "node -v"
+        },
+        {
+          "runtime": "yarn playwright --version"
+        }
       ]
+    },
+    "export": {
+      "dependsOn": ["build"]
     },
     "dev": {
       "dependsOn": ["^build"]

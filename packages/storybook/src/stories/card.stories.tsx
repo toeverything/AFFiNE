@@ -23,7 +23,6 @@ export const AffineWorkspaceCard = () => {
         flavour: WorkspaceFlavour.LOCAL,
         id: 'local',
         blockSuiteWorkspace,
-        providers: [],
       }}
       onClick={() => {}}
       onSettingClick={() => {}}
