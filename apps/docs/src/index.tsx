@@ -1,3 +1,4 @@
+import '@blocksuite/editor/themes/affine.css';
 import './index.css';
 
 import { StrictMode } from 'react';
