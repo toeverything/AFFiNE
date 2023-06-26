@@ -4,7 +4,10 @@ import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { upgradeV1ToV2 } from '@affine/workspace/migration';
+import {
+  migrateLocalBlobStorage,
+  upgradeV1ToV2,
+} from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
 import { rootStore } from '@toeverything/plugin-infra/manager';
@@ -86,7 +89,9 @@ rootStore.sub(rootWorkspacesMetadataAtom, () => {
         const newId = await adapter.CRUD.create(
           newWorkspace.blockSuiteWorkspace
         );
+
         await adapter.CRUD.delete(workspace as any);
+        await migrateLocalBlobStorage(workspace.id, newId);
         rootStore.set(rootWorkspacesMetadataAtom, metadata => [
           ...metadata
             .map(newMeta => (newMeta.id === oldMeta.id ? null : newMeta))

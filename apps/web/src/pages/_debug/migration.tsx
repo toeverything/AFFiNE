@@ -4,7 +4,10 @@ import type {
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { upgradeV1ToV2 } from '@affine/workspace/migration';
+import {
+  migrateLocalBlobStorage,
+  upgradeV1ToV2,
+} from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
@@ -58,11 +61,12 @@ const workspaceAtom = atom<Promise<Workspace>>(async get => {
   provider.sync();
   await provider.whenReady;
   const localWorkspace = {
-    id: 'wMORwDSLkb',
+    id: workspace.id,
     blockSuiteWorkspace: workspace,
     flavour: WorkspaceFlavour.LOCAL,
   } satisfies LocalWorkspace;
   const newWorkspace = upgradeV1ToV2(localWorkspace);
+  await migrateLocalBlobStorage(localWorkspace.id, newWorkspace.id);
   newWorkspace.blockSuiteWorkspace;
   return newWorkspace.blockSuiteWorkspace;
 });
