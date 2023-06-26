@@ -1,5 +1,84 @@
 import * as Y from 'yjs';
 
+function migrateDatabase(data: Y.Map<unknown>) {
+  data.delete('prop:mode');
+  data.set('prop:views', new Y.Array());
+  const columns = (data.get('prop:columns') as Y.Array<unknown>).toJSON() as {
+    id: string;
+    name: string;
+    hide: boolean;
+    type: string;
+    width: number;
+    selection?: unknown[];
+  }[];
+  const views = [
+    {
+      id: 'default',
+      name: 'Table',
+      columns: columns.map(col => ({
+        id: col.id,
+        width: col.width,
+        hide: col.hide,
+      })),
+      filter: { type: 'group', op: 'and', conditions: [] },
+      mode: 'table',
+    },
+  ];
+  const cells = (data.get('prop:cells') as Y.Map<unknown>).toJSON() as Record<
+    string,
+    Record<
+      string,
+      {
+        id: string;
+        value: unknown;
+      }
+    >
+  >;
+  const convertColumn = (
+    id: string,
+    update: (cell: { id: string; value: unknown }) => void
+  ) => {
+    Object.values(cells).forEach(row => {
+      update(row[id]);
+    });
+  };
+  const newColumns = columns.map(v => {
+    let data: Record<string, unknown> = {};
+    if (v.type === 'select' || v.type === 'multi-select') {
+      data = { options: v.selection };
+      if (v.type === 'select') {
+        convertColumn(v.id, cell => {
+          if (Array.isArray(cell.value)) {
+            cell.value = cell.value[0]?.id;
+          }
+        });
+      } else {
+        convertColumn(v.id, cell => {
+          if (Array.isArray(cell.value)) {
+            cell.value = cell.value.map(v => v.id);
+          }
+        });
+      }
+    }
+    if (v.type === 'number') {
+      convertColumn(v.id, cell => {
+        if (typeof cell.value === 'string') {
+          cell.value = Number.parseFloat(cell.value.toString());
+        }
+      });
+    }
+    return {
+      id: v.id,
+      type: v.type,
+      name: v.name,
+      data,
+    };
+  });
+  data.set('prop:columns', newColumns);
+  data.set('prop:views', views);
+  data.set('prop:cells', cells);
+}
+
 function runBlockMigration(
   flavour: string,
   data: Y.Map<unknown>,
@@ -18,6 +97,9 @@ function runBlockMigration(
     data.set('sys:flavour', 'affine:image');
     data.delete('prop:type');
   }
+  if (flavour === 'affine:database' && version < 2) {
+    migrateDatabase(data);
+  }
 }
 
 function updateBlockVersions(versions: Y.Map<number>) {
@@ -30,6 +112,10 @@ function updateBlockVersions(versions: Y.Map<number>) {
   if (embedVersion !== undefined) {
     versions.set('affine:image', embedVersion);
     versions.delete('affine:embed');
+  }
+  const databaseVersion = versions.get('affine:database');
+  if (databaseVersion !== undefined && databaseVersion < 2) {
+    versions.set('affine:database', 2);
   }
 }
 
