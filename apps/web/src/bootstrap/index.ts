@@ -109,6 +109,7 @@ rootStore.sub(rootWorkspacesMetadataAtom, () => {
         applyUpdateRecursive(newBlockSuiteWorkspace.doc, newDoc);
 
         const newId = await adapter.CRUD.create(newBlockSuiteWorkspace);
+        await adapter.CRUD.delete(workspace as any);
         rootStore.set(rootWorkspacesMetadataAtom, metadata => [
           ...metadata,
           {
