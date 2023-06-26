@@ -8,7 +8,11 @@ async fn main() -> Result<(), std::io::Error> {
   // always start with a fresh database to have
   // latest db schema
   let db_path = "../../affine.db";
-  fs::remove_file(db_path)?;
+
+  // check if db exists and then remove file
+  if fs::metadata(db_path).is_ok() {
+    fs::remove_file(db_path)?;
+  }
 
   napi_build::setup();
   let options = SqliteConnectOptions::new()
