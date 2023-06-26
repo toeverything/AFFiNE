@@ -63,10 +63,8 @@ async function createWindow(
           new Promise((resolve) => {
             let count = 0;
             const checkReactRender = setInterval(async () => {
-              const rootDefaultComponent = document.querySelector('affine-default-page');
-              const rootEdgelessComponent = document.querySelector('affine-edgeless-page');
-              const imageLoadingComponent = document.querySelector('affine-image-block-loading-card');
-              if ((rootDefaultComponent || rootEdgelessComponent) && !imageLoadingComponent) {
+              const editorComponent = document.querySelector('editor-container');
+              if (editorComponent) {
                 clearInterval(checkReactRender);
                 resolve('true');
               }
@@ -167,7 +165,7 @@ async function generatePDF(
       return filePath;
     } else {
       const finalFilePath = await win.webContents.executeJavaScript(`
-        const savePageToPng = async () => {
+        const savePageToPdf = async () => {
           const editor = document.querySelector('editor-container');
           if (editor.createContentParser) {
             const parser = editor.createContentParser();
@@ -176,7 +174,7 @@ async function generatePDF(
             return finalFilePath;
           }
         };
-        savePageToPng()
+        savePageToPdf()
       `);
       return finalFilePath;
     }
@@ -250,7 +248,6 @@ async function generatePNG(
       };
       savePageToPng()
     `);
-    console.log('finalFilePath', finalFilePath);
     return finalFilePath;
   } finally {
     win.close();
