@@ -1,0 +1,9 @@
+affineCloud:
+    tag: 'nightly-latest'
+    resources:
+        cpu: '250m'
+        memory: 0.5Gi
+postgres:
+    resources:
+        cpu: '500m'
+        memory: 0.5Gi
