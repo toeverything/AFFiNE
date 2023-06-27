@@ -102,7 +102,7 @@ const ImagePreviewModalImpl = (
       const nextBlock = page
         .getNextSiblings(block)
         .find(
-          (block): block is ImageBlockModel => block.flavour === 'affine:embed'
+          (block): block is ImageBlockModel => block.flavour === 'affine:image'
         );
       if (nextBlock) {
         setBlockId(nextBlock.id);
@@ -122,7 +122,7 @@ const ImagePreviewModalImpl = (
       const prevBlock = page
         .getPreviousSiblings(block)
         .findLast(
-          (block): block is ImageBlockModel => block.flavour === 'affine:embed'
+          (block): block is ImageBlockModel => block.flavour === 'affine:image'
         );
       if (prevBlock) {
         setBlockId(prevBlock.id);
@@ -145,14 +145,14 @@ const ImagePreviewModalImpl = (
           .getPreviousSiblings(block)
           .findLast(
             (block): block is ImageBlockModel =>
-              block.flavour === 'affine:embed'
+              block.flavour === 'affine:image'
           )
       ) {
         const prevBlock = page
           .getPreviousSiblings(block)
           .findLast(
             (block): block is ImageBlockModel =>
-              block.flavour === 'affine:embed'
+              block.flavour === 'affine:image'
           );
         if (prevBlock) {
           setBlockId(prevBlock.id);
@@ -162,14 +162,14 @@ const ImagePreviewModalImpl = (
           .getNextSiblings(block)
           .find(
             (block): block is ImageBlockModel =>
-              block.flavour === 'affine:embed'
+              block.flavour === 'affine:image'
           )
       ) {
         const nextBlock = page
           .getNextSiblings(block)
           .find(
             (block): block is ImageBlockModel =>
-              block.flavour === 'affine:embed'
+              block.flavour === 'affine:image'
           );
         if (nextBlock) {
           setBlockId(nextBlock.id);
@@ -252,7 +252,7 @@ const ImagePreviewModalImpl = (
     assertExists(block);
     setCaption(block?.caption);
   }, [props.blockId, props.pageId, props.workspace]);
-  const { data } = useSWR(['workspace', 'embed', props.pageId, props.blockId], {
+  const { data } = useSWR(['workspace', 'image', props.pageId, props.blockId], {
     fetcher: ([_, __, pageId, blockId]) => {
       const page = props.workspace.getPage(pageId);
       assertExists(page);
@@ -494,7 +494,7 @@ export const ImagePreviewModal = (
           .getPreviousSiblings(block)
           .findLast(
             (block): block is ImageBlockModel =>
-              block.flavour === 'affine:embed'
+              block.flavour === 'affine:image'
           );
         if (prevBlock) {
           setBlockId(prevBlock.id);
@@ -504,7 +504,7 @@ export const ImagePreviewModal = (
           .getNextSiblings(block)
           .find(
             (block): block is ImageBlockModel =>
-              block.flavour === 'affine:embed'
+              block.flavour === 'affine:image'
           );
         if (nextBlock) {
           setBlockId(nextBlock.id);
@@ -542,8 +542,9 @@ export const ImagePreviewModal = (
         />
       </Suspense>
       <button
+        data-testid="image-preview-close-button"
         onClick={() => {
-          setIsOpen(false);
+          setBlockId(null);
         }}
         className={imagePreviewModalCloseButtonStyle}
       >

@@ -8,8 +8,11 @@ export const inputStyle = style({
   alignItems: 'center',
   justifyContent: 'center',
   height: '22px',
-  marginLeft: '10px',
-  marginRight: '10px',
+  textAlign: 'center',
+  ':hover': {
+    background: 'var(--affine-hover-color)',
+    borderRadius: '4px',
+  },
 });
 export const popperStyle = style({
   boxShadow: 'var(--affine-shadow-2)',
