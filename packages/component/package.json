@@ -8,7 +8,7 @@
     "./*": "./src/components/*/index.tsx"
   },
   "scripts": {
-    "build": "yarn nx build @affine/i18n"
+    "build": "yarn workspace @affine/i18n build"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
