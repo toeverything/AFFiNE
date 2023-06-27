@@ -273,6 +273,26 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
+  e2e-migration-test:
+    name: E2E Migration Test
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+
+      - name: Unzip
+        run: yarn unzip
+        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+
+      - name: Run legacy playwright tests
+        run: yarn e2e --forbid-only
+        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+
   desktop-test:
     name: Desktop Test
     runs-on: ${{ matrix.spec.os }}

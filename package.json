@@ -10,7 +10,8 @@
     "plugins/*",
     "packages/*",
     "tests/fixtures",
-    "tests/kit"
+    "tests/kit",
+    "tests/affine-legacy/*"
   ],
   "scripts": {
     "dev": "dev-web",
