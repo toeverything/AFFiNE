@@ -7,12 +7,10 @@ export const pluginContainer = style({
 
 export const editor = style({
   height: 'calc(100% - 52px)',
-
   selectors: {
     '&.full-screen': {
-      padding: '0 5%',
       vars: {
-        '--affine-editor-width': '100%',
+        '--affine-editor-width': '90%',
       },
     },
   },

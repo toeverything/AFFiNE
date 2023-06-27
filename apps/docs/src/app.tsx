@@ -25,11 +25,11 @@ const AppCreator = (pathname: string) =>
     const buffer = [...readFileSync(path)];
 
     return (
-      <div className="flex flex-col-reverse sm:flex-row">
+      <div className="flex flex-col-reverse sm:flex-row h-screen">
         <nav className="w-full sm:w-64">
           <Sidebar />
         </nav>
-        <main className="flex-1 p-6 w-full sm:w-[calc(100%-16rem)]">
+        <main className="flex-1 p-6 w-full sm:w-[calc(100%-16rem)] overflow-scroll">
           <Editor
             workspaceId={pathname}
             pageId="1"
