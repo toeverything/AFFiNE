@@ -41,7 +41,6 @@ export const buildFlagsSchema = z.object({
    */
   enableAllPageFilter: z.boolean(),
   enablePlugin: z.boolean(),
-  enableImagePreviewModal: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),

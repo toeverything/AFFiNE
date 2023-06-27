@@ -60,7 +60,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           API_SERVER_PROFILE: prod
           ENABLE_TEST_PROPERTIES: false
-          ENABLE_IMAGE_PREVIEW_MODAL: true
           ENABLE_BOOKMARK_OPERATION: true
           RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
 

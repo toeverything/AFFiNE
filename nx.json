@@ -49,9 +49,6 @@
           "env": "ENABLE_ALL_PAGE_FILTER"
         },
         {
-          "env": "ENABLE_IMAGE_PREVIEW_MODAL"
-        },
-        {
           "env": "ENABLE_TEST_PROPERTIES"
         },
         {
