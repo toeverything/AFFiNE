@@ -26,6 +26,7 @@ export default defineConfig({
       resolve(rootDir, './scripts/setup/i18n.ts'),
       resolve(rootDir, './scripts/setup/search.ts'),
       resolve(rootDir, './scripts/setup/lottie-web.ts'),
+      resolve(rootDir, './scripts/setup/global.ts'),
     ],
     // split tests that include native addons or not
     include: process.env.NATIVE_TEST
