@@ -75,7 +75,7 @@
           "sys:id": "V7dUwRJxpY",
           "sys:flavour": "affine:surface",
           "sys:children": [],
-          "elements": {
+          "prop:elements": {
             "HAcJCK_5pU": {
               "type": "brush",
               "xywh": "[1199.3739609288366,67.69610348511776,41.289133053352316,60.53518339203259]",
