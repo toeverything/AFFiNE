@@ -4,7 +4,7 @@ import { settingRow } from './share.css';
 
 export const SettingRow: FC<
   PropsWithChildren<{
-    name: string;
+    name: string | ReactElement;
     desc: string | ReactElement;
     style?: CSSProperties;
     onClick?: () => void;
