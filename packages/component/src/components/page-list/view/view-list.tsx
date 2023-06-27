@@ -54,7 +54,12 @@ export const ViewList = ({
                 }[] = [
                   {
                     icon: <PinIcon />,
-                    click: () => {},
+                    click: () => {
+                      setting.updateView({
+                        ...view,
+                        pinned: !view.pinned,
+                      });
+                    },
                   },
                   {
                     icon: <PenIcon />,
@@ -69,13 +74,12 @@ export const ViewList = ({
                         console.error(err);
                       });
                     },
-                    className: styles.deleteOption,
                   },
                 ];
                 return (
                   <MenuItem
                     icon={<ViewLayersIcon></ViewLayersIcon>}
-                    onClick={() => setting.updateView(view)}
+                    onClick={() => setting.selectView(view.id)}
                     key={view.id}
                     className={styles.viewMenu}
                   >

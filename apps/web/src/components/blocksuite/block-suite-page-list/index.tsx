@@ -1,10 +1,6 @@
 import { Empty } from '@affine/component';
 import type { ListData, TrashListData } from '@affine/component/page-list';
-import {
-  filterByFilterList,
-  PageList,
-  PageListTrashView,
-} from '@affine/component/page-list';
+import { PageList, PageListTrashView } from '@affine/component/page-list';
 import { env } from '@affine/env';
 import type { View } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
@@ -21,6 +17,7 @@ import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
+import { filterPage } from '../../../utils/filter';
 import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
 import { usePageHelper } from './utils';
 
@@ -135,11 +132,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
           if (!view) {
             return true;
           }
-          return filterByFilterList(view.filterList, {
-            'Is Favourited': !!pageMeta.favorite,
-            Created: pageMeta.createDate,
-            Updated: pageMeta.updatedDate ?? pageMeta.createDate,
-          });
+          return filterPage(view.filterList, pageMeta);
         }),
     [pageMetas, filterMode, isPreferredEdgeless, listType, view]
   );

@@ -47,7 +47,7 @@ export function WorkspaceHeader({
                     name: '',
                     filterList: setting.currentView.filterList,
                   }}
-                  onConfirm={setting.createView}
+                  onConfirm={setting.saveView}
                 ></SaveViewButton>
               ) : null
             ) : (

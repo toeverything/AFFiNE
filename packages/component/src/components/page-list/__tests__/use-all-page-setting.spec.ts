@@ -22,7 +22,7 @@ test('useAllPageSetting', async () => {
   expect(nextView).not.toBe(prevView);
   expect(nextView.filterList).toEqual([createDefaultFilter(vars[0])]);
   settingHook.result.current.backToAll();
-  await settingHook.result.current.createView({
+  await settingHook.result.current.saveView({
     ...settingHook.result.current.currentView,
     id: '1',
   });

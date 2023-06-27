@@ -28,5 +28,6 @@ export type Filter = {
 export type View = {
   id: string;
   name: string;
+  pinned?: boolean;
   filterList: Filter[];
 };

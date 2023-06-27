@@ -29,6 +29,7 @@ import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
+import { SmartFolderList } from '../pure/workspace-slider-bar/smartFolder';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 
 export type RootAppSidebarProps = {
@@ -222,7 +223,10 @@ export const RootAppSidebar = ({
                 <span data-testid="shared-pages">{t['Shared Pages']()}</span>
               </RouteMenuLinkItem>
             ))}
-
+          <CategoryDivider label={t['Smart Folder']()} />
+          {blockSuiteWorkspace && (
+            <SmartFolderList currentWorkspace={currentWorkspace} />
+          )}
           <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}

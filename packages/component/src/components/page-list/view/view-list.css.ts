@@ -40,7 +40,7 @@ export const viewOption = style({
   height: 24,
   opacity: 0,
   ':hover': {
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    backgroundColor: 'var(--affine-hover-color)',
   },
   selectors: {
     [`${viewMenu}:hover &`]: {

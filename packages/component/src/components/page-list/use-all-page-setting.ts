@@ -37,7 +37,7 @@ const currentViewAtom = atomWithReset<View>({
   filterList: [],
 });
 
-export const useAllPageSetting = () => {
+export const useSavedViews = () => {
   const { data: savedViews, mutate } = useSWRImmutable<View[]>(
     ['affine', 'page-view'],
     {
@@ -51,10 +51,7 @@ export const useAllPageSetting = () => {
       revalidateOnMount: true,
     }
   );
-
-  const [currentView, setCurrentView] = useAtom(currentViewAtom);
-
-  const createView = useCallback(
+  const saveView = useCallback(
     async (view: View) => {
       if (view.id === NIL) {
         return;
@@ -78,29 +75,52 @@ export const useAllPageSetting = () => {
     },
     [mutate]
   );
+  return {
+    savedViews: savedViews ?? [],
+    saveView,
+    deleteView,
+  };
+};
+
+export const useAllPageSetting = () => {
+  const { savedViews, saveView, deleteView } = useSavedViews();
+  const [currentView, setCurrentView] = useAtom(currentViewAtom);
+
   const updateView = useCallback(
     (view: View) => {
-      createView(view)
+      saveView(view)
         .then(() => {
-          setCurrentView(view);
+          if (view.id === currentView.id) {
+            setCurrentView(view);
+          }
         })
         .catch(err => {
           console.error(err);
         });
     },
-    [createView, setCurrentView]
+    [currentView.id, saveView, setCurrentView]
+  );
+  const selectView = useCallback(
+    (id: string) => {
+      const view = savedViews.find(v => v.id === id);
+      if (view) {
+        setCurrentView(view);
+      }
+    },
+    [savedViews, setCurrentView]
   );
   const backToAll = useCallback(() => {
     setCurrentView(RESET);
   }, [setCurrentView]);
   return {
     currentView,
-    savedViews: savedViews ?? [],
+    savedViews,
     isDefault: currentView.id === NIL,
 
     // actions
-    createView,
+    saveView,
     updateView,
+    selectView,
     backToAll,
     deleteView,
   };
