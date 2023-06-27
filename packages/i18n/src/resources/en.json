@@ -245,7 +245,7 @@
   "Sync across devices with AFFiNE Cloud": "Sync across devices with AFFiNE Cloud",
   "Update workspace name success": "Update workspace name success",
   "Create your own workspace": "Create your own workspace",
-  "Storage Folder Hint": "Check or change storage location.",
+  "Storage Folder Hint": "Check or change storage location. Click path to edit location.",
   "Save": "Save",
   "Customize": "Customize",
   "Move folder success": "Move folder success",
@@ -363,5 +363,8 @@
   "Workspace demo's Settings": "Workspace demo's Settings",
   "You can customize your workspace here.": "You can customize your workspace here.",
   "Info": "Info",
-  "Storage and Export": "Storage and Export"
+  "Storage and Export": "Storage and Export",
+  "Workspace Profile": "Workspace Profile",
+  "Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.": "Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.",
+  "Storage": "Storage"
 }

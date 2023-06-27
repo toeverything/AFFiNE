@@ -9,14 +9,16 @@ import type {
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type { FC } from 'react';
 import { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { WorkspaceDeleteModal } from './delete';
+import { ExportPanel } from './export';
 import { WorkspaceLeave } from './leave';
+import { ProfilePanel } from './profile';
+import { StoragePanel } from './storage';
 
 export type WorkspaceSettingDetailProps = {
   workspace: AffineOfficialWorkspace;
@@ -36,24 +38,36 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
   onDeleteWorkspace,
 }) => {
   const t = useAFFiNEI18N();
-  const [workspaceName] = useBlockSuiteWorkspaceName(
-    workspace.blockSuiteWorkspace ?? null
-  );
   const isOwner = useIsWorkspaceOwner(workspace);
 
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
+
   return (
     <>
       <SettingHeader
         title={t[`Workspace demo's Settings`]()}
         subtitle={t['You can customize your workspace here.']()}
       />
-      {workspaceName}
-
-      <SettingWrapper title={t['Info']()}></SettingWrapper>
+      <SettingWrapper title={t['Info']()}>
+        <SettingRow
+          name={t['Workspace Profile']()}
+          desc={t[
+            'Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.'
+          ]()}
+          spreadCol={false}
+        >
+          <ProfilePanel workspace={workspace} />
+        </SettingRow>
+      </SettingWrapper>
       <SettingWrapper title={t['AFFiNE Cloud']()}></SettingWrapper>
-      <SettingWrapper title={t['Storage and Export']()}></SettingWrapper>
+      {environment.isDesktop ? (
+        <SettingWrapper title={t['Storage and Export']()}>
+          <StoragePanel workspace={workspace} />
+          <ExportPanel workspace={workspace} />
+        </SettingWrapper>
+      ) : null}
+
       <SettingWrapper>
         <SettingRow
           name={

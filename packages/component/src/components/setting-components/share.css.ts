@@ -41,16 +41,27 @@ globalStyle(`${wrapper} .title`, {
 });
 
 export const settingRow = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
   marginBottom: '25px',
   color: 'var(--affine-text-primary-color)',
+  selectors: {
+    '&.two-col': {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    '&:last-of-type': {
+      marginBottom: '0',
+    },
+  },
 });
 
 globalStyle(`${settingRow} .left-col`, {
   flexShrink: 0,
-  maxWidth: '80%',
+  maxWidth: '100%',
+});
+globalStyle(`${settingRow}.two-col .left-col`, {
+  flexShrink: 0,
+  maxWidth: '50%',
 });
 globalStyle(`${settingRow} .name`, {
   marginBottom: '2px',
