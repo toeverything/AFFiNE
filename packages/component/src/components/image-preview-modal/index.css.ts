@@ -62,7 +62,6 @@ export const imagePreviewModalCloseButtonStyle = style({
   zIndex: 1,
   marginTop: '38px',
   marginRight: '38px',
-
 });
 
 export const imagePreviewModalGoStyle = style({

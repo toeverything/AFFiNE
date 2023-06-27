@@ -181,7 +181,6 @@ export const useZoomControls = ({
     }
   }, [imageRef]);
 
-
   useEffect(() => {
     const handleScroll = (event: WheelEvent) => {
       const { deltaY } = event;

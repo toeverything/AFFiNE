@@ -9,7 +9,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import {
   publicPageBlockSuiteAtom,
@@ -17,7 +17,10 @@ import {
   publicWorkspacePageIdAtom,
 } from '../../../atoms/public-workspace';
 import { BlockSuiteEditorHeader } from '../../../components/blocksuite/workspace-header';
-import { PageDetailEditor } from '../../../components/page-detail-editor';
+import {
+  PageDetailEditor,
+  type PageDetailEditorProps,
+} from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
@@ -68,6 +71,19 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
   const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(blockSuiteWorkspace);
   const pageTitle = blockSuiteWorkspace.meta.getPageMeta(pageId)?.title;
+  const onLoad = useCallback<NonNullable<PageDetailEditorProps['onLoad']>>(
+    (_, editor) => {
+      const { page } = editor;
+      page.awarenessStore.setReadonly(page, true);
+      const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
+        return openPage(blockSuiteWorkspace.id, pageId);
+      });
+      return () => {
+        dispose.dispose();
+      };
+    },
+    [blockSuiteWorkspace.id, openPage]
+  );
   return (
     <>
       <PublicQuickSearch workspace={publicWorkspace} />
@@ -97,16 +113,7 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
         isPublic={true}
         pageId={pageId}
         workspace={publicWorkspace}
-        onLoad={(_, editor) => {
-          const { page } = editor;
-          page.awarenessStore.setReadonly(page, true);
-          const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
-            return openPage(blockSuiteWorkspace.id, pageId);
-          });
-          return () => {
-            dispose.dispose();
-          };
-        }}
+        onLoad={onLoad}
         onInit={initEmptyPage}
       />
     </>

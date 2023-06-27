@@ -33,7 +33,8 @@
         "{workspaceRoot}/apps/web/.next",
         "{workspaceRoot}/packages/storybook/storybook-static",
         "{workspaceRoot}/packages/native/affine.*.node",
-        "{workspaceRoot}/affine.db"
+        "{workspaceRoot}/affine.db",
+        "{workspaceRoot/apps/electron/dist"
       ],
       "inputs": [
         {
