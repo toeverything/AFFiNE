@@ -1,18 +1,32 @@
 import { resolve } from 'node:path';
 
 import { test } from '@playwright/test';
+import express from 'express';
+
+let app: express.Express;
+let server: ReturnType<express.Express['listen']>;
+
+test.beforeEach(() => {
+  app = express();
+  app.use(express.static(resolve(__dirname, '..', 'static')));
+  server = app.listen(8081);
+});
+
+test.afterEach(() => {
+  server.close();
+});
 
 test('init page', async ({ page }) => {
   await page.goto('http://localhost:8081/');
   await page.waitForSelector('v-line');
 
   const currentWorkspaceId: string = await page.evaluate(
-    () => (globalThis.currentWorkspace as any).id
+    () => (globalThis as any).currentWorkspace.id
   );
 
   const downloadPromise = page.waitForEvent('download');
   await page.evaluate(() => {
-    const workspace = (globalThis.currentWorkspace as any).blockSuiteWorkspace;
+    const workspace = (globalThis as any).currentWorkspace.blockSuiteWorkspace;
     workspace.exportYDoc();
   });
 

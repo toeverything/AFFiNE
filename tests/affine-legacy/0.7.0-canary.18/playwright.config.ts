@@ -23,14 +23,6 @@ const config: PlaywrightTestConfig = {
   workers: 4,
   retries: 1,
   reporter: process.env.CI ? 'github' : 'list',
-  webServer: [
-    {
-      command: 'yarn start',
-      port: 8081,
-      timeout: 120 * 1000,
-      reuseExistingServer: !process.env.CI,
-    },
-  ],
 };
 
 if (process.env.CI) {
