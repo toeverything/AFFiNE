@@ -92,7 +92,7 @@ describe('currentWorkspace atom', () => {
       const workspaceId = await WorkspaceAdapters[
         WorkspaceFlavour.LOCAL
       ].CRUD.create(workspace);
-      store.set(rootWorkspacesMetadataAtom, [
+      await store.set(rootWorkspacesMetadataAtom, [
         {
           id: workspaceId,
           flavour: WorkspaceFlavour.LOCAL,
@@ -103,7 +103,7 @@ describe('currentWorkspace atom', () => {
     }
     store.set(
       rootCurrentWorkspaceIdAtom,
-      store.get(rootWorkspacesMetadataAtom)[0].id
+      (await store.get(rootWorkspacesMetadataAtom))[0].id
     );
     const workspace = await store.get(rootCurrentWorkspaceAtom);
     expect(workspace).toBeDefined();

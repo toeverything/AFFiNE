@@ -54,7 +54,7 @@ if (environment.isBrowser) {
     try {
       const metadata = JSON.parse(value) as RootWorkspaceMetadata[];
       metadata.forEach(oldMeta => {
-        if (!oldMeta.version) {
+        if (!('version' in oldMeta)) {
           const adapter = WorkspaceAdapters[oldMeta.flavour];
           assertExists(adapter);
           const upgrade = async () => {
@@ -81,7 +81,7 @@ if (environment.isBrowser) {
             const newDoc = migrateToSubdoc(doc);
             if (doc === newDoc) {
               console.log('doc not changed');
-              rootStore.set(rootWorkspacesMetadataAtom, metadata =>
+              await rootStore.set(rootWorkspacesMetadataAtom, metadata =>
                 metadata.map(newMeta =>
                   newMeta.id === oldMeta.id
                     ? {
@@ -101,7 +101,7 @@ if (environment.isBrowser) {
 
             await adapter.CRUD.delete(workspace as any);
             await migrateLocalBlobStorage(workspace.id, newId);
-            rootStore.set(rootWorkspacesMetadataAtom, metadata => [
+            await rootStore.set(rootWorkspacesMetadataAtom, metadata => [
               ...metadata
                 .map(newMeta => (newMeta.id === oldMeta.id ? null : newMeta))
                 .filter((meta): meta is RootWorkspaceMetadata => !!meta),

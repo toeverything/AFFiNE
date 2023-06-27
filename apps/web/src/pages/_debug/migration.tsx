@@ -119,14 +119,13 @@ const MigrationInner = () => {
   const ids = useAtomValue(workspaceIdsAtom);
   const [id, setId] = useAtom(targetIdAtom);
   const router = useRouter();
-  const onWriteIntoProduction = useCallback(() => {
+  const onWriteIntoProduction = useCallback(async () => {
     assertExists(id);
     const metadata: RootWorkspaceMetadataV1 = {
       id,
       flavour: WorkspaceFlavour.LOCAL,
-      version: undefined,
     };
-    rootStore.set(rootWorkspacesMetadataAtom, [metadata]);
+    await rootStore.set(rootWorkspacesMetadataAtom, [metadata]);
     router.push('/').catch(console.error);
   }, [id, router]);
   const writeIntoProductionNode = id && (
