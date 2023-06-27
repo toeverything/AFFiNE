@@ -9,6 +9,7 @@ import type {
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type { FC } from 'react';
 import { useState } from 'react';
 
@@ -39,6 +40,7 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
 }) => {
   const t = useAFFiNEI18N();
   const isOwner = useIsWorkspaceOwner(workspace);
+  const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
 
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
@@ -46,7 +48,7 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
   return (
     <>
       <SettingHeader
-        title={t[`Workspace demo's Settings`]()}
+        title={t[`Workspace Settings with name`]({ name })}
         subtitle={t['You can customize your workspace here.']()}
       />
       <SettingWrapper title={t['Info']()}>
