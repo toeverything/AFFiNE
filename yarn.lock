@@ -38,8 +38,8 @@ __metadata:
     "@toeverything/plugin-infra": "workspace:*"
     foxact: ^0.2.10
     link-preview-js: ^3.0.4
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
   peerDependencies:
     react: "*"
     react-dom: "*"
@@ -100,9 +100,9 @@ __metadata:
     jotai: ^2.2.1
     lit: ^2.7.5
     lottie-web: ^5.12.2
-    react: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
     react-datepicker: ^4.13.0
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react-dom: 18.3.0-canary-8ec962d82-20230623
     react-error-boundary: ^4.0.10
     react-is: ^18.2.0
     rxjs: ^7.8.1
@@ -134,8 +134,8 @@ __metadata:
     marked: ^5.1.0
     marked-gfm-heading-id: ^3.0.4
     marked-mangle: ^1.0.1
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
     zod: ^3.21.4
   peerDependencies:
     react: "*"
@@ -170,9 +170,9 @@ __metadata:
     autoprefixer: ^10.4.14
     express: ^4.18.2
     jotai: ^2.2.1
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
-    react-server-dom-webpack: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
+    react-server-dom-webpack: 18.3.0-canary-8ec962d82-20230623
     tailwindcss: ^3.3.2
     typescript: ^5.1.3
     waku: 0.12.1
@@ -236,8 +236,8 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230626181619-90507cfc-nightly
     lit: ^2.7.5
     next: =13.4.2
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
     zod: ^3.21.4
   peerDependencies:
     "@affine/templates": "workspace:*"
@@ -344,8 +344,8 @@ __metadata:
     nx-cloud: latest
     nyc: ^15.1.0
     prettier: ^2.8.8
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
     serve: ^14.2.0
     typescript: ^5.1.3
     vite: ^4.3.9
@@ -444,8 +444,8 @@ __metadata:
     "@vitejs/plugin-react": ^4.0.1
     concurrently: ^8.2.0
     jest-mock: ^29.5.0
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
     serve: ^14.2.0
     storybook: ^7.0.21
     storybook-dark-mode: ^3.0.0
@@ -527,8 +527,8 @@ __metadata:
     next-router-mock: ^0.9.7
     next-themes: ^0.2.1
     raw-loader: ^4.0.2
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
     react-is: ^18.2.0
     react-resizable-panels: ^0.0.51
     redux: ^4.2.1
@@ -561,8 +561,8 @@ __metadata:
     ky: ^0.33.3
     lib0: ^0.2.78
     next: =13.4.2
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
     ws: ^8.13.0
     y-protocols: ^1.0.5
     yjs: ^13.6.6
@@ -26689,15 +26689,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:18.3.0-canary-16d053d59-20230506":
-  version: 18.3.0-canary-16d053d59-20230506
-  resolution: "react-dom@npm:18.3.0-canary-16d053d59-20230506"
+"react-dom@npm:18.3.0-canary-8ec962d82-20230623":
+  version: 18.3.0-canary-8ec962d82-20230623
+  resolution: "react-dom@npm:18.3.0-canary-8ec962d82-20230623"
   dependencies:
     loose-envify: ^1.1.0
-    scheduler: 0.24.0-canary-16d053d59-20230506
+    scheduler: 0.24.0-canary-8ec962d82-20230623
   peerDependencies:
-    react: 18.3.0-canary-16d053d59-20230506
-  checksum: c9a9b2a9233a892d0855b4b64c8bf37f0079d668048d3ed7b35753c45a166b41f859a3648c6ed3084e97abba0c57df32991f6e14e6a1b3197b696e11d8b92588
+    react: 18.3.0-canary-8ec962d82-20230623
+  checksum: fb850e6b574f246af536f545f5f1329ac000c9178c561348a565defd811e17e28bf9cc06857468768e5f58c8c86215757bc83323030cb9c5f4769317a03d376a
   languageName: node
   linkType: hard
 
@@ -26918,18 +26918,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-server-dom-webpack@npm:18.3.0-canary-16d053d59-20230506":
-  version: 18.3.0-canary-16d053d59-20230506
-  resolution: "react-server-dom-webpack@npm:18.3.0-canary-16d053d59-20230506"
+"react-server-dom-webpack@npm:18.3.0-canary-8ec962d82-20230623":
+  version: 18.3.0-canary-8ec962d82-20230623
+  resolution: "react-server-dom-webpack@npm:18.3.0-canary-8ec962d82-20230623"
   dependencies:
     acorn-loose: ^8.3.0
     loose-envify: ^1.1.0
     neo-async: ^2.6.1
   peerDependencies:
-    react: 18.3.0-canary-16d053d59-20230506
-    react-dom: 18.3.0-canary-16d053d59-20230506
+    react: 18.3.0-canary-8ec962d82-20230623
+    react-dom: 18.3.0-canary-8ec962d82-20230623
     webpack: ^5.59.0
-  checksum: 3d12d8e1f777adf77da23dc5ae6955226af60fe64ea94c068b1401314102ea72bb59fdaf6b41902190fba75b7070c3669f2fe4ab107ad855510723d126feb3cb
+  checksum: 5dda24c23584c868911b5fe9c1213b8317fcf6dd25a443085d4f49f96fa83594cfeb5dfd39467bd93c959c009e6013547b6e9e9f92e5349ca857a320763a012e
   languageName: node
   linkType: hard
 
@@ -26993,12 +26993,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:18.3.0-canary-16d053d59-20230506":
-  version: 18.3.0-canary-16d053d59-20230506
-  resolution: "react@npm:18.3.0-canary-16d053d59-20230506"
+"react@npm:18.3.0-canary-8ec962d82-20230623":
+  version: 18.3.0-canary-8ec962d82-20230623
+  resolution: "react@npm:18.3.0-canary-8ec962d82-20230623"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: 790f0db8016db27a618b35bf4b2718a3d10d54daba0d7cefb91e76929332443bb600a16c4986558733f12bb094e7644c20f7e75205175caac2abd284a5c6d9b9
+  checksum: 9f4fbe629efa6fb64484985886a9d754ffcf0e5f74dc9436750fecd11580ca929012a291891245c02be153a6498d4de61354eff79e6f2635c2d0c56590f96ae4
   languageName: node
   linkType: hard
 
@@ -27830,12 +27830,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"scheduler@npm:0.24.0-canary-16d053d59-20230506":
-  version: 0.24.0-canary-16d053d59-20230506
-  resolution: "scheduler@npm:0.24.0-canary-16d053d59-20230506"
+"scheduler@npm:0.24.0-canary-8ec962d82-20230623":
+  version: 0.24.0-canary-8ec962d82-20230623
+  resolution: "scheduler@npm:0.24.0-canary-8ec962d82-20230623"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: 01e55c532356efff71a74862ea2c6b5a9ea8b03fc231bd10dc196c7a344f738db1ddbc5d17a7f2a4e6cc4074f3c64e7974fb2b5d83bc1f084f7fb2ae0c62feb2
+  checksum: b66a348f4a6f3ccf33d3284417e445fb329151454280c154a2008bc3ddb0a78010ae79ff9922e0885f6f6bd6ef05c5559c7448ad63ad556982b0db99cb5bdc49
   languageName: node
   linkType: hard
 
