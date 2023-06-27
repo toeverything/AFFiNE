@@ -542,7 +542,9 @@ export const ImagePreviewModal = (
         />
       </Suspense>
       <button
+        data-testid="image-preview-close-button"
         onClick={() => {
+          setBlockId(null);
           setIsOpen(false);
         }}
         className={imagePreviewModalCloseButtonStyle}
