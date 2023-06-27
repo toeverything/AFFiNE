@@ -120,10 +120,9 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
       allWorkspaceIDs = [...allWorkspaceIDs, ...moreWorkspaces];
       storage.setItem(kStoreKey, allWorkspaceIDs);
     }
-    const workspaces = (
-      await Promise.all(allWorkspaceIDs.map(id => CRUD.get(id)))
-    ).filter(item => item !== null) as LocalWorkspace[];
 
-    return workspaces;
+    return (await Promise.all(allWorkspaceIDs.map(id => CRUD.get(id)))).filter(
+      item => item !== null
+    ) as LocalWorkspace[];
   },
 };

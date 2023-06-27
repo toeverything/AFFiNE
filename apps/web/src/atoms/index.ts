@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import { WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadataV2 } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { atom } from 'jotai';
@@ -50,28 +50,6 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
         return metadata;
       });
     }, 0);
-  }
-
-  if (environment.isDesktop) {
-    window.apis?.workspace
-      .list()
-      .then(workspaceIDs => {
-        if (abortController.signal.aborted) return;
-        const newMetadata = workspaceIDs.map(w => ({
-          id: w[0],
-          flavour: WorkspaceFlavour.LOCAL,
-          version: undefined,
-        }));
-        setAtom(metadata => {
-          return [
-            ...metadata,
-            ...newMetadata.filter(m => !metadata.find(m2 => m2.id === m.id)),
-          ];
-        });
-      })
-      .catch(err => {
-        console.error(err);
-      });
   }
 
   return () => {
