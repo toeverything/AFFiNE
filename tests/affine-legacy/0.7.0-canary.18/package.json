@@ -3,9 +3,13 @@
   "description": "AFFiNE 0.7.0-canary.18 static output",
   "scripts": {
     "unzip": "unzip affine-web -d static",
-    "start": "serve -s static -l 8081"
+    "start": "yarn exec serve -s static -l 8081",
+    "e2e": "playwright test"
   },
-  "dependencies": {
+  "devDependencies": {
+    "@affine-test/fixtures": "workspace:*",
+    "@affine-test/kit": "workspace:*",
+    "@playwright/test": "=1.33.0",
     "serve": "^14.2.0"
   }
 }
