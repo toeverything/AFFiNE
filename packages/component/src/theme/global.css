@@ -191,20 +191,30 @@ input[type='number']::-webkit-outer-spin-button {
   height: 0;
 }
 .affine-default-viewport::-webkit-scrollbar {
-  width: 8px; /* Chrome Safari */
+  width: 20px; /* Chrome Safari */
+  height: 20px;
 }
 .affine-default-viewport::-webkit-scrollbar-thumb {
-  border-radius: 4px;
+  border-radius: 12px;
+  background-clip: padding-box;
+  border-style: solid;
+  border-width: 7px;
+  border-color: transparent;
+  transition: all 0.2s;
 }
 .affine-default-viewport:hover::-webkit-scrollbar-thumb {
-  background-color: var(--affine-black-30);
- }
+  background-color: var(--affine-divider-color);
+}
+.affine-default-viewport:hover::-webkit-scrollbar-thumb:hover {
+  background-color: var(--affine-icon-color);
+  border-width: 5px;
+}
 .editor-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
   padding: 0 1rem;
-  padding-right: 8px;
+  padding-right: 0;
 }
 
 /* issue: https://github.com/toeverything/AFFiNE/issues/2004 */

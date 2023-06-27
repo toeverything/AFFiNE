@@ -8,7 +8,6 @@ import {
 } from '@affine/component';
 import { ScrollableContainer } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import { isDesktop } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
@@ -129,7 +128,7 @@ export const WorkspaceListModal = ({
                 [onMoveWorkspace]
               )}
             />
-            {!isDesktop && (
+            {!environment.isDesktop && (
               <div>
                 <StyledCreateWorkspaceCard
                   onClick={onNewWorkspace}
@@ -149,7 +148,7 @@ export const WorkspaceListModal = ({
               </div>
             )}
 
-            {isDesktop && (
+            {environment.isDesktop && (
               <Menu
                 placement="auto"
                 trigger={['click']}
@@ -180,7 +179,7 @@ export const WorkspaceListModal = ({
                     </StyledCreateWorkspaceCardPill>
                     <StyledCreateWorkspaceCardPill>
                       <MenuItem
-                        disabled={!isDesktop}
+                        disabled={!environment.isDesktop}
                         onClick={onAddWorkspace}
                         data-testid="add-workspace"
                         style={{
