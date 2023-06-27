@@ -1,0 +1,19 @@
+.wrs27w0 {
+  height: calc(100% - 52px);
+}
+.wrs27w1 {
+  cursor: pointer;
+  color: var(--affine-text-secondary-color);
+  background: var(--affine-background-code-block);
+  border: 1px solid var(--affine-border-color);
+  border-radius: 4px;
+  padding: 0 6px;
+  box-sizing: border-box;
+}
+.wrs27w1:hover {
+  background: var(--affine-hover-color);
+}
+.wrs27w2 {
+  cursor: text;
+}
+/*# sourceMappingURL=503aac2b41da299c.css.map*/
