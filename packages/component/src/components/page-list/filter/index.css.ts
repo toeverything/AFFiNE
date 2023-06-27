@@ -41,21 +41,41 @@ export const filterItemCloseStyle = style({
 });
 export const inputStyle = style({
   fontSize: 'var(--affine-font-xs)',
-  margin: '0 10px',
+  padding: '2px 4px',
+  transition: 'all 0.15s ease-in-out',
+  ':hover': {
+    cursor: 'pointer',
+    background: 'var(--affine-hover-color)',
+    borderRadius: '4px',
+  },
 });
 export const switchStyle = style({
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
-  margin: '0 10px',
+  padding: '2px 4px',
+  transition: 'all 0.15s ease-in-out',
+  ':hover': {
+    cursor: 'pointer',
+    background: 'var(--affine-hover-color)',
+    borderRadius: '4px',
+  },
 });
 export const filterTypeStyle = style({
   fontSize: 'var(--affine-font-sm)',
   display: 'flex',
-  marginRight: '10px',
+  padding: '2px 4px',
+  transition: 'all 0.15s ease-in-out',
+  marginRight: '6px',
+  ':hover': {
+    cursor: 'pointer',
+    background: 'var(--affine-hover-color)',
+    borderRadius: '4px',
+  },
 });
 export const filterTypeIconStyle = style({
   fontSize: 'var(--affine-font-base)',
   marginRight: '6px',
+  padding: '1px 0',
   display: 'flex',
   color: 'var(--affine-icon-color)',
 });
