@@ -1,0 +1,61 @@
+name: Release Charts
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Checkout Helm chart repo
+        uses: actions/checkout@v3
+        with:
+          repository: toeverything/helm-charts
+          path: .helm-chart-repo
+          ref: gh-pages
+          token: ${{ secrets.HELM_RELEASER_TOKEN }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Install chart releaser
+        run: |
+          set -e
+          arch="$(dpkg --print-architecture)"
+          curl -s https://api.github.com/repos/helm/chart-releaser/releases/latest \
+          | yq --indent 0 --no-colors --input-format json --unwrapScalar \
+            ".assets[] | select(.name | test("\""^chart-releaser_.+_linux_${arch}\.tar\.gz$"\"")) | .browser_download_url" \
+          | xargs curl -SsL \
+          | tar zxf - -C /usr/local/bin
+
+      - name: Package charts
+        working-directory: .helm-chart-repo
+        run: |
+          set -ex
+          git config --local user.name "$GITHUB_ACTOR"
+          git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          mkdir -p .cr-index
+          owner=$(cut -d '/' -f 1 <<< '${{ github.repository }}')
+          repo=helm-charts
+          git_hash=$(git rev-parse HEAD)
+          echo $git_hash
+
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+
+          cr package ../.github/helm/affine-cloud
+          cr upload --commit "$git_hash" \
+            --git-repo "$repo" --owner "$owner" \
+            --token '${{ secrets.HELM_RELEASER_TOKEN }}' \
+            --skip-existing
+          cr index --git-repo "$repo" --owner "$owner" \
+            --token '${{ secrets.HELM_RELEASER_TOKEN }}' \
+            --index-path .cr-index --push
