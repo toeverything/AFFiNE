@@ -16,6 +16,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine-legacy/0.7.0-canary.18@workspace:tests/affine-legacy/0.7.0-canary.18"
   dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@playwright/test": =1.33.0
+    playwright: =1.33.0
     serve: ^14.2.0
   languageName: unknown
   linkType: soft
