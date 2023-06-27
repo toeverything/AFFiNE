@@ -1,5 +1,4 @@
-import type { BlockSuiteFeatureFlags} from '@affine/env/config';
-import { config } from '@affine/env/config';
+import type { BlockSuiteFeatureFlags } from '@affine/env/config';
 import { isDesktop, isWindow } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
@@ -27,7 +26,7 @@ export function cleanupWorkspace(flavour: WorkspaceFlavour) {
 }
 
 function setEditorFlags(workspace: Workspace) {
-  Object.entries(config.editorFlags).forEach(([key, value]) => {
+  Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
     workspace.awarenessStore.setFlag(
       key as keyof BlockSuiteFeatureFlags,
       value

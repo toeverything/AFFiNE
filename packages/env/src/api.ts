@@ -1,13 +1,14 @@
-import { config, env, isWindow } from './config';
+import { isDesktop, isWindow } from '@affine/env/constant';
+
 import { isValidIPAddress } from './is-valid-ip-address';
 
 let prefixUrl = '/';
-if (!isWindow || env.isDesktop) {
+if (!isWindow || isDesktop) {
   // SSR or Desktop
-  const serverAPI = config.serverAPI;
+  const serverAPI = runtimeConfig.serverAPI;
   if (isValidIPAddress(serverAPI.split(':')[0])) {
     // This is for Server side rendering support
-    prefixUrl = new URL('http://' + config.serverAPI + '/').origin;
+    prefixUrl = new URL('http://' + runtimeConfig.serverAPI + '/').origin;
   } else {
     prefixUrl = serverAPI;
   }

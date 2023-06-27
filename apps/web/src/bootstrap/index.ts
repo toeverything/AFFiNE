@@ -1,5 +1,5 @@
 import { migrateToSubdoc } from '@affine/env/blocksuite';
-import { config, setupGlobal } from '@affine/env/config';
+import { setupGlobal } from '@affine/env/config';
 import { isDesktop, isServer } from '@affine/env/constant';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
@@ -17,7 +17,11 @@ import { WorkspaceAdapters } from '../adapters/workspace';
 
 setupGlobal();
 
-if (config.enablePlugin && !isServer) {
+if (process.env.NODE_ENV === 'development') {
+  console.log('Runtime Preset', runtimeConfig);
+}
+
+if (runtimeConfig.enablePlugin && !isServer) {
   import('@affine/copilot');
 }
 

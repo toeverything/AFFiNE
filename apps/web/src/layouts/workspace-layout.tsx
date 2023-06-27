@@ -10,7 +10,6 @@ import {
 } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { config } from '@affine/env/config';
 import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';
@@ -351,7 +350,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       id: pageId,
     });
     assertEquals(page.id, pageId);
-    if (config.enablePreloading) {
+    if (runtimeConfig.enablePreloading) {
       initPageWithPreloading(page).catch(error => {
         console.error('import error:', error);
       });

@@ -1,5 +1,4 @@
 import { websocketPrefixUrl } from '@affine/env/api';
-import { config } from '@affine/env/config';
 import { isDesktop } from '@affine/env/constant';
 import type {
   AffineWebSocketProvider,
@@ -314,7 +313,7 @@ export const createLocalProviders = (): DocProviderCreator[] => {
     createIndexedDBDownloadProvider,
   ] as DocProviderCreator[];
 
-  if (config.enableBroadcastChannelProvider) {
+  if (runtimeConfig.enableBroadcastChannelProvider) {
     providers.push(createBroadcastChannelProvider);
   }
 
@@ -330,7 +329,8 @@ export const createAffineProviders = (): DocProviderCreator[] => {
     [
       createAffineDownloadProvider,
       createAffineWebSocketProvider,
-      config.enableBroadcastChannelProvider && createBroadcastChannelProvider,
+      runtimeConfig.enableBroadcastChannelProvider &&
+        createBroadcastChannelProvider,
       createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));

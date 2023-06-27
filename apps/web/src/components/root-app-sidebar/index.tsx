@@ -10,7 +10,6 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { config } from '@affine/env/config';
 import { isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -178,7 +177,7 @@ export const RootAppSidebar = ({
           >
             <span data-testid="settings">{t['Settings']()}</span>
           </RouteMenuLinkItem>
-          {config.enableNewSettingModal ? (
+          {runtimeConfig.enableNewSettingModal ? (
             <MenuItem icon={<SettingsIcon />} onClick={onOpenSettingModal}>
               <span data-testid="new-settings">
                 {t['Settings']()}
@@ -204,7 +203,7 @@ export const RootAppSidebar = ({
           {blockSuiteWorkspace && (
             <FavoriteList currentWorkspace={currentWorkspace} />
           )}
-          {config.enableLegacyCloud &&
+          {runtimeConfig.enableLegacyCloud &&
             (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
             currentWorkspace.public ? (
               <RouteMenuLinkItem

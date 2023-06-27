@@ -8,7 +8,6 @@ import {
   Tooltip,
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env/config';
 import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
@@ -303,7 +302,7 @@ export const CreateWorkspaceModal = ({
   const onConfirmEnableCloudSyncing = useCallback(
     (enableCloudSyncing: boolean) => {
       (async function () {
-        if (!config.enableLegacyCloud && enableCloudSyncing) {
+        if (!runtimeConfig.enableLegacyCloud && enableCloudSyncing) {
           setOpenDisableCloudAlertModal(true);
         } else {
           let id = addedId;

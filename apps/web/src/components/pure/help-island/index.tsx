@@ -1,5 +1,4 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { config } from '@affine/env/config';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
@@ -73,7 +72,7 @@ export const HelpIsland = ({
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
-                  window.open(config.changelogUrl, '_blank');
+                  window.open(runtimeConfig.changelogUrl, '_blank');
                 }}
               >
                 <NewIcon />

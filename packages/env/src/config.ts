@@ -36,6 +36,8 @@ declare global {
   // eslint-disable-next-line no-var
   var environment: Environment;
   // eslint-disable-next-line no-var
+  var runtimeConfig: PublicRuntimeConfig;
+  // eslint-disable-next-line no-var
   var $AFFINE_SETUP: boolean | undefined;
   // eslint-disable-next-line no-var
   var editorVersion: string | undefined;
@@ -142,51 +144,6 @@ interface Desktop extends ChromeBrowser {
 
 export type Environment = Browser | Server | Desktop;
 
-export const env: Environment = (() => {
-  let environment = null;
-  const isDebug = process.env.NODE_ENV === 'development';
-  if (isServer) {
-    environment = {
-      isDesktop: false,
-      isBrowser: false,
-      isServer: true,
-      isDebug,
-    } satisfies Server;
-  } else {
-    const uaHelper = new UaHelper(navigator);
-
-    environment = {
-      origin: window.location.origin,
-      isDesktop,
-      isBrowser: true,
-      isServer: false,
-      isDebug,
-      isLinux: uaHelper.isLinux,
-      isMacOs: uaHelper.isMacOs,
-      isSafari: uaHelper.isSafari,
-      isWindows: uaHelper.isWindows,
-      isFireFox: uaHelper.isFireFox,
-      isMobile: uaHelper.isMobile,
-      isChrome: uaHelper.isChrome,
-      isIOS: uaHelper.isIOS,
-    } as Browser;
-    // Chrome on iOS is still Safari
-    if (environment.isChrome && !environment.isIOS) {
-      assertEquals(environment.isSafari, false);
-      assertEquals(environment.isFireFox, false);
-      environment = {
-        ...environment,
-        isSafari: false,
-        isFireFox: false,
-        isChrome: true,
-        chromeVersion: uaHelper.getChromeVersion(),
-      } satisfies ChromeBrowser;
-    }
-  }
-  globalThis.environment = environment;
-  return environment;
-})();
-
 function printBuildInfo() {
   console.group('Build info');
   console.log('Project:', config.PROJECT_NAME);
@@ -208,12 +165,54 @@ export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-  globalThis.environment = env;
-  if (env.isBrowser) {
+  globalThis.environment = (() => {
+    let environment = null;
+    const isDebug = process.env.NODE_ENV === 'development';
+    if (isServer) {
+      environment = {
+        isDesktop: false,
+        isBrowser: false,
+        isServer: true,
+        isDebug,
+      } satisfies Server;
+    } else {
+      const uaHelper = new UaHelper(navigator);
+
+      environment = {
+        origin: window.location.origin,
+        isDesktop,
+        isBrowser: true,
+        isServer: false,
+        isDebug,
+        isLinux: uaHelper.isLinux,
+        isMacOs: uaHelper.isMacOs,
+        isSafari: uaHelper.isSafari,
+        isWindows: uaHelper.isWindows,
+        isFireFox: uaHelper.isFireFox,
+        isMobile: uaHelper.isMobile,
+        isChrome: uaHelper.isChrome,
+        isIOS: uaHelper.isIOS,
+      } as Browser;
+      // Chrome on iOS is still Safari
+      if (environment.isChrome && !environment.isIOS) {
+        assertEquals(environment.isSafari, false);
+        assertEquals(environment.isFireFox, false);
+        environment = {
+          ...environment,
+          isSafari: false,
+          isFireFox: false,
+          isChrome: true,
+          chromeVersion: uaHelper.getChromeVersion(),
+        } satisfies ChromeBrowser;
+      }
+    }
+    globalThis.environment = environment;
+    return environment;
+  })();
+  if (environment.isBrowser) {
     printBuildInfo();
     globalThis.editorVersion = config.editorVersion;
   }
+  globalThis.runtimeConfig = config;
   globalThis.$AFFINE_SETUP = true;
 }
-
-export { config };

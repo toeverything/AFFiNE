@@ -5,7 +5,6 @@ import {
   Input,
   Wrapper,
 } from '@affine/component';
-import { config } from '@affine/env/config';
 import { isWindow, Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
@@ -133,7 +132,7 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
       >
         {t['Enable AFFiNE Cloud']()}
       </Button>
-      {config.enableLegacyCloud ? (
+      {runtimeConfig.enableLegacyCloud ? (
         <EnableAffineCloudModal
           open={open}
           onClose={() => {
