@@ -40,7 +40,7 @@ export const switchCheckedStyle = style({
   selectors: {
     '&:before': {
       background: 'var(--affine-toggle-circle-background-color)',
-      transform: 'translate(100%,-50%)',
+      transform: 'translate(21px,-50%)',
     },
   },
 });
