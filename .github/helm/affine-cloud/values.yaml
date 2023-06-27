@@ -3,19 +3,19 @@ affineCloud:
   resources:
     cpu: '250m'
     memory: 0.5Gi
-postgres:
+postgresql:
   auth:
-    username: affine
     # only for demo, please modify it at prod env
+    username: affine
     password: 5SmwZ9DnUkratH4Q
-    database: 'affine'
-    primary:
-      initdb:
-        scripts:
-          01-init.sql: |
-            CREATE DATABASE affine_binary;
-            GRANT ALL PRIVILEGES ON DATABASE affine_binary TO affine;
-      resources:
-        limits:
-          cpu: '500m'
-          memory: 0.5Gi
+    database: affine
+  primary:
+    initdb:
+      scripts:
+        01-init.sql: |
+          CREATE DATABASE affine_binary;
+          GRANT ALL PRIVILEGES ON DATABASE affine_binary TO affine;
+    resources:
+      limits:
+        cpu: '500m'
+        memory: 0.5Gi

@@ -21,8 +21,16 @@ spec:
       - name: affine-cloud
         image: "ghcr.io/toeverything/cloud-self-hosted:{{ .Values.affineCloud.tag | default .Chart.AppVersion }}"
         env:
+        - name: PG_USER
+          value: "{{ .Values.postgresql.auth.username }}"
+        - name: PG_PASS
+          value: "{{ .Values.postgresql.auth.password }}"
+        - name: PG_DATABASE
+          value: "{{ .Values.postgresql.auth.database }}"
+        - name: PG_HOST
+          value: "{{ .Release.Name }}-postgresql"
         - name: DATABASE_URL
-          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres-service/affine"
+          value: "{{ default "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST)/$(PG_DATABASE)" .Values.affineCloud.databaseUrl }}"
         envFrom:
         - secretRef:
             name: affine-cloud-secret
