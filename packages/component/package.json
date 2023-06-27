@@ -7,6 +7,9 @@
     "./theme/*": "./src/theme/*",
     "./*": "./src/components/*/index.tsx"
   },
+  "scripts": {
+    "build": "yarn workspace @affine/i18n build"
+  },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
     "@blocksuite/editor": "*",
