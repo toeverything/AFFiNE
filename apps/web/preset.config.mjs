@@ -1,7 +1,7 @@
 // @ts-check
 import 'dotenv/config';
 /**
- * @type {import('packages/env').BlockSuiteFeatureFlags}
+ * @type {import('@affine/env').BlockSuiteFeatureFlags}
  */
 export const blockSuiteFeatureFlags = {
   enable_database: true,
@@ -15,7 +15,7 @@ export const blockSuiteFeatureFlags = {
 };
 
 /**
- * @type {import('packages/env').BuildFlags}
+ * @type {import('@affine/env').BuildFlags}
  */
 export const buildFlags = {
   enablePlugin: process.env.ENABLE_PLUGIN === 'true',
