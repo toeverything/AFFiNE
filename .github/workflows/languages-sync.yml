@@ -6,11 +6,13 @@ on:
     paths:
       - 'packages/i18n/**'
       - '.github/workflows/languages-sync.yml'
+      - '!.github/actions/setup-node/action.yml'
   pull_request_target:
     branches: ['master']
     paths:
       - 'packages/i18n/**'
       - '.github/workflows/languages-sync.yml'
+      - '!.github/actions/setup-node/action.yml'
   workflow_dispatch:
 
 jobs:

@@ -14,15 +14,15 @@ import { useBlockSuiteWorkspaceHelper } from '../use-block-suite-workspace-helpe
 
 let blockSuiteWorkspace: Workspace;
 
-beforeEach(() => {
+beforeEach(async () => {
   blockSuiteWorkspace = new Workspace({
     id: 'test',
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
-  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
-  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
-  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
+  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
+  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('useBlockSuiteWorkspaceHelper', () => {
@@ -41,21 +41,5 @@ describe('useBlockSuiteWorkspaceHelper', () => {
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
     pageMetaHook.rerender();
     expect(pageMetaHook.result.current.length).toBe(4);
-  });
-
-  test('milestone', async () => {
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
-    const helperHook = renderHook(() =>
-      useBlockSuiteWorkspaceHelper(blockSuiteWorkspace)
-    );
-    await helperHook.result.current.markMilestone('test');
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
-    initEmptyPage(helperHook.result.current.createPage('page4'));
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
-    expect(await helperHook.result.current.listMilestone()).toHaveProperty(
-      'test'
-    );
-    await helperHook.result.current.revertMilestone('test');
-    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
   });
 });

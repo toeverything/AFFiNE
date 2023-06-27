@@ -41,13 +41,13 @@ export const buildFlagsSchema = z.object({
    */
   enableAllPageFilter: z.boolean(),
   enablePlugin: z.boolean(),
-  enableImagePreviewModal: z.boolean(),
   enableTestProperties: z.boolean(),
-  enableBroadCastChannelProvider: z.boolean(),
+  enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   enableLegacyCloud: z.boolean(),
   changelogUrl: z.string(),
   enablePreloading: z.boolean(),
+  enableNewSettingModal: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({

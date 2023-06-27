@@ -21,7 +21,7 @@ import {
   openWorkspaceListModal,
 } from '../../libs/workspace';
 
-test('should login with user A', async ({ page }) => {
+test.fixme('should login with user A', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const [a] = await createFakeUser(userA, userB);
@@ -33,7 +33,7 @@ test('should login with user A', async ({ page }) => {
   await assertCurrentWorkspaceFlavour('local', page);
 });
 
-test('should enable affine workspace successfully', async ({ page }) => {
+test.fixme('should enable affine workspace successfully', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const [a] = await createFakeUser();

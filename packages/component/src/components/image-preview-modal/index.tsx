@@ -2,7 +2,7 @@
 import '@blocksuite/blocks';
 
 import { Button, Tooltip } from '@affine/component';
-import type { EmbedBlockModel } from '@blocksuite/blocks';
+import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   ArrowLeftSmallIcon,
@@ -102,7 +102,7 @@ const ImagePreviewModalImpl = (
       const nextBlock = page
         .getNextSiblings(block)
         .find(
-          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+          (block): block is ImageBlockModel => block.flavour === 'affine:embed'
         );
       if (nextBlock) {
         setBlockId(nextBlock.id);
@@ -122,7 +122,7 @@ const ImagePreviewModalImpl = (
       const prevBlock = page
         .getPreviousSiblings(block)
         .findLast(
-          (block): block is EmbedBlockModel => block.flavour === 'affine:embed'
+          (block): block is ImageBlockModel => block.flavour === 'affine:embed'
         );
       if (prevBlock) {
         setBlockId(prevBlock.id);
@@ -144,14 +144,14 @@ const ImagePreviewModalImpl = (
         page
           .getPreviousSiblings(block)
           .findLast(
-            (block): block is EmbedBlockModel =>
+            (block): block is ImageBlockModel =>
               block.flavour === 'affine:embed'
           )
       ) {
         const prevBlock = page
           .getPreviousSiblings(block)
           .findLast(
-            (block): block is EmbedBlockModel =>
+            (block): block is ImageBlockModel =>
               block.flavour === 'affine:embed'
           );
         if (prevBlock) {
@@ -161,14 +161,14 @@ const ImagePreviewModalImpl = (
         page
           .getNextSiblings(block)
           .find(
-            (block): block is EmbedBlockModel =>
+            (block): block is ImageBlockModel =>
               block.flavour === 'affine:embed'
           )
       ) {
         const nextBlock = page
           .getNextSiblings(block)
           .find(
-            (block): block is EmbedBlockModel =>
+            (block): block is ImageBlockModel =>
               block.flavour === 'affine:embed'
           );
         if (nextBlock) {
@@ -188,7 +188,7 @@ const ImagePreviewModalImpl = (
       const page = workspace.getPage(props.pageId);
       assertExists(page);
       if (typeof blockId === 'string') {
-        const block = page.getBlockById(blockId) as EmbedBlockModel;
+        const block = page.getBlockById(blockId) as ImageBlockModel;
         assertExists(block);
         const store = await block.page.blobs;
         const url = store?.get(block.sourceId);
@@ -241,14 +241,14 @@ const ImagePreviewModalImpl = (
   const [caption, setCaption] = useState(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
-    const block = page.getBlockById(props.blockId) as EmbedBlockModel;
+    const block = page.getBlockById(props.blockId) as ImageBlockModel;
     assertExists(block);
     return block?.caption;
   });
   useEffect(() => {
     const page = props.workspace.getPage(props.pageId);
     assertExists(page);
-    const block = page.getBlockById(props.blockId) as EmbedBlockModel;
+    const block = page.getBlockById(props.blockId) as ImageBlockModel;
     assertExists(block);
     setCaption(block?.caption);
   }, [props.blockId, props.pageId, props.workspace]);
@@ -256,7 +256,7 @@ const ImagePreviewModalImpl = (
     fetcher: ([_, __, pageId, blockId]) => {
       const page = props.workspace.getPage(pageId);
       assertExists(page);
-      const block = page.getBlockById(blockId) as EmbedBlockModel;
+      const block = page.getBlockById(blockId) as ImageBlockModel;
       assertExists(block);
       return props.workspace.blobs.get(block?.sourceId);
     },
@@ -493,7 +493,7 @@ export const ImagePreviewModal = (
         const prevBlock = page
           .getPreviousSiblings(block)
           .findLast(
-            (block): block is EmbedBlockModel =>
+            (block): block is ImageBlockModel =>
               block.flavour === 'affine:embed'
           );
         if (prevBlock) {
@@ -503,7 +503,7 @@ export const ImagePreviewModal = (
         const nextBlock = page
           .getNextSiblings(block)
           .find(
-            (block): block is EmbedBlockModel =>
+            (block): block is ImageBlockModel =>
               block.flavour === 'affine:embed'
           );
         if (nextBlock) {

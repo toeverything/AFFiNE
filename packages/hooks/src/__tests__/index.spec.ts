@@ -24,18 +24,19 @@ beforeEach(async () => {
   blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' })
     .register(AffineSchemas)
     .register(__unstableSchemas);
-  const initPage = (page: Page) => {
+  const initPage = async (page: Page) => {
+    await page.waitForLoaded()
     expect(page).not.toBeNull();
     assertExists(page);
     const pageBlockId = page.addBlock('affine:page', {
       title: new page.Text(''),
     });
-    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
-  initPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
-  initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
-  initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
+  await initPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
+  await initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  await initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('useBlockSuiteWorkspaceName', () => {
@@ -97,7 +98,7 @@ describe('useBlockSuitePagePreview', () => {
       {
         text: new page.Text('Hello, world!'),
       },
-      page.getBlockByFlavour('affine:frame')[0].id
+      page.getBlockByFlavour('affine:note')[0].id
     );
     const hook = renderHook(() => useAtomValue(useBlockSuitePagePreview(page)));
     expect(hook.result.current).toBe('\nHello, world!');

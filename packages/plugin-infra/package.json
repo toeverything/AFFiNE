@@ -5,6 +5,9 @@
     "build": "vite build",
     "dev": "vite build --watch"
   },
+  "files": [
+    "dist"
+  ],
   "exports": {
     "./manager": {
       "type": "./dist/manager.d.ts",
@@ -18,17 +21,17 @@
     }
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.0.0-20230607055421-9b20fcaf-nightly",
-    "@blocksuite/editor": "0.0.0-20230607055421-9b20fcaf-nightly",
-    "@blocksuite/global": "0.0.0-20230607055421-9b20fcaf-nightly",
-    "@blocksuite/lit": "0.0.0-20230607055421-9b20fcaf-nightly",
-    "@blocksuite/store": "0.0.0-20230607055421-9b20fcaf-nightly",
-    "jotai": "^2.1.1"
+    "@blocksuite/blocks": "0.0.0-20230626181619-90507cfc-nightly",
+    "@blocksuite/editor": "0.0.0-20230626181619-90507cfc-nightly",
+    "@blocksuite/global": "0.0.0-20230626181619-90507cfc-nightly",
+    "@blocksuite/lit": "0.0.0-20230626181619-90507cfc-nightly",
+    "@blocksuite/store": "0.0.0-20230626181619-90507cfc-nightly",
+    "jotai": "^2.2.1"
   },
   "devDependencies": {
-    "jotai": "^2.1.1",
+    "jotai": "^2.2.1",
     "vite": "^4.3.9",
-    "vite-plugin-dts": "^2.3.0"
+    "vite-plugin-dts": "2.3.0"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
@@ -40,5 +43,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.7.0-canary.16"
+  "version": "0.7.0-canary.18"
 }

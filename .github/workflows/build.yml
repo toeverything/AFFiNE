@@ -10,6 +10,8 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/build.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-node/action.yml'
   pull_request:
     branches:
       - master
@@ -19,12 +21,15 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/build.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-node/action.yml'
 
 env:
   DEBUG: napi:*
   APP_NAME: affine
   COVERAGE: true
   MACOSX_DEPLOYMENT_TARGET: '10.13'
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
   lint:
@@ -43,6 +48,19 @@ jobs:
           yarn lint --max-warnings=0
           yarn circular
 
+  build-docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn nx build @affine/docs
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
   build-storybook:
     name: Build Storybook
     runs-on: ubuntu-latest
@@ -53,6 +71,8 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - run: yarn nx build @affine/storybook
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload storybook artifact
         uses: actions/upload-artifact@v3
         with:
@@ -64,29 +84,21 @@ jobs:
     name: Build @affine/web
     runs-on: ubuntu-latest
     environment: development
+    env:
+      API_SERVER_PROFILE: local
+      ENABLE_DEBUG_PAGE: 1
+      ENABLE_PLUGIN: true
+      ENABLE_ALL_PAGE_FILTER: true
+      ENABLE_LEGACY_PROVIDER: true
+      ENABLE_PRELOADING: false
+      ENABLE_NEW_SETTING_MODAL: false
 
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Cache Next.js
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ github.workspace }}/apps/web/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
       - name: Build Web
         run: yarn nx build @affine/web
-        env:
-          API_SERVER_PROFILE: local
-          ENABLE_DEBUG_PAGE: 1
-          ENABLE_PLUGIN: true
-          ENABLE_ALL_PAGE_FILTER: true
-          ENABLE_LEGACY_PROVIDER: true
-          ENABLE_PRELOADING: false
-
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
@@ -94,18 +106,26 @@ jobs:
           path: ./apps/web/.next
           if-no-files-found: error
 
-      - name: Build Web (Desktop)
-        run: yarn nx build @affine/web
-        env:
-          API_SERVER_PROFILE: affine
-          ENABLE_DEBUG_PAGE: 1
-          ENABLE_PLUGIN: true
-          ENABLE_ALL_PAGE_FILTER: true
-          ENABLE_LEGACY_PROVIDER: false
-          ENABLE_PRELOADING: false
+  build-web-desktop:
+    name: Build @affine/web (Desktop)
+    runs-on: ubuntu-latest
+    environment: development
+    env:
+      API_SERVER_PROFILE: affine
+      ENABLE_DEBUG_PAGE: 1
+      ENABLE_PLUGIN: true
+      ENABLE_ALL_PAGE_FILTER: true
+      ENABLE_LEGACY_PROVIDER: false
+      ENABLE_PRELOADING: false
+      ENABLE_NEW_SETTING_MODAL: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - name: Export static resources
-        run: yarn workspace @affine/web export
+        run: yarn nx export @affine/web
 
       - name: Upload static resources artifact
         uses: actions/upload-artifact@v3
@@ -290,7 +310,7 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
-    needs: [build-web]
+    needs: [build-web-desktop]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -301,6 +321,7 @@ jobs:
         uses: ./.github/actions/build-rust
         with:
           target: ${{ matrix.spec.target }}
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash

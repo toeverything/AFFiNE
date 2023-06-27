@@ -52,6 +52,8 @@ module.exports = {
           teamId: process.env.APPLE_TEAM_ID,
         }
       : undefined,
+    // We need the following line for updater
+    extraResource: ['./resources/app-update.yml'],
   },
   makers: [
     {

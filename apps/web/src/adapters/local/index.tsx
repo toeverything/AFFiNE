@@ -6,6 +6,7 @@ import {
 } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
+import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -15,12 +16,13 @@ import {
   CRUD,
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
-import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
+import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 
 import {
   BlockSuitePageList,
+  NewWorkspaceSettingDetail,
   PageDetailEditor,
   WorkspaceHeader,
   WorkspaceSettingDetail,
@@ -48,16 +50,22 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           logger.error('init page with preloading failed', err);
         });
       } else {
-        initEmptyPage(page);
+        initEmptyPage(page).catch(error => {
+          logger.error('init page with empty failed', error);
+        });
       }
       blockSuiteWorkspace.setPageMeta(page.id, {
         jumpOnce: true,
       });
-      const provider = createIndexedDBBackgroundProvider(blockSuiteWorkspace);
-      provider.connect();
-      provider.callbacks.add(() => {
-        provider.disconnect();
-      });
+      const provider = createIndexedDBDownloadProvider(
+        blockSuiteWorkspace.id,
+        blockSuiteWorkspace.doc,
+        {
+          awareness: blockSuiteWorkspace.awarenessStore.awareness,
+        }
+      ) as LocalIndexedDBDownloadProvider;
+      provider.sync();
+      provider.whenReady.catch(console.error);
       saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);
       logger.debug('create first workspace');
       return [blockSuiteWorkspace.id];
@@ -110,6 +118,19 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           onDeleteWorkspace={onDeleteWorkspace}
           onChangeTab={onChangeTab}
           currentTab={currentTab}
+          workspace={currentWorkspace}
+          onTransferWorkspace={onTransformWorkspace}
+        />
+      );
+    },
+    NewSettingsDetail: ({
+      currentWorkspace,
+      onDeleteWorkspace,
+      onTransformWorkspace,
+    }) => {
+      return (
+        <NewWorkspaceSettingDetail
+          onDeleteWorkspace={onDeleteWorkspace}
           workspace={currentWorkspace}
           onTransferWorkspace={onTransformWorkspace}
         />

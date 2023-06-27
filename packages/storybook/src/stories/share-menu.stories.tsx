@@ -17,20 +17,21 @@ import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
-import { useState } from 'react';
+import { use, useState } from 'react';
 
 export default {
   title: 'AFFiNE/ShareMenu',
   component: ShareMenu,
 };
 
-function initPage(page: Page): void {
+async function initPage(page: Page) {
+  await page.waitForLoaded();
   // Add page block and surface block at root level
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text('Hello, world!'),
   });
   page.addBlock('affine:surface', {}, pageBlockId);
-  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  const frameId = page.addBlock('affine:note', {}, pageBlockId);
   page.addBlock(
     'affine:paragraph',
     {
@@ -46,22 +47,22 @@ const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
   WorkspaceFlavour.LOCAL
 );
 
-initPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
-initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
-initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
+const promise = Promise.all([
+  initPage(blockSuiteWorkspace.createPage({ id: 'page0' })),
+  initPage(blockSuiteWorkspace.createPage({ id: 'page1' })),
+  initPage(blockSuiteWorkspace.createPage({ id: 'page2' })),
+]);
 
 const localWorkspace: LocalWorkspace = {
   id: 'test-workspace',
   flavour: WorkspaceFlavour.LOCAL,
   blockSuiteWorkspace,
-  providers: [],
 };
 
 const affineWorkspace: AffineLegacyCloudWorkspace = {
   id: 'test-workspace',
   flavour: WorkspaceFlavour.AFFINE,
   blockSuiteWorkspace,
-  providers: [],
   public: false,
   type: WorkspaceType.Normal,
   permission: PermissionType.Owner,
@@ -72,6 +73,7 @@ async function unimplemented() {
 }
 
 export const Basic: StoryFn = () => {
+  use(promise);
   return (
     <ShareMenu
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
@@ -102,6 +104,7 @@ Basic.play = async ({ canvasElement }) => {
 };
 
 export const AffineBasic: StoryFn = () => {
+  use(promise);
   return (
     <ShareMenu
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
@@ -116,6 +119,7 @@ export const AffineBasic: StoryFn = () => {
 
 export const DisableModal: StoryFn = () => {
   const [open, setOpen] = useState(false);
+  use(promise);
   return (
     <>
       <StyledDisableButton onClick={() => setOpen(!open)}>

@@ -62,6 +62,26 @@ export const imagePreviewModalCloseButtonStyle = style({
   zIndex: 1,
   marginTop: '38px',
   marginRight: '38px',
+
+});
+
+export const imagePreviewModalGoStyle = style({
+  color: 'var(--affine-white)',
+  position: 'absolute',
+  fontSize: '60px',
+  lineHeight: '60px',
+  fontWeight: 'bold',
+  opacity: '0.2',
+  padding: '0 15px',
+  cursor: 'pointer',
+});
+
+export const imageNavigationControlStyle = style({
+  display: 'flex',
+  height: '100%',
+  zIndex: 2,
+  justifyContent: 'space-between',
+  alignItems: 'center',
 });
 
 export const imagePreviewModalContainerStyle = style({
