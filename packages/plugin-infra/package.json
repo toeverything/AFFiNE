@@ -21,12 +21,12 @@
     }
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.0.0-20230626181619-90507cfc-nightly",
-    "@blocksuite/editor": "0.0.0-20230626181619-90507cfc-nightly",
-    "@blocksuite/global": "0.0.0-20230626181619-90507cfc-nightly",
-    "@blocksuite/lit": "0.0.0-20230626181619-90507cfc-nightly",
-    "@blocksuite/store": "0.0.0-20230626181619-90507cfc-nightly",
-    "jotai": "^2.2.1"
+    "@blocksuite/blocks": "0.0.0-20230627102054-b712dd6c-nightly",
+    "@blocksuite/editor": "0.0.0-20230627102054-b712dd6c-nightly",
+    "@blocksuite/global": "0.0.0-20230627102054-b712dd6c-nightly",
+    "@blocksuite/lit": "0.0.0-20230627102054-b712dd6c-nightly",
+    "@blocksuite/store": "0.0.0-20230627102054-b712dd6c-nightly",
+    "jotai": "^2.2.0"
   },
   "devDependencies": {
     "jotai": "^2.2.1",
