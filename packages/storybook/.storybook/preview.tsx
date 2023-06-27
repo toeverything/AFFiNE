@@ -2,7 +2,6 @@ import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import { LOCALES, createI18n } from '@affine/i18n';
 import { ThemeProvider, useTheme } from 'next-themes';
-// @ts-ignore
 import { setupGlobal } from '@affine/env/global';
 import type { ComponentType } from 'react';
 import { useEffect } from 'react';
