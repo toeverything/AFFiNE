@@ -43,7 +43,7 @@ jobs:
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
-          cr package --package-path .github/helm/affine-cloud
+          cr package .github/helm/affine-cloud
           cr upload --commit '${{ github.sha }}' --git-repo "$repo" --owner "$owner" --token '${{ github.token }}' --skip-existing
 
       - name: Update charts index
