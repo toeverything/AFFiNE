@@ -1,18 +1,45 @@
 import { baseTheme } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { keyframes, style } from '@vanilla-extract/css';
 
-export const imagePreviewModalStyle = style({
+const fadeInAnimation = keyframes({
+  from: { opacity: 0 },
+  to: { opacity: 1 },
+});
+
+const fadeOutAnimation = keyframes({
+  from: { opacity: 1 },
+  to: { opacity: 0 },
+});
+
+export const imagePreviewBackgroundStyle = style({
   position: 'fixed',
   top: 0,
   left: 0,
   width: '100%',
   height: '100%',
   zIndex: baseTheme.zIndexModal,
+  background: 'rgba(0, 0, 0, 0.75)',
+});
+
+export const imagePreviewModalStyle = style({
+  height: '100%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  // background: 'var(--affine-background-modal-color)',
-  background: 'rgba(0,0,0,0.75)',
+});
+
+export const loaded = style({
+  opacity: 0,
+  animationName: fadeInAnimation,
+  animationDuration: '0.25s',
+  animationFillMode: 'forwards',
+});
+
+export const unloaded = style({
+  opacity: 1,
+  animationName: fadeOutAnimation,
+  animationDuration: '0.25s',
+  animationFillMode: 'forwards',
 });
 
 export const imagePreviewModalCloseButtonStyle = style({
@@ -33,6 +60,9 @@ export const imagePreviewModalCloseButtonStyle = style({
   color: 'var(--affine-icon-color)',
   transition: 'background 0.2s ease-in-out',
   zIndex: 1,
+  marginTop: '38px',
+  marginRight: '38px',
+
 });
 
 export const imagePreviewModalGoStyle = style({
@@ -86,28 +116,48 @@ export const imagePreviewActionBarStyle = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  padding: '16px 0',
   backgroundColor: 'var(--affine-white)',
   borderRadius: '8px',
   boxShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
   maxWidth: 'max-content',
+  minHeight: '44px',
+  maxHeight: '44px',
 });
 
 export const groupStyle = style({
-  display: 'inline-flex',
+  padding: '10px 0',
+  boxSizing: 'border-box',
+  display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: 'var(--affine-white)',
   borderLeft: '1px solid #E3E2E4',
 });
 
 export const buttonStyle = style({
-  paddingLeft: '10px',
-  paddingRight: '10px',
+  minWidth: '24px',
+  height: '24px',
+  margin: '10px 6px',
+  padding: '0 0',
+  ':hover': {
+    backgroundColor: 'var(--affine-hover-color)',
+    backgroundSize: '24px 24px',
+  },
 });
 
-export const scaleIndicatorStyle = style({
-  margin: '0 8px',
+export const buttonIconStyle = style({
+  width: '20px',
+  height: '20px',
+});
+
+export const scaleIndicatorButtonStyle = style({
+  minHeight: '100%',
+  maxWidth: 'max-content',
+  fontSize: '12px',
+  padding: '5px 5px',
+
+  ':hover': {
+    backgroundColor: 'var(--affine-hover-color)',
+  },
 });
 
 export const imageBottomContainerStyle = style({
@@ -125,4 +175,9 @@ export const captionStyle = style({
   background: 'rgba(0,0,0,0.75)',
   padding: '10px',
   marginBottom: '21px',
+});
+
+export const suspenseFallbackStyle = style({
+  opacity: 0,
+  transition: 'opacity 2s ease-in-out',
 });
