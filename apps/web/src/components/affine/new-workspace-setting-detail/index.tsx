@@ -8,17 +8,14 @@ import type {
   WorkspaceRegistry,
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type { FC } from 'react';
-import { useState } from 'react';
 
-import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { WorkspaceDeleteModal } from './delete';
+import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
-import { WorkspaceLeave } from './leave';
 import { ProfilePanel } from './profile';
+import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
 
 export type WorkspaceSettingDetailProps = {
@@ -37,13 +34,10 @@ export type WorkspaceSettingDetailProps = {
 export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
   workspace,
   onDeleteWorkspace,
+  ...props
 }) => {
   const t = useAFFiNEI18N();
-  const isOwner = useIsWorkspaceOwner(workspace);
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
-
-  const [showDelete, setShowDelete] = useState(false);
-  const [showLeave, setShowLeave] = useState(false);
 
   return (
     <>
@@ -62,7 +56,13 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
           <ProfilePanel workspace={workspace} />
         </SettingRow>
       </SettingWrapper>
-      <SettingWrapper title={t['AFFiNE Cloud']()}></SettingWrapper>
+      <SettingWrapper title={t['AFFiNE Cloud']()}>
+        <PublishPanel
+          workspace={workspace}
+          onDeleteWorkspace={onDeleteWorkspace}
+          {...props}
+        />
+      </SettingWrapper>
       {environment.isDesktop ? (
         <SettingWrapper title={t['Storage and Export']()}>
           <StoragePanel workspace={workspace} />
@@ -71,39 +71,11 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
       ) : null}
 
       <SettingWrapper>
-        <SettingRow
-          name={
-            <span style={{ color: 'var(--affine-error-color)' }}>
-              {isOwner ? t['Delete Workspace']() : t['Leave Workspace']()}
-            </span>
-          }
-          desc={t['None yet']()}
-          style={{ cursor: 'pointer' }}
-          onClick={() => {
-            setShowDelete(true);
-          }}
-        >
-          <ArrowRightSmallIcon />
-        </SettingRow>
-      </SettingWrapper>
-
-      {isOwner ? (
-        <WorkspaceDeleteModal
-          onDeleteWorkspace={onDeleteWorkspace}
-          open={showDelete}
-          onClose={() => {
-            setShowDelete(false);
-          }}
+        <DeleteLeaveWorkspace
           workspace={workspace}
+          onDeleteWorkspace={onDeleteWorkspace}
         />
-      ) : (
-        <WorkspaceLeave
-          open={showLeave}
-          onClose={() => {
-            setShowLeave(false);
-          }}
-        />
-      )}
+      </SettingWrapper>
     </>
   );
 };

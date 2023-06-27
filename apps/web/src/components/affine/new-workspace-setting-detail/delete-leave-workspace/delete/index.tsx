@@ -5,8 +5,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useCallback, useState } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../../shared';
-import { toast } from '../../../../utils';
+import type { AffineOfficialWorkspace } from '../../../../../shared';
+import { toast } from '../../../../../utils';
 import {
   StyledButtonContent,
   StyledInputContent,

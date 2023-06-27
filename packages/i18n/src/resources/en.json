@@ -366,5 +366,7 @@
   "Storage and Export": "Storage and Export",
   "Workspace Profile": "Workspace Profile",
   "Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.": "Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.",
-  "Storage": "Storage"
+  "Storage": "Storage",
+  "Workspace saved locally": "{{name}} is saved locally",
+  "Enable cloud hint": "The following functions rely on AFFiNE Cloud. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud."
 }
