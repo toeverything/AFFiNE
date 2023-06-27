@@ -6,6 +6,7 @@ import {
   ModalWrapper,
   Tooltip,
 } from '@affine/component';
+import { ScrollableContainer } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import type {
   AffineLegacyCloudWorkspace,
@@ -105,7 +106,7 @@ export const WorkspaceListModal = ({
             />
           </StyledOperationWrapper>
         </StyledModalHeader>
-
+        <ScrollableContainer>
         <StyledModalContent>
           <WorkspaceList
             disabled={disabled}
@@ -128,6 +129,7 @@ export const WorkspaceListModal = ({
             )}
           />
           {!environment.isDesktop && (
+            <div>
             <StyledCreateWorkspaceCard
               onClick={onNewWorkspace}
               data-testid="new-workspace"
@@ -143,6 +145,7 @@ export const WorkspaceListModal = ({
                 <p>{t['Create Or Import']()}</p>
               </StyleWorkspaceInfo>
             </StyledCreateWorkspaceCard>
+            </div>
           )}
 
           {environment.isDesktop && (
@@ -218,7 +221,7 @@ export const WorkspaceListModal = ({
             </Menu>
           )}
         </StyledModalContent>
-
+        </ScrollableContainer>
         <Footer user={user} onLogin={onClickLogin} onLogout={onClickLogout} />
       </ModalWrapper>
     </Modal>

@@ -48,8 +48,7 @@ export const StyleWorkspaceTitle = styled('div')(() => {
 });
 
 export const StyledFooter = styled('div')({
-  height: '84px',
-  padding: '0 40px',
+  padding: '20px 40px',
   flexShrink: 0,
   ...displayFlex('space-between', 'center'),
 });

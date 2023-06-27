@@ -10,6 +10,10 @@ import type { FC, PropsWithChildren } from 'react';
 import type { View } from './filter';
 import type { Workspace as RemoteWorkspace } from './workspace/legacy-cloud';
 
+export enum WorkspaceVersion {
+  SubDoc = 2,
+}
+
 export enum WorkspaceSubPath {
   ALL = 'all',
   SETTING = 'setting',
