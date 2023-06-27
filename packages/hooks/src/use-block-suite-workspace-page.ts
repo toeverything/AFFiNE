@@ -2,7 +2,6 @@ import type { Page, Workspace } from '@blocksuite/store';
 import { assertExists, DisposableGroup } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
-import { use } from 'react';
 
 const weakMap = new WeakMap<Workspace, Map<string, Atom<Page | null>>>();
 
@@ -46,8 +45,6 @@ function getAtom(w: Workspace, pageId: string | null): Atom<Page | null> {
   }
 }
 
-const resolved = Promise.resolve(null);
-
 export function useBlockSuiteWorkspacePage(
   blockSuiteWorkspace: Workspace,
   pageId: string | null
@@ -55,8 +52,5 @@ export function useBlockSuiteWorkspacePage(
   const pageAtom = getAtom(blockSuiteWorkspace, pageId);
   assertExists(pageAtom);
   const page = useAtomValue(pageAtom);
-  // makes sure the page meta is loaded
-  // the syntax below is to avoid page blinks
-  use(page?.loaded ? resolved : page?.waitForLoaded() || resolved);
   return page;
 }
