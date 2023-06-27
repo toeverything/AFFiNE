@@ -1,6 +1,6 @@
 import { migrateToSubdoc } from '@affine/env/blocksuite';
-import { setupGlobal } from '@affine/env/config';
 import { isDesktop, isServer } from '@affine/env/constant';
+import { setupGlobal } from '@affine/env/global';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';

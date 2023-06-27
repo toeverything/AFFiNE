@@ -1,4 +1,3 @@
-import { websocketPrefixUrl } from '@affine/env/api';
 import { isDesktop } from '@affine/env/constant';
 import type {
   AffineWebSocketProvider,

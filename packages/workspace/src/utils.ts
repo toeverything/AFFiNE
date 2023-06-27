@@ -1,5 +1,5 @@
-import type { BlockSuiteFeatureFlags } from '@affine/env/config';
-import { isDesktop, isWindow } from '@affine/env/constant';
+import { isBrowser, isDesktop } from '@affine/env/constant';
+import type { BlockSuiteFeatureFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   createAffineProviders,
@@ -92,7 +92,7 @@ export function createEmptyBlockSuiteWorkspace(
     }
     providerCreators.push(...createAffineProviders());
   } else {
-    if (isWindow) {
+    if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
       if (isDesktop) {
         blobStorages.push(createSQLiteStorage);
@@ -103,7 +103,7 @@ export function createEmptyBlockSuiteWorkspace(
 
   const workspace = new Workspace({
     id,
-    isSSR: !isWindow,
+    isSSR: !isBrowser,
     providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: blobStorages,
     idGenerator,

@@ -2,9 +2,9 @@
 import type { Workspace } from '@blocksuite/store';
 
 //#region runtime variables
-export const isWindow = typeof window !== 'undefined';
-export const isServer = !isWindow && typeof navigator === 'undefined';
-export const isDesktop = isWindow && !!window.appInfo?.electron;
+export const isBrowser = typeof window !== 'undefined';
+export const isServer = !isBrowser && typeof navigator === 'undefined';
+export const isDesktop = isBrowser && !!window.appInfo?.electron;
 //#endregion
 export const AFFINE_STORAGE_KEY = 'affine-local-storage-v2';
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';

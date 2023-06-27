@@ -1,10 +1,10 @@
-import { isWindow } from '@affine/env/constant';
+import { isBrowser } from '@affine/env/constant';
 import createCache from '@emotion/cache';
 
 export default function createEmotionCache() {
   let insertionPoint;
 
-  if (isWindow) {
+  if (isBrowser) {
     const emotionInsertionPoint = document.querySelector<HTMLMetaElement>(
       'meta[name="emotion-insertion-point"]'
     );

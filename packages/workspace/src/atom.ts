@@ -1,4 +1,4 @@
-import { isWindow } from '@affine/env/constant';
+import { isBrowser } from '@affine/env/constant';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type { WorkspaceVersion } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
@@ -45,7 +45,7 @@ export const rootWorkspacesMetadataAtom = atomWithStorage<
 export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
 
 rootCurrentWorkspaceIdAtom.onMount = set => {
-  if (isWindow) {
+  if (isBrowser) {
     const callback = (url: string) => {
       const value = url.split('/')[2];
       if (value) {
@@ -67,7 +67,7 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
 export const rootCurrentPageIdAtom = atom<string | null>(null);
 
 rootCurrentPageIdAtom.onMount = set => {
-  if (isWindow) {
+  if (isBrowser) {
     const callback = (url: string) => {
       const value = url.split('/')[3];
       if (value) {

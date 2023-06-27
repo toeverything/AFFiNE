@@ -1,4 +1,4 @@
-import { isWindow } from '@affine/env/constant';
+import { isBrowser } from '@affine/env/constant';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { Observable } from 'rxjs';
 
@@ -22,7 +22,7 @@ function rpcToObservable<
   return new Observable<T>(subscriber => {
     subscriber.next(initialValue);
     onSubscribe?.();
-    if (!isWindow || !environment.isDesktop || !event) {
+    if (!isBrowser || !environment.isDesktop || !event) {
       subscriber.complete();
       return;
     }

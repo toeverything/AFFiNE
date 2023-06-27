@@ -10,10 +10,12 @@ import type {
   UpdaterHandlerManager,
   WorkspaceHandlerManager,
 } from '@toeverything/infra';
+// fixme(himself65): remove `next/config` dependency
 import getConfig from 'next/config';
 import { z } from 'zod';
 
-import { isDesktop, isServer } from './constant';
+import { isBrowser, isDesktop, isServer } from './constant';
+import { isValidIPAddress } from './is-valid-ip-address';
 import { UaHelper } from './ua-helper';
 
 declare global {
@@ -41,6 +43,10 @@ declare global {
   var $AFFINE_SETUP: boolean | undefined;
   // eslint-disable-next-line no-var
   var editorVersion: string | undefined;
+  // eslint-disable-next-line no-var
+  var prefixUrl: string;
+  // eslint-disable-next-line no-var
+  var websocketPrefixUrl: string;
 }
 
 export const buildFlagsSchema = z.object({
@@ -165,54 +171,79 @@ export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-  globalThis.environment = (() => {
-    let environment = null;
-    const isDebug = process.env.NODE_ENV === 'development';
-    if (isServer) {
-      environment = {
-        isDesktop: false,
-        isBrowser: false,
-        isServer: true,
-        isDebug,
-      } satisfies Server;
-    } else {
-      const uaHelper = new UaHelper(navigator);
+  globalThis.runtimeConfig = config;
+  let environment: Environment;
+  const isDebug = process.env.NODE_ENV === 'development';
+  if (isServer) {
+    environment = {
+      isDesktop: false,
+      isBrowser: false,
+      isServer: true,
+      isDebug,
+    } satisfies Server;
+  } else {
+    const uaHelper = new UaHelper(navigator);
 
+    environment = {
+      origin: window.location.origin,
+      isDesktop,
+      isBrowser: true,
+      isServer: false,
+      isDebug,
+      isLinux: uaHelper.isLinux,
+      isMacOs: uaHelper.isMacOs,
+      isSafari: uaHelper.isSafari,
+      isWindows: uaHelper.isWindows,
+      isFireFox: uaHelper.isFireFox,
+      isMobile: uaHelper.isMobile,
+      isChrome: uaHelper.isChrome,
+      isIOS: uaHelper.isIOS,
+    } as Browser;
+    // Chrome on iOS is still Safari
+    if (environment.isChrome && !environment.isIOS) {
+      assertEquals(environment.isSafari, false);
+      assertEquals(environment.isFireFox, false);
       environment = {
-        origin: window.location.origin,
-        isDesktop,
-        isBrowser: true,
-        isServer: false,
-        isDebug,
-        isLinux: uaHelper.isLinux,
-        isMacOs: uaHelper.isMacOs,
-        isSafari: uaHelper.isSafari,
-        isWindows: uaHelper.isWindows,
-        isFireFox: uaHelper.isFireFox,
-        isMobile: uaHelper.isMobile,
-        isChrome: uaHelper.isChrome,
-        isIOS: uaHelper.isIOS,
-      } as Browser;
-      // Chrome on iOS is still Safari
-      if (environment.isChrome && !environment.isIOS) {
-        assertEquals(environment.isSafari, false);
-        assertEquals(environment.isFireFox, false);
-        environment = {
-          ...environment,
-          isSafari: false,
-          isFireFox: false,
-          isChrome: true,
-          chromeVersion: uaHelper.getChromeVersion(),
-        } satisfies ChromeBrowser;
-      }
+        ...environment,
+        isSafari: false,
+        isFireFox: false,
+        isChrome: true,
+        chromeVersion: uaHelper.getChromeVersion(),
+      } satisfies ChromeBrowser;
     }
-    globalThis.environment = environment;
-    return environment;
-  })();
+  }
+  globalThis.environment = environment;
+
   if (environment.isBrowser) {
     printBuildInfo();
-    globalThis.editorVersion = config.editorVersion;
+    globalThis.editorVersion = global.editorVersion;
   }
-  globalThis.runtimeConfig = config;
+
+  let prefixUrl = '/';
+  if (!isBrowser || isDesktop) {
+    // SSR or Desktop
+    const serverAPI = runtimeConfig.serverAPI;
+    if (isValidIPAddress(serverAPI.split(':')[0])) {
+      // This is for Server side rendering support
+      prefixUrl = new URL('http://' + runtimeConfig.serverAPI + '/').origin;
+    } else {
+      prefixUrl = serverAPI;
+    }
+    prefixUrl = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
+  } else {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('prefixUrl')) {
+      prefixUrl = params.get('prefixUrl') as string;
+    } else {
+      prefixUrl = window.location.origin + '/';
+    }
+  }
+
+  const apiUrl = new URL(prefixUrl);
+  const wsProtocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws';
+  const websocketPrefixUrl = `${wsProtocol}://${apiUrl.host}`;
+
+  globalThis.prefixUrl = prefixUrl;
+  globalThis.websocketPrefixUrl = websocketPrefixUrl;
   globalThis.$AFFINE_SETUP = true;
 }

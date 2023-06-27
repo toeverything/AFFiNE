@@ -1,4 +1,4 @@
-import { isWindow } from '@affine/env/constant';
+import { isBrowser } from '@affine/env/constant';
 import * as encoding from 'lib0/encoding';
 import * as math from 'lib0/math';
 import { Observable } from 'lib0/observable';
@@ -218,7 +218,7 @@ export class KeckProvider extends Observable<string> {
         'window unload'
       );
     };
-    if (isWindow) {
+    if (isBrowser) {
       window.addEventListener('unload', this._unloadHandler);
     } else if (typeof process !== 'undefined') {
       process.on('exit', this._unloadHandler);
@@ -260,7 +260,7 @@ export class KeckProvider extends Observable<string> {
     }
     clearInterval(this._checkInterval);
     this.disconnect();
-    if (isWindow) {
+    if (isBrowser) {
       window.removeEventListener('unload', this._unloadHandler);
     } else if (typeof process !== 'undefined') {
       process.off('exit', this._unloadHandler);

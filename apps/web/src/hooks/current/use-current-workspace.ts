@@ -1,4 +1,4 @@
-import { isWindow } from '@affine/env/constant';
+import { isBrowser } from '@affine/env/constant';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
@@ -20,7 +20,7 @@ export function useCurrentWorkspace(): [
     currentWorkspace,
     useCallback(
       (id: string | null) => {
-        if (isWindow && id) {
+        if (isBrowser && id) {
           localStorage.setItem('last_workspace_id', id);
         }
         setPageId(null);

@@ -1,4 +1,3 @@
-import { prefixUrl } from '@affine/env/api';
 import type {
   GraphQLQuery,
   MutationOptions,

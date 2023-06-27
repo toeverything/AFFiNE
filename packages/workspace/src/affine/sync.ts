@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { websocketPrefixUrl } from '@affine/env/api';
 import type { WorkspaceCRUD } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import {
