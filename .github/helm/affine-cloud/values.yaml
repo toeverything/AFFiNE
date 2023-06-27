@@ -1,9 +1,21 @@
 affineCloud:
-    tag: 'nightly-latest'
-    resources:
-        cpu: '250m'
-        memory: 0.5Gi
+  tag: 'nightly-latest'
+  resources:
+    cpu: '250m'
+    memory: 0.5Gi
 postgres:
-    resources:
-        cpu: '500m'
-        memory: 0.5Gi
+  auth:
+    username: affine
+    # only for demo, please modify it at prod env
+    password: 5SmwZ9DnUkratH4Q
+    database: 'affine'
+    primary:
+      initdb:
+        scripts:
+          01-init.sql: |
+            CREATE DATABASE affine_binary;
+            GRANT ALL PRIVILEGES ON DATABASE affine_binary TO affine;
+      resources:
+        limits:
+          cpu: '500m'
+          memory: 0.5Gi
