@@ -7,6 +7,9 @@
     "./theme/*": "./src/theme/*",
     "./*": "./src/components/*/index.tsx"
   },
+  "scripts": {
+    "build": "yarn nx build @affine/i18n"
+  },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
     "@blocksuite/editor": "*",

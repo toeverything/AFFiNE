@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
-    "@affine/i18n": "workspace:*",
     "@blocksuite/block-std": "0.0.0-20230626181619-90507cfc-nightly",
     "@blocksuite/blocks": "0.0.0-20230626181619-90507cfc-nightly",
     "@blocksuite/editor": "0.0.0-20230626181619-90507cfc-nightly",
