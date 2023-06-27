@@ -15,6 +15,7 @@
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "packages": ["{workspaceRoot}/packages/**/*"],
     "sharedGlobals": [
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/nx.json"
@@ -37,6 +38,7 @@
         "{workspaceRoot/apps/electron/dist"
       ],
       "inputs": [
+        "packages",
         {
           "runtime": "node -v"
         },
