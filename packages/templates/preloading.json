@@ -6209,13 +6209,7 @@
             "nDNHkufUpb": {
               "fafWu_k4eb": {
                 "columnId": "fafWu_k4eb",
-                "value": [
-                  {
-                    "id": "MXPthta90B",
-                    "value": "Tag1",
-                    "color": "var(--affine-tag-yellow)"
-                  }
-                ]
+                "value": ["MXPthta90B"]
               },
               "xta1ActkB1": { "columnId": "xta1ActkB1", "value": 100 }
             },
@@ -6223,65 +6217,73 @@
               "xta1ActkB1": { "columnId": "xta1ActkB1", "value": 41 },
               "fafWu_k4eb": {
                 "columnId": "fafWu_k4eb",
-                "value": [
-                  {
-                    "id": "4LhPvJWXU2",
-                    "value": "Tag2",
-                    "color": "var(--affine-tag-pink)"
-                  }
-                ]
+                "value": ["4LhPvJWXU2"]
               }
             },
             "zCn640WobP": {
               "xta1ActkB1": { "columnId": "xta1ActkB1", "value": 23 },
               "fafWu_k4eb": {
                 "columnId": "fafWu_k4eb",
-                "value": [
-                  {
-                    "id": "w6YYhk21ZT",
-                    "value": "Tag3",
-                    "color": "var(--affine-tag-teal)"
-                  }
-                ]
+                "value": ["w6YYhk21ZT"]
               }
             }
           },
+          "prop:views": [
+            {
+              "id": "default",
+              "name": "Table",
+              "mode": "table",
+              "columns": [
+                {
+                  "width": 200,
+                  "id": "fafWu_k4eb"
+                },
+                {
+                  "width": 200,
+                  "id": "xta1ActkB1"
+                }
+              ],
+              "filter": {
+                "type": "group",
+                "op": "and",
+                "conditions": []
+              }
+            }
+          ],
           "prop:columns": [
             {
               "name": "Tag",
               "type": "multi-select",
-              "width": 119,
-              "hide": false,
-              "selection": [
-                {
-                  "id": "MXPthta90B",
-                  "value": "Tag1",
-                  "color": "var(--affine-tag-yellow)"
-                },
-                {
-                  "id": "4LhPvJWXU2",
-                  "value": "Tag2",
-                  "color": "var(--affine-tag-pink)"
-                },
-                {
-                  "id": "w6YYhk21ZT",
-                  "value": "Tag3",
-                  "color": "var(--affine-tag-teal)"
-                },
-                {
-                  "id": "tCIAywo8av",
-                  "value": "How to write",
-                  "color": "var(--affine-tag-gray)"
-                }
-              ],
+              "data": {
+                "options": [
+                  {
+                    "id": "MXPthta90B",
+                    "value": "Tag1",
+                    "color": "var(--affine-tag-yellow)"
+                  },
+                  {
+                    "id": "4LhPvJWXU2",
+                    "value": "Tag2",
+                    "color": "var(--affine-tag-pink)"
+                  },
+                  {
+                    "id": "w6YYhk21ZT",
+                    "value": "Tag3",
+                    "color": "var(--affine-tag-teal)"
+                  },
+                  {
+                    "id": "tCIAywo8av",
+                    "value": "How to write",
+                    "color": "var(--affine-tag-gray)"
+                  }
+                ]
+              },
               "id": "fafWu_k4eb"
             },
             {
               "type": "progress",
               "name": "Progress",
-              "width": 200,
-              "hide": false,
-              "selection": [],
+              "data": {},
               "id": "xta1ActkB1"
             }
           ],
