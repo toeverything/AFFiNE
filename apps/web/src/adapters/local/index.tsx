@@ -7,6 +7,7 @@ import {
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
+import type { WorkspaceAdapter } from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -27,7 +28,6 @@ import {
   WorkspaceHeader,
   WorkspaceSettingDetail,
 } from '../shared';
-import type { WorkspaceAdapter } from '../type';
 
 const logger = new DebugLogger('use-create-first-workspace');
 

@@ -48,8 +48,9 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
     }
     const workspaces = await Promise.all(
       jotaiWorkspaces.map(workspace => {
-        const adapter: WorkspaceAdapter<WorkspaceFlavour> =
-          WorkspaceAdapters[workspace.flavour];
+        const adapter = WorkspaceAdapters[
+          workspace.flavour
+        ] as WorkspaceAdapter<WorkspaceFlavour>;
         assertExists(adapter);
         const { CRUD } = adapter;
         return CRUD.get(workspace.id).then(workspace => {

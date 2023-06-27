@@ -210,7 +210,7 @@ export interface AppEvents {
 export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
   releaseType: ReleaseType;
   flavour: Flavour;
-  // Plugin will be loaded according to the priority
+  // The Adapter will be loaded according to the priority
   loadPriority: LoadPriority;
   Events: Partial<AppEvents>;
   // Fetch necessary data for the first render
