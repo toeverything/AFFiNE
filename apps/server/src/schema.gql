@@ -64,6 +64,11 @@ type WorkspaceType {
   Owner of workspace
   """
   owner: UserType!
+
+  """
+  Members of workspace
+  """
+  members: [UserType!]!
 }
 
 """
@@ -94,6 +99,7 @@ type Query {
 }
 
 type Mutation {
+  register(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
   signUp(email: String!, password: String!, name: String!): UserType!
 
@@ -107,6 +113,14 @@ type Mutation {
   """
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
   deleteWorkspace(id: String!): Boolean!
+  invite(
+    workspaceId: String!
+    email: String!
+    permission: Permission!
+  ): Boolean!
+  revoke(workspaceId: String!, userId: String!): Boolean!
+  acceptInvite(workspaceId: String!): Boolean!
+  leaveWorkspace(workspaceId: String!): Boolean!
 
   """
   Upload user avatar

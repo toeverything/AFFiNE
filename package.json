@@ -65,7 +65,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "@vitest/coverage-istanbul": "^0.32.0",
     "@vitest/ui": "^0.32.0",
-    "eslint": "^8.42.0",
+    "eslint": "^8.43.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-prettier": "^4.2.1",
@@ -93,7 +93,7 @@
     "vite": "^4.3.9",
     "vite-plugin-istanbul": "^4.1.0",
     "vite-tsconfig-paths": "^4.2.0",
-    "vitest": "^0.32.0",
+    "vitest": "^0.32.2",
     "vitest-fetch-mock": "^0.2.2",
     "vitest-mock-extended": "^1.1.3"
   },

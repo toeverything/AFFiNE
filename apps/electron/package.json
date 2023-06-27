@@ -46,13 +46,13 @@
     "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.2",
     "cross-env": "7.0.3",
-    "electron": "^25.1.1",
+    "electron": "^25.2.0",
     "electron-log": "^5.0.0-beta.24",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",
-    "esbuild": "^0.18.3",
+    "esbuild": "^0.18.9",
     "fs-extra": "^11.1.1",
-    "jotai": "^2.2.0",
+    "jotai": "^2.2.1",
     "playwright": "=1.33.0",
     "ts-node": "^10.9.1",
     "undici": "^5.22.1",
@@ -68,7 +68,7 @@
     "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
     "rxjs": "^7.8.1",
-    "yjs": "^13.6.4"
+    "yjs": "^13.6.6"
   },
   "build": {
     "protocols": [
