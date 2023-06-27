@@ -38,9 +38,7 @@
         "{workspaceRoot/apps/electron/dist"
       ],
       "inputs": [
-        {
-          "fileset": "packages"
-        },
+        "packages",
         {
           "runtime": "node -v"
         },
