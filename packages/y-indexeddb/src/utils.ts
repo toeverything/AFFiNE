@@ -143,3 +143,24 @@ export async function downloadBinary(
     return mergeUpdates(doc.updates.map(({ update }) => update));
   }
 }
+
+export async function overwriteBinary(
+  guid: string,
+  update: UpdateMessage['update'],
+  dbName = DEFAULT_DB_NAME
+) {
+  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+    upgrade: upgradeDB,
+  });
+  const db = await dbPromise;
+  const t = db.transaction('workspace', 'readwrite').objectStore('workspace');
+  await t.put({
+    id: guid,
+    updates: [
+      {
+        timestamp: Date.now(),
+        update,
+      },
+    ],
+  });
+}
