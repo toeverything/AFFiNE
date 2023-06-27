@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import type { SqliteConnection } from '@affine/native';
+import type { InsertRow } from '@affine/native';
 import { debounce } from 'lodash-es';
 import * as Y from 'yjs';
 
@@ -8,19 +8,19 @@ import { logger } from '../logger';
 import type { YOrigin } from '../type';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
-import { mergeUpdate } from './merge-update';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 
 const FLUSH_WAIT_TIME = 5000;
 const FLUSH_MAX_WAIT_TIME = 10000;
 
+// todo: trim db when it is too big
 export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   role = 'secondary';
   yDoc = new Y.Doc();
   firstConnected = false;
   destroyed = false;
 
-  updateQueue: Uint8Array[] = [];
+  updateQueue: { data: Uint8Array; docId?: string }[] = [];
 
   unsubscribers = new Set<() => void>();
 
@@ -29,8 +29,21 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     public upstream: WorkspaceSQLiteDB
   ) {
     super(path);
-    this.setupAndListen();
+    this.init();
     logger.debug('[SecondaryWorkspaceSQLiteDB] created', this.workspaceId);
+  }
+
+  getDoc(docId?: string) {
+    if (!docId) {
+      return this.yDoc;
+    }
+    // this should be pretty fast and we don't need to cache it
+    for (const subdoc of this.yDoc.subdocs) {
+      if (subdoc.guid === docId) {
+        return subdoc;
+      }
+    }
+    return null;
   }
 
   override async destroy() {
@@ -47,7 +60,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   // do not update db immediately, instead, push to a queue
   // and flush the queue in a future time
-  async addUpdateToUpdateQueue(db: SqliteConnection, update: Uint8Array) {
+  async addUpdateToUpdateQueue(update: InsertRow) {
     this.updateQueue.push(update);
     await this.debouncedFlush();
   }
@@ -101,55 +114,82 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     }
   }
 
-  setupAndListen() {
-    if (this.firstConnected) {
+  setupListener(docId?: string) {
+    const doc = this.getDoc(docId);
+    if (!doc) {
       return;
     }
-    this.firstConnected = true;
 
     const onUpstreamUpdate = (update: Uint8Array, origin: YOrigin) => {
       if (origin === 'renderer') {
         // update to upstream yDoc should be replicated to self yDoc
-        this.applyUpdate(update, 'upstream');
+        this.applyUpdate(update, 'upstream', docId);
       }
     };
 
     const onSelfUpdate = async (update: Uint8Array, origin: YOrigin) => {
       // for self update from upstream, we need to push it to external DB
-      if (origin === 'upstream' && this.db) {
-        await this.addUpdateToUpdateQueue(this.db, update);
+      if (origin === 'upstream') {
+        await this.addUpdateToUpdateQueue({
+          data: update,
+          docId,
+        });
       }
 
       if (origin === 'self') {
-        this.upstream.applyUpdate(update, 'external');
+        this.upstream.applyUpdate(update, 'external', docId);
       }
+    };
+
+    const onSubdocs = ({ added }: { added: Set<Y.Doc> }) => {
+      added.forEach(subdoc => {
+        this.setupListener(subdoc.guid);
+      });
     };
 
     // listen to upstream update
     this.upstream.yDoc.on('update', onUpstreamUpdate);
     this.yDoc.on('update', onSelfUpdate);
+    this.yDoc.on('subdocs', onSubdocs);
 
     this.unsubscribers.add(() => {
       this.upstream.yDoc.off('update', onUpstreamUpdate);
       this.yDoc.off('update', onSelfUpdate);
+      this.yDoc.off('subdocs', onSubdocs);
     });
-
-    this.run(() => {
-      // apply all updates from upstream
-      const upstreamUpdate = this.upstream.getDocAsUpdates();
-      // to initialize the yDoc, we need to apply all updates from the db
-      this.applyUpdate(upstreamUpdate, 'upstream');
-    })
-      .then(() => {
-        logger.debug('run success');
-      })
-      .catch(err => {
-        logger.error('run error', err);
-      });
   }
 
-  applyUpdate = (data: Uint8Array, origin: YOrigin = 'upstream') => {
-    Y.applyUpdate(this.yDoc, data, origin);
+  init() {
+    if (this.firstConnected) {
+      return;
+    }
+    this.firstConnected = true;
+    this.setupListener();
+    // apply all updates from upstream
+    // we assume here that the upstream ydoc is already sync'ed
+    const syncUpstreamDoc = (docId?: string) => {
+      const update = this.upstream.getDocAsUpdates(docId);
+      if (update) {
+        this.applyUpdate(update, 'upstream');
+      }
+    };
+    syncUpstreamDoc();
+    this.upstream.yDoc.subdocs.forEach(subdoc => {
+      syncUpstreamDoc(subdoc.guid);
+    });
+  }
+
+  applyUpdate = (
+    data: Uint8Array,
+    origin: YOrigin = 'upstream',
+    docId?: string
+  ) => {
+    const doc = this.getDoc(docId);
+    if (doc) {
+      Y.applyUpdate(this.yDoc, data, origin);
+    } else {
+      logger.warn('applyUpdate: doc not found', docId);
+    }
   };
 
   // TODO: have a better solution to handle blobs
@@ -186,23 +226,33 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   async pull() {
     const start = performance.now();
     assert(this.upstream.db, 'upstream db should be connected');
-    const updates = await this.run(async () => {
+    const rows = await this.run(async () => {
       // TODO: no need to get all updates, just get the latest ones (using a cursor, etc)?
       await this.syncBlobs();
-      return (await this.getUpdates()).map(update => update.data);
+      return await this.getAllUpdates();
     });
 
-    if (!updates || this.destroyed) {
+    if (!rows || this.destroyed) {
       return;
     }
 
-    const merged = mergeUpdate(updates);
-    this.applyUpdate(merged, 'self');
+    // apply root doc first
+    rows.forEach(row => {
+      if (!row.docId) {
+        this.applyUpdate(row.data, 'self');
+      }
+    });
+
+    rows.forEach(row => {
+      if (row.docId) {
+        this.applyUpdate(row.data, 'self', row.docId);
+      }
+    });
 
     logger.debug(
       'pull external updates',
       this.path,
-      updates.length,
+      rows.length,
       (performance.now() - start).toFixed(2),
       'ms'
     );

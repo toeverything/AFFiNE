@@ -19,6 +19,13 @@ pub struct UpdateRow {
   pub id: i64,
   pub timestamp: NaiveDateTime,
   pub data: Buffer,
+  pub doc_id: Option<String>,
+}
+
+#[napi(object)]
+pub struct InsertRow {
+  pub doc_id: Option<String>,
+  pub data: Uint8Array,
 }
 
 #[napi]
@@ -53,6 +60,7 @@ impl SqliteConnection {
       .execute(connection.as_mut())
       .await
       .map_err(anyhow::Error::from)?;
+    self.migrate_add_doc_id().await?;
     connection.detach();
     Ok(())
   }
@@ -74,10 +82,14 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn get_blob(&self, key: String) -> Option<BlobRow> {
-    sqlx::query_as!(BlobRow, "SELECT * FROM blobs WHERE key = ?", key)
-      .fetch_one(&self.pool)
-      .await
-      .ok()
+    sqlx::query_as!(
+      BlobRow,
+      "SELECT key, data, timestamp FROM blobs WHERE key = ?",
+      key
+    )
+    .fetch_one(&self.pool)
+    .await
+    .ok()
   }
 
   #[napi]
@@ -100,8 +112,54 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn get_updates(&self) -> napi::Result<Vec<UpdateRow>> {
-    let updates = sqlx::query_as!(UpdateRow, "SELECT * FROM updates")
+  pub async fn get_updates(&self, doc_id: Option<String>) -> napi::Result<Vec<UpdateRow>> {
+    let updates = match doc_id {
+      Some(doc_id) => sqlx::query_as!(
+        UpdateRow,
+        "SELECT id, timestamp, data, doc_id FROM updates WHERE doc_id = ?",
+        doc_id
+      )
+      .fetch_all(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?,
+      None => sqlx::query_as!(
+        UpdateRow,
+        "SELECT id, timestamp, data, doc_id FROM updates WHERE doc_id is NULL",
+      )
+      .fetch_all(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?,
+    };
+    Ok(updates)
+  }
+
+  #[napi]
+  pub async fn get_updates_count(&self, doc_id: Option<String>) -> napi::Result<i32> {
+    let count = match doc_id {
+      Some(doc_id) => {
+        sqlx::query!(
+          "SELECT COUNT(*) as count FROM updates WHERE doc_id = ?",
+          doc_id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(anyhow::Error::from)?
+        .count
+      }
+      None => {
+        sqlx::query!("SELECT COUNT(*) as count FROM updates WHERE doc_id is NULL")
+          .fetch_one(&self.pool)
+          .await
+          .map_err(anyhow::Error::from)?
+          .count
+      }
+    };
+    Ok(count)
+  }
+
+  #[napi]
+  pub async fn get_all_updates(&self) -> napi::Result<Vec<UpdateRow>> {
+    let updates = sqlx::query_as!(UpdateRow, "SELECT id, timestamp, data, doc_id FROM updates")
       .fetch_all(&self.pool)
       .await
       .map_err(anyhow::Error::from)?;
@@ -109,14 +167,54 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn insert_updates(&self, updates: Vec<Uint8Array>) -> napi::Result<()> {
+  pub async fn insert_updates(&self, updates: Vec<InsertRow>) -> napi::Result<()> {
     let mut transaction = self.pool.begin().await.map_err(anyhow::Error::from)?;
-    for update in updates.into_iter() {
-      let update = update.as_ref();
-      sqlx::query_as!(UpdateRow, "INSERT INTO updates (data) VALUES ($1)", update)
+    for InsertRow { data, doc_id } in updates {
+      let update = data.as_ref();
+      sqlx::query_as!(
+        UpdateRow,
+        "INSERT INTO updates (data, doc_id) VALUES ($1, $2)",
+        update,
+        doc_id
+      )
+      .execute(&mut *transaction)
+      .await
+      .map_err(anyhow::Error::from)?;
+    }
+    transaction.commit().await.map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn replace_updates(
+    &self,
+    doc_id: Option<String>,
+    updates: Vec<InsertRow>,
+  ) -> napi::Result<()> {
+    let mut transaction = self.pool.begin().await.map_err(anyhow::Error::from)?;
+
+    match doc_id {
+      Some(doc_id) => sqlx::query!("DELETE FROM updates where doc_id = ?", doc_id)
         .execute(&mut *transaction)
         .await
-        .map_err(anyhow::Error::from)?;
+        .map_err(anyhow::Error::from)?,
+      None => sqlx::query!("DELETE FROM updates where doc_id is NULL",)
+        .execute(&mut *transaction)
+        .await
+        .map_err(anyhow::Error::from)?,
+    };
+
+    for InsertRow { data, doc_id } in updates {
+      let update = data.as_ref();
+      sqlx::query_as!(
+        UpdateRow,
+        "INSERT INTO updates (data, doc_id) VALUES ($1, $2)",
+        update,
+        doc_id
+      )
+      .execute(&mut *transaction)
+      .await
+      .map_err(anyhow::Error::from)?;
     }
     transaction.commit().await.map_err(anyhow::Error::from)?;
     Ok(())
@@ -156,6 +254,24 @@ impl SqliteConnection {
       }
     } else {
       false
+    }
+  }
+
+  // todo: have a better way to handle migration
+  async fn migrate_add_doc_id(&self) -> Result<(), anyhow::Error> {
+    // ignore errors
+    match sqlx::query("ALTER TABLE updates ADD COLUMN doc_id TEXT")
+      .execute(&self.pool)
+      .await
+    {
+      Ok(_) => Ok(()),
+      Err(err) => {
+        if err.to_string().contains("duplicate column name") {
+          Ok(()) // Ignore error if it's due to duplicate column
+        } else {
+          Err(anyhow::Error::from(err)) // Propagate other errors
+        }
+      }
     }
   }
 }

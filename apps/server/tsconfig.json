@@ -12,7 +12,8 @@
     "types": ["node"],
     "outDir": "dist",
     "noEmit": false,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "rootDir": "./src"
   },
   "include": ["src", "package.json"],
   "exclude": ["dist", "node_modules"],

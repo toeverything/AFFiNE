@@ -140,7 +140,7 @@ describe('ydoc sync', () => {
 
       const pageId = uuidv4();
       const page1 = workspace1.createPage({ id: pageId });
-      await page1.waitForLoaded()
+      await page1.waitForLoaded();
       const pageBlockId = page1.addBlock('affine:page', {
         title: new page1.Text(''),
       });
@@ -153,7 +153,7 @@ describe('ydoc sync', () => {
         workspace1.doc.getMap(`space:${pageId}`).toJSON()
       );
       const page2 = workspace2.getPage(pageId) as Page;
-      await page2.waitForLoaded()
+      await page2.waitForLoaded();
       page1.updateBlock(
         page1.getBlockById(paragraphId) as ParagraphBlockModel,
         {

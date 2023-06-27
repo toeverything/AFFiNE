@@ -4,10 +4,10 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230624163241-751f7170-nightly",
+    "@blocksuite/global": "0.0.0-20230626181619-90507cfc-nightly",
     "next": "=13.4.2",
-    "react": "18.3.0-canary-16d053d59-20230506",
-    "react-dom": "18.3.0-canary-16d053d59-20230506",
+    "react": "18.3.0-canary-8ec962d82-20230623",
+    "react-dom": "18.3.0-canary-8ec962d82-20230623",
     "zod": "^3.21.4"
   },
   "exports": {

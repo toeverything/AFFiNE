@@ -33,7 +33,8 @@
         "{workspaceRoot}/apps/web/.next",
         "{workspaceRoot}/packages/storybook/storybook-static",
         "{workspaceRoot}/packages/native/affine.*.node",
-        "{workspaceRoot}/affine.db"
+        "{workspaceRoot}/affine.db",
+        "{workspaceRoot/apps/electron/dist"
       ],
       "inputs": [
         {
@@ -47,9 +48,6 @@
         },
         {
           "env": "ENABLE_ALL_PAGE_FILTER"
-        },
-        {
-          "env": "ENABLE_IMAGE_PREVIEW_MODAL"
         },
         {
           "env": "ENABLE_TEST_PROPERTIES"

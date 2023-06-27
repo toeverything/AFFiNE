@@ -7,7 +7,10 @@ import type { Y as YType } from '@blocksuite/store';
 import { uuidv4, Workspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { createSQLiteDBDownloadProvider, createSQLiteProvider } from '../index';
+import {
+  createSQLiteDBDownloadProvider,
+  createSQLiteProvider,
+} from '../sqlite-providers';
 
 const Y = Workspace.Y;
 
@@ -148,15 +151,21 @@ describe('SQLite download provider', () => {
   test('disconnect handlers', async () => {
     const offHandler = vi.fn();
     let handleUpdate = () => {};
-    workspace.doc.on = (_: string, fn: () => void) => {
-      handleUpdate = fn;
+    let handleSubdocs = () => {};
+    workspace.doc.on = (event: string, fn: () => void) => {
+      if (event === 'update') {
+        handleUpdate = fn;
+      } else if (event === 'subdocs') {
+        handleSubdocs = fn;
+      }
     };
     workspace.doc.off = offHandler;
-    await provider.connect();
+    provider.connect();
 
     provider.disconnect();
 
     expect(triggerDBUpdate).toBe(null);
     expect(offHandler).toBeCalledWith('update', handleUpdate);
+    expect(offHandler).toBeCalledWith('subdocs', handleSubdocs);
   });
 });
