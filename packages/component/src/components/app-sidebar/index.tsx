@@ -1,4 +1,3 @@
-import { env } from '@affine/env';
 import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
@@ -84,7 +83,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   // disable animation to avoid UI flash
   const enableAnimation = useEnableAnimation();
 
-  const isMacosDesktop = env.isDesktop && env.isMacOs;
+  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
   if (initialRender) {
     // avoid the UI flash
     return <div />;
@@ -97,7 +96,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
           [navWidthVar]: `${appSidebarWidth}px`,
         })}
         className={clsx(navWrapperStyle, {
-          'has-background': env.isDesktop && props.hasBackground,
+          'has-background': environment.isDesktop && props.hasBackground,
         })}
         data-open={open}
         data-is-macos-electron={isMacosDesktop}

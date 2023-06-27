@@ -1,5 +1,5 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { config, env } from '@affine/env';
+import { config } from '@affine/env/config';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
@@ -28,7 +28,7 @@ const DEFAULT_SHOW_LIST: IslandItemNames[] = [
 const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST, 'guide'];
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts' | 'guide';
 export const HelpIsland = ({
-  showList = env.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST,
+  showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST,
 }: {
   showList?: IslandItemNames[];
 }) => {

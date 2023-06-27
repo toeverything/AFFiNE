@@ -1,5 +1,5 @@
 import { MainContainer } from '@affine/component/workspace';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import { NoSsr } from '@mui/material';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';

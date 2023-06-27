@@ -1,4 +1,4 @@
-import { isWindow } from '@affine/env';
+import { isWindow } from '@affine/env/constant';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,

@@ -1,5 +1,5 @@
 import { ShareMenu } from '@affine/component/share-menu';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import { Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,

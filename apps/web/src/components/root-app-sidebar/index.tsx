@@ -10,7 +10,8 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
+import { isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -105,14 +106,14 @@ export const RootAppSidebar = ({
 
   // Listen to the "New Page" action from the menu
   useEffect(() => {
-    if (environment.isDesktop) {
+    if (isDesktop) {
       return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
     }
   }, [onClickNewPage]);
 
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
-    if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
+    if (isDesktop && typeof sidebarOpen === 'boolean') {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
         console.error(err);
       });
@@ -235,7 +236,7 @@ export const RootAppSidebar = ({
           </RouteMenuLinkItem>
         </SidebarScrollableContainer>
         <SidebarContainer>
-          {environment.isDesktop && <AppUpdaterButton />}
+          {isDesktop && <AppUpdaterButton />}
           <div />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>

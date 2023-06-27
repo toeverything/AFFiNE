@@ -8,7 +8,8 @@ import {
   Tooltip,
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
+import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';
@@ -290,7 +291,7 @@ export const CreateWorkspaceModal = ({
         console.error(err);
       });
     } else if (mode === 'new') {
-      setStep(environment.isDesktop ? 'set-db-location' : 'name-workspace');
+      setStep(isDesktop ? 'set-db-location' : 'name-workspace');
     } else {
       setStep(undefined);
     }
@@ -342,7 +343,7 @@ export const CreateWorkspaceModal = ({
   const onConfirmName = useCallback(
     (name: string) => {
       setWorkspaceName(name);
-      if (environment.isDesktop) {
+      if (isDesktop) {
         setStep('set-syncing-mode');
       } else {
         // this will be the last step for web for now

@@ -1,5 +1,5 @@
+import { isWindow } from '@affine/env/constant';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import { isWindow } from '@affine/env';
 import type { WorkspaceVersion } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom } from 'jotai';

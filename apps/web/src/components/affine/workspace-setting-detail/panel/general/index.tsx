@@ -1,5 +1,6 @@
 import { Button, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ArrowRightSmallIcon,
@@ -26,7 +27,7 @@ import { StyledInput } from './style';
 const useShowOpenDBFile = (workspaceId: string) => {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    if (window.apis && window.events && environment.isDesktop) {
+    if (window.apis && window.events && isDesktop) {
       window.apis.workspace
         .getMeta(workspaceId)
         .then(meta => {
@@ -201,7 +202,7 @@ function DesktopClientOnly({ workspaceId }: { workspaceId: string }) {
   const t = useAFFiNEI18N();
   const showOpenFolder = useShowOpenDBFile(workspaceId);
   const onRevealDBFile = useCallback(() => {
-    if (environment.isDesktop) {
+    if (isDesktop) {
       window.apis?.dialog.revealDBFile(workspaceId).catch(err => {
         console.error(err);
       });

@@ -1,5 +1,11 @@
+// This file should has not side effect
 import type { Workspace } from '@blocksuite/store';
 
+//#region runtime variables
+export const isWindow = typeof window !== 'undefined';
+export const isServer = !isWindow && typeof navigator === 'undefined';
+export const isDesktop = isWindow && !!window.appInfo?.electron;
+//#endregion
 export const AFFINE_STORAGE_KEY = 'affine-local-storage-v2';
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';

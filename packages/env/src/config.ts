@@ -13,8 +13,8 @@ import type {
 import getConfig from 'next/config';
 import { z } from 'zod';
 
+import { isDesktop, isServer } from './constant';
 import { UaHelper } from './ua-helper';
-import { isWindow } from './utils';
 
 declare global {
   interface Window {
@@ -32,6 +32,13 @@ declare global {
     };
     events: any;
   }
+
+  // eslint-disable-next-line no-var
+  var environment: Environment;
+  // eslint-disable-next-line no-var
+  var $AFFINE_SETUP: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var editorVersion: string | undefined;
 }
 
 export const buildFlagsSchema = z.object({
@@ -136,9 +143,9 @@ interface Desktop extends ChromeBrowser {
 export type Environment = Browser | Server | Desktop;
 
 export const env: Environment = (() => {
-  let environment = null
+  let environment = null;
   const isDebug = process.env.NODE_ENV === 'development';
-  if (!isWindow || typeof navigator === 'undefined') {
+  if (isServer) {
     environment = {
       isDesktop: false,
       isBrowser: false,
@@ -150,7 +157,7 @@ export const env: Environment = (() => {
 
     environment = {
       origin: window.location.origin,
-      isDesktop: !!window.appInfo?.electron,
+      isDesktop,
       isBrowser: true,
       isServer: false,
       isDebug,
@@ -195,15 +202,6 @@ function printBuildInfo() {
   );
   console.log(`https://github.com/toeverything/AFFiNE/tree/${config.hash}`);
   console.groupEnd();
-}
-
-declare global {
-  // eslint-disable-next-line no-var
-  var environment: Environment;
-  // eslint-disable-next-line no-var
-  var $AFFINE_SETUP: boolean | undefined;
-  // eslint-disable-next-line no-var
-  var editorVersion: string | undefined;
 }
 
 export function setupGlobal() {

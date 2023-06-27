@@ -5,8 +5,8 @@ import {
   Input,
   Wrapper,
 } from '@affine/component';
-import { config, isWindow } from '@affine/env';
-import { Unreachable } from '@affine/env/constant';
+import { config } from '@affine/env/config';
+import { isWindow, Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
@@ -37,11 +37,7 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
 }) => {
   const [origin, setOrigin] = useState('');
   useEffect(() => {
-    setOrigin(
-      isWindow && window.location.origin
-        ? window.location.origin
-        : ''
-    );
+    setOrigin(isWindow && window.location.origin ? window.location.origin : '');
   }, []);
   const shareUrl = origin + '/public-workspace/' + workspace.id;
   const t = useAFFiNEI18N();

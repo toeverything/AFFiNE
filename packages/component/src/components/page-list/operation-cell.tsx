@@ -1,3 +1,4 @@
+import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeletePermanentlyIcon,
@@ -65,7 +66,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       >
         {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
       </MenuItem>
-      {!environment.isDesktop && (
+      {!isDesktop && (
         <MenuItem onClick={onOpenPageInNewTab} icon={<OpenInNewIcon />}>
           {t['Open in new tab']()}
         </MenuItem>

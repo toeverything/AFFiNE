@@ -1,4 +1,3 @@
-import { env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMemo } from 'react';
 
@@ -209,21 +208,21 @@ export const useWinMarkdownShortcuts = (): ShortcutTip => {
 export const useMarkdownShortcuts = (): ShortcutTip => {
   const macMarkdownShortcuts = useMacMarkdownShortcuts();
   const winMarkdownShortcuts = useWinMarkdownShortcuts();
-  const isMac = env.isBrowser && env.isMacOs;
+  const isMac = environment.isBrowser && environment.isMacOs;
   return isMac ? macMarkdownShortcuts : winMarkdownShortcuts;
 };
 
 export const usePageShortcuts = (): ShortcutTip => {
   const macPageShortcuts = useMacPageKeyboardShortcuts();
   const winPageShortcuts = useWinPageKeyboardShortcuts();
-  const isMac = env.isBrowser && env.isMacOs;
+  const isMac = environment.isBrowser && environment.isMacOs;
   return isMac ? macPageShortcuts : winPageShortcuts;
 };
 
 export const useEdgelessShortcuts = (): ShortcutTip => {
   const macEdgelessShortcuts = useMacEdgelessKeyboardShortcuts();
   const winEdgelessShortcuts = useWinEdgelessKeyboardShortcuts();
-  const isMac = env.isBrowser && env.isMacOs;
+  const isMac = environment.isBrowser && environment.isMacOs;
 
   return isMac ? macEdgelessShortcuts : winEdgelessShortcuts;
 };
@@ -231,7 +230,7 @@ export const useEdgelessShortcuts = (): ShortcutTip => {
 export const useGeneralShortcuts = (): ShortcutTip => {
   const macGeneralShortcuts = useMacGeneralKeyboardShortcuts();
   const winGeneralShortcuts = useWinGeneralKeyboardShortcuts();
-  const isMac = env.isBrowser && env.isMacOs;
+  const isMac = environment.isBrowser && environment.isMacOs;
 
   return isMac ? macGeneralShortcuts : winGeneralShortcuts;
 };

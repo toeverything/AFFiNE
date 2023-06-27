@@ -5,7 +5,6 @@ import {
   PageList,
   PageListTrashView,
 } from '@affine/component/page-list';
-import { env } from '@affine/env';
 import type { View } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -56,8 +55,8 @@ const PageListEmpty = (props: {
           New Page
         </button>
       );
-      if (env.isDesktop) {
-        const shortcut = env.isMacOs ? '⌘ + N' : 'Ctrl + N';
+      if (environment.isDesktop) {
+        const shortcut = environment.isMacOs ? '⌘ + N' : 'Ctrl + N';
         return (
           <Trans i18nKey="emptyAllPagesClient">
             Click on the <CreateNewPageButton /> button Or press

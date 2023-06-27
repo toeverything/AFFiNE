@@ -1,6 +1,6 @@
 import { Switch } from '@affine/component';
 import { relatedLinks } from '@affine/component/contact-modal';
-import { env } from '@affine/env';
+import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
@@ -24,7 +24,7 @@ export const AboutAffine = () => {
   return (
     <>
       <SettingHeader title={t['About AFFiNE']()} subtitle={t['None yet']()} />
-      {IS_EXHIBITION && env.isDesktop ? (
+      {IS_EXHIBITION && isDesktop ? (
         <Wrapper title={t['Version']()}>
           <SettingRow
             name={t['Check for updates']()}

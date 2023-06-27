@@ -1,5 +1,5 @@
-import type { BlockSuiteFeatureFlags } from '@affine/env';
-import { config } from '@affine/env';
+import type { BlockSuiteFeatureFlags } from '@affine/env/config';
+import { config } from '@affine/env/config';
 import type { AffinePublicWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { affineApis } from '@affine/workspace/affine/shared';

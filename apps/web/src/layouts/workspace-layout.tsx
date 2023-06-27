@@ -9,8 +9,9 @@ import {
   WorkspaceFallback,
 } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { config, DEFAULT_HELLO_WORLD_PAGE_ID, env } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
+import { config } from '@affine/env/config';
+import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -455,7 +456,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   );
   const t = useAFFiNEI18N();
 
-  const showList: IslandItemNames[] = env.isDesktop
+  const showList: IslandItemNames[] = isDesktop
     ? ['whatNew', 'contact', 'guide']
     : ['whatNew', 'contact'];
 

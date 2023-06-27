@@ -1,5 +1,5 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';

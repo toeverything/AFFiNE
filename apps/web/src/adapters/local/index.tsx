@@ -1,11 +1,11 @@
 import { DebugLogger } from '@affine/debug';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
+import { config } from '@affine/env/config';
 import {
-  config,
   DEFAULT_HELLO_WORLD_PAGE_ID,
   DEFAULT_WORKSPACE_NAME,
-} from '@affine/env';
-import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { PageNotFoundError } from '@affine/env/constant';
+  PageNotFoundError,
+} from '@affine/env/constant';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import {
   LoadPriority,

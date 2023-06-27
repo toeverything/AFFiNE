@@ -1,6 +1,6 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {

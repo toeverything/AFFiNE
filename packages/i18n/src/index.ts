@@ -1,4 +1,4 @@
-import { isWindow } from '@affine/env';
+import { isWindow } from '@affine/env/constant';
 import type { i18n, Resource } from 'i18next';
 import i18next from 'i18next';
 import {

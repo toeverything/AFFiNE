@@ -1,4 +1,4 @@
-import { isWindow } from '@affine/env';
+import { isWindow } from '@affine/env/constant';
 import * as encoding from 'lib0/encoding';
 import * as math from 'lib0/math';
 import { Observable } from 'lib0/observable';

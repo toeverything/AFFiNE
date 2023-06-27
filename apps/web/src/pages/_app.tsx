@@ -5,7 +5,7 @@ import '../bootstrap';
 
 import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { config } from '@affine/env';
+import { config } from '@affine/env/config';
 import { createI18n, I18nextProvider } from '@affine/i18n';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
