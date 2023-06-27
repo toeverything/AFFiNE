@@ -34,8 +34,10 @@ export type RootWorkspaceMetadata =
 export const workspaceAdaptersAtom = atom<
   Record<WorkspaceFlavour, WorkspaceAdapter<WorkspaceFlavour>>
 >(
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  null!
+  null as unknown as Record<
+    WorkspaceFlavour,
+    WorkspaceAdapter<WorkspaceFlavour>
+  >
 );
 
 // #region root atoms

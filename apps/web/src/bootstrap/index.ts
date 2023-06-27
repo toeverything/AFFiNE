@@ -1,9 +1,15 @@
 import { migrateToSubdoc } from '@affine/env/blocksuite';
 import { config, setupGlobal } from '@affine/env/config';
-import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
+import type {
+  LocalIndexedDBDownloadProvider,
+  WorkspaceAdapter,
+} from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import {
+  rootWorkspacesMetadataAtom,
+  workspaceAdaptersAtom,
+} from '@affine/workspace/atom';
 import {
   migrateLocalBlobStorage,
   upgradeV1ToV2,
@@ -13,6 +19,14 @@ import { assertExists } from '@blocksuite/global/utils';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
+
+rootStore.set(
+  workspaceAdaptersAtom,
+  WorkspaceAdapters as Record<
+    WorkspaceFlavour,
+    WorkspaceAdapter<WorkspaceFlavour>
+  >
+);
 
 setupGlobal();
 
