@@ -219,7 +219,7 @@ export function setupGlobal() {
     globalThis.editorVersion = global.editorVersion;
   }
 
-  let prefixUrl = '/';
+  let prefixUrl: string;
   if (!isBrowser || isDesktop) {
     // SSR or Desktop
     const serverAPI = runtimeConfig.serverAPI;
