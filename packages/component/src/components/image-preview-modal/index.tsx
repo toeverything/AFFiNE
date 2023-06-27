@@ -545,7 +545,6 @@ export const ImagePreviewModal = (
         data-testid="image-preview-close-button"
         onClick={() => {
           setBlockId(null);
-          setIsOpen(false);
         }}
         className={imagePreviewModalCloseButtonStyle}
       >
