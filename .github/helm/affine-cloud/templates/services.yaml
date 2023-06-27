@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: affine-cloud
+spec:
+  type: ClusterIP
+  selector:
+    app: affine-cloud
+  ports:
+    - name: affine-cloud
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
