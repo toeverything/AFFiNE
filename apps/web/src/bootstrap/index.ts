@@ -49,7 +49,8 @@ if (!environment.isDesktop && !environment.isServer) {
 
 if (environment.isBrowser) {
   const value = localStorage.getItem('jotai-workspaces');
-  if (value) {
+  if (value && localStorage.getItem('migration-v2') !== 'true') {
+    localStorage.setItem('migration-v2', 'true');
     try {
       const metadata = JSON.parse(value) as RootWorkspaceMetadata[];
       metadata.forEach(oldMeta => {
