@@ -43,9 +43,9 @@
     "jotai": "^2.2.1",
     "lit": "^2.7.5",
     "lottie-web": "^5.12.2",
-    "react": "18.3.0-next-fecc288b7-20221025",
+    "react": "18.3.0-canary-16d053d59-20230506",
     "react-datepicker": "^4.13.0",
-    "react-dom": "18.3.0-next-fecc288b7-20221025",
+    "react-dom": "18.3.0-canary-16d053d59-20230506",
     "react-error-boundary": "^4.0.10",
     "react-is": "^18.2.0",
     "rxjs": "^7.8.1"

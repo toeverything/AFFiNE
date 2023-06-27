@@ -18,9 +18,9 @@
     "@blocksuite/store": "0.0.0-20230626181619-90507cfc-nightly",
     "express": "^4.18.2",
     "jotai": "^2.2.1",
-    "react": "18.3.0-next-fecc288b7-20221025",
-    "react-dom": "18.3.0-next-fecc288b7-20221025",
-    "react-server-dom-webpack": "18.3.0-next-fecc288b7-20221025",
+    "react": "18.3.0-canary-16d053d59-20230506",
+    "react-dom": "18.3.0-canary-16d053d59-20230506",
+    "react-server-dom-webpack": "18.3.0-canary-16d053d59-20230506",
     "waku": "0.12.1"
   },
   "devDependencies": {
