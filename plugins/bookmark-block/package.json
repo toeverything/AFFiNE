@@ -14,8 +14,8 @@
     "link-preview-js": "^3.0.4"
   },
   "devDependencies": {
-    "react": "18.3.0-canary-16d053d59-20230506",
-    "react-dom": "18.3.0-canary-16d053d59-20230506"
+    "react": "18.3.0-next-fecc288b7-20221025",
+    "react-dom": "18.3.0-next-fecc288b7-20221025"
   },
   "peerDependencies": {
     "react": "*",
