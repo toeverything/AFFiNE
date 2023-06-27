@@ -4,14 +4,17 @@ import type {
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import type { RootWorkspaceMetadataV1 } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
   migrateLocalBlobStorage,
   upgradeV1ToV2,
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { Workspace } from '@blocksuite/store';
+import { assertExists, Workspace } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import {
   atom,
   createStore,
@@ -20,6 +23,7 @@ import {
   useAtomValue,
   useSetAtom,
 } from 'jotai';
+import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import { Suspense, use, useCallback } from 'react';
 
@@ -114,6 +118,25 @@ const WorkspaceInner = () => {
 const MigrationInner = () => {
   const ids = useAtomValue(workspaceIdsAtom);
   const [id, setId] = useAtom(targetIdAtom);
+  const router = useRouter();
+  const onWriteIntoProduction = useCallback(() => {
+    assertExists(id);
+    const metadata: RootWorkspaceMetadataV1 = {
+      id,
+      flavour: WorkspaceFlavour.LOCAL,
+      version: undefined,
+    };
+    rootStore.set(rootWorkspacesMetadataAtom, [metadata]);
+    router.push('/').catch(console.error);
+  }, [id, router]);
+  const writeIntoProductionNode = id && (
+    <button
+      data-test-id="write into production"
+      onClick={onWriteIntoProduction}
+    >
+      write into production
+    </button>
+  );
   return (
     <div
       style={{
@@ -133,6 +156,7 @@ const MigrationInner = () => {
           </li>
         ))}
       </ul>
+      {writeIntoProductionNode}
       <Suspense fallback="loading...">{id && <WorkspaceInner />}</Suspense>
     </div>
   );
