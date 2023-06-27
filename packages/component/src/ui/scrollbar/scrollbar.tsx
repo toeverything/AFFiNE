@@ -15,29 +15,27 @@ export const ScrollableContainer = ({
   showScrollTopBorder = false,
   inTableView = false,
 }: PropsWithChildren<ScrollableContainerProps>) => {
-    const [hasScrollTop, ref] = useHasScrollTop();
-    return (
-      <ScrollArea.Root className={styles.scrollableContainerRoot}>
-        <div
-          data-has-scroll-top={hasScrollTop}
-          className={clsx({[styles.scrollTopBorder]:showScrollTopBorder})}
-        />
-        <ScrollArea.Viewport
-          className={clsx([styles.scrollableViewport])}
-          ref={ref}
-        >
-          <div className={styles.scrollableContainer}>
-          {children}
-          </div>
-         
-        </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar
-          
-          orientation="vertical"
-          className={clsx(styles.scrollbar,{[styles.TableScrollbar]:inTableView})}
-        >
-          <ScrollArea.Thumb className={styles.scrollbarThumb} />
-        </ScrollArea.Scrollbar>
-      </ScrollArea.Root>
-    );
-  }
+  const [hasScrollTop, ref] = useHasScrollTop();
+  return (
+    <ScrollArea.Root className={styles.scrollableContainerRoot}>
+      <div
+        data-has-scroll-top={hasScrollTop}
+        className={clsx({ [styles.scrollTopBorder]: showScrollTopBorder })}
+      />
+      <ScrollArea.Viewport
+        className={clsx([styles.scrollableViewport])}
+        ref={ref}
+      >
+        <div className={styles.scrollableContainer}>{children}</div>
+      </ScrollArea.Viewport>
+      <ScrollArea.Scrollbar
+        orientation="vertical"
+        className={clsx(styles.scrollbar, {
+          [styles.TableScrollbar]: inTableView,
+        })}
+      >
+        <ScrollArea.Thumb className={styles.scrollbarThumb} />
+      </ScrollArea.Scrollbar>
+    </ScrollArea.Root>
+  );
+};

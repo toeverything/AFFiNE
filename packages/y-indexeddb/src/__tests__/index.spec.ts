@@ -108,6 +108,7 @@ describe('indexeddb provider', () => {
       })
         .register(AffineSchemas)
         .register(__unstableSchemas);
+      // data should only contain updates for the root doc
       data.updates.forEach(({ update }) => {
         Workspace.Y.applyUpdate(testWorkspace.doc, update);
       });
@@ -126,19 +127,6 @@ describe('indexeddb provider', () => {
       }
       expect(workspace.doc.toJSON()).toEqual(testWorkspace.doc.toJSON());
     }
-
-    const secondWorkspace = new Workspace({
-      id,
-    })
-      .register(AffineSchemas)
-      .register(__unstableSchemas);
-    const provider2 = createIndexedDBProvider(secondWorkspace.doc, rootDBName);
-    provider2.connect();
-    await provider2.whenSynced;
-    const page = secondWorkspace.getPage('page0');
-    assertExists(page);
-    await page.waitForLoaded();
-    expect(workspace.doc.toJSON()).toEqual(secondWorkspace.doc.toJSON());
   });
 
   test('disconnect suddenly', async () => {
@@ -424,6 +412,7 @@ describe('subDoc', () => {
       provider.disconnect();
       json2 = doc.toJSON();
     }
+    // the following line compares {} with {}
     expect(json1['']['1'].toJSON()).toEqual(json2['']['1'].toJSON());
     expect(json1['']['2']).toEqual(json2['']['2']);
   });

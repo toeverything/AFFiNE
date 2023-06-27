@@ -20,14 +20,31 @@ afterEach(async () => {
   await fs.remove(tmpDir);
 });
 
+let testYDoc: Y.Doc;
+let testYSubDoc: Y.Doc;
+
 function getTestUpdates() {
-  const testYDoc = new Y.Doc();
+  testYDoc = new Y.Doc();
   const yText = testYDoc.getText('test');
   yText.insert(0, 'hello');
+
+  testYSubDoc = new Y.Doc();
+  testYDoc.getMap('subdocs').set('test-subdoc', testYSubDoc);
+
   const updates = Y.encodeStateAsUpdate(testYDoc);
 
   return updates;
 }
+
+function getTestSubDocUpdates() {
+  const yText = testYSubDoc.getText('test');
+  yText.insert(0, 'hello');
+
+  const updates = Y.encodeStateAsUpdate(testYSubDoc);
+
+  return updates;
+}
+
 test('can create new db file if not exists', async () => {
   const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
   const workspaceId = v4();
@@ -65,6 +82,31 @@ test('on applyUpdate (from renderer), will trigger update', async () => {
   db.applyUpdate(getTestUpdates(), 'renderer');
   expect(onUpdate).toHaveBeenCalled();
   sub.unsubscribe();
+  await db.destroy();
+});
+
+test('on applyUpdate (from renderer, subdoc), will trigger update', async () => {
+  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const workspaceId = v4();
+  const onUpdate = vi.fn();
+  const insertUpdates = vi.fn();
+
+  const db = await openWorkspaceDatabase(workspaceId);
+  db.applyUpdate(getTestUpdates(), 'renderer');
+
+  db.db!.insertUpdates = insertUpdates;
+  db.update$.subscribe(onUpdate);
+
+  const subdocUpdates = getTestSubDocUpdates();
+  db.applyUpdate(subdocUpdates, 'renderer', testYSubDoc.guid);
+
+  expect(onUpdate).toHaveBeenCalled();
+  expect(insertUpdates).toHaveBeenCalledWith([
+    {
+      docId: testYSubDoc.guid,
+      data: subdocUpdates,
+    },
+  ]);
   await db.destroy();
 });
 

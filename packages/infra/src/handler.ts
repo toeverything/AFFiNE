@@ -17,8 +17,15 @@ export abstract class HandlerManager<
 }
 
 type DBHandlers = {
-  getDocAsUpdates: (id: string) => Promise<Uint8Array>;
-  applyDocUpdate: (id: string, update: Uint8Array) => Promise<void>;
+  getDocAsUpdates: (
+    workspaceId: string,
+    subdocId?: string
+  ) => Promise<Uint8Array>;
+  applyDocUpdate: (
+    id: string,
+    update: Uint8Array,
+    subdocId?: string
+  ) => Promise<void>;
   addBlob: (
     workspaceId: string,
     key: string,

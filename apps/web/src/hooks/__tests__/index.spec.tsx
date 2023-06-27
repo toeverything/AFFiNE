@@ -71,7 +71,7 @@ beforeEach(async () => {
     .register(AffineSchemas)
     .register(__unstableSchemas);
   const initPage = async (page: Page) => {
-    await page.waitForLoaded()
+    await page.waitForLoaded();
     expect(page).not.toBeNull();
     assertExists(page);
     const pageBlockId = page.addBlock('affine:page', {

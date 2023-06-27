@@ -1,3 +1,5 @@
+import type { InsertRow } from '@affine/native';
+import { debounce } from 'lodash-es';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
@@ -5,8 +7,9 @@ import { logger } from '../logger';
 import type { YOrigin } from '../type';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
-import { mergeUpdate } from './merge-update';
 import { dbSubjects } from './subjects';
+
+const TRIM_SIZE = 500;
 
 export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   role = 'primary';
@@ -28,33 +31,76 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     this.firstConnected = false;
   }
 
+  getDoc(docId?: string) {
+    if (!docId) {
+      return this.yDoc;
+    }
+    // this should be pretty fast and we don't need to cache it
+    for (const subdoc of this.yDoc.subdocs) {
+      if (subdoc.guid === docId) {
+        return subdoc;
+      }
+    }
+    return null;
+  }
+
   getWorkspaceName = () => {
-    return this.yDoc.getMap('space:meta').get('name') as string;
+    return this.yDoc.getMap('meta').get('name') as string;
   };
+
+  setupListener(docId?: string) {
+    const doc = this.getDoc(docId);
+    if (doc) {
+      const onUpdate = async (update: Uint8Array, origin: YOrigin) => {
+        const insertRows = [{ data: update, docId }];
+        if (origin === 'renderer') {
+          await this.addUpdateToSQLite(insertRows);
+        } else if (origin === 'external') {
+          dbSubjects.externalUpdate.next({
+            workspaceId: this.workspaceId,
+            update,
+            docId,
+          });
+          await this.addUpdateToSQLite(insertRows);
+          logger.debug('external update', this.workspaceId);
+        }
+      };
+      const onSubdocs = ({ added }: { added: Set<Y.Doc> }) => {
+        added.forEach(subdoc => {
+          this.setupListener(subdoc.guid);
+        });
+      };
+
+      doc.on('update', onUpdate);
+      doc.on('subdocs', onSubdocs);
+    } else {
+      logger.error('setupListener: doc not found', docId);
+    }
+  }
 
   async init() {
     const db = await super.connectIfNeeded();
 
     if (!this.firstConnected) {
-      this.yDoc.on('update', async (update: Uint8Array, origin: YOrigin) => {
-        if (origin === 'renderer') {
-          await this.addUpdateToSQLite([update]);
-        } else if (origin === 'external') {
-          dbSubjects.externalUpdate.next({
-            workspaceId: this.workspaceId,
-            update,
-          });
-          await this.addUpdateToSQLite([update]);
-          logger.debug('external update', this.workspaceId);
-        }
-      });
+      this.setupListener();
     }
 
-    const updates = await this.getUpdates();
-    const merged = mergeUpdate(updates.map(update => update.data));
+    const updates = await this.getAllUpdates();
 
-    // to initialize the yDoc, we need to apply all updates from the db
-    this.applyUpdate(merged, 'self');
+    // apply root first (without ID).
+    // subdoc will be available after root is applied
+    updates.forEach(update => {
+      if (!update.docId) {
+        this.applyUpdate(update.data, 'self');
+      }
+    });
+
+    // then, for all subdocs, apply the updates
+    updates.forEach(update => {
+      if (update.docId) {
+        this.applyUpdate(update.data, 'self', update.docId);
+      }
+    });
 
     this.firstConnected = true;
     this.update$.next();
@@ -62,18 +108,32 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     return db;
   }
 
-  getDocAsUpdates = () => {
-    return Y.encodeStateAsUpdate(this.yDoc);
+  // unlike getUpdates, this will return updates in yDoc
+  getDocAsUpdates = (docId?: string) => {
+    const doc = docId ? this.getDoc(docId) : this.yDoc;
+    if (doc) {
+      return Y.encodeStateAsUpdate(doc);
+    }
+    return null;
   };
 
   // non-blocking and use yDoc to validate the update
   // after that, the update is added to the db
-  applyUpdate = (data: Uint8Array, origin: YOrigin = 'renderer') => {
+  applyUpdate = (
+    data: Uint8Array,
+    origin: YOrigin = 'renderer',
+    docId?: string
+  ) => {
     // todo: trim the updates when the number of records is too large
     // 1. store the current ydoc state in the db
     // 2. then delete the old updates
     // yjs-idb will always trim the db for the first time after DB is loaded
-    Y.applyUpdate(this.yDoc, data, origin);
+    const doc = this.getDoc(docId);
+    if (doc) {
+      Y.applyUpdate(doc, data, origin);
+    } else {
+      logger.warn('applyUpdate: doc not found', docId);
+    }
   };
 
   override async addBlob(key: string, value: Uint8Array) {
@@ -87,10 +147,30 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     await super.deleteBlob(key);
   }
 
-  override async addUpdateToSQLite(data: Uint8Array[]) {
+  override async addUpdateToSQLite(data: InsertRow[]) {
     this.update$.next();
+    data.forEach(row => {
+      this.trimWhenNecessary(row.docId)?.catch(err => {
+        logger.error('trimWhenNecessary failed', err);
+      });
+    });
     await super.addUpdateToSQLite(data);
   }
+
+  trimWhenNecessary = debounce(async (docId?: string) => {
+    if (this.firstConnected) {
+      const count = (await this.db?.getUpdatesCount(docId)) ?? 0;
+      if (count > TRIM_SIZE) {
+        logger.debug(`trim ${this.workspaceId}:${docId} ${count}`);
+        const update = this.getDocAsUpdates(docId);
+        if (update) {
+          const insertRows = [{ data: update, docId }];
+          await this.db?.replaceUpdates(docId, insertRows);
+          logger.debug(`trim ${this.workspaceId}:${docId} successfully`);
+        }
+      }
+    }
+  }, 1000);
 }
 
 export async function openWorkspaceDatabase(workspaceId: string) {

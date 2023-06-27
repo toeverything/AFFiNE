@@ -3,8 +3,6 @@ import type {
   AffineWebSocketProvider,
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
-  SQLiteDBDownloadProvider,
-  SQLiteProvider,
 } from '@affine/env/workspace';
 import type { Disposable, DocProviderCreator } from '@blocksuite/store';
 import { assertExists, Workspace } from '@blocksuite/store';
@@ -21,6 +19,10 @@ import { getLoginStorage, storageChangeSlot } from '../affine/login';
 import { CallbackSet } from '../utils';
 import { createAffineDownloadProvider } from './affine-download';
 import { localProviderLogger as logger } from './logger';
+import {
+  createSQLiteDBDownloadProvider,
+  createSQLiteProvider,
+} from './sqlite-providers';
 
 const Y = Workspace.Y;
 
@@ -147,151 +149,6 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     sync: () => {
       logger.info('connect indexeddb provider', id);
       downloadBinaryRecursively(doc).then(_resolve).catch(_reject);
-    },
-  };
-};
-
-const sqliteOrigin = Symbol('sqlite-provider-origin');
-
-const createSQLiteProvider: DocProviderCreator = (id, doc): SQLiteProvider => {
-  const { apis, events } = window;
-  // make sure it is being used in Electron with APIs
-  assertExists(apis);
-  assertExists(events);
-
-  function handleUpdate(update: Uint8Array, origin: unknown) {
-    if (origin === sqliteOrigin) {
-      return;
-    }
-    apis.db.applyDocUpdate(id, update).catch(err => {
-      console.error(err);
-    });
-  }
-
-  let unsubscribe = () => {};
-  let connected = false;
-
-  const connect = () => {
-    logger.info('connecting sqlite provider', id);
-    doc.on('update', handleUpdate);
-    unsubscribe = events.db.onExternalUpdate(
-      ({
-        update,
-        workspaceId,
-      }: {
-        workspaceId: string;
-        update: Uint8Array;
-      }) => {
-        if (workspaceId === id) {
-          Y.applyUpdate(doc, update, sqliteOrigin);
-        }
-      }
-    );
-    connected = true;
-    logger.info('connecting sqlite done', id);
-  };
-
-  const cleanup = () => {
-    logger.info('disconnecting sqlite provider', id);
-    unsubscribe();
-    doc.off('update', handleUpdate);
-    connected = false;
-  };
-
-  return {
-    flavour: 'sqlite',
-    passive: true,
-    get connected(): boolean {
-      return connected;
-    },
-    cleanup,
-    connect,
-    disconnect: cleanup,
-  };
-};
-
-const createSQLiteDBDownloadProvider: DocProviderCreator = (
-  id,
-  doc
-): SQLiteDBDownloadProvider => {
-  const { apis } = window;
-  let disconnected = false;
-
-  let _resolve: () => void;
-  let _reject: (error: unknown) => void;
-  const promise = new Promise<void>((resolve, reject) => {
-    _resolve = resolve;
-    _reject = reject;
-  });
-
-  async function syncUpdates() {
-    logger.info('syncing updates from sqlite', id);
-    const updates = await apis.db.getDocAsUpdates(id);
-
-    if (disconnected) {
-      return;
-    }
-
-    if (updates) {
-      Y.applyUpdate(doc, updates, sqliteOrigin);
-    }
-
-    const diff = Y.encodeStateAsUpdate(doc, updates);
-
-    // also apply updates to sqlite
-    await apis.db.applyDocUpdate(id, diff);
-  }
-
-  // fixme(pengx17): should n't sync blob in doc provider
-  // async function _syncBlobIntoSQLite(bs: BlobManager) {
-  //   const persistedKeys = await apis.db.getBlobKeys(id);
-  //
-  //   if (disconnected) {
-  //     return;
-  //   }
-  //
-  //   const allKeys = await bs.list().catch(() => []);
-  //   const keysToPersist = allKeys.filter(k => !persistedKeys.includes(k));
-  //
-  //   logger.info('persisting blobs', keysToPersist, 'to sqlite');
-  //   return Promise.all(
-  //     keysToPersist.map(async k => {
-  //       const blob = await bs.get(k);
-  //       if (!blob) {
-  //         logger.warn('blob not found for', k);
-  //         return;
-  //       }
-  //
-  //       if (disconnected) {
-  //         return;
-  //       }
-  //
-  //       return apis?.db.addBlob(
-  //         id,
-  //         k,
-  //         new Uint8Array(await blob.arrayBuffer())
-  //       );
-  //     })
-  //   );
-  // }
-
-  return {
-    flavour: 'sqlite-download',
-    active: true,
-    get whenReady() {
-      return promise;
-    },
-    cleanup: () => {
-      disconnected = true;
-    },
-    sync: async () => {
-      logger.info('connect indexeddb provider', id);
-      try {
-        await syncUpdates();
-        _resolve();
-      } catch (error) {
-        _reject(error);
-      }
     },
   };
 };
