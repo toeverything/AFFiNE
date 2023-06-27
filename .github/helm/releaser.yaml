@@ -1,0 +1,3 @@
+owner: toeverything
+git-repo: helm-charts
+package-path: .github/helm/affine-cloud
