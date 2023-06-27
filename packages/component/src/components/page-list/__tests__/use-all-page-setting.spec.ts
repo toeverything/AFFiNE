@@ -4,7 +4,6 @@
 import 'fake-indexeddb/auto';
 
 import { renderHook } from '@testing-library/react';
-import { RESET } from 'jotai/utils';
 import { expect, test } from 'vitest';
 
 import { createDefaultFilter, vars } from '../filter/vars';
@@ -14,15 +13,15 @@ test('useAllPageSetting', async () => {
   const settingHook = renderHook(() => useAllPageSetting());
   const prevView = settingHook.result.current.currentView;
   expect(settingHook.result.current.savedViews).toEqual([]);
-  settingHook.result.current.setCurrentView(view => ({
-    ...view,
+  settingHook.result.current.updateView({
+    ...settingHook.result.current.currentView,
     filterList: [createDefaultFilter(vars[0])],
-  }));
+  });
   settingHook.rerender();
   const nextView = settingHook.result.current.currentView;
   expect(nextView).not.toBe(prevView);
   expect(nextView.filterList).toEqual([createDefaultFilter(vars[0])]);
-  settingHook.result.current.setCurrentView(RESET);
+  settingHook.result.current.backToAll();
   await settingHook.result.current.createView({
     ...settingHook.result.current.currentView,
     id: '1',

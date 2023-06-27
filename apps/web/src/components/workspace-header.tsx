@@ -5,14 +5,12 @@ import {
   useAllPageSetting,
   ViewList,
 } from '@affine/component/page-list';
-import { config } from '@affine/env';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
-import { RESET } from 'jotai/utils';
+import { uuidv4 } from '@blocksuite/store';
 import type { ReactElement } from 'react';
-import { NIL } from 'uuid';
 
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { filterContainerStyle } from './filter-container.css';
@@ -33,29 +31,34 @@ export function WorkspaceHeader({
             <FilterList
               value={setting.currentView.filterList}
               onChange={filterList => {
-                setting.setCurrentView(view => ({
-                  ...view,
+                setting.updateView({
+                  ...setting.currentView,
                   filterList,
-                }));
+                });
               }}
             />
           </div>
-          {config.enableAllPageFilter && (
-            <div>
-              {setting.currentView.id !== NIL ||
-              (setting.currentView.id === NIL &&
-                setting.currentView.filterList.length > 0) ? (
+          <div>
+            {setting.isDefault ? (
+              setting.currentView.filterList.length > 0 ? (
                 <SaveViewButton
-                  init={setting.currentView.filterList}
+                  init={{
+                    id: uuidv4(),
+                    name: '',
+                    filterList: setting.currentView.filterList,
+                  }}
                   onConfirm={setting.createView}
                 ></SaveViewButton>
-              ) : (
-                <Button onClick={() => setting.setCurrentView(RESET)}>
-                  Back to all
-                </Button>
-              )}
-            </div>
-          )}
+              ) : null
+            ) : (
+              <Button
+                style={{ border: 'none' }}
+                onClick={() => setting.backToAll()}
+              >
+                Back to all
+              </Button>
+            )}
+          </div>
         </div>
       );
       return (

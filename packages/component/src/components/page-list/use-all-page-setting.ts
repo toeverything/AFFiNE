@@ -3,7 +3,7 @@ import type { DBSchema } from 'idb';
 import { openDB } from 'idb';
 import type { IDBPDatabase } from 'idb/build/entry';
 import { useAtom } from 'jotai';
-import { atomWithReset } from 'jotai/utils';
+import { atomWithReset, RESET } from 'jotai/utils';
 import { useCallback } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { NIL } from 'uuid';
@@ -32,13 +32,13 @@ const pageViewDBPromise: Promise<IDBPDatabase<PageViewDBV1>> =
       });
 
 const currentViewAtom = atomWithReset<View>({
-  name: 'default',
+  name: 'All',
   id: NIL,
   filterList: [],
 });
 
 export const useAllPageSetting = () => {
-  const { data: savedViews, mutate } = useSWRImmutable(
+  const { data: savedViews, mutate } = useSWRImmutable<View[]>(
     ['affine', 'page-view'],
     {
       fetcher: async () => {
@@ -66,14 +66,43 @@ export const useAllPageSetting = () => {
     },
     [mutate]
   );
-
+  const deleteView = useCallback(
+    async (id: string) => {
+      if (id === NIL) {
+        return;
+      }
+      const db = await pageViewDBPromise;
+      const t = db.transaction('view', 'readwrite').objectStore('view');
+      await t.delete(id);
+      await mutate();
+    },
+    [mutate]
+  );
+  const updateView = useCallback(
+    (view: View) => {
+      createView(view)
+        .then(() => {
+          setCurrentView(view);
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    [createView, setCurrentView]
+  );
+  const backToAll = useCallback(() => {
+    setCurrentView(RESET);
+  }, [setCurrentView]);
   return {
     currentView,
-    savedViews: savedViews as View[],
+    savedViews: savedViews ?? [],
+    isDefault: currentView.id === NIL,
 
     // actions
     createView,
-    setCurrentView,
+    updateView,
+    backToAll,
+    deleteView,
   };
 };
 export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>

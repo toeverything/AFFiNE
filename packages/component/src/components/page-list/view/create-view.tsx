@@ -1,6 +1,5 @@
-import type { Filter, View } from '@affine/env/filter';
+import type { View } from '@affine/env/filter';
 import { SaveIcon } from '@blocksuite/icons';
-import { uuidv4 } from '@blocksuite/store';
 import { useState } from 'react';
 
 import { Button, Input, Modal, ModalCloseButton, ModalWrapper } from '../../..';
@@ -8,24 +7,22 @@ import { FilterList } from '../filter';
 import * as styles from './view-list.css';
 
 type CreateViewProps = {
-  init: Filter[];
+  title?: string;
+  init: View;
   onConfirm: (view: View) => void;
 };
 
-const CreateView = ({
+export const EditView = ({
+  title,
   init,
   onConfirm,
   onCancel,
 }: CreateViewProps & { onCancel: () => void }) => {
-  const [value, onChange] = useState<View>({
-    name: '',
-    filterList: init,
-    id: uuidv4(),
-  });
+  const [value, onChange] = useState<View>(init);
 
   return (
     <div>
-      <div className={styles.saveTitle}>Save As New View</div>
+      <div className={styles.saveTitle}>{title ?? 'Save As New View'}</div>
       <div
         style={{
           backgroundColor: 'var(--affine-hover-color)',
@@ -97,7 +94,7 @@ export const SaveViewButton = ({ init, onConfirm }: CreateViewProps) => {
             onClick={() => changeShow(false)}
             hoverColor="var(--affine-icon-color)"
           />
-          <CreateView
+          <EditView
             init={init}
             onCancel={() => changeShow(false)}
             onConfirm={view => {
