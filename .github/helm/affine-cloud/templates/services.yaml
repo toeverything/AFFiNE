@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: affine-cloud
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: affine-cloud
   ports:

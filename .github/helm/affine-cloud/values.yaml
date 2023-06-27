@@ -7,7 +7,7 @@ postgresql:
   auth:
     # only for demo, please modify it at prod env
     username: affine
-    password: AFFiNE.PA$$W0RD
+    password: XJYMLnuBJS27a2du
     database: affine
   primary:
     initdb:
