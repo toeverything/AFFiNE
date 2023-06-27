@@ -14,7 +14,8 @@
     "defaultBase": "master"
   },
   "namedInputs": {
-    "default": ["{workspaceRoot}/**/*", "sharedGlobals"],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "packages": ["{workspaceRoot}/packages/**/*"],
     "sharedGlobals": [
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/nx.json"
@@ -37,6 +38,9 @@
         "{workspaceRoot/apps/electron/dist"
       ],
       "inputs": [
+        {
+          "fileset": "packages"
+        },
         {
           "runtime": "node -v"
         },
