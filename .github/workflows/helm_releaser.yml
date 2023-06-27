@@ -19,24 +19,42 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Checkout Helm chart repo
+        uses: actions/checkout@v3
+        with:
+          repository: toeverything/helm-charts
+          path: .helm-chart-repo
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Helm
         uses: azure/setup-helm@v3
 
-      - name: Add bitnami repo
+      - name: Install chart releaser
+        run: |
+          set -e
+          arch="$(dpkg --print-architecture)"
+          curl -s https://api.github.com/repos/helm/chart-releaser/releases/latest \
+          | yq --indent 0 --no-colors --input-format json --unwrapScalar \
+            ".assets[] | select(.name | test("\""^chart-releaser_.+_linux_${arch}\.tar\.gz$"\"")) | .browser_download_url" \
+          | xargs curl -SsL \
+          | tar zxf - -C /usr/local/bin
+
+      - name: Package charts
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
+          cr package --package-path .github/helm/affine-cloud
+          cr upload --commit '${{ github.sha }}' --git-repo "$repo" --owner "$owner" --token '${{ github.token }}' --skip-existing
 
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.5.0
-        with:
-          charts_dir: .github/helm
-          config: .github/helm/releaser.yaml
-          charts_repo_url: https://toeverything.github.io/helm-charts
-        env:
-          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      - name: Update charts index
+        working-directory: .helm-chart-repo
+        run: |
+          set -ex
+          git config --local user.name "$GITHUB_ACTOR"
+          git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          mkdir -p .cr-index
+          owner=$(cut -d '/' -f 1 <<< '${{ github.repository }}')
+          repo=$(cut -d '/' -f 2 <<< '${{ github.repository }}')
+          cr index --git-repo "$repo" --owner "$owner" \
+            --package-path '../.cr-release-packages' \
+            --index-path .cr-index --push
