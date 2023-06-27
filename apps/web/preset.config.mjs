@@ -24,9 +24,6 @@ export const buildFlags = {
     (process.env.ENABLE_ALL_PAGE_FILTER
       ? process.env.ENABLE_ALL_PAGE_FILTER === 'true'
       : false),
-  enableImagePreviewModal: process.env.ENABLE_IMAGE_PREVIEW_MODAL
-    ? process.env.ENABLE_IMAGE_PREVIEW_MODAL === 'true'
-    : true,
   enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
     ? process.env.ENABLE_TEST_PROPERTIES === 'true'
     : true,
