@@ -3,9 +3,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const settingSlideBar = style({
   width: '25%',
   maxWidth: '242px',
-  // TODO: use color variable
-  // background: 'var(--affine-background-secondary-color)',
-  backgroundColor: '#F4F4F5',
+  background: 'var(--affine-background-secondary-color)',
   padding: '20px 16px',
   height: '100%',
   flexShrink: 0,
