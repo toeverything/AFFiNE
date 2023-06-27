@@ -1,6 +1,14 @@
 // This file should has not side effect
 import type { Workspace } from '@blocksuite/store';
 
+declare global {
+  interface Window {
+    appInfo: {
+      electron: boolean;
+    };
+  }
+}
+
 //#region runtime variables
 export const isBrowser = typeof window !== 'undefined';
 export const isServer = !isBrowser && typeof navigator === 'undefined';
