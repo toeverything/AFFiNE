@@ -13,10 +13,10 @@ variables:
   yarn_config_cache: $(Pipeline.Workspace)/.yarn/cache
 
 steps:
-  - script: |
-      corepack enable
-      corepack prepare
-    displayName: 'Setup yarn'
+  - task: NodeTool@0
+    inputs:
+      versionSource: 'fromFile'
+    displayName: 'Install Node.js'
 
   - task: Cache@2
     inputs:
