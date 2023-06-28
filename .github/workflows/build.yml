@@ -47,7 +47,7 @@ jobs:
       - name: Run Type Check
         run: yarn typecheck
       - name: Run ESLint
-        run: yarn lint --max-warnings=0
+        run: yarn lint --max-warnings=0 --cache
       - name: Run Prettier
         run: yarn prettier . --ignore-unknown --cache --check
       - name: Run circular
