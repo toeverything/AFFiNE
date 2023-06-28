@@ -32,7 +32,7 @@ permissions:
   security-events: write
 
 env:
-  BUILD_TYPE: ${{ github.event.inputs.build-type || (github.ref_type === 'tag' && contains(github.ref, 'canary') && 'canary') }}
+  BUILD_TYPE: ${{ github.event.inputs.build-type || (github.ref_type == 'tag' && contains(github.ref, 'canary') && 'canary') }}
   DEBUG: napi:*
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '10.13'
