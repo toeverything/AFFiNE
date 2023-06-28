@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AppController } from './app.controller';
 import { ConfigModule } from './config';
 import { GqlModule } from './graphql.module';
 import { BusinessModules } from './modules';
@@ -14,5 +15,6 @@ import { StorageModule } from './storage';
     StorageModule.forRoot(),
     ...BusinessModules,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
