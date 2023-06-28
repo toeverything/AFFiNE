@@ -25,7 +25,7 @@ steps:
     displayName: 'Setup yarn'
 
   - script: |
-      yarn install
+      yarn install --immutable --inline-builds
     displayName: 'yarn install'
 
   - script: |
