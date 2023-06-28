@@ -1,4 +1,4 @@
-import { Unreachable } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import type {
   AppEvents,
   WorkspaceAdapter,
