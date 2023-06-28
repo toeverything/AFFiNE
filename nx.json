@@ -33,6 +33,7 @@
         "{projectRoot}/target",
         "{workspaceRoot}/apps/web/.next",
         "{workspaceRoot}/packages/storybook/storybook-static",
+        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
         "{workspaceRoot}/packages/native/affine.*.node",
         "{workspaceRoot}/affine.db",
         "{workspaceRoot/apps/electron/dist"
@@ -41,6 +42,9 @@
         "packages",
         {
           "runtime": "node -v"
+        },
+        {
+          "env": "BUILD_ENV"
         },
         {
           "env": "ENABLE_BOOKMARK_OPERATION"
