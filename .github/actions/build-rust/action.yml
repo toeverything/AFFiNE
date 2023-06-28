@@ -55,3 +55,4 @@ runs:
         options: --user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build -e NX_CLOUD_ACCESS_TOKEN=${{ inputs.nx_token }}
         run: >-
           yarn nx build @affine/native --target ${{ inputs.target }}
+          chmod -R 777 node_modules/.cache

@@ -1,0 +1,16 @@
+{
+  "name": "@affine-legacy/0.7.0-canary.18",
+  "description": "AFFiNE 0.7.0-canary.18 static output",
+  "scripts": {
+    "unzip": "unzip affine-web -d static",
+    "start": "yarn exec serve -s static -l 8081",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@affine-test/fixtures": "workspace:*",
+    "@affine-test/kit": "workspace:*",
+    "@playwright/test": "=1.33.0",
+    "playwright": "=1.33.0",
+    "serve": "^14.2.0"
+  }
+}
