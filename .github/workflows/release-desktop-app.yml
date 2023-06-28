@@ -57,6 +57,7 @@ jobs:
           API_SERVER_PROFILE: prod
           ENABLE_TEST_PROPERTIES: false
           ENABLE_BOOKMARK_OPERATION: true
+          ENABLE_SQLITE_PROVIDER: false
           RELEASE_VERSION: ${{ github.event.inputs.version }}
 
       - name: Upload Artifact (web-static)

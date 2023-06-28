@@ -71,6 +71,9 @@
         },
         {
           "env": "API_SERVER_PROFILE"
+        },
+        {
+          "env": "ENABLE_SQLITE_PROVIDER"
         }
       ]
     },
