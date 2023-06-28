@@ -41,6 +41,7 @@ const allPackages = [
   'apps/web',
   'apps/server',
   'apps/electron',
+  'apps/storybook',
   'plugins/copilot',
   'plugins/bookmark-block',
 ];

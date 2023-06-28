@@ -13,9 +13,9 @@
   "include": [".storybook/**/*"],
   "exclude": ["lib"],
   "references": [
-    { "path": "../i18n" },
+    { "path": "../../packages/i18n" },
     {
-      "path": "../env"
+      "path": "../../packages/env"
     }
   ]
 }

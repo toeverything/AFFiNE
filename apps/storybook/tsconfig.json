@@ -2,17 +2,22 @@
   "extends": "../../tsconfig.json",
   "include": ["./src"],
   "compilerOptions": {
+    // Workaround for storybook build
+    "baseUrl": "../..",
     "composite": true,
     "noEmit": false,
     "outDir": "lib",
-    "paths": {
-      "@affine/component": ["../component/src"],
-      "@affine/component/*": ["../component/src/components/*"]
-    }
+    "types": ["react/experimental"]
   },
   "references": [
     {
-      "path": "../component"
+      "path": "../../packages/component"
+    },
+    {
+      "path": "../../packages/env"
+    },
+    {
+      "path": "../../packages/workspace"
     },
     {
       "path": "./tsconfig.node.json"
