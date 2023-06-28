@@ -157,6 +157,7 @@ const config = {
     'sonarjs/no-duplicated-branches': 'error',
     'sonarjs/no-collection-size-mischeck': 'error',
     'sonarjs/no-useless-catch': 'error',
+    'sonarjs/no-identical-functions': 'error',
   },
   overrides: [
     {
