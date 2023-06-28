@@ -2,7 +2,7 @@ import { Empty } from '@affine/component';
 import type { ListData, TrashListData } from '@affine/component/page-list';
 import { PageList, PageListTrashView } from '@affine/component/page-list';
 import { env } from '@affine/env';
-import type { View } from '@affine/env/filter';
+import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
@@ -26,7 +26,7 @@ export type BlockSuitePageListProps = {
   listType: 'all' | 'trash' | 'shared' | 'public';
   isPublic?: true;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
-  view?: View;
+  collection?: Collection;
 };
 
 const filter = {
@@ -95,7 +95,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   onOpenPage,
   listType,
   isPublic = false,
-  view,
+  collection,
 }) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const {
@@ -129,12 +129,12 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
           if (!filter[listType](pageMeta, pageMetas)) {
             return false;
           }
-          if (!view) {
+          if (!collection) {
             return true;
           }
-          return filterPage(view, pageMeta);
+          return filterPage(collection, pageMeta);
         }),
-    [pageMetas, filterMode, isPreferredEdgeless, listType, view]
+    [pageMetas, filterMode, isPreferredEdgeless, listType, collection]
   );
 
   if (listType === 'trash') {

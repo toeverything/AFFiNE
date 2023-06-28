@@ -1,3 +1,3 @@
-export * from './create-view';
-export * from './view-bar';
-export * from './view-list';
+export * from './collection-bar';
+export * from './collection-list';
+export * from './create-collection';

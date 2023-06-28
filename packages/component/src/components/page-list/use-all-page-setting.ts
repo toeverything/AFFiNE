@@ -1,4 +1,4 @@
-import type { Filter, VariableMap, View } from '@affine/env/filter';
+import type { Collection, Filter, VariableMap } from '@affine/env/filter';
 import type { DBSchema } from 'idb';
 import { openDB } from 'idb';
 import type { IDBPDatabase } from 'idb/build/entry';
@@ -10,20 +10,20 @@ import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
 
-type PersistenceView = View;
+type PersistenceCollection = Collection;
 
-export interface PageViewDBV1 extends DBSchema {
+export interface PageCollectionDBV1 extends DBSchema {
   view: {
-    key: PersistenceView['id'];
-    value: PersistenceView;
+    key: PersistenceCollection['id'];
+    value: PersistenceCollection;
   };
 }
 
-const pageViewDBPromise: Promise<IDBPDatabase<PageViewDBV1>> =
+const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
   typeof window === 'undefined'
     ? // never resolve in SSR
       new Promise<any>(() => {})
-    : openDB<PageViewDBV1>('page-view', 1, {
+    : openDB<PageCollectionDBV1>('page-view', 1, {
         upgrade(database) {
           database.createObjectStore('view', {
             keyPath: 'id',
@@ -31,18 +31,18 @@ const pageViewDBPromise: Promise<IDBPDatabase<PageViewDBV1>> =
         },
       });
 
-const currentViewAtom = atomWithReset<View>({
+const currentCollectionAtom = atomWithReset<Collection>({
   name: 'All',
   id: NIL,
   filterList: [],
 });
 
-export const useSavedViews = () => {
-  const { data: savedViews, mutate } = useSWRImmutable<View[]>(
-    ['affine', 'page-view'],
+export const useSavedCollections = () => {
+  const { data: savedCollections, mutate } = useSWRImmutable<Collection[]>(
+    ['affine', 'page-collection'],
     {
       fetcher: async () => {
-        const db = await pageViewDBPromise;
+        const db = await pageCollectionDBPromise;
         const t = db.transaction('view').objectStore('view');
         return await t.getAll();
       },
@@ -51,24 +51,24 @@ export const useSavedViews = () => {
       revalidateOnMount: true,
     }
   );
-  const saveView = useCallback(
-    async (view: View) => {
-      if (view.id === NIL) {
+  const saveCollection = useCallback(
+    async (collection: Collection) => {
+      if (collection.id === NIL) {
         return;
       }
-      const db = await pageViewDBPromise;
+      const db = await pageCollectionDBPromise;
       const t = db.transaction('view', 'readwrite').objectStore('view');
-      await t.put(view);
+      await t.put(collection);
       await mutate();
     },
     [mutate]
   );
-  const deleteView = useCallback(
+  const deleteCollection = useCallback(
     async (id: string) => {
       if (id === NIL) {
         return;
       }
-      const db = await pageViewDBPromise;
+      const db = await pageCollectionDBPromise;
       const t = db.transaction('view', 'readwrite').objectStore('view');
       await t.delete(id);
       await mutate();
@@ -76,67 +76,70 @@ export const useSavedViews = () => {
     [mutate]
   );
   const addPage = useCallback(
-    async (viewId: string, pageId: string) => {
-      const view = savedViews?.find(v => v.id === viewId);
-      if (!view) {
+    async (collectionId: string, pageId: string) => {
+      const collection = savedCollections?.find(v => v.id === collectionId);
+      if (!collection) {
         return;
       }
-      await saveView({
-        ...view,
-        whiteList: [pageId, ...(view.whiteList ?? [])],
+      await saveCollection({
+        ...collection,
+        allowList: [pageId, ...(collection.allowList ?? [])],
       });
     },
-    [saveView, savedViews]
+    [saveCollection, savedCollections]
   );
   return {
-    savedViews: savedViews ?? [],
-    saveView,
-    deleteView,
+    savedCollections: savedCollections ?? [],
+    saveCollection,
+    deleteCollection,
     addPage,
   };
 };
 
 export const useAllPageSetting = () => {
-  const { savedViews, saveView, deleteView, addPage } = useSavedViews();
-  const [currentView, setCurrentView] = useAtom(currentViewAtom);
+  const { savedCollections, saveCollection, deleteCollection, addPage } =
+    useSavedCollections();
+  const [currentCollection, setCurrentCollection] = useAtom(
+    currentCollectionAtom
+  );
 
-  const updateView = useCallback(
-    (view: View) => {
-      return saveView(view)
+  const updateCollection = useCallback(
+    (collection: Collection) => {
+      return saveCollection(collection)
         .then(() => {
-          if (view.id === currentView.id) {
-            setCurrentView(view);
+          if (collection.id === currentCollection.id) {
+            setCurrentCollection(collection);
           }
         })
         .catch(err => {
           console.error(err);
         });
     },
-    [currentView.id, saveView, setCurrentView]
+    [currentCollection.id, saveCollection, setCurrentCollection]
   );
-  const selectView = useCallback(
+  const selectCollection = useCallback(
     (id: string) => {
-      const view = savedViews.find(v => v.id === id);
-      if (view) {
-        setCurrentView(view);
+      const collection = savedCollections.find(v => v.id === id);
+      if (collection) {
+        setCurrentCollection(collection);
       }
     },
-    [savedViews, setCurrentView]
+    [savedCollections, setCurrentCollection]
   );
   const backToAll = useCallback(() => {
-    setCurrentView(RESET);
-  }, [setCurrentView]);
+    setCurrentCollection(RESET);
+  }, [setCurrentCollection]);
   return {
-    currentView,
-    savedViews,
-    isDefault: currentView.id === NIL,
+    currentCollection: currentCollection,
+    savedCollections: savedCollections,
+    isDefault: currentCollection.id === NIL,
 
     // actions
-    saveView,
-    updateView,
-    selectView,
+    saveCollection,
+    updateCollection,
+    selectCollection,
     backToAll,
-    deleteView,
+    deleteCollection,
     addPage,
   };
 };

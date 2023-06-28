@@ -54,9 +54,7 @@ import {
 import { AppContainer } from '../components/affine/app-container';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
-import {
-  processSmartFolderDrag,
-} from '../components/pure/workspace-slider-bar/smartFolder';
+import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
 import {
   DROPPABLE_SIDEBAR_TRASH,
   RootAppSidebar,
@@ -475,8 +473,8 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         moveToTrash(pageId);
         toast(t['Successfully deleted']());
       }
-      // Drag page into smart folder
-      processSmartFolderDrag(e);
+      // Drag page into Collections
+      processCollectionsDrag(e);
     },
     [moveToTrash, t]
   );

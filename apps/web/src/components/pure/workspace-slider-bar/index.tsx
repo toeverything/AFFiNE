@@ -4,6 +4,6 @@ export type FavoriteListProps = {
   currentWorkspace: AllWorkspace;
 };
 
-export type SmartFolderListProps = {
+export type CollectionsListProps = {
   currentWorkspace: AllWorkspace;
 };

@@ -1,24 +1,24 @@
-import type { View } from '@affine/env/filter';
+import type { Collection } from '@affine/env/filter';
 import { SaveIcon } from '@blocksuite/icons';
 import { useState } from 'react';
 
 import { Button, Input, Modal, ModalCloseButton, ModalWrapper } from '../../..';
 import { FilterList } from '../filter';
-import * as styles from './view-list.css';
+import * as styles from './collection-list.css';
 
-type CreateViewProps = {
+type CreateCollectionProps = {
   title?: string;
-  init: View;
-  onConfirm: (view: View) => void;
+  init: Collection;
+  onConfirm: (view: Collection) => void;
 };
-export const EditViewModel = ({
+export const EditCollectionModel = ({
   init,
   onConfirm,
   open,
   onClose,
 }: {
-  init: View;
-  onConfirm: (view: View) => void;
+  init: Collection;
+  onConfirm: (view: Collection) => void;
   open: boolean;
   onClose: () => void;
 }) => {
@@ -37,7 +37,7 @@ export const EditViewModel = ({
           onClick={onClose}
           hoverColor="var(--affine-icon-color)"
         />
-        <EditView
+        <EditCollection
           init={init}
           onCancel={onClose}
           onConfirm={view => {
@@ -49,17 +49,19 @@ export const EditViewModel = ({
     </Modal>
   );
 };
-export const EditView = ({
+export const EditCollection = ({
   title,
   init,
   onConfirm,
   onCancel,
-}: CreateViewProps & { onCancel: () => void }) => {
-  const [value, onChange] = useState<View>(init);
+}: CreateCollectionProps & { onCancel: () => void }) => {
+  const [value, onChange] = useState<Collection>(init);
 
   return (
     <div>
-      <div className={styles.saveTitle}>{title ?? 'Save As New View'}</div>
+      <div className={styles.saveTitle}>
+        {title ?? 'Save As New Collection'}
+      </div>
       <div
         style={{
           backgroundColor: 'var(--affine-hover-color)',
@@ -75,7 +77,7 @@ export const EditView = ({
       </div>
       <div style={{ marginTop: 20 }}>
         <Input
-          placeholder="Untitled View"
+          placeholder="Untitled Collection"
           value={value.name}
           onChange={text => onChange({ ...value, name: text })}
         />
@@ -101,7 +103,10 @@ export const EditView = ({
     </div>
   );
 };
-export const SaveViewButton = ({ init, onConfirm }: CreateViewProps) => {
+export const SaveCollectionButton = ({
+  init,
+  onConfirm,
+}: CreateCollectionProps) => {
   const [show, changeShow] = useState(false);
   return (
     <>
@@ -114,10 +119,10 @@ export const SaveViewButton = ({ init, onConfirm }: CreateViewProps) => {
           <div className={styles.saveIcon}>
             <SaveIcon />
           </div>
-          <div className={styles.saveText}>Save View</div>
+          <div className={styles.saveText}>Save Collection</div>
         </div>
       </Button>
-      <EditViewModel
+      <EditCollectionModel
         init={init}
         onConfirm={onConfirm}
         open={show}

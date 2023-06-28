@@ -25,10 +25,11 @@ export type Filter = {
   args: Literal[];
 };
 
-export type View = {
+export type Collection = {
   id: string;
   name: string;
   pinned?: boolean;
   filterList: Filter[];
-  whiteList?: string[];
+  allowList?: string[];
+  excludeList?: string[];
 };

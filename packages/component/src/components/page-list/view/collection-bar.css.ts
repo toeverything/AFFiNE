@@ -11,6 +11,22 @@ export const pin = style({
     backgroundColor: 'var(--affine-hover-color)',
   },
 });
+export const pinedIcon = style({
+  display: 'block',
+  selectors: {
+    [`${pin}:hover &`]: {
+      display: 'none',
+    },
+  },
+});
+export const pinIcon = style({
+  display: 'none',
+  selectors: {
+    [`${pin}:hover &`]: {
+      display: 'block',
+    },
+  },
+});
 export const view = style({
   display: 'flex',
   alignItems: 'center',

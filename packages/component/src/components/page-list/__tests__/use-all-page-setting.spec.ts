@@ -11,22 +11,22 @@ import { useAllPageSetting } from '../use-all-page-setting';
 
 test('useAllPageSetting', async () => {
   const settingHook = renderHook(() => useAllPageSetting());
-  const prevView = settingHook.result.current.currentView;
-  expect(settingHook.result.current.savedViews).toEqual([]);
-  await settingHook.result.current.updateView({
-    ...settingHook.result.current.currentView,
+  const prevCollection = settingHook.result.current.currentCollection;
+  expect(settingHook.result.current.savedCollections).toEqual([]);
+  await settingHook.result.current.updateCollection({
+    ...settingHook.result.current.currentCollection,
     filterList: [createDefaultFilter(vars[0])],
   });
   settingHook.rerender();
-  const nextView = settingHook.result.current.currentView;
-  expect(nextView).not.toBe(prevView);
-  expect(nextView.filterList).toEqual([createDefaultFilter(vars[0])]);
+  const nextCollection = settingHook.result.current.currentCollection;
+  expect(nextCollection).not.toBe(prevCollection);
+  expect(nextCollection.filterList).toEqual([createDefaultFilter(vars[0])]);
   settingHook.result.current.backToAll();
-  await settingHook.result.current.saveView({
-    ...settingHook.result.current.currentView,
+  await settingHook.result.current.saveCollection({
+    ...settingHook.result.current.currentCollection,
     id: '1',
   });
   settingHook.rerender();
-  expect(settingHook.result.current.savedViews.length).toBe(1);
-  expect(settingHook.result.current.savedViews[0].id).toBe('1');
+  expect(settingHook.result.current.savedCollections.length).toBe(1);
+  expect(settingHook.result.current.savedCollections[0].id).toBe('1');
 });

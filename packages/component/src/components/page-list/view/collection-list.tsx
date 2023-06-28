@@ -1,10 +1,10 @@
-import { EditView } from '@affine/component/page-list';
-import type { Filter, View } from '@affine/env/filter';
+import { EditCollection } from '@affine/component/page-list';
+import type { Collection, Filter } from '@affine/env/filter';
 import {
   DeleteIcon,
   FilteredIcon,
+  FilterIcon,
   FolderIcon,
-  PenIcon,
   PinIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
@@ -24,16 +24,16 @@ import Menu from '../../../ui/menu/menu';
 import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useAllPageSetting } from '../use-all-page-setting';
-import * as styles from './view-list.css';
+import * as styles from './collection-list.css';
 
-const ViewOption = ({
-  view,
+const CollectionOption = ({
+  collection,
   setting,
-  updateView,
+  updateCollection,
 }: {
-  view: View;
+  collection: Collection;
   setting: ReturnType<typeof useAllPageSetting>;
-  updateView: (view: View) => void;
+  updateCollection: (view: Collection) => void;
 }) => {
   const actions: {
     icon: ReactNode;
@@ -44,38 +44,38 @@ const ViewOption = ({
       {
         icon: <PinIcon />,
         click: () => {
-          return setting.updateView({
-            ...view,
-            pinned: !view.pinned,
+          return setting.updateCollection({
+            ...collection,
+            pinned: !collection.pinned,
           });
         },
       },
       {
-        icon: <PenIcon />,
+        icon: <FilterIcon />,
         click: () => {
-          updateView(view);
+          updateCollection(collection);
         },
       },
       {
         icon: <DeleteIcon style={{ color: 'red' }} />,
         click: () => {
-          setting.deleteView(view.id).catch(err => {
+          setting.deleteCollection(collection.id).catch(err => {
             console.error(err);
           });
         },
       },
     ],
-    [setting, updateView, view]
+    [setting, updateCollection, collection]
   );
-  const selectView = useCallback(
-    () => setting.selectView(view.id),
-    [setting, view.id]
+  const selectCollection = useCallback(
+    () => setting.selectCollection(collection.id),
+    [setting, collection.id]
   );
   return (
     <MenuItem
       icon={<ViewLayersIcon></ViewLayersIcon>}
-      onClick={selectView}
-      key={view.id}
+      onClick={selectCollection}
+      key={collection.id}
       className={styles.viewMenu}
     >
       <div
@@ -85,7 +85,7 @@ const ViewOption = ({
           justifyContent: 'space-between',
         }}
       >
-        <div>{view.name}</div>
+        <div>{collection.name}</div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {actions.map((v, i) => {
             const onClick = (e: MouseEvent<HTMLDivElement>) => {
@@ -108,30 +108,33 @@ const ViewOption = ({
     </MenuItem>
   );
 };
-export const ViewList = ({
+export const CollectionList = ({
   setting,
 }: {
   setting: ReturnType<typeof useAllPageSetting>;
 }) => {
   const [open] = useAtom(appSidebarOpenAtom);
-  const [view, setView] = useState<View>();
+  const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
     (filterList: Filter[]) => {
-      return setting.updateView({
-        ...setting.currentView,
+      return setting.updateCollection({
+        ...setting.currentCollection,
         filterList,
       });
     },
     [setting]
   );
-  const closeUpdateViewModal = useCallback(() => setView(undefined), []);
+  const closeUpdateCollectionModal = useCallback(
+    () => setCollection(undefined),
+    []
+  );
   const onConfirm = useCallback(
-    (view: View) => {
-      return setting.updateView(view).then(() => {
-        closeUpdateViewModal();
+    (view: Collection) => {
+      return setting.updateCollection(view).then(() => {
+        closeUpdateCollectionModal();
       });
     },
-    [closeUpdateViewModal, setting]
+    [closeUpdateCollectionModal, setting]
   );
   return (
     <div
@@ -140,7 +143,7 @@ export const ViewList = ({
       })}
       style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}
     >
-      {setting.savedViews.length > 0 && (
+      {setting.savedCollections.length > 0 && (
         <Menu
           trigger="click"
           content={
@@ -160,14 +163,14 @@ export const ViewList = ({
                   <div>All</div>
                 </div>
               </MenuItem>
-              <div className={styles.menuTitleStyle}>Saved View</div>
+              <div className={styles.menuTitleStyle}>Saved Collection</div>
               <div className={styles.menuDividerStyle}></div>
-              {setting.savedViews.map(view => (
-                <ViewOption
+              {setting.savedCollections.map(view => (
+                <CollectionOption
                   key={view.id}
-                  view={view}
+                  collection={view}
                   setting={setting}
-                  updateView={setView}
+                  updateCollection={setCollection}
                 />
               ))}
             </div>
@@ -178,7 +181,7 @@ export const ViewList = ({
             className={clsx(styles.viewButton)}
             hoverColor="var(--affine-icon-color)"
           >
-            {setting.currentView.name}
+            {setting.currentCollection.name}
           </Button>
         </Menu>
       )}
@@ -187,7 +190,7 @@ export const ViewList = ({
         placement="bottom-start"
         content={
           <CreateFilterMenu
-            value={setting.currentView.filterList}
+            value={setting.currentCollection.filterList}
             onChange={onChange}
           />
         }
@@ -201,7 +204,7 @@ export const ViewList = ({
           Filter
         </Button>
       </Menu>
-      <Modal open={view != null} onClose={closeUpdateViewModal}>
+      <Modal open={collection != null} onClose={closeUpdateCollectionModal}>
         <ModalWrapper
           width={560}
           style={{
@@ -212,14 +215,14 @@ export const ViewList = ({
           <ModalCloseButton
             top={12}
             right={12}
-            onClick={closeUpdateViewModal}
+            onClick={closeUpdateCollectionModal}
             hoverColor="var(--affine-icon-color)"
           />
-          {view ? (
-            <EditView
-              title="Update View"
-              init={view}
-              onCancel={closeUpdateViewModal}
+          {collection ? (
+            <EditCollection
+              title="Update Collection"
+              init={collection}
+              onCancel={closeUpdateCollectionModal}
               onConfirm={onConfirm}
             />
           ) : null}

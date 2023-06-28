@@ -1,8 +1,8 @@
 import {
+  CollectionList,
   FilterList,
-  SaveViewButton,
+  SaveCollectionButton,
   useAllPageSetting,
-  ViewList,
 } from '@affine/component/page-list';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
@@ -23,31 +23,31 @@ export function WorkspaceHeader({
   const t = useAFFiNEI18N();
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {
-      const leftSlot = <ViewList setting={setting}></ViewList>;
+      const leftSlot = <CollectionList setting={setting}></CollectionList>;
       const filterContainer =
-        setting.isDefault && setting.currentView.filterList.length > 0 ? (
+        setting.isDefault && setting.currentCollection.filterList.length > 0 ? (
           <div className={filterContainerStyle}>
             <div style={{ flex: 1 }}>
               <FilterList
-                value={setting.currentView.filterList}
+                value={setting.currentCollection.filterList}
                 onChange={filterList => {
-                  return setting.updateView({
-                    ...setting.currentView,
+                  return setting.updateCollection({
+                    ...setting.currentCollection,
                     filterList,
                   });
                 }}
               />
             </div>
             <div>
-              {setting.currentView.filterList.length > 0 ? (
-                <SaveViewButton
+              {setting.currentCollection.filterList.length > 0 ? (
+                <SaveCollectionButton
                   init={{
                     id: uuidv4(),
                     name: '',
-                    filterList: setting.currentView.filterList,
+                    filterList: setting.currentCollection.filterList,
                   }}
-                  onConfirm={setting.saveView}
-                ></SaveViewButton>
+                  onConfirm={setting.saveCollection}
+                ></SaveCollectionButton>
               ) : null}
             </div>
           </div>
