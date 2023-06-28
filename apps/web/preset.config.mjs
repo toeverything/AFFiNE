@@ -31,6 +31,7 @@ const buildPreset = {
     enableSQLiteProvider: false,
   },
   beta: {},
+  internal: {},
   // canary will be aggressive and enable all features
   canary: {
     enableAllPageFilter: true,
@@ -48,7 +49,7 @@ const buildPreset = {
 
 // beta and internal versions are the same as stable
 buildPreset.beta = buildPreset.stable;
-buildPreset.canary = buildPreset.stable;
+buildPreset.internal = buildPreset.stable;
 
 const currentBuild = process.env.BUILD_ENV || 'stable';
 
@@ -59,6 +60,10 @@ const currentBuildPreset = buildPreset[currentBuild];
  */
 const buildFlags = {
   ...currentBuildPreset,
+  // environment preset will overwrite current build preset
+  // this environment variable is for debug proposes only
+  // do not put them into CI
+  ...environmentPreset,
 };
 
 export { buildFlags };
