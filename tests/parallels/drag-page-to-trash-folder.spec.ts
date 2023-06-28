@@ -15,9 +15,11 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
     await page.getByText('All Pages').click();
   }
 
+  const title = 'AFFiNE - not just a note taking app';
+
   // Drag-and-drop
   // Ref: https://playwright.dev/docs/input#dragging-manually
-  await page.getByText('Untitled').hover();
+  await page.getByText(title).hover();
   await page.mouse.down();
   await page.waitForTimeout(1000);
   await page.getByText('Trash').hover();
@@ -29,7 +31,7 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
   ).toBeVisible();
 
   await expect(
-    page.getByText('Untitled'),
+    page.getByText(title),
     'The deleted post is no longer on the All Page list'
   ).toHaveCount(0);
 
@@ -37,7 +39,7 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
   // Visit trash page via url
   await page.getByText('Trash', { exact: true }).click();
   await expect(
-    page.getByText('Untitled'),
+    page.getByText(title),
     'The deleted post exists in the Trash list'
   ).toHaveCount(1);
 });
