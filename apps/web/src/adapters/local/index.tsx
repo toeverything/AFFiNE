@@ -99,7 +99,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       return (
         <BlockSuitePageList
           listType="all"
-          view={collection}
+          collection={collection}
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
         />

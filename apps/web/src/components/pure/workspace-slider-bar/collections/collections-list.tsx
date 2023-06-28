@@ -224,7 +224,7 @@ export const processCollectionsDrag = (e: DragEndEvent) => {
 };
 const CollectionOperations = ({
   view,
-  showUpdateCollection: showUpdateCollection,
+  showUpdateCollection,
   setting,
 }: {
   view: Collection;

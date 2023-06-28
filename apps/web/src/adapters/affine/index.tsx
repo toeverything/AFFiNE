@@ -339,7 +339,7 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
     PageList: ({ blockSuiteWorkspace, onOpenPage, collection }) => {
       return (
         <BlockSuitePageList
-          view={collection}
+          collection={collection}
           listType="all"
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}

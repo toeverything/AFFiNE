@@ -10,6 +10,7 @@ type CreateCollectionProps = {
   title?: string;
   init: Collection;
   onConfirm: (view: Collection) => void;
+  onConfirmText?: string;
 };
 export const EditCollectionModel = ({
   init,
@@ -54,7 +55,10 @@ export const EditCollection = ({
   init,
   onConfirm,
   onCancel,
-}: CreateCollectionProps & { onCancel: () => void }) => {
+  onConfirmText,
+}: CreateCollectionProps & {
+  onCancel: () => void;
+}) => {
   const [value, onChange] = useState<Collection>(init);
 
   return (
@@ -72,24 +76,41 @@ export const EditCollection = ({
       >
         <FilterList
           value={value.filterList}
-          onChange={list => onChange({ ...value, filterList: list })}
+          onChange={list =>
+            onChange({
+              ...value,
+              filterList: list,
+            })
+          }
         ></FilterList>
       </div>
       <div style={{ marginTop: 20 }}>
         <Input
           placeholder="Untitled Collection"
           value={value.name}
-          onChange={text => onChange({ ...value, name: text })}
+          onChange={text =>
+            onChange({
+              ...value,
+              name: text,
+            })
+          }
         />
       </div>
       <div
-        style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 40 }}
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginTop: 40,
+        }}
       >
         <Button className={styles.cancelButton} onClick={onCancel}>
           Cancel
         </Button>
         <Button
-          style={{ marginLeft: 20, borderRadius: '8px' }}
+          style={{
+            marginLeft: 20,
+            borderRadius: '8px',
+          }}
           type="primary"
           onClick={() => {
             if (value.name.trim().length > 0) {
@@ -97,7 +118,7 @@ export const EditCollection = ({
             }
           }}
         >
-          Create
+          {onConfirmText ?? 'Create'}
         </Button>
       </div>
     </div>

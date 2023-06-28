@@ -222,6 +222,7 @@ export const CollectionList = ({
             <EditCollection
               title="Update Collection"
               init={collection}
+              onConfirmText="Save"
               onCancel={closeUpdateCollectionModal}
               onConfirm={onConfirm}
             />
