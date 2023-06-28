@@ -13,6 +13,7 @@ on:
       - '!.github/actions/build-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
   pull_request:
+  merge_group:
     branches:
       - master
       - v[0-9]+.[0-9]+.x-staging
