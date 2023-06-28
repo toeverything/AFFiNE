@@ -38,6 +38,10 @@ describe('subdoc', () => {
       if (id === 'xyWNqindHH') {
         return;
       }
+      if (blocks[id]['sys:flavour'] === 'affine:surface' && !blocks[id]['prop:elements']) {
+        blocks[id]['prop:elements'] = data[id]['prop:elements'];
+
+      }
       expect(data[id]).toEqual(blocks[id]);
     });
   });

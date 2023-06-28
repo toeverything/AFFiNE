@@ -11,4 +11,6 @@ import { AuthService } from './service';
   controllers: [NextAuthController],
 })
 export class AuthModule {}
+
 export * from './guard';
+export { TokenType } from './resolver';

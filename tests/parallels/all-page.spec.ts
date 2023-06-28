@@ -195,10 +195,12 @@ const selectDateFromDatePicker = async (page: Page, date: Date) => {
       );
       await nextMonthButton.click();
     }
-    const map = ['th', 'st', 'nd', 'rd']
+    const map = ['th', 'st', 'nd', 'rd'];
     // Click on the day cell
     const dateCell = page.locator(
-      `[aria-disabled="false"][aria-label="Choose ${weekday}, ${month} ${day}${map[Number.parseInt(day) % 10] ?? 'th'}, ${year}"]`
+      `[aria-disabled="false"][aria-label="Choose ${weekday}, ${month} ${day}${
+        map[Number.parseInt(day) % 10] ?? 'th'
+      }, ${year}"]`
     );
     await dateCell.click();
   };

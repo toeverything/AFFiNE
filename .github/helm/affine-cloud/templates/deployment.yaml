@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: affine-cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: affine-cloud
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 2
+  template:
+    metadata:
+      labels:
+        app: affine-cloud
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: affine-cloud
+        image: "ghcr.io/toeverything/cloud-self-hosted:{{ .Values.affineCloud.tag | default .Chart.AppVersion }}"
+        env:
+        - name: PG_USER
+          value: "{{ .Values.postgresql.auth.username }}"
+        - name: PG_PASS
+          value: "{{ .Values.postgresql.auth.password }}"
+        - name: PG_DATABASE
+          value: "{{ .Values.postgresql.auth.database }}"
+        - name: PG_HOST
+          value: "{{ .Release.Name }}-postgresql"
+        - name: DATABASE_URL
+          value: "{{ default "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST)/$(PG_DATABASE)" .Values.affineCloud.databaseUrl }}"
+        envFrom:
+        - secretRef:
+            name: affine-cloud-secret
+        ports:
+        - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /api/healthz
+            port: 3000
+          failureThreshold: 1
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: "{{ .Values.affineCloud.resources.cpu }}"
+            memory: "{{ .Values.affineCloud.resources.memory }}"

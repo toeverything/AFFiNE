@@ -151,7 +151,7 @@ module.exports = {
   containsFile: ${containsFile},
   query: \`
 ${print(doc)}${importing || ''}\`,
-}
+};
 `);
             if (definition.operation === 'query') {
               queries.push(exportedName);
@@ -171,11 +171,11 @@ ${print(doc)}${importing || ''}\``);
       [
         '/* do not manipulate this file manually. */',
         `export interface GraphQLQuery {
-  id: string
-  operationName: string
-  definitionName: string
-  query: string
-  containsFile?: boolean
+  id: string;
+  operationName: string;
+  definitionName: string;
+  query: string;
+  containsFile?: boolean;
 }
 `,
         ...defs,

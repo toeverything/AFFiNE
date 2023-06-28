@@ -41,7 +41,6 @@ export const buildFlagsSchema = z.object({
    */
   enableAllPageFilter: z.boolean(),
   enablePlugin: z.boolean(),
-  enableImagePreviewModal: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
@@ -49,6 +48,7 @@ export const buildFlagsSchema = z.object({
   changelogUrl: z.string(),
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
+  enableSQLiteProvider: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({
