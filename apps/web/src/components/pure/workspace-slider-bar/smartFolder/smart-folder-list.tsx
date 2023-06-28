@@ -103,7 +103,7 @@ const FolderOperations = ({
         },
       },
       {
-        render: <div className={styles.menuDividerStyle}></div>,
+        render: <div key="divider" className={styles.menuDividerStyle}></div>,
       },
       {
         icon: <DeleteIcon style={{ color: 'var(--affine-warning-color)' }} />,
