@@ -3,7 +3,7 @@ import {
   PublicLinkDisableModal,
   StyledDisableButton,
 } from '@affine/component/share-menu';
-import { ShareMenu } from '@affine/component/share-menu/share-menu';
+import { ShareMenu } from '@affine/component/share-menu';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
