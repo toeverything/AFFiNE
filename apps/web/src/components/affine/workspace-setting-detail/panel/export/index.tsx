@@ -1,4 +1,5 @@
 import { Button, toast, Wrapper } from '@affine/component';
+import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
@@ -12,7 +13,7 @@ export const ExportPanel = () => {
       <Button
         type="light"
         shape="circle"
-        disabled={!environment.isDesktop || !id}
+        disabled={!environment.isDesktop || !id || !config.enableSQLiteProvider}
         data-testid="export-affine-backup"
         onClick={async () => {
           if (id) {

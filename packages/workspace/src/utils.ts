@@ -34,6 +34,10 @@ function setEditorFlags(workspace: Workspace) {
       value
     );
   });
+  workspace.awarenessStore.setFlag(
+    'enable_bookmark_operation',
+    environment.isDesktop
+  );
 }
 
 const hashMap = new Map<string, Workspace>();

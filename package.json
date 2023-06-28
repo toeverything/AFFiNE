@@ -1,6 +1,6 @@
 {
   "name": "@affine/monorepo",
-  "version": "0.7.0-canary.19",
+  "version": "0.7.0-canary.20",
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
@@ -10,7 +10,8 @@
     "plugins/*",
     "packages/*",
     "tests/fixtures",
-    "tests/kit"
+    "tests/kit",
+    "tests/affine-legacy/*"
   ],
   "scripts": {
     "dev": "dev-web",
