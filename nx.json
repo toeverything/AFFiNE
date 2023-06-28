@@ -32,7 +32,7 @@
         "{projectRoot}/node_modules/.cache",
         "{projectRoot}/target",
         "{workspaceRoot}/apps/web/.next",
-        "{workspaceRoot}/packages/storybook/storybook-static",
+        "{workspaceRoot}/apps/storybook/storybook-static",
         "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
         "{workspaceRoot}/packages/native/affine.*.node",
         "{workspaceRoot}/affine.db",

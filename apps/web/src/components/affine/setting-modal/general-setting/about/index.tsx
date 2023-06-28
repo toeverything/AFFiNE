@@ -3,7 +3,6 @@ import { relatedLinks } from '@affine/component/contact-modal';
 import { SettingHeader } from '@affine/component/setting-components';
 import { SettingRow } from '@affine/component/setting-components';
 import { SettingWrapper } from '@affine/component/setting-components';
-import { env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
@@ -24,7 +23,7 @@ export const AboutAffine = () => {
   return (
     <>
       <SettingHeader title={t['About AFFiNE']()} subtitle={t['None yet']()} />
-      {IS_EXHIBITION && env.isDesktop ? (
+      {IS_EXHIBITION && environment.isDesktop ? (
         <SettingWrapper title={t['Version']()}>
           <SettingRow
             name={t['Check for updates']()}

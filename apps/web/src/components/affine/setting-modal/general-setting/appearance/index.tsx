@@ -2,7 +2,6 @@ import { RadioButton, RadioButtonGroup, Switch } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { SettingRow } from '@affine/component/setting-components';
 import { SettingWrapper } from '@affine/component/setting-components';
-import { env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useTheme } from 'next-themes';
 import { useCallback } from 'react';
@@ -71,7 +70,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu />
           </div>
         </SettingRow>
-        {IS_EXHIBITION && env.isDesktop ? (
+        {IS_EXHIBITION && environment.isDesktop ? (
           <SettingRow
             name={t['Client Border Style']()}
             desc={t['Customize the appearance of the client.']()}
@@ -92,7 +91,7 @@ export const AppearanceSettings = () => {
             onChange={checked => changeSwitch('fullWidthLayout', checked)}
           />
         </SettingRow>
-        {IS_EXHIBITION && env.isDesktop ? (
+        {IS_EXHIBITION && environment.isDesktop ? (
           <SettingRow
             name={t['Window frame style']()}
             desc={t['Customize appearance of Windows Client.']()}
@@ -137,7 +136,7 @@ export const AppearanceSettings = () => {
         </SettingWrapper>
       ) : null}
 
-      {env.isDesktop ? (
+      {environment.isDesktop ? (
         <SettingWrapper title={t['Sidebar']()}>
           <SettingRow
             name={t['Disable the noise background on the sidebar']()}
