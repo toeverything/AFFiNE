@@ -1,7 +1,7 @@
 import { Button, IconButton, Menu, MenuItem } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { UserAvatar } from '@affine/component/user-avatar';
-import { Unreachable } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import type { AffineLegacyCloudWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { PermissionType } from '@affine/env/workspace/legacy-cloud';

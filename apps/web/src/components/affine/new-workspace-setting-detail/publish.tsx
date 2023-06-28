@@ -1,6 +1,6 @@
 import { Button, FlexWrapper, Switch } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
-import { config, Unreachable } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
@@ -137,13 +137,13 @@ const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
           }}
           style={{ marginTop: '12px' }}
         >
-          {config.enableLegacyCloud
+          {runtimeConfig.enableLegacyCloud
             ? t['Enable AFFiNE Cloud']()
             : 'Disable AFFiNE Cloud'}
         </Button>
       </SettingRow>
       <FakePublishPanelAffine workspace={workspace} />
-      {config.enableLegacyCloud ? (
+      {runtimeConfig.enableLegacyCloud ? (
         <EnableAffineCloudModal
           open={open}
           onClose={() => {
