@@ -39,7 +39,9 @@ function migrateDatabase(data: Y.Map<unknown>) {
     update: (cell: { id: string; value: unknown }) => void
   ) => {
     Object.values(cells).forEach(row => {
-      update(row[id]);
+      if (row[id] != null) {
+        update(row[id]);
+      }
     });
   };
   const newColumns = columns.map(v => {
