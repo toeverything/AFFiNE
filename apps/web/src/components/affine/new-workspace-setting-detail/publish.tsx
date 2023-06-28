@@ -124,11 +124,14 @@ const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
         name={t['Workspace saved locally']({ name })}
         desc={t['Enable cloud hint']()}
         spreadCol={false}
+        style={{
+          padding: '10px',
+          background: 'var(--affine-background-secondary-color)',
+        }}
       >
         <Button
           data-testid="publish-enable-affine-cloud-button"
           type="primary"
-          shape="circle"
           onClick={() => {
             setOpen(true);
           }}

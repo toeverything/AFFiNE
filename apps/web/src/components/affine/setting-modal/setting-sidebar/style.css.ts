@@ -105,14 +105,9 @@ export const accountButton = style({
 });
 
 globalStyle(`${accountButton} .avatar`, {
-  width: '28px',
-  height: '28px',
   border: '1px solid',
   borderColor: 'var(--affine-white)',
-  borderRadius: '14px',
-  flexShrink: '0',
   marginRight: '10px',
-  background: 'red',
 });
 globalStyle(`${accountButton} .content`, {
   flexGrow: '1',

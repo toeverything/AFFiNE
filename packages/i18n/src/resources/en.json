@@ -371,5 +371,6 @@
   "Workspace saved locally": "{{name}} is saved locally",
   "Enable cloud hint": "The following functions rely on AFFiNE Cloud. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud.",
   "Unpublished hint": "Once published to the web, visitors can view the contents through the provided link.",
-  "Published hint": "Visitors can view the contents through the provided link."
+  "Published hint": "Visitors can view the contents through the provided link.",
+  "Members hint": "Manage members here, invite new member by email."
 }
