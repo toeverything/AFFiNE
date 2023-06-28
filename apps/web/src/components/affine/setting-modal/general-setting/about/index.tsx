@@ -1,14 +1,13 @@
 import { Switch } from '@affine/component';
 import { relatedLinks } from '@affine/component/contact-modal';
-import { isDesktop } from '@affine/env/constant';
+import { SettingHeader } from '@affine/component/setting-components';
+import { SettingRow } from '@affine/component/setting-components';
+import { SettingWrapper } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 
 import { type AppSetting, useAppSetting } from '../../../../../atoms/settings';
-import { SettingHeader } from '../../common/setting-header';
-import { SettingRow } from '../../common/setting-row';
-import { Wrapper } from '../../common/wrapper';
 import { IS_EXHIBITION } from '../../config';
 import { communityItem, communityWrapper, link } from './style.css';
 
@@ -24,8 +23,8 @@ export const AboutAffine = () => {
   return (
     <>
       <SettingHeader title={t['About AFFiNE']()} subtitle={t['None yet']()} />
-      {IS_EXHIBITION && isDesktop ? (
-        <Wrapper title={t['Version']()}>
+      {IS_EXHIBITION && environment.isDesktop ? (
+        <SettingWrapper title={t['Version']()}>
           <SettingRow
             name={t['Check for updates']()}
             desc={t['New version is ready']()}
@@ -65,9 +64,9 @@ export const AboutAffine = () => {
           >
             <ArrowRightSmallIcon />
           </SettingRow>
-        </Wrapper>
+        </SettingWrapper>
       ) : null}
-      <Wrapper title={t['Contact with us']()}>
+      <SettingWrapper title={t['Contact with us']()}>
         <a className={link} href="https://affine.pro" target="_blank">
           {t['Official Website']()}
           <OpenInNewIcon className="icon" />
@@ -76,8 +75,8 @@ export const AboutAffine = () => {
           {t['AFFiNE Community']()}
           <OpenInNewIcon className="icon" />
         </a>
-      </Wrapper>
-      <Wrapper title={t['Communities']()}>
+      </SettingWrapper>
+      <SettingWrapper title={t['Communities']()}>
         <div className={communityWrapper}>
           {relatedLinks.map(({ icon, title, link }) => {
             return (
@@ -94,8 +93,8 @@ export const AboutAffine = () => {
             );
           })}
         </div>
-      </Wrapper>
-      <Wrapper title={t['Info of legal']()}>
+      </SettingWrapper>
+      <SettingWrapper title={t['Info of legal']()}>
         <a className={link} href="https://affine.pro/privacy" target="_blank">
           {t['Privacy']()}
           <OpenInNewIcon className="icon" />
@@ -104,7 +103,7 @@ export const AboutAffine = () => {
           {t['Terms of Use']()}
           <OpenInNewIcon className="icon" />
         </a>
-      </Wrapper>
+      </SettingWrapper>
     </>
   );
 };
