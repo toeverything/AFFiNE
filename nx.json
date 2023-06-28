@@ -92,13 +92,21 @@
         }
       ]
     },
+    "e2e:desktop": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        {
+          "runtime": "node -v"
+        },
+        {
+          "runtime": "yarn playwright --version"
+        }
+      ]
+    },
     "export": {
       "dependsOn": ["build"]
     },
     "dev": {
-      "dependsOn": ["^build"]
-    },
-    "e2e:coverage": {
       "dependsOn": ["^build"]
     },
     "test": {
