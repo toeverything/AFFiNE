@@ -1,6 +1,9 @@
 name: Release Desktop App
 
 on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-canary.[0-9]+'
   workflow_dispatch:
     inputs:
       version:
@@ -28,14 +31,8 @@ permissions:
   contents: write
   security-events: write
 
-concurrency:
-  # The concurrency group contains the workflow name and the branch name for
-  # pull requests or the commit hash for any other events.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
-  cancel-in-progress: true
-
 env:
-  BUILD_TYPE: ${{ github.event.inputs.build-type }}
+  BUILD_TYPE: ${{ github.event.inputs.build-type || (github.ref_type == 'tag' && contains(github.ref, 'canary') && 'canary') }}
   DEBUG: napi:*
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '10.13'
@@ -44,17 +41,30 @@ jobs:
   before-make:
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
+    outputs:
+      RELEASE_VERSION: ${{ steps.get-canary-version.outputs.RELEASE_VERSION }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Get canary version
+        id: get-canary-version
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+            exit 1
+          fi
+          echo ::set-env name=RELEASE_VERSION::${TAG_VERSION}
       - name: generate-assets
         run: yarn workspace @affine/electron generate-assets
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          RELEASE_VERSION: ${{ github.event.inputs.version }}
+          RELEASE_VERSION: ${{ github.event.inputs.version || steps.get-canary-version.outputs.RELEASE_VERSION }}
 
       - name: Upload Artifact (web-static)
         uses: actions/upload-artifact@v3
@@ -154,7 +164,7 @@ jobs:
           path: builds
 
   release:
-    needs: make-distribution
+    needs: [before-make, make-distribution]
     runs-on: ubuntu-latest
 
     steps:
@@ -187,16 +197,16 @@ jobs:
           cp ./apps/electron/scripts/generate-yml.js .
           node generate-yml.js
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.version }}
+          RELEASE_VERSION: ${{ github.event.inputs.version || needs.before-make.outputs.version }}
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
-          name: Desktop APP ${{ github.event.inputs.version }}
-          body: 'TODO: Add release notes here'
-          draft: ${{ github.event.inputs.is-draft }}
-          prerelease: ${{ github.event.inputs.is-pre-release }}
+          name: ${{ github.event.inputs.version || needs.before-make.outputs.version }}
+          body: ''
+          draft: ${{ github.event.inputs.is-draft || false }}
+          prerelease: ${{ github.event.inputs.is-pre-release || needs.before-make.outputs.version }}
           files: |
             ./VERSION
             ./*.zip
