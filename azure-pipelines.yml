@@ -17,7 +17,7 @@ steps:
     inputs:
       key: 'yarn | "$(Agent.OS)" | yarn.lock'
       path: $(yarn_config_cache)
-    displayName: Cache pnpm
+    displayName: Cache yarn
 
   - script: |
       corepack enable
