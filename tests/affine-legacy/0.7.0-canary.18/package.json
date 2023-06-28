@@ -4,13 +4,12 @@
   "scripts": {
     "unzip": "unzip affine-web -d static",
     "start": "yarn exec serve -s static -l 8081",
-    "e2e": "playwright test"
+    "e2e": "yarn playwright test"
   },
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
-    "@playwright/test": "=1.33.0",
-    "playwright": "=1.33.0",
+    "@playwright/test": "^1.35.1",
     "serve": "^14.2.0"
   },
   "version": "0.7.0-canary.20"

@@ -17,7 +17,7 @@
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "test": "DEBUG=pw:browser playwright test"
+    "test": "DEBUG=pw:browser yarn playwright test"
   },
   "config": {
     "forge": "./forge.config.js"
@@ -42,6 +42,7 @@
     "@electron-forge/maker-zip": "^6.2.1",
     "@electron-forge/shared-types": "^6.2.1",
     "@electron/remote": "2.0.10",
+    "@playwright/test": "^1.35.1",
     "@toeverything/infra": "workspace:*",
     "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.2",
@@ -53,7 +54,6 @@
     "esbuild": "^0.18.9",
     "fs-extra": "^11.1.1",
     "jotai": "^2.2.1",
-    "playwright": "=1.33.0",
     "ts-node": "^10.9.1",
     "undici": "^5.22.1",
     "uuid": "^9.0.0",
