@@ -3,8 +3,8 @@ name: affine-cloud
 description: A Helm chart for AFFiNE Cloud
 
 type: application
-version: 0.6.0
-appVersion: '0.6.0'
+version: 0.6.1
+appVersion: '0.6.1'
 
 dependencies:
   - name: postgresql
