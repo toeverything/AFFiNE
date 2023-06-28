@@ -52,12 +52,12 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PACKAGE_VERSION=$(node -p "require('./apps/electron/package.json').version")
           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
             echo "Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
             exit 1
           fi
-          echo ::set-env name=RELEASE_VERSION::${TAG_VERSION}
+          echo "RELEASE_VERSION=$(node -p "require('./apps/electron/package.json').version")" >> $GITHUB_OUTPUT
       - name: generate-assets
         run: yarn workspace @affine/electron generate-assets
         env:
