@@ -26,6 +26,9 @@ steps:
     displayName: Cache yarn
 
   - script: |
+      yarn config -v
+
+  - script: |
       yarn install --immutable --inline-builds
     displayName: 'yarn install'
 
