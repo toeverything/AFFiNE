@@ -40,7 +40,7 @@ env:
 jobs:
   before-make:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
+    environment: production
     outputs:
       RELEASE_VERSION: ${{ steps.get-canary-version.outputs.RELEASE_VERSION }}
     steps:
@@ -73,7 +73,7 @@ jobs:
           path: apps/electron/resources/web-static
 
   make-distribution:
-    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
+    environment: production
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
