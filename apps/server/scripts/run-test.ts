@@ -12,7 +12,13 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const testDir = resolve(root, 'src', 'tests');
 const files = await readdir(testDir);
 
-const sharedArgs = [...pkg.nodemonConfig.nodeArgs, '--test'];
+const watchMode = process.argv.includes('--watch');
+
+const sharedArgs = [
+  ...pkg.nodemonConfig.nodeArgs,
+  '--test',
+  watchMode ? '--watch' : '',
+];
 
 const env = {
   PATH: process.env.PATH,
