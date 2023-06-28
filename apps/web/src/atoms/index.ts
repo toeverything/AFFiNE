@@ -33,7 +33,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
 
   const abortController = new AbortController();
 
-  if (!environment.isDesktop) {
+  if (!environment.isServer) {
     // next tick to make sure the hydration is correct
     setTimeout(() => {
       setAtom(metadata => {
