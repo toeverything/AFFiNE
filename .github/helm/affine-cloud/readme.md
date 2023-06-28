@@ -10,6 +10,8 @@ The following table lists the configurable parameters of this Helm chart and the
 | `affineCloud.resources.cpu`    | The CPU resources allocated for AffineCloud        | `'250m'`           |
 | `affineCloud.resources.memory` | The memory resources allocated for AffineCloud     | `'0.5Gi'`          |
 | `affineCloud.signKey`          | The key used to sign the JWT tokens                | `'c2VjcmV0'`       |
+| `affineCloud.service.type`     | The type of the Kubernetes service                 | `'ClusterIP'`      |
+| `affineCloud.service.port`     | The port of the Kubernetes service                 | `'http'`           |
 | `affineCloud.mail.account`     | The email account used to send emails              | `''`               |
 | `affineCloud.mail.password`    | The password of the email account                  | `''`               |
 

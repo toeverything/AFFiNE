@@ -5,6 +5,9 @@ affineCloud:
   mail:
     account: ''
     password: ''
+  service:
+    type: ClusterIP
+    port: 80
   resources:
     cpu: '250m'
     memory: 0.5Gi
