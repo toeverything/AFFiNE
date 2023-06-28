@@ -1,4 +1,3 @@
-import { Button } from '@affine/component';
 import {
   FilterList,
   SaveViewButton,
@@ -25,22 +24,22 @@ export function WorkspaceHeader({
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {
       const leftSlot = <ViewList setting={setting}></ViewList>;
-      const filterContainer = setting.currentView.filterList.length > 0 && (
-        <div className={filterContainerStyle}>
-          <div style={{ flex: 1 }}>
-            <FilterList
-              value={setting.currentView.filterList}
-              onChange={filterList => {
-                setting.updateView({
-                  ...setting.currentView,
-                  filterList,
-                });
-              }}
-            />
-          </div>
-          <div>
-            {setting.isDefault ? (
-              setting.currentView.filterList.length > 0 ? (
+      const filterContainer =
+        setting.isDefault && setting.currentView.filterList.length > 0 ? (
+          <div className={filterContainerStyle}>
+            <div style={{ flex: 1 }}>
+              <FilterList
+                value={setting.currentView.filterList}
+                onChange={filterList => {
+                  return setting.updateView({
+                    ...setting.currentView,
+                    filterList,
+                  });
+                }}
+              />
+            </div>
+            <div>
+              {setting.currentView.filterList.length > 0 ? (
                 <SaveViewButton
                   init={{
                     id: uuidv4(),
@@ -49,18 +48,10 @@ export function WorkspaceHeader({
                   }}
                   onConfirm={setting.saveView}
                 ></SaveViewButton>
-              ) : null
-            ) : (
-              <Button
-                style={{ border: 'none' }}
-                onClick={() => setting.backToAll()}
-              >
-                Back to all
-              </Button>
-            )}
+              ) : null}
+            </div>
           </div>
-        </div>
-      );
+        ) : null;
       return (
         <>
           <WorkspaceModeFilterTab

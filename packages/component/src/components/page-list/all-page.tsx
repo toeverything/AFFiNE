@@ -1,3 +1,4 @@
+import { ViewBar } from '@affine/component/page-list';
 import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
@@ -107,6 +108,7 @@ const AllPagesHead = ({
             </TableCell>
           ))}
       </TableHeadRow>
+      <ViewBar />
     </TableHead>
   );
 };

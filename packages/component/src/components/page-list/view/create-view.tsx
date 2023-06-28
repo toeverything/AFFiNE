@@ -11,7 +11,44 @@ type CreateViewProps = {
   init: View;
   onConfirm: (view: View) => void;
 };
-
+export const EditViewModel = ({
+  init,
+  onConfirm,
+  open,
+  onClose,
+}: {
+  init: View;
+  onConfirm: (view: View) => void;
+  open: boolean;
+  onClose: () => void;
+}) => {
+  return (
+    <Modal open={open} onClose={onClose}>
+      <ModalWrapper
+        width={560}
+        style={{
+          padding: '40px',
+          background: 'var(--affine-background-primary-color)',
+        }}
+      >
+        <ModalCloseButton
+          top={12}
+          right={12}
+          onClick={onClose}
+          hoverColor="var(--affine-icon-color)"
+        />
+        <EditView
+          init={init}
+          onCancel={onClose}
+          onConfirm={view => {
+            onConfirm(view);
+            onClose();
+          }}
+        />
+      </ModalWrapper>
+    </Modal>
+  );
+};
 export const EditView = ({
   title,
   init,
@@ -80,30 +117,12 @@ export const SaveViewButton = ({ init, onConfirm }: CreateViewProps) => {
           <div className={styles.saveText}>Save View</div>
         </div>
       </Button>
-      <Modal open={show} onClose={() => changeShow(false)}>
-        <ModalWrapper
-          width={560}
-          style={{
-            padding: '40px',
-            background: 'var(--affine-background-primary-color)',
-          }}
-        >
-          <ModalCloseButton
-            top={12}
-            right={12}
-            onClick={() => changeShow(false)}
-            hoverColor="var(--affine-icon-color)"
-          />
-          <EditView
-            init={init}
-            onCancel={() => changeShow(false)}
-            onConfirm={view => {
-              onConfirm(view);
-              changeShow(false);
-            }}
-          />
-        </ModalWrapper>
-      </Modal>
+      <EditViewModel
+        init={init}
+        onConfirm={onConfirm}
+        open={show}
+        onClose={() => changeShow(false)}
+      />
     </>
   );
 };

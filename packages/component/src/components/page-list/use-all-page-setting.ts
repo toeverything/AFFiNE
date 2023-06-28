@@ -102,7 +102,7 @@ export const useAllPageSetting = () => {
 
   const updateView = useCallback(
     (view: View) => {
-      saveView(view)
+      return saveView(view)
         .then(() => {
           if (view.id === currentView.id) {
             setCurrentView(view);

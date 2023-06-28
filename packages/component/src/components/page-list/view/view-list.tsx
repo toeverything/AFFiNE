@@ -3,6 +3,7 @@ import type { Filter, View } from '@affine/env/filter';
 import {
   DeleteIcon,
   FilteredIcon,
+  FolderIcon,
   PenIcon,
   PinIcon,
   ViewLayersIcon,
@@ -43,7 +44,7 @@ const ViewOption = ({
       {
         icon: <PinIcon />,
         click: () => {
-          setting.updateView({
+          return setting.updateView({
             ...view,
             pinned: !view.pinned,
           });
@@ -116,21 +117,22 @@ export const ViewList = ({
   const [view, setView] = useState<View>();
   const onChange = useCallback(
     (filterList: Filter[]) => {
-      setting.updateView({
+      return setting.updateView({
         ...setting.currentView,
         filterList,
       });
     },
     [setting]
   );
+  const closeUpdateViewModal = useCallback(() => setView(undefined), []);
   const onConfirm = useCallback(
     (view: View) => {
-      setting.updateView(view);
-      setView(undefined);
+      return setting.updateView(view).then(() => {
+        closeUpdateViewModal();
+      });
     },
-    [setting]
+    [closeUpdateViewModal, setting]
   );
-  const closeUpdateViewModal = useCallback(() => setView(undefined), []);
   return (
     <div
       className={clsx({
@@ -143,6 +145,21 @@ export const ViewList = ({
           trigger="click"
           content={
             <div style={{ minWidth: 150 }}>
+              <MenuItem
+                icon={<FolderIcon></FolderIcon>}
+                onClick={setting.backToAll}
+                className={styles.viewMenu}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>All</div>
+                </div>
+              </MenuItem>
               <div className={styles.menuTitleStyle}>Saved View</div>
               <div className={styles.menuDividerStyle}></div>
               {setting.savedViews.map(view => (

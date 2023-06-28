@@ -1,8 +1,21 @@
+import { Menu } from '@affine/component';
 import { MenuItem, MenuLinkItem } from '@affine/component/app-sidebar';
-import { useAllPageSetting, useSavedViews } from '@affine/component/page-list';
+import {
+  EditViewModel,
+  useAllPageSetting,
+  useSavedViews,
+} from '@affine/component/page-list';
 import type { View } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
+import {
+  DeleteIcon,
+  EdgelessIcon,
+  FilterIcon,
+  MoreHorizontalIcon,
+  PageIcon,
+  PinIcon,
+  ViewLayersIcon,
+} from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
@@ -10,7 +23,8 @@ import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
-import React, { useCallback } from 'react';
+import type { ReactElement } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { pageSettingFamily } from '../../../../atoms';
 import type { AllWorkspace } from '../../../../shared';
@@ -51,6 +65,77 @@ export const processSmartFolderDrag = (e: DragEndEvent) => {
     e.over?.data.current?.addToView?.(e.active.data.current?.pageId);
   }
 };
+const FolderOperations = ({
+  view,
+  showUpdateView,
+  setting,
+}: {
+  view: View;
+  showUpdateView: () => void;
+  setting: ReturnType<typeof useAllPageSetting>;
+}) => {
+  const actions = useMemo<
+    Array<
+      | {
+          icon: ReactElement;
+          name: string;
+          click: () => void;
+          className?: string;
+          render?: undefined;
+        }
+      | { render: ReactElement }
+    >
+  >(
+    () => [
+      {
+        icon: <FilterIcon />,
+        name: 'Edit Filter',
+        click: showUpdateView,
+      },
+      {
+        icon: <PinIcon />,
+        name: 'Unpin',
+        click: () => {
+          return setting.updateView({
+            ...view,
+            pinned: false,
+          });
+        },
+      },
+      {
+        render: <div className={styles.menuDividerStyle}></div>,
+      },
+      {
+        icon: <DeleteIcon style={{ color: 'var(--affine-warning-color)' }} />,
+        name: 'Delete',
+        click: () => {
+          return setting.deleteView(view.id);
+        },
+        className: styles.deleteFolder,
+      },
+    ],
+    [setting, showUpdateView, view]
+  );
+  return (
+    <div style={{ minWidth: 150 }}>
+      {actions.map(action => {
+        if (action.render) {
+          return action.render;
+        }
+        return (
+          <MenuItem
+            key={action.name}
+            className={action.className}
+            icon={action.icon}
+            onClick={action.click}
+          >
+            {action.name}
+          </MenuItem>
+        );
+      })}
+    </div>
+  );
+};
 const Folder = ({
   view,
   pages,
@@ -83,17 +168,50 @@ const Folder = ({
       },
     },
   });
+  const [show, showUpdateView] = useState(false);
+  const setting = useAllPageSetting();
   return (
     <Collapsible.Root open={!collapsed}>
+      <EditViewModel
+        init={view}
+        onConfirm={setting.saveView}
+        open={show}
+        onClose={() => showUpdateView(false)}
+      />
       <MenuItem
         ref={setNodeRef}
         onCollapsedChange={setCollapsed}
         active={isOver}
         icon={<ViewLayersIcon />}
+        postfix={
+          <Menu
+            trigger="click"
+            placement="bottom-start"
+            content={
+              <FolderOperations
+                view={view}
+                showUpdateView={() => showUpdateView(true)}
+                setting={setting}
+              />
+            }
+          >
+            <div className={styles.more}>
+              <MoreHorizontalIcon></MoreHorizontalIcon>
+            </div>
+          </Menu>
+        }
         collapsed={collapsed}
         onClick={clickFolder}
       >
-        {view.name}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>{view.name}</div>
+        </div>
       </MenuItem>
       <Collapsible.Content>
         <div style={{ marginLeft: 8 }}>

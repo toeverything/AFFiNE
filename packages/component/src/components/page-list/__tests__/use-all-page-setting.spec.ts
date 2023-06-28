@@ -13,7 +13,7 @@ test('useAllPageSetting', async () => {
   const settingHook = renderHook(() => useAllPageSetting());
   const prevView = settingHook.result.current.currentView;
   expect(settingHook.result.current.savedViews).toEqual([]);
-  settingHook.result.current.updateView({
+  await settingHook.result.current.updateView({
     ...settingHook.result.current.currentView,
     filterList: [createDefaultFilter(vars[0])],
   });
