@@ -13,5 +13,5 @@
     "playwright": "=1.33.0",
     "serve": "^14.2.0"
   },
-  "version": "0.7.0-canary.20"
+  "version": "0.7.0-canary.21"
 }
