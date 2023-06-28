@@ -30,7 +30,7 @@ spec:
         - name: PG_HOST
           value: "{{ .Release.Name }}-postgresql"
         - name: DATABASE_URL
-          value: "{{ default "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST)/$(PG_DATABASE)" .Values.affineCloud.databaseUrl }}"
+          value: "{{ .Values.affineCloud.databaseUrl | default "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST)/$(PG_DATABASE)" }}"
         envFrom:
         - secretRef:
             name: affine-cloud-secret
