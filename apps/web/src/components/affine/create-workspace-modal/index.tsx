@@ -290,7 +290,11 @@ export const CreateWorkspaceModal = ({
         console.error(err);
       });
     } else if (mode === 'new') {
-      setStep(environment.isDesktop ? 'set-db-location' : 'name-workspace');
+      setStep(
+        environment.isDesktop && config.enableSQLiteProvider
+          ? 'set-db-location'
+          : 'name-workspace'
+      );
     } else {
       setStep(undefined);
     }
@@ -342,7 +346,7 @@ export const CreateWorkspaceModal = ({
   const onConfirmName = useCallback(
     (name: string) => {
       setWorkspaceName(name);
-      if (environment.isDesktop) {
+      if (environment.isDesktop && config.enableSQLiteProvider) {
         setStep('set-syncing-mode');
       } else {
         // this will be the last step for web for now

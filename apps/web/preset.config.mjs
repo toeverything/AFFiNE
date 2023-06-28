@@ -30,21 +30,12 @@ export const buildFlags = {
   enableLegacyCloud: process.env.ENABLE_LEGACY_PROVIDER
     ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
     : true,
-  enableBroadcastChannelProvider: Boolean(
-    process.env.ENABLE_BC_PROVIDER ?? '1'
-  ),
-  enableDebugPage: Boolean(
-    process.env.ENABLE_DEBUG_PAGE ?? process.env.NODE_ENV === 'development'
-  ),
+  enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER !== 'false',
+  enableDebugPage: true,
   changelogUrl:
     process.env.CHANGELOG_URL ??
     'https://affine.pro/blog/what-is-new-affine-0620',
-  enablePreloading:
-    process.env.ENABLE_PRELOADING === undefined
-      ? true
-      : process.env.ENABLE_PRELOADING === 'true',
-  enableNewSettingModal:
-    process.env.ENABLE_NEW_SETTING_MODAL === undefined
-      ? true
-      : process.env.ENABLE_PRELOADING === 'true',
+  enablePreloading: process.env.ENABLE_PRELOADING === 'true',
+  enableNewSettingModal: process.env.ENABLE_NEW_SETTING_MODAL === 'true',
+  enableSQLiteProvider: process.env.ENABLE_SQLITE_PROVIDER === 'true',
 };
