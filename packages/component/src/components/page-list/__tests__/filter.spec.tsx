@@ -11,6 +11,7 @@ import type {
 } from '@affine/env/filter';
 import { assertExists } from '@blocksuite/global/utils';
 import { render } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { describe, expect, test } from 'vitest';
 
@@ -130,15 +131,19 @@ describe('render filter', () => {
     await result.findByText('false');
     result.unmount();
   });
-  test('date condition function change', async () => {
-    const dateFunction = filterMatcher.match(tDate.create());
-    assertExists(dateFunction);
-    const Wrapper = () => {
+
+  const WrapperCreator = (fn: FilterMatcherDataType) =>
+    function Wrapper(): ReactElement {
       const [value, onChange] = useState(
-        filter(dateFunction, ref('Created'), [new Date(2023, 5, 29).getTime()])
+        filter(fn, ref('Created'), [new Date(2023, 5, 29).getTime()])
       );
       return <Condition value={value} onChange={onChange} />;
     };
+
+  test('date condition function change', async () => {
+    const dateFunction = filterMatcher.match(tDate.create());
+    assertExists(dateFunction);
+    const Wrapper = WrapperCreator(dateFunction);
     const result = render(<Wrapper />);
     const dom = await result.findByTestId('filter-name');
     dom.click();
@@ -148,12 +153,7 @@ describe('render filter', () => {
   test('date condition variable change', async () => {
     const dateFunction = filterMatcher.match(tDate.create());
     assertExists(dateFunction);
-    const Wrapper = () => {
-      const [value, onChange] = useState(
-        filter(dateFunction, ref('Created'), [new Date(2023, 5, 29).getTime()])
-      );
-      return <Condition value={value} onChange={onChange} />;
-    };
+    const Wrapper = WrapperCreator(dateFunction);
     const result = render(<Wrapper />);
     const dom = await result.findByTestId('variable-name');
     dom.click();

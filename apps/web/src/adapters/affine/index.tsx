@@ -2,9 +2,8 @@
  * This file has deprecated because we do not maintain legacy affine cloud,
  *  please use new affine cloud instead.
  */
-import { AFFINE_STORAGE_KEY, config } from '@affine/env';
 import { initEmptyPage } from '@affine/env/blocksuite';
-import { PageNotFoundError } from '@affine/env/constant';
+import { AFFINE_STORAGE_KEY, PageNotFoundError } from '@affine/env/constant';
 import type {
   AffineDownloadProvider,
   AffineLegacyCloudWorkspace,
@@ -109,7 +108,7 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
   loadPriority: LoadPriority.HIGH,
   Events: {
     'workspace:access': async () => {
-      if (!config.enableLegacyCloud) {
+      if (!runtimeConfig.enableLegacyCloud) {
         console.warn('Legacy cloud is disabled');
         return;
       }
@@ -123,7 +122,7 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
       }
     },
     'workspace:revoke': async () => {
-      if (!config.enableLegacyCloud) {
+      if (!runtimeConfig.enableLegacyCloud) {
         console.warn('Legacy cloud is disabled');
         return;
       }

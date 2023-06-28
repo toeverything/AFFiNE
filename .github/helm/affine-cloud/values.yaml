@@ -1,5 +1,13 @@
 affineCloud:
   tag: 'nightly-latest'
+  # databaseUrl: 'postgresql://affine:password@affine-cloud-postgresql:5432/affine'
+  signKey: TUFtdFdzQTJhdGJuem01TA==
+  mail:
+    account: ''
+    password: ''
+  service:
+    type: ClusterIP
+    port: 80
   resources:
     cpu: '250m'
     memory: 0.5Gi
@@ -7,7 +15,7 @@ postgresql:
   auth:
     # only for demo, please modify it at prod env
     username: affine
-    password: XJYMLnuBJS27a2du
+    password: password
     database: affine
   primary:
     initdb:

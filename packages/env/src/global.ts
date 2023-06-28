@@ -10,9 +10,12 @@ import type {
   UpdaterHandlerManager,
   WorkspaceHandlerManager,
 } from '@toeverything/infra';
+// fixme(himself65): remove `next/config` dependency
 import getConfig from 'next/config';
 import { z } from 'zod';
 
+import { isBrowser, isDesktop, isServer } from './constant';
+import { isValidIPAddress } from './is-valid-ip-address';
 import { UaHelper } from './ua-helper';
 
 declare global {
@@ -31,6 +34,19 @@ declare global {
     };
     events: any;
   }
+
+  // eslint-disable-next-line no-var
+  var environment: Environment;
+  // eslint-disable-next-line no-var
+  var runtimeConfig: PublicRuntimeConfig;
+  // eslint-disable-next-line no-var
+  var $AFFINE_SETUP: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var editorVersion: string | undefined;
+  // eslint-disable-next-line no-var
+  var prefixUrl: string;
+  // eslint-disable-next-line no-var
+  var websocketPrefixUrl: string;
 }
 
 export const buildFlagsSchema = z.object({
@@ -135,10 +151,31 @@ interface Desktop extends ChromeBrowser {
 
 export type Environment = Browser | Server | Desktop;
 
-export const env: Environment = (() => {
-  let environment = null;
+function printBuildInfo() {
+  console.group('Build info');
+  console.log('Project:', config.PROJECT_NAME);
+  console.log(
+    'Build date:',
+    config.BUILD_DATE ? new Date(config.BUILD_DATE).toLocaleString() : 'Unknown'
+  );
+  console.log('Editor Version:', config.editorVersion);
+
+  console.log('Version:', config.gitVersion);
+  console.log(
+    'AFFiNE is an open source project, you can view its source code on GitHub!'
+  );
+  console.log(`https://github.com/toeverything/AFFiNE/tree/${config.hash}`);
+  console.groupEnd();
+}
+
+export function setupGlobal() {
+  if (globalThis.$AFFINE_SETUP) {
+    return;
+  }
+  globalThis.runtimeConfig = config;
+  let environment: Environment;
   const isDebug = process.env.NODE_ENV === 'development';
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+  if (isServer) {
     environment = {
       isDesktop: false,
       isBrowser: false,
@@ -150,7 +187,7 @@ export const env: Environment = (() => {
 
     environment = {
       origin: window.location.origin,
-      isDesktop: !!window.appInfo?.electron,
+      isDesktop,
       isBrowser: true,
       isServer: false,
       isDebug,
@@ -177,45 +214,37 @@ export const env: Environment = (() => {
     }
   }
   globalThis.environment = environment;
-  return environment;
-})();
 
-function printBuildInfo() {
-  console.group('Build info');
-  console.log('Project:', config.PROJECT_NAME);
-  console.log(
-    'Build date:',
-    config.BUILD_DATE ? new Date(config.BUILD_DATE).toLocaleString() : 'Unknown'
-  );
-  console.log('Editor Version:', config.editorVersion);
-
-  console.log('Version:', config.gitVersion);
-  console.log(
-    'AFFiNE is an open source project, you can view its source code on GitHub!'
-  );
-  console.log(`https://github.com/toeverything/AFFiNE/tree/${config.hash}`);
-  console.groupEnd();
-}
-
-declare global {
-  // eslint-disable-next-line no-var
-  var environment: Environment;
-  // eslint-disable-next-line no-var
-  var $AFFINE_SETUP: boolean | undefined;
-  // eslint-disable-next-line no-var
-  var editorVersion: string | undefined;
-}
-
-export function setupGlobal() {
-  if (globalThis.$AFFINE_SETUP) {
-    return;
-  }
-  globalThis.environment = env;
-  if (env.isBrowser) {
+  if (environment.isBrowser) {
     printBuildInfo();
-    globalThis.editorVersion = config.editorVersion;
+    globalThis.editorVersion = global.editorVersion;
   }
+
+  let prefixUrl: string;
+  if (!isBrowser || isDesktop) {
+    // SSR or Desktop
+    const serverAPI = runtimeConfig.serverAPI;
+    if (isValidIPAddress(serverAPI.split(':')[0])) {
+      // This is for Server side rendering support
+      prefixUrl = new URL('http://' + runtimeConfig.serverAPI + '/').origin;
+    } else {
+      prefixUrl = serverAPI;
+    }
+    prefixUrl = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
+  } else {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('prefixUrl')) {
+      prefixUrl = params.get('prefixUrl') as string;
+    } else {
+      prefixUrl = window.location.origin + '/';
+    }
+  }
+
+  const apiUrl = new URL(prefixUrl);
+  const wsProtocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws';
+  const websocketPrefixUrl = `${wsProtocol}://${apiUrl.host}`;
+
+  globalThis.prefixUrl = prefixUrl;
+  globalThis.websocketPrefixUrl = websocketPrefixUrl;
   globalThis.$AFFINE_SETUP = true;
 }
-
-export { config };

@@ -195,14 +195,12 @@ export const rootWorkspacesMetadataAtom = atom<
 export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
 
 rootCurrentWorkspaceIdAtom.onMount = set => {
-  if (typeof window !== 'undefined') {
+  if (environment.isBrowser) {
     const callback = (url: string) => {
       const value = url.split('/')[2];
       if (value) {
         set(value);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('last_workspace_id', value);
-        }
+        localStorage.setItem('last_workspace_id', value);
       } else {
         set(null);
       }
@@ -219,7 +217,7 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
 export const rootCurrentPageIdAtom = atom<string | null>(null);
 
 rootCurrentPageIdAtom.onMount = set => {
-  if (typeof window !== 'undefined') {
+  if (environment.isBrowser) {
     const callback = (url: string) => {
       const value = url.split('/')[3];
       if (value) {

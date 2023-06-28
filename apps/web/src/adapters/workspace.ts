@@ -17,6 +17,10 @@ const unimplemented = () => {
   throw new Error('Not implemented');
 };
 
+const bypassList = async () => {
+  return [];
+};
+
 export const WorkspaceAdapters = {
   [WorkspaceFlavour.AFFINE]: AffineAdapter,
   [WorkspaceFlavour.LOCAL]: LocalAdapter,
@@ -28,7 +32,7 @@ export const WorkspaceAdapters = {
     // todo: implement this
     CRUD: {
       get: unimplemented,
-      list: unimplemented,
+      list: bypassList,
       delete: unimplemented,
       create: unimplemented,
     },
@@ -50,7 +54,7 @@ export const WorkspaceAdapters = {
     // todo: implement this
     CRUD: {
       get: unimplemented,
-      list: unimplemented,
+      list: bypassList,
       delete: unimplemented,
       create: unimplemented,
     },
