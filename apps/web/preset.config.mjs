@@ -28,8 +28,10 @@ const buildPreset = {
     changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0620',
     enablePreloading: true,
     enableNewSettingModal: false,
+    enableSQLiteProvider: false,
   },
   beta: {},
+  // canary will be aggressive and enable all features
   canary: {
     enableAllPageFilter: true,
     enablePlugin: true,
@@ -37,9 +39,10 @@ const buildPreset = {
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
     enableLegacyCloud: false,
-    changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0620',
+    changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
     enablePreloading: true,
     enableNewSettingModal: true,
+    enableSQLiteProvider: true,
   },
 };
 
