@@ -1,4 +1,5 @@
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import { ResetIcon } from '@blocksuite/icons';
 import { clsx } from 'clsx';
 import type { MessageType } from 'langchain/schema';
 import { marked } from 'marked';
@@ -37,10 +38,21 @@ export const Conversation = (props: ConversationProps): ReactElement => {
           [styles.aiMessageStyle]: props.type === 'ai',
           [styles.humanMessageStyle]: props.type === 'human',
         })}
-        dangerouslySetInnerHTML={{
-          __html: html,
-        }}
-      ></div>
+      >
+        {props.type === 'ai' ? (
+          <div className={styles.regenerateButtonStyle}>
+            <div className={styles.resetIconStyle}>
+              <ResetIcon />
+            </div>
+            Regenerate
+          </div>
+        ) : null}
+        <div
+          dangerouslySetInnerHTML={{
+            __html: html,
+          }}
+        ></div>
+      </div>
     </div>
   );
 };

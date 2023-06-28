@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const containerStyle = style({
   display: 'flex',
@@ -13,6 +13,7 @@ export const conversationStyle = style({
   lineHeight: '16px',
   borderRadius: '18px',
   maxWidth: 'calc(100% - 30px)',
+  position: 'relative',
 });
 export const avatarRightStyle = style({
   flexDirection: 'row-reverse',
@@ -23,4 +24,31 @@ export const aiMessageStyle = style({
 
 export const humanMessageStyle = style({
   backgroundColor: 'var(--affine-white-90)',
+});
+export const regenerateButtonStyle = style({
+  position: 'absolute',
+  display: 'none',
+  right: '12px',
+  top: '-16px',
+  padding: '4px 8px',
+  fontSize: 'var(--affine-font-xs)',
+  borderRadius: '8px',
+  border: '1px solid var(--affine-border-color)',
+  cursor: 'pointer',
+  backgroundColor: 'var(--affine-white)',
+  ':hover': {
+    background:
+      'linear-gradient(var(--affine-white),var(--affine-white)),var(--affine-hover-color)',
+    backgroundBlendMode: 'overlay',
+    display: 'flex',
+  },
+});
+export const resetIconStyle = style({
+  fontSize: 'var(--affine-font-sm)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  marginRight: '4px',
+});
+globalStyle(`${conversationStyle}:hover ${regenerateButtonStyle}`, {
+  display: 'flex',
 });
