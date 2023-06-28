@@ -78,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: storybook
-          path: ./packages/storybook/storybook-static
+          path: ./apps/storybook/storybook-static
           if-no-files-found: error
 
   build-web:
@@ -191,9 +191,9 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/storybook/storybook-static
+          path: ./apps/storybook/storybook-static
       - name: Run storybook tests
-        working-directory: ./packages/storybook
+        working-directory: ./apps/storybook
         run: |
           yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test"
 
@@ -232,7 +232,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/storybook/storybook-static
+          path: ./apps/storybook/storybook-static
 
       - name: Wait for Octobase Ready
         run: |
