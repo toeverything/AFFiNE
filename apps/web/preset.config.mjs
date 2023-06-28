@@ -56,7 +56,9 @@ const currentBuild = process.env.BUILD_ENV || 'stable';
 const currentBuildPreset = buildPreset[currentBuild];
 
 const environmentPreset = {
-  enablePlugin: process.env.ENABLE_PLUGIN === 'true',
+  enablePlugin: process.env.ENABLE_PLUGIN
+    ? process.env.ENABLE_PLUGIN === 'true'
+    : buildPreset.canary.enablePlugin,
   enableAllPageFilter: process.env.ENABLE_ALL_PAGE_FILTER
     ? process.env.ENABLE_ALL_PAGE_FILTER === 'true'
     : buildPreset.canary.enableAllPageFilter,
@@ -69,7 +71,6 @@ const environmentPreset = {
   enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER
     ? process.env.ENABLE_BC_PROVIDER !== 'false'
     : buildPreset.canary.enableBroadcastChannelProvider,
-  enableDebugPage: buildPreset.canary.enableDebugPage,
   changelogUrl: process.env.CHANGELOG_URL ?? buildPreset.canary.changelogUrl,
   enablePreloading: process.env.ENABLE_PRELOADING
     ? process.env.ENABLE_PRELOADING === 'true'
