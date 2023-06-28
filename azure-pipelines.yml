@@ -26,7 +26,8 @@ steps:
     displayName: Cache yarn
 
   - script: |
-      yarn config -v
+      unset $(printenv | grep '^YARN_' | cut -d= -f1)
+    displayName: 'Unset YARN_ variables'
 
   - script: |
       yarn install --immutable --inline-builds
