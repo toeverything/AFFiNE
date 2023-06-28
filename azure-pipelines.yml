@@ -16,6 +16,7 @@ steps:
   - task: NodeTool@0
     inputs:
       versionSource: 'fromFile'
+      versionFilePath: '.nvmrc'
     displayName: 'Install Node.js'
 
   - task: Cache@2
