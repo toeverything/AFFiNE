@@ -10,14 +10,14 @@ export const SIZE_CONFIG = {
     fontSize: 16,
     borderRadius: 4,
     height: 26,
-    padding: 24,
+    padding: 6,
   },
   [SIZE_MIDDLE]: {
     iconSize: 20,
     fontSize: 16,
     borderRadius: 4,
     height: 32,
-    padding: 24,
+    padding: 12,
   },
   [SIZE_DEFAULT]: {
     iconSize: 24,
