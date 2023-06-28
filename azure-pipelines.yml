@@ -13,16 +13,16 @@ variables:
   yarn_config_cache: $(Pipeline.Workspace)/.yarn/cache
 
 steps:
+  - script: |
+      corepack enable
+      corepack prepare
+    displayName: 'Setup yarn'
+
   - task: Cache@2
     inputs:
       key: 'yarn | "$(Agent.OS)" | yarn.lock'
       path: $(yarn_config_cache)
     displayName: Cache yarn
-
-  - script: |
-      corepack enable
-      corepack prepare
-    displayName: 'Setup yarn'
 
   - script: |
       yarn install --immutable --inline-builds
