@@ -83,24 +83,32 @@ export const ViewList = ({
                     key={view.id}
                     className={styles.viewMenu}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      {view.name}
-                      {actions.map((v, i) => {
-                        const onClick = (e: MouseEvent<HTMLDivElement>) => {
-                          e.stopPropagation();
-                          v.click();
-                        };
-                        return (
-                          <div
-                            key={i}
-                            onClick={onClick}
-                            style={{ marginLeft: i === 0 ? 28 : undefined }}
-                            className={clsx(styles.viewOption, v.className)}
-                          >
-                            {v.icon}
-                          </div>
-                        );
-                      })}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div>{view.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {actions.map((v, i) => {
+                          const onClick = (e: MouseEvent<HTMLDivElement>) => {
+                            e.stopPropagation();
+                            v.click();
+                          };
+                          return (
+                            <div
+                              key={i}
+                              onClick={onClick}
+                              style={{ marginLeft: i === 0 ? 28 : undefined }}
+                              className={clsx(styles.viewOption, v.className)}
+                            >
+                              {v.icon}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </MenuItem>
                 );
