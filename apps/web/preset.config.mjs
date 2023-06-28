@@ -56,25 +56,29 @@ const currentBuildPreset = buildPreset[currentBuild];
 
 const environmentPreset = {
   enablePlugin: process.env.ENABLE_PLUGIN === 'true',
-  enableAllPageFilter:
-    !!process.env.VERCEL ||
-    (process.env.ENABLE_ALL_PAGE_FILTER
-      ? process.env.ENABLE_ALL_PAGE_FILTER === 'true'
-      : false),
+  enableAllPageFilter: process.env.ENABLE_ALL_PAGE_FILTER
+    ? process.env.ENABLE_ALL_PAGE_FILTER === 'true'
+    : buildPreset.canary.enableAllPageFilter,
   enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
     ? process.env.ENABLE_TEST_PROPERTIES === 'true'
-    : true,
+    : buildPreset.canary.enableTestProperties,
   enableLegacyCloud: process.env.ENABLE_LEGACY_PROVIDER
     ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
-    : true,
-  enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER !== 'false',
-  enableDebugPage: true,
-  changelogUrl:
-    process.env.CHANGELOG_URL ??
-    'https://affine.pro/blog/what-is-new-affine-0620',
-  enablePreloading: process.env.ENABLE_PRELOADING === 'true',
-  enableNewSettingModal: process.env.ENABLE_NEW_SETTING_MODAL === 'true',
-  enableSQLiteProvider: process.env.ENABLE_SQLITE_PROVIDER === 'true',
+    : buildPreset.canary.enableLegacyCloud,
+  enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER
+    ? process.env.ENABLE_BC_PROVIDER !== 'false'
+    : buildPreset.canary.enableBroadcastChannelProvider,
+  enableDebugPage: buildPreset.canary.enableDebugPage,
+  changelogUrl: process.env.CHANGELOG_URL ?? buildPreset.canary.changelogUrl,
+  enablePreloading: process.env.ENABLE_PRELOADING
+    ? process.env.ENABLE_PRELOADING === 'true'
+    : buildPreset.canary.enablePreloading,
+  enableNewSettingModal: process.env.ENABLE_NEW_SETTING_MODAL
+    ? process.env.ENABLE_NEW_SETTING_MODAL === 'true'
+    : buildPreset.canary.enableNewSettingModal,
+  enableSQLiteProvider: process.env.ENABLE_SQLITE_PROVIDER
+    ? process.env.ENABLE_SQLITE_PROVIDER === 'true'
+    : buildPreset.canary.enableSQLiteProvider,
 };
 
 /**
