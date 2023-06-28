@@ -5,7 +5,6 @@ import '../bootstrap';
 
 import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { config } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
@@ -42,9 +41,6 @@ const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
 };
 
 const i18n = createI18n();
-if (process.env.NODE_ENV === 'development') {
-  console.log('Runtime Preset', config);
-}
 
 const App = function App({
   Component,

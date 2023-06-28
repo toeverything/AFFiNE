@@ -1,5 +1,5 @@
 import { RadioButton, RadioButtonGroup, Switch } from '@affine/component';
-import { env } from '@affine/env';
+import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useTheme } from 'next-themes';
 import { useCallback } from 'react';
@@ -71,7 +71,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu />
           </div>
         </SettingRow>
-        {IS_EXHIBITION && env.isDesktop ? (
+        {IS_EXHIBITION && isDesktop ? (
           <SettingRow
             name={t['Client Border Style']()}
             desc={t['Customize the appearance of the client.']()}
@@ -92,7 +92,7 @@ export const AppearanceSettings = () => {
             onChange={checked => changeSwitch('fullWidthLayout', checked)}
           />
         </SettingRow>
-        {IS_EXHIBITION && env.isDesktop ? (
+        {IS_EXHIBITION && isDesktop ? (
           <SettingRow
             name={t['Window frame style']()}
             desc={t['Customize appearance of Windows Client.']()}
@@ -137,7 +137,7 @@ export const AppearanceSettings = () => {
         </Wrapper>
       ) : null}
 
-      {env.isDesktop ? (
+      {isDesktop ? (
         <Wrapper title={t['Sidebar']()}>
           <SettingRow
             name={t['Disable the noise background on the sidebar']()}

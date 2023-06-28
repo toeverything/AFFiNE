@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadataV2 } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
@@ -53,7 +52,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
     }, 0);
   }
 
-  if (environment.isDesktop && config.enableSQLiteProvider) {
+  if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
     window.apis?.workspace
       .list()
       .then(workspaceIDs => {

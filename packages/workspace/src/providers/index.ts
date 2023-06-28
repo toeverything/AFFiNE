@@ -1,4 +1,3 @@
-import { config, websocketPrefixUrl } from '@affine/env';
 import type {
   AffineWebSocketProvider,
   LocalIndexedDBBackgroundProvider,
@@ -169,11 +168,11 @@ export const createLocalProviders = (): DocProviderCreator[] => {
     createIndexedDBDownloadProvider,
   ] as DocProviderCreator[];
 
-  if (config.enableBroadcastChannelProvider) {
+  if (runtimeConfig.enableBroadcastChannelProvider) {
     providers.push(createBroadcastChannelProvider);
   }
 
-  if (environment.isDesktop && config.enableSQLiteProvider) {
+  if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
     providers.push(createSQLiteProvider, createSQLiteDBDownloadProvider);
   }
 
@@ -185,7 +184,8 @@ export const createAffineProviders = (): DocProviderCreator[] => {
     [
       createAffineDownloadProvider,
       createAffineWebSocketProvider,
-      config.enableBroadcastChannelProvider && createBroadcastChannelProvider,
+      runtimeConfig.enableBroadcastChannelProvider &&
+        createBroadcastChannelProvider,
       createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));

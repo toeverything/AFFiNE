@@ -1,4 +1,4 @@
-import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';

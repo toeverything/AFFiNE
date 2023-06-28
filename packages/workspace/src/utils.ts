@@ -1,5 +1,5 @@
-import type { BlockSuiteFeatureFlags } from '@affine/env';
-import { config } from '@affine/env';
+import { isBrowser, isDesktop } from '@affine/env/constant';
+import type { BlockSuiteFeatureFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   createAffineProviders,
@@ -26,7 +26,7 @@ export function cleanupWorkspace(flavour: WorkspaceFlavour) {
 }
 
 function setEditorFlags(workspace: Workspace) {
-  Object.entries(config.editorFlags).forEach(([key, value]) => {
+  Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
     workspace.awarenessStore.setFlag(
       key as keyof BlockSuiteFeatureFlags,
       value
@@ -96,9 +96,9 @@ export function createEmptyBlockSuiteWorkspace(
     }
     providerCreators.push(...createAffineProviders());
   } else {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
-      if (environment.isDesktop) {
+      if (isDesktop) {
         blobStorages.push(createSQLiteStorage);
       }
     }
@@ -107,7 +107,7 @@ export function createEmptyBlockSuiteWorkspace(
 
   const workspace = new Workspace({
     id,
-    isSSR: typeof window === 'undefined',
+    isSSR: !isBrowser,
     providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: blobStorages,
     idGenerator,
