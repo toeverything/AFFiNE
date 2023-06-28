@@ -65,7 +65,7 @@
     "@types/react-dnd": "^3.0.2",
     "@types/react-dom": "^18.2.6",
     "@vanilla-extract/css": "^1.11.1",
-    "typescript": "^5.1.3",
+    "typescript": "^5.1.5",
     "vite": "^4.3.9",
     "yjs": "^13.6.6"
   },
