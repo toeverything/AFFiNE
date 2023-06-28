@@ -39,7 +39,9 @@ function migrateDatabase(data: Y.Map<unknown>) {
     update: (cell: { id: string; value: unknown }) => void
   ) => {
     Object.values(cells).forEach(row => {
-      update(row[id]);
+      if (row[id] != null) {
+        update(row[id]);
+      }
     });
   };
   const newColumns = columns.map(v => {
@@ -88,10 +90,14 @@ function runBlockMigration(
     data.set('sys:flavour', 'affine:note');
     return;
   }
-  if (flavour === 'affine:surface' && version <= 3 && data.has('elements')) {
-    const elements = data.get('elements') as Y.Map<unknown>;
-    data.set('prop:elements', elements.clone());
-    data.delete('elements');
+  if (flavour === 'affine:surface' && version <= 3) {
+    if (data.has('elements')) {
+      const elements = data.get('elements') as Y.Map<unknown>;
+      data.set('prop:elements', elements.clone());
+      data.delete('elements');
+    } else {
+      data.set('prop:elements', new Y.Map());
+    }
   }
   if (flavour === 'affine:embed') {
     data.set('sys:flavour', 'affine:image');

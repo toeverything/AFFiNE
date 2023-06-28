@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { isDesktop, isServer } from '@affine/env/constant';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadataV2 } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
@@ -34,7 +33,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
 
   const abortController = new AbortController();
 
-  if (!isServer) {
+  if (!environment.isDesktop) {
     // next tick to make sure the hydration is correct
     setTimeout(() => {
       setAtom(metadata => {
@@ -53,7 +52,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
     }, 0);
   }
 
-  if (isDesktop) {
+  if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
     window.apis?.workspace
       .list()
       .then(workspaceIDs => {

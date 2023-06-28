@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { isDesktop } from '@affine/env/constant';
 import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
@@ -98,7 +97,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     data.splice(idx, 1);
     storage.setItem(kStoreKey, [...data]);
     // flywire
-    if (window.apis && isDesktop) {
+    if (window.apis && environment.isDesktop) {
       await window.apis.workspace.delete(workspace.id);
     }
   },
@@ -112,7 +111,11 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
       : [];
 
     // workspaces in desktop
-    if (window.apis && isDesktop) {
+    if (
+      window.apis &&
+      environment.isDesktop &&
+      runtimeConfig.enableSQLiteProvider
+    ) {
       const desktopIds = (await window.apis.workspace.list()).map(([id]) => id);
       // the ids maybe a subset of the local storage
       const moreWorkspaces = desktopIds.filter(

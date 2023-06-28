@@ -1,4 +1,3 @@
-import { isDesktop } from '@affine/env/constant';
 import type {
   AffineWebSocketProvider,
   LocalIndexedDBBackgroundProvider,
@@ -173,7 +172,7 @@ export const createLocalProviders = (): DocProviderCreator[] => {
     providers.push(createBroadcastChannelProvider);
   }
 
-  if (isDesktop) {
+  if (environment.isDesktop && config.enableSQLiteProvider) {
     providers.push(createSQLiteProvider, createSQLiteDBDownloadProvider);
   }
 
