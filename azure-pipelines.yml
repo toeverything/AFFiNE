@@ -9,9 +9,6 @@ trigger:
 pool:
   vmImage: macOS-13
 
-variables:
-  yarn_config_cache: $(Pipeline.Workspace)/.yarn/cache
-
 steps:
   - task: NodeTool@0
     inputs:
@@ -19,16 +16,6 @@ steps:
       versionFilePath: '.nvmrc'
     displayName: 'Install Node.js'
 
-  - task: Cache@2
-    inputs:
-      key: 'yarn | "$(Agent.OS)" | yarn.lock'
-      path: $(yarn_config_cache)
-    displayName: Cache yarn
-
   - script: |
       yarn install --immutable --inline-builds
     displayName: 'yarn install'
-
-  - script: |
-      yarn nx build @affine/web
-    displayName: 'yarn build @affine/web'
