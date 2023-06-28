@@ -1,12 +1,10 @@
 import type { Page } from '@blocksuite/store';
 
 export async function initPageWithPreloading(page: Page) {
-  return initEmptyPage(page);
-  // fixme(Mirone): preloading page has broken
-  // const workspace = page.workspace;
-  // const { data } = await import('@affine/templates/preloading.json');
-  // await page.waitForLoaded();
-  // await workspace.importPageSnapshot(data['space:hello-world'], page.id);
+  const workspace = page.workspace;
+  const { data } = await import('@affine/templates/preloading.json');
+  await page.waitForLoaded();
+  await workspace.importPageSnapshot(data['space:hello-world'], page.id);
 }
 
 export async function initEmptyPage(page: Page) {
