@@ -1,5 +1,6 @@
 import { Button, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ArrowRightSmallIcon,
@@ -26,7 +27,12 @@ import { StyledInput } from './style';
 const useShowOpenDBFile = (workspaceId: string) => {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    if (window.apis && window.events && environment.isDesktop) {
+    if (
+      window.apis &&
+      window.events &&
+      environment.isDesktop &&
+      config.enableSQLiteProvider
+    ) {
       window.apis.workspace
         .getMeta(workspaceId)
         .then(meta => {
@@ -137,7 +143,9 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           </Button>
         </div>
       </div>
-      <DesktopClientOnly workspaceId={workspace.id} />
+      {environment.isDesktop && config.enableSQLiteProvider ? (
+        <DesktopClientOnly workspaceId={workspace.id} />
+      ) : null}
       <div className={style.row}>
         <div className={style.col}>
           <div className={style.settingItemLabel}>
@@ -201,7 +209,7 @@ function DesktopClientOnly({ workspaceId }: { workspaceId: string }) {
   const t = useAFFiNEI18N();
   const showOpenFolder = useShowOpenDBFile(workspaceId);
   const onRevealDBFile = useCallback(() => {
-    if (environment.isDesktop) {
+    if (environment.isDesktop && config.enableSQLiteProvider) {
       window.apis?.dialog.revealDBFile(workspaceId).catch(err => {
         console.error(err);
       });
