@@ -144,6 +144,7 @@
   "Publishing": "Publishing to web requires AFFiNE Cloud service.",
   "Share with link": "Share with link",
   "Copy Link": "Copy Link",
+  "Copy": "Copy",
   "Publishing Description": "After publishing to the web, everyone can view the content of this workspace through the link.",
   "Stop publishing": "Stop publishing",
   "Publish to web": "Publish to web",
@@ -368,5 +369,7 @@
   "Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.": "Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.",
   "Storage": "Storage",
   "Workspace saved locally": "{{name}} is saved locally",
-  "Enable cloud hint": "The following functions rely on AFFiNE Cloud. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud."
+  "Enable cloud hint": "The following functions rely on AFFiNE Cloud. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud.",
+  "Unpublished hint": "Once published to the web, visitors can view the contents through the provided link.",
+  "Published hint": "Visitors can view the contents through the provided link."
 }

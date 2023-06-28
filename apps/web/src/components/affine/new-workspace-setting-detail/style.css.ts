@@ -1,13 +1,5 @@
 import { globalStyle, style } from '@vanilla-extract/css';
 
-export const settingWrapper = style({
-  flexGrow: 1,
-  display: 'flex',
-  justifyContent: 'flex-end',
-  minWidth: '150px',
-  maxWidth: '250px',
-});
-
 export const profileWrapper = style({
   display: 'flex',
   alignItems: 'flex-end',
@@ -47,4 +39,29 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   alignItems: 'center',
   backgroundColor: 'rgba(60, 61, 63, 0.5)',
   zIndex: '1',
+});
+
+export const urlButton = style({
+  width: 'calc(100% - 64px - 15px)',
+});
+globalStyle(`${urlButton} span`, {
+  width: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
+
+export const fakeWrapper = style({
+  position: 'relative',
+  selectors: {
+    '&::after': {
+      content: '""',
+      width: '100%',
+      height: '100%',
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      background: 'var(--affine-white-60)',
+    },
+  },
 });

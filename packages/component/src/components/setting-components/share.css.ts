@@ -43,6 +43,7 @@ globalStyle(`${wrapper} .title`, {
 export const settingRow = style({
   marginBottom: '25px',
   color: 'var(--affine-text-primary-color)',
+  borderRadius: '8px',
   selectors: {
     '&.two-col': {
       display: 'flex',
@@ -61,7 +62,7 @@ globalStyle(`${settingRow} .left-col`, {
 });
 globalStyle(`${settingRow}.two-col .left-col`, {
   flexShrink: 0,
-  maxWidth: '50%',
+  maxWidth: '80%',
 });
 globalStyle(`${settingRow} .name`, {
   marginBottom: '2px',
@@ -77,4 +78,5 @@ globalStyle(`${settingRow} .right-col`, {
   display: 'flex',
   justifyContent: 'flex-end',
   paddingLeft: '15px',
+  flexShrink: 0,
 });
