@@ -1,5 +1,10 @@
-pnpm-lock.yaml
+yarn.lock
 target
 lib
 test-results
 packages/graphql/src/graphql/index.ts
+.next
+out
+dist
+.yarn
+tests/affine-legacy/0.7.0-canary.18/static
