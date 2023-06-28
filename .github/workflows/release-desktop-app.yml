@@ -197,15 +197,15 @@ jobs:
           cp ./apps/electron/scripts/generate-yml.js .
           node generate-yml.js
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.version || needs.before-make.outputs.version }}
+          RELEASE_VERSION: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
-          name: ${{ github.event.inputs.version || needs.before-make.outputs.version }}
+          name: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
           body: ''
-          draft: ${{ github.event.inputs.is-draft || false }}
+          draft: ${{ github.event.inputs.is-draft || true }}
           prerelease: ${{ github.event.inputs.is-pre-release || needs.before-make.outputs.version }}
           files: |
             ./VERSION
