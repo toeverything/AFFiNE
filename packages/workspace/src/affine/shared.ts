@@ -1,4 +1,4 @@
-import { prefixUrl } from '@affine/env';
+import { setupGlobal } from '@affine/env/global';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 
 import { createUserApis, createWorkspaceApis } from './api/index';
@@ -6,9 +6,12 @@ import { currentAffineUserAtom } from './atom';
 import type { LoginResponse } from './login';
 import { createAffineAuth, parseIdToken, setLoginStorage } from './login';
 
+setupGlobal();
+
 export const affineAuth = createAffineAuth(prefixUrl);
 const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;
+
 Object.assign(affineApis, createUserApis(prefixUrl));
 Object.assign(affineApis, createWorkspaceApis(prefixUrl));
 

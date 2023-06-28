@@ -1,13 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: affine-cloud
+  name: "{{ include "affine-cloud.fullname" . }}"
+  labels:
+    {{- include "affine-cloud.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP
-  selector:
-    app: affine-cloud
+  type: "{{ .Values.affineCloud.service.type }}"
   ports:
-    - name: affine-cloud
+    - name: http
       protocol: TCP
-      port: 3000
+      port: {{ .Values.affineCloud.service.port }}
       targetPort: 3000
+  selector:
+    {{- include "affine-cloud.selectorLabels" . | nindent 4 }}

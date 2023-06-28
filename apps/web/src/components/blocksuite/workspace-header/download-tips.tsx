@@ -1,5 +1,5 @@
 import { DownloadTips } from '@affine/component/affine-banner';
-import { env } from '@affine/env';
+import { isDesktop } from '@affine/env/constant';
 import { useAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -13,7 +13,7 @@ export const DownloadClientTip = () => {
     setShowDownloadClientTips(false);
   }, [setShowDownloadClientTips]);
 
-  if (!showDownloadClientTips || env.isDesktop) {
+  if (!showDownloadClientTips || isDesktop) {
     return <></>;
   }
   return <DownloadTips onClose={onCloseDownloadClient} />;

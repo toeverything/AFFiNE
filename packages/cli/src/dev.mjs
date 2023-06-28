@@ -5,7 +5,6 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import * as p from '@clack/prompts';
-import { runCli } from '@magic-works/i18n-codegen';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,27 +14,6 @@ const cwd = path.resolve(root, 'apps', 'web');
 
 const dev = await p.group(
   {
-    server: () =>
-      p.select({
-        message: `Select dev server`,
-        initialValue: 'local',
-        options: [
-          {
-            value: 'local',
-            label: 'local - 127.0.0.1:3000',
-            hint: 'recommend',
-          },
-          { value: 'dev', label: 'dev - 100.84.105.99:11001' },
-          {
-            value: 'ac',
-            label: 'ac - 100.85.73.88:12001',
-          },
-          {
-            value: 'test',
-            label: 'test - 100.84.105.99:11001',
-          },
-        ],
-      }),
     debugBlockSuite: () =>
       p.confirm({
         message: 'Debug blocksuite locally?',
@@ -51,7 +29,6 @@ const dev = await p.group(
 );
 
 const env = {
-  API_SERVER_PROFILE: dev.server,
   PATH: process.env.PATH,
   NODE_ENV: 'development',
   PORT: 8080,
@@ -76,18 +53,6 @@ if (dev.debugBlockSuite) {
 } else {
   env.LOCAL_BLOCK_SUITE = '';
 }
-
-if (dev.server === 'local') {
-  console.log('You might need setup OctoBase dev server first.');
-}
-
-runCli(
-  {
-    watch: true,
-    cwd: root,
-  },
-  console.error
-);
 
 spawn('nx', ['dev', '@affine/web'], {
   env,

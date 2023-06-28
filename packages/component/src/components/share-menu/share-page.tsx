@@ -1,4 +1,3 @@
-import { prefixUrl } from '@affine/env';
 import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
