@@ -30,4 +30,5 @@ export type View = {
   name: string;
   pinned?: boolean;
   filterList: Filter[];
+  whiteList?: string[];
 };

@@ -1,5 +1,5 @@
 import { EditView } from '@affine/component/page-list';
-import type { View } from '@affine/env/filter';
+import type { Filter, View } from '@affine/env/filter';
 import {
   DeleteIcon,
   FilteredIcon,
@@ -10,7 +10,7 @@ import {
 import clsx from 'clsx';
 import { useAtom } from 'jotai';
 import type { MouseEvent, ReactNode } from 'react';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   Button,
@@ -25,6 +25,88 @@ import { CreateFilterMenu } from '../filter/vars';
 import type { useAllPageSetting } from '../use-all-page-setting';
 import * as styles from './view-list.css';
 
+const ViewOption = ({
+  view,
+  setting,
+  updateView,
+}: {
+  view: View;
+  setting: ReturnType<typeof useAllPageSetting>;
+  updateView: (view: View) => void;
+}) => {
+  const actions: {
+    icon: ReactNode;
+    click: () => void;
+    className?: string;
+  }[] = useMemo(
+    () => [
+      {
+        icon: <PinIcon />,
+        click: () => {
+          setting.updateView({
+            ...view,
+            pinned: !view.pinned,
+          });
+        },
+      },
+      {
+        icon: <PenIcon />,
+        click: () => {
+          updateView(view);
+        },
+      },
+      {
+        icon: <DeleteIcon style={{ color: 'red' }} />,
+        click: () => {
+          setting.deleteView(view.id).catch(err => {
+            console.error(err);
+          });
+        },
+      },
+    ],
+    [setting, updateView, view]
+  );
+  const selectView = useCallback(
+    () => setting.selectView(view.id),
+    [setting, view.id]
+  );
+  return (
+    <MenuItem
+      icon={<ViewLayersIcon></ViewLayersIcon>}
+      onClick={selectView}
+      key={view.id}
+      className={styles.viewMenu}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div>{view.name}</div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {actions.map((v, i) => {
+            const onClick = (e: MouseEvent<HTMLDivElement>) => {
+              e.stopPropagation();
+              v.click();
+            };
+            return (
+              <div
+                key={i}
+                onClick={onClick}
+                style={{ marginLeft: i === 0 ? 28 : undefined }}
+                className={clsx(styles.viewOption, v.className)}
+              >
+                {v.icon}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </MenuItem>
+  );
+};
 export const ViewList = ({
   setting,
 }: {
@@ -32,6 +114,23 @@ export const ViewList = ({
 }) => {
   const [open] = useAtom(appSidebarOpenAtom);
   const [view, setView] = useState<View>();
+  const onChange = useCallback(
+    (filterList: Filter[]) => {
+      setting.updateView({
+        ...setting.currentView,
+        filterList,
+      });
+    },
+    [setting]
+  );
+  const onConfirm = useCallback(
+    (view: View) => {
+      setting.updateView(view);
+      setView(undefined);
+    },
+    [setting]
+  );
+  const closeUpdateViewModal = useCallback(() => setView(undefined), []);
   return (
     <div
       className={clsx({
@@ -46,73 +145,14 @@ export const ViewList = ({
             <div style={{ minWidth: 150 }}>
               <div className={styles.menuTitleStyle}>Saved View</div>
               <div className={styles.menuDividerStyle}></div>
-              {setting.savedViews.map(view => {
-                const actions: {
-                  icon: ReactNode;
-                  click: () => void;
-                  className?: string;
-                }[] = [
-                  {
-                    icon: <PinIcon />,
-                    click: () => {
-                      setting.updateView({
-                        ...view,
-                        pinned: !view.pinned,
-                      });
-                    },
-                  },
-                  {
-                    icon: <PenIcon />,
-                    click: () => {
-                      setView(view);
-                    },
-                  },
-                  {
-                    icon: <DeleteIcon style={{ color: 'red' }} />,
-                    click: () => {
-                      setting.deleteView(view.id).catch(err => {
-                        console.error(err);
-                      });
-                    },
-                  },
-                ];
-                return (
-                  <MenuItem
-                    icon={<ViewLayersIcon></ViewLayersIcon>}
-                    onClick={() => setting.selectView(view.id)}
-                    key={view.id}
-                    className={styles.viewMenu}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>{view.name}</div>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        {actions.map((v, i) => {
-                          const onClick = (e: MouseEvent<HTMLDivElement>) => {
-                            e.stopPropagation();
-                            v.click();
-                          };
-                          return (
-                            <div
-                              key={i}
-                              onClick={onClick}
-                              style={{ marginLeft: i === 0 ? 28 : undefined }}
-                              className={clsx(styles.viewOption, v.className)}
-                            >
-                              {v.icon}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </MenuItem>
-                );
-              })}
+              {setting.savedViews.map(view => (
+                <ViewOption
+                  key={view.id}
+                  view={view}
+                  setting={setting}
+                  updateView={setView}
+                />
+              ))}
             </div>
           }
         >
@@ -131,12 +171,7 @@ export const ViewList = ({
         content={
           <CreateFilterMenu
             value={setting.currentView.filterList}
-            onChange={filterList => {
-              setting.updateView({
-                ...setting.currentView,
-                filterList,
-              });
-            }}
+            onChange={onChange}
           />
         }
       >
@@ -149,7 +184,7 @@ export const ViewList = ({
           Filter
         </Button>
       </Menu>
-      <Modal open={view != null} onClose={() => setView(undefined)}>
+      <Modal open={view != null} onClose={closeUpdateViewModal}>
         <ModalWrapper
           width={560}
           style={{
@@ -160,18 +195,15 @@ export const ViewList = ({
           <ModalCloseButton
             top={12}
             right={12}
-            onClick={() => setView(undefined)}
+            onClick={closeUpdateViewModal}
             hoverColor="var(--affine-icon-color)"
           />
           {view ? (
             <EditView
               title="Update View"
               init={view}
-              onCancel={() => setView(undefined)}
-              onConfirm={view => {
-                setting.updateView(view);
-                setView(undefined);
-              }}
+              onCancel={closeUpdateViewModal}
+              onConfirm={onConfirm}
             />
           ) : null}
         </ModalWrapper>

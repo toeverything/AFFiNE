@@ -132,7 +132,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
           if (!view) {
             return true;
           }
-          return filterPage(view.filterList, pageMeta);
+          return filterPage(view, pageMeta);
         }),
     [pageMetas, filterMode, isPreferredEdgeless, listType, view]
   );

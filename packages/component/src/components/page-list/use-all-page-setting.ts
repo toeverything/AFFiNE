@@ -75,15 +75,29 @@ export const useSavedViews = () => {
     },
     [mutate]
   );
+  const addPage = useCallback(
+    async (viewId: string, pageId: string) => {
+      const view = savedViews?.find(v => v.id === viewId);
+      if (!view) {
+        return;
+      }
+      await saveView({
+        ...view,
+        whiteList: [pageId, ...(view.whiteList ?? [])],
+      });
+    },
+    [saveView, savedViews]
+  );
   return {
     savedViews: savedViews ?? [],
     saveView,
     deleteView,
+    addPage,
   };
 };
 
 export const useAllPageSetting = () => {
-  const { savedViews, saveView, deleteView } = useSavedViews();
+  const { savedViews, saveView, deleteView, addPage } = useSavedViews();
   const [currentView, setCurrentView] = useAtom(currentViewAtom);
 
   const updateView = useCallback(
@@ -123,6 +137,7 @@ export const useAllPageSetting = () => {
     selectView,
     backToAll,
     deleteView,
+    addPage,
   };
 };
 export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>
