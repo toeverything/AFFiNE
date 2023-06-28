@@ -232,9 +232,6 @@ __metadata:
     which: ^3.0.1
     yjs: ^13.6.6
     zx: ^7.2.2
-  peerDependencies:
-    playwright: "*"
-    ts-node: "*"
   languageName: unknown
   linkType: soft
 
