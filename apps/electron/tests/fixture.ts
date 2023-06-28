@@ -8,9 +8,9 @@ import {
   test as base,
   testResultDir,
 } from '@affine-test/kit/playwright';
+import type { ElectronApplication, Page } from '@playwright/test';
+import { _electron as electron } from '@playwright/test';
 import fs from 'fs-extra';
-import type { ElectronApplication, Page } from 'playwright';
-import { _electron as electron } from 'playwright';
 
 function generateUUID() {
   return crypto.randomUUID();
