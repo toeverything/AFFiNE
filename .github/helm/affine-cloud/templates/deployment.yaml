@@ -1,7 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: affine-cloud
+  name: "{{ include "affine-cloud.fullname" . }}"
+  labels:
+    {{- include "affine-cloud.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
@@ -30,7 +32,7 @@ spec:
         - name: PG_HOST
           value: "{{ .Release.Name }}-postgresql"
         - name: DATABASE_URL
-          value: "{{ default "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST)/$(PG_DATABASE)" .Values.affineCloud.databaseUrl }}"
+          value: "{{ .Values.affineCloud.databaseUrl | default "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST)/$(PG_DATABASE)" }}"
         envFrom:
         - secretRef:
             name: affine-cloud-secret
