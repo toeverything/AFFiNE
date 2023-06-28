@@ -6,13 +6,13 @@
     "noEmit": false,
     "outDir": "lib",
     "paths": {
-      "@affine/component": ["../component/src"],
-      "@affine/component/*": ["../component/src/components/*"]
+      "@affine/component": ["../../packages/component/src"],
+      "@affine/component/*": ["../../packages/component/src/components/*"]
     }
   },
   "references": [
     {
-      "path": "../component"
+      "path": "../../packages/component"
     },
     {
       "path": "./tsconfig.node.json"
