@@ -8,7 +8,6 @@ import {
 } from '@affine/component';
 import { ScrollableContainer } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import { config } from '@affine/env/config';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
@@ -66,7 +65,7 @@ const CreateWorkspaceCard = ({
   const t = useAFFiNEI18N();
   const anchorEL = useRef<HTMLDivElement>(null);
 
-  if (config.enableSQLiteProvider && environment.isDesktop) {
+  if (runtimeConfig.enableSQLiteProvider && environment.isDesktop) {
     return (
       <Menu
         placement="auto"

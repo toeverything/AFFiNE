@@ -1,5 +1,4 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
-import { config } from '@affine/env';
 import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -82,7 +81,7 @@ export const SyncUser = () => {
   const t = useAFFiNEI18N();
   const transformWorkspace = useTransformWorkspace();
 
-  if (!config.enableLegacyCloud) {
+  if (!runtimeConfig.enableLegacyCloud) {
     return null;
   }
 

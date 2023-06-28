@@ -91,12 +91,12 @@ function runBlockMigration(
     return;
   }
   if (flavour === 'affine:surface' && version <= 3) {
-    if(data.has('elements')){
+    if (data.has('elements')) {
       const elements = data.get('elements') as Y.Map<unknown>;
       data.set('prop:elements', elements.clone());
       data.delete('elements');
     } else {
-      data.set('prop:elements', new Y.Map())
+      data.set('prop:elements', new Y.Map());
     }
   }
   if (flavour === 'affine:embed') {

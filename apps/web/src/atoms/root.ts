@@ -1,6 +1,5 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
@@ -30,7 +29,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
         // TODO: remove this when we remove the legacy cloud
       )
       .filter(workspace =>
-        !config.enableLegacyCloud
+        !runtimeConfig.enableLegacyCloud
           ? workspace.flavour !== WorkspaceFlavour.AFFINE
           : true
       );
