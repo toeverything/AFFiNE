@@ -1,4 +1,4 @@
-import { styled, TextButton } from '@affine/component';
+import { styled, TextButton } from '../../..';
 
 export const StyledModalWrapper = styled('div')(() => {
   return {

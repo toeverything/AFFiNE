@@ -1,10 +1,10 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom } from 'jotai';
 import type { CSSProperties } from 'react';
 
-import { workspacePreferredModeAtom } from '../../../../atoms';
+import { pageSettingFamily } from '../../../../atoms';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
 import { StyledEditorModeSwitch } from './style';
@@ -22,9 +22,8 @@ export const EditorModeSwitch = ({
   blockSuiteWorkspace,
   pageId,
 }: EditorModeSwitchProps) => {
-  const currentMode =
-    useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
-  const setMode = useSetAtom(workspacePreferredModeAtom);
+  const [setting, setSetting] = useAtom(pageSettingFamily(pageId));
+  const currentMode = setting?.mode ?? 'page';
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
@@ -43,11 +42,11 @@ export const EditorModeSwitch = ({
         active={currentMode === 'page'}
         hide={trash && currentMode !== 'page'}
         onClick={() => {
-          setMode(mode => {
-            if (mode[pageMeta.id] !== 'page') {
+          setSetting(setting => {
+            if (setting?.mode !== 'page') {
               toast(t['com.affine.pageMode']());
             }
-            return { ...mode, [pageMeta.id]: 'page' };
+            return { ...setting, mode: 'page' };
           });
         }}
       />
@@ -56,11 +55,11 @@ export const EditorModeSwitch = ({
         active={currentMode === 'edgeless'}
         hide={trash && currentMode !== 'edgeless'}
         onClick={() => {
-          setMode(mode => {
-            if (mode[pageMeta.id] !== 'edgeless') {
-              toast(t['com.affine.edgelessMode']());
+          setSetting(setting => {
+            if (setting?.mode !== 'edgeless') {
+              toast(t['com.affine.pageMode']());
             }
-            return { ...mode, [pageMeta.id]: 'edgeless' };
+            return { ...setting, mode: 'edgeless' };
           });
         }}
       />

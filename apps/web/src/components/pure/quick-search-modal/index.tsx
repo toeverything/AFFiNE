@@ -1,5 +1,4 @@
 import { Modal, ModalWrapper } from '@affine/component';
-import { getEnvironment } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';
@@ -25,11 +24,6 @@ import {
   StyledModalHeader,
   StyledShortcut,
 } from './style';
-
-const isMac = () => {
-  const env = getEnvironment();
-  return env.isBrowser && env.isMacOs;
-};
 
 export type QuickSearchModalProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -150,7 +144,11 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                   : t['Quick search placeholder']()
               }
             />
-            <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
+            <StyledShortcut>
+              {environment.isBrowser && environment.isMacOs
+                ? '⌘ + K'
+                : 'Ctrl + K'}
+            </StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider
             style={{ display: isPublicAndNoQuery() ? 'none' : '' }}

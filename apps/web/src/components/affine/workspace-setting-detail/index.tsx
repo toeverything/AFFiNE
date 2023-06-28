@@ -1,13 +1,13 @@
+import type { SettingPanel, WorkspaceRegistry } from '@affine/env/workspace';
+import { settingPanel, WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { SettingPanel, WorkspaceRegistry } from '@affine/workspace/type';
-import { settingPanel, WorkspaceFlavour } from '@affine/workspace/type';
 import type { MouseEvent } from 'react';
 import type React from 'react';
 import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { preload } from 'swr';
 
+import { fetcher, QueryKey } from '../../../adapters/affine/fetcher';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
-import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import * as style from './index.css';
 import { CollaborationPanel } from './panel/collaboration';
@@ -95,7 +95,7 @@ export const WorkspaceSettingDetail: React.FC<
   const workspaceId = workspace.id;
   useEffect(() => {
     if (isAffine && isOwner) {
-      preload([QueryKey.getMembers, workspaceId], fetcher);
+      preload([QueryKey.getMembers, workspaceId], fetcher).catch(console.error);
     }
   }, [isAffine, isOwner, workspaceId]);
   const containerRef = useRef<HTMLDivElement | null>(null);

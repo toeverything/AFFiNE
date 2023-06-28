@@ -1,12 +1,13 @@
 /* eslint-disable no-async-promise-executor */
-import { execSync, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import path, { resolve } from 'node:path';
 
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
+import which from 'which';
 
-import { config, root } from './common.mjs';
+import { config, electronDir, rootDir } from './common.mjs';
 
 // this means we don't spawn electron windows, mainly for testing
 const watchMode = process.argv.includes('--watch');
@@ -21,7 +22,10 @@ const stderrFilterPatterns = [
 
 // these are set before calling `config`, so we have a chance to override them
 try {
-  const devJson = readFileSync(path.resolve(root, './dev.json'), 'utf-8');
+  const devJson = readFileSync(
+    path.resolve(electronDir, './dev.json'),
+    'utf-8'
+  );
   const devEnv = JSON.parse(devJson);
   Object.assign(process.env, devEnv);
 } catch (err) {
@@ -64,20 +68,29 @@ function spawnOrReloadElectron() {
 }
 
 const common = config();
+const yarnPath = which.sync('yarn');
+async function watchPlugins() {
+  spawn(yarnPath, ['dev'], {
+    stdio: 'inherit',
+    cwd: resolve(rootDir, './packages/plugin-infra'),
+  });
+  await import('./plugins/dev-plugins.mjs');
+}
 
-function watchPreload() {
+async function watchLayers() {
   return new Promise(async resolve => {
     let initialBuild = false;
-    const preloadBuild = await esbuild.context({
-      ...common.preload,
+
+    const buildContext = await esbuild.context({
+      ...common.layers,
       plugins: [
-        ...(common.preload.plugins ?? []),
+        ...(common.layers.plugins ?? []),
         {
-          name: 'electron-dev:reload-app-on-preload-change',
+          name: 'electron-dev:reload-app-on-layers-change',
           setup(build) {
             build.onEnd(() => {
               if (initialBuild) {
-                console.log(`[preload] has changed, [re]launching electron...`);
+                console.log(`[layers] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
               } else {
                 resolve();
@@ -88,27 +101,24 @@ function watchPreload() {
         },
       ],
     });
-    // watch will trigger build.onEnd() on first run & on subsequent changes
-    await preloadBuild.watch();
+    await buildContext.watch();
   });
 }
 
-async function watchMain() {
+async function watchWorkers() {
   return new Promise(async resolve => {
     let initialBuild = false;
 
-    const mainBuild = await esbuild.context({
-      ...common.main,
+    const buildContext = await esbuild.context({
+      ...common.workers,
       plugins: [
-        ...(common.main.plugins ?? []),
+        ...(common.workers.plugins ?? []),
         {
-          name: 'electron-dev:reload-app-on-main-change',
+          name: 'electron-dev:reload-app-on-workers-change',
           setup(build) {
             build.onEnd(() => {
-              execSync('yarn generate-main-exposed-meta');
-
               if (initialBuild) {
-                console.log(`[main] has changed, [re]launching electron...`);
+                console.log(`[workers] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
               } else {
                 resolve();
@@ -119,13 +129,14 @@ async function watchMain() {
         },
       ],
     });
-    await mainBuild.watch();
+    await buildContext.watch();
   });
 }
 
 async function main() {
-  await watchMain();
-  await watchPreload();
+  await watchPlugins();
+  await watchLayers();
+  await watchWorkers();
 
   if (watchMode) {
     console.log(`Watching for changes...`);

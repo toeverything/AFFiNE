@@ -6,20 +6,14 @@ on:
     paths:
       - 'packages/i18n/**'
       - '.github/workflows/languages-sync.yml'
+      - '!.github/actions/setup-node/action.yml'
   pull_request_target:
     branches: ['master']
     paths:
       - 'packages/i18n/**'
       - '.github/workflows/languages-sync.yml'
+      - '!.github/actions/setup-node/action.yml'
   workflow_dispatch:
-
-# Cancels all previous workflow runs for pull requests that have not completed.
-# See https://docs.github.com/en/actions/using-jobs/using-concurrency
-concurrency:
-  # The concurrency group contains the workflow name and the branch name for
-  # pull requests or the commit hash for any other events.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
-  cancel-in-progress: true
 
 jobs:
   main:

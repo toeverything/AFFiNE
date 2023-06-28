@@ -9,7 +9,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 import { UserType } from '../users/resolver';
 import { CurrentUser } from './guard';
@@ -38,6 +38,18 @@ export class AuthResolver {
       token: this.auth.sign(user),
       refresh: this.auth.refresh(user),
     };
+  }
+
+  @Mutation(() => UserType)
+  async register(
+    @Context() ctx: { req: Request },
+    @Args('name') name: string,
+    @Args('email') email: string,
+    @Args('password') password: string
+  ) {
+    const user = await this.auth.register(name, email, password);
+    ctx.req.user = user;
+    return user;
   }
 
   @Mutation(() => UserType)

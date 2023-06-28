@@ -109,8 +109,11 @@ const nextConfig = {
     '@affine/templates',
     '@affine/workspace',
     '@affine/jotai',
+    '@affine/copilot',
     '@toeverything/hooks',
     '@toeverything/y-indexeddb',
+    '@toeverything/infra',
+    '@toeverything/plugin-infra',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
@@ -177,6 +180,7 @@ const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
 const withDebugLocal = debugLocal(
   {
     '@blocksuite/editor': path.resolve(baseDir, 'packages', 'editor'),
+    '@blocksuite/block-std': path.resolve(baseDir, 'packages', 'block-std'),
     '@blocksuite/blocks/models': path.resolve(
       baseDir,
       'packages',
@@ -200,6 +204,14 @@ const withDebugLocal = debugLocal(
     ),
     '@blocksuite/blocks': path.resolve(baseDir, 'packages', 'blocks'),
     '@blocksuite/store': path.resolve(baseDir, 'packages', 'store'),
+    '@blocksuite/store/providers/broadcast-channel': path.resolve(
+      baseDir,
+      'packages',
+      'store',
+      'src',
+      'providers',
+      'broadcast-channel'
+    ),
   },
   {
     enable: enableDebugLocal,

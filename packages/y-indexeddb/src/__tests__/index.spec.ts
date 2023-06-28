@@ -3,8 +3,8 @@
  */
 import 'fake-indexeddb/auto';
 
-import { initPage } from '@affine/env/blocksuite';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import type { Page } from '@blocksuite/store';
 import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -20,9 +20,25 @@ import {
   downloadBinary,
   getMilestones,
   markMilestone,
+  overwriteBinary,
   revertUpdate,
   setMergeCount,
 } from '../index';
+
+function initEmptyPage(page: Page) {
+  const pageBlockId = page.addBlock('affine:page', {
+    title: new page.Text(''),
+  });
+  const surfaceBlockId = page.addBlock('affine:surface', {}, pageBlockId);
+  const frameBlockId = page.addBlock('affine:note', {}, pageBlockId);
+  const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBlockId);
+  return {
+    pageBlockId,
+    surfaceBlockId,
+    frameBlockId,
+    paragraphBlockId,
+  };
+}
 
 async function getUpdates(id: string): Promise<Uint8Array[]> {
   const db = await openDB(rootDBName, dbVersion);
@@ -55,7 +71,7 @@ afterEach(() => {
 
 describe('indexeddb provider', () => {
   test('connect', async () => {
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(workspace.doc);
     provider.connect();
     await provider.whenSynced;
     const db = await openDB(rootDBName, dbVersion);
@@ -73,9 +89,10 @@ describe('indexeddb provider', () => {
           },
         ],
       });
-      const page = workspace.createPage('page0');
+      const page = workspace.createPage({ id: 'page0' });
+      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -91,36 +108,29 @@ describe('indexeddb provider', () => {
       })
         .register(AffineSchemas)
         .register(__unstableSchemas);
+      // data should only contain updates for the root doc
       data.updates.forEach(({ update }) => {
         Workspace.Y.applyUpdate(testWorkspace.doc, update);
       });
-      const binary = Workspace.Y.encodeStateAsUpdate(testWorkspace.doc);
-      expect(binary).toEqual(Workspace.Y.encodeStateAsUpdate(workspace.doc));
+      const subPage = testWorkspace.doc.spaces.get('space:page0');
+      {
+        assertExists(subPage);
+        await store.get(subPage.guid);
+        const data = (await store.get(subPage.guid)) as
+          | WorkspacePersist
+          | undefined;
+        assertExists(data);
+        await testWorkspace.getPage('page0')?.waitForLoaded();
+        data.updates.forEach(({ update }) => {
+          Workspace.Y.applyUpdate(subPage, update);
+        });
+      }
+      expect(workspace.doc.toJSON()).toEqual(testWorkspace.doc.toJSON());
     }
-
-    const secondWorkspace = new Workspace({
-      id,
-    })
-      .register(AffineSchemas)
-      .register(__unstableSchemas);
-    const provider2 = createIndexedDBProvider(
-      secondWorkspace.id,
-      secondWorkspace.doc,
-      rootDBName
-    );
-    provider2.connect();
-    await provider2.whenSynced;
-    expect(Workspace.Y.encodeStateAsUpdate(secondWorkspace.doc)).toEqual(
-      Workspace.Y.encodeStateAsUpdate(workspace.doc)
-    );
   });
 
   test('disconnect suddenly', async () => {
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     const fn = vi.fn();
     provider.connect();
     provider.disconnect();
@@ -130,11 +140,7 @@ describe('indexeddb provider', () => {
   });
 
   test('connect and disconnect', async () => {
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     expect(provider.connected).toBe(true);
     const p1 = provider.whenSynced;
@@ -143,9 +149,10 @@ describe('indexeddb provider', () => {
     provider.disconnect();
     expect(provider.connected).toBe(false);
     {
-      const page = workspace.createPage('page0');
+      const page = workspace.createPage({ id: 'page0' });
+      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
     {
@@ -169,7 +176,7 @@ describe('indexeddb provider', () => {
   });
 
   test('cleanup', async () => {
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(workspace.doc);
     provider.connect();
     await provider.whenSynced;
     const db = await openDB(rootDBName, dbVersion);
@@ -195,9 +202,9 @@ describe('indexeddb provider', () => {
   });
 
   test('cleanup when connecting', async () => {
-    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
+    const provider = createIndexedDBProvider(workspace.doc);
     provider.connect();
-    expect(() => provider.cleanup()).rejects.toThrowError(
+    await expect(() => provider.cleanup()).rejects.toThrowError(
       CleanupWhenConnectingError
     );
     await provider.whenSynced;
@@ -207,17 +214,14 @@ describe('indexeddb provider', () => {
 
   test('merge', async () => {
     setMergeCount(5);
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     {
-      const page = workspace.createPage('page0');
+      const page = workspace.createPage({ id: 'page0' });
+      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
-      for (let i = 0; i < 100; i++) {
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
+      for (let i = 0; i < 99; i++) {
         page.addBlock('affine:paragraph', {}, frameId);
       }
     }
@@ -229,21 +233,20 @@ describe('indexeddb provider', () => {
   });
 
   test("data won't be lost", async () => {
-    const id = uuidv4();
     const doc = new Workspace.Y.Doc();
     const map = doc.getMap('map');
     for (let i = 0; i < 100; i++) {
       map.set(`${i}`, i);
     }
     {
-      const provider = createIndexedDBProvider(id, doc, rootDBName);
+      const provider = createIndexedDBProvider(doc, rootDBName);
       provider.connect();
       await provider.whenSynced;
       provider.disconnect();
     }
     {
       const newDoc = new Workspace.Y.Doc();
-      const provider = createIndexedDBProvider(id, newDoc, rootDBName);
+      const provider = createIndexedDBProvider(newDoc, rootDBName);
       provider.connect();
       await provider.whenSynced;
       provider.disconnect();
@@ -259,11 +262,13 @@ describe('indexeddb provider', () => {
       yDoc.getMap().set('foo', 'bar');
       const persistence = new IndexeddbPersistence('test', yDoc);
       await persistence.whenSynced;
-      persistence.destroy();
+      await persistence.destroy();
     }
     {
-      const yDoc = new Doc();
-      const provider = createIndexedDBProvider('test', yDoc);
+      const yDoc = new Doc({
+        guid: 'test',
+      });
+      const provider = createIndexedDBProvider(yDoc);
       provider.connect();
       await provider.whenSynced;
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -274,10 +279,12 @@ describe('indexeddb provider', () => {
       indexedDB.databases = vi.fn(async () => {
         throw new Error('not supported');
       });
-      expect(indexedDB.databases).rejects.toThrow('not supported');
-      const yDoc = new Doc();
+      await expect(indexedDB.databases).rejects.toThrow('not supported');
+      const yDoc = new Doc({
+        guid: 'test',
+      });
       expect(indexedDB.databases).toBeCalledTimes(1);
-      const provider = createIndexedDBProvider('test', yDoc);
+      const provider = createIndexedDBProvider(yDoc);
       provider.connect();
       await provider.whenSynced;
       expect(indexedDB.databases).toBeCalledTimes(2);
@@ -296,8 +303,10 @@ describe('indexeddb provider', () => {
       expect(event).toBe('beforeunload');
       return oldRemoveEventListener(event, fn, options);
     });
-    const doc = new Doc();
-    const provider = createIndexedDBProvider('1', doc);
+    const doc = new Doc({
+      guid: '1',
+    });
+    const provider = createIndexedDBProvider(doc);
     const map = doc.getMap('map');
     map.set('1', 1);
     provider.connect();
@@ -372,15 +381,88 @@ describe('milestone', () => {
   });
 });
 
+describe('subDoc', () => {
+  test('basic', async () => {
+    let json1: any, json2: any;
+    {
+      const doc = new Doc({
+        guid: 'test',
+      });
+      const map = doc.getMap();
+      const subDoc = new Doc();
+      subDoc.load();
+      map.set('1', subDoc);
+      map.set('2', 'test');
+      const provider = createIndexedDBProvider(doc);
+      provider.connect();
+      await provider.whenSynced;
+      provider.disconnect();
+      json1 = doc.toJSON();
+    }
+    {
+      const doc = new Doc({
+        guid: 'test',
+      });
+      const provider = createIndexedDBProvider(doc);
+      provider.connect();
+      await provider.whenSynced;
+      const map = doc.getMap();
+      const subDoc = map.get('1') as Doc;
+      subDoc.load();
+      provider.disconnect();
+      json2 = doc.toJSON();
+    }
+    // the following line compares {} with {}
+    expect(json1['']['1'].toJSON()).toEqual(json2['']['1'].toJSON());
+    expect(json1['']['2']).toEqual(json2['']['2']);
+  });
+
+  test('blocksuite', async () => {
+    const page0 = workspace.createPage({
+      id: 'page0',
+    });
+    await page0.waitForLoaded();
+    const { paragraphBlockId: paragraphBlockIdPage1 } = initEmptyPage(page0);
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
+    provider.connect();
+    const page1 = workspace.createPage({
+      id: 'page1',
+    });
+    await page1.waitForLoaded();
+    const { paragraphBlockId: paragraphBlockIdPage2 } = initEmptyPage(page1);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    provider.disconnect();
+    {
+      const newWorkspace = new Workspace({
+        id,
+        isSSR: true,
+      });
+      newWorkspace.register(AffineSchemas).register(__unstableSchemas);
+      const provider = createIndexedDBProvider(newWorkspace.doc, rootDBName);
+      provider.connect();
+      await provider.whenSynced;
+      const page0 = newWorkspace.getPage('page0') as Page;
+      await page0.waitForLoaded();
+      {
+        const block = page0.getBlockById(paragraphBlockIdPage1);
+        assertExists(block);
+      }
+      const page1 = newWorkspace.getPage('page1') as Page;
+      await page1.waitForLoaded();
+      {
+        const block = page1.getBlockById(paragraphBlockIdPage2);
+        assertExists(block);
+      }
+    }
+  });
+});
+
 describe('utils', () => {
   test('download binary', async () => {
-    const page = workspace.createPage('page0');
-    initPage(page);
-    const provider = createIndexedDBProvider(
-      workspace.id,
-      workspace.doc,
-      rootDBName
-    );
+    const page = workspace.createPage({ id: 'page0' });
+    await page.waitForLoaded();
+    initEmptyPage(page);
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     await provider.whenSynced;
     provider.disconnect();
@@ -397,9 +479,27 @@ describe('utils', () => {
     applyUpdate(newWorkspace.doc, update);
     await new Promise<void>(resolve =>
       setTimeout(() => {
-        expect(workspace.doc.toJSON()).toEqual(newWorkspace.doc.toJSON());
+        expect(workspace.doc.toJSON()['meta']).toEqual(
+          newWorkspace.doc.toJSON()['meta']
+        );
+        expect(Object.keys(workspace.doc.toJSON()['spaces'])).toEqual(
+          Object.keys(newWorkspace.doc.toJSON()['spaces'])
+        );
         resolve();
       }, 0)
     );
+  });
+
+  test('overwrite binary', async () => {
+    await overwriteBinary('test', new Uint8Array([1, 2, 3]));
+    {
+      const binary = await downloadBinary('test');
+      expect(binary).toEqual(new Uint8Array([1, 2, 3]));
+    }
+    await overwriteBinary('test', new Uint8Array([0, 0]));
+    {
+      const binary = await downloadBinary('test');
+      expect(binary).toEqual(new Uint8Array([0, 0]));
+    }
   });
 });

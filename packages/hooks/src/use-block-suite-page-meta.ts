@@ -16,11 +16,8 @@ declare module '@blocksuite/store' {
     updatedDate?: number;
     mode?: 'page' | 'edgeless';
     jumpOnce?: boolean;
-    // whether to create the page with the default template
-    init?: boolean;
     // todo: support `number` in the future
     isPublic?: boolean;
-    isRootPinboard?: boolean;
   }
 }
 
@@ -65,12 +62,6 @@ export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
       },
       getPageMeta: (pageId: string) => {
         return blockSuiteWorkspace.meta.getPageMeta(pageId);
-      },
-      /**
-       * @deprecated
-       */
-      shiftPageMeta: (pageId: string, index: number) => {
-        return blockSuiteWorkspace.meta.shiftPageMeta(pageId, index);
       },
     }),
     [blockSuiteWorkspace]

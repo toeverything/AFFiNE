@@ -1,13 +1,14 @@
 import { MenuLinkItem } from '@affine/component/app-sidebar';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
+import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import { useMemo, useState } from 'react';
 
-import { workspacePreferredModeAtom } from '../../../../atoms';
+import { pageSettingFamily } from '../../../../atoms';
 import type { FavoriteListProps } from '../index';
 import EmptyItem from './empty-item';
 import * as styles from './styles.css';
@@ -26,20 +27,29 @@ function FavoriteMenuItem({
   parentIds,
 }: FavoriteMenuItemProps) {
   const router = useRouter();
-  const record = useAtomValue(workspacePreferredModeAtom);
+  const setting = useAtomValue(pageSettingFamily(pageId));
   const active = router.query.pageId === pageId;
-  const icon = record[pageId] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
+  const icon = setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
   const references = useBlockSuitePageReferences(workspace, pageId);
   const referencesToShow = useMemo(() => {
-    return [...new Set(references.filter(ref => !parentIds.has(ref)))];
-  }, [references, parentIds]);
+    return [
+      ...new Set(
+        references.filter(
+          ref => !parentIds.has(ref) && !metaMapping[ref]?.trash
+        )
+      ),
+    ];
+  }, [references, parentIds, metaMapping]);
   const [collapsed, setCollapsed] = useState(true);
   const collapsible = referencesToShow.length > 0;
-  const showReferences = collapsible ? !collapsed : referencesToShow.length > 0;
   const nestedItem = parentIds.size > 0;
   const untitled = !metaMapping[pageId]?.title;
   return (
-    <div className={styles.favItemWrapper} data-nested={nestedItem}>
+    <Collapsible.Root
+      className={styles.favItemWrapper}
+      data-nested={nestedItem}
+      open={!collapsed}
+    >
       <MenuLinkItem
         data-type="favorite-list-item"
         data-testid={`favorite-list-item-${pageId}`}
@@ -53,19 +63,24 @@ function FavoriteMenuItem({
           {metaMapping[pageId]?.title || 'Untitled'}
         </span>
       </MenuLinkItem>
-      {showReferences &&
-        referencesToShow.map(ref => {
-          return (
-            <FavoriteMenuItem
-              key={ref}
-              workspace={workspace}
-              pageId={ref}
-              metaMapping={metaMapping}
-              parentIds={new Set([...parentIds, pageId])}
-            />
-          );
-        })}
-    </div>
+      {collapsible && (
+        <Collapsible.Content className={styles.collapsibleContent}>
+          <div className={styles.collapsibleContentInner}>
+            {referencesToShow.map(ref => {
+              return (
+                <FavoriteMenuItem
+                  key={ref}
+                  workspace={workspace}
+                  pageId={ref}
+                  metaMapping={metaMapping}
+                  parentIds={new Set([...parentIds, pageId])}
+                />
+              );
+            })}
+          </div>
+        </Collapsible.Content>
+      )}
+    </Collapsible.Root>
   );
 }
 

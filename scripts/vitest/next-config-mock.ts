@@ -1,7 +1,8 @@
 import {
   blockSuiteFeatureFlags,
   buildFlags,
-} from '../../apps/web/preset.config.mjs';
+  // @ts-expect-error
+} from '@affine/web/preset.config.mjs';
 
 export default function getConfig() {
   return {

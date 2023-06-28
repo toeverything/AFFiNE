@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true
+  },
+  "include": ["."],
+  "exclude": [
+    "target",
+    "node_modules",
+    "dist",
+    "lib",
+    ".coverage",
+    ".yarn",
+    "test-results"
+  ]
+}

@@ -12,7 +12,7 @@ import { useCallback, useState } from 'react';
 import useCollapsed from './hooks/use-collapsed';
 import useSelectWithKeyboard from './hooks/use-select-with-keyboard';
 import { TreeNode, TreeNodeWithDnd } from './tree-node';
-import type { TreeViewProps } from './types';
+import type { Node, TreeViewProps } from './types';
 import { findNode } from './utils';
 export const TreeView = <RenderProps,>({
   data,
@@ -58,6 +58,39 @@ export const TreeView = <RenderProps,>({
     setDraggingId(e.active.id as string);
   }, []);
   if (enableDnd) {
+    const treeNodes = data.map((node, index) => (
+      <TreeNodeWithDnd
+        key={node.id}
+        index={index}
+        collapsedIds={collapsedIds}
+        setCollapsed={setCollapsed}
+        node={node}
+        selectedId={selectedId}
+        enableDnd={enableDnd}
+        disableCollapse={disableCollapse}
+        draggingId={draggingId}
+        {...otherProps}
+      />
+    ));
+    const draggingNode = (function () {
+      let draggingNode: Node<RenderProps> | undefined;
+      if (draggingId) {
+        draggingNode = findNode(draggingId, data);
+      }
+      if (draggingNode) {
+        return (
+          <TreeNode
+            node={draggingNode}
+            index={0}
+            allowDrop={false}
+            collapsedIds={collapsedIds}
+            setCollapsed={() => {}}
+            {...otherProps}
+          />
+        );
+      }
+      return null;
+    })();
     return (
       <DndContext
         sensors={sensors}
@@ -65,33 +98,8 @@ export const TreeView = <RenderProps,>({
         onDragMove={onDragMove}
         onDragEnd={onDragEnd}
       >
-        {data.map((node, index) => (
-          <TreeNodeWithDnd
-            key={node.id}
-            index={index}
-            collapsedIds={collapsedIds}
-            setCollapsed={setCollapsed}
-            node={node}
-            selectedId={selectedId}
-            enableDnd={enableDnd}
-            disableCollapse={disableCollapse}
-            draggingId={draggingId}
-            {...otherProps}
-          />
-        ))}
-
-        <DragOverlay>
-          {draggingId && (
-            <TreeNode
-              node={findNode(draggingId, data)!}
-              index={0}
-              allowDrop={false}
-              collapsedIds={collapsedIds}
-              setCollapsed={() => {}}
-              {...otherProps}
-            />
-          )}
-        </DragOverlay>
+        {treeNodes}
+        <DragOverlay>{draggingNode}</DragOverlay>
       </DndContext>
     );
   }

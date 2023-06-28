@@ -1,13 +1,13 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
-import { config } from '@affine/env';
+import type { LocalWorkspace } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   getLoginStorage,
   setLoginStorage,
   SignMethod,
 } from '@affine/workspace/affine/login';
-import type { LocalWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { affineAuth } from '@affine/workspace/affine/shared';
 import {
   CloudWorkspaceIcon,
   LocalWorkspaceIcon,
@@ -19,7 +19,6 @@ import React, { useEffect, useState } from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useTransformWorkspace } from '../../../../hooks/use-transform-workspace';
-import { affineAuth } from '../../../../plugins/affine';
 import type { AffineOfficialWorkspace } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
@@ -82,7 +81,7 @@ export const SyncUser = () => {
   const t = useAFFiNEI18N();
   const transformWorkspace = useTransformWorkspace();
 
-  if (!config.enableLegacyCloud) {
+  if (!runtimeConfig.enableLegacyCloud) {
     return null;
   }
 
@@ -138,17 +137,14 @@ export const SyncUser = () => {
               workspace as LocalWorkspace
             );
             // fixme(himself65): refactor this
-            router
-              .replace({
-                pathname: `/workspace/[workspaceId]/all`,
-                query: {
-                  workspaceId: id,
-                },
-              })
-              .then(() => {
-                router.reload();
-              });
+            await router.replace({
+              pathname: `/workspace/[workspaceId]/all`,
+              query: {
+                workspaceId: id,
+              },
+            });
             setOpen(false);
+            router.reload();
           }}
         />
       </>

@@ -75,7 +75,9 @@ export function useHistoryAtom() {
           if (forward) {
             const target = Math.min(prev.stack.length - 1, prev.current + 1);
             const url = prev.stack[target];
-            void router.push(url);
+            router.push(url).catch(err => {
+              console.error(err);
+            });
             return {
               ...prev,
               current: target,
@@ -84,7 +86,9 @@ export function useHistoryAtom() {
           } else {
             const target = Math.max(0, prev.current - 1);
             const url = prev.stack[target];
-            void router.push(url);
+            router.push(url).catch(err => {
+              console.error(err);
+            });
             return {
               ...prev,
               current: target,

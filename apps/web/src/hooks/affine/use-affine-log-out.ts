@@ -1,8 +1,8 @@
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
-import { WorkspaceAdapters } from '../../plugins';
+import { WorkspaceAdapters } from '../../adapters/workspace';
 
 export function useAffineLogOut() {
   const router = useRouter();

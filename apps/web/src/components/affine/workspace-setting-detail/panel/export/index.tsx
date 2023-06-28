@@ -12,12 +12,15 @@ export const ExportPanel = () => {
       <Button
         type="light"
         shape="circle"
-        disabled={!environment.isDesktop || !id}
+        disabled={
+          !environment.isDesktop || !id || !runtimeConfig.enableSQLiteProvider
+        }
         data-testid="export-affine-backup"
         onClick={async () => {
           if (id) {
             const result = await window.apis?.dialog.saveDBFileAs(id);
             if (result?.error) {
+              // @ts-expect-error: result.error is dynamic
               toast(t[result.error]());
             } else if (!result?.canceled) {
               toast(t['Export success']());

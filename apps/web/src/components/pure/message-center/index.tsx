@@ -1,27 +1,27 @@
 import { MessageCode, Messages } from '@affine/env/constant';
 import { setLoginStorage, SignMethod } from '@affine/workspace/affine/login';
-import type React from 'react';
+import { affineAuth } from '@affine/workspace/affine/shared';
+import type { FC } from 'react';
 import { memo, useEffect, useState } from 'react';
 
 import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
-import { affineAuth } from '../../../plugins/affine';
 import { toast } from '../../../utils';
 
 declare global {
   interface DocumentEventMap {
     'affine-error': CustomEvent<{
-      code: MessageCode;
+      code: keyof typeof Messages;
     }>;
   }
 }
 
-export const MessageCenter: React.FC = memo(function MessageCenter() {
+export const MessageCenter: FC = memo(function MessageCenter() {
   const [popup, setPopup] = useState(false);
   const onLogout = useAffineLogOut();
   useEffect(() => {
     const listener = (
       event: CustomEvent<{
-        code: MessageCode;
+        code: keyof typeof Messages;
       }>
     ) => {
       // fixme: need refactor
@@ -43,7 +43,7 @@ export const MessageCenter: React.FC = memo(function MessageCenter() {
           })
           .catch(() => {
             setPopup(false);
-            onLogout();
+            return onLogout();
           });
       } else {
         toast(Messages[event.detail.code].message);

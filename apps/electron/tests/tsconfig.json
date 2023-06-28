@@ -1,8 +1,11 @@
 {
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
+    "outDir": "./lib",
     "baseUrl": ".",
-    "noEmit": true
+    "target": "ESNext"
   },
-  "include": ["**.spec.ts", "**.test.ts"]
+  "references": [{ "path": "../../../tests/kit" }],
+  "include": ["**.spec.ts", "**.test.ts", "fixture.ts"],
+  "exclude": ["lib"]
 }

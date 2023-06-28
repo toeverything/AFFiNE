@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "moduleResolution": "Node16",
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist/scripts",
+    "rootDir": "."
+  },
+  "include": ["vite.config.ts", "vite.prod.config.ts"]
+}

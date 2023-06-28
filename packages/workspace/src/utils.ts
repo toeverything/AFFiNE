@@ -1,16 +1,40 @@
-import type { createWorkspaceApis } from '@affine/workspace/affine/api';
-import { rootStore, rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { createAffineBlobStorage } from '@affine/workspace/blob';
+import { isBrowser, isDesktop } from '@affine/env/constant';
+import type { BlockSuiteFeatureFlags } from '@affine/env/global';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import {
+  createAffineProviders,
+  createLocalProviders,
+} from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import type { Generator, StoreOptions } from '@blocksuite/store';
+import type {
+  DocProviderCreator,
+  Generator,
+  StoreOptions,
+} from '@blocksuite/store';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 
+import type { createWorkspaceApis } from './affine/api';
+import { rootWorkspacesMetadataAtom } from './atom';
+import { createAffineBlobStorage } from './blob';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
-import { WorkspaceFlavour } from './type';
 
 export function cleanupWorkspace(flavour: WorkspaceFlavour) {
   rootStore.set(rootWorkspacesMetadataAtom, metas =>
     metas.filter(meta => meta.flavour !== flavour)
+  );
+}
+
+function setEditorFlags(workspace: Workspace) {
+  Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
+    workspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
+  workspace.awarenessStore.setFlag(
+    'enable_bookmark_operation',
+    environment.isDesktop
   );
 }
 
@@ -55,6 +79,7 @@ export function createEmptyBlockSuiteWorkspace(
   ) {
     throw new Error('workspaceApis is required for affine flavour');
   }
+  const providerCreators: DocProviderCreator[] = [];
   const prefix: string = config?.cachePrefix ?? '';
   const cacheKey = `${prefix}${id}`;
   if (hashMap.has(cacheKey)) {
@@ -65,26 +90,31 @@ export function createEmptyBlockSuiteWorkspace(
   const blobStorages: StoreOptions['blobStorages'] = [];
 
   if (flavour === WorkspaceFlavour.AFFINE) {
-    blobStorages.push(id =>
-      createAffineBlobStorage(id, config!.workspaceApis!)
-    );
+    if (config && config.workspaceApis) {
+      const workspaceApis = config.workspaceApis;
+      blobStorages.push(id => createAffineBlobStorage(id, workspaceApis));
+    }
+    providerCreators.push(...createAffineProviders());
   } else {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
-      if (environment.isDesktop) {
+      if (isDesktop) {
         blobStorages.push(createSQLiteStorage);
       }
     }
+    providerCreators.push(...createLocalProviders());
   }
 
   const workspace = new Workspace({
     id,
-    isSSR: typeof window === 'undefined',
+    isSSR: !isBrowser,
+    providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: blobStorages,
     idGenerator,
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
+  setEditorFlags(workspace);
   hashMap.set(cacheKey, workspace);
   return workspace;
 }
@@ -100,7 +130,7 @@ export class CallbackSet extends Set<() => void> {
     this.#ready = v;
   }
 
-  add(cb: () => void) {
+  override add(cb: () => void) {
     if (this.ready) {
       cb();
       return this;
@@ -111,7 +141,7 @@ export class CallbackSet extends Set<() => void> {
     return super.add(cb);
   }
 
-  delete(cb: () => void) {
+  override delete(cb: () => void) {
     if (this.has(cb)) {
       return super.delete(cb);
     }

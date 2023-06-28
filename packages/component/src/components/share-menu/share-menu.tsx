@@ -1,7 +1,7 @@
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
+} from '@affine/env/workspace';
 import { ExportIcon, PublishIcon, ShareIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';

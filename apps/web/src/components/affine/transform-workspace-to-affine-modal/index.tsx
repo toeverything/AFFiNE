@@ -26,11 +26,7 @@ export const TransformWorkspaceToAffineModal: React.FC<
     >
       <ModalWrapper width={560} height={292}>
         <Header>
-          <IconButton
-            onClick={() => {
-              onClose();
-            }}
-          >
+          <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
         </Header>
@@ -43,23 +39,7 @@ export const TransformWorkspaceToAffineModal: React.FC<
               data-testid="confirm-enable-cloud-button"
               shape="round"
               type="primary"
-              onClick={async () => {
-                onConform();
-                // setLoading(true);
-                // if (user || (await login())) {
-                //   if (currentWorkspace) {
-                //     const workspace = await dataCenter.enableWorkspaceCloud(
-                //       currentWorkspace
-                //     );
-                //     toast(t('Enabled success'));
-                //
-                //     if (workspace) {
-                //       router.push(`/workspace/${workspace.id}/setting`);
-                //     }
-                //   }
-                // }
-                // setLoading(false);
-              }}
+              onClick={onConform}
             >
               {user ? t['Enable']() : t['Sign in and Enable']()}
             </StyleButton>

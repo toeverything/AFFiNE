@@ -1,16 +1,15 @@
 import { DebugLogger } from '@affine/debug';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
-import type { LocalWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
+import { LocalAdapter } from '../adapters/local';
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { workspacesAtom } from '../atoms';
-import { WorkspaceAdapters } from '../plugins';
-import { LocalPlugin } from '../plugins/local';
 import type { AllWorkspace } from '../shared';
 
 export function useWorkspaces(): AllWorkspace[] {
@@ -27,19 +26,6 @@ export function useAppHelper() {
   const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const set = useSetAtom(rootWorkspacesMetadataAtom);
   return {
-    createWorkspacePage: useCallback(
-      (workspaceId: string, pageId: string) => {
-        const workspace = workspaces.find(
-          ws => ws.id === workspaceId
-        ) as LocalWorkspace;
-        if (workspace && 'blockSuiteWorkspace' in workspace) {
-          workspace.blockSuiteWorkspace.createPage({ id: pageId });
-        } else {
-          throw new Error('cannot create page. blockSuiteWorkspace not found');
-        }
-      },
-      [workspaces]
-    ),
     addLocalWorkspace: useCallback(
       async (workspaceId: string): Promise<string> => {
         saveWorkspaceToLocalStorage(workspaceId);
@@ -48,6 +34,7 @@ export function useAppHelper() {
           {
             id: workspaceId,
             flavour: WorkspaceFlavour.LOCAL,
+            version: WorkspaceVersion.SubDoc,
           },
         ]);
         logger.debug('imported local workspace', workspaceId);
@@ -62,12 +49,13 @@ export function useAppHelper() {
           WorkspaceFlavour.LOCAL
         );
         blockSuiteWorkspace.meta.setName(name);
-        const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
+        const id = await LocalAdapter.CRUD.create(blockSuiteWorkspace);
         set(workspaces => [
           ...workspaces,
           {
             id,
             flavour: WorkspaceFlavour.LOCAL,
+            version: WorkspaceVersion.SubDoc,
           },
         ]);
         logger.debug('created local workspace', id);

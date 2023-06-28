@@ -104,7 +104,6 @@
   "NotLoggedIn": "当前未登录",
   "Official Website": "官网",
   "Once deleted, you can't undo this action": "一旦删除，您将无法撤销此操作。",
-  "Ooops!": "啊哦！",
   "Publishing Description": "发布到 web 后，所有人都可以通过链接查看此工作区的内容。",
   "Created": "创建时间",
   "Delete Workspace Description": "正在删除 <1>{{workspace}}</1> ，此操作无法撤销，所有内容将会丢失。",

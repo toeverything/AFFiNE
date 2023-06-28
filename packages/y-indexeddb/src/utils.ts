@@ -117,6 +117,7 @@ export async function tryMigrate(
               }
             );
           }
+          return void 0;
         })
       );
       localStorage.setItem(`${dbName}-migration`, 'true');
@@ -127,7 +128,7 @@ export async function tryMigrate(
 }
 
 export async function downloadBinary(
-  id: string,
+  guid: string,
   dbName = DEFAULT_DB_NAME
 ): Promise<UpdateMessage['update'] | false> {
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
@@ -135,10 +136,31 @@ export async function downloadBinary(
   });
   const db = await dbPromise;
   const t = db.transaction('workspace', 'readonly').objectStore('workspace');
-  const doc = await t.get(id);
+  const doc = await t.get(guid);
   if (!doc) {
     return false;
   } else {
     return mergeUpdates(doc.updates.map(({ update }) => update));
   }
+}
+
+export async function overwriteBinary(
+  guid: string,
+  update: UpdateMessage['update'],
+  dbName = DEFAULT_DB_NAME
+) {
+  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+    upgrade: upgradeDB,
+  });
+  const db = await dbPromise;
+  const t = db.transaction('workspace', 'readwrite').objectStore('workspace');
+  await t.put({
+    id: guid,
+    updates: [
+      {
+        timestamp: Date.now(),
+        update,
+      },
+    ],
+  });
 }

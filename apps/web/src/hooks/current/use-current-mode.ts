@@ -1,14 +1,15 @@
+import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import { atom, useAtomValue } from 'jotai';
 
-import { currentPageIdAtom, workspacePreferredModeAtom } from '../../atoms';
+import { pageSettingFamily } from '../../atoms';
 
 const currentModeAtom = atom<'page' | 'edgeless'>(get => {
-  const pageId = get(currentPageIdAtom);
-  const record = get(workspacePreferredModeAtom);
-  if (pageId) return record[pageId] ?? 'page';
-  else {
+  const pageId = get(rootCurrentPageIdAtom);
+  // fixme(himself65): pageId should not be null
+  if (!pageId) {
     return 'page';
   }
+  return get(pageSettingFamily(pageId))?.mode ?? 'page';
 });
 
 export const useCurrentMode = () => {

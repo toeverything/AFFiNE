@@ -13,6 +13,8 @@ export type IconMenuProps = PropsWithChildren<{
   endIcon?: ReactElement;
   iconSize?: [number, number];
   disabled?: boolean;
+  active?: boolean;
+  disableHover?: boolean;
 }> &
   HTMLAttributes<HTMLButtonElement>;
 

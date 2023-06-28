@@ -111,6 +111,29 @@ export class WorkspaceResolver {
     return data.user;
   }
 
+  @ResolveField(() => [UserType], {
+    description: 'Members of workspace',
+    complexity: 2,
+  })
+  async members(
+    @CurrentUser() user: UserType,
+    @Parent() workspace: WorkspaceType
+  ) {
+    const data = await this.prisma.userWorkspacePermission.findMany({
+      where: {
+        workspaceId: workspace.id,
+        accepted: true,
+        userId: {
+          not: user.id,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+    return data.map(({ user }) => user);
+  }
+
   @Query(() => [WorkspaceType], {
     description: 'Get all accessible workspaces for current user',
     complexity: 2,
@@ -202,5 +225,62 @@ export class WorkspaceResolver {
     // delete all related data, like websocket connections, blobs, etc.
 
     return true;
+  }
+
+  @Mutation(() => Boolean)
+  async invite(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('email') email: string,
+    @Args('permission', { type: () => Permission }) permission: Permission
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+
+    if (permission === Permission.Owner) {
+      throw new ForbiddenException('Cannot change owner');
+    }
+
+    const target = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!target) {
+      throw new NotFoundException("User doesn't exist");
+    }
+
+    await this.permissionProvider.grant(workspaceId, target.id, permission);
+
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  async revoke(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('userId') userId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+
+    return this.permissionProvider.revoke(workspaceId, userId);
+  }
+
+  @Mutation(() => Boolean)
+  async acceptInvite(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    return this.permissionProvider.accept(workspaceId, user.id);
+  }
+
+  @Mutation(() => Boolean)
+  async leaveWorkspace(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    return this.permissionProvider.revoke(workspaceId, user.id);
   }
 }

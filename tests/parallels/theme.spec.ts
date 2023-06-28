@@ -4,7 +4,7 @@ import { test, testResultDir } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 
 // default could be anything, according to the system
 test('default white', async ({ browser }) => {
@@ -13,7 +13,7 @@ test('default white', async ({ browser }) => {
   });
   const page = await context.newPage();
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   const root = page.locator('html');
   const themeMode = await root.evaluate(element =>
     element.getAttribute('data-theme')

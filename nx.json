@@ -1,0 +1,114 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "npmScope": "toeverything",
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "nx-cloud",
+      "options": {
+        "cacheableOperations": ["build", "test"],
+        "accessToken": "YmQ2NTg1ODktZTk5Mi00YzhiLTk2ZmUtNWQzMDg0NDBkOWM3fHJlYWQtb25seQ=="
+      }
+    }
+  },
+  "affected": {
+    "defaultBase": "master"
+  },
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "packages": ["{workspaceRoot}/packages/**/*"],
+    "sharedGlobals": [
+      "{workspaceRoot}/tsconfig.json",
+      "{workspaceRoot}/nx.json"
+    ],
+    "production": ["default"]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "{projectRoot}/dist",
+        "{projectRoot}/build",
+        "{projectRoot}/out",
+        "{projectRoot}/node_modules/.cache",
+        "{projectRoot}/target",
+        "{workspaceRoot}/apps/web/.next",
+        "{workspaceRoot}/apps/storybook/storybook-static",
+        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
+        "{workspaceRoot}/packages/native/affine.*.node",
+        "{workspaceRoot}/affine.db",
+        "{workspaceRoot/apps/electron/dist"
+      ],
+      "inputs": [
+        "packages",
+        {
+          "runtime": "node -v"
+        },
+        {
+          "env": "BUILD_ENV"
+        },
+        {
+          "env": "ENABLE_BOOKMARK_OPERATION"
+        },
+        {
+          "env": "ENABLE_PLUGIN"
+        },
+        {
+          "env": "ENABLE_ALL_PAGE_FILTER"
+        },
+        {
+          "env": "ENABLE_TEST_PROPERTIES"
+        },
+        {
+          "env": "ENABLE_LEGACY_PROVIDER"
+        },
+        {
+          "env": "ENABLE_BC_PROVIDER"
+        },
+        {
+          "env": "ENABLE_DEBUG_PAGE"
+        },
+        {
+          "env": "CHANGELOG_URL"
+        },
+        {
+          "env": "ENABLE_PRELOADING"
+        },
+        {
+          "env": "API_SERVER_PROFILE"
+        },
+        {
+          "env": "ENABLE_SQLITE_PROVIDER"
+        }
+      ]
+    },
+    "e2e": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        {
+          "runtime": "node -v"
+        },
+        {
+          "runtime": "yarn playwright --version"
+        }
+      ]
+    },
+    "export": {
+      "dependsOn": ["build"]
+    },
+    "dev": {
+      "dependsOn": ["^build"]
+    },
+    "e2e:coverage": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "test:ui": {
+      "dependsOn": ["^build"]
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"]
+    }
+  }
+}

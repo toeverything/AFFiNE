@@ -5,13 +5,13 @@ import { openHomePage } from '../libs/load-page';
 import {
   getBlockSuiteEditorTitle,
   newPage,
-  waitMarkdownImported,
+  waitEditorLoad,
 } from '../libs/page-logic';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('click btn bew page and open in tab', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page');

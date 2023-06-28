@@ -6,13 +6,13 @@ import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
-  waitMarkdownImported,
+  waitEditorLoad,
 } from '../libs/page-logic';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test.skip('New a page ,then open it and export html', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await page

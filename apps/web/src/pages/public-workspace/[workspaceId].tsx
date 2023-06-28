@@ -1,6 +1,7 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
 import { StyledTableContainer } from '@affine/component/page-list';
 import { QueryParamError } from '@affine/env/constant';
+import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import { SearchIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -9,7 +10,7 @@ import { useRouter } from 'next/router';
 import type React from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 
-import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../../atoms';
+import { openQuickSearchModalAtom } from '../../atoms';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
@@ -96,7 +97,7 @@ const ListPage: NextPageWithLayout = () => {
   const workspaceId = router.query.workspaceId;
   const setWorkspaceId = useSetAtom(publicWorkspaceIdAtom);
   // todo: remove this atom usage here
-  const setCurrentWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
+  const setCurrentWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
   useEffect(() => {
     if (!router.isReady) {
       return;

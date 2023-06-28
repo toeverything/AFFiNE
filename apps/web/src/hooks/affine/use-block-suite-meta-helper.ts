@@ -11,8 +11,7 @@ export function useBlockSuiteMetaHelper(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ) {
   const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-  const { addReferenceLink, removeReferenceLink } =
-    useReferenceLinkHelper(blockSuiteWorkspace);
+  const { addReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
   const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
 
   const addToFavorite = useCallback(
@@ -41,6 +40,8 @@ export function useBlockSuiteMetaHelper(
     [getPageMeta, setPageMeta]
   );
 
+  // TODO-Doma
+  // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".
   const removeToTrash = useCallback(
     (pageId: string, isRoot = true) => {
       const parentMeta = metas.find(m => m.subpageIds?.includes(pageId));
@@ -55,13 +56,8 @@ export function useBlockSuiteMetaHelper(
         trashDate: +new Date(),
         trashRelate: isRoot ? parentMeta?.id : undefined,
       });
-
-      // Just the trash root need delete its id from parent
-      if (parentMeta && isRoot) {
-        removeReferenceLink(pageId);
-      }
     },
-    [getPageMeta, metas, removeReferenceLink, setPageMeta]
+    [getPageMeta, metas, setPageMeta]
   );
 
   const restoreFromTrash = useCallback(

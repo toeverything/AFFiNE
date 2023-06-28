@@ -12,7 +12,7 @@ const description =
 export default class AppDocument extends Document<{
   emotionStyleTags: EmotionJSX.Element[];
 }> {
-  static getInitialProps = async (ctx: DocumentContext) => {
+  static override getInitialProps = async (ctx: DocumentContext) => {
     const originalRenderPage = ctx.renderPage;
 
     const cache = createEmotionCache();
@@ -41,7 +41,7 @@ export default class AppDocument extends Document<{
       emotionStyleTags,
     };
   };
-  render() {
+  override render() {
     return (
       <Html>
         <Head>

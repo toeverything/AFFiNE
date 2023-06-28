@@ -9,7 +9,7 @@ import { test as baseTest } from '@playwright/test';
 export const rootDir = resolve(__dirname, '..', '..');
 // assert that the rootDir is the root of the project
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-ok(require(resolve(rootDir, 'package.json')).name.toLowerCase() === 'affine');
+ok(require(resolve(rootDir, 'package.json')).name.toLowerCase() === '@affine/monorepo');
 
 export const testResultDir = resolve(rootDir, 'test-results');
 

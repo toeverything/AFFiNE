@@ -1,9 +1,11 @@
-import { getEnvironment } from '@affine/env';
+import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
+import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
+import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,
   navBodyStyle,
@@ -23,7 +25,11 @@ import { ResizeIndicator } from './resize-indicator';
 import type { SidebarHeaderProps } from './sidebar-header';
 import { SidebarHeader } from './sidebar-header';
 
-export type AppSidebarProps = PropsWithChildren<SidebarHeaderProps>;
+export type AppSidebarProps = PropsWithChildren<
+  SidebarHeaderProps & {
+    hasBackground?: boolean;
+  }
+>;
 
 function useEnableAnimation() {
   const [enable, setEnable] = useState(false);
@@ -77,7 +83,6 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   // disable animation to avoid UI flash
   const enableAnimation = useEnableAnimation();
 
-  const environment = getEnvironment();
   const isMacosDesktop = environment.isDesktop && environment.isMacOs;
   if (initialRender) {
     // avoid the UI flash
@@ -90,7 +95,9 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         style={assignInlineVars({
           [navWidthVar]: `${appSidebarWidth}px`,
         })}
-        className={navWrapperStyle}
+        className={clsx(navWrapperStyle, {
+          'has-background': environment.isDesktop && props.hasBackground,
+        })}
         data-open={open}
         data-is-macos-electron={isMacosDesktop}
         data-enable-animation={enableAnimation && !isResizing}
@@ -114,11 +121,25 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   );
 }
 
+export const AppSidebarFallback = (): ReactElement | null => {
+  return (
+    <AppSidebar>
+      <div className={fallbackStyle}>
+        <div className={fallbackHeaderStyle}>
+          <Skeleton variant="circular" width={40} height={40} />
+          <Skeleton variant="rectangular" width={150} height={40} />
+        </div>
+      </div>
+    </AppSidebar>
+  );
+};
+
 export * from './add-page-button';
 export * from './app-updater-button';
 export * from './category-divider';
-export { AppSidebarFallback } from './fallback';
+export * from './index.css';
 export * from './menu-item';
 export * from './quick-search-input';
 export * from './sidebar-containers';
+export * from './sidebar-header';
 export { appSidebarFloatingAtom, appSidebarOpenAtom, appSidebarResizingAtom };

@@ -1,15 +1,11 @@
-import { IconButton } from '@affine/component';
-import { getEnvironment } from '@affine/env/config';
-import {
-  ArrowLeftSmallIcon,
-  ArrowRightSmallIcon,
-  SidebarIcon,
-} from '@blocksuite/icons';
-import { useAtom } from 'jotai';
+import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
+import { useAtomValue } from 'jotai';
 
+import { IconButton } from '../../..';
 import type { History } from '..';
-import { navHeaderStyle, sidebarButtonStyle } from '../index.css';
+import { navHeaderStyle } from '../index.css';
 import { appSidebarOpenAtom } from '../index.jotai';
+import { SidebarSwitch } from './sidebar-switch';
 
 export type SidebarHeaderProps = {
   router?: {
@@ -20,17 +16,12 @@ export type SidebarHeaderProps = {
 };
 
 export const SidebarHeader = (props: SidebarHeaderProps) => {
-  const [open, setOpen] = useAtom(appSidebarOpenAtom);
-  const environment = getEnvironment();
-  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+  const open = useAtomValue(appSidebarOpenAtom);
   return (
-    <div
-      className={navHeaderStyle}
-      data-is-macos-electron={isMacosDesktop}
-      data-open={open}
-    >
-      {isMacosDesktop && (
+    <div className={navHeaderStyle} data-open={open}>
+      {environment.isDesktop && (
         <>
+          {environment.isMacOs && <div style={{ flex: 1 }} />}
           <IconButton
             size="middle"
             data-testid="app-sidebar-arrow-button-back"
@@ -57,15 +48,13 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
           >
             <ArrowRightSmallIcon />
           </IconButton>
+
+          {!environment.isMacOs && <div style={{ flex: 1 }} />}
         </>
       )}
-      <IconButton
-        data-testid="app-sidebar-arrow-button-collapse"
-        className={sidebarButtonStyle}
-        onClick={() => setOpen(open => !open)}
-      >
-        <SidebarIcon width={24} height={24} />
-      </IconButton>
+      {open && <SidebarSwitch />}
     </div>
   );
 };
+
+export * from './sidebar-switch';

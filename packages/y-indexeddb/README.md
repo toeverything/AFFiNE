@@ -1,14 +1,24 @@
 # @toeverything/y-indexeddb
 
+## Features
+
+- persistence data in indexeddb
+- sub-documents support
+- fully TypeScript
+
 ## Usage
 
 ```ts
 import { createIndexedDBProvider, downloadBinary } from '@toeverything/y-indexeddb';
 import * as Y from 'yjs';
-const yDoc = new Y.Doc();
+
+const yDoc = new Y.Doc({
+  // we use `guid` as unique key
+  guid: 'my-doc',
+});
 
 // sync yDoc with indexedDB
-const provider = createIndexedDBProvider('docName', yDoc);
+const provider = createIndexedDBProvider(yDoc);
 provider.connect();
 await provider.whenSynced.then(() => {
   console.log('synced');
@@ -16,7 +26,7 @@ await provider.whenSynced.then(() => {
 });
 
 // dowload binary data from indexedDB for once
-downloadBinary('docName').then(blob => {
+downloadBinary(yDoc.guid).then(blob => {
   if (blob !== false) {
     Y.applyUpdate(yDoc, blob);
   }

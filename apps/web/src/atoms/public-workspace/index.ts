@@ -1,12 +1,11 @@
-import type { BlockSuiteFeatureFlags } from '@affine/env';
-import { config } from '@affine/env';
-import type { AffinePublicWorkspace } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { BlockSuiteFeatureFlags } from '@affine/env/global';
+import type { AffinePublicWorkspace } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { affineApis } from '@affine/workspace/affine/shared';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { atom } from 'jotai';
 
 import { BlockSuiteWorkspace } from '../../shared';
-import { affineApis } from '../../shared/apis';
 
 function createPublicWorkspace(
   workspaceId: string,
@@ -25,7 +24,7 @@ function createPublicWorkspace(
     blockSuiteWorkspace.doc,
     new Uint8Array(binary)
   );
-  Object.entries(config.editorFlags).forEach(([key, value]) => {
+  Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
     blockSuiteWorkspace.awarenessStore.setFlag(
       key as keyof BlockSuiteFeatureFlags,
       value
@@ -38,8 +37,6 @@ function createPublicWorkspace(
     flavour: WorkspaceFlavour.PUBLIC,
     id: workspaceId,
     blockSuiteWorkspace,
-    // maybe we can add some sync providers here
-    providers: [],
   };
 }
 

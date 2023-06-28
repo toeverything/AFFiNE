@@ -1,7 +1,7 @@
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
+} from '@affine/env/workspace';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,

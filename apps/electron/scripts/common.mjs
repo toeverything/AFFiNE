@@ -2,7 +2,10 @@ import { resolve } from 'node:path';
 
 import { fileURLToPath } from 'url';
 
-export const root = fileURLToPath(new URL('..', import.meta.url));
+export const electronDir = fileURLToPath(new URL('..', import.meta.url));
+
+export const rootDir = resolve(electronDir, '..', '..');
+
 export const NODE_MAJOR_VERSION = 18;
 
 // hard-coded for now:
@@ -15,7 +18,7 @@ const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
 // List of env that will be replaced by esbuild
 const ENV_MACROS = ['AFFINE_GOOGLE_CLIENT_ID', 'AFFINE_GOOGLE_CLIENT_SECRET'];
 
-/** @return {{main: import('esbuild').BuildOptions, preload: import('esbuild').BuildOptions}} */
+/** @return {{layers: import('esbuild').BuildOptions, workers: import('esbuild').BuildOptions}} */
 export const config = () => {
   const define = Object.fromEntries([
     ...ENV_MACROS.map(key => [
@@ -23,6 +26,7 @@ export const config = () => {
       JSON.stringify(process.env[key] ?? ''),
     ]),
     ['process.env.NODE_ENV', `"${mode}"`],
+    ['process.env.USE_WORKER', '"true"'],
   ]);
 
   if (DEV_SERVER_URL) {
@@ -30,16 +34,18 @@ export const config = () => {
   }
 
   return {
-    main: {
+    layers: {
       entryPoints: [
-        resolve(root, './layers/main/src/index.ts'),
-        resolve(root, './layers/main/src/exposed.ts'),
+        resolve(electronDir, './src/main/index.ts'),
+        resolve(electronDir, './src/preload/index.ts'),
+        resolve(electronDir, './src/helper/index.ts'),
       ],
-      outdir: resolve(root, './dist/layers/main'),
+      entryNames: '[dir]',
+      outdir: resolve(electronDir, './dist'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', 'yjs', 'better-sqlite3', 'electron-updater'],
+      external: ['electron', 'electron-updater', '@toeverything/plugin-infra'],
       define: define,
       format: 'cjs',
       loader: {
@@ -48,14 +54,23 @@ export const config = () => {
       assetNames: '[name]',
       treeShaking: true,
     },
-    preload: {
-      entryPoints: [resolve(root, './layers/preload/src/index.ts')],
-      outdir: resolve(root, './dist/layers/preload'),
+    workers: {
+      entryPoints: [
+        resolve(electronDir, './src/main/workers/plugin.worker.ts'),
+      ],
+      entryNames: '[dir]/[name]',
+      outdir: resolve(electronDir, './dist/workers'),
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', '../main/exposed-meta'],
+      external: ['@toeverything/plugin-infra', 'async-call-rpc'],
       define: define,
+      format: 'cjs',
+      loader: {
+        '.node': 'copy',
+      },
+      assetNames: '[name]',
+      treeShaking: true,
     },
   };
 };

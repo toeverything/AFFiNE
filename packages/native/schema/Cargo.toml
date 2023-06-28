@@ -1,0 +1,4 @@
+[package]
+edition = "2021"
+name = "affine_schema"
+version = "0.0.0"

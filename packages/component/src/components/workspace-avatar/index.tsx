@@ -2,7 +2,7 @@ import type {
   AffineLegacyCloudWorkspace,
   AffinePublicWorkspace,
   LocalWorkspace,
-} from '@affine/workspace/type';
+} from '@affine/env/workspace';
 import type { Workspace } from '@blocksuite/store';
 import * as RadixAvatar from '@radix-ui/react-avatar';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';

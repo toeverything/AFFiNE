@@ -1,11 +1,6 @@
-import {
-  FlexWrapper,
-  Modal,
-  ModalCloseButton,
-  ModalWrapper,
-} from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
+import { FlexWrapper, Modal, ModalCloseButton, ModalWrapper } from '../..';
 import {
   DiscordIcon,
   DocIcon,
@@ -25,7 +20,7 @@ import {
   StyledSmallLink,
   StyledSubTitle,
 } from './style';
-const linkList = [
+export const relatedLinks = [
   {
     icon: <GithubIcon />,
     title: 'GitHub',
@@ -112,7 +107,7 @@ export const ContactModal = ({
           {t['Get in touch! Join our communities']()}
         </StyledSubTitle>
         <FlexWrapper justifyContent="center">
-          {linkList.map(({ icon, title, link }) => {
+          {relatedLinks.map(({ icon, title, link }) => {
             return (
               <StyledSmallLink key={title} href={link} target="_blank">
                 {icon}

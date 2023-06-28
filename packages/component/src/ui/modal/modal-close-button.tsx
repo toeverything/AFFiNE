@@ -18,6 +18,7 @@ const StyledIconButton = styled(IconButton)<
     position: 'absolute',
     top: top ?? 24,
     right: right ?? 40,
+    zIndex: 1,
   };
 });
 

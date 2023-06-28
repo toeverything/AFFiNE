@@ -1,4 +1,3 @@
-import { config } from '@affine/env';
 import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
@@ -7,7 +6,15 @@ import type { Page } from '@blocksuite/store';
 import { Skeleton } from '@mui/material';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { lazy, memo, Suspense, useCallback, useEffect, useRef } from 'react';
+import {
+  lazy,
+  memo,
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react';
 import { createPortal } from 'react-dom';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -21,8 +28,9 @@ export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
-  onLoad?: (page: Page, editor: EditorContainer) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
+  className?: string;
 };
 
 export type ErrorBoundaryProps = {
@@ -43,10 +51,13 @@ const ImagePreviewModal = lazy(() =>
 );
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
+  const { onLoad, page, mode, style, onInit } = props;
+  if (!page.loaded) {
+    use(page.waitForLoaded());
+  }
   const JotaiEditorContainer = useAtomValue(
     editorContainerModuleAtom
   ) as typeof EditorContainer;
-  const page = props.page;
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
@@ -57,19 +68,31 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   }
   const editor = editorRef.current;
   assertExists(editorRef, 'editorRef.current should not be null');
-  if (editor.mode !== props.mode) {
-    editor.mode = props.mode;
+  if (editor.mode !== mode) {
+    editor.mode = mode;
   }
 
   useEffect(() => {
-    if (editor.page !== props.page) {
-      editor.page = props.page;
+    if (editor.page !== page) {
+      editor.page = page;
       if (page.root === null) {
-        props.onInit(page, editor);
+        onInit(page, editor);
       }
-      props.onLoad?.(page, editor);
     }
-  }, [props.page, props.onInit, props.onLoad, editor, props, page]);
+  }, [editor, page, onInit]);
+
+  useEffect(() => {
+    if (editor.page && onLoad) {
+      const disposes = [] as ((() => void) | undefined)[];
+      disposes.push(onLoad?.(page, editor));
+      return () => {
+        disposes
+          .filter((dispose): dispose is () => void => !!dispose)
+          .forEach(dispose => dispose());
+      };
+    }
+    return;
+  }, [editor, editor.page, page, onLoad]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -81,20 +104,25 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       return;
     }
     if (page.awarenessStore.getFlag('enable_block_hub')) {
-      editor.createBlockHub().then(blockHub => {
-        if (blockHubRef.current) {
-          blockHubRef.current.remove();
-        }
-        blockHubRef.current = blockHub;
-        const toolWrapper = document.querySelector('#toolWrapper');
-        if (!toolWrapper) {
-          console.warn(
-            'toolWrapper not found, block hub feature will not be available.'
-          );
-        } else {
-          toolWrapper.appendChild(blockHub);
-        }
-      });
+      editor
+        .createBlockHub()
+        .then(blockHub => {
+          if (blockHubRef.current) {
+            blockHubRef.current.remove();
+          }
+          blockHubRef.current = blockHub;
+          const toolWrapper = document.querySelector('#toolWrapper');
+          if (!toolWrapper) {
+            console.warn(
+              'toolWrapper not found, block hub feature will not be available.'
+            );
+          } else {
+            toolWrapper.appendChild(blockHub);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+        });
     }
 
     container.appendChild(editor);
@@ -105,12 +133,14 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   }, [editor, page]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
-  const className = `editor-wrapper ${editor.mode}-mode`;
+  const className = `editor-wrapper ${editor.mode}-mode ${
+    props.className || ''
+  }`;
   return (
     <div
-      data-testid={`editor-${props.page.id}`}
+      data-testid={`editor-${page.id}`}
       className={className}
-      style={props.style}
+      style={style}
       ref={ref}
     />
   );
@@ -164,7 +194,7 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
       <Suspense fallback={<BlockSuiteFallback />}>
         <BlockSuiteEditorImpl {...props} />
       </Suspense>
-      {config.enableImagePreviewModal && props.page && (
+      {props.page && (
         <Suspense fallback={null}>
           {createPortal(
             <ImagePreviewModal

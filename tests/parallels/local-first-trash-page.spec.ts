@@ -5,7 +5,7 @@ import { openHomePage } from '../libs/load-page';
 import {
   getBlockSuiteEditorTitle,
   newPage,
-  waitMarkdownImported,
+  waitEditorLoad,
 } from '../libs/page-logic';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
@@ -13,7 +13,7 @@ test('New a page , then delete it in all pages, finally find it in trash', async
   page,
 }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');

@@ -24,11 +24,7 @@ export const EnableAffineCloudModal: React.FC<EnableAffineCloudModalProps> = ({
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
       <ModalWrapper width={560} height={292}>
         <Header>
-          <IconButton
-            onClick={() => {
-              onClose();
-            }}
-          >
+          <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
         </Header>
@@ -41,18 +37,11 @@ export const EnableAffineCloudModal: React.FC<EnableAffineCloudModalProps> = ({
               data-testid="confirm-enable-affine-cloud-button"
               shape="round"
               type="primary"
-              onClick={() => {
-                onConfirm();
-              }}
+              onClick={onConfirm}
             >
               {user ? t.Enable() : t['Sign in and Enable']()}
             </StyleButton>
-            <StyleButton
-              shape="round"
-              onClick={() => {
-                onClose();
-              }}
-            >
+            <StyleButton shape="round" onClick={onClose}>
               {t['Not now']()}
             </StyleButton>
           </div>

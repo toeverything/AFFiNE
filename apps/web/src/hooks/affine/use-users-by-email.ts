@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 
-import { QueryKey } from '../../plugins/affine/fetcher';
+import { QueryKey } from '../../adapters/affine/fetcher';
 
 export interface QueryEmailMember {
   id: string;

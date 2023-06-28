@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import type { BlobStorage } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import { openDB } from 'idb';
@@ -19,6 +20,8 @@ interface AffineBlob extends DBSchema {
   // todo: migrate blob storage from `createIndexeddbStorage`
 }
 
+const logger = new DebugLogger('affine:blob');
+
 export const createAffineBlobStorage = (
   workspaceId: string,
   workspaceApis: ReturnType<typeof createWorkspaceApis>
@@ -29,19 +32,25 @@ export const createAffineBlobStorage = (
       db.createObjectStore('uploading', { keyPath: 'key' });
     },
   });
-  dbPromise.then(async db => {
-    const t = db.transaction('uploading', 'readwrite').objectStore('uploading');
-    await t.getAll().then(blobs =>
-      blobs.map(({ arrayBuffer, type }) =>
-        workspaceApis.uploadBlob(workspaceId, arrayBuffer, type).then(key => {
-          const t = db
-            .transaction('uploading', 'readwrite')
-            .objectStore('uploading');
-          return t.delete(key);
-        })
-      )
-    );
-  });
+  dbPromise
+    .then(async db => {
+      const t = db
+        .transaction('uploading', 'readwrite')
+        .objectStore('uploading');
+      await t.getAll().then(blobs =>
+        blobs.map(({ arrayBuffer, type }) =>
+          workspaceApis.uploadBlob(workspaceId, arrayBuffer, type).then(key => {
+            const t = db
+              .transaction('uploading', 'readwrite')
+              .objectStore('uploading');
+            return t.delete(key);
+          })
+        )
+      );
+    })
+    .catch(err => {
+      logger.error('[createAffineBlobStorage] dbPromise error', err);
+    });
   return {
     crud: {
       get: async key => {
@@ -60,19 +69,21 @@ export const createAffineBlobStorage = (
           .transaction('uploading', 'readwrite')
           .objectStore('uploading');
         let uploaded = false;
-        t.put({
+        await t.put({
           key,
           arrayBuffer,
           type: value.type,
-        }).then(() => {
-          // delete the uploading blob after uploaded
-          if (uploaded) {
-            const t = db
-              .transaction('uploading', 'readwrite')
-              .objectStore('uploading');
-            t.delete(key);
-          }
         });
+        // delete the uploading blob after uploaded
+        if (uploaded) {
+          const t = db
+            .transaction('uploading', 'readwrite')
+            .objectStore('uploading');
+          // don't await here, we don't care if it's deleted
+          t.delete(key).catch(err => {
+            logger.error('[createAffineBlobStorage] delete error', err);
+          });
+        }
         await Promise.all([
           storage.crud.set(key, value),
           workspaceApis

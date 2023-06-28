@@ -28,9 +28,9 @@ node_modules
 
 # IDE - VSCode
 .vscode/*
-!.vscode/settings.json
 !.vscode/tasks.json
-!.vscode/launch.json
+!.vscode/settings.template.json
+!.vscode/launch.template.json
 !.vscode/extensions.json
 
 # misc
@@ -55,6 +55,7 @@ Thumbs.db
 .history
 
 .next
+.vercel
 out/
 storybook-static
 i18n-generated.ts
@@ -66,7 +67,11 @@ i18n-generated.ts
 # Cache
 .eslintcache
 next-env.d.ts
+.rollup.cache
 
 # Rust
 target
 *.node
+tsconfig.node.tsbuildinfo
+lib
+affine.db

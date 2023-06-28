@@ -1,5 +1,6 @@
 *.autogen.*
 dist
+e2e-dist-*
 
 resources/web-static
 

@@ -1,7 +1,6 @@
 import { MuiFade, Tooltip } from '@affine/component';
-import { config, getEnvironment } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon, NewIcon } from '@blocksuite/icons';
+import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
 import { lazy, Suspense, useState } from 'react';
 
@@ -15,7 +14,6 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-const env = getEnvironment();
 const ContactModal = lazy(() =>
   import('@affine/component/contact-modal').then(({ ContactModal }) => ({
     default: ContactModal,
@@ -29,7 +27,7 @@ const DEFAULT_SHOW_LIST: IslandItemNames[] = [
 const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST, 'guide'];
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts' | 'guide';
 export const HelpIsland = ({
-  showList = env.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST,
+  showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST,
 }: {
   showList?: IslandItemNames[];
 }) => {
@@ -74,7 +72,7 @@ export const HelpIsland = ({
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
-                  window.open(config.changelogUrl, '_blank');
+                  window.open(runtimeConfig.changelogUrl, '_blank');
                 }}
               >
                 <NewIcon />
@@ -119,7 +117,7 @@ export const HelpIsland = ({
                   setOpenOnboarding(true);
                 }}
               >
-                <HelpIcon />
+                <UserGuideIcon />
               </StyledIconWrapper>
             </Tooltip>
           )}

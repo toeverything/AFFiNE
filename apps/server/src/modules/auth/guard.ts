@@ -1,10 +1,5 @@
-import {
-  CanActivate,
-  createParamDecorator,
-  ExecutionContext,
-  Injectable,
-  UseGuards,
-} from '@nestjs/common';
+import type { CanActivate, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, Injectable, UseGuards } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma';
 import { getRequestResponseFromContext } from '../../utils/nestjs';
@@ -54,10 +49,17 @@ class AuthGuard implements CanActivate {
     if (!token) {
       return false;
     }
+    const [type, jwt] = token.split(' ') ?? [];
 
-    const claims = this.auth.verify(token);
-    req.user = await this.prisma.user.findUnique({ where: { id: claims.id } });
-    return !!req.user;
+    if (type === 'Bearer') {
+      const claims = await this.auth.verify(jwt);
+      req.user = await this.prisma.user.findUnique({
+        where: { id: claims.id },
+      });
+      return !!req.user;
+    }
+
+    return false;
   }
 }
 

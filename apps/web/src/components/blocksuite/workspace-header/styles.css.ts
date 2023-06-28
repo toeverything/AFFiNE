@@ -16,6 +16,14 @@ export const headerContainer = style({
       WebkitAppRegion: 'drag',
     },
   },
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
+  ':has([data-popper-placement])': {
+    WebkitAppRegion: 'no-drag',
+  },
 } as ComplexStyleRule);
 
 export const header = style({
@@ -141,7 +149,24 @@ export const pageListTitleWrapper = style({
   justifyContent: 'center',
   alignItems: 'center',
 });
-
+export const allPageListTitleWrapper = style({
+  fontSize: 'var(--affine-font-base)',
+  color: 'var(--affine-text-primary-color)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  '::after': {
+    content: '""',
+    display: 'block',
+    width: '100%',
+    height: '1px',
+    background: 'var(--affine-border-color)',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    margin: '0 1px',
+  },
+});
 export const pageListTitleIcon = style({
   fontSize: '20px',
   height: '1em',
@@ -191,10 +216,11 @@ export const windowAppControl = style({
   WebkitAppRegion: 'no-drag',
   cursor: 'pointer',
   display: 'inline-flex',
-  width: '32px',
+  width: '42px',
+  height: '32px',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: '2px',
+  borderRadius: '4px',
   selectors: {
     '&[data-type="close"]:hover': {
       background: 'var(--affine-error-color)',

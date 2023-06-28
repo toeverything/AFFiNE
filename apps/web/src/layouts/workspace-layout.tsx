@@ -1,50 +1,83 @@
+import { Content, displayFlex } from '@affine/component';
+import { AffineWatermark } from '@affine/component/affine-watermark';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import type { DraggableTitleCellData } from '@affine/component/page-list';
+import { StyledTitleLink } from '@affine/component/page-list';
 import {
-  AppContainer,
   MainContainer,
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
+import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { setUpLanguage, useI18N } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
-  rootStore,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { BackgroundProvider } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { PassiveDocProvider } from '@blocksuite/store';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  pointerWithin,
+  useDndContext,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { rootStore } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
-import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
+import { WorkspaceAdapters } from '../adapters/workspace';
+import {
+  openQuickSearchModalAtom,
+  openSettingModalAtom,
+  openWorkspacesModalAtom,
+} from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
+import { AppContainer } from '../components/affine/app-container';
+import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
-import { RootAppSidebar } from '../components/root-app-sidebar';
+import {
+  DROPPABLE_SIDEBAR_TRASH,
+  RootAppSidebar,
+} from '../components/root-app-sidebar';
+import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { WorkspaceAdapters } from '../plugins';
-import { ModalProvider } from '../providers/modal-provider';
+import {
+  AllWorkspaceModals,
+  CurrentWorkspaceModals,
+} from '../providers/modal-provider';
 import { pathGenerator, publicPathGenerator } from '../shared';
+import { toast } from '../utils';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
     default: module.QuickSearchModal,
+  }))
+);
+const SettingModal = lazy(() =>
+  import('../components/affine/setting-modal').then(module => ({
+    default: module.SettingModal,
   }))
 );
 
@@ -95,6 +128,21 @@ export const QuickSearch: FC = () => {
     />
   );
 };
+export const Setting: FC = () => {
+  const [currentWorkspace] = useCurrentWorkspace();
+  const router = useRouter();
+  const [openSettingModal, setOpenSettingModalAtom] =
+    useAtom(openSettingModalAtom);
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const isPublicWorkspace =
+    router.pathname.split('/')[1] === 'public-workspace';
+  if (!blockSuiteWorkspace || isPublicWorkspace) {
+    return null;
+  }
+  return (
+    <SettingModal open={openSettingModal} setOpen={setOpenSettingModalAtom} />
+  );
+};
 
 const logger = new DebugLogger('workspace-layout');
 
@@ -112,9 +160,9 @@ export const AllWorkspaceContext = ({
       // ignore current workspace
       .filter(workspace => workspace.id !== currentWorkspaceId)
       .flatMap(workspace =>
-        workspace.providers.filter(
-          (provider): provider is BackgroundProvider =>
-            'background' in provider && provider.background
+        workspace.blockSuiteWorkspace.providers.filter(
+          (provider): provider is PassiveDocProvider =>
+            'passive' in provider && provider.passive
         )
       );
     providers.forEach(provider => {
@@ -151,14 +199,19 @@ export const CurrentWorkspaceContext = ({
   useEffect(() => {
     const id = setTimeout(() => {
       if (!exist) {
-        void push('/');
+        push('/').catch(err => {
+          console.error(err);
+        });
         globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
       }
     }, globalThis.HALTING_PROBLEM_TIMEOUT);
     return () => {
       clearTimeout(id);
     };
-  }, [push, exist]);
+  }, [push, exist, metadata.length]);
+  if (metadata.length === 0) {
+    return <WorkspaceFallback key="no-workspace" />;
+  }
   if (!router.isReady) {
     return <WorkspaceFallback key="router-is-loading" />;
   }
@@ -177,7 +230,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
     useEffect(() => {
       document.documentElement.lang = i18n.language;
       // todo(himself65): this is a hack, we should use a better way to set the language
-      setUpLanguage(i18n);
+      setUpLanguage(i18n)?.catch(error => {
+        console.error(error);
+      });
     }, [i18n]);
     useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
@@ -208,7 +263,13 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
                 );
               });
             }
-            items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
+            items.push(
+              ...item.map(x => ({
+                id: x.id,
+                flavour: x.flavour,
+                version: undefined,
+              }))
+            );
           } catch (e) {
             logger.error('list data error:', e);
           }
@@ -220,7 +281,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         logger.info('mount first data:', items);
       }
 
-      fetch();
+      fetch().catch(e => {
+        logger.error('fetch error:', e);
+      });
       return () => {
         controller.abort();
         logger.info('unmount');
@@ -237,18 +300,23 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
           affineGlobalChannel.disconnect();
         };
       }
+      return;
     }, [currentWorkspaceId, jotaiWorkspaces]);
 
     const Provider =
       (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
     return (
       <>
-        {/* fixme(himself65): don't re-render whole modals */}
-        <AllWorkspaceContext>
-          <CurrentWorkspaceContext>
-            <ModalProvider key={currentWorkspaceId} />
-          </CurrentWorkspaceContext>
-        </AllWorkspaceContext>
+        {/* load all workspaces is costly, do not block the whole UI */}
+        <Suspense fallback={null}>
+          <AllWorkspaceContext>
+            <AllWorkspaceModals />
+            <CurrentWorkspaceContext>
+              {/* fixme(himself65): don't re-render whole modals */}
+              <CurrentWorkspaceModals key={currentWorkspaceId} />
+            </CurrentWorkspaceContext>
+          </AllWorkspaceContext>
+        </Suspense>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
             <Provider>
@@ -267,34 +335,41 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
 
+  // fixme(himself65):
+  //  we should move the page into jotai atom since it's an async value
+
   //#region init workspace
   if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
     // this is a new workspace, so we should redirect to the new page
-    const pageId = nanoid();
+    const pageId = DEFAULT_HELLO_WORLD_PAGE_ID;
     const page = currentWorkspace.blockSuiteWorkspace.createPage({
       id: pageId,
     });
     assertEquals(page.id, pageId);
-    currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
-      init: true,
-    });
-    initPage(page);
+    if (runtimeConfig.enablePreloading) {
+      initPageWithPreloading(page).catch(error => {
+        console.error('import error:', error);
+      });
+    } else {
+      initEmptyPage(page).catch(error => {
+        console.error('init empty page error', error);
+      });
+    }
     if (!router.query.pageId) {
       setCurrentPageId(pageId);
-      void jumpToPage(currentWorkspace.id, pageId);
+      jumpToPage(currentWorkspace.id, pageId).catch(err => {
+        console.error(err);
+      });
     }
   }
-
-  // fixme: pinboard has been removed,
-  //  the related code should be removed in the future.
-  // no matter the workspace is empty, ensure the root pinboard exists
-  // ensureRootPinboard(currentWorkspace.blockSuiteWorkspace);
   //#endregion
 
   useEffect(() => {
-    const backgroundProviders = currentWorkspace.providers.filter(
-      (provider): provider is BackgroundProvider => 'background' in provider
-    );
+    const backgroundProviders =
+      currentWorkspace.blockSuiteWorkspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive
+      );
     backgroundProviders.forEach(provider => {
       provider.connect();
     });
@@ -320,7 +395,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         }
       );
       setCurrentPageId(currentPageId);
-      void jumpToPage(currentWorkspace.id, page.id);
+      jumpToPage(currentWorkspace.id, page.id).catch(err => {
+        console.error(err);
+      });
     }
   }, [
     currentPageId,
@@ -350,48 +427,136 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
+  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+
+  const handleOpenSettingModal = useCallback(() => {
+    setOpenSettingModalAtom(true);
+  }, [setOpenSettingModalAtom]);
+
   const resizing = useAtomValue(appSidebarResizingAtom);
+
+  const sensors = useSensors(
+    // Delay 10ms after mousedown
+    // Otherwise clicks would be intercepted
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        delay: 500,
+        tolerance: 10,
+      },
+    })
+  );
+
+  const { removeToTrash: moveToTrash } = useBlockSuiteMetaHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
+  const t = useAFFiNEI18N();
+
+  const showList: IslandItemNames[] = isDesktop
+    ? ['whatNew', 'contact', 'guide']
+    : ['whatNew', 'contact'];
+
+  const handleDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      // Drag page into trash folder
+      if (
+        e.over?.id === DROPPABLE_SIDEBAR_TRASH &&
+        String(e.active.id).startsWith('page-list-item-')
+      ) {
+        const { pageId } = e.active.data.current as DraggableTitleCellData;
+        // TODO-Doma
+        // Co-locate `moveToTrash` with the toast for reuse, as they're always used together
+        moveToTrash(pageId);
+        toast(t['Successfully deleted']());
+      }
+    },
+    [moveToTrash, t]
+  );
 
   return (
     <>
       <Head>
         <title>{title}</title>
       </Head>
-      <AppContainer resizing={resizing}>
-        <RootAppSidebar
-          isPublicWorkspace={isPublicWorkspace}
-          onOpenQuickSearchModal={handleOpenQuickSearchModal}
-          currentWorkspace={currentWorkspace}
-          onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
-          openPage={useCallback(
-            (pageId: string) => {
-              assertExists(currentWorkspace);
-              return openPage(currentWorkspace.id, pageId);
-            },
-            [currentWorkspace, openPage]
-          )}
-          createPage={handleCreatePage}
-          currentPath={router.asPath.split('?')[0]}
-          paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
-        />
-        <MainContainer>
-          {children}
-          <ToolContainer>
-            {/* fixme(himself65): remove this */}
-            <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-              {/* Slot for block hub */}
-            </div>
-            {!isPublicWorkspace && (
-              <HelpIsland
-                showList={
-                  router.query.pageId ? undefined : ['whatNew', 'contact']
-                }
-              />
+      {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={pointerWithin}
+        onDragEnd={handleDragEnd}
+      >
+        <AppContainer resizing={resizing}>
+          <RootAppSidebar
+            isPublicWorkspace={isPublicWorkspace}
+            onOpenQuickSearchModal={handleOpenQuickSearchModal}
+            onOpenSettingModal={handleOpenSettingModal}
+            currentWorkspace={currentWorkspace}
+            onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
+            openPage={useCallback(
+              (pageId: string) => {
+                assertExists(currentWorkspace);
+                return openPage(currentWorkspace.id, pageId);
+              },
+              [currentWorkspace, openPage]
             )}
-          </ToolContainer>
-        </MainContainer>
-      </AppContainer>
+            createPage={handleCreatePage}
+            currentPath={router.asPath.split('?')[0]}
+            paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
+          />
+          <MainContainer>
+            {children}
+            <ToolContainer>
+              {/* fixme(himself65): remove this */}
+              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+                {/* Slot for block hub */}
+              </div>
+              {!isPublicWorkspace && (
+                <HelpIsland
+                  showList={router.query.pageId ? undefined : showList}
+                />
+              )}
+            </ToolContainer>
+            <AffineWatermark />
+          </MainContainer>
+        </AppContainer>
+        <PageListTitleCellDragOverlay />
+      </DndContext>
       <QuickSearch />
+      <Setting />
     </>
   );
 };
+
+function PageListTitleCellDragOverlay() {
+  const { active } = useDndContext();
+
+  const renderChildren = useCallback(
+    ({ icon, pageTitle }: DraggableTitleCellData) => {
+      return (
+        <StyledTitleLink>
+          {icon}
+          <Content ellipsis={true} color="inherit">
+            {pageTitle}
+          </Content>
+        </StyledTitleLink>
+      );
+    },
+    []
+  );
+
+  return (
+    <DragOverlay
+      style={{
+        zIndex: 1001,
+        backgroundColor: 'var(--affine-black-10)',
+        padding: '0 30px',
+        cursor: 'default',
+        borderRadius: 10,
+        ...displayFlex('flex-start', 'center'),
+      }}
+      dropAnimation={null}
+    >
+      {active
+        ? renderChildren(active.data.current as DraggableTitleCellData)
+        : null}
+    </DragOverlay>
+  );
+}

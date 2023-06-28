@@ -7,21 +7,20 @@ import { fileURLToPath } from 'node:url';
 import { lastValueFrom, Subject } from 'rxjs';
 import { v4 } from 'uuid';
 
-import type { FSWatcher } from '../index';
-import { watch } from '../index.js';
+import { FsWatcher } from '../index';
 
 test('fs watch', { concurrency: false }, async t => {
-  let watcher: FSWatcher;
+  let watcher: FsWatcher;
   let fixture: string;
   t.beforeEach(async () => {
     const fixtureName = `fs-${v4()}.fixture`;
     fixture = join(fileURLToPath(import.meta.url), '..', fixtureName);
     await fs.writeFile(fixture, '\n');
-    watcher = watch(fixture);
+    watcher = FsWatcher.watch(fixture);
   });
 
   t.afterEach(async () => {
-    watcher.close();
+    FsWatcher.close();
     await fs.unlink(fixture).catch(() => false);
   });
 

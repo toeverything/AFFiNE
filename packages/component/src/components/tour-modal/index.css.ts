@@ -190,3 +190,7 @@ export const tabContainerStyle = style({
   alignItems: 'center',
   justifyContent: 'center',
 });
+export const buttonDisableStyle = style({
+  cursor: 'not-allowed',
+  color: 'var(--affine-text-disable-color)',
+});

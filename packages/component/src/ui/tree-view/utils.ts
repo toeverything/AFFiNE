@@ -33,4 +33,5 @@ export function findNode<RenderProps>(
       }
     }
   }
+  return undefined;
 }

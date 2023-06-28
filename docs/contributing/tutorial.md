@@ -70,10 +70,10 @@ yarn dev
 
 See [building desktop client app](../building-desktop-client-app.md).
 
-### `@affine/component` Storybook
+### `@affine/storybook`
 
 ```shell
-yarn workspace @affine/component storybook
+yarn workspace @affine/storybook storybook
 ```
 
 ## What's next?

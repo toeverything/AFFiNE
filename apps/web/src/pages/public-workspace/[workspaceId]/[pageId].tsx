@@ -1,5 +1,5 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
-import { initPage } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
@@ -16,10 +16,13 @@ import {
   publicWorkspaceIdAtom,
   publicWorkspacePageIdAtom,
 } from '../../../atoms/public-workspace';
-import { PageDetailEditor } from '../../../components/page-detail-editor';
+import { BlockSuiteEditorHeader } from '../../../components/blocksuite/workspace-header';
+import {
+  PageDetailEditor,
+  type PageDetailEditorProps,
+} from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
-import { useReferenceLinkEffect } from '../../../hooks/affine/use-reference-link-effect';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import {
   PublicQuickSearch,
@@ -64,48 +67,54 @@ const PublicWorkspaceDetailPageInner = (): ReactElement => {
   }
   const router = useRouter();
   const { openPage } = useRouterHelper(router);
-  useReferenceLinkEffect({
-    pageLinkClicked: useCallback(
-      ({ pageId }: { pageId: string }) => {
-        return openPage(blockSuiteWorkspace.id, pageId);
-      },
-      [blockSuiteWorkspace.id, openPage]
-    ),
-  });
   const t = useAFFiNEI18N();
   const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(blockSuiteWorkspace);
   const pageTitle = blockSuiteWorkspace.meta.getPageMeta(pageId)?.title;
+  const onLoad = useCallback<NonNullable<PageDetailEditorProps['onLoad']>>(
+    (_, editor) => {
+      const { page } = editor;
+      page.awarenessStore.setReadonly(page, true);
+      const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
+        return openPage(blockSuiteWorkspace.id, pageId);
+      });
+      return () => {
+        dispose.dispose();
+      };
+    },
+    [blockSuiteWorkspace.id, openPage]
+  );
   return (
     <>
       <PublicQuickSearch workspace={publicWorkspace} />
+      <BlockSuiteEditorHeader
+        isPublic={true}
+        workspace={publicWorkspace}
+        currentPage={blockSuiteWorkspace.getPage(pageId)}
+      >
+        <NavContainer>
+          <Breadcrumbs>
+            <StyledBreadcrumbs
+              href={`/public-workspace/${blockSuiteWorkspace.id}`}
+            >
+              <WorkspaceAvatar size={24} name={name} avatar={avatar} />
+              <span>{name}</span>
+            </StyledBreadcrumbs>
+            <StyledBreadcrumbs
+              href={`/public-workspace/${blockSuiteWorkspace.id}/${pageId}`}
+            >
+              <PageIcon fontSize={24} />
+              <span>{pageTitle ? pageTitle : t['Untitled']()}</span>
+            </StyledBreadcrumbs>
+          </Breadcrumbs>
+        </NavContainer>
+      </BlockSuiteEditorHeader>
       <PageDetailEditor
         isPublic={true}
         pageId={pageId}
         workspace={publicWorkspace}
-        onLoad={(_, editor) => {
-          const { page } = editor;
-          page.awarenessStore.setReadonly(page, true);
-        }}
-        onInit={initPage}
-        header={
-          <NavContainer>
-            <Breadcrumbs>
-              <StyledBreadcrumbs
-                href={`/public-workspace/${blockSuiteWorkspace.id}`}
-              >
-                <WorkspaceAvatar size={24} name={name} avatar={avatar} />
-                <span>{name}</span>
-              </StyledBreadcrumbs>
-              <StyledBreadcrumbs
-                href={`/public-workspace/${blockSuiteWorkspace.id}/${pageId}`}
-              >
-                <PageIcon fontSize={24} />
-                <span>{pageTitle ? pageTitle : t['Untitled']()}</span>
-              </StyledBreadcrumbs>
-            </Breadcrumbs>
-          </NavContainer>
-        }
+        onLoad={onLoad}
+        onInit={initEmptyPage}
       />
     </>
   );

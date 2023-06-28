@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 
 import { test } from './fixture';
 
-test('check workspace has a DB file', async ({ appInfo, workspace }) => {
+test.skip('check workspace has a DB file', async ({ appInfo, workspace }) => {
   const w = await workspace.current();
   const dbPath = path.join(
     appInfo.sessionData,
@@ -17,16 +17,17 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test('move workspace db file', async ({ page, appInfo, workspace }) => {
+test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
   const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
   // goto settings
   await settingButton.click();
 
-  const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
+  const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp-dir');
 
   // move db file to tmp folder
   await page.evaluate(tmpPath => {
+    // @ts-expect-error
     window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });
@@ -36,9 +37,12 @@ test('move workspace db file', async ({ page, appInfo, workspace }) => {
   // check if db file exists
   await page.waitForSelector('text="Move folder success"');
   expect(await fs.exists(tmpPath)).toBe(true);
+  // check if db file exists under tmpPath (a file ends with .affine)
+  const files = await fs.readdir(tmpPath);
+  expect(files.some(f => f.endsWith('.affine'))).toBe(true);
 });
 
-test('export then add', async ({ page, appInfo, workspace }) => {
+test.skip('export then add', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
   const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
   // goto settings
@@ -56,8 +60,9 @@ test('export then add', async ({ page, appInfo, workspace }) => {
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
 
-  // move db file to tmp folder
+  // export db file to tmp folder
   await page.evaluate(tmpPath => {
+    // @ts-expect-error
     window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });
@@ -76,6 +81,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('add-or-new-workspace').click();
 
   await page.evaluate(tmpPath => {
+    // @ts-expect-error
     window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });

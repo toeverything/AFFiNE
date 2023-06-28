@@ -263,9 +263,11 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`);
 }
 
-const { WatcherKind, Subscription, FsWatcher, moveFile } = nativeBinding;
+const { WatcherKind, Subscription, FsWatcher, moveFile, SqliteConnection } =
+  nativeBinding;
 
 module.exports.WatcherKind = WatcherKind;
 module.exports.Subscription = Subscription;
 module.exports.FsWatcher = FsWatcher;
 module.exports.moveFile = moveFile;
+module.exports.SqliteConnection = SqliteConnection;

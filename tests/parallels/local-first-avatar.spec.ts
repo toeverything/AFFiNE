@@ -2,12 +2,12 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { newPage, waitMarkdownImported } from '../libs/page-logic';
+import { newPage, waitEditorLoad } from '../libs/page-logic';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('should create a page with a local first avatar', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await newPage(page);
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('new-workspace').click({ delay: 50 });

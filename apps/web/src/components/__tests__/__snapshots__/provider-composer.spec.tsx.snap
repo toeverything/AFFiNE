@@ -1,7 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`ProviderComposer 1`] = `
-<DocumentFragment>
-  test1
-</DocumentFragment>
-`;

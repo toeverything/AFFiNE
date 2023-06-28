@@ -2,14 +2,14 @@ import { test } from '@affine-test/kit/playwright';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitEditorLoad } from '../libs/page-logic';
 import { createWorkspace } from '../libs/workspace';
 
 test('Open last workspace when back to affine', async ({ page }) => {
   await openHomePage(page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   await createWorkspace({ name: 'New Workspace 2' }, page);
-  await waitMarkdownImported(page);
+  await waitEditorLoad(page);
   // show workspace list
   await page.getByTestId('workspace-name').click();
 
@@ -19,7 +19,7 @@ test('Open last workspace when back to affine', async ({ page }) => {
   await workspaceCards[1].click();
   await openHomePage(page);
 
-  const workspaceNameDom = await page.getByTestId('workspace-name');
+  const workspaceNameDom = page.getByTestId('workspace-name');
   const currentWorkspaceName = await workspaceNameDom.evaluate(
     node => node.textContent
   );

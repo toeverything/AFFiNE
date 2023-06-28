@@ -23,6 +23,21 @@ export const enum WatcherKind {
   Unknown = 'Unknown',
 }
 export function moveFile(src: string, dst: string): Promise<void>;
+export interface BlobRow {
+  key: string;
+  data: Buffer;
+  timestamp: Date;
+}
+export interface UpdateRow {
+  id: number;
+  timestamp: Date;
+  data: Buffer;
+  docId?: string;
+}
+export interface InsertRow {
+  docId?: string;
+  data: Uint8Array;
+}
 export class Subscription {
   toString(): string;
   unsubscribe(): void;
@@ -38,4 +53,23 @@ export class FsWatcher {
   ): Subscription;
   static unwatch(p: string): void;
   static close(): void;
+}
+export class SqliteConnection {
+  constructor(path: string);
+  connect(): Promise<void>;
+  addBlob(key: string, blob: Uint8Array): Promise<void>;
+  getBlob(key: string): Promise<BlobRow | null>;
+  deleteBlob(key: string): Promise<void>;
+  getBlobKeys(): Promise<Array<string>>;
+  getUpdates(docId?: string | undefined | null): Promise<Array<UpdateRow>>;
+  getUpdatesCount(docId?: string | undefined | null): Promise<number>;
+  getAllUpdates(): Promise<Array<UpdateRow>>;
+  insertUpdates(updates: Array<InsertRow>): Promise<void>;
+  replaceUpdates(
+    docId: string | undefined | null,
+    updates: Array<InsertRow>
+  ): Promise<void>;
+  close(): Promise<void>;
+  get isClose(): boolean;
+  static validate(path: string): Promise<boolean>;
 }
