@@ -5,9 +5,6 @@
   "exports": {
     "./playwright": "./playwright.ts"
   },
-  "devDependencies": {
-    "@playwright/test": "^1.35.1"
-  },
   "peerDependencies": {
     "@playwright/test": "*"
   }
