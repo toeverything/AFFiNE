@@ -140,11 +140,7 @@ export const Setting: FC = () => {
     return null;
   }
   return (
-    <SettingModal
-      open={openSettingModal}
-      setOpen={setOpenSettingModalAtom}
-      router={router}
-    />
+    <SettingModal open={openSettingModal} setOpen={setOpenSettingModalAtom} />
   );
 };
 
