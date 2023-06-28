@@ -1,6 +1,5 @@
 import { Button, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ArrowRightSmallIcon,
@@ -31,7 +30,7 @@ const useShowOpenDBFile = (workspaceId: string) => {
       window.apis &&
       window.events &&
       environment.isDesktop &&
-      config.enableSQLiteProvider
+      runtimeConfig.enableSQLiteProvider
     ) {
       window.apis.workspace
         .getMeta(workspaceId)
@@ -143,7 +142,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           </Button>
         </div>
       </div>
-      {environment.isDesktop && config.enableSQLiteProvider ? (
+      {environment.isDesktop && runtimeConfig.enableSQLiteProvider ? (
         <DesktopClientOnly workspaceId={workspace.id} />
       ) : null}
       <div className={style.row}>
@@ -209,7 +208,7 @@ function DesktopClientOnly({ workspaceId }: { workspaceId: string }) {
   const t = useAFFiNEI18N();
   const showOpenFolder = useShowOpenDBFile(workspaceId);
   const onRevealDBFile = useCallback(() => {
-    if (environment.isDesktop && config.enableSQLiteProvider) {
+    if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
       window.apis?.dialog.revealDBFile(workspaceId).catch(err => {
         console.error(err);
       });

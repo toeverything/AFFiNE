@@ -5,7 +5,6 @@ import {
   useAllPageSetting,
   ViewList,
 } from '@affine/component/page-list';
-import { config } from '@affine/env';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -40,7 +39,7 @@ export function WorkspaceHeader({
               }}
             />
           </div>
-          {config.enableAllPageFilter && (
+          {runtimeConfig.enableAllPageFilter && (
             <div>
               {setting.currentView.id !== NIL ||
               (setting.currentView.id === NIL &&

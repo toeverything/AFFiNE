@@ -5,8 +5,7 @@ import {
   Input,
   Wrapper,
 } from '@affine/component';
-import { config } from '@affine/env';
-import { Unreachable } from '@affine/env/constant';
+import { isBrowser, Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
@@ -38,9 +37,7 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
   const [origin, setOrigin] = useState('');
   useEffect(() => {
     setOrigin(
-      typeof window !== 'undefined' && window.location.origin
-        ? window.location.origin
-        : ''
+      isBrowser && window.location.origin ? window.location.origin : ''
     );
   }, []);
   const shareUrl = origin + '/public-workspace/' + workspace.id;
@@ -137,7 +134,7 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
       >
         {t['Enable AFFiNE Cloud']()}
       </Button>
-      {config.enableLegacyCloud ? (
+      {runtimeConfig.enableLegacyCloud ? (
         <EnableAffineCloudModal
           open={open}
           onClose={() => {

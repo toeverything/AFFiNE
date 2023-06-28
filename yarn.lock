@@ -277,7 +277,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/i18n@workspace:packages/i18n"
   dependencies:
-    "@affine/debug": "workspace:*"
     "@types/node": ^18.16.18
     "@types/prettier": ^2.7.3
     i18next: ^23.2.3
