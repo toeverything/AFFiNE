@@ -426,9 +426,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/storybook@workspace:packages/storybook":
+"@affine/storybook@workspace:apps/storybook":
   version: 0.0.0-use.local
-  resolution: "@affine/storybook@workspace:packages/storybook"
+  resolution: "@affine/storybook@workspace:apps/storybook"
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/i18n": "workspace:*"
