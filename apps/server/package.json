@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.7.0-canary.19",
+  "version": "0.7.0-canary.20",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "nodemon ./src/index.ts",
     "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",
+    "test:watch": "yarn exec ts-node-esm ./scripts/run-test.ts all --watch",
     "test:coverage": "c8 yarn exec ts-node-esm ./scripts/run-test.ts all",
     "postinstall": "prisma generate"
   },

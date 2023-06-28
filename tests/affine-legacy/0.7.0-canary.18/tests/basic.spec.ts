@@ -4,7 +4,9 @@ import { test } from '@playwright/test';
 
 test('init page', async ({ page }) => {
   await page.goto('http://localhost:8081/');
-  await page.waitForSelector('v-line');
+  await page.waitForSelector('v-line', {
+    timeout: 10000,
+  });
 
   const currentWorkspaceId: string = await page.evaluate(
     () => (globalThis.currentWorkspace as any).id

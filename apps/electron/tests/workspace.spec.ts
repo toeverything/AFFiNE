@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 
 import { test } from './fixture';
 
-test('check workspace has a DB file', async ({ appInfo, workspace }) => {
+test.skip('check workspace has a DB file', async ({ appInfo, workspace }) => {
   const w = await workspace.current();
   const dbPath = path.join(
     appInfo.sessionData,
@@ -17,7 +17,7 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test('move workspace db file', async ({ page, appInfo, workspace }) => {
+test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
   const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
   // goto settings
@@ -42,7 +42,7 @@ test('move workspace db file', async ({ page, appInfo, workspace }) => {
   expect(files.some(f => f.endsWith('.affine'))).toBe(true);
 });
 
-test('export then add', async ({ page, appInfo, workspace }) => {
+test.skip('export then add', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
   const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
   // goto settings

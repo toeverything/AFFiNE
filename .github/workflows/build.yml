@@ -13,6 +13,7 @@ on:
       - '!.github/actions/build-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
   pull_request:
+  merge_group:
     branches:
       - master
       - v[0-9]+.[0-9]+.x-staging
@@ -85,13 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     env:
-      API_SERVER_PROFILE: local
-      ENABLE_DEBUG_PAGE: 1
-      ENABLE_PLUGIN: true
-      ENABLE_ALL_PAGE_FILTER: true
-      ENABLE_LEGACY_PROVIDER: true
-      ENABLE_PRELOADING: false
-      ENABLE_NEW_SETTING_MODAL: false
+      RELEASE_VERSION: canary
 
     steps:
       - uses: actions/checkout@v3
@@ -111,13 +106,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     env:
-      API_SERVER_PROFILE: affine
-      ENABLE_DEBUG_PAGE: 1
-      ENABLE_PLUGIN: true
-      ENABLE_ALL_PAGE_FILTER: true
-      ENABLE_LEGACY_PROVIDER: false
-      ENABLE_PRELOADING: false
-      ENABLE_NEW_SETTING_MODAL: false
+      ENABLE_BOOKMARK_OPERATION: true
+      RELEASE_VERSION: canary
 
     steps:
       - uses: actions/checkout@v3

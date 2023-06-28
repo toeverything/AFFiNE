@@ -48,6 +48,7 @@ export const buildFlagsSchema = z.object({
   changelogUrl: z.string(),
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
+  enableSQLiteProvider: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({
