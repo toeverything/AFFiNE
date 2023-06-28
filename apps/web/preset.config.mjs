@@ -31,9 +31,7 @@ export const buildFlags = {
     ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
     : true,
   enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER !== 'false',
-  enableDebugPage:
-    process.env.ENABLE_DEBUG_PAGE === 'true' ||
-    process.env.NODE_ENV === 'development',
+  enableDebugPage: true,
   changelogUrl:
     process.env.CHANGELOG_URL ??
     'https://affine.pro/blog/what-is-new-affine-0620',
