@@ -32,11 +32,20 @@ export type RootWorkspaceMetadata =
   | RootWorkspaceMetadataV2;
 
 export const workspaceAdaptersAtom = atom<
-  Record<WorkspaceFlavour, WorkspaceAdapter<WorkspaceFlavour>>
+  Record<
+    WorkspaceFlavour,
+    Pick<
+      WorkspaceAdapter<WorkspaceFlavour>,
+      'CRUD' | 'Events' | 'flavour' | 'loadPriority'
+    >
+  >
 >(
   null as unknown as Record<
     WorkspaceFlavour,
-    WorkspaceAdapter<WorkspaceFlavour>
+    Pick<
+      WorkspaceAdapter<WorkspaceFlavour>,
+      'CRUD' | 'Events' | 'flavour' | 'loadPriority'
+    >
   >
 );
 
@@ -57,7 +66,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
   Promise<RootWorkspaceMetadata[]>
 >(async (get, { signal }) => {
   const WorkspaceAdapters = get(workspaceAdaptersAtom);
-  assertExists(WorkspaceAdapters);
+  assertExists(WorkspaceAdapters, 'workspace adapter should be defined');
   const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
   if (maybeMetadata !== null) {
     return maybeMetadata;
