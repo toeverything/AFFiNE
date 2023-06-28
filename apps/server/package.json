@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "nodemon ./src/index.ts",
     "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",
+    "test:watch": "yarn exec ts-node-esm ./scripts/run-test.ts all --watch",
     "test:coverage": "c8 yarn exec ts-node-esm ./scripts/run-test.ts all",
     "postinstall": "prisma generate"
   },
