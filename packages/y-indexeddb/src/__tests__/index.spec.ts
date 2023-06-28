@@ -20,6 +20,7 @@ import {
   downloadBinary,
   getMilestones,
   markMilestone,
+  overwriteBinary,
   revertUpdate,
   setMergeCount,
 } from '../index';
@@ -487,5 +488,18 @@ describe('utils', () => {
         resolve();
       }, 0)
     );
+  });
+
+  test('overwrite binary', async () => {
+    await overwriteBinary('test', new Uint8Array([1, 2, 3]));
+    {
+      const binary = await downloadBinary('test');
+      expect(binary).toEqual(new Uint8Array([1, 2, 3]));
+    }
+    await overwriteBinary('test', new Uint8Array([0, 0]));
+    {
+      const binary = await downloadBinary('test');
+      expect(binary).toEqual(new Uint8Array([0, 0]));
+    }
   });
 });
