@@ -5,14 +5,17 @@
     "composite": true,
     "noEmit": false,
     "outDir": "lib",
-    "paths": {
-      "@affine/component": ["../../packages/component/src"],
-      "@affine/component/*": ["../../packages/component/src/components/*"]
-    }
+    "types": ["react/experimental"]
   },
   "references": [
     {
       "path": "../../packages/component"
+    },
+    {
+      "path": "../../packages/env"
+    },
+    {
+      "path": "../../packages/workspace"
     },
     {
       "path": "./tsconfig.node.json"
