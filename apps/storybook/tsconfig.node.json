@@ -12,5 +12,5 @@
   },
   "include": [".storybook/**/*"],
   "exclude": ["lib"],
-  "references": [{ "path": "../i18n" }]
+  "references": [{ "path": "../../packages/i18n" }]
 }
