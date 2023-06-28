@@ -7,7 +7,7 @@ trigger:
   - master
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: macOS-13
 
 variables:
   yarn_config_cache: $(Pipeline.Workspace)/.yarn/cache
@@ -24,10 +24,6 @@ steps:
       key: 'yarn | "$(Agent.OS)" | yarn.lock'
       path: $(yarn_config_cache)
     displayName: Cache yarn
-
-  - script: |
-      unset $(printenv | grep '^YARN_' | cut -d= -f1)
-    displayName: 'Unset YARN_ variables'
 
   - script: |
       yarn install --immutable --inline-builds
