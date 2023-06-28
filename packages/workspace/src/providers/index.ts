@@ -172,7 +172,7 @@ export const createLocalProviders = (): DocProviderCreator[] => {
     providers.push(createBroadcastChannelProvider);
   }
 
-  if (environment.isDesktop && config.enableSQLiteProvider) {
+  if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
     providers.push(createSQLiteProvider, createSQLiteDBDownloadProvider);
   }
 
