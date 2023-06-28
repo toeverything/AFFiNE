@@ -1,7 +1,5 @@
-import { env } from '@affine/env';
+import { isBrowser } from '@affine/env/constant';
 import createCache from '@emotion/cache';
-
-const isBrowser = env.isBrowser;
 
 export default function createEmotionCache() {
   let insertionPoint;

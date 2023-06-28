@@ -1,5 +1,4 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
-import { config } from '@affine/env';
 import { Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
@@ -186,7 +185,7 @@ const LocalCollaborationPanel: React.FC<
       >
         {t['Enable AFFiNE Cloud']()}
       </Button>
-      {config.enableLegacyCloud ? (
+      {runtimeConfig.enableLegacyCloud ? (
         <TransformWorkspaceToAffineModal
           open={open}
           onClose={() => {

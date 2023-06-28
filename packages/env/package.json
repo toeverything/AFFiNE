@@ -3,6 +3,7 @@
   "private": true,
   "main": "./src/index.ts",
   "module": "./src/index.ts",
+  "types": "./src/global.ts",
   "devDependencies": {
     "@blocksuite/global": "0.0.0-20230627165830-836e6fd1-nightly",
     "next": "=13.4.2",
@@ -11,9 +12,7 @@
     "zod": "^3.21.4"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./api": "./src/api.ts",
-    "./config": "./src/config.ts",
+    "./global": "./src/global.ts",
     "./constant": "./src/constant.ts",
     "./workspace": "./src/workspace.ts",
     "./workspace/legacy-cloud": "./src/workspace/legacy-cloud/index.ts",

@@ -2,7 +2,10 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 # check lockfile is up to date
-yarn install
+yarn install --mode=update-lockfile
 
 # lint staged files
 yarn exec lint-staged
+
+# type check
+yarn typecheck

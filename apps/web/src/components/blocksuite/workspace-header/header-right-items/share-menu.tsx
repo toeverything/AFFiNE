@@ -1,5 +1,4 @@
 import { ShareMenu } from '@affine/component/share-menu';
-import { config } from '@affine/env';
 import { Unreachable } from '@affine/env/constant';
 import type {
   AffineLegacyCloudWorkspace,
@@ -110,7 +109,7 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
 };
 
 export const HeaderShareMenu: React.FC<BaseHeaderProps> = props => {
-  if (!config.enableLegacyCloud) {
+  if (!runtimeConfig.enableLegacyCloud) {
     return null;
   }
   if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {

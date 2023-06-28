@@ -1,5 +1,4 @@
 import { MainContainer } from '@affine/component/workspace';
-import { config } from '@affine/env';
 import { NoSsr } from '@mui/material';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
@@ -29,7 +28,7 @@ const Plugins = () => {
 };
 
 export default function PluginPage(): ReactElement {
-  if (!config.enablePlugin) {
+  if (!runtimeConfig.enablePlugin) {
     return <></>;
   }
   return (
