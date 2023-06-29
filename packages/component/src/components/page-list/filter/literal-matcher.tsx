@@ -8,7 +8,9 @@ import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TType } from './logical/typesystem';
 import { typesystem } from './logical/typesystem';
+import { useFilterName } from './translation-hook';
 
+const filterName = useFilterName;
 export const literalMatcher = new Matcher<{
   render: (props: {
     type: TType;
@@ -28,7 +30,7 @@ literalMatcher.register(tBoolean.create(), {
         onChange({ type: 'literal', value: !value.value });
       }}
     >
-      {value.value?.toString()}
+      {filterName(value.value?.toString())}
     </div>
   ),
 });

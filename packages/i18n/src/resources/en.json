@@ -372,5 +372,13 @@
   "Enable cloud hint": "The following functions rely on AFFiNE Cloud. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud.",
   "Unpublished hint": "Once published to the web, visitors can view the contents through the provided link.",
   "Published hint": "Visitors can view the contents through the provided link.",
-  "Members hint": "Manage members here, invite new member by email."
+  "Members hint": "Manage members here, invite new member by email.",
+  "com.affine.filter": "Filter",
+  "com.affine.filter.is-favourited": "Is Favourited",
+  "com.affine.filter.after": "after",
+  "com.affine.filter.before": "before",
+  "com.affine.filter.is": "is",
+  "com.affine.filter.true": "true",
+  "com.affine.filter.false": "false",
+  "com.affine.filter.save-view": "Save View"
 }

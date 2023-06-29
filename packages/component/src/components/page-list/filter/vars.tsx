@@ -1,4 +1,5 @@
 import type { Filter, LiteralValue, VariableMap } from '@affine/env/filter';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
@@ -10,6 +11,7 @@ import type { TFunction } from './logical/typesystem';
 import { tFunction, typesystem } from './logical/typesystem';
 import type { FilterVariable } from './shared-types';
 import { variableDefineMap } from './shared-types';
+import { useFilterName } from './translation-hook';
 
 export const vars: FilterVariable[] = Object.entries(variableDefineMap).map(
   ([key, value]) => ({
@@ -48,16 +50,19 @@ export const CreateFilterMenu = ({
     />
   );
 };
-
 export const VariableSelect = ({
   onSelect,
 }: {
   selected: Filter[];
   onSelect: (value: Filter) => void;
 }) => {
+  const variableName = useFilterName;
+  const t = useAFFiNEI18N();
   return (
     <div data-testid="variable-select">
-      <div className={styles.variableSelectTitleStyle}>Filter</div>
+      <div className={styles.variableSelectTitleStyle}>
+        {t['com.affine.filter']()}
+      </div>
       <div className={styles.variableSelectDividerStyle}></div>
       {vars
         // .filter(v => !selected.find(filter => filter.left.name === v.name))
@@ -74,7 +79,7 @@ export const VariableSelect = ({
               data-testid="variable-select-item"
               className={styles.menuItemTextStyle}
             >
-              {v.name}
+              {variableName(v.name)}
             </div>
           </MenuItem>
         ))}

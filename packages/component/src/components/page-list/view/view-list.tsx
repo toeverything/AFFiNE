@@ -1,3 +1,4 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilteredIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useAtom } from 'jotai';
@@ -14,6 +15,7 @@ export const ViewList = ({
   setting: ReturnType<typeof useAllPageSetting>;
 }) => {
   const [open] = useAtom(appSidebarOpenAtom);
+  const t = useAFFiNEI18N();
   return (
     <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}>
       {setting.savedViews.length > 0 && (
@@ -62,7 +64,7 @@ export const ViewList = ({
           size="small"
           hoverColor="var(--affine-icon-color)"
         >
-          Filter
+          {t['com.affine.filter']()}
         </Button>
       </Menu>
     </div>
