@@ -33,6 +33,7 @@
     "lib0": "^0.2.78",
     "react": "18.3.0-canary-16d053d59-20230506",
     "react-dom": "18.3.0-canary-16d053d59-20230506",
+    "socket.io-client": "^4.7.1",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.6",
     "zod": "^3.21.4"

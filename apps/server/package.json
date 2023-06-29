@@ -42,7 +42,8 @@
     "redis": "^4.6.7",
     "reflect-metadata": "^0.1.13",
     "socket.io": "^4.7.0",
-    "ws": "^8.13.0"
+    "ws": "^8.13.0",
+    "yjs": "^13.6.6"
   },
   "devDependencies": {
     "@napi-rs/image": "^1.6.1",
