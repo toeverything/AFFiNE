@@ -69,10 +69,10 @@ if (!environment.isDesktop && !environment.isServer) {
 
 if (environment.isBrowser) {
   const value = localStorage.getItem('jotai-workspaces');
-  if (value && localStorage.getItem('migration-v2') !== 'true') {
-    localStorage.setItem('migration-v2', 'true');
+  if (value) {
     try {
       const metadata = JSON.parse(value) as RootWorkspaceMetadata[];
+      const promises: Promise<void>[] = [];
       metadata.forEach(oldMeta => {
         if (!('version' in oldMeta)) {
           const adapter = WorkspaceAdapters[oldMeta.flavour];
@@ -134,11 +134,26 @@ if (environment.isBrowser) {
           };
 
           // create a new workspace and push it to metadata
-          upgrade().catch(console.error);
+          promises.push(upgrade().catch(console.error));
         }
       });
+
+      Promise.all(promises)
+        .then(() => {
+          window.dispatchEvent(new CustomEvent('migration-done'));
+        })
+        .catch(() => {
+          console.error('migration failed');
+        });
     } catch (e) {
       console.error('error when migrating data', e);
     }
+  }
+}
+
+declare global {
+  // global Events
+  interface WindowEventMap {
+    'migration-done': CustomEvent;
   }
 }

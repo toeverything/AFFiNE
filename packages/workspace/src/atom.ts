@@ -116,6 +116,16 @@ const rootWorkspacesMetadataPromiseAtom = atom<
           console.error('cannot parse worksapce', e);
         }
       }
+
+      // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
+      if (metadata.some(meta => !('version' in meta))) {
+        await new Promise<void>((resolve, reject) => {
+          signal.addEventListener('abort', () => reject(), { once: true });
+          window.addEventListener('migration-done', () => resolve(), {
+            once: true,
+          });
+        });
+      }
     }
     // step 2: fetch from adapters
     {
