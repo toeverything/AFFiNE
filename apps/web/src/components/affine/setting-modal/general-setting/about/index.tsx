@@ -22,7 +22,11 @@ export const AboutAffine = () => {
   );
   return (
     <>
-      <SettingHeader title={t['About AFFiNE']()} subtitle={t['None yet']()} />
+      <SettingHeader
+        title={t['About AFFiNE']()}
+        subtitle={t['None yet']()}
+        data-testid="about-title"
+      />
       {IS_EXHIBITION && environment.isDesktop ? (
         <SettingWrapper title={t['Version']()}>
           <SettingRow

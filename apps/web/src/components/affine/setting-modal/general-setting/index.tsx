@@ -15,6 +15,7 @@ export type GeneralSettingList = {
   key: GeneralSettingKeys;
   title: string;
   icon: FC<SVGProps<SVGSVGElement>>;
+  testId: string;
 }[];
 
 export const generalSettingList: GeneralSettingList = [
@@ -22,16 +23,19 @@ export const generalSettingList: GeneralSettingList = [
     key: 'appearance',
     title: 'Appearance',
     icon: AppearanceIcon,
+    testId: 'appearance-panel-trigger',
   },
   {
     key: 'shortcuts',
     title: 'Keyboard Shortcuts',
     icon: KeyboardIcon,
+    testId: 'shortcuts-panel-trigger',
   },
   {
     key: 'about',
     title: 'About AFFiNE',
     icon: InformationIcon,
+    testId: 'about-panel-trigger',
   },
 ];
 
