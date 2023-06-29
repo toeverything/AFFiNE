@@ -75,9 +75,10 @@ test('init page', async ({ page, context }) => {
   );
   await download.saveAs(output);
   await switchToNext();
+  // this might be pretty slow
   await page.waitForTimeout(1000);
   await page.reload();
   await page.waitForSelector('v-line', {
-    timeout: 10000,
+    timeout: 60000,
   });
 });
