@@ -21,6 +21,7 @@ import {
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
+import { NoSsr } from '@mui/material';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -155,10 +156,12 @@ export const RootAppSidebar = ({
         hasBackground={!appSettings.disableBlurBackground}
       >
         <SidebarContainer>
-          <WorkspaceSelector
-            currentWorkspace={currentWorkspace}
-            onClick={onOpenWorkspaceListModal}
-          />
+          <NoSsr>
+            <WorkspaceSelector
+              currentWorkspace={currentWorkspace}
+              onClick={onOpenWorkspaceListModal}
+            />
+          </NoSsr>
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}

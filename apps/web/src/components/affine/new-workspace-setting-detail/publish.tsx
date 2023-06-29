@@ -137,9 +137,7 @@ const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
           }}
           style={{ marginTop: '12px' }}
         >
-          {runtimeConfig.enableLegacyCloud
-            ? t['Enable AFFiNE Cloud']()
-            : 'Disable AFFiNE Cloud'}
+          {t['Enable AFFiNE Cloud']()}
         </Button>
       </SettingRow>
       <FakePublishPanelAffine workspace={workspace} />

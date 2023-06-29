@@ -18,7 +18,7 @@ import { AccountSetting } from './account-setting';
 import {
   GeneralSetting,
   type GeneralSettingKeys,
-  generalSettingList,
+  useGeneralSettingList,
 } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
 import { settingContent } from './style.css';
@@ -32,7 +32,7 @@ export const SettingModal: React.FC<SettingModalProps> = ({
   const t = useAFFiNEI18N();
   const workspaces = useWorkspaces();
   const [currentWorkspace] = useCurrentWorkspace();
-
+  const generalSettingList = useGeneralSettingList();
   const workspaceList = useMemo(() => {
     return workspaces.filter(
       ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC

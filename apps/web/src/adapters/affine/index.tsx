@@ -9,6 +9,7 @@ import type {
   AffineLegacyCloudWorkspace,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
+import type { WorkspaceAdapter } from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -49,7 +50,6 @@ import {
   WorkspaceHeader,
   WorkspaceSettingDetail,
 } from '../shared';
-import type { WorkspaceAdapter } from '../type';
 import { QueryKey } from './fetcher';
 
 const storage = createJSONStorage(() => localStorage);
@@ -126,7 +126,7 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
         console.warn('Legacy cloud is disabled');
         return;
       }
-      rootStore.set(rootWorkspacesMetadataAtom, workspaces =>
+      await rootStore.set(rootWorkspacesMetadataAtom, workspaces =>
         workspaces.filter(
           workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
         )

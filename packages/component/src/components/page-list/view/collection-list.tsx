@@ -1,6 +1,7 @@
 import { EditCollectionModel } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   FilteredIcon,
@@ -121,6 +122,7 @@ export const CollectionList = ({
   setting: ReturnType<typeof useAllPageSetting>;
   getPageInfo: GetPageInfoById;
 }) => {
+  const t = useAFFiNEI18N();
   const [open] = useAtom(appSidebarOpenAtom);
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
@@ -215,7 +217,7 @@ export const CollectionList = ({
           hoverColor="var(--affine-icon-color)"
           data-testid="create-first-filter"
         >
-          Filter
+          {t['com.affine.filter']()}
         </Button>
       </Menu>
       <EditCollectionModel
