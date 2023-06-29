@@ -106,7 +106,7 @@ type Mutation {
   """
   Create a new workspace
   """
-  createWorkspace: WorkspaceType!
+  createWorkspace(init: Upload!): WorkspaceType!
 
   """
   Update workspace
@@ -121,12 +121,18 @@ type Mutation {
   revoke(workspaceId: String!, userId: String!): Boolean!
   acceptInvite(workspaceId: String!): Boolean!
   leaveWorkspace(workspaceId: String!): Boolean!
+  uploadBlob(workspaceId: String!, blob: Upload!): String!
 
   """
   Upload user avatar
   """
   uploadAvatar(id: String!, avatar: Upload!): UserType!
 }
+
+"""
+The `Upload` scalar type represents a file upload.
+"""
+scalar Upload
 
 input UpdateWorkspaceInput {
   """
@@ -135,8 +141,3 @@ input UpdateWorkspaceInput {
   public: Boolean
   id: ID!
 }
-
-"""
-The `Upload` scalar type represents a file upload.
-"""
-scalar Upload
