@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, shell } from 'electron';
+import { BrowserWindow, dialog } from 'electron';
 import fs from 'fs-extra';
 
 import { logger } from '../logger';
@@ -49,8 +49,6 @@ export async function savePDFFileAs(
           logger.log(`Wrote PDF successfully to ${filePath}`);
         });
       });
-
-    await shell.openPath(filePath);
     return { filePath };
   } catch (err) {
     logger.error('savePDFFileAs', err);
