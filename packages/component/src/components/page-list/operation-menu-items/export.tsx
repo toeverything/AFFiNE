@@ -1,5 +1,6 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { PageBlockModel } from '@blocksuite/blocks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import {
   ArrowRightSmallIcon,
@@ -28,43 +29,43 @@ const ExportToPdfMenuItem = ({
       return;
     }
 
-    // if (environment.isDesktop && currentEditor.mode === 'page') {
-    //   window.apis?.export
-    //     .savePDFFileAs(
-    //       (currentEditor.page.root as PageBlockModel).title.toString()
-    //     )
-    //     .then(() => {
-    //       onSelect?.({ type: 'pdf' });
-    //     })
-    //     .catch(err => {
-    //       console.error(err);
-    //     });
-    // } else {
-    const contentParser =
-      contentParserRef.current ??
-      (contentParserRef.current = new ContentParser(currentEditor.page));
+    if (environment.isDesktop && currentEditor.mode === 'page') {
+      window.apis?.export
+        .savePDFFileAs(
+          (currentEditor.page.root as PageBlockModel).title.toString()
+        )
+        .then(() => {
+          onSelect?.({ type: 'pdf' });
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    } else {
+      const contentParser =
+        contentParserRef.current ??
+        (contentParserRef.current = new ContentParser(currentEditor.page));
 
-    contentParser
-      .exportPdf()
-      .then(() => {
-        onSelect?.({ type: 'pdf' });
-        setPushNotification({
-          key: 'export-to-pdf',
-          title: 'export',
-          message: 'Export success',
-          type: 'success',
+      contentParser
+        .exportPdf()
+        .then(() => {
+          onSelect?.({ type: 'pdf' });
+          setPushNotification({
+            key: 'export-to-pdf',
+            title: 'export',
+            message: 'Export success',
+            type: 'success',
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          setPushNotification({
+            key: 'export-to-pdf',
+            title: 'export',
+            message: 'Export error',
+            type: 'error',
+          });
         });
-      })
-      .catch(err => {
-        console.error(err);
-        setPushNotification({
-          key: 'export-to-pdf',
-          title: 'export',
-          message: 'Export error',
-          type: 'error',
-        });
-      });
-    // }
+    }
   }, [currentEditor, onSelect, setPushNotification]);
 
   return (
