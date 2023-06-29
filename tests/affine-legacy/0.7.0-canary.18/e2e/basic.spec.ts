@@ -41,7 +41,16 @@ test.afterEach(() => {
   server.close();
 });
 
-test('init page', async ({ page }) => {
+test('init page', async ({ page, context }) => {
+  {
+    // make sure 8080 is ready
+    const page = await context.newPage();
+    await page.goto('http://localhost:8080/');
+    await page.waitForSelector('v-line', {
+      timeout: 10000,
+    });
+    await page.close();
+  }
   await page.goto('http://localhost:8081/');
   await page.waitForSelector('v-line', {
     timeout: 10000,
