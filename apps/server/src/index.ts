@@ -1,5 +1,4 @@
-import './prelude';
-
+/// <reference types="./global.d.ts" />
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { static as staticMiddleware } from 'express';
