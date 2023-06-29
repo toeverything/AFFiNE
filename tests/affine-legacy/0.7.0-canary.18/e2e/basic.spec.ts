@@ -27,8 +27,12 @@ async function switchToNext() {
       changeOrigin: true,
     })
   );
-  server = app.listen(8081);
-  console.log('proxy to next.js server');
+  return new Promise<void>(resolve => {
+    server = app.listen(8081, () => {
+      console.log('proxy to next.js server');
+      resolve();
+    });
+  });
 }
 
 test.beforeEach(() => {
@@ -75,10 +79,9 @@ test('init page', async ({ page, context }) => {
   );
   await download.saveAs(output);
   await switchToNext();
-  // this might be pretty slow
   await page.waitForTimeout(1000);
   await page.reload();
   await page.waitForSelector('v-line', {
-    timeout: 60000,
+    timeout: 10000,
   });
 });
