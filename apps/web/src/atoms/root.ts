@@ -1,6 +1,9 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
-import type { WorkspaceRegistry } from '@affine/env/workspace';
+import type {
+  WorkspaceAdapter,
+  WorkspaceRegistry,
+} from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
@@ -23,7 +26,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
     const flavours: string[] = Object.values(WorkspaceAdapters).map(
       plugin => plugin.flavour
     );
-    const jotaiWorkspaces = get(rootWorkspacesMetadataAtom)
+    const jotaiWorkspaces = (await get(rootWorkspacesMetadataAtom))
       .filter(
         workspace => flavours.includes(workspace.flavour)
         // TODO: remove this when we remove the legacy cloud
@@ -33,7 +36,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
           ? workspace.flavour !== WorkspaceFlavour.AFFINE
           : true
       );
-    if (jotaiWorkspaces.some(meta => meta.version === undefined)) {
+    if (jotaiWorkspaces.some(meta => !('version' in meta))) {
       // wait until all workspaces have migrated to v2
       await new Promise((resolve, reject) => {
         signal.addEventListener('abort', reject);
@@ -44,12 +47,11 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
     }
     const workspaces = await Promise.all(
       jotaiWorkspaces.map(workspace => {
-        const plugin =
-          WorkspaceAdapters[
-            workspace.flavour as keyof typeof WorkspaceAdapters
-          ];
-        assertExists(plugin);
-        const { CRUD } = plugin;
+        const adapter = WorkspaceAdapters[
+          workspace.flavour
+        ] as WorkspaceAdapter<WorkspaceFlavour>;
+        assertExists(adapter);
+        const { CRUD } = adapter;
         return CRUD.get(workspace.id).then(workspace => {
           if (workspace === null) {
             console.warn(
@@ -93,7 +95,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
 export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
   async (get, { signal }) => {
     const { WorkspaceAdapters } = await import('../adapters/workspace');
-    const metadata = get(rootWorkspacesMetadataAtom);
+    const metadata = await get(rootWorkspacesMetadataAtom);
     const targetId = get(rootCurrentWorkspaceIdAtom);
     if (targetId === null) {
       throw new Error(
@@ -105,7 +107,7 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
       throw new Error(`cannot find the workspace with id ${targetId}.`);
     }
 
-    if (!targetWorkspace.version) {
+    if (!('version' in targetWorkspace)) {
       // wait until the workspace has migrated to v2
       await new Promise((resolve, reject) => {
         signal.addEventListener('abort', reject);
@@ -115,9 +117,12 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
       });
     }
 
-    const workspace = await WorkspaceAdapters[targetWorkspace.flavour].CRUD.get(
-      targetWorkspace.id
-    );
+    const adapter = WorkspaceAdapters[
+      targetWorkspace.flavour
+    ] as WorkspaceAdapter<WorkspaceFlavour>;
+    assertExists(adapter);
+
+    const workspace = await adapter.CRUD.get(targetWorkspace.id);
     if (!workspace) {
       throw new Error(
         `cannot find the workspace with id ${targetId} in the plugin ${targetWorkspace.flavour}.`

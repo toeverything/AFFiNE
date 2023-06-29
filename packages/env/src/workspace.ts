@@ -206,3 +206,14 @@ export interface AppEvents {
   // request to revoke access to workspace plugin
   'workspace:revoke': () => Promise<void>;
 }
+
+export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
+  releaseType: ReleaseType;
+  flavour: Flavour;
+  // The Adapter will be loaded according to the priority
+  loadPriority: LoadPriority;
+  Events: Partial<AppEvents>;
+  // Fetch necessary data for the first render
+  CRUD: WorkspaceCRUD<Flavour>;
+  UI: WorkspaceUISchema<Flavour>;
+}
