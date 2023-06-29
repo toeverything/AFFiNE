@@ -4,12 +4,9 @@ import type {
   LocalIndexedDBDownloadProvider,
   WorkspaceAdapter,
 } from '@affine/env/workspace';
-import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import {
-  rootWorkspacesMetadataAtom,
-  workspaceAdaptersAtom,
-} from '@affine/workspace/atom';
+import { workspaceAdaptersAtom } from '@affine/workspace/atom';
 import {
   migrateLocalBlobStorage,
   upgradeV1ToV2,
@@ -101,16 +98,6 @@ if (environment.isBrowser) {
             const newDoc = migrateToSubdoc(doc);
             if (doc === newDoc) {
               console.log('doc not changed');
-              await rootStore.set(rootWorkspacesMetadataAtom, metadata =>
-                metadata.map(newMeta =>
-                  newMeta.id === oldMeta.id
-                    ? {
-                        ...newMeta,
-                        version: WorkspaceVersion.SubDoc,
-                      }
-                    : newMeta
-                )
-              );
               return;
             }
             const newWorkspace = upgradeV1ToV2(workspace);
@@ -121,29 +108,23 @@ if (environment.isBrowser) {
 
             await adapter.CRUD.delete(workspace as any);
             await migrateLocalBlobStorage(workspace.id, newId);
-            await rootStore.set(rootWorkspacesMetadataAtom, metadata => [
-              ...metadata
-                .map(newMeta => (newMeta.id === oldMeta.id ? null : newMeta))
-                .filter((meta): meta is RootWorkspaceMetadata => !!meta),
-              {
-                id: newId,
-                flavour: oldMeta.flavour,
-                version: WorkspaceVersion.SubDoc,
-              },
-            ]);
           };
 
           // create a new workspace and push it to metadata
-          promises.push(upgrade().catch(console.error));
+          promises.push(upgrade());
         }
       });
 
       Promise.all(promises)
         .then(() => {
-          window.dispatchEvent(new CustomEvent('migration-done'));
+          localStorage.removeItem('jotai-workspaces');
+          console.log('migration done');
         })
         .catch(() => {
           console.error('migration failed');
+        })
+        .finally(() => {
+          window.dispatchEvent(new CustomEvent('migration-done'));
         });
     } catch (e) {
       console.error('error when migrating data', e);

@@ -26,7 +26,7 @@ export function upgradeV1ToV2(oldWorkspace: LocalWorkspace): LocalWorkspace {
         }
       });
     });
-    console.log(newBlockSuiteWorkspace.doc.toJSON());
+    console.log('migration result', newBlockSuiteWorkspace.doc.toJSON());
 
     return {
       blockSuiteWorkspace: newBlockSuiteWorkspace,
