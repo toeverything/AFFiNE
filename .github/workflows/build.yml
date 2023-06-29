@@ -179,7 +179,7 @@ jobs:
           files: ./apps/server/.coverage/lcov.info
           flags: server-test
           name: affine
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   storybook-test:
     name: Storybook Test
@@ -258,7 +258,7 @@ jobs:
           files: ./.coverage/lcov.info
           flags: e2etest
           name: affine
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Upload test results
         if: ${{ failure() }}
@@ -394,7 +394,7 @@ jobs:
           files: ./.coverage/lcov.info
           flags: e2etest-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           name: affine
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Upload test results
         if: ${{ failure() }}
@@ -433,7 +433,7 @@ jobs:
           files: ./.coverage/store/lcov.info
           flags: unittest
           name: affine
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   build-docker:
     if: github.ref == 'refs/heads/master'
