@@ -1,4 +1,5 @@
 import { test } from '@affine-test/kit/playwright';
+import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
@@ -9,7 +10,12 @@ import {
   waitEditorLoad,
 } from '../libs/page-logic';
 
-test('Show collections items in sidebar', async ({ page }) => {
+const createAndPinCollection = async (
+  page: Page,
+  options?: {
+    collectionName?: string;
+  }
+) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -29,9 +35,12 @@ test('Show collections items in sidebar', async ({ page }) => {
   await page.getByTestId('save-as-collection').click();
   const title = page.getByTestId('input-collection-title');
   await title.isVisible();
-  await title.fill('test collection');
+  await title.fill(options?.collectionName ?? 'test collection');
   await page.getByTestId('save-collection').click();
-  await page.getByTestId('collection-bar-pin-to-collections').click();
+  await page.getByTestId('collection-bar-option-pin').click();
+};
+test('Show collections items in sidebar', async ({ page }) => {
+  await createAndPinCollection(page);
   const collections = page.getByTestId('collections');
   const items = collections.getByTestId('collection-item');
   expect(await items.count()).toBe(1);
@@ -52,4 +61,43 @@ test('Show collections items in sidebar', async ({ page }) => {
     .getByText('Delete');
   await deleteCollection.click();
   expect(await items.count()).toBe(0);
+});
+
+test('pin and unpin collection', async ({ page }) => {
+  const name = 'asd';
+  await createAndPinCollection(page, { collectionName: name });
+  const collections = page.getByTestId('collections');
+  const items = collections.getByTestId('collection-item');
+  expect(await items.count()).toBe(1);
+  const first = items.first();
+  await first.getByTestId('collection-options').click();
+  const deleteCollection = page
+    .getByTestId('collection-option')
+    .getByText('Unpin');
+  await deleteCollection.click();
+  expect(await items.count()).toBe(0);
+  await page.getByTestId('collection-select').click();
+  const option = page.locator('[data-testid=collection-select-option]', {
+    hasText: name,
+  });
+  await option.hover();
+  await option.getByTestId('collection-select-option-pin').click();
+  expect(await items.count()).toBe(1);
+});
+
+test('edit collection', async ({ page }) => {
+  await createAndPinCollection(page);
+  const collections = page.getByTestId('collections');
+  const items = collections.getByTestId('collection-item');
+  expect(await items.count()).toBe(1);
+  const first = items.first();
+  await first.getByTestId('collection-options').click();
+  const editCollection = page
+    .getByTestId('collection-option')
+    .getByText('Edit Filter');
+  await editCollection.click();
+  const title = page.getByTestId('input-collection-title');
+  await title.fill('123');
+  await page.getByTestId('save-collection').click();
+  expect(await first.textContent()).toBe('123');
 });

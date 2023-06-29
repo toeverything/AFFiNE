@@ -1,6 +1,16 @@
 import { style } from '@vanilla-extract/css';
 
-export const pin = style({
+export const view = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  fontSize: 14,
+  fontWeight: 600,
+  height: '100%',
+  paddingLeft: 16,
+});
+
+export const option = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -10,11 +20,20 @@ export const pin = style({
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
   },
+  opacity: 0,
+  selectors: {
+    [`${view}:hover &`]: {
+      opacity: 1,
+    },
+  },
+});
+export const pin = style({
+  opacity: 1,
 });
 export const pinedIcon = style({
   display: 'block',
   selectors: {
-    [`${pin}:hover &`]: {
+    [`${option}:hover &`]: {
       display: 'none',
     },
   },
@@ -22,17 +41,8 @@ export const pinedIcon = style({
 export const pinIcon = style({
   display: 'none',
   selectors: {
-    [`${pin}:hover &`]: {
+    [`${option}:hover &`]: {
       display: 'block',
     },
   },
-});
-export const view = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  fontSize: 14,
-  fontWeight: 600,
-  height: '100%',
-  paddingLeft: 16,
 });

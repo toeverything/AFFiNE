@@ -127,3 +127,75 @@ export const saveTitle = style({
   fontWeight: '600',
   lineHeight: '24px',
 });
+export const allowList = style({});
+
+export const allowTitle = style({
+  fontSize: 12,
+  margin: '20px 0',
+});
+
+export const allowListContent = style({
+  margin: '8px 0',
+});
+
+export const excludeList = style({
+  backgroundColor: 'var(--affine-background-warning-color)',
+  padding: 18,
+  borderRadius: 8,
+  marginTop: 20,
+});
+
+export const excludeListContent = style({
+  margin: '8px 0',
+});
+
+export const filterTitle = style({
+  fontSize: 12,
+  fontWeight: 600,
+  marginBottom: 10,
+});
+
+export const excludeTitle = style({
+  fontSize: 12,
+  fontWeight: 600,
+});
+
+export const excludeTip = style({
+  color: 'var(--affine-text-secondary-color)',
+  fontSize: 12,
+});
+
+export const scrollContainer = style({
+  overflow: 'hidden',
+  height: 800,
+});
+export const pageContainer = style({
+  fontSize: 14,
+  fontWeight: 600,
+  height: 32,
+  display: 'flex',
+  alignItems: 'center',
+  paddingLeft: 8,
+  paddingRight: 5,
+});
+
+export const pageIcon = style({
+  marginRight: 20,
+  display: 'flex',
+  alignItems: 'center',
+});
+
+export const pageTitle = style({
+  flex: 1,
+});
+export const deleteIcon = style({
+  marginLeft: 20,
+  display: 'flex',
+  alignItems: 'center',
+  borderRadius: 4,
+  padding: 4,
+  cursor: 'pointer',
+  ':hover': {
+    backgroundColor: 'var(--affine-hover-color)',
+  },
+});

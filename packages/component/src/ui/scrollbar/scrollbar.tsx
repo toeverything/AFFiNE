@@ -8,16 +8,20 @@ import * as styles from './index.css';
 export type ScrollableContainerProps = {
   showScrollTopBorder?: boolean;
   inTableView?: boolean;
+  className?: string;
 };
 
 export const ScrollableContainer = ({
   children,
   showScrollTopBorder = false,
   inTableView = false,
+  className,
 }: PropsWithChildren<ScrollableContainerProps>) => {
   const [hasScrollTop, ref] = useHasScrollTop();
   return (
-    <ScrollArea.Root className={styles.scrollableContainerRoot}>
+    <ScrollArea.Root
+      className={clsx(styles.scrollableContainerRoot, className)}
+    >
       <div
         data-has-scroll-top={hasScrollTop}
         className={clsx({ [styles.scrollTopBorder]: showScrollTopBorder })}

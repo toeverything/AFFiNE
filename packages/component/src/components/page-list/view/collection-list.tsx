@@ -1,5 +1,6 @@
-import { EditCollection } from '@affine/component/page-list';
+import { EditCollectionModel } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
+import type { GetPageInfoById } from '@affine/env/page-info';
 import {
   DeleteIcon,
   FilteredIcon,
@@ -13,13 +14,7 @@ import { useAtom } from 'jotai';
 import type { MouseEvent, ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
-import {
-  Button,
-  MenuItem,
-  Modal,
-  ModalCloseButton,
-  ModalWrapper,
-} from '../../..';
+import { Button, MenuItem } from '../../..';
 import Menu from '../../../ui/menu/menu';
 import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
@@ -39,10 +34,12 @@ const CollectionOption = ({
     icon: ReactNode;
     click: () => void;
     className?: string;
+    name: string;
   }[] = useMemo(
     () => [
       {
         icon: <PinIcon />,
+        name: 'pin',
         click: () => {
           return setting.updateCollection({
             ...collection,
@@ -52,12 +49,14 @@ const CollectionOption = ({
       },
       {
         icon: <FilterIcon />,
+        name: 'edit',
         click: () => {
           updateCollection(collection);
         },
       },
       {
         icon: <DeleteIcon style={{ color: 'red' }} />,
+        name: 'delete',
         click: () => {
           setting.deleteCollection(collection.id).catch(err => {
             console.error(err);
@@ -73,6 +72,7 @@ const CollectionOption = ({
   );
   return (
     <MenuItem
+      data-testid="collection-select-option"
       icon={<ViewLayersIcon></ViewLayersIcon>}
       onClick={selectCollection}
       key={collection.id}
@@ -86,7 +86,12 @@ const CollectionOption = ({
         }}
       >
         <div>{collection.name}</div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
           {actions.map((v, i) => {
             const onClick = (e: MouseEvent<HTMLDivElement>) => {
               e.stopPropagation();
@@ -94,6 +99,7 @@ const CollectionOption = ({
             };
             return (
               <div
+                data-testid={`collection-select-option-${v.name}`}
                 key={i}
                 onClick={onClick}
                 style={{ marginLeft: i === 0 ? 28 : undefined }}
@@ -110,8 +116,10 @@ const CollectionOption = ({
 };
 export const CollectionList = ({
   setting,
+  getPageInfo,
 }: {
   setting: ReturnType<typeof useAllPageSetting>;
+  getPageInfo: GetPageInfoById;
 }) => {
   const [open] = useAtom(appSidebarOpenAtom);
   const [collection, setCollection] = useState<Collection>();
@@ -141,7 +149,11 @@ export const CollectionList = ({
       className={clsx({
         [styles.filterButtonCollapse]: !open,
       })}
-      style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}
+      style={{
+        marginLeft: 4,
+        display: 'flex',
+        alignItems: 'center',
+      }}
     >
       {setting.savedCollections.length > 0 && (
         <Menu
@@ -180,6 +192,7 @@ export const CollectionList = ({
             size="small"
             className={clsx(styles.viewButton)}
             hoverColor="var(--affine-icon-color)"
+            data-testid="collection-select"
           >
             {setting.currentCollection.name}
           </Button>
@@ -205,31 +218,13 @@ export const CollectionList = ({
           Filter
         </Button>
       </Menu>
-      <Modal open={collection != null} onClose={closeUpdateCollectionModal}>
-        <ModalWrapper
-          width={560}
-          style={{
-            padding: '40px',
-            background: 'var(--affine-background-primary-color)',
-          }}
-        >
-          <ModalCloseButton
-            top={12}
-            right={12}
-            onClick={closeUpdateCollectionModal}
-            hoverColor="var(--affine-icon-color)"
-          />
-          {collection ? (
-            <EditCollection
-              title="Update Collection"
-              onConfirmText="Save"
-              init={collection}
-              onCancel={closeUpdateCollectionModal}
-              onConfirm={onConfirm}
-            />
-          ) : null}
-        </ModalWrapper>
-      </Modal>
+      <EditCollectionModel
+        getPageInfo={getPageInfo}
+        init={collection}
+        open={!!collection}
+        onClose={closeUpdateCollectionModal}
+        onConfirm={onConfirm}
+      ></EditCollectionModel>
     </div>
   );
 };

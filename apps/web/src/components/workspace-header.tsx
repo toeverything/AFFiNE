@@ -13,6 +13,7 @@ import { uuidv4 } from '@blocksuite/store';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 
+import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { filterContainerStyle } from './filter-container.css';
 import { WorkspaceModeFilterTab, WorkspaceTitle } from './pure/workspace-title';
@@ -30,9 +31,15 @@ export function WorkspaceHeader({
     },
     [setting]
   );
+  const getPageInfoById = useGetPageInfoById();
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {
-      const leftSlot = <CollectionList setting={setting}></CollectionList>;
+      const leftSlot = (
+        <CollectionList
+          setting={setting}
+          getPageInfo={getPageInfoById}
+        ></CollectionList>
+      );
       const filterContainer =
         setting.isDefault && setting.currentCollection.filterList.length > 0 ? (
           <div className={filterContainerStyle}>
@@ -50,6 +57,7 @@ export function WorkspaceHeader({
             <div>
               {setting.currentCollection.filterList.length > 0 ? (
                 <SaveCollectionButton
+                  getPageInfo={getPageInfoById}
                   init={{
                     id: uuidv4(),
                     name: '',

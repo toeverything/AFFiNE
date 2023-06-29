@@ -132,14 +132,15 @@ export const useAllPageSetting = () => {
   const backToAll = useCallback(() => {
     setCollectionData(RESET);
   }, [setCollectionData]);
-  const isDefault = collectionData.currentId === NIL;
-  return {
-    currentCollection: isDefault
+  const currentCollection =
+    collectionData.currentId === NIL
       ? collectionData.defaultCollection
       : savedCollections.find(v => v.id === collectionData.currentId) ??
-        collectionData.defaultCollection,
+        collectionData.defaultCollection;
+  return {
+    currentCollection: currentCollection,
     savedCollections,
-    isDefault,
+    isDefault: currentCollection.id === NIL,
 
     // actions
     saveCollection,

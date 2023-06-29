@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { filterPage } from '../../../utils/filter';
@@ -108,6 +109,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
+  const getPageInfo = useGetPageInfoById();
   const list = useMemo(
     () =>
       pageMetas
@@ -215,9 +217,9 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       },
     };
   });
-
   return (
     <PageList
+      getPageInfo={getPageInfo}
       onCreateNewPage={createPage}
       onCreateNewEdgeless={createEdgeless}
       onImportFile={importFile}

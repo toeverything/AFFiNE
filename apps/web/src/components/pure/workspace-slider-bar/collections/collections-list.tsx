@@ -6,6 +6,7 @@ import {
   useSavedCollections,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
+import type { GetPageInfoById } from '@affine/env/page-info';
 import {
   DeleteIcon,
   FilterIcon,
@@ -22,6 +23,7 @@ import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
 import type { AllWorkspace } from '../../../../shared';
 import { filterPage } from '../../../../utils/filter';
 import type { CollectionsListProps } from '../index';
@@ -118,10 +120,12 @@ const CollectionRenderer = ({
   collection,
   pages,
   workspace,
+  getPageInfo,
 }: {
   collection: Collection;
   pages: PageMeta[];
   workspace: AllWorkspace;
+  getPageInfo: GetPageInfoById;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
   const setting = useAllPageSetting();
@@ -183,6 +187,7 @@ const CollectionRenderer = ({
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModel
+        getPageInfo={getPageInfo}
         init={collection}
         onConfirm={setting.saveCollection}
         open={show}
@@ -248,7 +253,7 @@ const CollectionRenderer = ({
 export const CollectionsList = ({ currentWorkspace }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const { savedCollections } = useSavedCollections();
-
+  const getPageInfo = useGetPageInfoById();
   return (
     <div data-testid="collections" className={styles.wrapper}>
       {savedCollections
@@ -256,6 +261,7 @@ export const CollectionsList = ({ currentWorkspace }: CollectionsListProps) => {
         .map(view => {
           return (
             <CollectionRenderer
+              getPageInfo={getPageInfo}
               key={view.id}
               collection={view}
               pages={metas}
