@@ -6,13 +6,16 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
-import * as Y from 'yjs';
-import { Doc } from 'yjs';
 
-import { base64ToUint8Array, DocUpdate, uint8ArrayToBase64 } from '../utils';
+import { base64ToUint8Array, uint8ArrayToBase64 } from '../utils';
+import { WorkspaceService } from './workspace';
 
-@WebSocketGateway()
+const port = parseInt(process.env.PORT ?? '3010');
+
+@WebSocketGateway(port)
 export class EventsGateway {
+  constructor(private readonly storageService: WorkspaceService) {}
+
   @WebSocketServer()
   server: any;
 
@@ -21,7 +24,7 @@ export class EventsGateway {
     @MessageBody() workspace_id: string,
     @ConnectedSocket() client: Socket
   ) {
-    const docs = await getDocsFromWorkspaceId(workspace_id);
+    const docs = await this.storageService.getDocsFromWorkspaceId(workspace_id);
 
     for (const { guid, update } of docs) {
       await client.join(guid);
@@ -38,7 +41,10 @@ export class EventsGateway {
   ) {
     const update = base64ToUint8Array(message.update);
     this.server.to(message.guid).emit('server-update', message);
-    await saveWorkspaceUpdate({ guid: message.guid, update });
+    await this.storageService.saveWorkspaceUpdate({
+      guid: message.guid,
+      update,
+    });
   }
 
   @SubscribeMessage('init-awareness')
@@ -63,38 +69,3 @@ export class EventsGateway {
       });
   }
 }
-
-const getDocsFromWorkspaceId = async (
-  _workspace_id: string
-): Promise<
-  Array<{
-    guid: string;
-    update: Uint8Array;
-  }>
-> => {
-  const result: Array<{
-    guid: string;
-    update: Uint8Array;
-  }> = [];
-  // get Array<Uint8Array> from db
-  // deep find yDoc.subdocs，get subdoc from db, append to result
-  return result;
-};
-
-const _getDocFromGuid = async (_guid: string): Promise<Doc> => {
-  const updates: Array<Uint8Array> = [
-    new Uint8Array([1, 2, 3]),
-    new Uint8Array([1, 2, 3]),
-  ]; // TODO get from database
-  const doc = new Y.Doc();
-  updates.forEach(update => {
-    Y.applyUpdate(doc, update);
-  });
-
-  return doc;
-};
-
-const saveWorkspaceUpdate = async (_docUpdate: DocUpdate) => {
-  // save to db
-  console.log('saveWorkspaceUpdate');
-};
