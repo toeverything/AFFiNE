@@ -1,3 +1,4 @@
+import { Storage } from '@affine/storage';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import {
   Args,
@@ -16,8 +17,11 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, Workspace } from '@prisma/client';
+// @ts-expect-error graphql-upload is not typed
+import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma';
+import type { FileUpload } from '../../types';
 import { Auth, CurrentUser } from '../auth';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
@@ -55,7 +59,8 @@ export class UpdateWorkspaceInput extends PickType(
 export class WorkspaceResolver {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly permissionProvider: PermissionService
+    private readonly permissionProvider: PermissionService,
+    private readonly storage: Storage
   ) {}
 
   @ResolveField(() => Permission, {
@@ -111,6 +116,29 @@ export class WorkspaceResolver {
     return data.user;
   }
 
+  @ResolveField(() => [UserType], {
+    description: 'Members of workspace',
+    complexity: 2,
+  })
+  async members(
+    @CurrentUser() user: UserType,
+    @Parent() workspace: WorkspaceType
+  ) {
+    const data = await this.prisma.userWorkspacePermission.findMany({
+      where: {
+        workspaceId: workspace.id,
+        accepted: true,
+        userId: {
+          not: user.id,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+    return data.map(({ user }) => user);
+  }
+
   @Query(() => [WorkspaceType], {
     description: 'Get all accessible workspaces for current user',
     complexity: 2,
@@ -151,8 +179,25 @@ export class WorkspaceResolver {
   @Mutation(() => WorkspaceType, {
     description: 'Create a new workspace',
   })
-  async createWorkspace(@CurrentUser() user: User) {
-    return this.prisma.workspace.create({
+  async createWorkspace(
+    @CurrentUser() user: User,
+    @Args({ name: 'init', type: () => GraphQLUpload })
+    update: FileUpload
+  ) {
+    // convert stream to buffer
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const stream = update.createReadStream();
+      const chunks: Uint8Array[] = [];
+      stream.on('data', chunk => {
+        chunks.push(chunk);
+      });
+      stream.on('error', reject);
+      stream.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
+
+    const workspace = await this.prisma.workspace.create({
       data: {
         public: false,
         users: {
@@ -168,6 +213,10 @@ export class WorkspaceResolver {
         },
       },
     });
+
+    await this.storage.createWorkspace(workspace.id, buffer);
+
+    return workspace;
   }
 
   @Mutation(() => WorkspaceType, {
@@ -198,9 +247,97 @@ export class WorkspaceResolver {
       },
     });
 
+    await this.prisma.userWorkspacePermission.deleteMany({
+      where: {
+        workspaceId: id,
+      },
+    });
+
     // TODO:
     // delete all related data, like websocket connections, blobs, etc.
+    await this.storage.deleteWorkspace(id);
 
     return true;
+  }
+
+  @Mutation(() => Boolean)
+  async invite(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('email') email: string,
+    @Args('permission', { type: () => Permission }) permission: Permission
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+
+    if (permission === Permission.Owner) {
+      throw new ForbiddenException('Cannot change owner');
+    }
+
+    const target = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!target) {
+      throw new NotFoundException("User doesn't exist");
+    }
+
+    await this.permissionProvider.grant(workspaceId, target.id, permission);
+
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  async revoke(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('userId') userId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+
+    return this.permissionProvider.revoke(workspaceId, userId);
+  }
+
+  @Mutation(() => Boolean)
+  async acceptInvite(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    return this.permissionProvider.accept(workspaceId, user.id);
+  }
+
+  @Mutation(() => Boolean)
+  async leaveWorkspace(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    return this.permissionProvider.revoke(workspaceId, user.id);
+  }
+
+  @Mutation(() => String)
+  async uploadBlob(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args({ name: 'blob', type: () => GraphQLUpload })
+    blob: FileUpload
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const stream = blob.createReadStream();
+      const chunks: Uint8Array[] = [];
+      stream.on('data', chunk => {
+        chunks.push(chunk);
+      });
+      stream.on('error', reject);
+      stream.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
+
+    return this.storage.uploadBlob(workspaceId, buffer);
   }
 }

@@ -56,19 +56,21 @@ yarn install
 ### Build Native Dependencies
 
 Run the following script. It will build the native module at [`/packages/native`](/packages/native) and build Node.js binding using [NAPI.rs](https://napi.rs/).
-This could take a while if you build it for the first time.
+This could take a while if you build it for the first time.  
+Note: use `strip` from system instead of `binutils` if you are runinng MacOS. [see problem here](https://github.com/toeverything/AFFiNE/discussions/2840)
 
 ```
 yarn workspace @affine/native build
 ```
 
-## Debugging the Electron App 
+## Debugging the Electron App
 
 You need to run two scripts to run the app in development mode
 
 Firstly, run the web app which is served at :8080
+
 ```
-yarn dev # you may want to chose `dev - 100.84.105.99:11001` when selecting the dev server 
+yarn dev # you may want to chose `dev - 100.84.105.99:11001` when selecting the dev server
 ```
 
 Secondly, bring up the electron app

@@ -41,6 +41,7 @@ const allPackages = [
   'apps/web',
   'apps/server',
   'apps/electron',
+  'apps/storybook',
   'plugins/copilot',
   'plugins/bookmark-block',
 ];
@@ -64,6 +65,7 @@ const config = {
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
     'plugin:@typescript-eslint/recommended',
+    'prettier',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -157,6 +159,7 @@ const config = {
     'sonarjs/no-duplicated-branches': 'error',
     'sonarjs/no-collection-size-mischeck': 'error',
     'sonarjs/no-useless-catch': 'error',
+    'sonarjs/no-identical-functions': 'error',
   },
   overrides: [
     {

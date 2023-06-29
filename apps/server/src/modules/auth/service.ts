@@ -1,44 +1,88 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { compare, hash } from '@node-rs/bcrypt';
+import { hash, verify } from '@node-rs/argon2';
+import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import type { User } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 
-type UserClaim = Pick<User, 'id' | 'name' | 'email'>;
+export type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'>;
+
+export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
 
 @Injectable()
 export class AuthService {
   constructor(private config: Config, private prisma: PrismaService) {}
 
   sign(user: UserClaim) {
-    return jwt.sign(user, this.config.auth.privateKey, {
-      algorithm: 'ES256',
-      subject: user.id,
-      issuer: this.config.serverId,
-      expiresIn: this.config.auth.accessTokenExpiresIn,
-    });
+    const now = getUtcTimestamp();
+    return sign(
+      {
+        data: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt.toISOString(),
+        },
+        iat: now,
+        exp: now + this.config.auth.accessTokenExpiresIn,
+        iss: this.config.serverId,
+        sub: user.id,
+        aud: user.name,
+        jti: randomUUID({
+          disableEntropyCache: true,
+        }),
+      },
+      this.config.auth.privateKey,
+      {
+        algorithm: Algorithm.ES256,
+      }
+    );
   }
 
   refresh(user: UserClaim) {
-    return jwt.sign(user, this.config.auth.privateKey, {
-      algorithm: 'ES256',
-      subject: user.id,
-      issuer: this.config.serverId,
-      expiresIn: this.config.auth.refreshTokenExpiresIn,
-    });
+    const now = getUtcTimestamp();
+    return sign(
+      {
+        data: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt.toISOString(),
+        },
+        exp: now + this.config.auth.refreshTokenExpiresIn,
+        iat: now,
+        iss: this.config.serverId,
+        sub: user.id,
+        aud: user.name,
+        jti: randomUUID({
+          disableEntropyCache: true,
+        }),
+      },
+      this.config.auth.privateKey,
+      {
+        algorithm: Algorithm.ES256,
+      }
+    );
   }
 
-  verify(token: string) {
+  async verify(token: string) {
     try {
-      return jwt.verify(token, this.config.auth.publicKey, {
-        algorithms: ['ES256'],
-      }) as UserClaim;
+      return (
+        await jwtVerify(token, this.config.auth.publicKey, {
+          algorithms: [Algorithm.ES256],
+          iss: [this.config.serverId],
+          leeway: this.config.auth.leeway,
+          requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
+        })
+      ).data as UserClaim;
     } catch (e) {
       throw new UnauthorizedException('Invalid token');
     }
@@ -58,9 +102,13 @@ export class AuthService {
     if (!user.password) {
       throw new BadRequestException('User has no password');
     }
-
-    const equal = await compare(password, user.password);
-
+    let equal = false;
+    try {
+      equal = await verify(user.password, password);
+    } catch (e) {
+      console.error(e);
+      throw new InternalServerErrorException(e, 'Verify password failed');
+    }
     if (!equal) {
       throw new UnauthorizedException('Invalid password');
     }
@@ -69,8 +117,6 @@ export class AuthService {
   }
 
   async register(name: string, email: string, password: string): Promise<User> {
-    const hashedPassword = await hash(password);
-
     const user = await this.prisma.user.findFirst({
       where: {
         email,
@@ -80,6 +126,8 @@ export class AuthService {
     if (user) {
       throw new BadRequestException('Email already exists');
     }
+
+    const hashedPassword = await hash(password);
 
     return this.prisma.user.create({
       data: {

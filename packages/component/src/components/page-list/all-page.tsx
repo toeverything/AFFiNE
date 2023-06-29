@@ -5,7 +5,14 @@ import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
 import { type CSSProperties } from 'react';
 
-import { Table, TableBody, TableCell, TableHead, TableHeadRow } from '../..';
+import {
+  ScrollableContainer,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeadRow,
+} from '../..';
 import { TableBodyRow } from '../../ui/table';
 import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
 import { AllPagesBody } from './all-pages-body';
@@ -121,13 +128,15 @@ export const PageList = ({
   const isSmallDevices = useIsSmallDevices();
   if (isSmallDevices) {
     return (
-      <AllPageListMobileView
-        isPublicWorkspace={isPublicWorkspace}
-        createNewPage={onCreateNewPage}
-        createNewEdgeless={onCreateNewEdgeless}
-        importFile={onImportFile}
-        list={sorter.data}
-      />
+      <ScrollableContainer inTableView>
+        <AllPageListMobileView
+          isPublicWorkspace={isPublicWorkspace}
+          createNewPage={onCreateNewPage}
+          createNewEdgeless={onCreateNewEdgeless}
+          importFile={onImportFile}
+          list={sorter.data}
+        />
+      </ScrollableContainer>
     );
   }
 
@@ -139,24 +148,27 @@ export const PageList = ({
       ? DEFAULT_SORT_KEY
       : undefined;
 
-  return (
-    <StyledTableContainer ref={ref}>
-      <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
-        <AllPagesHead
-          isPublicWorkspace={isPublicWorkspace}
-          sorter={sorter}
-          createNewPage={onCreateNewPage}
-          createNewEdgeless={onCreateNewEdgeless}
-          importFile={onImportFile}
-        />
-        <AllPagesBody
-          isPublicWorkspace={isPublicWorkspace}
-          groupKey={groupKey}
-          data={sorter.data}
-        />
-      </Table>
-      {sorter.data.length === 0 && fallback ? fallback : null}
-    </StyledTableContainer>
+  return sorter.data.length === 0 && fallback ? (
+    <StyledTableContainer>{fallback}</StyledTableContainer>
+  ) : (
+    <ScrollableContainer inTableView>
+      <StyledTableContainer ref={ref}>
+        <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
+          <AllPagesHead
+            isPublicWorkspace={isPublicWorkspace}
+            sorter={sorter}
+            createNewPage={onCreateNewPage}
+            createNewEdgeless={onCreateNewEdgeless}
+            importFile={onImportFile}
+          />
+          <AllPagesBody
+            isPublicWorkspace={isPublicWorkspace}
+            groupKey={groupKey}
+            data={sorter.data}
+          />
+        </Table>
+      </StyledTableContainer>
+    </ScrollableContainer>
   );
 };
 
@@ -237,13 +249,16 @@ export const PageListTrashView: React.FC<{
     }
   );
 
-  return (
-    <StyledTableContainer ref={ref}>
-      <Table showBorder={hasScrollTop}>
-        <TrashListHead />
-        <TableBody>{ListItems}</TableBody>
-      </Table>
-      {list.length === 0 && fallback ? fallback : null}
-    </StyledTableContainer>
+  return list.length === 0 && fallback ? (
+    <StyledTableContainer>{fallback}</StyledTableContainer>
+  ) : (
+    <ScrollableContainer inTableView>
+      <StyledTableContainer ref={ref}>
+        <Table showBorder={hasScrollTop}>
+          <TrashListHead />
+          <TableBody>{ListItems}</TableBody>
+        </Table>
+      </StyledTableContainer>
+    </ScrollableContainer>
   );
 };

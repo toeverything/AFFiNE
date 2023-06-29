@@ -9,6 +9,7 @@
         "server",
         "web",
         "docs",
+        "storybook",
         "component",
         "workspace",
         "env",
@@ -21,7 +22,7 @@
         "templates",
         "y-indexeddb",
         "debug",
-        "theme"
+        "storage"
       ]
     ]
   }

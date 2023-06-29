@@ -37,11 +37,11 @@ export const Footer: React.FC<FooterProps> = ({
   return (
     <Command.Item
       data-testid="quick-search-add-new-page"
-      onSelect={useCallback(() => {
+      onSelect={useCallback(async () => {
         const id = nanoid();
         const page = createPage(id);
         assertEquals(page.id, id);
-        initEmptyPage(page);
+        await initEmptyPage(page);
         const block = page.getBlockByFlavour(
           'affine:page'
         )[0] as PageBlockModel;

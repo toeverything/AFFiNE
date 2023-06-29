@@ -11,6 +11,8 @@ const StyledTooltip = styled(StyledPopperContainer)(() => {
     backgroundColor: 'var(--affine-tooltip)',
     color: 'var(--affine-white)',
     fontSize: 'var(--affine-font-sm)',
+    borderRadius: '8px',
+    marginBottom: '12px',
   };
 });
 

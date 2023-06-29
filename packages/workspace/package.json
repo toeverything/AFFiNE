@@ -6,6 +6,7 @@
     "./blob": "./src/blob/index.ts",
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
+    "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
     "./providers": "./src/providers/index.ts",
     "./affine/*": "./src/affine/*.ts",
@@ -24,15 +25,16 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
-    "firebase": "^9.22.2",
-    "jotai": "^2.2.0",
+    "async-call-rpc": "^6.3.1",
+    "firebase": "^9.23.0",
+    "jotai": "^2.2.1",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "lib0": "^0.2.78",
-    "react": "18.3.0-canary-16d053d59-20230506",
-    "react-dom": "18.3.0-canary-16d053d59-20230506",
+    "react": "18.3.0-canary-8ec962d82-20230623",
+    "react-dom": "18.3.0-canary-8ec962d82-20230623",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.4",
+    "yjs": "^13.6.6",
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -40,5 +42,5 @@
     "next": "=13.4.2",
     "ws": "^8.13.0"
   },
-  "version": "0.7.0-canary.18"
+  "version": "0.7.0-canary.23"
 }

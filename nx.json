@@ -15,6 +15,7 @@
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "packages": ["{workspaceRoot}/packages/**/*"],
     "sharedGlobals": [
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/nx.json"
@@ -29,13 +30,22 @@
         "{projectRoot}/build",
         "{projectRoot}/out",
         "{projectRoot}/node_modules/.cache",
-        "apps/web/.next",
-        "packages/storybook/storybook-static",
-        "packages/native/affine.*.node"
+        "{projectRoot}/target",
+        "{workspaceRoot}/apps/web/.next",
+        "{workspaceRoot}/apps/storybook/storybook-static",
+        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
+        "{workspaceRoot}/packages/native/affine.*.node",
+        "{workspaceRoot}/packages/storage/*.node",
+        "{workspaceRoot}/affine.db",
+        "{workspaceRoot/apps/electron/dist"
       ],
       "inputs": [
+        "packages",
         {
           "runtime": "node -v"
+        },
+        {
+          "env": "BUILD_ENV"
         },
         {
           "env": "ENABLE_BOOKMARK_OPERATION"
@@ -45,9 +55,6 @@
         },
         {
           "env": "ENABLE_ALL_PAGE_FILTER"
-        },
-        {
-          "env": "ENABLE_IMAGE_PREVIEW_MODAL"
         },
         {
           "env": "ENABLE_TEST_PROPERTIES"
@@ -69,6 +76,9 @@
         },
         {
           "env": "API_SERVER_PROFILE"
+        },
+        {
+          "env": "ENABLE_SQLITE_PROVIDER"
         }
       ]
     },

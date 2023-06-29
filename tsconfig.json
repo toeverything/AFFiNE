@@ -41,7 +41,7 @@
     "jsx": "react-jsx",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "target": "ES2022",
-    "useDefineForClassFields": true,
+    "useDefineForClassFields": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 
@@ -79,6 +79,7 @@
       "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
       "@affine/native/*": ["./packages/native/*"],
+      "@affine/storage": ["./packages/storage/index.d.ts"],
 
       // Development only
       "@affine/electron/*": ["./apps/electron/src/*"]
@@ -95,6 +96,9 @@
     },
     {
       "path": "./apps/server"
+    },
+    {
+      "path": "./apps/storybook"
     },
     // Top level packages
     {

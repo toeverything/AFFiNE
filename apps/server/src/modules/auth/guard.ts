@@ -49,10 +49,17 @@ class AuthGuard implements CanActivate {
     if (!token) {
       return false;
     }
+    const [type, jwt] = token.split(' ') ?? [];
 
-    const claims = this.auth.verify(token);
-    req.user = await this.prisma.user.findUnique({ where: { id: claims.id } });
-    return !!req.user;
+    if (type === 'Bearer') {
+      const claims = await this.auth.verify(jwt);
+      req.user = await this.prisma.user.findUnique({
+        where: { id: claims.id },
+      });
+      return !!req.user;
+    }
+
+    return false;
   }
 }
 

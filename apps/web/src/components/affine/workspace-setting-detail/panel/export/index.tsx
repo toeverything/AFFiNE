@@ -12,7 +12,9 @@ export const ExportPanel = () => {
       <Button
         type="light"
         shape="circle"
-        disabled={!environment.isDesktop || !id}
+        disabled={
+          !environment.isDesktop || !id || !runtimeConfig.enableSQLiteProvider
+        }
         data-testid="export-affine-backup"
         onClick={async () => {
           if (id) {

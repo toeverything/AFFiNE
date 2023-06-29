@@ -1,4 +1,4 @@
-import { Unreachable } from '@affine/env';
+import { Unreachable } from '@affine/env/constant';
 import type { AppEvents, WorkspaceUISchema } from '@affine/env/workspace';
 import {
   LoadPriority,
@@ -14,6 +14,10 @@ const unimplemented = () => {
   throw new Error('Not implemented');
 };
 
+const bypassList = async () => {
+  return [];
+};
+
 export const WorkspaceAdapters = {
   [WorkspaceFlavour.AFFINE]: AffineAdapter,
   [WorkspaceFlavour.LOCAL]: LocalAdapter,
@@ -25,7 +29,7 @@ export const WorkspaceAdapters = {
     // todo: implement this
     CRUD: {
       get: unimplemented,
-      list: unimplemented,
+      list: bypassList,
       delete: unimplemented,
       create: unimplemented,
     },
@@ -36,6 +40,7 @@ export const WorkspaceAdapters = {
       PageDetail: unimplemented,
       PageList: unimplemented,
       SettingsDetail: unimplemented,
+      NewSettingsDetail: unimplemented,
     },
   },
   [WorkspaceFlavour.PUBLIC]: {
@@ -46,7 +51,7 @@ export const WorkspaceAdapters = {
     // todo: implement this
     CRUD: {
       get: unimplemented,
-      list: unimplemented,
+      list: bypassList,
       delete: unimplemented,
       create: unimplemented,
     },
@@ -57,6 +62,7 @@ export const WorkspaceAdapters = {
       PageDetail: unimplemented,
       PageList: unimplemented,
       SettingsDetail: unimplemented,
+      NewSettingsDetail: unimplemented,
     },
   },
 } satisfies {

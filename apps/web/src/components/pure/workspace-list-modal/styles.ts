@@ -45,6 +45,7 @@ export const StyledCreateWorkspaceCard = styled('div')(() => {
   return {
     width: '310px',
     height: '124px',
+    marginBottom: '24px',
     cursor: 'pointer',
     padding: '16px',
     boxShadow: 'var(--affine-shadow-1)',
@@ -133,10 +134,8 @@ export const StyledHelperContainer = styled('div')(() => {
 });
 
 export const StyledModalContent = styled('div')({
-  height: '534px',
+  height: '540px',
   padding: '8px 40px',
-  marginTop: '72px',
-  overflow: 'auto',
   ...displayFlex('space-between', 'flex-start', 'flex-start'),
   flexWrap: 'wrap',
 });
@@ -163,12 +162,11 @@ export const StyleWorkspaceAdd = styled('div')(() => {
 export const StyledModalHeader = styled('div')(() => {
   return {
     width: '100%',
-    height: '72px',
-    position: 'absolute',
+    marginTop: '10px',
     left: 0,
     top: 0,
     borderRadius: '24px 24px 0 0',
-    padding: '0 40px',
+    padding: '10px 40px',
     ...displayFlex('space-between', 'center'),
   };
 });

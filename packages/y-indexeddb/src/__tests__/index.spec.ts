@@ -20,6 +20,7 @@ import {
   downloadBinary,
   getMilestones,
   markMilestone,
+  overwriteBinary,
   revertUpdate,
   setMergeCount,
 } from '../index';
@@ -29,12 +30,12 @@ function initEmptyPage(page: Page) {
     title: new page.Text(''),
   });
   const surfaceBlockId = page.addBlock('affine:surface', {}, pageBlockId);
-  const frameBLockId = page.addBlock('affine:frame', {}, pageBlockId);
-  const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBLockId);
+  const frameBlockId = page.addBlock('affine:note', {}, pageBlockId);
+  const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBlockId);
   return {
     pageBlockId,
     surfaceBlockId,
-    frameBLockId,
+    frameBlockId,
     paragraphBlockId,
   };
 }
@@ -91,7 +92,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -107,24 +108,25 @@ describe('indexeddb provider', () => {
       })
         .register(AffineSchemas)
         .register(__unstableSchemas);
+      // data should only contain updates for the root doc
       data.updates.forEach(({ update }) => {
         Workspace.Y.applyUpdate(testWorkspace.doc, update);
       });
-      const binary = Workspace.Y.encodeStateAsUpdate(testWorkspace.doc);
-      expect(binary).toEqual(Workspace.Y.encodeStateAsUpdate(workspace.doc));
+      const subPage = testWorkspace.doc.spaces.get('space:page0');
+      {
+        assertExists(subPage);
+        await store.get(subPage.guid);
+        const data = (await store.get(subPage.guid)) as
+          | WorkspacePersist
+          | undefined;
+        assertExists(data);
+        await testWorkspace.getPage('page0')?.waitForLoaded();
+        data.updates.forEach(({ update }) => {
+          Workspace.Y.applyUpdate(subPage, update);
+        });
+      }
+      expect(workspace.doc.toJSON()).toEqual(testWorkspace.doc.toJSON());
     }
-
-    const secondWorkspace = new Workspace({
-      id,
-    })
-      .register(AffineSchemas)
-      .register(__unstableSchemas);
-    const provider2 = createIndexedDBProvider(secondWorkspace.doc, rootDBName);
-    provider2.connect();
-    await provider2.whenSynced;
-    expect(Workspace.Y.encodeStateAsUpdate(secondWorkspace.doc)).toEqual(
-      Workspace.Y.encodeStateAsUpdate(workspace.doc)
-    );
   });
 
   test('disconnect suddenly', async () => {
@@ -150,7 +152,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
     {
@@ -218,7 +220,7 @@ describe('indexeddb provider', () => {
       const page = workspace.createPage({ id: 'page0' });
       await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
-      const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+      const frameId = page.addBlock('affine:note', {}, pageBlockId);
       for (let i = 0; i < 99; i++) {
         page.addBlock('affine:paragraph', {}, frameId);
       }
@@ -410,6 +412,7 @@ describe('subDoc', () => {
       provider.disconnect();
       json2 = doc.toJSON();
     }
+    // the following line compares {} with {}
     expect(json1['']['1'].toJSON()).toEqual(json2['']['1'].toJSON());
     expect(json1['']['2']).toEqual(json2['']['2']);
   });
@@ -485,5 +488,18 @@ describe('utils', () => {
         resolve();
       }, 0)
     );
+  });
+
+  test('overwrite binary', async () => {
+    await overwriteBinary('test', new Uint8Array([1, 2, 3]));
+    {
+      const binary = await downloadBinary('test');
+      expect(binary).toEqual(new Uint8Array([1, 2, 3]));
+    }
+    await overwriteBinary('test', new Uint8Array([0, 0]));
+    {
+      const binary = await downloadBinary('test');
+      expect(binary).toEqual(new Uint8Array([0, 0]));
+    }
   });
 });

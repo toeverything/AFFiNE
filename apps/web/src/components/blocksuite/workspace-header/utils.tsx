@@ -1,4 +1,4 @@
-import { env } from '@affine/env';
+import { isDesktop } from '@affine/env/constant';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type React from 'react';
@@ -7,18 +7,18 @@ import { useEffect, useState } from 'react';
 const minimumChromeVersion = 102;
 
 export const shouldShowWarning = () => {
-  if (env.isDesktop) {
+  if (isDesktop) {
     // even though desktop have compatibility issues, we don't want to show the warning
     return false;
   }
-  if (!env.isBrowser) {
+  if (!environment.isBrowser) {
     // disable in SSR
     return false;
   }
-  if (env.isChrome) {
-    return env.chromeVersion < minimumChromeVersion;
+  if (environment.isChrome) {
+    return environment.chromeVersion < minimumChromeVersion;
   } else {
-    return !env.isMobile;
+    return !environment.isMobile;
   }
 };
 
@@ -27,9 +27,11 @@ export const OSWarningMessage: React.FC = () => {
   const [notChrome, setNotChrome] = useState(false);
   const [notGoodVersion, setNotGoodVersion] = useState(false);
   useEffect(() => {
-    setNotChrome(env.isBrowser && !env.isChrome);
+    setNotChrome(environment.isBrowser && !environment.isChrome);
     setNotGoodVersion(
-      env.isBrowser && env.isChrome && env.chromeVersion < minimumChromeVersion
+      environment.isBrowser &&
+        environment.isChrome &&
+        environment.chromeVersion < minimumChromeVersion
     );
   }, []);
 

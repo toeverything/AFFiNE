@@ -17,6 +17,7 @@ config:
     UUID: string
     ID: string
     JSON: any
+    Upload: File
 overwrite: true
 schema: ../../apps/server/src/schema.gql
 documents: ./src/**/*.gql

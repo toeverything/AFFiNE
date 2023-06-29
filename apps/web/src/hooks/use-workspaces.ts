@@ -1,6 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import type { LocalWorkspace } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -27,19 +26,6 @@ export function useAppHelper() {
   const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const set = useSetAtom(rootWorkspacesMetadataAtom);
   return {
-    createWorkspacePage: useCallback(
-      (workspaceId: string, pageId: string) => {
-        const workspace = workspaces.find(
-          ws => ws.id === workspaceId
-        ) as LocalWorkspace;
-        if (workspace && 'blockSuiteWorkspace' in workspace) {
-          workspace.blockSuiteWorkspace.createPage({ id: pageId });
-        } else {
-          throw new Error('cannot create page. blockSuiteWorkspace not found');
-        }
-      },
-      [workspaces]
-    ),
     addLocalWorkspace: useCallback(
       async (workspaceId: string): Promise<string> => {
         saveWorkspaceToLocalStorage(workspaceId);
@@ -48,6 +34,7 @@ export function useAppHelper() {
           {
             id: workspaceId,
             flavour: WorkspaceFlavour.LOCAL,
+            version: WorkspaceVersion.SubDoc,
           },
         ]);
         logger.debug('imported local workspace', workspaceId);
@@ -68,6 +55,7 @@ export function useAppHelper() {
           {
             id,
             flavour: WorkspaceFlavour.LOCAL,
+            version: WorkspaceVersion.SubDoc,
           },
         ]);
         logger.debug('created local workspace', id);

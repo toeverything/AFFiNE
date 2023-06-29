@@ -1,4 +1,4 @@
-import { AppContainer, MainContainer } from '@affine/component/workspace';
+import { MainContainer } from '@affine/component/workspace';
 import type { AffinePublicWorkspace } from '@affine/env/workspace';
 import { useAtom } from 'jotai';
 import Head from 'next/head';
@@ -7,6 +7,7 @@ import type React from 'react';
 import { lazy, Suspense } from 'react';
 
 import { openQuickSearchModalAtom } from '../atoms';
+import { AppContainer } from '../components/affine/app-container';
 import { useRouterTitle } from '../hooks/use-router-title';
 
 const QuickSearchModal = lazy(() =>

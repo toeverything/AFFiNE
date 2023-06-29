@@ -22,24 +22,14 @@ export function useReferenceLinkHelper(
           },
         },
       ]);
-      const [frame] = page.getBlockByFlavour('affine:frame');
+      const [frame] = page.getBlockByFlavour('affine:note');
 
       frame && page.addBlock('affine:paragraph', { text }, frame.id);
-    },
-    [blockSuiteWorkspace]
-  );
-  const removeReferenceLink = useCallback(
-    (deleteId: string) => {
-      blockSuiteWorkspace.indexer.backlink.removeSubpageNode(
-        blockSuiteWorkspace,
-        deleteId
-      );
     },
     [blockSuiteWorkspace]
   );
 
   return {
     addReferenceLink,
-    removeReferenceLink,
   };
 }

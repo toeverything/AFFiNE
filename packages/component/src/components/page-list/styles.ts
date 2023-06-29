@@ -7,7 +7,6 @@ export const StyledTableContainer = styled('div')(({ theme }) => {
     height: '100%',
     padding: '0 32px 180px 32px',
     maxWidth: '100%',
-    overflowY: 'scroll',
     [theme.breakpoints.down('sm')]: {
       padding: '52px 0px',
       'tr > td:first-of-type': {

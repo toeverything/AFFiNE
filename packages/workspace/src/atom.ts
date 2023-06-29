@@ -1,13 +1,28 @@
+import { isBrowser } from '@affine/env/constant';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
+import type { WorkspaceVersion } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import Router from 'next/router';
 
-export type RootWorkspaceMetadata = {
+export type RootWorkspaceMetadataV2 = {
   id: string;
   flavour: WorkspaceFlavour;
+  version: WorkspaceVersion;
 };
+
+export type RootWorkspaceMetadataV1 = {
+  id: string;
+  flavour: WorkspaceFlavour;
+  // force type check
+  version: undefined;
+};
+
+export type RootWorkspaceMetadata =
+  | RootWorkspaceMetadataV1
+  | RootWorkspaceMetadataV2;
+
 // #region root atoms
 // root primitive atom that stores the necessary data for the whole app
 // be careful when you use this atom,
@@ -30,14 +45,12 @@ export const rootWorkspacesMetadataAtom = atomWithStorage<
 export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
 
 rootCurrentWorkspaceIdAtom.onMount = set => {
-  if (typeof window !== 'undefined') {
+  if (isBrowser) {
     const callback = (url: string) => {
       const value = url.split('/')[2];
       if (value) {
         set(value);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('last_workspace_id', value);
-        }
+        localStorage.setItem('last_workspace_id', value);
       } else {
         set(null);
       }
@@ -54,7 +67,7 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
 export const rootCurrentPageIdAtom = atom<string | null>(null);
 
 rootCurrentPageIdAtom.onMount = set => {
-  if (typeof window !== 'undefined') {
+  if (isBrowser) {
     const callback = (url: string) => {
       const value = url.split('/')[3];
       if (value) {

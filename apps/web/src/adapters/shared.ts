@@ -1,7 +1,14 @@
 import { lazy } from 'react';
-
+// export { WorkspaceSettingDetail as NewWorkspaceSettingDetail } from '../components/affine/new-workspace-setting-detail';
 export const WorkspaceSettingDetail = lazy(() =>
   import('../components/affine/workspace-setting-detail').then(
+    ({ WorkspaceSettingDetail }) => ({
+      default: WorkspaceSettingDetail,
+    })
+  )
+);
+export const NewWorkspaceSettingDetail = lazy(() =>
+  import('../components/affine/new-workspace-setting-detail').then(
     ({ WorkspaceSettingDetail }) => ({
       default: WorkspaceSettingDetail,
     })
