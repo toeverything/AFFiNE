@@ -140,3 +140,12 @@ test('affine onboarding button', async ({ page }) => {
 
   expect(await onboardingModal.isVisible()).toEqual(false);
 });
+
+test('windows only check', async ({ page }) => {
+  const windowOnlyUI = page.locator('[data-platform-target=win32]');
+  if (process.platform === 'win32') {
+    await expect(windowOnlyUI).toBeVisible();
+  } else {
+    await expect(windowOnlyUI).not.toBeVisible();
+  }
+});

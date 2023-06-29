@@ -36,6 +36,8 @@ declare global {
   }
 
   // eslint-disable-next-line no-var
+  var platform: Platform | undefined;
+  // eslint-disable-next-line no-var
   var environment: Environment;
   // eslint-disable-next-line no-var
   var runtimeConfig: PublicRuntimeConfig;
@@ -95,6 +97,22 @@ const { publicRuntimeConfig: config } = getConfig() as {
 };
 
 publicRuntimeConfigSchema.parse(config);
+
+export const platformSchema = z.enum([
+  'aix',
+  'android',
+  'darwin',
+  'freebsd',
+  'haiku',
+  'linux',
+  'openbsd',
+  'sunos',
+  'win32',
+  'cygwin',
+  'netbsd',
+]);
+
+export type Platform = z.infer<typeof platformSchema>;
 
 type BrowserBase = {
   /**

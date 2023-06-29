@@ -7,6 +7,7 @@ import { contextBridge, ipcRenderer } from 'electron';
   contextBridge.exposeInMainWorld('appInfo', appInfo);
   contextBridge.exposeInMainWorld('apis', apis);
   contextBridge.exposeInMainWorld('events', events);
+  contextBridge.exposeInMainWorld('platform', process.platform);
 
   // Credit to microsoft/vscode
   const globals = {
