@@ -36,9 +36,21 @@ const ExportToPdfMenuItem = ({
         )
         .then(() => {
           onSelect?.({ type: 'pdf' });
+          setPushNotification({
+            key: 'export-to-pdf',
+            title: 'export',
+            message: 'Export success',
+            type: 'success',
+          });
         })
         .catch(err => {
           console.error(err);
+          setPushNotification({
+            key: 'export-to-pdf',
+            title: 'export',
+            message: 'Export error',
+            type: 'error',
+          });
         });
     } else {
       const contentParser =
