@@ -50,12 +50,7 @@ declare global {
 }
 
 export const buildFlagsSchema = z.object({
-  /**
-   * todo: remove this build flag when filter feature is ready.
-   *
-   * filter feature in the all pages.
-   */
-  enableAllPageFilter: z.boolean(),
+  enableAllPageSaving: z.boolean(),
   enablePlugin: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
@@ -64,6 +59,7 @@ export const buildFlagsSchema = z.object({
   changelogUrl: z.string(),
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
+  enableNewSettingUnstableApi: z.boolean(),
   enableSQLiteProvider: z.boolean(),
 });
 

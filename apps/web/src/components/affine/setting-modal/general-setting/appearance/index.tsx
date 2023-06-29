@@ -12,7 +12,6 @@ import {
   windowFrameStyleOptions,
 } from '../../../../../atoms/settings';
 import { LanguageMenu } from '../../../language-menu';
-import { IS_EXHIBITION } from '../../config';
 import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
 
@@ -70,7 +69,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu />
           </div>
         </SettingRow>
-        {IS_EXHIBITION && environment.isDesktop ? (
+        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
             name={t['Client Border Style']()}
             desc={t['Customize the appearance of the client.']()}
@@ -91,7 +90,7 @@ export const AppearanceSettings = () => {
             onChange={checked => changeSwitch('fullWidthLayout', checked)}
           />
         </SettingRow>
-        {IS_EXHIBITION && environment.isDesktop ? (
+        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
             name={t['Window frame style']()}
             desc={t['Customize appearance of Windows Client.']()}
@@ -114,7 +113,7 @@ export const AppearanceSettings = () => {
           </SettingRow>
         ) : null}
       </SettingWrapper>
-      {IS_EXHIBITION ? (
+      {runtimeConfig.enableNewSettingUnstableApi ? (
         <SettingWrapper title={t['Date']()}>
           <SettingRow
             name={t['Date Format']()}
