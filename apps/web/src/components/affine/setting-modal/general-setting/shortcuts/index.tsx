@@ -1,3 +1,5 @@
+import { SettingHeader } from '@affine/component/setting-components';
+import { SettingWrapper } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import {
@@ -6,8 +8,6 @@ import {
   useMarkdownShortcuts,
   usePageShortcuts,
 } from '../../../../../hooks/affine/use-shortcuts';
-import { SettingHeader } from '../../common/setting-header';
-import { Wrapper } from '../../common/wrapper';
 import { shortcutRow } from './style.css';
 
 export const Shortcuts = () => {
@@ -24,7 +24,7 @@ export const Shortcuts = () => {
         title={t['Keyboard Shortcuts']()}
         subtitle={t['Check Keyboard Shortcuts quickly']()}
       />
-      <Wrapper title={t['General']()}>
+      <SettingWrapper title={t['General']()}>
         {Object.entries(generalShortcuts).map(([title, shortcuts]) => {
           return (
             <div key={title} className={shortcutRow}>
@@ -33,8 +33,8 @@ export const Shortcuts = () => {
             </div>
           );
         })}
-      </Wrapper>
-      <Wrapper title={t['Page']()}>
+      </SettingWrapper>
+      <SettingWrapper title={t['Page']()}>
         {Object.entries(pageShortcuts).map(([title, shortcuts]) => {
           return (
             <div key={title} className={shortcutRow}>
@@ -43,8 +43,8 @@ export const Shortcuts = () => {
             </div>
           );
         })}
-      </Wrapper>
-      <Wrapper title={t['Edgeless']()}>
+      </SettingWrapper>
+      <SettingWrapper title={t['Edgeless']()}>
         {Object.entries(edgelessShortcuts).map(([title, shortcuts]) => {
           return (
             <div key={title} className={shortcutRow}>
@@ -53,8 +53,8 @@ export const Shortcuts = () => {
             </div>
           );
         })}
-      </Wrapper>
-      <Wrapper title={t['Markdown Syntax']()}>
+      </SettingWrapper>
+      <SettingWrapper title={t['Markdown Syntax']()}>
         {Object.entries(markdownShortcuts).map(([title, shortcuts]) => {
           return (
             <div key={title} className={shortcutRow}>
@@ -63,7 +63,7 @@ export const Shortcuts = () => {
             </div>
           );
         })}
-      </Wrapper>
+      </SettingWrapper>
     </>
   );
 };

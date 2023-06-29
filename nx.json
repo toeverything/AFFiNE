@@ -32,8 +32,10 @@
         "{projectRoot}/node_modules/.cache",
         "{projectRoot}/target",
         "{workspaceRoot}/apps/web/.next",
-        "{workspaceRoot}/packages/storybook/storybook-static",
+        "{workspaceRoot}/apps/storybook/storybook-static",
+        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
         "{workspaceRoot}/packages/native/affine.*.node",
+        "{workspaceRoot}/packages/storage/*.node",
         "{workspaceRoot}/affine.db",
         "{workspaceRoot/apps/electron/dist"
       ],
@@ -41,6 +43,9 @@
         "packages",
         {
           "runtime": "node -v"
+        },
+        {
+          "env": "BUILD_ENV"
         },
         {
           "env": "ENABLE_BOOKMARK_OPERATION"
@@ -71,6 +76,9 @@
         },
         {
           "env": "API_SERVER_PROFILE"
+        },
+        {
+          "env": "ENABLE_SQLITE_PROVIDER"
         }
       ]
     },

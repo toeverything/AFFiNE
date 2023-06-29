@@ -1,7 +1,7 @@
 {
   "name": "@affine/web",
   "private": true,
-  "version": "0.7.0-canary.19",
+  "version": "0.7.0-canary.23",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -79,7 +79,7 @@
     "raw-loader": "^4.0.2",
     "redux": "^4.2.1",
     "swc-plugin-coverage-instrument": "^0.0.18",
-    "typescript": "^5.1.3",
+    "typescript": "^5.1.5",
     "webpack": "^5.88.0"
   },
   "stableVersion": "0.0.0"

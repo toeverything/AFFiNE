@@ -62,16 +62,4 @@ export class AuthResolver {
     ctx.req.user = user;
     return user;
   }
-
-  @Mutation(() => UserType)
-  async signUp(
-    @Context() ctx: { req: Request },
-    @Args('email') email: string,
-    @Args('password') password: string,
-    @Args('name') name: string
-  ) {
-    const user = await this.auth.register(name, email, password);
-    ctx.req.user = user;
-    return user;
-  }
 }

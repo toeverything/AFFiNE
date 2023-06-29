@@ -1,11 +1,10 @@
 import { DebugLogger } from '@affine/debug';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import {
-  config,
   DEFAULT_HELLO_WORLD_PAGE_ID,
   DEFAULT_WORKSPACE_NAME,
-} from '@affine/env';
-import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { PageNotFoundError } from '@affine/env/constant';
+  PageNotFoundError,
+} from '@affine/env/constant';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import {
   LoadPriority,
@@ -45,7 +44,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       const page = blockSuiteWorkspace.createPage({
         id: DEFAULT_HELLO_WORLD_PAGE_ID,
       });
-      if (config.enablePreloading) {
+      if (runtimeConfig.enablePreloading) {
         initPageWithPreloading(page).catch(err => {
           logger.error('init page with preloading failed', err);
         });
