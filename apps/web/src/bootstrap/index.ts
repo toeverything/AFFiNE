@@ -14,6 +14,7 @@ import {
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
 import { rootStore } from '@toeverything/plugin-infra/manager';
+import { z } from 'zod';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -37,6 +38,35 @@ if (runtimeConfig.enablePlugin && !environment.isServer) {
 
 if (!environment.isServer) {
   import('@affine/bookmark-block');
+}
+
+// platform check
+{
+  const platformSchema = z.enum([
+    'aix',
+    'android',
+    'darwin',
+    'freebsd',
+    'haiku',
+    'linux',
+    'openbsd',
+    'sunos',
+    'win32',
+    'cygwin',
+    'netbsd',
+  ]);
+  type Platform = z.infer<typeof platformSchema>;
+
+  let platform: Platform | undefined;
+  if (typeof window === 'undefined') {
+    platform = process.platform;
+  } else {
+    platform = (globalThis as any).platform;
+  }
+
+  if (platform) {
+    platformSchema.parse(platform);
+  }
 }
 
 if (!environment.isDesktop && !environment.isServer) {
