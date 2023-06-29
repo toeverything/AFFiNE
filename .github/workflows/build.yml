@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     env:
-      RELEASE_VERSION: canary
+      BUILD_TYPE: canary
 
     steps:
       - uses: actions/checkout@v3
@@ -111,7 +111,7 @@ jobs:
     environment: development
     env:
       ENABLE_BOOKMARK_OPERATION: true
-      RELEASE_VERSION: canary
+      BUILD_TYPE: canary
 
     steps:
       - uses: actions/checkout@v3

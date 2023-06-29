@@ -53,9 +53,9 @@ const buildPreset = {
 buildPreset.beta = buildPreset.stable;
 buildPreset.internal = buildPreset.stable;
 
-const currentBuild = process.env.BUILD_ENV || 'stable';
+const currentBuild = process.env.BUILD_TYPE || 'stable';
 
-if (process.env.CI && !process.env.BUILD_ENV) {
+if (process.env.CI && !process.env.BUILD_TYPE) {
   throw new Error('BUILD_ENV is required in CI');
 }
 
