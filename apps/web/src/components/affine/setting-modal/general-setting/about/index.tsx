@@ -56,7 +56,7 @@ export const AboutAffine = () => {
             style={{ cursor: 'pointer' }}
             onClick={() => {
               window.open(
-                'https://github.com/toeverything/AFFiNE/releases',
+                'https://affine.pro/blog/whats-new-affine-0630',
                 '_blank'
               );
             }}
