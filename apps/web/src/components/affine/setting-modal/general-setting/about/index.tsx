@@ -8,7 +8,6 @@ import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 
 import { type AppSetting, useAppSetting } from '../../../../../atoms/settings';
-import { IS_EXHIBITION } from '../../config';
 import { communityItem, communityWrapper, link } from './style.css';
 
 export const AboutAffine = () => {
@@ -23,7 +22,7 @@ export const AboutAffine = () => {
   return (
     <>
       <SettingHeader title={t['About AFFiNE']()} subtitle={t['None yet']()} />
-      {IS_EXHIBITION && environment.isDesktop ? (
+      {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
         <SettingWrapper title={t['Version']()}>
           <SettingRow
             name={t['Check for updates']()}

@@ -39,7 +39,7 @@ export function WorkspaceHeader({
               }}
             />
           </div>
-          {runtimeConfig.enableAllPageFilter && (
+          {runtimeConfig.enableAllPageSaving && (
             <div>
               {setting.currentView.id !== NIL ||
               (setting.currentView.id === NIL &&

@@ -19,7 +19,7 @@ export const blockSuiteFeatureFlags = {
  */
 const buildPreset = {
   stable: {
-    enableAllPageFilter: true,
+    enableAllPageSaving: false,
     enablePlugin: false,
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
@@ -28,13 +28,14 @@ const buildPreset = {
     changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0620',
     enablePreloading: true,
     enableNewSettingModal: false,
+    enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
   },
   beta: {},
   internal: {},
   // canary will be aggressive and enable all features
   canary: {
-    enableAllPageFilter: true,
+    enableAllPageSaving: true,
     enablePlugin: true,
     enableTestProperties: true,
     enableBroadcastChannelProvider: true,
@@ -43,6 +44,7 @@ const buildPreset = {
     changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
     enablePreloading: true,
     enableNewSettingModal: true,
+    enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
   },
 };
@@ -51,36 +53,43 @@ const buildPreset = {
 buildPreset.beta = buildPreset.stable;
 buildPreset.internal = buildPreset.stable;
 
-const currentBuild = process.env.BUILD_ENV || 'stable';
+const currentBuild = process.env.BUILD_TYPE || 'stable';
+
+if (process.env.CI && !process.env.BUILD_TYPE) {
+  throw new Error('BUILD_ENV is required in CI');
+}
 
 const currentBuildPreset = buildPreset[currentBuild];
 
 const environmentPreset = {
   enablePlugin: process.env.ENABLE_PLUGIN
     ? process.env.ENABLE_PLUGIN === 'true'
-    : buildPreset.canary.enablePlugin,
-  enableAllPageFilter: process.env.ENABLE_ALL_PAGE_FILTER
+    : currentBuildPreset.enablePlugin,
+  enableAllPageSaving: process.env.ENABLE_ALL_PAGE_SAVING
     ? process.env.ENABLE_ALL_PAGE_FILTER === 'true'
-    : buildPreset.canary.enableAllPageFilter,
+    : currentBuildPreset.enableAllPageSaving,
   enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
     ? process.env.ENABLE_TEST_PROPERTIES === 'true'
-    : buildPreset.canary.enableTestProperties,
+    : currentBuildPreset.enableTestProperties,
   enableLegacyCloud: process.env.ENABLE_LEGACY_PROVIDER
     ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
-    : buildPreset.canary.enableLegacyCloud,
+    : currentBuildPreset.enableLegacyCloud,
   enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER
     ? process.env.ENABLE_BC_PROVIDER !== 'false'
-    : buildPreset.canary.enableBroadcastChannelProvider,
-  changelogUrl: process.env.CHANGELOG_URL ?? buildPreset.canary.changelogUrl,
+    : currentBuildPreset.enableBroadcastChannelProvider,
+  changelogUrl: process.env.CHANGELOG_URL ?? currentBuildPreset.changelogUrl,
   enablePreloading: process.env.ENABLE_PRELOADING
     ? process.env.ENABLE_PRELOADING === 'true'
-    : buildPreset.canary.enablePreloading,
+    : currentBuildPreset.enablePreloading,
   enableNewSettingModal: process.env.ENABLE_NEW_SETTING_MODAL
     ? process.env.ENABLE_NEW_SETTING_MODAL === 'true'
-    : buildPreset.canary.enableNewSettingModal,
+    : currentBuildPreset.enableNewSettingModal,
   enableSQLiteProvider: process.env.ENABLE_SQLITE_PROVIDER
     ? process.env.ENABLE_SQLITE_PROVIDER === 'true'
-    : buildPreset.canary.enableSQLiteProvider,
+    : currentBuildPreset.enableSQLiteProvider,
+  enableNewSettingUnstableApi: process.env.ENABLE_NEW_SETTING_UNSTABLE_API
+    ? process.env.ENABLE_NEW_SETTING_UNSTABLE_API === 'true'
+    : currentBuildPreset.enableNewSettingUnstableApi,
 };
 
 /**
@@ -91,7 +100,7 @@ const buildFlags = {
   // environment preset will overwrite current build preset
   // this environment variable is for debug proposes only
   // do not put them into CI
-  ...environmentPreset,
+  ...(process.env.CI ? {} : environmentPreset),
 };
 
 export { buildFlags };

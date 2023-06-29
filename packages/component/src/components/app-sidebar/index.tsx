@@ -97,6 +97,9 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         })}
         className={clsx(navWrapperStyle, {
           'has-background': environment.isDesktop && props.hasBackground,
+          'has-border':
+            !environment.isDesktop ||
+            (environment.isDesktop && props.hasBackground),
         })}
         data-open={open}
         data-is-macos-electron={isMacosDesktop}
