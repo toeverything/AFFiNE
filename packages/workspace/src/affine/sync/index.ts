@@ -27,6 +27,11 @@ export class SocketIOProvider extends Observable<string> {
   awareness: awarenessProtocol.Awareness;
   rootDoc: Doc;
   connected: boolean;
+  synced: boolean;
+  connectPromise: Promise<void>;
+  connectResolve: () => void = () => {};
+  syncPromise: Promise<void>;
+  syncResolve: () => void = () => {};
 
   constructor(
     serverUrl: string,
@@ -42,6 +47,7 @@ export class SocketIOProvider extends Observable<string> {
     });
     this.awareness = awareness;
     this.connected = false;
+    this.synced = false;
     this.registerDoc(doc);
     socket.on('server-handshake', this.serverHandshakeHandler);
     socket.on('server-update', this.handlerServerUpdate);
@@ -53,6 +59,12 @@ export class SocketIOProvider extends Observable<string> {
       this.serverAwarenessBroadcastHandler
     );
     awareness.on('update', this.awarenessUpdateHandler);
+    this.connectPromise = new Promise(resolve => {
+      this.connectResolve = resolve;
+    });
+    this.syncPromise = new Promise(resolve => {
+      this.syncResolve = resolve;
+    });
   }
 
   serverHandshakeHandler = (message: { guid: string; update: string }) => {
@@ -74,6 +86,8 @@ export class SocketIOProvider extends Observable<string> {
     // apply update from server
     Y.applyUpdate(doc, update, 'server');
     doc.emit('load', []);
+    this.syncResolve();
+    this.synced = true;
   };
 
   handlerServerUpdate = (message: { guid: string; update: string }) => {
@@ -206,11 +220,20 @@ export class SocketIOProvider extends Observable<string> {
     doc.off('destroy', this.createOrGetDestroyHandler(doc));
   };
 
+  waitForConnected = (): Promise<void> => {
+    return this.connectPromise;
+  };
+
+  waitForSynced = (): Promise<void> => {
+    return this.syncPromise;
+  };
+
   connect = () => {
     const doc = this.rootDoc;
     const socket = this.socket;
     socket.connect();
     socket.on('connect', () => {
+      this.connectResolve();
       this.connected = true;
       socket.emit('client-handshake', doc.guid);
       // ask for other clients' awareness
@@ -219,9 +242,16 @@ export class SocketIOProvider extends Observable<string> {
   };
 
   disconnect = () => {
+    this.connectPromise = new Promise(resolve => {
+      this.connectResolve = resolve;
+    });
+    this.syncPromise = new Promise(resolve => {
+      this.syncResolve = resolve;
+    });
     const socket = this.socket;
     socket.disconnect();
     this.connected = false;
+    this.synced = false;
   };
 
   override destroy = () => {
