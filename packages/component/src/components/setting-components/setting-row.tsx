@@ -10,8 +10,17 @@ export const SettingRow: FC<
     style?: CSSProperties;
     onClick?: () => void;
     spreadCol?: boolean;
+    testId?: string;
   }>
-> = ({ name, desc, children, onClick, style, spreadCol = true }) => {
+> = ({
+  name,
+  desc,
+  children,
+  onClick,
+  style,
+  spreadCol = true,
+  testId = '',
+}) => {
   return (
     <div
       className={clsx(settingRow, {
@@ -19,6 +28,7 @@ export const SettingRow: FC<
       })}
       style={style}
       onClick={onClick}
+      data-testid={testId}
     >
       <div className="left-col">
         <div className="name">{name}</div>

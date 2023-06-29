@@ -23,6 +23,7 @@ export const Shortcuts = () => {
       <SettingHeader
         title={t['Keyboard Shortcuts']()}
         subtitle={t['Check Keyboard Shortcuts quickly']()}
+        data-testid="keyboard-shortcuts-title"
       />
       <SettingWrapper title={t['General']()}>
         {Object.entries(generalShortcuts).map(([title, shortcuts]) => {

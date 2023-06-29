@@ -31,6 +31,7 @@ export const DeleteLeaveWorkspace: FC<{
         onClick={() => {
           setShowDelete(true);
         }}
+        testId="delete-workspace-button"
       >
         <ArrowRightSmallIcon />
       </SettingRow>
