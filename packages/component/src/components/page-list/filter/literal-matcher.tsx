@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
 import { AFFiNEDatePicker } from '../../date-picker';
+import { FilterTag } from './filter-tag-translation';
 import { inputStyle } from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
@@ -28,7 +29,7 @@ literalMatcher.register(tBoolean.create(), {
         onChange({ type: 'literal', value: !value.value });
       }}
     >
-      {value.value?.toString()}
+      <FilterTag name={value.value?.toString()} />
     </div>
   ),
 });

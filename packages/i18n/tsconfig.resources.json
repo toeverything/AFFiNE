@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "module": "ESNext",
+    "module": "NodeNext",
     "resolveJsonModule": true,
     "moduleResolution": "nodenext",
     "outDir": "lib/resources",
