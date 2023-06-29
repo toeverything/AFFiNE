@@ -275,6 +275,12 @@ jobs:
         with:
           playwright-install: true
 
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: next-js
+          path: ./apps/web/.next
+
       - name: Unzip
         run: yarn unzip
         working-directory: ./tests/affine-legacy/0.7.0-canary.18

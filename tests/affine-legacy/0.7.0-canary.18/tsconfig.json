@@ -1,7 +1,8 @@
 {
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "outDir": "lib"
   },
   "include": ["e2e"],
   "references": [
