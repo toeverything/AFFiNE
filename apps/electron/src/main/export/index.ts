@@ -1,5 +1,5 @@
 import type { NamespaceHandlers } from '../type';
-import { savePDFFileAs, savePngFileAs } from './export';
+import { saveFileAs, savePDFFileAs, savePngFileAs } from './export';
 
 export const exportHandlers = {
   savePDFFileAs: async (
@@ -20,6 +20,17 @@ export const exportHandlers = {
     mode: string
   ) => {
     return savePngFileAs(workspaceId, pageId, title, mode);
+  },
+
+  saveFileAs: async (
+    _,
+    imageDataUrl: string,
+    width: number,
+    height: number,
+    filePath: string,
+    fileType: string
+  ) => {
+    return saveFileAs(imageDataUrl, width, height, filePath, fileType);
   },
 } satisfies NamespaceHandlers;
 

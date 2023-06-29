@@ -5,6 +5,7 @@ import {
   PageNotFoundError,
 } from '@affine/env/constant';
 import { rootCurrentEditorAtom } from '@affine/workspace/atom';
+import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -21,7 +22,7 @@ import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
-import type { FC, ReactElement } from 'react';
+import { type FC, type ReactElement,useEffect } from 'react';
 import React, {
   memo,
   startTransition,
@@ -77,6 +78,36 @@ const EditorWrapper = memo(function EditorWrapper({
   const [appSettings] = useAppSetting();
 
   assertExists(meta);
+
+  useEffect(() => {
+    if (environment.isDesktop) {
+      return window.events?.export.transPageToCanvas(async (meta: any) => {
+        const { fileType, filePath, channelReply, channelError } = meta;
+        try {
+          const contentParser = new ContentParser(page);
+          const canvasEle = await contentParser.transPageToCanvas();
+          if (!canvasEle) {
+            window.affine?.ipcRenderer.send(channelError, 'fail to export');
+            return;
+          }
+
+          const imageDataUrl = canvasEle.toDataURL(
+            fileType === 'pdf' ? 'image/png' : `image/${fileType}`
+          );
+          const finallyFilePath = await window.apis.export.saveFileAs(
+            imageDataUrl,
+            canvasEle.width,
+            canvasEle.height,
+            filePath,
+            fileType
+          );
+          window.affine?.ipcRenderer.send(channelReply, finallyFilePath);
+        } catch (error) {
+          window.affine?.ipcRenderer.send(channelError, error);
+        }
+      });
+    }
+  }, [page]);
 
   return (
     <Editor

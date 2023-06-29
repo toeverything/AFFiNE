@@ -14,7 +14,7 @@ const IS_DEV: boolean =
 
 const DEV_TOOL = process.env.DEV_TOOL === 'true';
 
-async function createWindow() {
+export async function createWindow(show = true, url?: string) {
   logger.info('create window');
   const mainWindowState = electronWindowState({
     defaultWidth: 1000,
@@ -72,11 +72,13 @@ async function createWindow() {
    * @see https://github.com/electron/electron/issues/25012
    */
   browserWindow.on('ready-to-show', () => {
-    if (IS_DEV) {
-      // do not gain focus in dev mode
-      browserWindow.showInactive();
-    } else {
-      browserWindow.show();
+    if (show) {
+      if (IS_DEV) {
+        // do not gain focus in dev mode
+        browserWindow.showInactive();
+      } else {
+        browserWindow.show();
+      }
     }
     helperConnectionUnsub = helperProcessManager.connectRenderer(
       browserWindow.webContents
@@ -101,7 +103,7 @@ async function createWindow() {
   /**
    * URL for main window.
    */
-  const pageUrl = process.env.DEV_SERVER_URL || 'file://./index.html'; // see protocol.ts
+  const pageUrl = url || process.env.DEV_SERVER_URL || 'file://./index.html'; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 

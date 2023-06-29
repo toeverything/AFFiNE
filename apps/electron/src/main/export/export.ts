@@ -1,9 +1,10 @@
-import { BrowserWindow, dialog, shell } from 'electron';
+import { uuidv4 } from '@blocksuite/store';
+import { type BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import fs from 'fs-extra';
 import { jsPDF } from 'jspdf';
-import { join } from 'path';
 
 import { logger } from '../logger';
+import { createWindow } from '../main-window';
 import type { ErrorMessage } from './utils';
 import { getFakedResult } from './utils';
 
@@ -13,50 +14,19 @@ export interface SavePDFFileResult {
   error?: ErrorMessage;
 }
 
-interface SaveInfo {
-  imageDataUrl: string;
-  width: number;
-  height: number;
-  filePath: string;
-  fileType: string;
-}
-
 // todo maybe need to change page mode
-async function createWindow(
+async function createMainWindow(
   workspaceId: string,
   pageId: string,
   _mode: string
 ): Promise<BrowserWindow> {
+  const win = await createWindow(
+    true,
+    `${
+      process.env.DEV_SERVER_URL || 'file://.'
+    }/workspace/${workspaceId}/${pageId}`
+  );
   return new Promise<BrowserWindow>((resolve, reject) => {
-    const win = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: true,
-        preload: join(__dirname, './main/export.js'),
-      },
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    win.loadURL(
-      `${
-        process.env.DEV_SERVER_URL || 'file://.'
-      }/workspace/${workspaceId}/${pageId}`
-    );
-
-    win.webContents.on(
-      'ipc-message',
-      async (event, channel, uniqueId: string, params) => {
-        if (channel === 'save-file') {
-          try {
-            const result = await saveFileAs(params as SaveInfo);
-            win.webContents.send(uniqueId + '-reply', result);
-          } catch (error) {
-            win.webContents.send(uniqueId + '-error', error);
-          }
-        }
-      }
-    );
-
     win.webContents.on('did-finish-load', async () => {
       try {
         const result = await win.webContents.executeJavaScript(`
@@ -91,8 +61,38 @@ async function createWindow(
   });
 }
 
-async function saveFileAs(params: SaveInfo): Promise<string> {
-  const { imageDataUrl, width, height, filePath, fileType } = params;
+async function savePageToFile(
+  win: BrowserWindow,
+  filePath: string,
+  fileType: string
+) {
+  const channelReply = uuidv4() + '-reply';
+  const channelError = uuidv4() + '-error';
+  win.webContents.send('export:transPageToCanvas', {
+    filePath,
+    fileType,
+    channelReply,
+    channelError,
+  });
+  const promise = new Promise<string>((resolve, reject) => {
+    ipcMain.once(channelReply, (event, result) => {
+      resolve(result);
+    });
+    ipcMain.once(channelError, (event, result) => {
+      reject(result);
+    });
+  });
+  const finalPath = await promise;
+  return finalPath;
+}
+
+export async function saveFileAs(
+  imageDataUrl: string,
+  width: number,
+  height: number,
+  filePath: string,
+  fileType: string
+): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     console.log('pdfDataUrl');
 
@@ -146,7 +146,7 @@ async function generatePDF(
   mode: string,
   filePath: string
 ): Promise<string> {
-  const win = await createWindow(workspaceId, pageId, mode);
+  const win = await createMainWindow(workspaceId, pageId, mode);
   try {
     if (mode === 'page') {
       const options = {
@@ -164,19 +164,8 @@ async function generatePDF(
       });
       return filePath;
     } else {
-      const finalFilePath = await win.webContents.executeJavaScript(`
-        const savePageToPdf = async () => {
-          const editor = document.querySelector('editor-container');
-          if (editor.createContentParser) {
-            const parser = editor.createContentParser();
-            const canvas = await parser.transPageToCanvas();
-            const finalFilePath = await window.api.saveFile(canvas, '${filePath}', 'pdf');
-            return finalFilePath;
-          }
-        };
-        savePageToPdf()
-      `);
-      return finalFilePath;
+      const finalPath = await savePageToFile(win, filePath, 'pdf');
+      return finalPath;
     }
   } finally {
     win.close();
@@ -228,61 +217,32 @@ export async function savePDFFileAs(
   }
 }
 
-async function generatePNG(
-  workspaceId: string,
-  pageId: string,
-  mode: string,
-  filePath: string
-): Promise<string> {
-  const win = await createWindow(workspaceId, pageId, mode);
-  try {
-    const finalFilePath = await win.webContents.executeJavaScript(`
-      const savePageToPng = async () => {
-          const editor = document.querySelector('editor-container');
-          if (editor.createContentParser) {
-            const parser = editor.createContentParser();
-            const canvas = await parser.transPageToCanvas();
-            const finalFilePath = await window.api.saveFile(canvas, '${filePath}', 'png');
-            return finalFilePath;
-          }
-      };
-      savePageToPng()
-    `);
-    return finalFilePath;
-  } finally {
-    win.close();
-  }
-}
-
 export async function savePngFileAs(
   workspaceId: string,
   pageId: string,
   pageTitle: string,
   mode: string
 ): Promise<SavePDFFileResult> {
+  const ret =
+    getFakedResult() ??
+    (await dialog.showSaveDialog({
+      properties: ['showOverwriteConfirmation'],
+      title: 'Save PNG',
+      showsTagField: false,
+      buttonLabel: 'Save',
+      defaultPath: `${pageTitle}.png`,
+      message: 'Save Page as a PNG file',
+    }));
+  const filePath = ret.filePath;
+  if (ret.canceled || !filePath) {
+    return {
+      canceled: true,
+    };
+  }
+
+  const win = await createMainWindow(workspaceId, pageId, mode);
   try {
-    const ret =
-      getFakedResult() ??
-      (await dialog.showSaveDialog({
-        properties: ['showOverwriteConfirmation'],
-        title: 'Save PNG',
-        showsTagField: false,
-        buttonLabel: 'Save',
-        defaultPath: `${pageTitle}.png`,
-        message: 'Save Page as a PNG file',
-      }));
-    const filePath = ret.filePath;
-    if (ret.canceled || !filePath) {
-      return {
-        canceled: true,
-      };
-    }
-    const finalFilePath = await generatePNG(
-      workspaceId,
-      pageId,
-      mode,
-      filePath
-    );
+    const finalFilePath = await savePageToFile(win, filePath, 'png');
     await shell.openPath(finalFilePath);
     return { filePath: finalFilePath };
   } catch (err) {
@@ -290,5 +250,7 @@ export async function savePngFileAs(
     return {
       error: 'UNKNOWN_ERROR',
     };
+  } finally {
+    win.close();
   }
 }

@@ -86,6 +86,13 @@ type ExportHandlers = {
     title: string,
     mode: string
   ) => Promise<any>;
+  saveFileAs: (
+    imageDataUrl: string,
+    width: number,
+    height: number,
+    filePath: string,
+    fileType: string
+  ) => Promise<any>;
 };
 
 export abstract class ExportHandlerManager extends HandlerManager<

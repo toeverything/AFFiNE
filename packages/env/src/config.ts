@@ -30,6 +30,7 @@ declare global {
       workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
     };
     events: any;
+    affine: any;
   }
 }
 
