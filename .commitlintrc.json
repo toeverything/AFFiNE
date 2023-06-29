@@ -21,7 +21,8 @@
         "native",
         "templates",
         "y-indexeddb",
-        "debug"
+        "debug",
+        "storage"
       ]
     ]
   }

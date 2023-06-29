@@ -15,6 +15,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@affine/storage": "workspace:*",
     "@apollo/server": "^4.7.4",
     "@auth/prisma-adapter": "^1.0.0",
     "@aws-sdk/client-s3": "^3.359.0",
