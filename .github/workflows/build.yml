@@ -299,6 +299,10 @@ jobs:
         run: yarn e2e --forbid-only
         working-directory: ./tests/affine-legacy/0.7.0-canary.18
 
+      - name: Run vitest
+        run: yarn test
+        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+
       - name: Upload test results
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
