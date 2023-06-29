@@ -26,7 +26,7 @@ const config: PlaywrightTestConfig = {
   webServer: [
     // Intentionally not building the web, reminds you to run it by yourself.
     {
-      command: 'yarn -T run start:web -p 8080',
+      command: 'yarn -T run start:web-static',
       port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,

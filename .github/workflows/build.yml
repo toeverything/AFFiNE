@@ -281,11 +281,11 @@ jobs:
         with:
           playwright-install: true
 
-      - name: Download artifact
+      - name: Download next static
         uses: actions/download-artifact@v3
         with:
-          name: next-js
-          path: ./apps/web/.next
+          name: next-js-static
+          path: ./apps/web/out
 
       - name: Unzip
         run: yarn unzip
