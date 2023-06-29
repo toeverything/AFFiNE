@@ -6,210 +6,28 @@ import {
   useSavedCollections,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
-  EdgelessIcon,
   FilterIcon,
   MoreHorizontalIcon,
-  PageIcon,
   UnpinIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { PageMeta } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
-import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import React, { useCallback, useMemo, useState } from 'react';
 
-import { pageSettingFamily } from '../../../../atoms';
-import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import type { AllWorkspace } from '../../../../shared';
 import { filterPage } from '../../../../utils/filter';
-import { ReferencePage } from '../components/reference-page';
 import type { CollectionsListProps } from '../index';
+import { Page } from './page';
 import * as styles from './styles.css';
 
-const PageOperations = ({
-  page,
-  inAllowList,
-  addToExcludeList,
-  removeFromAllowList,
-  inExcludeList,
-  workspace,
-}: {
-  workspace: Workspace;
-  page: PageMeta;
-  inAllowList: boolean;
-  removeFromAllowList: (id: string) => void;
-  inExcludeList: boolean;
-  addToExcludeList: (id: string) => void;
-}) => {
-  const { removeToTrash } = useBlockSuiteMetaHelper(workspace);
-  const actions = useMemo<
-    Array<
-      | {
-          icon: ReactElement;
-          name: string;
-          click: () => void;
-          className?: string;
-          render?: undefined;
-        }
-      | {
-          render: ReactElement;
-        }
-    >
-  >(
-    () => [
-      ...(inAllowList
-        ? [
-            {
-              icon: <FilterIcon />,
-              name: 'Exclude from allow list',
-              click: () => removeFromAllowList(page.id),
-            },
-          ]
-        : []),
-      ...(!inExcludeList
-        ? [
-            {
-              icon: <FilterIcon />,
-              name: 'Exclude from collection',
-              click: () => addToExcludeList(page.id),
-            },
-          ]
-        : []),
-      {
-        render: <div key="divider" className={styles.menuDividerStyle}></div>,
-      },
-      {
-        icon: <DeleteIcon style={{ color: 'var(--affine-warning-color)' }} />,
-        name: 'Delete',
-        click: () => {
-          removeToTrash(page.id);
-        },
-        className: styles.deleteFolder,
-      },
-    ],
-    [
-      inAllowList,
-      inExcludeList,
-      page.id,
-      removeFromAllowList,
-      addToExcludeList,
-      removeToTrash,
-    ]
-  );
-  return (
-    <>
-      {actions.map(action => {
-        if (action.render) {
-          return action.render;
-        }
-        return (
-          <MenuItem
-            key={action.name}
-            className={action.className}
-            icon={action.icon}
-            onClick={action.click}
-          >
-            {action.name}
-          </MenuItem>
-        );
-      })}
-    </>
-  );
-};
-const Page = ({
-  page,
-  workspace,
-  allPageMeta,
-  inAllowList,
-  inExcludeList,
-  removeFromAllowList,
-  addToExcludeList,
-}: {
-  page: PageMeta;
-  inAllowList: boolean;
-  removeFromAllowList: (id: string) => void;
-  inExcludeList: boolean;
-  addToExcludeList: (id: string) => void;
-  workspace: AllWorkspace;
-  allPageMeta: Record<string, PageMeta>;
-}) => {
-  const [collapsed, setCollapsed] = React.useState(true);
-  const router = useRouter();
-  const t = useAFFiNEI18N();
-  const pageId = page.id;
-  const active = router.query.pageId === pageId;
-  const setting = useAtomValue(pageSettingFamily(pageId));
-  const icon = setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
-  const references = useBlockSuitePageReferences(
-    workspace.blockSuiteWorkspace,
-    pageId
-  );
-  const clickPage = useCallback(() => {
-    return router.push(`/workspace/${workspace.id}/${page.id}`);
-  }, [page.id, router, workspace.id]);
-  return (
-    <Collapsible.Root open={!collapsed}>
-      <MenuItem
-        icon={icon}
-        onClick={clickPage}
-        className={styles.title}
-        active={active}
-        collapsed={collapsed}
-        onCollapsedChange={setCollapsed}
-        postfix={
-          <Menu
-            trigger="click"
-            placement="bottom-start"
-            content={
-              <div style={{ width: 220 }}>
-                <PageOperations
-                  inAllowList={inAllowList}
-                  removeFromAllowList={removeFromAllowList}
-                  inExcludeList={inExcludeList}
-                  addToExcludeList={addToExcludeList}
-                  page={page}
-                  workspace={workspace.blockSuiteWorkspace}
-                />
-              </div>
-            }
-          >
-            <div className={styles.more}>
-              <MoreHorizontalIcon></MoreHorizontalIcon>
-            </div>
-          </Menu>
-        }
-      >
-        {page.title || t['Untitled']()}
-      </MenuItem>
-      <Collapsible.Content>
-        <div style={{ marginLeft: 8 }}>
-          {references
-            .filter(id => !allPageMeta[id]?.trash)
-            .map(id => {
-              return (
-                <ReferencePage
-                  key={id}
-                  workspace={workspace.blockSuiteWorkspace}
-                  pageId={id}
-                  metaMapping={allPageMeta}
-                  parentIds={new Set([pageId])}
-                />
-              );
-            })}
-        </div>
-      </Collapsible.Content>
-    </Collapsible.Root>
-  );
-};
 const Collections_DROP_AREA_PREFIX = 'collections-';
 const isCollectionsDropArea = (id?: string | number) => {
   return typeof id === 'string' && id.startsWith(Collections_DROP_AREA_PREFIX);
@@ -358,6 +176,9 @@ const CollectionRenderer = ({
     },
     [collection, setting]
   );
+  const pagesToRender = pages.filter(
+    page => filterPage(collection, page) && !page.trash
+  );
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModel
@@ -388,7 +209,7 @@ const CollectionRenderer = ({
             </div>
           </Menu>
         }
-        collapsed={collapsed}
+        collapsed={pagesToRender.length > 0 ? collapsed : undefined}
         onClick={clickCollection}
       >
         <div
@@ -403,22 +224,20 @@ const CollectionRenderer = ({
       </MenuItem>
       <Collapsible.Content>
         <div style={{ marginLeft: 8 }}>
-          {pages
-            .filter(page => filterPage(collection, page) && !page.trash)
-            .map(page => {
-              return (
-                <Page
-                  inAllowList={allowList.has(page.id)}
-                  removeFromAllowList={removeFromAllowList}
-                  inExcludeList={excludeList.has(page.id)}
-                  addToExcludeList={addToExcludeList}
-                  allPageMeta={allPagesMeta}
-                  page={page}
-                  key={page.id}
-                  workspace={workspace}
-                />
-              );
-            })}
+          {pagesToRender.map(page => {
+            return (
+              <Page
+                inAllowList={allowList.has(page.id)}
+                removeFromAllowList={removeFromAllowList}
+                inExcludeList={excludeList.has(page.id)}
+                addToExcludeList={addToExcludeList}
+                allPageMeta={allPagesMeta}
+                page={page}
+                key={page.id}
+                workspace={workspace}
+              />
+            );
+          })}
         </div>
       </Collapsible.Content>
     </Collapsible.Root>
