@@ -1,8 +1,7 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
 import type {
-  NecessaryProvider,
+  WorkspaceAdapter,
   WorkspaceRegistry,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -10,6 +9,7 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import type { ActiveDocProvider } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
@@ -20,60 +20,72 @@ const logger = new DebugLogger('web:atoms:root');
 /**
  * Fetch all workspaces from the Plugin CRUD
  */
-export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
-  const { WorkspaceAdapters } = await import('../adapters/workspace');
-  const flavours: string[] = Object.values(WorkspaceAdapters).map(
-    plugin => plugin.flavour
-  );
-  const jotaiWorkspaces = get(rootWorkspacesMetadataAtom)
-    .filter(
-      workspace => flavours.includes(workspace.flavour)
-      // TODO: remove this when we remove the legacy cloud
-    )
-    .filter(workspace =>
-      !config.enableLegacyCloud
-        ? workspace.flavour !== WorkspaceFlavour.AFFINE
-        : true
+export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
+  async (get, { signal }) => {
+    const { WorkspaceAdapters } = await import('../adapters/workspace');
+    const flavours: string[] = Object.values(WorkspaceAdapters).map(
+      plugin => plugin.flavour
     );
-  const workspaces = await Promise.all(
-    jotaiWorkspaces.map(workspace => {
-      const plugin =
-        WorkspaceAdapters[workspace.flavour as keyof typeof WorkspaceAdapters];
-      assertExists(plugin);
-      const { CRUD } = plugin;
-      return CRUD.get(workspace.id).then(workspace => {
-        if (workspace === null) {
-          console.warn(
-            'workspace is null. this should not happen. If you see this error, please report it to the developer.'
-          );
-        }
-        return workspace;
+    const jotaiWorkspaces = (await get(rootWorkspacesMetadataAtom))
+      .filter(
+        workspace => flavours.includes(workspace.flavour)
+        // TODO: remove this when we remove the legacy cloud
+      )
+      .filter(workspace =>
+        !runtimeConfig.enableLegacyCloud
+          ? workspace.flavour !== WorkspaceFlavour.AFFINE
+          : true
+      );
+    if (jotaiWorkspaces.some(meta => !('version' in meta))) {
+      // wait until all workspaces have migrated to v2
+      await new Promise((resolve, reject) => {
+        signal.addEventListener('abort', reject);
+        setTimeout(resolve, 1000);
+      }).catch(() => {
+        // do nothing
       });
-    })
-  ).then(workspaces =>
-    workspaces.filter(
-      (workspace): workspace is WorkspaceRegistry['affine' | 'local'] =>
-        workspace !== null
-    )
-  );
-  const workspaceProviders = workspaces.map(workspace =>
-    workspace.providers.filter(
-      (provider): provider is NecessaryProvider =>
-        'necessary' in provider && provider.necessary
-    )
-  );
-  const promises: Promise<void>[] = [];
-  for (const providers of workspaceProviders) {
-    for (const provider of providers) {
-      provider.sync();
-      promises.push(provider.whenReady);
     }
+    const workspaces = await Promise.all(
+      jotaiWorkspaces.map(workspace => {
+        const adapter = WorkspaceAdapters[
+          workspace.flavour
+        ] as WorkspaceAdapter<WorkspaceFlavour>;
+        assertExists(adapter);
+        const { CRUD } = adapter;
+        return CRUD.get(workspace.id).then(workspace => {
+          if (workspace === null) {
+            console.warn(
+              'workspace is null. this should not happen. If you see this error, please report it to the developer.'
+            );
+          }
+          return workspace;
+        });
+      })
+    ).then(workspaces =>
+      workspaces.filter(
+        (workspace): workspace is WorkspaceRegistry['affine' | 'local'] =>
+          workspace !== null
+      )
+    );
+    const workspaceProviders = workspaces.map(workspace =>
+      workspace.blockSuiteWorkspace.providers.filter(
+        (provider): provider is ActiveDocProvider =>
+          'active' in provider && provider.active
+      )
+    );
+    const promises: Promise<void>[] = [];
+    for (const providers of workspaceProviders) {
+      for (const provider of providers) {
+        provider.sync();
+        promises.push(provider.whenReady);
+      }
+    }
+    // we will wait for all the necessary providers to be ready
+    await Promise.all(promises);
+    logger.info('workspaces', workspaces);
+    return workspaces;
   }
-  // we will wait for all the necessary providers to be ready
-  await Promise.all(promises);
-  logger.info('workspaces', workspaces);
-  return workspaces;
-});
+);
 
 /**
  * This will throw an error if the workspace is not found,
@@ -81,9 +93,9 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(async get => {
  * use `rootCurrentWorkspaceIdAtom` instead
  */
 export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
-  async get => {
+  async (get, { signal }) => {
     const { WorkspaceAdapters } = await import('../adapters/workspace');
-    const metadata = get(rootWorkspacesMetadataAtom);
+    const metadata = await get(rootWorkspacesMetadataAtom);
     const targetId = get(rootCurrentWorkspaceIdAtom);
     if (targetId === null) {
       throw new Error(
@@ -94,17 +106,32 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
     if (!targetWorkspace) {
       throw new Error(`cannot find the workspace with id ${targetId}.`);
     }
-    const workspace = await WorkspaceAdapters[targetWorkspace.flavour].CRUD.get(
-      targetWorkspace.id
-    );
+
+    if (!('version' in targetWorkspace)) {
+      // wait until the workspace has migrated to v2
+      await new Promise((resolve, reject) => {
+        signal.addEventListener('abort', reject);
+        setTimeout(resolve, 1000);
+      }).catch(() => {
+        // do nothing
+      });
+    }
+
+    const adapter = WorkspaceAdapters[
+      targetWorkspace.flavour
+    ] as WorkspaceAdapter<WorkspaceFlavour>;
+    assertExists(adapter);
+
+    const workspace = await adapter.CRUD.get(targetWorkspace.id);
     if (!workspace) {
       throw new Error(
         `cannot find the workspace with id ${targetId} in the plugin ${targetWorkspace.flavour}.`
       );
     }
-    const providers = workspace.providers.filter(
-      (provider): provider is NecessaryProvider =>
-        'necessary' in provider && provider.necessary === true
+
+    const providers = workspace.blockSuiteWorkspace.providers.filter(
+      (provider): provider is ActiveDocProvider =>
+        'active' in provider && provider.active === true
     );
     for (const provider of providers) {
       provider.sync();

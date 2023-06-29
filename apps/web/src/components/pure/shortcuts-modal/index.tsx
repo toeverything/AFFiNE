@@ -3,16 +3,14 @@ import {
   MuiClickAwayListener,
   MuiSlide,
 } from '@affine/component';
-import { env } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useEffect, useState } from 'react';
 
 import {
-  useMacKeyboardShortcuts,
-  useMacMarkdownShortcuts,
-  useWindowsKeyboardShortcuts,
-  useWinMarkdownShortcuts,
-} from './config';
+  useEdgelessShortcuts,
+  useGeneralShortcuts,
+  useMarkdownShortcuts,
+  usePageShortcuts,
+} from '../../../hooks/affine/use-shortcuts';
 import { KeyboardIcon } from './icons';
 import {
   StyledListItem,
@@ -26,25 +24,13 @@ type ModalProps = {
   onClose: () => void;
 };
 
-const checkIsMac = () => {
-  return env.isBrowser && env.isMacOs;
-};
-
 export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
   const t = useAFFiNEI18N();
-  const macMarkdownShortcuts = useMacMarkdownShortcuts();
-  const winMarkdownShortcuts = useWinMarkdownShortcuts();
-  const macKeyboardShortcuts = useMacKeyboardShortcuts();
-  const windowsKeyboardShortcuts = useWindowsKeyboardShortcuts();
-  const [isMac, setIsMac] = useState(false);
-  const markdownShortcuts = isMac ? macMarkdownShortcuts : winMarkdownShortcuts;
-  const keyboardShortcuts = isMac
-    ? macKeyboardShortcuts
-    : windowsKeyboardShortcuts;
 
-  useEffect(() => {
-    setIsMac(checkIsMac());
-  }, []);
+  const markdownShortcuts = useMarkdownShortcuts();
+  const pageShortcuts = usePageShortcuts();
+  const edgelessShortcuts = useEdgelessShortcuts();
+  const generalShortcuts = useGeneralShortcuts();
 
   return (
     <MuiSlide direction="left" in={open} mountOnEnter unmountOnExit>
@@ -72,9 +58,27 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
               />
             </StyledModalHeader>
             <StyledSubTitle style={{ marginTop: 0 }}>
-              {t['Keyboard Shortcuts']()}
+              {t['General']()}
             </StyledSubTitle>
-            {Object.entries(keyboardShortcuts).map(([title, shortcuts]) => {
+            {Object.entries(generalShortcuts).map(([title, shortcuts]) => {
+              return (
+                <StyledListItem key={title}>
+                  <span>{title}</span>
+                  <span>{shortcuts}</span>
+                </StyledListItem>
+              );
+            })}
+            <StyledSubTitle>{t['Page']()}</StyledSubTitle>
+            {Object.entries(pageShortcuts).map(([title, shortcuts]) => {
+              return (
+                <StyledListItem key={title}>
+                  <span>{title}</span>
+                  <span>{shortcuts}</span>
+                </StyledListItem>
+              );
+            })}
+            <StyledSubTitle>{t['Edgeless']()}</StyledSubTitle>
+            {Object.entries(edgelessShortcuts).map(([title, shortcuts]) => {
               return (
                 <StyledListItem key={title}>
                   <span>{title}</span>

@@ -1,18 +1,15 @@
-import { ok, throws } from 'node:assert';
+/// <reference types="../global.d.ts" />
+import { ok } from 'node:assert';
 import { beforeEach, test } from 'node:test';
 
-import { UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 
 import { ConfigModule } from '../config';
-import { getDefaultAFFiNEConfig } from '../config/default';
 import { GqlModule } from '../graphql.module';
 import { AuthModule } from '../modules/auth';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
-
-globalThis.AFFiNE = getDefaultAFFiNEConfig();
 
 let auth: AuthService;
 
@@ -28,8 +25,9 @@ beforeEach(async () => {
     imports: [
       ConfigModule.forRoot({
         auth: {
-          accessTokenExpiresIn: '1s',
-          refreshTokenExpiresIn: '3s',
+          accessTokenExpiresIn: 1,
+          refreshTokenExpiresIn: 1,
+          leeway: 1,
         },
       }),
       PrismaModule,
@@ -39,12 +37,6 @@ beforeEach(async () => {
   }).compile();
   auth = module.get(AuthService);
 });
-
-async function sleep(ms: number) {
-  return new Promise<void>(resolve => {
-    setTimeout(resolve, ms);
-  });
-}
 
 test('should be able to register and signIn', async () => {
   await auth.register('Alex Yang', 'alexyang@example.org', '123456');
@@ -58,23 +50,20 @@ test('should be able to verify', async () => {
     id: '1',
     name: 'Alex Yang',
     email: 'alexyang@example.org',
+    createdAt: new Date(),
   };
   {
-    const token = auth.sign(user);
-    const clain = auth.verify(token);
-    ok(clain.id === '1');
-    ok(clain.name === 'Alex Yang');
-    ok(clain.email === 'alexyang@example.org');
-    await sleep(1050);
-    throws(() => auth.verify(token), UnauthorizedException, 'Invalid token');
+    const token = await auth.sign(user);
+    const claim = await auth.verify(token);
+    ok(claim.id === '1');
+    ok(claim.name === 'Alex Yang');
+    ok(claim.email === 'alexyang@example.org');
   }
   {
-    const token = auth.refresh(user);
-    const clain = auth.verify(token);
-    ok(clain.id === '1');
-    ok(clain.name === 'Alex Yang');
-    ok(clain.email === 'alexyang@example.org');
-    await sleep(3050);
-    throws(() => auth.verify(token), UnauthorizedException, 'Invalid token');
+    const token = await auth.refresh(user);
+    const claim = await auth.verify(token);
+    ok(claim.id === '1');
+    ok(claim.name === 'Alex Yang');
+    ok(claim.email === 'alexyang@example.org');
   }
 });

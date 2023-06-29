@@ -63,7 +63,7 @@ export const config = () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', 'electron-updater', '@toeverything/plugin-infra'],
+      external: ['@toeverything/plugin-infra', 'async-call-rpc'],
       define: define,
       format: 'cjs',
       loader: {

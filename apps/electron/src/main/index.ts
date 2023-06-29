@@ -60,12 +60,11 @@ app.on('activate', restoreOrCreateWindow);
 app
   .whenReady()
   .then(registerProtocol)
+  .then(registerPlugin)
   .then(registerHandlers)
   .then(registerEvents)
-  .then(registerPlugin)
   .then(ensureHelperProcess)
   .then(restoreOrCreateWindow)
   .then(createApplicationMenu)
-  .then()
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));

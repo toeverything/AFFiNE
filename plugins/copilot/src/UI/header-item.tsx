@@ -19,7 +19,7 @@ export const HeaderItem: PluginUIAdapter['headerItem'] = ({
                   direction: 'horizontal',
                   first: 'editor',
                   second: 'com.affine.copilot',
-                  splitPercentage: 80,
+                  splitPercentage: 70,
                 };
               } else {
                 return 'editor';

@@ -4,6 +4,7 @@ import {
   appSidebarOpenAtom,
 } from '@affine/component/app-sidebar';
 import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
+import { isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
@@ -11,7 +12,14 @@ import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
-import { forwardRef, memo, useEffect, useMemo, useState } from 'react';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { contentLayoutAtom } from '../../../atoms/layout';
@@ -99,32 +107,44 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   },
   [HeaderRightItemName.WindowsAppControls]: {
     Component: () => {
+      const handleMinimizeApp = useCallback(() => {
+        window.apis?.ui.handleMinimizeApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
+      const handleMaximizeApp = useCallback(() => {
+        window.apis?.ui.handleMaximizeApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
+      const handleCloseApp = useCallback(() => {
+        window.apis?.ui.handleCloseApp().catch(err => {
+          console.error(err);
+        });
+      }, []);
       return (
-        <div className={styles.windowAppControlsWrapper}>
+        <div
+          data-platform-target="win32"
+          className={styles.windowAppControlsWrapper}
+        >
           <button
             data-type="minimize"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleMinimizeApp();
-            }}
+            onClick={handleMinimizeApp}
           >
             <MinusIcon />
           </button>
           <button
             data-type="maximize"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleMaximizeApp();
-            }}
+            onClick={handleMaximizeApp}
           >
             <RoundedRectangleIcon />
           </button>
           <button
             data-type="close"
             className={styles.windowAppControl}
-            onClick={() => {
-              window.apis?.ui.handleCloseApp();
-            }}
+            onClick={handleCloseApp}
           >
             <CloseIcon />
           </button>
@@ -132,7 +152,7 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       );
     },
     availableWhen: () => {
-      return environment.isDesktop && environment.isWindows;
+      return isDesktop && globalThis.platform === 'win32';
     },
   },
 };

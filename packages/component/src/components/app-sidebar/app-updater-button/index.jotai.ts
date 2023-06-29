@@ -1,4 +1,4 @@
-import { env } from '@affine/env/config';
+import { isBrowser } from '@affine/env/constant';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { Observable } from 'rxjs';
 
@@ -22,7 +22,7 @@ function rpcToObservable<
   return new Observable<T>(subscriber => {
     subscriber.next(initialValue);
     onSubscribe?.();
-    if (typeof window === 'undefined' || !env.isDesktop || !event) {
+    if (!isBrowser || !environment.isDesktop || !event) {
       subscriber.complete();
       return;
     }
@@ -49,7 +49,9 @@ export const updateAvailableAtom = atomWithObservable(() => {
   return rpcToObservable(null as any | null, {
     event: window.events?.updater.onUpdateAvailable,
     onSubscribe: () => {
-      window.apis?.updater.checkForUpdatesAndNotify();
+      window.apis?.updater.checkForUpdatesAndNotify().catch(err => {
+        console.error(err);
+      });
     },
   });
 });

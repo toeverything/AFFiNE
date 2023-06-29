@@ -51,5 +51,6 @@ export function useBlockSuiteWorkspacePage(
 ): Page | null {
   const pageAtom = getAtom(blockSuiteWorkspace, pageId);
   assertExists(pageAtom);
-  return useAtomValue(pageAtom);
+  const page = useAtomValue(pageAtom);
+  return page;
 }

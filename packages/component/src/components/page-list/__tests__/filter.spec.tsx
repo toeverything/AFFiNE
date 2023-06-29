@@ -9,8 +9,10 @@ import type {
   Ref,
   VariableMap,
 } from '@affine/env/filter';
+import { createI18n, I18nextProvider } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { render } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { describe, expect, test } from 'vitest';
 
@@ -20,7 +22,6 @@ import { toLiteral } from '../filter/shared-types';
 import type { FilterMatcherDataType } from '../filter/vars';
 import { filterMatcher } from '../filter/vars';
 import { filterByFilterList } from '../use-all-page-setting';
-
 const ref = (name: keyof VariableMap): Ref => {
   return {
     type: 'ref',
@@ -116,13 +117,19 @@ describe('eval filter', () => {
 
 describe('render filter', () => {
   test('boolean condition value change', async () => {
+    const i18n = createI18n();
     const is = filterMatcher.match(tBoolean.create());
     assertExists(is);
     const Wrapper = () => {
       const [value, onChange] = useState(
         filter(is, ref('Is Favourited'), [true])
       );
-      return <Condition value={value} onChange={onChange} />;
+
+      return (
+        <I18nextProvider i18n={i18n}>
+          <Condition value={value} onChange={onChange} />
+        </I18nextProvider>
+      );
     };
     const result = render(<Wrapper />);
     const dom = await result.findByText('true');
@@ -130,15 +137,19 @@ describe('render filter', () => {
     await result.findByText('false');
     result.unmount();
   });
-  test('date condition function change', async () => {
-    const dateFunction = filterMatcher.match(tDate.create());
-    assertExists(dateFunction);
-    const Wrapper = () => {
+
+  const WrapperCreator = (fn: FilterMatcherDataType) =>
+    function Wrapper(): ReactElement {
       const [value, onChange] = useState(
-        filter(dateFunction, ref('Created'), [new Date(2023, 5, 29).getTime()])
+        filter(fn, ref('Created'), [new Date(2023, 5, 29).getTime()])
       );
       return <Condition value={value} onChange={onChange} />;
     };
+
+  test('date condition function change', async () => {
+    const dateFunction = filterMatcher.match(tDate.create());
+    assertExists(dateFunction);
+    const Wrapper = WrapperCreator(dateFunction);
     const result = render(<Wrapper />);
     const dom = await result.findByTestId('filter-name');
     dom.click();
@@ -148,12 +159,7 @@ describe('render filter', () => {
   test('date condition variable change', async () => {
     const dateFunction = filterMatcher.match(tDate.create());
     assertExists(dateFunction);
-    const Wrapper = () => {
-      const [value, onChange] = useState(
-        filter(dateFunction, ref('Created'), [new Date(2023, 5, 29).getTime()])
-      );
-      return <Condition value={value} onChange={onChange} />;
-    };
+    const Wrapper = WrapperCreator(dateFunction);
     const result = render(<Wrapper />);
     const dom = await result.findByTestId('variable-name');
     dom.click();

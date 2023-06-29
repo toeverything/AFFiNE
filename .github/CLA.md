@@ -59,3 +59,4 @@ Example:
 - 三咲智子 Kevin Deng, @sxzz, 2023/04/21
 - Moeyua, @moeyua, 2023/04/22
 - Shishu, @shishudesu, 2023/05/19
+- Kushagra Singh, @kush002, 2023/06/28

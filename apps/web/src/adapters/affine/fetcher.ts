@@ -2,7 +2,6 @@ import { Unreachable } from '@affine/env/constant';
 import type { AffineLegacyCloudWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { affineApis } from '@affine/workspace/affine/shared';
-import { createAffineProviders } from '@affine/workspace/providers';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
 import { rootStore } from '@toeverything/plugin-infra/manager';
@@ -74,7 +73,6 @@ export const fetcher = async (
             ...workspace,
             flavour: WorkspaceFlavour.AFFINE,
             blockSuiteWorkspace,
-            providers: [...createAffineProviders(blockSuiteWorkspace)],
           };
           return remWorkspace;
         });

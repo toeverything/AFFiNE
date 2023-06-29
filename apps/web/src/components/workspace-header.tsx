@@ -5,7 +5,6 @@ import {
   useAllPageSetting,
   ViewList,
 } from '@affine/component/page-list';
-import { config } from '@affine/env';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -40,7 +39,7 @@ export function WorkspaceHeader({
               }}
             />
           </div>
-          {config.enableAllPageFilter && (
+          {runtimeConfig.enableAllPageSaving && (
             <div>
               {setting.currentView.id !== NIL ||
               (setting.currentView.id === NIL &&
@@ -80,15 +79,10 @@ export function WorkspaceHeader({
           {t['Workspace Settings']()}
         </WorkspaceTitle>
       );
-    } else if (currentEntry.subPath === WorkspaceSubPath.SHARED) {
-      return (
-        <WorkspaceModeFilterTab
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPublic={false}
-        />
-      );
-    } else if (currentEntry.subPath === WorkspaceSubPath.TRASH) {
+    } else if (
+      currentEntry.subPath === WorkspaceSubPath.SHARED ||
+      currentEntry.subPath === WorkspaceSubPath.TRASH
+    ) {
       return (
         <WorkspaceModeFilterTab
           workspace={currentWorkspace}

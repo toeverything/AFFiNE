@@ -2,10 +2,14 @@
  * This file has deprecated because we do not maintain legacy affine cloud,
  *  please use new affine cloud instead.
  */
-import { AFFINE_STORAGE_KEY, config } from '@affine/env';
 import { initEmptyPage } from '@affine/env/blocksuite';
-import { PageNotFoundError } from '@affine/env/constant';
-import type { AffineLegacyCloudWorkspace } from '@affine/env/workspace';
+import { AFFINE_STORAGE_KEY, PageNotFoundError } from '@affine/env/constant';
+import type {
+  AffineDownloadProvider,
+  AffineLegacyCloudWorkspace,
+  LocalIndexedDBDownloadProvider,
+} from '@affine/env/workspace';
+import type { WorkspaceAdapter } from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -22,10 +26,7 @@ import {
 } from '@affine/workspace/affine/login';
 import { affineApis, affineAuth } from '@affine/workspace/affine/shared';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import {
-  createAffineProviders,
-  createIndexedDBBackgroundProvider,
-} from '@affine/workspace/providers';
+import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { createAffineDownloadProvider } from '@affine/workspace/providers';
 import {
   cleanupWorkspace,
@@ -44,11 +45,11 @@ import { BlockSuiteWorkspace } from '../../shared';
 import { toast } from '../../utils';
 import {
   BlockSuitePageList,
+  NewWorkspaceSettingDetail,
   PageDetailEditor,
   WorkspaceHeader,
   WorkspaceSettingDetail,
 } from '../shared';
-import type { WorkspaceAdapter } from '../type';
 import { QueryKey } from './fetcher';
 
 const storage = createJSONStorage(() => localStorage);
@@ -79,7 +80,6 @@ const getPersistenceAllWorkspace = () => {
           ...item,
           flavour: WorkspaceFlavour.AFFINE,
           blockSuiteWorkspace,
-          providers: [...createAffineProviders(blockSuiteWorkspace)],
         };
         return affineWorkspace;
       })
@@ -108,7 +108,7 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
   loadPriority: LoadPriority.HIGH,
   Events: {
     'workspace:access': async () => {
-      if (!config.enableLegacyCloud) {
+      if (!runtimeConfig.enableLegacyCloud) {
         console.warn('Legacy cloud is disabled');
         return;
       }
@@ -122,11 +122,11 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
       }
     },
     'workspace:revoke': async () => {
-      if (!config.enableLegacyCloud) {
+      if (!runtimeConfig.enableLegacyCloud) {
         console.warn('Legacy cloud is disabled');
         return;
       }
-      rootStore.set(rootWorkspacesMetadataAtom, workspaces =>
+      await rootStore.set(rootWorkspacesMetadataAtom, workspaces =>
         workspaces.filter(
           workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
         )
@@ -164,19 +164,19 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
         // fixme:
         //  force to download workspace binary
         //  to make sure the workspace is synced
-        const provider = createAffineDownloadProvider(bs);
-        const indexedDBProvider = createIndexedDBBackgroundProvider(bs);
-        await new Promise<void>(resolve => {
-          indexedDBProvider.callbacks.add(() => {
-            resolve();
-          });
-          provider.callbacks.add(() => {
-            indexedDBProvider.connect();
-          });
-          provider.connect();
-        });
+        const provider = createAffineDownloadProvider(bs.id, bs.doc, {
+          awareness: bs.awarenessStore.awareness,
+        }) as AffineDownloadProvider;
+        const indexedDBProvider = createIndexedDBDownloadProvider(
+          bs.id,
+          bs.doc,
+          {
+            awareness: bs.awarenessStore.awareness,
+          }
+        ) as LocalIndexedDBDownloadProvider;
+        indexedDBProvider.sync();
+        await indexedDBProvider.whenReady;
         provider.disconnect();
-        indexedDBProvider.disconnect();
       }
 
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
@@ -279,7 +279,6 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
               ...workspace,
               flavour: WorkspaceFlavour.AFFINE,
               blockSuiteWorkspace,
-              providers: [...createAffineProviders(blockSuiteWorkspace)],
             };
             return affineWorkspace;
           });
@@ -359,6 +358,19 @@ export const AffineAdapter: WorkspaceAdapter<WorkspaceFlavour.AFFINE> = {
           onDeleteWorkspace={onDeleteWorkspace}
           onChangeTab={onChangeTab}
           currentTab={currentTab}
+          workspace={currentWorkspace}
+          onTransferWorkspace={onTransformWorkspace}
+        />
+      );
+    },
+    NewSettingsDetail: ({
+      currentWorkspace,
+      onDeleteWorkspace,
+      onTransformWorkspace,
+    }) => {
+      return (
+        <NewWorkspaceSettingDetail
+          onDeleteWorkspace={onDeleteWorkspace}
           workspace={currentWorkspace}
           onTransferWorkspace={onTransformWorkspace}
         />

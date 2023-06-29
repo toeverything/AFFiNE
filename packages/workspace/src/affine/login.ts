@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { env } from '@affine/env';
 import { assertExists } from '@blocksuite/global/utils';
 import { Slot } from '@blocksuite/store';
 import { initializeApp } from 'firebase/app';
@@ -189,7 +188,7 @@ export function createAffineAuth(prefix = '/') {
       }
       try {
         let idToken: string | undefined;
-        if (env.isDesktop) {
+        if (environment.isDesktop) {
           idToken = await signInWithElectron(auth);
         } else {
           const response = await signInWithPopup(auth, provider);
@@ -207,10 +206,12 @@ export function createAffineAuth(prefix = '/') {
           }),
         }).then(r => r.json()) as Promise<LoginResponse>;
       } catch (error) {
-        if (error instanceof Error && 'code' in error) {
-          if (error.code === 'auth/popup-closed-by-user') {
-            return null;
-          }
+        if (
+          error instanceof Error &&
+          'code' in error &&
+          error.code === 'auth/popup-closed-by-user'
+        ) {
+          return null;
         }
         logger.error('Failed to sign in', error);
       }

@@ -1,4 +1,3 @@
-import { env } from '@affine/env';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
@@ -69,7 +68,7 @@ export function CurrentWorkspaceModals() {
           }, [setOpenDisableCloudAlertModal])}
         />
       </Suspense>
-      {env.isDesktop && (
+      {environment.isDesktop && (
         <Suspense>
           <OnboardingModal
             open={openOnboardingModal}
@@ -117,11 +116,11 @@ export const AllWorkspaceModals = (): ReactElement => {
             (activeId, overId) => {
               const oldIndex = workspaces.findIndex(w => w.id === activeId);
               const newIndex = workspaces.findIndex(w => w.id === overId);
-              transition(() =>
+              transition(() => {
                 setWorkspaces(workspaces =>
                   arrayMove(workspaces, oldIndex, newIndex)
-                )
-              );
+                ).catch(console.error);
+              });
             },
             [setWorkspaces, workspaces]
           )}

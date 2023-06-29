@@ -7,6 +7,7 @@ import { contextBridge, ipcRenderer } from 'electron';
   contextBridge.exposeInMainWorld('appInfo', appInfo);
   contextBridge.exposeInMainWorld('apis', apis);
   contextBridge.exposeInMainWorld('events', events);
+  contextBridge.exposeInMainWorld('platform', process.platform);
 
   // Credit to microsoft/vscode
   const globals = {
@@ -50,4 +51,6 @@ import { contextBridge, ipcRenderer } from 'electron';
   } catch (error) {
     console.error('Failed to expose affine APIs to window object!', error);
   }
-})();
+})().catch(err => {
+  console.error('Failed to bootstrap preload script!', err);
+});

@@ -1,7 +1,7 @@
-mutation createWorkspace {
-  createWorkspace {
+mutation createWorkspace($init: Upload!) {
+  createWorkspace(init: $init) {
     id
     public
-    created_at
+    createdAt
   }
 }

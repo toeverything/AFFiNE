@@ -4,24 +4,19 @@ import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
 import {
-  AppContainer,
   MainContainer,
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
-import { DebugLogger } from '@affine/debug';
-import { config, DEFAULT_HELLO_WORLD_PAGE_ID } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import type { BackgroundProvider } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import { setUpLanguage, useI18N } from '@affine/i18n';
+import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import type { PassiveDocProvider } from '@blocksuite/store';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -34,7 +29,6 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { rootStore } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -42,12 +36,18 @@ import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
-import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
+import {
+  openQuickSearchModalAtom,
+  openSettingModalAtom,
+  openWorkspacesModalAtom,
+} from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import {
   publicWorkspaceAtom,
   publicWorkspaceIdAtom,
 } from '../atoms/public-workspace';
+import { AppContainer } from '../components/affine/app-container';
+import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import {
   DROPPABLE_SIDEBAR_TRASH,
@@ -68,6 +68,11 @@ import { toast } from '../utils';
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
     default: module.QuickSearchModal,
+  }))
+);
+const SettingModal = lazy(() =>
+  import('../components/affine/setting-modal').then(module => ({
+    default: module.SettingModal,
   }))
 );
 
@@ -118,12 +123,21 @@ export const QuickSearch: FC = () => {
     />
   );
 };
-
-const logger = new DebugLogger('workspace-layout');
-
-const affineGlobalChannel = createAffineGlobalChannel(
-  WorkspaceAdapters[WorkspaceFlavour.AFFINE].CRUD
-);
+export const Setting: FC = () => {
+  const [currentWorkspace] = useCurrentWorkspace();
+  const router = useRouter();
+  const [openSettingModal, setOpenSettingModalAtom] =
+    useAtom(openSettingModalAtom);
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const isPublicWorkspace =
+    router.pathname.split('/')[1] === 'public-workspace';
+  if (!blockSuiteWorkspace || isPublicWorkspace) {
+    return null;
+  }
+  return (
+    <SettingModal open={openSettingModal} setOpen={setOpenSettingModalAtom} />
+  );
+};
 
 export const AllWorkspaceContext = ({
   children,
@@ -135,9 +149,9 @@ export const AllWorkspaceContext = ({
       // ignore current workspace
       .filter(workspace => workspace.id !== currentWorkspaceId)
       .flatMap(workspace =>
-        workspace.providers.filter(
-          (provider): provider is BackgroundProvider =>
-            'background' in provider && provider.background
+        workspace.blockSuiteWorkspace.providers.filter(
+          (provider): provider is PassiveDocProvider =>
+            'passive' in provider && provider.passive
         )
       );
     providers.forEach(provider => {
@@ -174,7 +188,9 @@ export const CurrentWorkspaceContext = ({
   useEffect(() => {
     const id = setTimeout(() => {
       if (!exist) {
-        void push('/');
+        push('/').catch(err => {
+          console.error(err);
+        });
         globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
       }
     }, globalThis.HALTING_PROBLEM_TIMEOUT);
@@ -199,14 +215,6 @@ export const CurrentWorkspaceContext = ({
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    const i18n = useI18N();
-    useEffect(() => {
-      document.documentElement.lang = i18n.language;
-      // todo(himself65): this is a hack, we should use a better way to set the language
-      setUpLanguage(i18n)?.catch(error => {
-        console.error(error);
-      });
-    }, [i18n]);
     useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
@@ -214,61 +222,6 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
       [currentWorkspaceId, jotaiWorkspaces]
     );
-    const set = useSetAtom(rootWorkspacesMetadataAtom);
-    useEffect(() => {
-      logger.info('mount');
-      const controller = new AbortController();
-      const lists = Object.values(WorkspaceAdapters)
-        .sort((a, b) => a.loadPriority - b.loadPriority)
-        .map(({ CRUD }) => CRUD.list);
-
-      async function fetch() {
-        const jotaiWorkspaces = rootStore.get(rootWorkspacesMetadataAtom);
-        const items = [];
-        for (const list of lists) {
-          try {
-            const item = await list();
-            if (jotaiWorkspaces.length) {
-              item.sort((a, b) => {
-                return (
-                  jotaiWorkspaces.findIndex(x => x.id === a.id) -
-                  jotaiWorkspaces.findIndex(x => x.id === b.id)
-                );
-              });
-            }
-            items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
-          } catch (e) {
-            logger.error('list data error:', e);
-          }
-        }
-        if (controller.signal.aborted) {
-          return;
-        }
-        set([...items]);
-        logger.info('mount first data:', items);
-      }
-
-      fetch().catch(e => {
-        logger.error('fetch error:', e);
-      });
-      return () => {
-        controller.abort();
-        logger.info('unmount');
-      };
-    }, [set]);
-
-    useEffect(() => {
-      const flavour = jotaiWorkspaces.find(
-        x => x.id === currentWorkspaceId
-      )?.flavour;
-      if (flavour === WorkspaceFlavour.AFFINE) {
-        affineGlobalChannel.connect();
-        return () => {
-          affineGlobalChannel.disconnect();
-        };
-      }
-      return;
-    }, [currentWorkspaceId, jotaiWorkspaces]);
 
     const Provider =
       (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
@@ -303,31 +256,44 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const { jumpToPage } = useRouterHelper(router);
 
   //#region init workspace
-  if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  if (currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty !== true) {
     // this is a new workspace, so we should redirect to the new page
     const pageId = DEFAULT_HELLO_WORLD_PAGE_ID;
-    const page = currentWorkspace.blockSuiteWorkspace.createPage({
-      id: pageId,
-    });
-    assertEquals(page.id, pageId);
-    if (config.enablePreloading) {
-      initPageWithPreloading(page).catch(error => {
-        console.error('import error:', error);
+    if (currentWorkspace.blockSuiteWorkspace.getPage(pageId) === null) {
+      const page = currentWorkspace.blockSuiteWorkspace.createPage({
+        id: pageId,
       });
-    } else {
-      initEmptyPage(page);
-    }
-    if (!router.query.pageId) {
-      setCurrentPageId(pageId);
-      void jumpToPage(currentWorkspace.id, pageId);
+      assertEquals(page.id, pageId);
+      if (runtimeConfig.enablePreloading) {
+        initPageWithPreloading(page).catch(error => {
+          console.error('import error:', error);
+        });
+      } else {
+        initEmptyPage(page).catch(error => {
+          console.error('init empty page error', error);
+        });
+      }
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty = false;
+      if (!router.query.pageId) {
+        setCurrentPageId(pageId);
+        jumpToPage(currentWorkspace.id, pageId).catch(err => {
+          console.error(err);
+        });
+      }
     }
   }
   //#endregion
 
   useEffect(() => {
-    const backgroundProviders = currentWorkspace.providers.filter(
-      (provider): provider is BackgroundProvider => 'background' in provider
-    );
+    const backgroundProviders =
+      currentWorkspace.blockSuiteWorkspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive
+      );
     backgroundProviders.forEach(provider => {
       provider.connect();
     });
@@ -353,7 +319,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         }
       );
       setCurrentPageId(currentPageId);
-      void jumpToPage(currentWorkspace.id, page.id);
+      jumpToPage(currentWorkspace.id, page.id).catch(err => {
+        console.error(err);
+      });
     }
   }, [
     currentPageId,
@@ -383,6 +351,12 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
+  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+
+  const handleOpenSettingModal = useCallback(() => {
+    setOpenSettingModalAtom(true);
+  }, [setOpenSettingModalAtom]);
+
   const resizing = useAtomValue(appSidebarResizingAtom);
 
   const sensors = useSensors(
@@ -400,6 +374,10 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     currentWorkspace.blockSuiteWorkspace
   );
   const t = useAFFiNEI18N();
+
+  const showList: IslandItemNames[] = isDesktop
+    ? ['whatNew', 'contact', 'guide']
+    : ['whatNew', 'contact'];
 
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {
@@ -433,6 +411,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           <RootAppSidebar
             isPublicWorkspace={isPublicWorkspace}
             onOpenQuickSearchModal={handleOpenQuickSearchModal}
+            onOpenSettingModal={handleOpenSettingModal}
             currentWorkspace={currentWorkspace}
             onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
             openPage={useCallback(
@@ -455,9 +434,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
               </div>
               {!isPublicWorkspace && (
                 <HelpIsland
-                  showList={
-                    router.query.pageId ? undefined : ['whatNew', 'contact']
-                  }
+                  showList={router.query.pageId ? undefined : showList}
                 />
               )}
             </ToolContainer>
@@ -467,6 +444,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
+      <Setting />
     </>
   );
 };

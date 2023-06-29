@@ -18,6 +18,7 @@ import type {
   PluginUIAdapter,
 } from '@toeverything/plugin-infra/type';
 import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
+import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type { FC, ReactElement } from 'react';
@@ -32,8 +33,11 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
+import { useAppSetting } from '../atoms/settings';
 import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
+import { editor } from './page-detail-editor.css';
+import { pluginContainer } from './page-detail-editor.css';
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
@@ -70,12 +74,15 @@ const EditorWrapper = memo(function EditorWrapper({
     (DEFAULT_HELLO_WORLD_PAGE_ID === pageId ? 'edgeless' : 'page');
 
   const setEditor = useSetAtom(rootCurrentEditorAtom);
+  const [appSettings] = useAppSetting();
+
   assertExists(meta);
+
   return (
     <Editor
-      style={{
-        height: 'calc(100% - 52px)',
-      }}
+      className={clsx(editor, {
+        'full-screen': appSettings?.fullWidthLayout,
+      })}
       key={`${workspace.flavour}-${workspace.id}-${pageId}`}
       mode={isPublic ? 'page' : currentMode}
       page={page}
@@ -108,7 +115,7 @@ const EditorWrapper = memo(function EditorWrapper({
             );
           const disposes = uiDecorators.map(ui => ui(editor));
           return () => {
-            disposes.map(fn => fn());
+            disposes.forEach(fn => fn());
             dispose();
           };
         },
@@ -122,7 +129,7 @@ const PluginContentAdapter = memo<{
   detailContent: PluginUIAdapter['detailContent'];
 }>(function PluginContentAdapter({ detailContent }) {
   return (
-    <div>
+    <div className={pluginContainer}>
       {detailContent({
         contentLayoutAtom,
       })}
@@ -153,7 +160,12 @@ const LayoutPanel = memo(function LayoutPanel(
     }
   } else {
     return (
-      <PanelGroup direction={node.direction}>
+      <PanelGroup
+        style={{
+          height: 'calc(100% - 52px)',
+        }}
+        direction={node.direction}
+      >
         <Panel defaultSize={node.splitPercentage}>
           <Suspense>
             <LayoutPanel

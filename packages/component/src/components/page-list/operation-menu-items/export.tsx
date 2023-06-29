@@ -35,8 +35,13 @@ const ExportToPdfMenuItem = ({
         if (result !== undefined) {
           return;
         }
-        contentParser.exportPdf();
+        return contentParser.exportPdf();
+      })
+      .then(() => {
         onSelect?.({ type: 'pdf' });
+      })
+      .catch(err => {
+        console.error(err);
       });
   }, [currentEditor, onSelect]);
   if (currentEditor && currentEditor.mode === 'page') {
@@ -66,7 +71,9 @@ const ExportToHtmlMenuItem = ({
     if (!contentParserRef.current) {
       contentParserRef.current = new ContentParser(currentEditor.page);
     }
-    contentParserRef.current.exportHtml();
+    contentParserRef.current.exportHtml().catch(err => {
+      console.error(err);
+    });
     onSelect?.({ type: 'html' });
   }, [onSelect, currentEditor]);
   return (
@@ -123,7 +130,9 @@ const ExportToMarkdownMenuItem = ({
     if (!contentParserRef.current) {
       contentParserRef.current = new ContentParser(currentEditor.page);
     }
-    contentParserRef.current.exportMarkdown();
+    contentParserRef.current.exportMarkdown().catch(err => {
+      console.error(err);
+    });
     onSelect?.({ type: 'markdown' });
   }, [onSelect, currentEditor]);
   return (

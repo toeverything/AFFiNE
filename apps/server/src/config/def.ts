@@ -106,7 +106,7 @@ export interface AFFiNEConfig {
   /**
    * which port the server will listen on
    *
-   * @default 3000
+   * @default 3010
    * @env AFFINE_SERVER_PORT
    */
   port: number;
@@ -133,6 +133,13 @@ export interface AFFiNEConfig {
   get origin(): string;
 
   /**
+   * the database config
+   */
+  db: {
+    url: string;
+  };
+
+  /**
    * the apollo driver config
    */
   graphql: ApolloDriverConfig;
@@ -146,23 +153,19 @@ export interface AFFiNEConfig {
     /**
      * whether use remote object storage
      */
-    enable: boolean;
+    r2: {
+      enabled: boolean;
+      accountId: string;
+      bucket: string;
+      accessKeyId: string;
+      secretAccessKey: string;
+    };
     /**
-     * used to store all uploaded builds and analysis reports
-     *
-     * the concrete type definition is not given here because different storage providers introduce
-     * significant differences in configuration
-     *
-     * @example
-     * {
-     *   provider: 'aws',
-     *   region: 'eu-west-1',
-     *   aws_access_key_id: '',
-     *   aws_secret_access_key: '',
-     *   // other aws storage config...
-     * }
+     * Only used when `enable` is `false`
      */
-    config: Record<string, string>;
+    fs: {
+      path: string;
+    };
   };
 
   /**
@@ -172,11 +175,16 @@ export interface AFFiNEConfig {
     /**
      * Application access token expiration time
      */
-    readonly accessTokenExpiresIn: string;
+    readonly accessTokenExpiresIn: number;
     /**
      * Application refresh token expiration time
      */
-    readonly refreshTokenExpiresIn: string;
+    readonly refreshTokenExpiresIn: number;
+    /**
+     * Add some leeway (in seconds) to the exp and nbf validation to account for clock skew.
+     * Defaults to 60 if omitted.
+     */
+    readonly leeway: number;
     /**
      * Application public key
      *
@@ -196,12 +204,17 @@ export interface AFFiNEConfig {
      */
     enableOauth: boolean;
     /**
+     * NEXTAUTH_SECRET
+     */
+    nextAuthSecret: string;
+    /**
      * all available oauth providers
      */
     oauthProviders: Partial<
       Record<
         ExternalAccount,
         {
+          enabled: boolean;
           clientId: string;
           clientSecret: string;
           /**

@@ -19,7 +19,7 @@ export function useToggleWorkspacePublish(
       });
       await mutate(QueryKey.getWorkspaces);
       // fixme: remove force update
-      rootStore.set(rootWorkspacesMetadataAtom, ws => [...ws]);
+      await rootStore.set(rootWorkspacesMetadataAtom, ws => [...ws]);
     },
     [mutate, workspace.id]
   );

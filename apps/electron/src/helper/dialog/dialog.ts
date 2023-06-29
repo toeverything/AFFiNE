@@ -110,7 +110,9 @@ export async function saveDBFileAs(
 
     await fs.copyFile(db.path, filePath);
     logger.log('saved', filePath);
-    mainRPC.showItemInFolder(filePath);
+    mainRPC.showItemInFolder(filePath).catch(err => {
+      console.error(err);
+    });
     return { filePath };
   } catch (err) {
     logger.error('saveDBFileAs', err);

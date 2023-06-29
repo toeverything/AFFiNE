@@ -16,6 +16,9 @@ import { Config } from './config';
         return {
           ...config.graphql,
           path: `${config.path}/graphql`,
+          csrfPrevention: {
+            requestHeaders: ['content-type'],
+          },
           autoSchemaFile: join(
             fileURLToPath(import.meta.url),
             '..',

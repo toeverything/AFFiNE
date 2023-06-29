@@ -4,12 +4,13 @@ import {
   appSidebarOpenAtom,
   AppUpdaterButton,
   CategoryDivider,
+  MenuItem,
   MenuLinkItem,
   QuickSearchInput,
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { config } from '@affine/env';
+import { isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -20,11 +21,13 @@ import {
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
+import { NoSsr } from '@mui/material';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import React, { useCallback, useEffect, useMemo } from 'react';
 
 import { useHistoryAtom } from '../../atoms/history';
+import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
@@ -32,6 +35,7 @@ import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelecto
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
+  onOpenSettingModal: () => void;
   onOpenWorkspaceListModal: () => void;
   currentWorkspace: AllWorkspace | null;
   openPage: (pageId: string) => void;
@@ -88,8 +92,11 @@ export const RootAppSidebar = ({
   paths,
   onOpenQuickSearchModal,
   onOpenWorkspaceListModal,
+  onOpenSettingModal,
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace?.id || null;
+  const [appSettings] = useAppSetting();
+
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
@@ -99,15 +106,17 @@ export const RootAppSidebar = ({
 
   // Listen to the "New Page" action from the menu
   useEffect(() => {
-    if (environment.isDesktop) {
+    if (isDesktop) {
       return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
     }
   }, [onClickNewPage]);
 
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
-    if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
-      window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen);
+    if (isDesktop && typeof sidebarOpen === 'boolean') {
+      window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
+        console.error(err);
+      });
     }
   }, [sidebarOpen]);
 
@@ -141,12 +150,17 @@ export const RootAppSidebar = ({
 
   return (
     <>
-      <AppSidebar router={router}>
+      <AppSidebar
+        router={router}
+        hasBackground={!appSettings.disableBlurBackground}
+      >
         <SidebarContainer>
-          <WorkspaceSelector
-            currentWorkspace={currentWorkspace}
-            onClick={onOpenWorkspaceListModal}
-          />
+          <NoSsr>
+            <WorkspaceSelector
+              currentWorkspace={currentWorkspace}
+              onClick={onOpenWorkspaceListModal}
+            />
+          </NoSsr>
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}
@@ -166,6 +180,25 @@ export const RootAppSidebar = ({
           >
             <span data-testid="settings">{t['Settings']()}</span>
           </RouteMenuLinkItem>
+          {runtimeConfig.enableNewSettingModal ? (
+            <MenuItem icon={<SettingsIcon />} onClick={onOpenSettingModal}>
+              <span data-testid="settings-modal-trigger">
+                {t['Settings']()}
+                <i
+                  style={{
+                    background: 'var(--affine-palette-line-blue)',
+                    borderRadius: '2px',
+                    fontSize: '8px',
+                    padding: '0 5px',
+                    color: 'var(--affine-white)',
+                    marginLeft: '15px',
+                  }}
+                >
+                  NEW
+                </i>
+              </span>
+            </MenuItem>
+          ) : null}
         </SidebarContainer>
 
         <SidebarScrollableContainer>
@@ -173,7 +206,7 @@ export const RootAppSidebar = ({
           {blockSuiteWorkspace && (
             <FavoriteList currentWorkspace={currentWorkspace} />
           )}
-          {config.enableLegacyCloud &&
+          {runtimeConfig.enableLegacyCloud &&
             (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
             currentWorkspace.public ? (
               <RouteMenuLinkItem
@@ -205,7 +238,7 @@ export const RootAppSidebar = ({
           </RouteMenuLinkItem>
         </SidebarScrollableContainer>
         <SidebarContainer>
-          {environment.isDesktop && <AppUpdaterButton />}
+          {isDesktop && <AppUpdaterButton />}
           <div />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>

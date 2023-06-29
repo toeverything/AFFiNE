@@ -1,5 +1,9 @@
-import { Unreachable } from '@affine/env';
-import type { AppEvents, WorkspaceUISchema } from '@affine/env/workspace';
+import { Unreachable } from '@affine/env/constant';
+import type {
+  AppEvents,
+  WorkspaceAdapter,
+  WorkspaceUISchema,
+} from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -8,10 +12,13 @@ import {
 
 import { AffineAdapter } from './affine';
 import { LocalAdapter } from './local';
-import type { WorkspaceAdapter } from './type';
 
 const unimplemented = () => {
   throw new Error('Not implemented');
+};
+
+const bypassList = async () => {
+  return [];
 };
 
 export const WorkspaceAdapters = {
@@ -25,7 +32,7 @@ export const WorkspaceAdapters = {
     // todo: implement this
     CRUD: {
       get: unimplemented,
-      list: unimplemented,
+      list: bypassList,
       delete: unimplemented,
       create: unimplemented,
     },
@@ -36,6 +43,7 @@ export const WorkspaceAdapters = {
       PageDetail: unimplemented,
       PageList: unimplemented,
       SettingsDetail: unimplemented,
+      NewSettingsDetail: unimplemented,
     },
   },
   [WorkspaceFlavour.PUBLIC]: {
@@ -46,7 +54,7 @@ export const WorkspaceAdapters = {
     // todo: implement this
     CRUD: {
       get: unimplemented,
-      list: unimplemented,
+      list: bypassList,
       delete: unimplemented,
       create: unimplemented,
     },
@@ -57,6 +65,7 @@ export const WorkspaceAdapters = {
       PageDetail: unimplemented,
       PageList: unimplemented,
       SettingsDetail: unimplemented,
+      NewSettingsDetail: unimplemented,
     },
   },
 } satisfies {

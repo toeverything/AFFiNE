@@ -39,21 +39,31 @@ const IndexPageInner = () => {
         nonTrashPages.at(0)?.id;
       if (pageId) {
         logger.debug('Found target workspace. Jump to page', pageId);
-        void jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
+        jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE).catch(
+          err => {
+            console.error(err);
+          }
+        );
       } else {
         const clearId = setTimeout(() => {
           dispose.dispose();
           logger.debug('Found target workspace. Jump to all pages');
-          void jumpToSubPath(
+          jumpToSubPath(
             targetWorkspace.id,
             WorkspaceSubPath.ALL,
             RouteLogic.REPLACE
-          );
+          ).catch(err => {
+            console.error(err);
+          });
         }, 1000);
         const dispose =
           targetWorkspace.blockSuiteWorkspace.slots.pageAdded.once(pageId => {
             clearTimeout(clearId);
-            void jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
+            jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE).catch(
+              err => {
+                console.error(err);
+              }
+            );
           });
         return () => {
           clearTimeout(clearId);

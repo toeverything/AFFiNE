@@ -7,10 +7,12 @@ import type { Mutations, Queries } from './schema';
 
 export type NotArray<T> = T extends Array<unknown> ? never : T;
 
-type _QueryVariables<Q extends GraphQLQuery> = Extract<
-  Queries | Mutations,
-  { name: Q['id'] }
->['variables'];
+export type _QueryVariables<Q extends GraphQLQuery> =
+  Q['id'] extends Queries['name']
+    ? Extract<Queries, { name: Q['id'] }>['variables']
+    : Q['id'] extends Mutations['name']
+    ? Extract<Mutations, { name: Q['id'] }>['variables']
+    : undefined;
 
 export type QueryVariables<Q extends GraphQLQuery> = _QueryVariables<Q> extends
   | never
@@ -66,13 +68,6 @@ export type RequestOptions<Q extends GraphQLQuery> = QueryVariablesOption<Q> & {
    */
   context?: AllowedRequestContext;
   /**
-   * files need to be uploaded
-   *
-   * When provided, the request body will be turned to multiparts to satisfy
-   * file uploading scene.
-   */
-  files?: File[];
-  /**
    * Whether keep null or undefined value in variables.
    *
    * if `false` given, `{ a: 0, b: undefined, c: null }` will be converted to `{ a: 0 }`
@@ -105,27 +100,43 @@ function filterEmptyValue(vars: any) {
   return newVars;
 }
 
-export function appendFormData(body: RequestBody, files: File[]) {
+export function transformToForm(body: RequestBody) {
   const form = new FormData();
+  const gqlBody: {
+    name?: string;
+    query: string;
+    variables: any;
+    map: any;
+  } = {
+    query: body.query,
+    variables: body.variables,
+    map: {},
+  };
 
   if (body.operationName) {
-    form.append('operationName', body.operationName);
+    gqlBody.name = body.operationName;
   }
-  form.append('query', body.query);
-  form.append('variables', JSON.stringify(body.variables));
-  files.forEach(file => {
-    form.append(file.name, file);
-  });
 
-  body.form = form;
+  if (body.variables) {
+    let i = 0;
+    Object.entries(body.variables).forEach(([key, value]) => {
+      if (value instanceof File) {
+        gqlBody.map['0'] = [`variables.${key}`];
+        form.append(`${i}`, value);
+        i++;
+      }
+    });
+  }
+
+  form.append('operations', JSON.stringify(gqlBody));
+  return form;
 }
 
 function formatRequestBody<Q extends GraphQLQuery>({
   query,
   variables,
   keepNilVariables,
-  files,
-}: QueryOptions<Q>): RequestBody {
+}: QueryOptions<Q>): RequestBody | FormData {
   const body: RequestBody = {
     query: query.query,
     variables:
@@ -136,10 +147,9 @@ function formatRequestBody<Q extends GraphQLQuery>({
     body.operationName = query.operationName;
   }
 
-  if (files?.length) {
-    appendFormData(body, files);
+  if (query.containsFile) {
+    return transformToForm(body);
   }
-
   return body;
 }
 
@@ -157,7 +167,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
           'x-operation-name': options.query.operationName,
           'x-definition-name': options.query.definitionName,
         },
-        body: body.form ?? JSON.stringify(body),
+        body: body instanceof FormData ? body : JSON.stringify(body),
       })
     ).then(async res => {
       if (res.headers.get('content-type') === 'application/json') {

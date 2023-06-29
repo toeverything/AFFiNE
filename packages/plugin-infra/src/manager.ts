@@ -32,15 +32,21 @@ export function definePlugin<ID extends string>(
 
   if (isServer) {
     if (serverAdapter) {
-      serverAdapter.load().then(({ default: adapter }) => {
-        rootStore.set(affinePluginsAtom, plugins => ({
-          ...plugins,
-          [definition.id]: {
-            ...basePlugin,
-            serverAdapter: adapter,
-          },
-        }));
-      });
+      console.log('register server adapter');
+      serverAdapter
+        .load()
+        .then(({ default: adapter }) => {
+          rootStore.set(affinePluginsAtom, plugins => ({
+            ...plugins,
+            [definition.id]: {
+              ...basePlugin,
+              serverAdapter: adapter,
+            },
+          }));
+        })
+        .catch(err => {
+          console.error(err);
+        });
     }
   } else if (isClient) {
     if (blockSuiteAdapter) {

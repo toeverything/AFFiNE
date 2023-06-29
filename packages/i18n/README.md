@@ -23,7 +23,7 @@ const App = () => {
 
   return (
     <div>
-      <div>{t('Text')}</div>
+      <div>{t['Workspace Settings']()}</div>
 
       <button onClick={() => changeLanguage('en')}>{t('Switch to language', { language: 'en' })}</button>
       <button onClick={() => changeLanguage('zh-Hans')}>{t('Switch to language', { language: 'zh-Hans' })}</button>

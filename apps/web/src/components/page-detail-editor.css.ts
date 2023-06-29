@@ -1,5 +1,17 @@
-import { globalStyle } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
-globalStyle('.mosaic.mosaic-blueprint-theme', {
-  backgroundColor: 'var(--background-color)',
+export const pluginContainer = style({
+  height: '100%',
+  width: '100%',
+});
+
+export const editor = style({
+  height: 'calc(100% - 52px)',
+  selectors: {
+    '&.full-screen': {
+      vars: {
+        '--affine-editor-width': '90%',
+      },
+    },
+  },
 });

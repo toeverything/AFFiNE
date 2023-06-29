@@ -117,6 +117,21 @@ export class PermissionService {
     });
   }
 
+  async accept(ws: string, user: string) {
+    const result = await this.prisma.userWorkspacePermission.updateMany({
+      where: {
+        workspaceId: ws,
+        userId: user,
+        accepted: false,
+      },
+      data: {
+        accepted: true,
+      },
+    });
+
+    return result.count > 0;
+  }
+
   async revoke(ws: string, user: string) {
     const result = await this.prisma.userWorkspacePermission.deleteMany({
       where: {

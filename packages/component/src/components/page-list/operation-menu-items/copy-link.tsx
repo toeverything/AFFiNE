@@ -9,8 +9,15 @@ export const CopyLink = ({ onItemClick, onSelect }: CommonMenuItemProps) => {
   const t = useAFFiNEI18N();
 
   const copyUrl = useCallback(() => {
-    navigator.clipboard.writeText(window.location.href);
-    toast(t['Copied link to clipboard']());
+    navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        toast(t['Copied link to clipboard']());
+      })
+      .catch(err => {
+        // TODO add error toast here
+        console.error(err);
+      });
   }, [t]);
 
   return (
