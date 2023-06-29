@@ -3,15 +3,23 @@
   "description": "AFFiNE 0.7.0-canary.18 static output",
   "scripts": {
     "unzip": "unzip affine-web -d static",
-    "start": "yarn exec serve -s static -l 8081",
-    "e2e": "playwright test"
+    "start": "yarn exec serve -s static -l 8082",
+    "e2e": "playwright test && vitest --run"
   },
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
+    "@affine/env": "workspace:*",
+    "@blocksuite/block-std": "0.0.0-20230627165830-836e6fd1-nightly",
+    "@blocksuite/blocks": "0.0.0-20230627165830-836e6fd1-nightly",
+    "@blocksuite/global": "0.0.0-20230627165830-836e6fd1-nightly",
+    "@blocksuite/store": "0.0.0-20230627165830-836e6fd1-nightly",
     "@playwright/test": "=1.33.0",
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^3.0.0-beta.1",
     "playwright": "=1.33.0",
-    "serve": "^14.2.0"
+    "serve": "^14.2.0",
+    "vitest": "^0.32.2"
   },
   "version": "0.7.0-canary.23"
 }

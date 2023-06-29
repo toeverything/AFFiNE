@@ -276,6 +276,7 @@ jobs:
     name: E2E Migration Test
     runs-on: ubuntu-latest
     environment: development
+    needs: [build-web]
 
     steps:
       - uses: actions/checkout@v3
@@ -284,6 +285,12 @@ jobs:
         with:
           playwright-install: true
 
+      - name: Download next static
+        uses: actions/download-artifact@v3
+        with:
+          name: next-js-static
+          path: ./apps/web/out
+
       - name: Unzip
         run: yarn unzip
         working-directory: ./tests/affine-legacy/0.7.0-canary.18
@@ -291,6 +298,14 @@ jobs:
       - name: Run legacy playwright tests
         run: yarn e2e --forbid-only
         working-directory: ./tests/affine-legacy/0.7.0-canary.18
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-migration
+          path: ./tests/affine-legacy/0.7.0-canary.18/test-results
+          if-no-files-found: ignore
 
   desktop-test:
     name: Desktop Test

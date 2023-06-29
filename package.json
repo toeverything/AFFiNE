@@ -22,6 +22,7 @@
     "build:storybook": "nx build @affine/storybook",
     "build:plugins": "./apps/electron/scripts/plugins/build-plugins.mjs",
     "start:web": "yarn workspace @affine/web start",
+    "start:web-static": "yarn exec serve apps/web/out -l 8080",
     "start:storybook": "yarn exec serve apps/storybook/storybook-static -l 6006",
     "serve:test-static": "yarn exec serve tests/fixtures --cors -p 8081",
     "lint": "eslint . --ext .js,mjs,.ts,.tsx --cache",
