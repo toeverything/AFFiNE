@@ -27,8 +27,6 @@ rootStore.set(
   >
 );
 
-setupGlobal();
-
 if (process.env.NODE_ENV === 'development') {
   console.log('Runtime Preset', runtimeConfig);
 }
