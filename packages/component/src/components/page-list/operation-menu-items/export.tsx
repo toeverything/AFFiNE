@@ -21,7 +21,7 @@ const ExportToPdfMenuItem = ({
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
-  const push = useSetAtom(pushNotificationAtom);
+  const setPushNotification = useSetAtom(pushNotificationAtom);
 
   const onClickDownloadPDF = useCallback(() => {
     if (!currentEditor) {
@@ -48,7 +48,7 @@ const ExportToPdfMenuItem = ({
       .exportPdf()
       .then(() => {
         onSelect?.({ type: 'pdf' });
-        push({
+        setPushNotification({
           key: 'export-to-pdf',
           title: 'export',
           message: 'Export success',
@@ -57,7 +57,7 @@ const ExportToPdfMenuItem = ({
       })
       .catch(err => {
         console.error(err);
-        push({
+        setPushNotification({
           key: 'export-to-pdf',
           title: 'export',
           message: 'Export error',
@@ -65,7 +65,7 @@ const ExportToPdfMenuItem = ({
         });
       });
     // }
-  }, [currentEditor, onSelect, push]);
+  }, [currentEditor, onSelect, setPushNotification]);
 
   return (
     <MenuItem
@@ -115,7 +115,7 @@ const ExportToPngMenuItem = ({
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
-  const push = useSetAtom(pushNotificationAtom);
+  const setPushNotification = useSetAtom(pushNotificationAtom);
 
   const onClickDownloadPNG = useCallback(() => {
     if (!currentEditor) {
@@ -129,7 +129,7 @@ const ExportToPngMenuItem = ({
       .exportPng()
       .then(() => {
         onSelect?.({ type: 'png' });
-        push({
+        setPushNotification({
           key: 'export-to-pdf',
           title: 'export',
           message: 'Export success',
@@ -138,14 +138,14 @@ const ExportToPngMenuItem = ({
       })
       .catch(err => {
         console.error(err);
-        push({
+        setPushNotification({
           key: 'export-to-pdf',
           title: 'export',
           message: 'Export error',
           type: 'error',
         });
       });
-  }, [currentEditor, onSelect]);
+  }, [currentEditor, onSelect, setPushNotification]);
 
   return (
     <>
