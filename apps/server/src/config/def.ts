@@ -106,7 +106,7 @@ export interface AFFiNEConfig {
   /**
    * which port the server will listen on
    *
-   * @default 3000
+   * @default 3010
    * @env AFFINE_SERVER_PORT
    */
   port: number;
@@ -153,23 +153,13 @@ export interface AFFiNEConfig {
     /**
      * whether use remote object storage
      */
-    enable: boolean;
-    /**
-     * used to store all uploaded builds and analysis reports
-     *
-     * the concrete type definition is not given here because different storage providers introduce
-     * significant differences in configuration
-     *
-     * @example
-     * {
-     *   provider: 'aws',
-     *   region: 'eu-west-1',
-     *   aws_access_key_id: '',
-     *   aws_secret_access_key: '',
-     *   // other aws storage config...
-     * }
-     */
-    config: Record<string, string>;
+    r2: {
+      enabled: boolean;
+      accountId: string;
+      bucket: string;
+      accessKeyId: string;
+      secretAccessKey: string;
+    };
     /**
      * Only used when `enable` is `false`
      */
@@ -224,6 +214,7 @@ export interface AFFiNEConfig {
       Record<
         ExternalAccount,
         {
+          enabled: boolean;
           clientId: string;
           clientSecret: string;
           /**

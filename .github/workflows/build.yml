@@ -53,6 +53,12 @@ jobs:
         run: yarn prettier . --ignore-unknown --cache --check
       - name: Run circular
         run: yarn circular
+      - name: Upload server dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+          if-no-files-found: error
 
   build-docs:
     name: Build Docs
@@ -172,6 +178,12 @@ jobs:
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Upload storage.node
+        uses: actions/upload-artifact@v3
+        with:
+          name: storage.node
+          path: ./packages/storage/storage.node
+          if-no-files-found: error
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
         with:
@@ -439,7 +451,9 @@ jobs:
     if: github.ref == 'refs/heads/master'
     name: Build Docker
     needs:
-      - build-web-desktop
+      - lint
+      - desktop-test
+      - server-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -448,6 +462,16 @@ jobs:
         with:
           name: next-js-static
           path: ./apps/web/out
+      - name: Download server dist
+        uses: actions/download-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./apps/server
       - name: Setup Git short hash
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
@@ -473,13 +497,20 @@ jobs:
           file: .github/deployment/front/Dockerfile
           tags: ghcr.io/toeverything/affine-front:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:latest
 
+      # setup node without cache configuration
+      # Prisma cache is not compatible with docker build cache
       - name: Setup Node.js
-        uses: ./.github/actions/setup-node
+        uses: actions/setup-node@v3
         with:
-          package-install: false
+          node-version-file: '.nvmrc'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
 
       - name: Install Node.js dependencies
         run: yarn workspaces focus @affine/server --production
+
+      - name: Generate Prisma client
+        run: yarn workspace @affine/server prisma generate
 
       - name: Build graphql Dockerfile
         uses: docker/build-push-action@v4
