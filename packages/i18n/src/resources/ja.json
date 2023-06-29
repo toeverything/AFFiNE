@@ -132,7 +132,6 @@
   "Open folder hint": "保存フォルダがどこにあるか確認してください",
   "Add Workspace": "ワークスペースの追加",
   "Add a subpage inside": "内部にサブページを追加",
-  "Add Workspace Hint": "すでに持っている場所を選択",
   "Access level": "アクセスレベル",
   "Continue with Google": "Googleでログイン",
   "Continue": "続行",
@@ -166,6 +165,7 @@
   "Sync": "同期",
   "Not now": "あとで登録する",
   "Check Our Docs": "ドキュメントを確認しよう",
+  "Add Workspace Hint": "既存のワークスペースを選択",
   "Collapse sidebar": "サイドバーを折りたたむ",
   "Download core data": "主要なデータのダウンロード",
   "Jump to": "ジャンプ先",
@@ -277,8 +277,7 @@
   "Wait for Sync": "同期を待つ",
   "Strikethrough": "打ち消し線",
   "Cloud Workspace Description": "すべてのデータは、AFFiNEアカウント<1>{{email}}</1>に同期して保存されます",
-  "Delete Workspace Description": "削除 <1>{{workspace}}</1> は元に戻すことができません。慎重に続行してください。すべての内容が失われます",
-  "Delete Workspace Description2": "<1>{{workspace}}</1>を削除すると、ローカルデータとクラウドデータの両方が削除されます。この操作は元に戻すことができません。注意して続行してください",
+  "Delete Workspace Description2": "<1>{{workspace}}</1> を削除すると、ローカルデータとクラウドデータの両方が削除されます。この操作は元に戻すことができません。注意して続行してください",
   "Export Workspace": "ワークスペースのエクスポート <1>{{workspace}}</1>は近日公開予定です",
   "Sync Description": "{{workspaceName}}はローカルワークスペースです。すべてのデータは現在のデバイスに保存されます。このワークスペースに対してAFFiNEクラウドを有効にして、データをクラウドと同期させることができます",
   "Sync Description2": "<1>{{workspaceName}}</1>はクラウドワークスペースです。すべてのデータは同期され、AFFiNEクラウドに保存されます",
@@ -286,5 +285,6 @@
   "Export AFFiNE backup file": "AFFiNEバックアップファイルのエクスポート",
   "Sign in": "AFFiNEクラウドにサインイン",
   "Local Workspace Description": "すべてのデータは現在のデバイスに保存されます。このワークスペースのAFFiNEクラウドを有効にすると、クラウドとデータを同期しておくことができます",
-  "Discover what's new!": "新着情報を見る"
+  "Discover what's new!": "新着情報を見る",
+  "Delete Workspace Description": "削除 <1>{{workspace}}</1> は元に戻すことができません。慎重に続行してください。すべての内容が失われます"
 }
