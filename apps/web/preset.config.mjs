@@ -43,7 +43,7 @@ const buildPreset = {
     changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
     enablePreloading: true,
     enableNewSettingModal: true,
-    enableSQLiteProvider: true,
+    enableSQLiteProvider: false,
   },
 };
 
