@@ -3,10 +3,9 @@ import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
 import { waitEditorLoad } from '../libs/page-logic';
-import {
-  clickSideBarCurrentWorkspaceBanner,
-  clickSideBarSettingButton,
-} from '../libs/sidebar';
+import { openWorkspaceSettingPanel } from '../libs/setting';
+import { openSettingModal } from '../libs/setting';
+import { clickSideBarCurrentWorkspaceBanner } from '../libs/sidebar';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('Create new workspace, then delete it', async ({ page }) => {
@@ -24,7 +23,8 @@ test('Create new workspace, then delete it', async ({ page }) => {
   expect(await page.getByTestId('workspace-name').textContent()).toBe(
     'Test Workspace'
   );
-  await clickSideBarSettingButton(page);
+  await openSettingModal(page);
+  await openWorkspaceSettingPanel(page, 'Test Workspace');
   await page.getByTestId('delete-workspace-button').click();
   const workspaceNameDom = await page.getByTestId('workspace-name');
   const currentWorkspaceName = await workspaceNameDom.evaluate(
@@ -50,12 +50,13 @@ test('Create new workspace, then delete it', async ({ page }) => {
 test('Delete last workspace', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
-  await clickSideBarSettingButton(page);
-  await page.getByTestId('delete-workspace-button').click();
   const workspaceNameDom = await page.getByTestId('workspace-name');
   const currentWorkspaceName = await workspaceNameDom.evaluate(
     node => node.textContent
   );
+  await openSettingModal(page);
+  await openWorkspaceSettingPanel(page, currentWorkspaceName as string);
+  await page.getByTestId('delete-workspace-button').click();
   await page
     .getByTestId('delete-workspace-input')
     .type(currentWorkspaceName as string);

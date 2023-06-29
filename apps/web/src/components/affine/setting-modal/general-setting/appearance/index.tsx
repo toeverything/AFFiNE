@@ -30,9 +30,15 @@ export const ThemeSettings = () => {
         [setTheme]
       )}
     >
-      <RadioButton value="system">{t['system']()}</RadioButton>
-      <RadioButton value="light">{t['light']()}</RadioButton>
-      <RadioButton value="dark">{t['dark']()}</RadioButton>
+      <RadioButton value="system" data-testid="system-theme-trigger">
+        {t['system']()}
+      </RadioButton>
+      <RadioButton value="light" data-testid="light-theme-trigger">
+        {t['light']()}
+      </RadioButton>
+      <RadioButton value="dark" data-testid="dark-theme-trigger">
+        {t['dark']()}
+      </RadioButton>
     </RadioButtonGroup>
   );
 };
@@ -86,6 +92,7 @@ export const AppearanceSettings = () => {
           desc={t['Maximum display of content within a page.']()}
         >
           <Switch
+            data-testid="full-width-layout-trigger"
             checked={appSettings.fullWidthLayout}
             onChange={checked => changeSwitch('fullWidthLayout', checked)}
           />
