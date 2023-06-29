@@ -112,6 +112,7 @@ const nextConfig = {
     serverAPI:
       profileTarget[process.env.API_SERVER_PROFILE || 'dev'] ??
       profileTarget.dev,
+    editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
     editorFlags: blockSuiteFeatureFlags,
     ...buildFlags,
   },

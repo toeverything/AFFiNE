@@ -22,6 +22,48 @@ mutation createWorkspace($init: Upload!) {
 }`,
 };
 
+export const registerMutation = {
+  id: 'registerMutation' as const,
+  operationName: 'register',
+  definitionName: 'register',
+  containsFile: false,
+  query: `
+mutation register($name: String!, $email: String!, $password: String!) {
+  register(name: $name, email: $email, password: $password) {
+    id
+    name
+    email
+    avatarUrl
+    createdAt
+    token {
+      token
+      refresh
+    }
+  }
+}`,
+};
+
+export const signInMutation = {
+  id: 'signInMutation' as const,
+  operationName: 'signIn',
+  definitionName: 'signIn',
+  containsFile: false,
+  query: `
+mutation signIn($email: String!, $password: String!) {
+  signIn(email: $email, password: $password) {
+    id
+    email
+    name
+    avatarUrl
+    createdAt
+    token {
+      token
+      refresh
+    }
+  }
+}`,
+};
+
 export const uploadAvatarMutation = {
   id: 'uploadAvatarMutation' as const,
   operationName: 'uploadAvatar',
