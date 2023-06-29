@@ -267,6 +267,7 @@ jobs:
     name: E2E Migration Test
     runs-on: ubuntu-latest
     environment: development
+    needs: [build-web]
 
     steps:
       - uses: actions/checkout@v3
