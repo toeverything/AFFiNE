@@ -5,8 +5,12 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
+import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
-import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
+import {
+  rootCurrentWorkspaceIdAtom,
+  workspaceAdaptersAtom,
+} from '@affine/workspace/atom';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
@@ -22,6 +26,7 @@ import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { WorkspaceAdapters } from '../../adapters/workspace';
 import { workspacesAtom } from '../../atoms';
 import { rootCurrentWorkspaceAtom } from '../../atoms/root';
 import { BlockSuiteWorkspace } from '../../shared';
@@ -53,12 +58,19 @@ beforeEach(() => {
 
 async function getJotaiContext() {
   const store = createStore();
+  store.set(
+    workspaceAdaptersAtom,
+    WorkspaceAdapters as Record<
+      WorkspaceFlavour,
+      WorkspaceAdapter<WorkspaceFlavour>
+    >
+  );
   const ProviderWrapper: React.FC<React.PropsWithChildren> =
     function ProviderWrapper({ children }) {
       return <Provider store={store}>{children}</Provider>;
     };
   const workspaces = await store.get(workspacesAtom);
-  expect(workspaces.length).toBe(0);
+  expect(workspaces.length).toBe(1);
   return {
     store,
     ProviderWrapper,
@@ -182,7 +194,13 @@ describe('useWorkspaces', () => {
     const { result } = renderHook(() => useWorkspaces(), {
       wrapper: ProviderWrapper,
     });
-    expect(result.current).toEqual([]);
+    expect(result.current).toEqual([
+      {
+        id: expect.stringContaining(''),
+        flavour: WorkspaceFlavour.LOCAL,
+        blockSuiteWorkspace: expect.anything(),
+      },
+    ]);
   });
 
   test('mutation', async () => {
@@ -192,20 +210,20 @@ describe('useWorkspaces', () => {
     });
     {
       const workspaces = await store.get(workspacesAtom);
-      expect(workspaces.length).toEqual(0);
+      expect(workspaces.length).toEqual(1);
     }
     await result.current.createLocalWorkspace('test');
     {
       const workspaces = await store.get(workspacesAtom);
-      expect(workspaces.length).toEqual(1);
+      expect(workspaces.length).toEqual(2);
     }
     const { result: result2 } = renderHook(() => useWorkspaces(), {
       wrapper: ProviderWrapper,
     });
-    expect(result2.current.length).toEqual(1);
-    const firstWorkspace = result2.current[0];
-    expect(firstWorkspace.flavour).toBe('local');
-    assert(firstWorkspace.flavour === WorkspaceFlavour.LOCAL);
-    expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
+    expect(result2.current.length).toEqual(2);
+    const secondWorkspace = result2.current[1];
+    expect(secondWorkspace.flavour).toBe('local');
+    assert(secondWorkspace.flavour === WorkspaceFlavour.LOCAL);
+    expect(secondWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
   });
 });

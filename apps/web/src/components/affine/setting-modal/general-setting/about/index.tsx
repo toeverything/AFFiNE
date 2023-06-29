@@ -8,7 +8,6 @@ import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 
 import { type AppSetting, useAppSetting } from '../../../../../atoms/settings';
-import { IS_EXHIBITION } from '../../config';
 import { communityItem, communityWrapper, link } from './style.css';
 
 export const AboutAffine = () => {
@@ -27,7 +26,7 @@ export const AboutAffine = () => {
         subtitle={t['None yet']()}
         data-testid="about-title"
       />
-      {IS_EXHIBITION && environment.isDesktop ? (
+      {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
         <SettingWrapper title={t['Version']()}>
           <SettingRow
             name={t['Check for updates']()}
@@ -61,7 +60,7 @@ export const AboutAffine = () => {
             style={{ cursor: 'pointer' }}
             onClick={() => {
               window.open(
-                'https://github.com/toeverything/AFFiNE/releases',
+                'https://affine.pro/blog/whats-new-affine-0630',
                 '_blank'
               );
             }}

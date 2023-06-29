@@ -9,6 +9,7 @@ import type {
   Ref,
   VariableMap,
 } from '@affine/env/filter';
+import { createI18n, I18nextProvider } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
@@ -21,7 +22,6 @@ import { toLiteral } from '../filter/shared-types';
 import type { FilterMatcherDataType } from '../filter/vars';
 import { filterMatcher } from '../filter/vars';
 import { filterByFilterList } from '../use-all-page-setting';
-
 const ref = (name: keyof VariableMap): Ref => {
   return {
     type: 'ref',
@@ -117,13 +117,19 @@ describe('eval filter', () => {
 
 describe('render filter', () => {
   test('boolean condition value change', async () => {
+    const i18n = createI18n();
     const is = filterMatcher.match(tBoolean.create());
     assertExists(is);
     const Wrapper = () => {
       const [value, onChange] = useState(
         filter(is, ref('Is Favourited'), [true])
       );
-      return <Condition value={value} onChange={onChange} />;
+
+      return (
+        <I18nextProvider i18n={i18n}>
+          <Condition value={value} onChange={onChange} />
+        </I18nextProvider>
+      );
     };
     const result = render(<Wrapper />);
     const dom = await result.findByText('true');
