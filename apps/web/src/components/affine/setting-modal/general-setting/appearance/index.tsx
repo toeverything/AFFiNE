@@ -154,9 +154,9 @@ export const AppearanceSettings = () => {
             desc={t['None yet']()}
           >
             <Switch
-              checked={appSettings.disableBlurBackground}
+              checked={!appSettings.disableBlurBackground}
               onChange={checked =>
-                changeSwitch('disableBlurBackground', checked)
+                changeSwitch('disableBlurBackground', !checked)
               }
             />
           </SettingRow>

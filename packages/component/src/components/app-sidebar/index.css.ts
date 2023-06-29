@@ -16,7 +16,6 @@ export const navWrapperStyle = style({
   zIndex: 2,
   paddingBottom: '8px',
   backgroundColor: 'transparent',
-  borderRight: '1px solid var(--affine-border-color)',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
@@ -42,6 +41,10 @@ export const navWrapperStyle = style({
     },
     '&.has-background': {
       backgroundColor: 'var(--affine-white-60)',
+      borderRight: '1px solid var(--affine-border-color)',
+    },
+    '&.has-border': {
+      borderRight: '1px solid var(--affine-border-color)',
     },
   },
 });
