@@ -4,7 +4,7 @@ import type {
 } from '@playwright/test';
 
 const config: PlaywrightTestConfig = {
-  testDir: './tests',
+  testDir: './e2e',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {
@@ -24,11 +24,15 @@ const config: PlaywrightTestConfig = {
   retries: 1,
   reporter: process.env.CI ? 'github' : 'list',
   webServer: [
+    // Intentionally not building the web, reminds you to run it by yourself.
     {
-      command: 'yarn start',
-      port: 8081,
+      command: 'yarn -T run start:web-static',
+      port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+      },
     },
   ],
 };
