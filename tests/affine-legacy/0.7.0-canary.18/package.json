@@ -4,7 +4,8 @@
   "scripts": {
     "unzip": "unzip affine-web -d static",
     "start": "yarn exec serve -s static -l 8082",
-    "e2e": "playwright test && vitest --run"
+    "e2e": "yarn playwright test",
+    "test": "vitest --run"
   },
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
