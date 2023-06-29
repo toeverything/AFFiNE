@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
+    "noEmit": false
+  },
+  "include": ["tests"],
+  "references": [
+    {
+      "path": "../../../packages/env"
+    }
+  ]
+}
