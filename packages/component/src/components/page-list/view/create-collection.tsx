@@ -9,7 +9,7 @@ import * as styles from './collection-list.css';
 type CreateCollectionProps = {
   title?: string;
   init: Collection;
-  onConfirm: (view: Collection) => void;
+  onConfirm: (collection: Collection) => void;
   onConfirmText?: string;
 };
 export const EditCollectionModel = ({
@@ -86,6 +86,7 @@ export const EditCollection = ({
       </div>
       <div style={{ marginTop: 20 }}>
         <Input
+          data-testid="input-collection-title"
           placeholder="Untitled Collection"
           value={value.name}
           onChange={text =>
@@ -111,6 +112,7 @@ export const EditCollection = ({
             marginLeft: 20,
             borderRadius: '8px',
           }}
+          data-testid="save-collection"
           type="primary"
           onClick={() => {
             if (value.name.trim().length > 0) {
@@ -135,6 +137,7 @@ export const SaveCollectionButton = ({
         className={styles.saveButton}
         onClick={() => changeShow(true)}
         size="middle"
+        data-testid="save-as-collection"
       >
         <div className={styles.saveButtonContainer}>
           <div className={styles.saveIcon}>

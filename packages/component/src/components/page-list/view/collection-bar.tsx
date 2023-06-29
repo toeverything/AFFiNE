@@ -32,7 +32,11 @@ export const CollectionBar = () => {
           <div style={{ marginRight: 10 }}>
             {setting.currentCollection.name}
           </div>
-          <div onClick={pin} className={styles.pin}>
+          <div
+            data-testid="collection-bar-pin-to-collections"
+            onClick={pin}
+            className={styles.pin}
+          >
             {collection.pinned ? (
               <PinedIcon className={styles.pinedIcon}></PinedIcon>
             ) : (

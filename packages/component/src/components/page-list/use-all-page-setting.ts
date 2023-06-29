@@ -31,10 +31,16 @@ const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
         },
       });
 
-const currentCollectionAtom = atomWithReset<Collection>({
-  name: 'All',
-  id: NIL,
-  filterList: [],
+const collectionAtom = atomWithReset<{
+  currentId: string;
+  defaultCollection: Collection;
+}>({
+  currentId: NIL,
+  defaultCollection: {
+    id: NIL,
+    name: 'All',
+    filterList: [],
+  },
 });
 
 export const useSavedCollections = () => {
@@ -99,40 +105,41 @@ export const useSavedCollections = () => {
 export const useAllPageSetting = () => {
   const { savedCollections, saveCollection, deleteCollection, addPage } =
     useSavedCollections();
-  const [currentCollection, setCurrentCollection] = useAtom(
-    currentCollectionAtom
-  );
+  const [collectionData, setCollectionData] = useAtom(collectionAtom);
 
   const updateCollection = useCallback(
-    (collection: Collection) => {
-      return saveCollection(collection)
-        .then(() => {
-          if (collection.id === currentCollection.id) {
-            setCurrentCollection(collection);
-          }
-        })
-        .catch(err => {
-          console.error(err);
+    async (collection: Collection) => {
+      if (collection.id === NIL) {
+        setCollectionData({
+          ...collectionData,
+          defaultCollection: collection,
         });
+      } else {
+        await saveCollection(collection);
+      }
     },
-    [currentCollection.id, saveCollection, setCurrentCollection]
+    [collectionData, saveCollection, setCollectionData]
   );
   const selectCollection = useCallback(
     (id: string) => {
-      const collection = savedCollections.find(v => v.id === id);
-      if (collection) {
-        setCurrentCollection(collection);
-      }
+      setCollectionData({
+        ...collectionData,
+        currentId: id,
+      });
     },
-    [savedCollections, setCurrentCollection]
+    [collectionData, setCollectionData]
   );
   const backToAll = useCallback(() => {
-    setCurrentCollection(RESET);
-  }, [setCurrentCollection]);
+    setCollectionData(RESET);
+  }, [setCollectionData]);
+  const isDefault = collectionData.currentId === NIL;
   return {
-    currentCollection: currentCollection,
-    savedCollections: savedCollections,
-    isDefault: currentCollection.id === NIL,
+    currentCollection: isDefault
+      ? collectionData.defaultCollection
+      : savedCollections.find(v => v.id === collectionData.currentId) ??
+        collectionData.defaultCollection,
+    savedCollections,
+    isDefault,
 
     // actions
     saveCollection,

@@ -4,12 +4,14 @@ import {
   SaveCollectionButton,
   useAllPageSetting,
 } from '@affine/component/page-list';
+import type { Collection } from '@affine/env/filter';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
 import type { ReactElement } from 'react';
+import { useCallback } from 'react';
 
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { filterContainerStyle } from './filter-container.css';
@@ -21,6 +23,13 @@ export function WorkspaceHeader({
 }: WorkspaceHeaderProps<WorkspaceFlavour>): ReactElement {
   const setting = useAllPageSetting();
   const t = useAFFiNEI18N();
+  const saveToCollection = useCallback(
+    async (collection: Collection) => {
+      await setting.saveCollection(collection);
+      setting.selectCollection(collection.id);
+    },
+    [setting]
+  );
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {
       const leftSlot = <CollectionList setting={setting}></CollectionList>;
@@ -46,7 +55,7 @@ export function WorkspaceHeader({
                     name: '',
                     filterList: setting.currentCollection.filterList,
                   }}
-                  onConfirm={setting.saveCollection}
+                  onConfirm={saveToCollection}
                 ></SaveCollectionButton>
               ) : null}
             </div>

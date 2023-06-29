@@ -101,6 +101,7 @@ const CollectionOperations = ({
         }
         return (
           <MenuItem
+            data-testid="collection-option"
             key={action.name}
             className={action.className}
             icon={action.icon}
@@ -188,6 +189,7 @@ const CollectionRenderer = ({
         onClose={() => showUpdateCollection(false)}
       />
       <MenuItem
+        data-testid="collection-item"
         ref={setNodeRef}
         onCollapsedChange={setCollapsed}
         active={isOver}
@@ -204,7 +206,7 @@ const CollectionRenderer = ({
               />
             }
           >
-            <div className={styles.more}>
+            <div data-testid="collection-options" className={styles.more}>
               <MoreHorizontalIcon></MoreHorizontalIcon>
             </div>
           </Menu>
@@ -248,7 +250,7 @@ export const CollectionsList = ({ currentWorkspace }: CollectionsListProps) => {
   const { savedCollections } = useSavedCollections();
 
   return (
-    <div className={styles.wrapper}>
+    <div data-testid="collections" className={styles.wrapper}>
       {savedCollections
         .filter(v => v.pinned)
         .map(view => {

@@ -100,6 +100,7 @@ export const PageOperations = ({
         }
         return (
           <MenuItem
+            data-testid="collection-page-option"
             key={action.name}
             className={action.className}
             icon={action.icon}
@@ -147,6 +148,7 @@ export const Page = ({
   return (
     <Collapsible.Root open={!collapsed}>
       <MenuItem
+        data-testid="collection-page"
         icon={icon}
         onClick={clickPage}
         className={styles.title}
@@ -170,7 +172,7 @@ export const Page = ({
               </div>
             }
           >
-            <div className={styles.more}>
+            <div data-testid="collection-page-options" className={styles.more}>
               <MoreHorizontalIcon></MoreHorizontalIcon>
             </div>
           </Menu>

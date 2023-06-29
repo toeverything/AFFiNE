@@ -200,6 +200,7 @@ export const CollectionList = ({
           className={clsx(styles.filterButton)}
           size="small"
           hoverColor="var(--affine-icon-color)"
+          data-testid="create-first-filter"
         >
           Filter
         </Button>
