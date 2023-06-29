@@ -42,12 +42,16 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Run checks
-        run: |
-          yarn i18n-codegen gen
-          yarn typecheck
-          yarn lint --max-warnings=0
-          yarn circular
+      - name: Run i18n codegen
+        run: yarn i18n-codegen gen
+      - name: Run Type Check
+        run: yarn typecheck
+      - name: Run ESLint
+        run: yarn lint --max-warnings=0 --cache
+      - name: Run Prettier
+        run: yarn prettier . --ignore-unknown --cache --check
+      - name: Run circular
+        run: yarn circular
 
   build-docs:
     name: Build Docs
