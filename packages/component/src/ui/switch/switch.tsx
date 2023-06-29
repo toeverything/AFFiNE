@@ -1,17 +1,17 @@
 // components/switch.tsx
 import clsx from 'clsx';
-import { useState } from 'react';
+import { type HTMLAttributes, type ReactNode, useState } from 'react';
 
 import * as styles from './index.css';
 
-type SwitchProps = {
+type SwitchProps = Omit<HTMLAttributes<HTMLLabelElement>, 'onChange'> & {
   checked?: boolean;
   onChange?: (checked: boolean) => void;
-  children?: React.ReactNode;
+  children?: ReactNode;
 };
 
 export const Switch = (props: SwitchProps) => {
-  const { checked, onChange, children } = props;
+  const { checked, onChange, children, ...otherProps } = props;
   const [isChecked, setIsChecked] = useState(checked);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,7 +21,7 @@ export const Switch = (props: SwitchProps) => {
   };
 
   return (
-    <label className={clsx(styles.labelStyle)}>
+    <label className={clsx(styles.labelStyle)} {...otherProps}>
       {children}
       <input
         className={clsx(styles.inputStyle)}
