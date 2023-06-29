@@ -52,6 +52,9 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
   get baseUrl() {
     return `${this.origin}${this.path}`;
   },
+  db: {
+    url: '',
+  },
   graphql: {
     buildSchemaOptions: {
       numberScalarMode: 'integer',
@@ -81,3 +84,5 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => ({
     },
   },
 });
+
+export { registerEnvs } from './env';

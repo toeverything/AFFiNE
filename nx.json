@@ -35,6 +35,7 @@
         "{workspaceRoot}/apps/storybook/storybook-static",
         "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
         "{workspaceRoot}/packages/native/affine.*.node",
+        "{workspaceRoot}/packages/storage/*.node",
         "{workspaceRoot}/affine.db",
         "{workspaceRoot/apps/electron/dist"
       ],

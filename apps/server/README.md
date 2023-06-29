@@ -1,3 +1,23 @@
 # Server
 
-The latest server code of AFFiNE is at https://github.com/toeverything/OctoBase/tree/master/apps/cloud
+## Get started
+
+### Install dependencies
+
+```bash
+yarn
+```
+
+### Build Native binding
+
+```bash
+yarn workspace @affine/storage build
+```
+
+### Run server
+
+```bash
+yarn dev
+```
+
+now you can access the server GraphQL endpoint at http://localhost:3000/graphql
