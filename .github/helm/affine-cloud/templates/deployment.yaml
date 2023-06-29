@@ -8,7 +8,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: affine-cloud
+      {{- include "affine-cloud.selectorLabels" . | nindent 6 }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -16,7 +16,7 @@ spec:
   template:
     metadata:
       labels:
-        app: affine-cloud
+        {{- include "affine-cloud.selectorLabels" . | nindent 8 }}
     spec:
       restartPolicy: Always
       containers:
@@ -30,7 +30,7 @@ spec:
         - name: PG_DATABASE
           value: "{{ .Values.postgresql.auth.database }}"
         - name: PG_HOST
-          value: "{{ .Release.Name }}-postgresql"
+          value: "{{ .Values.postgresql.fullnameOverride | default (printf "%s-postgresql" .Release.Name) }}"
         - name: DATABASE_URL
           value: "{{ .Values.affineCloud.databaseUrl | default "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST)/$(PG_DATABASE)" }}"
         envFrom:
