@@ -385,5 +385,7 @@
   "system": "跟随系统",
   "emptyAllPagesClient": "点击 <1>$t(New Page)</1> 按钮或按 <3>{{shortcut}}</3> 以创建您的第一个页面。",
   "frameless": "无边框",
-  "Export to PDF": "导出为 PDF"
+  "Export to PDF": "导出为 PDF",
+  "com.affine.settings.workspace": "工作区",
+  "com.affine.settings.appearance": "外观"
 }

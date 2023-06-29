@@ -385,5 +385,6 @@
   "Unpublished hint": "Once published to the web, visitors can view the contents through the provided link.",
   "Members hint": "Manage members here, invite new member by email.",
   "Workspace Settings with name": "{{name}}'s Settings",
-  "com.affine.settings.workspace": "Workspace"
+  "com.affine.settings.workspace": "Workspace",
+  "com.affine.settings.appearance": "Appearance"
 }
