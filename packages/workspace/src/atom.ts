@@ -170,6 +170,9 @@ export const rootWorkspacesMetadataAtom = atom<
   Promise<RootWorkspaceMetadata[]>
 >(
   async get => {
+    if (environment.isServer) {
+      return Promise.resolve([]);
+    }
     const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
     if (maybeMetadata !== null) {
       return maybeMetadata;

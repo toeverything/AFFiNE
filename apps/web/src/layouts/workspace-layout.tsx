@@ -10,10 +10,7 @@ import {
 } from '@affine/component/workspace';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import { setUpLanguage, useI18N } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
@@ -142,10 +139,6 @@ export const Setting: FC = () => {
   );
 };
 
-const affineGlobalChannel = createAffineGlobalChannel(
-  WorkspaceAdapters[WorkspaceFlavour.AFFINE].CRUD
-);
-
 export const AllWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
@@ -222,14 +215,6 @@ export const CurrentWorkspaceContext = ({
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    const i18n = useI18N();
-    useEffect(() => {
-      document.documentElement.lang = i18n.language;
-      // todo(himself65): this is a hack, we should use a better way to set the language
-      setUpLanguage(i18n)?.catch(error => {
-        console.error(error);
-      });
-    }, [i18n]);
     useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
@@ -237,19 +222,6 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
       [currentWorkspaceId, jotaiWorkspaces]
     );
-
-    useEffect(() => {
-      const flavour = jotaiWorkspaces.find(
-        x => x.id === currentWorkspaceId
-      )?.flavour;
-      if (flavour === WorkspaceFlavour.AFFINE) {
-        affineGlobalChannel.connect();
-        return () => {
-          affineGlobalChannel.disconnect();
-        };
-      }
-      return;
-    }, [currentWorkspaceId, jotaiWorkspaces]);
 
     const Provider =
       (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
