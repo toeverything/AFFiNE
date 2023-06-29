@@ -39,6 +39,8 @@ export const EditCollectionModel = ({
           hoverColor="var(--affine-icon-color)"
         />
         <EditCollection
+          title="Update Collection"
+          onConfirmText="Save"
           init={init}
           onCancel={onClose}
           onConfirm={view => {
