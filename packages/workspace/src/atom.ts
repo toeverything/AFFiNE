@@ -97,6 +97,8 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     return [];
   } else {
     const metadata: RootWorkspaceMetadata[] = [];
+
+    // fixme(himself65): we might not need step 1
     // step 1: try load metadata from localStorage
     {
       // don't change this key,
@@ -173,6 +175,7 @@ export const rootWorkspacesMetadataAtom = atom<
     return get(rootWorkspacesMetadataPromiseAtom);
   },
   async (get, set, action) => {
+    // get metadata
     let metadata: RootWorkspaceMetadata[];
     const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
     if (maybeMetadata !== null) {
@@ -180,9 +183,14 @@ export const rootWorkspacesMetadataAtom = atom<
     } else {
       metadata = await get(rootWorkspacesMetadataPromiseAtom);
     }
+
+    // update metadata
     if (typeof action === 'function') {
       metadata = action(metadata);
+    } else {
+      metadata = action;
     }
+
     // write back to localStorage
     rootWorkspaceMetadataArraySchema.parse(metadata);
     localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
