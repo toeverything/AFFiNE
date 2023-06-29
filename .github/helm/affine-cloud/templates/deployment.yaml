@@ -6,16 +6,14 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels:
-      app: affine-cloud
+    matchLabels: { { - include "affine-cloud.selectorLabels" . | nindent 6 } }
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 2
   template:
     metadata:
-      labels:
-        app: affine-cloud
+      labels: { { - include "affine-cloud.selectorLabels" . | nindent 8 } }
     spec:
       restartPolicy: Always
       containers:
@@ -23,13 +21,18 @@ spec:
           image: 'ghcr.io/toeverything/cloud-self-hosted:{{ .Values.affineCloud.tag | default .Chart.AppVersion }}'
           env:
             - name: PG_USER
-              value: '{{ .Values.postgresql.auth.username }}'
+              value: { { .Values.postgresql.auth.username } }
             - name: PG_PASS
-              value: '{{ .Values.postgresql.auth.password }}'
+              value: { { .Values.postgresql.auth.password } }
             - name: PG_DATABASE
-              value: '{{ .Values.postgresql.auth.database }}'
+              value: { { .Values.postgresql.auth.database } }
             - name: PG_HOST
-              value: '{{ .Release.Name }}-postgresql'
+              value:
+                {
+                  {
+                    .Values.postgresql.fullnameOverride | default (printf "%s-postgresql" .Release.Name),
+                  },
+                }
             - name: DATABASE_URL
               value:
                 {

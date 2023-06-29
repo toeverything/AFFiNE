@@ -15,6 +15,7 @@ on:
   push:
     branches: [master]
   pull_request:
+  merge_group:
     # The branches below must be a subset of the branches above
     branches: [master]
 
