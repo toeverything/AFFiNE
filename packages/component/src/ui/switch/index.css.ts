@@ -31,7 +31,6 @@ export const switchStyle = style({
       border: '1px solid var(--affine-black-10)',
       background: 'var(--affine-white)',
       transform: 'translate(1px, -50%)',
-      boxShadow: 'var(--affine-toggle-circle-shadow)',
     },
   },
 });

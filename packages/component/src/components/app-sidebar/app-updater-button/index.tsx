@@ -1,5 +1,4 @@
-import { config } from '@affine/env/config';
-import { Unreachable } from '@affine/env/constant';
+import { isBrowser, Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
@@ -20,7 +19,7 @@ interface AddPageButtonProps {
 }
 
 const currentVersionAtom = atom(async () => {
-  if (typeof window === 'undefined') {
+  if (!isBrowser) {
     return null;
   }
   const currentVersion = await window.apis?.updater.currentVersion();
@@ -28,7 +27,7 @@ const currentVersionAtom = atom(async () => {
 });
 
 const currentChangelogUnreadAtom = atom(async get => {
-  if (typeof window === 'undefined') {
+  if (!isBrowser) {
     return false;
   }
   const mapping = get(changelogCheckedAtom);
@@ -79,7 +78,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
         );
       }
     } else if (currentChangelogUnread) {
-      window.open(config.changelogUrl, '_blank');
+      window.open(runtimeConfig.changelogUrl, '_blank');
       onDismissCurrentChangelog();
     } else {
       throw new Unreachable();

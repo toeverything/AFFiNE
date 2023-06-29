@@ -4,6 +4,7 @@ import {
   appSidebarOpenAtom,
 } from '@affine/component/app-sidebar';
 import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
+import { isBrowser, isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
@@ -148,7 +149,7 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       );
     },
     availableWhen: () => {
-      return environment.isDesktop && environment.isWindows;
+      return isDesktop && isBrowser;
     },
   },
 };

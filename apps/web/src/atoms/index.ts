@@ -52,7 +52,7 @@ rootWorkspacesMetadataAtom.onMount = setAtom => {
     }, 0);
   }
 
-  if (environment.isDesktop) {
+  if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
     window.apis?.workspace
       .list()
       .then(workspaceIDs => {

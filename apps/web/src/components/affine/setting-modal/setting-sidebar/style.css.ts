@@ -3,9 +3,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const settingSlideBar = style({
   width: '25%',
   maxWidth: '242px',
-  // TODO: use color variable
-  // background: 'var(--affine-background-secondary-color)',
-  backgroundColor: '#F4F4F5',
+  background: 'var(--affine-background-secondary-color)',
   padding: '20px 16px',
   height: '100%',
   flexShrink: 0,
@@ -107,14 +105,9 @@ export const accountButton = style({
 });
 
 globalStyle(`${accountButton} .avatar`, {
-  width: '28px',
-  height: '28px',
   border: '1px solid',
   borderColor: 'var(--affine-white)',
-  borderRadius: '14px',
-  flexShrink: '0',
   marginRight: '10px',
-  background: 'red',
 });
 globalStyle(`${accountButton} .content`, {
   flexGrow: '1',

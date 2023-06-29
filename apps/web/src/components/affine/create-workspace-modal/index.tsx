@@ -8,7 +8,6 @@ import {
   Tooltip,
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';
@@ -290,7 +289,11 @@ export const CreateWorkspaceModal = ({
         console.error(err);
       });
     } else if (mode === 'new') {
-      setStep(environment.isDesktop ? 'set-db-location' : 'name-workspace');
+      setStep(
+        environment.isDesktop && runtimeConfig.enableSQLiteProvider
+          ? 'set-db-location'
+          : 'name-workspace'
+      );
     } else {
       setStep(undefined);
     }
@@ -302,7 +305,7 @@ export const CreateWorkspaceModal = ({
   const onConfirmEnableCloudSyncing = useCallback(
     (enableCloudSyncing: boolean) => {
       (async function () {
-        if (!config.enableLegacyCloud && enableCloudSyncing) {
+        if (!runtimeConfig.enableLegacyCloud && enableCloudSyncing) {
           setOpenDisableCloudAlertModal(true);
         } else {
           let id = addedId;
@@ -342,7 +345,7 @@ export const CreateWorkspaceModal = ({
   const onConfirmName = useCallback(
     (name: string) => {
       setWorkspaceName(name);
-      if (environment.isDesktop) {
+      if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
         setStep('set-syncing-mode');
       } else {
         // this will be the last step for web for now
