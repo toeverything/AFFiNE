@@ -117,7 +117,6 @@ if (environment.isBrowser) {
 
       Promise.all(promises)
         .then(() => {
-          localStorage.removeItem('jotai-workspaces');
           console.log('migration done');
         })
         .catch(() => {
