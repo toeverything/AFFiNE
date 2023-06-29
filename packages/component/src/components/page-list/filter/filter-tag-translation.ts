@@ -1,6 +1,10 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
-export const useFilterName = (name: string) => {
+type FilterTagProps = {
+  name: string;
+};
+
+export const FilterTag = ({ name }: FilterTagProps) => {
   const t = useAFFiNEI18N();
   switch (name) {
     case 'Created':

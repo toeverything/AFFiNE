@@ -3,11 +3,11 @@ import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
 import { Menu, MenuItem } from '../../../ui/menu';
+import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
 import { variableDefineMap } from './shared-types';
-import { useFilterName } from './translation-hook';
 import { filterMatcher, VariableSelect, vars } from './vars';
 
 export const Condition = ({
@@ -17,7 +17,6 @@ export const Condition = ({
   value: Filter;
   onChange: (filter: Filter) => void;
 }) => {
-  const filterName = useFilterName;
   const data = useMemo(
     () => filterMatcher.find(v => v.data.name === value.funcName),
     [value.funcName]
@@ -41,7 +40,9 @@ export const Condition = ({
               <div className={styles.filterTypeIconStyle}>
                 {variableDefineMap[ast.left.name].icon}
               </div>
-              <div>{filterName(ast.left.name)}</div>
+              <div>
+                <FilterTag name={ast.left.name} />
+              </div>
             </div>
           </Menu>
           <Menu
@@ -49,7 +50,7 @@ export const Condition = ({
             content={<FunctionSelect value={value} onChange={onChange} />}
           >
             <div className={styles.switchStyle} data-testid="filter-name">
-              {filterName(ast.funcName)}
+              <FilterTag name={ast.funcName} />
             </div>
           </Menu>
           {args}
@@ -66,7 +67,6 @@ const FunctionSelect = ({
   value: Filter;
   onChange: (value: Filter) => void;
 }) => {
-  const filterName = useFilterName;
   const list = useMemo(() => {
     const type = vars.find(v => v.name === value.left.name)?.type;
     if (!type) {
@@ -87,7 +87,7 @@ const FunctionSelect = ({
           }}
           key={v.name}
         >
-          {filterName(v.name)}
+          <FilterTag name={v.name} />
         </MenuItem>
       ))}
     </div>

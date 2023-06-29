@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
 import { MenuItem } from '../../../ui/menu';
+import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
@@ -11,7 +12,6 @@ import type { TFunction } from './logical/typesystem';
 import { tFunction, typesystem } from './logical/typesystem';
 import type { FilterVariable } from './shared-types';
 import { variableDefineMap } from './shared-types';
-import { useFilterName } from './translation-hook';
 
 export const vars: FilterVariable[] = Object.entries(variableDefineMap).map(
   ([key, value]) => ({
@@ -56,7 +56,6 @@ export const VariableSelect = ({
   selected: Filter[];
   onSelect: (value: Filter) => void;
 }) => {
-  const variableName = useFilterName;
   const t = useAFFiNEI18N();
   return (
     <div data-testid="variable-select">
@@ -79,7 +78,7 @@ export const VariableSelect = ({
               data-testid="variable-select-item"
               className={styles.menuItemTextStyle}
             >
-              {variableName(v.name)}
+              <FilterTag name={v.name} />
             </div>
           </MenuItem>
         ))}

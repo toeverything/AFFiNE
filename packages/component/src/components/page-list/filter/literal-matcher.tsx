@@ -3,14 +3,13 @@ import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
 import { AFFiNEDatePicker } from '../../date-picker';
+import { FilterTag } from './filter-tag-translation';
 import { inputStyle } from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TType } from './logical/typesystem';
 import { typesystem } from './logical/typesystem';
-import { useFilterName } from './translation-hook';
 
-const filterName = useFilterName;
 export const literalMatcher = new Matcher<{
   render: (props: {
     type: TType;
@@ -30,7 +29,7 @@ literalMatcher.register(tBoolean.create(), {
         onChange({ type: 'literal', value: !value.value });
       }}
     >
-      {filterName(value.value?.toString())}
+      <FilterTag name={value.value?.toString()} />
     </div>
   ),
 });
