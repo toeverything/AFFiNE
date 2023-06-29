@@ -27,11 +27,11 @@ runs:
           .cargo-cache
           target/${{ inputs.target }}
         key: stable-${{ inputs.target }}-cargo-cache
-
     - name: Build
       if: ${{ inputs.target != 'x86_64-unknown-linux-gnu' && inputs.target != 'aarch64-unknown-linux-gnu' }}
       shell: bash
-      run: yarn nx build @affine/native --target ${{ inputs.target }}
+      run: |
+        yarn nx build @affine/native --target ${{ inputs.target }}
       env:
         NX_CLOUD_ACCESS_TOKEN: ${{ inputs.nx_token }}
 
@@ -41,10 +41,10 @@ runs:
       with:
         image: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
         options: --user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build -e NX_CLOUD_ACCESS_TOKEN=${{ inputs.nx_token }}
-        run: >-
-          export CC=x86_64-unknown-linux-gnu-gcc &&
-          export CC_x86_64_unknown_linux_gnu=x86_64-unknown-linux-gnu-gcc &&
-          yarn nx build @affine/native --target ${{ inputs.target }} &&
+        run: |
+          export CC=x86_64-unknown-linux-gnu-gcc
+          export CC_x86_64_unknown_linux_gnu=x86_64-unknown-linux-gnu-gcc
+          yarn nx build @affine/native --target ${{ inputs.target }}
           chmod -R 777 node_modules/.cache
 
     - name: Build
@@ -53,6 +53,6 @@ runs:
       with:
         image: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
         options: --user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build -e NX_CLOUD_ACCESS_TOKEN=${{ inputs.nx_token }}
-        run: >-
+        run: |
           yarn nx build @affine/native --target ${{ inputs.target }}
           chmod -R 777 node_modules/.cache

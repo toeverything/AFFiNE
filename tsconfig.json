@@ -79,6 +79,7 @@
       "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
       "@affine/native/*": ["./packages/native/*"],
+      "@affine/storage": ["./packages/storage/index.d.ts"],
 
       // Development only
       "@affine/electron/*": ["./apps/electron/src/*"]
