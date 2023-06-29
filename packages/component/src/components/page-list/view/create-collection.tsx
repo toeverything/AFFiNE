@@ -140,7 +140,7 @@ export const SaveCollectionButton = ({
           <div className={styles.saveIcon}>
             <SaveIcon />
           </div>
-          <div className={styles.saveText}>Save Collection</div>
+          <div className={styles.saveText}>Save As Collection</div>
         </div>
       </Button>
       <EditCollectionModel
