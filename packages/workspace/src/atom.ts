@@ -94,7 +94,8 @@ const rootWorkspacesMetadataPromiseAtom = atom<
   };
 
   if (environment.isServer) {
-    return [];
+    // return a promise in SSR to avoid the hydration mismatch
+    return Promise.resolve([]);
   } else {
     const metadata: RootWorkspaceMetadata[] = [];
 
@@ -156,7 +157,8 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         localStorage.setItem('is-first-open', 'false');
       }
     }
-    return metadata;
+    const metadataMap = new Map(metadata.map(x => [x.id, x]));
+    return Array.from(metadataMap.values());
   }
 });
 
@@ -190,6 +192,9 @@ export const rootWorkspacesMetadataAtom = atom<
     } else {
       metadata = action;
     }
+
+    const metadataMap = new Map(metadata.map(x => [x.id, x]));
+    metadata = Array.from(metadataMap.values());
 
     // write back to localStorage
     rootWorkspaceMetadataArraySchema.parse(metadata);

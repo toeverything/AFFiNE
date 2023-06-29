@@ -283,31 +283,35 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
 
-  // fixme(himself65):
-  //  we should move the page into jotai atom since it's an async value
-
   //#region init workspace
-  if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  if (currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty !== true) {
     // this is a new workspace, so we should redirect to the new page
     const pageId = DEFAULT_HELLO_WORLD_PAGE_ID;
-    const page = currentWorkspace.blockSuiteWorkspace.createPage({
-      id: pageId,
-    });
-    assertEquals(page.id, pageId);
-    if (runtimeConfig.enablePreloading) {
-      initPageWithPreloading(page).catch(error => {
-        console.error('import error:', error);
+    if (currentWorkspace.blockSuiteWorkspace.getPage(pageId) === null) {
+      const page = currentWorkspace.blockSuiteWorkspace.createPage({
+        id: pageId,
       });
-    } else {
-      initEmptyPage(page).catch(error => {
-        console.error('init empty page error', error);
-      });
-    }
-    if (!router.query.pageId) {
-      setCurrentPageId(pageId);
-      jumpToPage(currentWorkspace.id, pageId).catch(err => {
-        console.error(err);
-      });
+      assertEquals(page.id, pageId);
+      if (runtimeConfig.enablePreloading) {
+        initPageWithPreloading(page).catch(error => {
+          console.error('import error:', error);
+        });
+      } else {
+        initEmptyPage(page).catch(error => {
+          console.error('init empty page error', error);
+        });
+      }
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty = false;
+      if (!router.query.pageId) {
+        setCurrentPageId(pageId);
+        jumpToPage(currentWorkspace.id, pageId).catch(err => {
+          console.error(err);
+        });
+      }
     }
   }
   //#endregion
