@@ -1,8 +1,10 @@
 import type { Filter, LiteralValue, VariableMap } from '@affine/env/filter';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
 import { MenuItem } from '../../../ui/menu';
+import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
 import { tBoolean, tDate } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
@@ -48,16 +50,18 @@ export const CreateFilterMenu = ({
     />
   );
 };
-
 export const VariableSelect = ({
   onSelect,
 }: {
   selected: Filter[];
   onSelect: (value: Filter) => void;
 }) => {
+  const t = useAFFiNEI18N();
   return (
     <div data-testid="variable-select">
-      <div className={styles.variableSelectTitleStyle}>Filter</div>
+      <div className={styles.variableSelectTitleStyle}>
+        {t['com.affine.filter']()}
+      </div>
       <div className={styles.variableSelectDividerStyle}></div>
       {vars
         // .filter(v => !selected.find(filter => filter.left.name === v.name))
@@ -74,7 +78,7 @@ export const VariableSelect = ({
               data-testid="variable-select-item"
               className={styles.menuItemTextStyle}
             >
-              {v.name}
+              <FilterTag name={v.name} />
             </div>
           </MenuItem>
         ))}

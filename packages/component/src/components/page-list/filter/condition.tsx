@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
 import { Menu, MenuItem } from '../../../ui/menu';
+import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';
 import type { TFunction, TType } from './logical/typesystem';
@@ -39,7 +40,9 @@ export const Condition = ({
               <div className={styles.filterTypeIconStyle}>
                 {variableDefineMap[ast.left.name].icon}
               </div>
-              <div>{ast.left.name}</div>
+              <div>
+                <FilterTag name={ast.left.name} />
+              </div>
             </div>
           </Menu>
           <Menu
@@ -47,7 +50,7 @@ export const Condition = ({
             content={<FunctionSelect value={value} onChange={onChange} />}
           >
             <div className={styles.switchStyle} data-testid="filter-name">
-              {ast.funcName}
+              <FilterTag name={ast.funcName} />
             </div>
           </Menu>
           {args}
@@ -84,7 +87,7 @@ const FunctionSelect = ({
           }}
           key={v.name}
         >
-          {v.name}
+          <FilterTag name={v.name} />
         </MenuItem>
       ))}
     </div>
