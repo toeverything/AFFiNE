@@ -98,7 +98,7 @@ const { publicRuntimeConfig: config } = getConfig() as {
 
 publicRuntimeConfigSchema.parse(config);
 
-const platformSchema = z.enum([
+export const platformSchema = z.enum([
   'aix',
   'android',
   'darwin',
