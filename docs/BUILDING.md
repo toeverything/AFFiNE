@@ -63,13 +63,14 @@ Note: use `strip` from system instead of `binutils` if you are runinng MacOS. [s
 yarn workspace @affine/native build
 ```
 
-## Debugging the Electron App 
+## Debugging the Electron App
 
 You need to run two scripts to run the app in development mode
 
 Firstly, run the web app which is served at :8080
+
 ```
-yarn dev # you may want to chose `dev - 100.84.105.99:11001` when selecting the dev server 
+yarn dev # you may want to chose `dev - 100.84.105.99:11001` when selecting the dev server
 ```
 
 Secondly, bring up the electron app
