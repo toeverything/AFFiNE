@@ -20,7 +20,7 @@ import { rootStore } from '@toeverything/plugin-infra/manager';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
-setupGlobal()
+setupGlobal();
 
 rootStore.set(
   workspaceAdaptersAtom,

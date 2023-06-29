@@ -6,10 +6,7 @@ import 'fake-indexeddb/auto';
 import assert from 'node:assert';
 
 import type { WorkspaceAdapter } from '@affine/env/workspace';
-import {
-  WorkspaceFlavour,
-  WorkspaceSubPath,
-} from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   workspaceAdaptersAtom,
