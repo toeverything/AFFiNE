@@ -4,11 +4,15 @@
 import 'fake-indexeddb/auto';
 
 import { initEmptyPage } from '@affine/env/blocksuite';
-import type { LocalIndexedDBBackgroundProvider } from '@affine/env/workspace';
+import type {
+  LocalIndexedDBBackgroundProvider,
+  WorkspaceAdapter,
+} from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
+  workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
 import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
 import {
@@ -63,6 +67,13 @@ describe('page mode atom', () => {
 describe('currentWorkspace atom', () => {
   test('should be defined', async () => {
     const store = createStore();
+    store.set(
+      workspaceAdaptersAtom,
+      WorkspaceAdapters as Record<
+        WorkspaceFlavour,
+        WorkspaceAdapter<WorkspaceFlavour>
+      >
+    );
     let id: string;
     {
       const workspace = createEmptyBlockSuiteWorkspace(
@@ -92,7 +103,7 @@ describe('currentWorkspace atom', () => {
       const workspaceId = await WorkspaceAdapters[
         WorkspaceFlavour.LOCAL
       ].CRUD.create(workspace);
-      store.set(rootWorkspacesMetadataAtom, [
+      await store.set(rootWorkspacesMetadataAtom, [
         {
           id: workspaceId,
           flavour: WorkspaceFlavour.LOCAL,
@@ -103,7 +114,7 @@ describe('currentWorkspace atom', () => {
     }
     store.set(
       rootCurrentWorkspaceIdAtom,
-      store.get(rootWorkspacesMetadataAtom)[0].id
+      (await store.get(rootWorkspacesMetadataAtom))[0].id
     );
     const workspace = await store.get(rootCurrentWorkspaceAtom);
     expect(workspace).toBeDefined();

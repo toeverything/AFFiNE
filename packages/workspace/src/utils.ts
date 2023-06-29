@@ -20,9 +20,11 @@ import { createAffineBlobStorage } from './blob';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
 
 export function cleanupWorkspace(flavour: WorkspaceFlavour) {
-  rootStore.set(rootWorkspacesMetadataAtom, metas =>
-    metas.filter(meta => meta.flavour !== flavour)
-  );
+  rootStore
+    .set(rootWorkspacesMetadataAtom, metas =>
+      metas.filter(meta => meta.flavour !== flavour)
+    )
+    .catch(console.error);
 }
 
 function setEditorFlags(workspace: Workspace) {

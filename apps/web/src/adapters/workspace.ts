@@ -1,5 +1,9 @@
 import { Unreachable } from '@affine/env/constant';
-import type { AppEvents, WorkspaceUISchema } from '@affine/env/workspace';
+import type {
+  AppEvents,
+  WorkspaceAdapter,
+  WorkspaceUISchema,
+} from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -8,7 +12,6 @@ import {
 
 import { AffineAdapter } from './affine';
 import { LocalAdapter } from './local';
-import type { WorkspaceAdapter } from './type';
 
 const unimplemented = () => {
   throw new Error('Not implemented');

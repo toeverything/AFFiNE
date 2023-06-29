@@ -25,7 +25,7 @@ export function useTransformWorkspace() {
         workspace.blockSuiteWorkspace
       );
       await WorkspaceAdapters[from].CRUD.delete(workspace as any);
-      set(workspaces => {
+      await set(workspaces => {
         const idx = workspaces.findIndex(ws => ws.id === workspace.id);
         workspaces.splice(idx, 1, {
           id: newId,
