@@ -142,7 +142,7 @@ test('affine onboarding button', async ({ page }) => {
 });
 
 test('windows only check', async ({ page }) => {
-  const windowOnlyUI = page.getByTestId('data-platform-target=win32');
+  const windowOnlyUI = page.locator('[data-platform-target=win32]');
   if (process.platform === 'win32') {
     await expect(windowOnlyUI).toBeVisible();
   } else {
