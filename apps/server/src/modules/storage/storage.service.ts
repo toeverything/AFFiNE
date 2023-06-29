@@ -15,11 +15,11 @@ export class StorageService {
   ) {}
 
   async uploadFile(key: string, file: FileUpload) {
-    if (this.config.objectStorage.enable) {
+    if (this.config.objectStorage.r2.enabled) {
       await this.s3.send(
         new PutObjectCommand({
           Body: file.createReadStream(),
-          Bucket: this.config.objectStorage.config.bucket,
+          Bucket: this.config.objectStorage.r2.bucket,
           Key: key,
         })
       );

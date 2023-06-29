@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "graphql.fullname" . }}-database-migration
+  labels:
+    {{- include "graphql.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        command: ["yarn", "prisma", "migrate", "deploy"]
+        env:
+          - name: NODE_ENV
+            value: "{{ .Values.env }}"
+          - name: DATABSE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pg-postgresql
+                key: postgres-password
+          - name: DATABASE_URL
+            value: postgres://{{ .Values.database.user }}:$(DATABSE_PASSWORD)@{{ .Values.database.url }}:{{ .Values.database.port }}/{{ .Values.database.name }}
+        resources:
+          requests:
+            cpu: '100m'
+            memory: '200Mi'
+      restartPolicy: Never
+  backoffLimit: 1
