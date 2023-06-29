@@ -126,6 +126,7 @@ export const saveTitle = style({
   fontSize: 'var(--affine-font-h-6)',
   fontWeight: '600',
   lineHeight: '24px',
+  paddingBottom: 20,
 });
 export const allowList = style({});
 
@@ -142,7 +143,6 @@ export const excludeList = style({
   backgroundColor: 'var(--affine-background-warning-color)',
   padding: 18,
   borderRadius: 8,
-  marginTop: 20,
 });
 
 export const excludeListContent = style({
@@ -167,7 +167,13 @@ export const excludeTip = style({
 
 export const scrollContainer = style({
   overflow: 'hidden',
-  height: 800,
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+});
+export const container = style({
+  display: 'flex',
+  flexDirection: 'column',
 });
 export const pageContainer = style({
   fontSize: 14,

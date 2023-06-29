@@ -9,6 +9,7 @@ export type ScrollableContainerProps = {
   showScrollTopBorder?: boolean;
   inTableView?: boolean;
   className?: string;
+  viewPortClassName?: string;
 };
 
 export const ScrollableContainer = ({
@@ -16,6 +17,7 @@ export const ScrollableContainer = ({
   showScrollTopBorder = false,
   inTableView = false,
   className,
+  viewPortClassName,
 }: PropsWithChildren<ScrollableContainerProps>) => {
   const [hasScrollTop, ref] = useHasScrollTop();
   return (
@@ -27,7 +29,7 @@ export const ScrollableContainer = ({
         className={clsx({ [styles.scrollTopBorder]: showScrollTopBorder })}
       />
       <ScrollArea.Viewport
-        className={clsx([styles.scrollableViewport])}
+        className={clsx([styles.scrollableViewport, viewPortClassName])}
         ref={ref}
       >
         <div className={styles.scrollableContainer}>{children}</div>

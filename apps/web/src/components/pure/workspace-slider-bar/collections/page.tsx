@@ -57,7 +57,7 @@ export const PageOperations = ({
         ? [
             {
               icon: <FilterIcon />,
-              name: 'Exclude from allow list',
+              name: 'Remove special filter',
               click: () => removeFromAllowList(page.id),
             },
           ]
@@ -66,7 +66,7 @@ export const PageOperations = ({
         ? [
             {
               icon: <FilterIcon />,
-              name: 'Exclude from collection',
+              name: 'Exclude from filter',
               click: () => addToExcludeList(page.id),
             },
           ]

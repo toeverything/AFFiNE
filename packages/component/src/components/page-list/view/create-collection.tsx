@@ -153,7 +153,10 @@ export const EditCollection = ({
       <div className={styles.saveTitle}>
         {title ?? 'Save As New Collection'}
       </div>
-      <ScrollableContainer className={styles.scrollContainer}>
+      <ScrollableContainer
+        className={styles.scrollContainer}
+        viewPortClassName={styles.container}
+      >
         <div className={styles.excludeList}>
           <div className={styles.excludeTitle}>
             Exclude from this collection
