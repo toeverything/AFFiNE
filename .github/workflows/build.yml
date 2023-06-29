@@ -13,6 +13,7 @@ on:
       - '!.github/actions/build-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
   pull_request:
+  merge_group:
     branches:
       - master
       - v[0-9]+.[0-9]+.x-staging
@@ -77,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: storybook
-          path: ./packages/storybook/storybook-static
+          path: ./apps/storybook/storybook-static
           if-no-files-found: error
 
   build-web:
@@ -85,13 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     env:
-      API_SERVER_PROFILE: local
-      ENABLE_DEBUG_PAGE: 1
-      ENABLE_PLUGIN: true
-      ENABLE_ALL_PAGE_FILTER: true
-      ENABLE_LEGACY_PROVIDER: true
-      ENABLE_PRELOADING: false
-      ENABLE_NEW_SETTING_MODAL: false
+      RELEASE_VERSION: canary
 
     steps:
       - uses: actions/checkout@v3
@@ -111,13 +106,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     env:
-      API_SERVER_PROFILE: affine
-      ENABLE_DEBUG_PAGE: 1
-      ENABLE_PLUGIN: true
-      ENABLE_ALL_PAGE_FILTER: true
-      ENABLE_LEGACY_PROVIDER: false
-      ENABLE_PRELOADING: false
-      ENABLE_NEW_SETTING_MODAL: false
+      ENABLE_BOOKMARK_OPERATION: true
+      RELEASE_VERSION: canary
 
     steps:
       - uses: actions/checkout@v3
@@ -173,9 +163,14 @@ jobs:
         working-directory: apps/server
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          target: 'x86_64-unknown-linux-gnu'
       - name: Run server tests
         run: yarn nx test:coverage @affine/server
         env:
+          CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
@@ -201,9 +196,9 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/storybook/storybook-static
+          path: ./apps/storybook/storybook-static
       - name: Run storybook tests
-        working-directory: ./packages/storybook
+        working-directory: ./apps/storybook
         run: |
           yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test"
 
@@ -242,7 +237,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storybook
-          path: ./packages/storybook/storybook-static
+          path: ./apps/storybook/storybook-static
 
       - name: Wait for Octobase Ready
         run: |
@@ -272,6 +267,26 @@ jobs:
           name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
           if-no-files-found: ignore
+
+  e2e-migration-test:
+    name: E2E Migration Test
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+
+      - name: Unzip
+        run: yarn unzip
+        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+
+      - name: Run legacy playwright tests
+        run: yarn e2e --forbid-only
+        working-directory: ./tests/affine-legacy/0.7.0-canary.18
 
   desktop-test:
     name: Desktop Test
@@ -400,3 +415,60 @@ jobs:
           flags: unittest
           name: affine
           fail_ci_if_error: true
+
+  build-docker:
+    if: github.ref == 'refs/heads/master'
+    name: Build Docker
+    needs:
+      - build-web-desktop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download next static
+        uses: actions/download-artifact@v3
+        with:
+          name: next-js-static
+          path: ./apps/web/out
+      - name: Setup Git short hash
+        run: |
+          echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          logout: false
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build front Dockerfile
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/front/Dockerfile
+          tags: ghcr.io/toeverything/affine-front:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:latest
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          package-install: false
+
+      - name: Install Node.js dependencies
+        run: yarn workspaces focus @affine/server --production
+
+      - name: Build graphql Dockerfile
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/node/Dockerfile
+          tags: ghcr.io/toeverything/affine-graphql:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:latest

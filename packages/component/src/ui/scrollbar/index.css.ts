@@ -1,14 +1,11 @@
 import { globalStyle, style } from '@vanilla-extract/css';
 
-
-
 export const scrollableContainerRoot = style({
   width: '100%',
   vars: {
-    '--scrollbar-width': '10px',
+    '--scrollbar-width': '8px',
   },
   height: '100%',
-
 });
 
 export const scrollTopBorder = style({
@@ -32,7 +29,6 @@ export const scrollableViewport = style({
   width: '100%',
 });
 
-
 globalStyle(`${scrollableViewport} > div`, {
   maxWidth: '100%',
   display: 'block !important',
@@ -48,12 +44,16 @@ export const scrollbar = style({
   flexDirection: 'column',
   userSelect: 'none',
   touchAction: 'none',
-  padding: '0 2px',
   marginRight: '4px',
   width: 'var(--scrollbar-width)',
   height: '100%',
   opacity: 1,
-  transition: 'opacity .15s',
+  transition: 'width .15s',
+  ':hover': {
+    background: 'var(--affine-background-secondary-color)',
+    width: 'calc(var(--scrollbar-width) + 3px)',
+    borderLeft: '1px solid var(--affine-border-color)',
+  },
   selectors: {
     '&[data-state="hidden"]': {
       opacity: 0,
@@ -67,8 +67,12 @@ export const TableScrollbar = style({
 
 export const scrollbarThumb = style({
   position: 'relative',
-  background: 'var(--affine-black-30)',
+  background: 'var(--affine-divider-color)',
+  width: '50%',
   borderRadius: '4px',
+  ':hover': {
+    background: 'var(--affine-icon-color)',
+  },
   selectors: {
     '&::before': {
       content: '""',

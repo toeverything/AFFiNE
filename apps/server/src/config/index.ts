@@ -1,8 +1,11 @@
+// eslint-disable-next-line simple-import-sort/imports
 import type { DynamicModule, FactoryProvider } from '@nestjs/common';
 import { merge } from 'lodash-es';
 
 import type { DeepPartial } from '../utils/types';
 import type { AFFiNEConfig } from './def';
+
+import '../prelude';
 
 type ConstructorOf<T> = {
   new (): T;
@@ -37,11 +40,14 @@ function createConfigProvider(
     provide: Config,
     useFactory: () => {
       const wrapper = new Config();
-      const config = merge({}, AFFiNE, override);
+      const config = merge({}, globalThis.AFFiNE, override);
 
       const proxy: Config = new Proxy(wrapper, {
         get: (_target, property: keyof Config) => {
-          const desc = Object.getOwnPropertyDescriptor(AFFiNE, property);
+          const desc = Object.getOwnPropertyDescriptor(
+            globalThis.AFFiNE,
+            property
+          );
           if (desc?.get) {
             return desc.get.call(proxy);
           }

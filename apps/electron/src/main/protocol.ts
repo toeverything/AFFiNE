@@ -34,7 +34,6 @@ export function registerProtocol() {
     const url = request.url.replace(/^file:\/\//, '');
     const realpath = toAbsolutePath(url);
     callback(realpath);
-    console.log('interceptFileProtocol realpath', request.url, realpath);
     return true;
   });
 

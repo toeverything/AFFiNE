@@ -1,0 +1,30 @@
+affineCloud:
+  tag: 'canary-5e0d5e0cc65ea46f326fdde12658bfac59b38c9f-0949'
+  # databaseUrl: 'postgresql://affine:password@affine-cloud-postgresql:5432/affine'
+  signKey: TUFtdFdzQTJhdGJuem01TA==
+  mail:
+    account: ''
+    password: ''
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    cpu: '250m'
+    memory: 0.5Gi
+postgresql:
+  fullnameOverride: tcp-postgresql
+  auth:
+    # only for demo, please modify it at prod env
+    username: affine
+    password: password
+    database: affine
+  primary:
+    initdb:
+      scripts:
+        01-init.sql: |
+          CREATE DATABASE affine_binary;
+          GRANT ALL PRIVILEGES ON DATABASE affine_binary TO affine;
+    resources:
+      limits:
+        cpu: '500m'
+        memory: 0.5Gi

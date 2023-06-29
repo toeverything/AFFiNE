@@ -1,22 +1,21 @@
 import { ok } from 'node:assert';
-import { afterEach, beforeEach, describe, test } from 'node:test';
+import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
+// @ts-expect-error graphql-upload is not typed
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../app';
-import { getDefaultAFFiNEConfig } from '../config/default';
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
 import type { WorkspaceType } from '../modules/workspaces';
 
 const gql = '/graphql';
 
-globalThis.AFFiNE = getDefaultAFFiNEConfig();
-
-describe('AppModule', () => {
+describe('Workspace Module', () => {
   let app: INestApplication;
 
   // cleanup database before each test
@@ -32,6 +31,12 @@ describe('AppModule', () => {
       imports: [AppModule],
     }).compile();
     app = module.createNestApplication();
+    app.use(
+      graphqlUploadExpress({
+        maxFileSize: 10 * 1024 * 1024,
+        maxFiles: 5,
+      })
+    );
     await app.init();
   });
 
@@ -63,15 +68,20 @@ describe('AppModule', () => {
     const res = await request(app.getHttpServer())
       .post(gql)
       .auth(token, { type: 'bearer' })
-      .send({
-        query: `
-          mutation {
-            createWorkspace {
+      .field(
+        'operations',
+        JSON.stringify({
+          name: 'createWorkspace',
+          query: `mutation createWorkspace($init: Upload!) {
+            createWorkspace(init: $init) {
               id
             }
-          }
-        `,
-      })
+          }`,
+          variables: { init: null },
+        })
+      )
+      .field('map', JSON.stringify({ '0': ['variables.init'] }))
+      .attach('0', Buffer.from([0, 0]), 'init.data')
       .expect(200);
     return res.body.data.createWorkspace;
   }
@@ -151,21 +161,21 @@ describe('AppModule', () => {
     return res.body.data.revoke;
   }
 
-  test('should register a user', async () => {
+  it('should register a user', async () => {
     const user = await registerUser('u1', 'u1@affine.pro', '123456');
     ok(typeof user.id === 'string', 'user.id is not a string');
     ok(user.name === 'u1', 'user.name is not valid');
     ok(user.email === 'u1@affine.pro', 'user.email is not valid');
   });
 
-  test('should create a workspace', async () => {
+  it('should create a workspace', async () => {
     const user = await registerUser('u1', 'u1@affine.pro', '1');
 
     const workspace = await createWorkspace(user.token.token);
     ok(typeof workspace.id === 'string', 'workspace.id is not a string');
   });
 
-  test('should invite a user', async () => {
+  it('should invite a user', async () => {
     const u1 = await registerUser('u1', 'u1@affine.pro', '1');
     const u2 = await registerUser('u2', 'u2@affine.pro', '1');
 
@@ -180,7 +190,7 @@ describe('AppModule', () => {
     ok(invite === true, 'failed to invite user');
   });
 
-  test('should accept an invite', async () => {
+  it('should accept an invite', async () => {
     const u1 = await registerUser('u1', 'u1@affine.pro', '1');
     const u2 = await registerUser('u2', 'u2@affine.pro', '1');
 
@@ -191,7 +201,7 @@ describe('AppModule', () => {
     ok(accept === true, 'failed to accept invite');
   });
 
-  test('should leave a workspace', async () => {
+  it('should leave a workspace', async () => {
     const u1 = await registerUser('u1', 'u1@affine.pro', '1');
     const u2 = await registerUser('u2', 'u2@affine.pro', '1');
 
@@ -203,7 +213,7 @@ describe('AppModule', () => {
     ok(leave === true, 'failed to leave workspace');
   });
 
-  test('should revoke a user', async () => {
+  it('should revoke a user', async () => {
     const u1 = await registerUser('u1', 'u1@affine.pro', '1');
     const u2 = await registerUser('u2', 'u2@affine.pro', '1');
 

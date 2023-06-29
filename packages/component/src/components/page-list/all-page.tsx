@@ -5,7 +5,14 @@ import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
 import { type CSSProperties } from 'react';
 
-import { ScrollableContainer, Table, TableBody, TableCell, TableHead, TableHeadRow } from '../..';
+import {
+  ScrollableContainer,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeadRow,
+} from '../..';
 import { TableBodyRow } from '../../ui/table';
 import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
 import { AllPagesBody } from './all-pages-body';
@@ -141,12 +148,9 @@ export const PageList = ({
       ? DEFAULT_SORT_KEY
       : undefined;
 
-  return (
-    sorter.data.length === 0 && fallback ?
-    <StyledTableContainer>
-     {fallback}
-    </StyledTableContainer>
-   :
+  return sorter.data.length === 0 && fallback ? (
+    <StyledTableContainer>{fallback}</StyledTableContainer>
+  ) : (
     <ScrollableContainer inTableView>
       <StyledTableContainer ref={ref}>
         <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
@@ -158,7 +162,6 @@ export const PageList = ({
             importFile={onImportFile}
           />
           <AllPagesBody
-            
             isPublicWorkspace={isPublicWorkspace}
             groupKey={groupKey}
             data={sorter.data}
@@ -246,12 +249,9 @@ export const PageListTrashView: React.FC<{
     }
   );
 
-  return (
-    list.length === 0 && fallback ?
-    <StyledTableContainer>
-    {fallback}
-    </StyledTableContainer>
-  :
+  return list.length === 0 && fallback ? (
+    <StyledTableContainer>{fallback}</StyledTableContainer>
+  ) : (
     <ScrollableContainer inTableView>
       <StyledTableContainer ref={ref}>
         <Table showBorder={hasScrollTop}>

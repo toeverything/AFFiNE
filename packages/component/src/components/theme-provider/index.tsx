@@ -1,3 +1,4 @@
+import { isDesktop } from '@affine/env/constant';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
 import { memo, useRef } from 'react';
@@ -9,7 +10,7 @@ const DesktopThemeSync = memo(function DesktopThemeSync() {
   const lastThemeRef = useRef(theme);
   const onceRef = useRef(false);
   if (lastThemeRef.current !== theme || !onceRef.current) {
-    if (environment.isDesktop && theme) {
+    if (isDesktop && theme) {
       window.apis?.ui
         .handleThemeChange(theme as 'dark' | 'light' | 'system')
         .catch(err => {

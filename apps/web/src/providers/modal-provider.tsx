@@ -1,4 +1,3 @@
-import { env } from '@affine/env';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
@@ -69,7 +68,7 @@ export function CurrentWorkspaceModals() {
           }, [setOpenDisableCloudAlertModal])}
         />
       </Suspense>
-      {env.isDesktop && (
+      {environment.isDesktop && (
         <Suspense>
           <OnboardingModal
             open={openOnboardingModal}

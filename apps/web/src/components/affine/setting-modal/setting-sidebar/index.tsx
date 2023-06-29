@@ -1,3 +1,4 @@
+import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import type {
   AffineLegacyCloudWorkspace,
@@ -5,6 +6,7 @@ import type {
 } from '@affine/env/workspace';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
+import React from 'react';
 
 import type {
   GeneralSettingKeys,
@@ -84,7 +86,13 @@ export const SettingSidebar = ({
       </div>
 
       <div className={accountButton} onClick={onAccountSettingClick}>
-        <div className="avatar"></div>
+        <UserAvatar
+          size={28}
+          name="Account NameAccount Name"
+          url={''}
+          className="avatar"
+        />
+
         <div className="content">
           <div className="name" title="xxx">
             Account NameAccount Name

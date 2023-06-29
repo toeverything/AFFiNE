@@ -1,0 +1,43 @@
+{
+  "name": "@affine/storage",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">= 10.16.0 < 11 || >= 11.8.0"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "module": "./index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./storage.node",
+      "import": "./index.js",
+      "types": "./index.d.ts"
+    }
+  },
+  "napi": {
+    "binaryName": "storage",
+    "targets": [
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-pc-windows-msvc",
+      "x86_64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "x86_64-unknown-linux-gnu",
+      "universal-apple-darwin"
+    ]
+  },
+  "scripts": {
+    "test": "node --test ./__tests__/**/*.spec.js",
+    "build": "napi build --release --strip",
+    "build:debug": "napi build",
+    "prepublishOnly": "napi prepublish -t npm",
+    "artifacts": "napi artifacts",
+    "version": "napi version"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.0.0-alpha.4",
+    "lib0": "^0.2.78",
+    "yjs": "^13.6.6"
+  }
+}

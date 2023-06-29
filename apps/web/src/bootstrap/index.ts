@@ -1,5 +1,6 @@
 import { migrateToSubdoc } from '@affine/env/blocksuite';
-import { config, setupGlobal } from '@affine/env/config';
+import { isDesktop, isServer } from '@affine/env/constant';
+import { setupGlobal } from '@affine/env/global';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
@@ -16,15 +17,19 @@ import { WorkspaceAdapters } from '../adapters/workspace';
 
 setupGlobal();
 
-if (config.enablePlugin && !environment.isServer) {
+if (process.env.NODE_ENV === 'development') {
+  console.log('Runtime Preset', runtimeConfig);
+}
+
+if (runtimeConfig.enablePlugin && !isServer) {
   import('@affine/copilot');
 }
 
-if (!environment.isServer) {
+if (!isServer) {
   import('@affine/bookmark-block');
 }
 
-if (!environment.isDesktop && !environment.isServer) {
+if (!isDesktop && !isServer) {
   // Polyfill Electron
   const unimplemented = () => {
     throw new Error('AFFiNE Plugin Web will be supported in the future');

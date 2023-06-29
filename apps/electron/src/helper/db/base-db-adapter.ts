@@ -1,4 +1,4 @@
-import { SqliteConnection } from '@affine/native';
+import { type InsertRow, SqliteConnection } from '@affine/native';
 
 import { logger } from '../logger';
 
@@ -79,21 +79,34 @@ export abstract class BaseSQLiteAdapter {
     }
   }
 
-  async getUpdates() {
+  async getUpdates(docId?: string) {
     try {
       if (!this.db) {
         logger.warn(`${this.path} is not connected`);
         return [];
       }
-      return await this.db.getUpdates();
+      return await this.db.getUpdates(docId);
     } catch (error) {
       logger.error('getUpdates', error);
       return [];
     }
   }
 
+  async getAllUpdates() {
+    try {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return [];
+      }
+      return await this.db.getAllUpdates();
+    } catch (error) {
+      logger.error('getAllUpdates', error);
+      return [];
+    }
+  }
+
   // add a single update to SQLite
-  async addUpdateToSQLite(updates: Uint8Array[]) {
+  async addUpdateToSQLite(updates: InsertRow[]) {
     // batch write instead write per key stroke?
     try {
       if (!this.db) {

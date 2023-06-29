@@ -2,3 +2,5 @@ pnpm-lock.yaml
 target
 lib
 test-results
+packages/graphql/src/graphql/index.ts
+.github/helm/
