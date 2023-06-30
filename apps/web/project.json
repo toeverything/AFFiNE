@@ -6,15 +6,12 @@
   "sourceRoot": "apps/web/src",
   "targets": {
     "build": {
-      "executor": "@nx/next:build",
-      "outputs": ["{options.outputPath}", "{projectRoot}/out"],
+      "executor": "nx:run-script",
+      "dependsOn": ["^build"],
       "options": {
-        "outputPath": "dist/apps/web",
-        "experimentalAppOnly": false
+        "script": "build"
       },
-      "configurations": {
-        "production": {}
-      }
+      "outputs": ["{projectRoot}/out"]
     },
     "serve": {
       "executor": "@nx/next:server",
