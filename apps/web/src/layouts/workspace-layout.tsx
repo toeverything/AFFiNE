@@ -293,7 +293,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   if (currentPageId) {
     const pageExist =
       currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-    if (router.query.pageId && !pageExist) {
+    if (router.pathname === '/[workspaceId]/[pageId]' && !pageExist) {
       router.push('/404').catch(console.error);
     }
   }
