@@ -1,4 +1,5 @@
 import type {
+  AffineSocketIOProvider,
   AffineWebSocketProvider,
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
@@ -15,6 +16,7 @@ import type { Doc } from 'yjs';
 
 import { KeckProvider } from '../affine/keck';
 import { getLoginStorage, storageChangeSlot } from '../affine/login';
+import { SocketIOProvider } from '../affine/sync-socket-io';
 import { CallbackSet } from '../utils';
 import { createAffineDownloadProvider } from './affine-download';
 import { localProviderLogger as logger } from './logger';
@@ -78,6 +80,33 @@ const createAffineWebSocketProvider: DocProviderCreator = (
   return apis;
 };
 
+const createAffineSocketIOProvider: DocProviderCreator = (
+  id,
+  doc,
+  { awareness }
+): AffineSocketIOProvider => {
+  console.log(prefixUrl);
+  const provider = new SocketIOProvider('http://127.0.0.1:3010', id, doc, {
+    awareness,
+  });
+  return {
+    flavour: 'affine-socket-io',
+    passive: true,
+    get connected() {
+      return provider.connected;
+    },
+    connect: () => {
+      provider.connect();
+    },
+    disconnect: () => {
+      provider.disconnect();
+    },
+    cleanup: () => {
+      provider.destroy();
+    },
+  } satisfies AffineSocketIOProvider;
+};
+
 const createIndexedDBBackgroundProvider: DocProviderCreator = (
   id,
   blockSuiteWorkspace
@@ -129,6 +158,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     _resolve = resolve;
     _reject = reject;
   });
+
   async function downloadBinaryRecursively(doc: Doc) {
     const binary = await downloadBinary(doc.guid);
     if (binary) {
@@ -136,6 +166,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
       await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
     }
   }
+
   return {
     flavour: 'local-indexeddb',
     active: true,
@@ -154,6 +185,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
 
 export {
   createAffineDownloadProvider,
+  createAffineSocketIOProvider,
   createAffineWebSocketProvider,
   createBroadcastChannelProvider,
   createIndexedDBBackgroundProvider,

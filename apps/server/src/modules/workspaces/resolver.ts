@@ -214,7 +214,8 @@ export class WorkspaceResolver {
       },
     });
 
-    await this.storage.createWorkspace(workspace.id, buffer);
+    const storageWorkspace = await this.storage.createWorkspace(workspace.id);
+    await this.storage.sync(workspace.id, storageWorkspace.doc.guid, buffer);
 
     return workspace;
   }

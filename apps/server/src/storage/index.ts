@@ -8,7 +8,7 @@ export class StorageModule {
     const storageProvider: FactoryProvider = {
       provide: Storage,
       useFactory: async (config: Config) => {
-        return Storage.connect(config.db.url);
+        return Storage.connect(config.db.url, true);
       },
       inject: [Config],
     };

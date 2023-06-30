@@ -26,7 +26,7 @@ export class SocketIOProvider extends Observable<string> {
   socket: Socket;
   awareness: awarenessProtocol.Awareness;
   rootDoc: Doc;
-  connected: boolean;
+  _connected: boolean;
   synced: boolean;
   connectPromise: Promise<void>;
   connectResolve: () => void = () => {};
@@ -37,18 +37,22 @@ export class SocketIOProvider extends Observable<string> {
     serverUrl: string,
     roomName: string,
     doc: Y.Doc,
-    socket: Socket,
     { awareness = new awarenessProtocol.Awareness(doc) } = {}
   ) {
     super();
+    if (roomName !== doc.guid) {
+      console.warn('important!! please use doc.guid as roomName');
+    }
     this.rootDoc = doc;
-    this.socket = io(serverUrl, {
+    const socket = (this.socket = io(serverUrl, {
       autoConnect: false,
-    });
+    }));
     this.awareness = awareness;
-    this.connected = false;
+    this._connected = false;
     this.synced = false;
     this.registerDoc(doc);
+    // Register the handlers all at once.
+    // We don't need to ensure sequence order of server-handshake and server-update, as CRDT is order independent.
     socket.on('server-handshake', this.serverHandshakeHandler);
     socket.on('server-update', this.handlerServerUpdate);
     // help to send awareness update to other clients
@@ -77,6 +81,7 @@ export class SocketIOProvider extends Observable<string> {
     uint8ArrayToBase64(diffUpdate)
       .then(encodedUpdate => {
         this.socket.emit('client-update', {
+          workspaceId: this.rootDoc.guid,
           guid: doc.guid,
           update: encodedUpdate,
         });
@@ -115,7 +120,7 @@ export class SocketIOProvider extends Observable<string> {
   };
 
   serverAwarenessBroadcastHandler = (message: {
-    workspace_id: string;
+    workspaceId: string;
     awarenessUpdate: string;
   }) => {
     applyAwarenessUpdate(
@@ -137,7 +142,7 @@ export class SocketIOProvider extends Observable<string> {
     uint8ArrayToBase64(update)
       .then(encodedUpdate => {
         this.socket.emit('awareness-update', {
-          guid: this.rootDoc.guid,
+          workspaceId: this.rootDoc.guid,
           awarenessUpdate: encodedUpdate,
         });
       })
@@ -161,6 +166,7 @@ export class SocketIOProvider extends Observable<string> {
       uint8ArrayToBase64(update)
         .then(encodedUpdate => {
           this.socket.emit('client-update', {
+            workspaceId: this.rootDoc.guid,
             guid: doc.guid,
             update: encodedUpdate,
           });
@@ -228,16 +234,20 @@ export class SocketIOProvider extends Observable<string> {
     return this.syncPromise;
   };
 
+  get connected() {
+    return this._connected;
+  }
+
   connect = () => {
-    const doc = this.rootDoc;
+    const rootDoc = this.rootDoc;
     const socket = this.socket;
     socket.connect();
     socket.on('connect', () => {
       this.connectResolve();
-      this.connected = true;
-      socket.emit('client-handshake', doc.guid);
+      this._connected = true;
+      socket.emit('client-handshake', rootDoc.guid);
       // ask for other clients' awareness
-      socket.emit('init-awareness', doc.guid);
+      socket.emit('init-awareness', rootDoc.guid);
     });
   };
 
@@ -250,7 +260,7 @@ export class SocketIOProvider extends Observable<string> {
     });
     const socket = this.socket;
     socket.disconnect();
-    this.connected = false;
+    this._connected = false;
     this.synced = false;
   };
 

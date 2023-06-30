@@ -55,6 +55,10 @@ export interface AffineWebSocketProvider extends PassiveDocProvider {
   flavour: 'affine-websocket';
 }
 
+export interface AffineSocketIOProvider extends PassiveDocProvider {
+  flavour: 'affine-socket-io';
+}
+
 export interface AffineLegacyCloudWorkspace extends RemoteWorkspace {
   flavour: WorkspaceFlavour.AFFINE;
   // empty

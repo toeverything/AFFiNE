@@ -1,3 +1,4 @@
+import { Storage } from '@affine/storage';
 import {
   ConnectedSocket,
   MessageBody,
@@ -14,7 +15,10 @@ const port = parseInt(process.env.PORT ?? '3010');
 
 @WebSocketGateway(port)
 export class EventsGateway {
-  constructor(private readonly storageService: WorkspaceService) {}
+  constructor(
+    private readonly storageService: WorkspaceService,
+    private readonly storage: Storage
+  ) {}
 
   @WebSocketServer()
   server: any;
@@ -37,14 +41,21 @@ export class EventsGateway {
 
   @SubscribeMessage('client-update')
   async handleClientUpdate(
-    @MessageBody() message: { guid: string; update: string }
+    @MessageBody()
+    message: {
+      workspaceId: string;
+      guid: string;
+      update: string;
+    }
   ) {
     const update = base64ToUint8Array(message.update);
     this.server.to(message.guid).emit('server-update', message);
-    await this.storageService.saveWorkspaceUpdate({
-      guid: message.guid,
-      update,
-    });
+
+    let guid = message.guid;
+    if (message.workspaceId === message.guid) {
+      guid = (await this.storageService.getWorkspace(message.workspaceId)).guid;
+    }
+    await this.storage.sync(message.workspaceId, guid, Buffer.from(update));
   }
 
   @SubscribeMessage('init-awareness')
@@ -59,13 +70,12 @@ export class EventsGateway {
 
   @SubscribeMessage('awareness-update')
   async handleHelpGatheringAwareness(
-    @MessageBody() message: { workspace_id: string; awarenessUpdate: string }
+    @MessageBody() message: { workspaceId: string; awarenessUpdate: string }
   ) {
     this.server
-      .to(`awareness-${message.workspace_id}`)
+      .to(`awareness-${message.workspaceId}`)
       .emit('server-awareness-broadcast', {
         ...message,
-        awarenessUpdate: base64ToUint8Array(message.awarenessUpdate),
       });
   }
 }

@@ -7,6 +7,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';
 import { Config } from './config';
+import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   cors: {
@@ -26,6 +27,10 @@ app.use(
     maxFiles: 5,
   })
 );
+
+const redisIoAdapter = new RedisIoAdapter(app);
+await redisIoAdapter.connectToRedis();
+app.useWebSocketAdapter(redisIoAdapter);
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ?? 3010;
