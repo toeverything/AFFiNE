@@ -14,7 +14,8 @@ const addDatabase = async (page: Page) => {
   await page.keyboard.press('a', { delay: 50 });
   await page.keyboard.press('Enter', { delay: 50 });
 };
-test.only('database is useable', async ({ page }) => {
+
+test('database is useable', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
