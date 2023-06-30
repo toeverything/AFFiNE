@@ -50,7 +50,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/bookmark-block@workspace:*, @affine/bookmark-block@workspace:plugins/bookmark-block":
+"@affine/bookmark-block@workspace:plugins/bookmark-block":
   version: 0.0.0-use.local
   resolution: "@affine/bookmark-block@workspace:plugins/bookmark-block"
   dependencies:
@@ -207,7 +207,6 @@ __metadata:
   resolution: "@affine/electron@workspace:apps/electron"
   dependencies:
     "@affine-test/kit": "workspace:*"
-    "@affine/bookmark-block": "workspace:*"
     "@affine/native": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230630081054-55a25248-nightly
     "@blocksuite/editor": 0.0.0-20230630081054-55a25248-nightly
