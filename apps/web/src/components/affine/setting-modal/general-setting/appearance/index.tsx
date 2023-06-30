@@ -12,7 +12,6 @@ import {
   windowFrameStyleOptions,
 } from '../../../../../atoms/settings';
 import { LanguageMenu } from '../../../language-menu';
-import { IS_EXHIBITION } from '../../config';
 import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
 
@@ -31,9 +30,15 @@ export const ThemeSettings = () => {
         [setTheme]
       )}
     >
-      <RadioButton value="system">{t['system']()}</RadioButton>
-      <RadioButton value="light">{t['light']()}</RadioButton>
-      <RadioButton value="dark">{t['dark']()}</RadioButton>
+      <RadioButton value="system" data-testid="system-theme-trigger">
+        {t['system']()}
+      </RadioButton>
+      <RadioButton value="light" data-testid="light-theme-trigger">
+        {t['light']()}
+      </RadioButton>
+      <RadioButton value="dark" data-testid="dark-theme-trigger">
+        {t['dark']()}
+      </RadioButton>
     </RadioButtonGroup>
   );
 };
@@ -70,7 +75,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu />
           </div>
         </SettingRow>
-        {IS_EXHIBITION && environment.isDesktop ? (
+        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
             name={t['Client Border Style']()}
             desc={t['Customize the appearance of the client.']()}
@@ -87,11 +92,12 @@ export const AppearanceSettings = () => {
           desc={t['Maximum display of content within a page.']()}
         >
           <Switch
+            data-testid="full-width-layout-trigger"
             checked={appSettings.fullWidthLayout}
             onChange={checked => changeSwitch('fullWidthLayout', checked)}
           />
         </SettingRow>
-        {IS_EXHIBITION && environment.isDesktop ? (
+        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
             name={t['Window frame style']()}
             desc={t['Customize appearance of Windows Client.']()}
@@ -114,7 +120,7 @@ export const AppearanceSettings = () => {
           </SettingRow>
         ) : null}
       </SettingWrapper>
-      {IS_EXHIBITION ? (
+      {runtimeConfig.enableNewSettingUnstableApi ? (
         <SettingWrapper title={t['Date']()}>
           <SettingRow
             name={t['Date Format']()}
@@ -154,9 +160,9 @@ export const AppearanceSettings = () => {
             desc={t['None yet']()}
           >
             <Switch
-              checked={appSettings.disableBlurBackground}
+              checked={!appSettings.disableBlurBackground}
               onChange={checked =>
-                changeSwitch('disableBlurBackground', checked)
+                changeSwitch('disableBlurBackground', !checked)
               }
             />
           </SettingRow>

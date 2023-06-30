@@ -1,6 +1,4 @@
-import {
-  SettingRow,
-} from '@affine/component/setting-components';
+import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { type FC, useState } from 'react';
@@ -33,6 +31,7 @@ export const DeleteLeaveWorkspace: FC<{
         onClick={() => {
           setShowDelete(true);
         }}
+        testId="delete-workspace-button"
       >
         <ArrowRightSmallIcon />
       </SettingRow>

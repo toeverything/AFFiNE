@@ -27,6 +27,7 @@ on:
 
 env:
   DEBUG: napi:*
+  BUILD_TYPE: canary
   APP_NAME: affine
   COVERAGE: true
   MACOSX_DEPLOYMENT_TARGET: '10.13'
@@ -42,12 +43,22 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Run checks
-        run: |
-          yarn i18n-codegen gen
-          yarn typecheck
-          yarn lint --max-warnings=0
-          yarn circular
+      - name: Run i18n codegen
+        run: yarn i18n-codegen gen
+      - name: Run Type Check
+        run: yarn typecheck
+      - name: Run ESLint
+        run: yarn lint --max-warnings=0 --cache
+      - name: Run Prettier
+        run: yarn prettier . --ignore-unknown --cache --check
+      - name: Run circular
+        run: yarn circular
+      - name: Upload server dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+          if-no-files-found: error
 
   build-docs:
     name: Build Docs
@@ -85,8 +96,6 @@ jobs:
     name: Build @affine/web
     runs-on: ubuntu-latest
     environment: development
-    env:
-      RELEASE_VERSION: canary
 
     steps:
       - uses: actions/checkout@v3
@@ -105,9 +114,6 @@ jobs:
     name: Build @affine/web (Desktop)
     runs-on: ubuntu-latest
     environment: development
-    env:
-      ENABLE_BOOKMARK_OPERATION: true
-      RELEASE_VERSION: canary
 
     steps:
       - uses: actions/checkout@v3
@@ -172,6 +178,12 @@ jobs:
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Upload storage.node
+        uses: actions/upload-artifact@v3
+        with:
+          name: storage.node
+          path: ./packages/storage/storage.node
+          if-no-files-found: error
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
         with:
@@ -179,7 +191,7 @@ jobs:
           files: ./apps/server/.coverage/lcov.info
           flags: server-test
           name: affine
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   storybook-test:
     name: Storybook Test
@@ -258,7 +270,7 @@ jobs:
           files: ./.coverage/lcov.info
           flags: e2etest
           name: affine
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Upload test results
         if: ${{ failure() }}
@@ -272,6 +284,7 @@ jobs:
     name: E2E Migration Test
     runs-on: ubuntu-latest
     environment: development
+    needs: [build-web]
 
     steps:
       - uses: actions/checkout@v3
@@ -280,6 +293,12 @@ jobs:
         with:
           playwright-install: true
 
+      - name: Download next static
+        uses: actions/download-artifact@v3
+        with:
+          name: next-js-static
+          path: ./apps/web/out
+
       - name: Unzip
         run: yarn unzip
         working-directory: ./tests/affine-legacy/0.7.0-canary.18
@@ -287,6 +306,18 @@ jobs:
       - name: Run legacy playwright tests
         run: yarn e2e --forbid-only
         working-directory: ./tests/affine-legacy/0.7.0-canary.18
+
+      - name: Run vitest
+        run: yarn test
+        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-migration
+          path: ./tests/affine-legacy/0.7.0-canary.18/test-results
+          if-no-files-found: ignore
 
   desktop-test:
     name: Desktop Test
@@ -375,7 +406,7 @@ jobs:
           files: ./.coverage/lcov.info
           flags: e2etest-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           name: affine
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Upload test results
         if: ${{ failure() }}
@@ -414,13 +445,15 @@ jobs:
           files: ./.coverage/store/lcov.info
           flags: unittest
           name: affine
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   build-docker:
     if: github.ref == 'refs/heads/master'
     name: Build Docker
     needs:
-      - build-web-desktop
+      - lint
+      - desktop-test
+      - server-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -429,6 +462,16 @@ jobs:
         with:
           name: next-js-static
           path: ./apps/web/out
+      - name: Download server dist
+        uses: actions/download-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./apps/server
       - name: Setup Git short hash
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
@@ -454,13 +497,20 @@ jobs:
           file: .github/deployment/front/Dockerfile
           tags: ghcr.io/toeverything/affine-front:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:latest
 
+      # setup node without cache configuration
+      # Prisma cache is not compatible with docker build cache
       - name: Setup Node.js
-        uses: ./.github/actions/setup-node
+        uses: actions/setup-node@v3
         with:
-          package-install: false
+          node-version-file: '.nvmrc'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
 
       - name: Install Node.js dependencies
         run: yarn workspaces focus @affine/server --production
+
+      - name: Generate Prisma client
+        run: yarn workspace @affine/server prisma generate
 
       - name: Build graphql Dockerfile
         uses: docker/build-push-action@v4

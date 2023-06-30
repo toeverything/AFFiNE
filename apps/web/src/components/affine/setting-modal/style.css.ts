@@ -3,7 +3,8 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const settingContent = style({
   flexGrow: '1',
   height: '100%',
-  padding: '40px 0',
+  padding: '40px 15px 20px',
+  overflowX: 'auto',
 });
 
 globalStyle(`${settingContent} .wrapper`, {

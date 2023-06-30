@@ -116,11 +116,11 @@ export const AllWorkspaceModals = (): ReactElement => {
             (activeId, overId) => {
               const oldIndex = workspaces.findIndex(w => w.id === activeId);
               const newIndex = workspaces.findIndex(w => w.id === overId);
-              transition(() =>
+              transition(() => {
                 setWorkspaces(workspaces =>
                   arrayMove(workspaces, oldIndex, newIndex)
-                )
-              );
+                ).catch(console.error);
+              });
             },
             [setWorkspaces, workspaces]
           )}

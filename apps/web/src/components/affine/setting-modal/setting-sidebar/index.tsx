@@ -4,9 +4,9 @@ import type {
   AffineLegacyCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
-import React from 'react';
 
 import type {
   GeneralSettingKeys,
@@ -44,12 +44,13 @@ export const SettingSidebar = ({
   selectedGeneralKey: string | null;
   onAccountSettingClick: () => void;
 }) => {
+  const t = useAFFiNEI18N();
   return (
-    <div className={settingSlideBar}>
-      <div className={sidebarTitle}>Settings</div>
-      <div className={sidebarSubtitle}>General</div>
+    <div className={settingSlideBar} data-testid="settings-sidebar">
+      <div className={sidebarTitle}>{t['Settings']()}</div>
+      <div className={sidebarSubtitle}>{t['General']()}</div>
       <div className={sidebarItemsWrapper}>
-        {generalSettingList.map(({ title, icon, key }) => {
+        {generalSettingList.map(({ title, icon, key, testId }) => {
           return (
             <div
               className={clsx(sidebarSelectItem, {
@@ -60,6 +61,7 @@ export const SettingSidebar = ({
               onClick={() => {
                 onGeneralSettingClick(key);
               }}
+              data-testid={testId}
             >
               {icon({ className: 'icon' })}
               <span className="setting-name">{title}</span>
@@ -68,7 +70,9 @@ export const SettingSidebar = ({
         })}
       </div>
 
-      <div className={sidebarSubtitle}>Workspace</div>
+      <div className={sidebarSubtitle}>
+        {t['com.affine.settings.workspace']()}
+      </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
         {workspaceList.map(workspace => {
           return (

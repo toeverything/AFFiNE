@@ -153,6 +153,9 @@
     },
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tests/affine-legacy/0.7.0-canary.18"
     }
   ],
   "files": [],

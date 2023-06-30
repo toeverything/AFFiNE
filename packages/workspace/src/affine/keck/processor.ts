@@ -1,3 +1,6 @@
+/**
+ * @deprecated Remove this file after we migrate to the new cloud.
+ */
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
 
