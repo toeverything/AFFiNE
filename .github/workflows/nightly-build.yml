@@ -125,7 +125,7 @@ jobs:
         run: yarn nx run-many -t build -p plugin-infra infra
 
       - name: Build layers
-        run: yarn workspace @affine/electron build
+        run: yarn nx build @affine/electron
 
       - name: Signing By Apple Developer ID
         if: ${{ matrix.spec.platform == 'darwin' }}

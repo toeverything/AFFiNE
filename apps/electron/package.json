@@ -11,8 +11,7 @@
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
-    "watch": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs --watch",
-    "prod": "yarn node scripts/dev.mjs",
+    "dev:prod": "yarn node scripts/dev.mjs",
     "build": "zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
@@ -23,11 +22,9 @@
     "forge": "./forge.config.js"
   },
   "main": "./dist/main.js",
-  "exports": {
-    "./scripts/plugins/build-plugins.mjs": "./scripts/plugins/build-plugins.mjs"
-  },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
+    "@affine/bookmark-block": "workspace:*",
     "@affine/native": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230629103121-76e6587d-nightly",
     "@blocksuite/editor": "0.0.0-20230629103121-76e6587d-nightly",
@@ -50,7 +47,7 @@
     "electron-log": "^5.0.0-beta.24",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",
-    "esbuild": "^0.18.9",
+    "esbuild": "^0.18.10",
     "fs-extra": "^11.1.1",
     "jotai": "^2.2.1",
     "playwright": "=1.33.0",

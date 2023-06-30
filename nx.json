@@ -97,7 +97,7 @@
       "dependsOn": ["build"]
     },
     "dev": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^dev"]
     },
     "e2e:coverage": {
       "dependsOn": ["^build"]

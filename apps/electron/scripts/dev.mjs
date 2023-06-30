@@ -1,13 +1,12 @@
 /* eslint-disable no-async-promise-executor */
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import path, { resolve } from 'node:path';
+import path from 'node:path';
 
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
-import which from 'which';
 
-import { config, electronDir, rootDir } from './common.mjs';
+import { config, electronDir } from './common.mjs';
 
 // this means we don't spawn electron windows, mainly for testing
 const watchMode = process.argv.includes('--watch');
@@ -68,14 +67,6 @@ function spawnOrReloadElectron() {
 }
 
 const common = config();
-const yarnPath = which.sync('yarn');
-async function watchPlugins() {
-  spawn(yarnPath, ['dev'], {
-    stdio: 'inherit',
-    cwd: resolve(rootDir, './packages/plugin-infra'),
-  });
-  await import('./plugins/dev-plugins.mjs');
-}
 
 async function watchLayers() {
   return new Promise(async resolve => {
@@ -134,7 +125,6 @@ async function watchWorkers() {
 }
 
 async function main() {
-  await watchPlugins();
   await watchLayers();
   await watchWorkers();
 
