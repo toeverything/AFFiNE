@@ -86,6 +86,7 @@
     },
     "e2e": {
       "dependsOn": ["^build"],
+      "outputs": ["{workspaceRoot}/.nyc_output", "{projectRoot}/test-results"],
       "inputs": [
         {
           "runtime": "node -v"
@@ -97,6 +98,7 @@
     },
     "e2e:coverage": {
       "dependsOn": ["^build"],
+      "outputs": ["{workspaceRoot}/.nyc_output", "{projectRoot}/test-results"],
       "inputs": [
         {
           "runtime": "node -v"

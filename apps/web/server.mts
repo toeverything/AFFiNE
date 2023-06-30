@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 8080;
 
 app.use('/', express.static('out'));
 
+app.use('/_debug/*', express.static('out/_debug/*.html'));
 app.use(
   '/workspace/*/all',
   express.static('out/workspace/[workspaceId]/all.html')
