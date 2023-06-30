@@ -1,4 +1,5 @@
 /// <reference types="react/experimental" />
+'use client';
 import '@blocksuite/blocks';
 
 import { Button, Tooltip } from '@affine/component';
