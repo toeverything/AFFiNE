@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node-esm
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -28,10 +28,10 @@ const dev = await p.group(
   }
 );
 
-const env = {
-  PATH: process.env.PATH,
+const env: Record<string, string> = {
+  PATH: process.env.PATH ?? '',
   NODE_ENV: 'development',
-  PORT: 8080,
+  PORT: '8080',
 };
 
 if (dev.debugBlockSuite) {
@@ -44,8 +44,11 @@ if (dev.debugBlockSuite) {
     message: 'local blocksuite PATH',
     initialValue: envLocal.error
       ? undefined
-      : envLocal.parsed.LOCAL_BLOCK_SUITE,
+      : envLocal.parsed?.LOCAL_BLOCK_SUITE,
   });
+  if (typeof localBlockSuite !== 'string') {
+    throw new Error('local blocksuite PATH is required');
+  }
   if (!fs.existsSync(localBlockSuite)) {
     throw new Error(`local blocksuite not found: ${localBlockSuite}`);
   }
