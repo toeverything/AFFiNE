@@ -34,7 +34,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
+import { lazy, Suspense, use, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import {
@@ -289,6 +289,14 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     }
   }
   //#endregion
+
+  if (currentPageId) {
+    const pageExist =
+      currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+    if (router.query.pageId && !pageExist) {
+      use(router.push('/404'));
+    }
+  }
 
   useEffect(() => {
     const backgroundProviders =
