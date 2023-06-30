@@ -126,7 +126,7 @@ jobs:
           path: apps/electron/resources/web-static
 
       - name: Build layers
-        run: yarn workspace @affine/electron build
+        run: yarn nx build @affine/electron
 
       - name: Signing By Apple Developer ID
         if: ${{ matrix.spec.platform == 'darwin' }}
