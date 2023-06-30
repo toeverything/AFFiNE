@@ -1,3 +1,6 @@
+/**
+ * @deprecated Remove this file after we migrate to the new cloud.
+ */
 import { DebugLogger } from '@affine/debug';
 import type { WorkspaceCRUD } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
