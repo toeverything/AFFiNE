@@ -1,3 +1,5 @@
+import type { GetPageInfoById } from '@affine/env/page-info';
+
 /**
  * Get the keys of an object type whose values are of a given type
  *
@@ -45,6 +47,7 @@ export type PageListProps = {
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;
+  getPageInfo: GetPageInfoById;
 };
 
 export type DraggableTitleCellData = {

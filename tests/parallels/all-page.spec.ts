@@ -3,7 +3,11 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { getBlockSuiteEditorTitle, waitEditorLoad } from '../libs/page-logic';
+import {
+  closeDownloadTip,
+  getBlockSuiteEditorTitle,
+  waitEditorLoad,
+} from '../libs/page-logic';
 import { clickSideBarAllPageButton } from '../libs/sidebar';
 
 function getAllPage(page: Page) {
@@ -51,12 +55,6 @@ test('all page can create new edgeless page', async ({ page }) => {
   await clickNewEdgelessDropdown();
   await expect(page.locator('affine-edgeless-page')).toBeVisible();
 });
-
-const closeDownloadTip = async (page: Page) => {
-  await page
-    .locator('[data-testid="download-client-tip-close-button"]')
-    .click();
-};
 
 const createFirstFilter = async (page: Page, name: string) => {
   await page

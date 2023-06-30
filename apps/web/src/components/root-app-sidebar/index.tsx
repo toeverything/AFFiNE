@@ -29,6 +29,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
+import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 
@@ -225,7 +226,10 @@ export const RootAppSidebar = ({
                 <span data-testid="shared-pages">{t['Shared Pages']()}</span>
               </RouteMenuLinkItem>
             ))}
-
+          <CategoryDivider label={t['Collections']()} />
+          {blockSuiteWorkspace && (
+            <CollectionsList currentWorkspace={currentWorkspace} />
+          )}
           <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}

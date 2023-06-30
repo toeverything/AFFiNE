@@ -10,6 +10,7 @@ export const root = style({
   cursor: 'pointer',
   padding: '0 8px 0 12px',
   fontSize: 'var(--affine-font-sm)',
+  margin: '2px 0',
   selectors: {
     '&:hover': {
       background: 'var(--affine-hover-color)',
@@ -22,11 +23,12 @@ export const root = style({
       color: 'var(--affine-text-secondary-color)',
       pointerEvents: 'none',
     },
-    '&[data-active="true"]:hover': {
-      background:
-        // make this a variable?
-        'linear-gradient(0deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04)), rgba(0, 0, 0, 0.04);',
-    },
+    // this is not visible in dark mode
+    // '&[data-active="true"]:hover': {
+    //   background:
+    //     // make this a variable?
+    //     'linear-gradient(0deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04)), rgba(0, 0, 0, 0.04)',
+    // },
     '&[data-collapsible="true"]': {
       width: 'calc(100% + 8px)',
       transform: 'translateX(-8px)',
@@ -39,6 +41,7 @@ export const content = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  flex: 1,
 });
 
 export const icon = style({
