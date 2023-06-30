@@ -445,7 +445,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
-      <NotificationCenter />
+      {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
       <Setting />
     </>
   );

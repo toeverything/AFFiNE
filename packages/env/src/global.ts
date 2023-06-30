@@ -63,6 +63,7 @@ export const buildFlagsSchema = z.object({
   enableNewSettingModal: z.boolean(),
   enableNewSettingUnstableApi: z.boolean(),
   enableSQLiteProvider: z.boolean(),
+  enableNotificationCenter: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({

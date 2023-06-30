@@ -30,6 +30,7 @@ const buildPreset = {
     enableNewSettingModal: false,
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
+    enableNotificationCenter: false,
   },
   beta: {},
   internal: {},
@@ -46,6 +47,7 @@ const buildPreset = {
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
+    enableNotificationCenter: true,
   },
 };
 
@@ -90,6 +92,9 @@ const environmentPreset = {
   enableNewSettingUnstableApi: process.env.ENABLE_NEW_SETTING_UNSTABLE_API
     ? process.env.ENABLE_NEW_SETTING_UNSTABLE_API === 'true'
     : currentBuildPreset.enableNewSettingUnstableApi,
+  enableNotificationCenter: process.env.ENABLE_NOTIFICATION_CENTER
+    ? process.env.ENABLE_NOTIFICATION_CENTER === 'true'
+    : currentBuildPreset.enableNotificationCenter,
 };
 
 /**
