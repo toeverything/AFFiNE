@@ -80,6 +80,15 @@ export abstract class UIHandlerManager extends HandlerManager<
   UIHandlers
 > {}
 
+type ClipboardHandlers = {
+  copyAsPng: () => Promise<void>;
+};
+
+export abstract class ClipboardHandlerManager extends HandlerManager<
+  'clipboard',
+  ClipboardHandlers
+> {}
+
 type ExportHandlers = {
   savePDFFileAs: (title: string) => Promise<any>;
 };
