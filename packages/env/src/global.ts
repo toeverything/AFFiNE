@@ -87,7 +87,6 @@ export const publicRuntimeConfigSchema = buildFlagsSchema.extend({
   gitVersion: z.string(),
   hash: z.string(),
   serverAPI: z.string(),
-  editorVersion: z.string(),
   editorFlags: blockSuiteFeatureFlags,
 });
 
@@ -173,7 +172,6 @@ function printBuildInfo() {
     'Build date:',
     config.BUILD_DATE ? new Date(config.BUILD_DATE).toLocaleString() : 'Unknown'
   );
-  console.log('Editor Version:', config.editorVersion);
 
   console.log('Version:', config.gitVersion);
   console.log(

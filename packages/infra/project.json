@@ -1,0 +1,21 @@
+{
+  "name": "infra",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "packages/infra/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/packages/infra"
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/packages/infra",
+        "watch": true
+      }
+    }
+  }
+}

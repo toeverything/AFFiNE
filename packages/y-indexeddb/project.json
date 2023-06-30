@@ -1,0 +1,21 @@
+{
+  "name": "y-indexeddb",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "packages/y-indexeddb/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/packages/y-indexeddb"
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/packages/y-indexeddb",
+        "watch": true
+      }
+    }
+  }
+}

@@ -20,7 +20,12 @@
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/nx.json"
     ],
-    "production": ["default"]
+    "production": [
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/tsconfig.spec.json",
+      "!{projectRoot}/jest.config.[jt]s"
+    ]
   },
   "targetDefaults": {
     "build": {
@@ -93,9 +98,6 @@
         }
       ]
     },
-    "export": {
-      "dependsOn": ["build"]
-    },
     "dev": {
       "dependsOn": ["^dev"]
     },
@@ -110,6 +112,16 @@
     },
     "test:coverage": {
       "dependsOn": ["^build"]
+    }
+  },
+  "generators": {
+    "@nx/react": {
+      "application": {
+        "babel": true
+      },
+      "library": {
+        "unitTestRunner": "jest"
+      }
     }
   }
 }

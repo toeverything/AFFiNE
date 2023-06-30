@@ -57,7 +57,7 @@ if (dev.debugBlockSuite) {
   env.LOCAL_BLOCK_SUITE = '';
 }
 
-spawn('nx', ['dev', '@affine/web'], {
+spawn('nx', ['serve', '@affine/web'], {
   env,
   cwd,
   stdio: 'inherit',

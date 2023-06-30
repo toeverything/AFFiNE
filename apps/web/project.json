@@ -1,0 +1,39 @@
+{
+  "name": "@affine/web",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "root": "apps/web",
+  "sourceRoot": "apps/web/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/next:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/web",
+        "experimentalAppOnly": false
+      },
+      "configurations": {
+        "production": {}
+      }
+    },
+    "serve": {
+      "executor": "@nx/next:server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "@affine/web:build",
+        "dev": true,
+        "port": 8080
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "@affine/web:build:development",
+          "dev": true
+        },
+        "production": {
+          "buildTarget": "@affine/web:build:production",
+          "dev": false
+        }
+      }
+    }
+  }
+}
