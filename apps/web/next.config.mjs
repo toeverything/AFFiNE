@@ -53,24 +53,9 @@ const profileTarget = {
   local: '127.0.0.1:3000',
 };
 
-const getRedirectConfig = profile => {
-  const target = profileTarget[profile || 'dev'] || profileTarget['dev'];
-
-  return [
-    [
-      { source: '/api/:path*', destination: `http://${target}/api/:path*` },
-      {
-        source: '/collaboration/:path*',
-        destination: `http://${target}/collaboration/:path*`,
-      },
-    ],
-    target,
-    profile || 'dev',
-  ];
-};
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
   sentry: {
     hideSourceMaps: true,
   },
@@ -123,7 +108,6 @@ const nextConfig = {
     serverAPI:
       profileTarget[process.env.API_SERVER_PROFILE || 'dev'] ??
       profileTarget.dev,
-    editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
     editorFlags: blockSuiteFeatureFlags,
     ...buildFlags,
   },
@@ -161,13 +145,6 @@ const nextConfig = {
     }
 
     return config;
-  },
-  rewrites: async () => {
-    const [profile, target, desc] = getRedirectConfig(
-      process.env.API_SERVER_PROFILE
-    );
-    console.info(`API request proxy to [${desc} Server]: ` + target);
-    return profile;
   },
   basePath: process.env.NEXT_BASE_PATH,
   assetPrefix: process.env.NEXT_ASSET_PREFIX,

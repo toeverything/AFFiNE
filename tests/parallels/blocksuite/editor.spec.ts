@@ -14,6 +14,7 @@ const addDatabase = async (page: Page) => {
   await page.keyboard.press('a', { delay: 50 });
   await page.keyboard.press('Enter', { delay: 50 });
 };
+
 test('database is useable', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -24,7 +25,7 @@ test('database is useable', async ({ page }) => {
   expect(await title.innerText()).toBe('test title');
   await addDatabase(page);
   const database = page.locator('.affine-database-table');
-  expect(database).toBeVisible();
+  await expect(database).toBeVisible();
   await page.reload();
   await waitEditorLoad(page);
   await newPage(page);
@@ -34,7 +35,7 @@ test('database is useable', async ({ page }) => {
   expect(await title2.innerText()).toBe('test title2');
   await addDatabase(page);
   const database2 = page.locator('.affine-database-table');
-  expect(database2).toBeVisible();
+  await expect(database2).toBeVisible();
 });
 
 test('link page is useable', async ({ page }) => {

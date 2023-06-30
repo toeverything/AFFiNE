@@ -5,7 +5,7 @@
     "default": {
       "runner": "nx-cloud",
       "options": {
-        "cacheableOperations": ["build", "test"],
+        "cacheableOperations": ["build", "test", "e2e", "lint"],
         "accessToken": "YmQ2NTg1ODktZTk5Mi00YzhiLTk2ZmUtNWQzMDg0NDBkOWM3fHJlYWQtb25seQ=="
       }
     }
@@ -15,12 +15,15 @@
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
-    "packages": ["{workspaceRoot}/packages/**/*"],
     "sharedGlobals": [
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/nx.json"
     ],
-    "production": ["default"]
+    "production": [
+      "default",
+      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)"
+    ]
   },
   "targetDefaults": {
     "build": {
@@ -40,7 +43,6 @@
         "{workspaceRoot/apps/electron/dist"
       ],
       "inputs": [
-        "packages",
         {
           "runtime": "node -v"
         },
@@ -84,6 +86,7 @@
     },
     "e2e": {
       "dependsOn": ["^build"],
+      "outputs": ["{workspaceRoot}/.nyc_output", "{projectRoot}/test-results"],
       "inputs": [
         {
           "runtime": "node -v"
@@ -93,23 +96,51 @@
         }
       ]
     },
-    "export": {
-      "dependsOn": ["build"]
-    },
-    "dev": {
-      "dependsOn": ["^dev"]
-    },
     "e2e:coverage": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "outputs": ["{workspaceRoot}/.nyc_output", "{projectRoot}/test-results"],
+      "inputs": [
+        {
+          "runtime": "node -v"
+        },
+        {
+          "runtime": "yarn playwright --version"
+        }
+      ]
     },
     "test": {
+      "inputs": [
+        {
+          "env": "ENABLE_PRELOADING"
+        }
+      ],
       "dependsOn": ["^build"]
     },
     "test:ui": {
+      "inputs": [
+        {
+          "env": "ENABLE_PRELOADING"
+        }
+      ],
       "dependsOn": ["^build"]
     },
     "test:coverage": {
+      "inputs": [
+        {
+          "env": "ENABLE_PRELOADING"
+        }
+      ],
       "dependsOn": ["^build"]
+    }
+  },
+  "generators": {
+    "@nx/react": {
+      "application": {
+        "babel": true
+      },
+      "library": {
+        "unitTestRunner": "jest"
+      }
     }
   }
 }

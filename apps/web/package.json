@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "export": "next export",
-    "start": "next start"
+    "start": "ts-node-esm server.mts"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
@@ -73,12 +72,14 @@
     "eslint": "^8.43.0",
     "eslint-config-next": "^13.4.7",
     "eslint-plugin-unicorn": "^47.0.0",
+    "express": "^4.18.2",
     "next": "=13.4.2",
     "next-debug-local": "^0.1.5",
     "next-router-mock": "^0.9.7",
     "raw-loader": "^4.0.2",
     "redux": "^4.2.1",
     "swc-plugin-coverage-instrument": "^0.0.18",
+    "ts-node": "^10.9.1",
     "typescript": "^5.1.5",
     "webpack": "^5.88.0"
   },

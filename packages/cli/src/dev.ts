@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import * as p from '@clack/prompts';
+import { spawnSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,7 +58,26 @@ if (dev.debugBlockSuite) {
   env.LOCAL_BLOCK_SUITE = '';
 }
 
-spawn('nx', ['dev', '@affine/web'], {
+const packages = ['infra', 'plugin-infra'];
+
+spawnSync('nx', ['run-many', '-t', 'build', '-p', ...packages], {
+  env,
+  cwd,
+  stdio: 'inherit',
+  shell: true,
+});
+
+packages.forEach(pkg => {
+  const cwd = path.resolve(root, 'packages', pkg);
+  spawn('yarn', ['dev'], {
+    env,
+    cwd,
+    stdio: 'inherit',
+    shell: true,
+  });
+});
+
+spawn('yarn', ['dev', '-p', '8080'], {
   env,
   cwd,
   stdio: 'inherit',
