@@ -34,7 +34,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, use, useCallback, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import {
@@ -294,30 +294,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     const pageExist =
       currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
     if (router.query.pageId && !pageExist) {
-      use(router.push('/404'));
+      router.push('/404').catch(console.error);
     }
   }
 
   useEffect(() => {
-    const backgroundProviders =
-      currentWorkspace.blockSuiteWorkspace.providers.filter(
-        (provider): provider is PassiveDocProvider =>
-          'passive' in provider && provider.passive
-      );
-    backgroundProviders.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      backgroundProviders.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspace]);
-
-  useEffect(() => {
-    if (!currentWorkspace) {
-      return;
-    }
     const page = currentWorkspace.blockSuiteWorkspace.getPage(
       DEFAULT_HELLO_WORLD_PAGE_ID
     );
