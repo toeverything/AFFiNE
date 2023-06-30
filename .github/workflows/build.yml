@@ -374,8 +374,8 @@ jobs:
         run: yarn nx test @affine/monorepo
         env:
           NATIVE_TEST: 'true'
-      - name: Build layers
-        run: yarn workspace @affine/electron build
+      - name: Build AFFiNE Desktop
+        run: yarn nx build @affine/electron
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
         with:
@@ -384,13 +384,13 @@ jobs:
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine/electron test
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn nx test @affine/electron
         env:
           COVERAGE: true
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
-        run: yarn workspace @affine/electron test
+        run: yarn nx test @affine/electron
         env:
           COVERAGE: true
 
