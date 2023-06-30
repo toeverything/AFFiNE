@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "bin": {
-    "dev-web": "./src/dev.mts"
+    "dev-web": "./src/dev.mjs"
   },
   "scripts": {
     "start": "ts-node-esm ./src/dev.mjs"
