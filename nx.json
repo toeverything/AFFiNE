@@ -95,7 +95,7 @@
         }
       ]
     },
-    "e2e:*": {
+    "e2e:coverage": {
       "dependsOn": ["^build"],
       "inputs": [
         {
@@ -107,9 +107,27 @@
       ]
     },
     "test": {
+      "inputs": [
+        {
+          "env": "ENABLE_PRELOADING"
+        }
+      ],
       "dependsOn": ["^build"]
     },
-    "test:*": {
+    "test:ui": {
+      "inputs": [
+        {
+          "env": "ENABLE_PRELOADING"
+        }
+      ],
+      "dependsOn": ["^build"]
+    },
+    "test:coverage": {
+      "inputs": [
+        {
+          "env": "ENABLE_PRELOADING"
+        }
+      ],
       "dependsOn": ["^build"]
     }
   },
