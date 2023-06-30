@@ -1,18 +1,19 @@
-import { Button } from '@affine/component';
 import {
+  CollectionList,
   FilterList,
-  SaveViewButton,
+  SaveCollectionButton,
   useAllPageSetting,
-  ViewList,
 } from '@affine/component/page-list';
+import type { Collection } from '@affine/env/filter';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
-import { RESET } from 'jotai/utils';
+import { uuidv4 } from '@blocksuite/store';
 import type { ReactElement } from 'react';
-import { NIL } from 'uuid';
+import { useCallback } from 'react';
 
+import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { filterContainerStyle } from './filter-container.css';
 import { WorkspaceModeFilterTab, WorkspaceTitle } from './pure/workspace-title';
@@ -23,40 +24,51 @@ export function WorkspaceHeader({
 }: WorkspaceHeaderProps<WorkspaceFlavour>): ReactElement {
   const setting = useAllPageSetting();
   const t = useAFFiNEI18N();
+  const saveToCollection = useCallback(
+    async (collection: Collection) => {
+      await setting.saveCollection(collection);
+      setting.selectCollection(collection.id);
+    },
+    [setting]
+  );
+  const getPageInfoById = useGetPageInfoById();
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {
-      const leftSlot = <ViewList setting={setting}></ViewList>;
-      const filterContainer = setting.currentView.filterList.length > 0 && (
-        <div className={filterContainerStyle}>
-          <div style={{ flex: 1 }}>
-            <FilterList
-              value={setting.currentView.filterList}
-              onChange={filterList => {
-                setting.setCurrentView(view => ({
-                  ...view,
-                  filterList,
-                }));
-              }}
-            />
-          </div>
-          {runtimeConfig.enableAllPageSaving && (
-            <div>
-              {setting.currentView.id !== NIL ||
-              (setting.currentView.id === NIL &&
-                setting.currentView.filterList.length > 0) ? (
-                <SaveViewButton
-                  init={setting.currentView.filterList}
-                  onConfirm={setting.createView}
-                ></SaveViewButton>
-              ) : (
-                <Button onClick={() => setting.setCurrentView(RESET)}>
-                  Back to all
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+      const leftSlot = (
+        <CollectionList
+          setting={setting}
+          getPageInfo={getPageInfoById}
+        ></CollectionList>
       );
+      const filterContainer =
+        setting.isDefault && setting.currentCollection.filterList.length > 0 ? (
+          <div className={filterContainerStyle}>
+            <div style={{ flex: 1 }}>
+              <FilterList
+                value={setting.currentCollection.filterList}
+                onChange={filterList => {
+                  return setting.updateCollection({
+                    ...setting.currentCollection,
+                    filterList,
+                  });
+                }}
+              />
+            </div>
+            <div>
+              {setting.currentCollection.filterList.length > 0 ? (
+                <SaveCollectionButton
+                  getPageInfo={getPageInfoById}
+                  init={{
+                    id: uuidv4(),
+                    name: '',
+                    filterList: setting.currentCollection.filterList,
+                  }}
+                  onConfirm={saveToCollection}
+                ></SaveCollectionButton>
+              ) : null}
+            </div>
+          </div>
+        ) : null;
       return (
         <>
           <WorkspaceModeFilterTab
