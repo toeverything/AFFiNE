@@ -4,7 +4,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   EdgelessIcon,
-  FilterIcon,
+  FilterMinusIcon,
+  FilterUndoIcon,
   MoreHorizontalIcon,
   PageIcon,
 } from '@blocksuite/icons';
@@ -56,7 +57,7 @@ export const PageOperations = ({
       ...(inAllowList
         ? [
             {
-              icon: <FilterIcon />,
+              icon: <FilterMinusIcon />,
               name: 'Remove special filter',
               click: () => removeFromAllowList(page.id),
             },
@@ -65,7 +66,7 @@ export const PageOperations = ({
       ...(!inExcludeList
         ? [
             {
-              icon: <FilterIcon />,
+              icon: <FilterUndoIcon />,
               name: 'Exclude from filter',
               click: () => addToExcludeList(page.id),
             },
