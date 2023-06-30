@@ -5,7 +5,7 @@
     "default": {
       "runner": "nx-cloud",
       "options": {
-        "cacheableOperations": ["build", "test"],
+        "cacheableOperations": ["build", "test", "e2e", "lint"],
         "accessToken": "YmQ2NTg1ODktZTk5Mi00YzhiLTk2ZmUtNWQzMDg0NDBkOWM3fHJlYWQtb25seQ=="
       }
     }
@@ -15,12 +15,15 @@
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
-    "packages": ["{workspaceRoot}/packages/**/*"],
     "sharedGlobals": [
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/nx.json"
     ],
-    "production": ["default"]
+    "production": [
+      "default",
+      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)"
+    ]
   },
   "targetDefaults": {
     "build": {
@@ -40,7 +43,6 @@
         "{workspaceRoot/apps/electron/dist"
       ],
       "inputs": [
-        "packages",
         {
           "runtime": "node -v"
         },
