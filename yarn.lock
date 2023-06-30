@@ -73,8 +73,11 @@ __metadata:
     "@clack/core": ^0.3.2
     "@clack/prompts": ^0.6.3
     dotenv: ^16.3.1
+    ts-node: ^10.9.1
+  peerDependencies:
+    ts-node: "*"
   bin:
-    dev-web: ./src/dev.mjs
+    dev-web: ./src/dev.mts
   languageName: unknown
   linkType: soft
 

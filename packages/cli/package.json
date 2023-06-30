@@ -3,17 +3,21 @@
   "type": "module",
   "private": true,
   "bin": {
-    "dev-web": "./src/dev.mjs"
+    "dev-web": "./src/dev.mts"
   },
   "scripts": {
-    "start": "node ./src/dev.mjs"
+    "start": "ts-node-esm ./src/dev.mjs"
   },
   "devDependencies": {
     "@clack/core": "^0.3.2",
-    "@clack/prompts": "^0.6.3"
+    "@clack/prompts": "^0.6.3",
+    "ts-node": "^10.9.1"
   },
   "dependencies": {
     "dotenv": "^16.3.1"
+  },
+  "peerDependencies": {
+    "ts-node": "*"
   },
   "version": "0.7.0-canary.24"
 }
