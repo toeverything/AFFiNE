@@ -30,13 +30,13 @@
     "wait-on": "^7.0.1"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.0.0-20230629084521-542de4e8-nightly",
-    "@blocksuite/blocks": "0.0.0-20230629084521-542de4e8-nightly",
-    "@blocksuite/editor": "0.0.0-20230629084521-542de4e8-nightly",
-    "@blocksuite/global": "0.0.0-20230629084521-542de4e8-nightly",
+    "@blocksuite/block-std": "0.0.0-20230629103121-76e6587d-nightly",
+    "@blocksuite/blocks": "0.0.0-20230629103121-76e6587d-nightly",
+    "@blocksuite/editor": "0.0.0-20230629103121-76e6587d-nightly",
+    "@blocksuite/global": "0.0.0-20230629103121-76e6587d-nightly",
     "@blocksuite/icons": "^2.1.21",
-    "@blocksuite/lit": "0.0.0-20230629084521-542de4e8-nightly",
-    "@blocksuite/store": "0.0.0-20230629084521-542de4e8-nightly",
+    "@blocksuite/lit": "0.0.0-20230629103121-76e6587d-nightly",
+    "@blocksuite/store": "0.0.0-20230629103121-76e6587d-nightly",
     "react": "18.3.0-canary-8ec962d82-20230623",
     "react-dom": "18.3.0-canary-8ec962d82-20230623"
   },
