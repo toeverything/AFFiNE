@@ -126,7 +126,7 @@ jobs:
       - name: Build Infra
         run: yarn nx run-many -t build -p plugin-infra infra
 
-      - name: Build layers
+      - name: Build AFFiNE Desktop
         run: yarn nx build @affine/electron
 
       - name: Signing By Apple Developer ID
