@@ -20,6 +20,7 @@
     "build": "yarn nx build @affine/web",
     "build:electron": "yarn nx build @affine/electron",
     "build:infra": "yarn nx run-many -t build -p plugin-infra infra",
+    "build:plugins": "yarn nx run-many -t build -p @affine/bookmark-block",
     "build:storybook": "yarn nx build @affine/storybook",
     "start:web": "yarn workspace @affine/web start",
     "start:web-static": "yarn exec serve apps/web/out -l 8080",

@@ -124,9 +124,12 @@ jobs:
           path: apps/electron/resources/web-static
 
       - name: Build Infra
-        run: yarn nx run-many -t build -p plugin-infra infra
+        run: yarn run build:infra
 
-      - name: Build AFFiNE Desktop
+      - name: Build Plugins
+        run: yarn run build:plugins
+
+      - name: Build Desktop Layers
         run: yarn nx build @affine/electron
 
       - name: Signing By Apple Developer ID
