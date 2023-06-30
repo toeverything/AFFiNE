@@ -282,9 +282,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty = false;
       if (!router.query.pageId) {
         setCurrentPageId(pageId);
-        jumpToPage(currentWorkspace.id, pageId).catch(err => {
-          console.error(err);
-        });
+        jumpToPage(currentWorkspace.id, pageId).catch(console.error);
       }
     }
   }
@@ -296,7 +294,30 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     if (router.pathname === '/[workspaceId]/[pageId]' && !pageExist) {
       router.push('/404').catch(console.error);
     }
+  } else if (
+    router.pathname === '/[workspaceId]/[pageId]' &&
+    typeof router.query.pageId === 'string' &&
+    router.query.pageId !== currentPageId
+  ) {
+    setCurrentPageId(router.query.pageId);
+    jumpToPage(currentWorkspace.id, router.query.pageId).catch(console.error);
   }
+
+  useEffect(() => {
+    const backgroundProviders =
+      currentWorkspace.blockSuiteWorkspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive
+      );
+    backgroundProviders.forEach(provider => {
+      provider.connect();
+    });
+    return () => {
+      backgroundProviders.forEach(provider => {
+        provider.disconnect();
+      });
+    };
+  }, [currentWorkspace]);
 
   useEffect(() => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(

@@ -102,6 +102,7 @@ export const RootAppSidebar = ({
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
+    await page.waitForLoaded();
     openPage(page.id);
   }, [createPage, openPage]);
 

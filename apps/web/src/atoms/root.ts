@@ -9,7 +9,7 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import type { ActiveDocProvider, PassiveDocProvider } from '@blocksuite/store';
+import type { ActiveDocProvider } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
@@ -138,18 +138,6 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
       // we will wait for the necessary providers to be ready
       await provider.whenReady;
     }
-    const backgroundProviders = workspace.blockSuiteWorkspace.providers.filter(
-      (provider): provider is PassiveDocProvider =>
-        'passive' in provider && provider.passive
-    );
-    backgroundProviders.forEach(provider => {
-      provider.connect();
-    });
-    signal.addEventListener('abort', () => {
-      backgroundProviders.forEach(provider => {
-        provider.disconnect();
-      });
-    });
     logger.info('current workspace', workspace);
     globalThis.currentWorkspace = workspace;
     globalThis.dispatchEvent(
