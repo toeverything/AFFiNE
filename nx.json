@@ -95,19 +95,21 @@
         }
       ]
     },
-    "dev": {
-      "dependsOn": ["^dev"]
-    },
-    "e2e:coverage": {
-      "dependsOn": ["^build"]
+    "e2e:*": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        {
+          "runtime": "node -v"
+        },
+        {
+          "runtime": "yarn playwright --version"
+        }
+      ]
     },
     "test": {
       "dependsOn": ["^build"]
     },
-    "test:ui": {
-      "dependsOn": ["^build"]
-    },
-    "test:coverage": {
+    "test:*": {
       "dependsOn": ["^build"]
     }
   },
