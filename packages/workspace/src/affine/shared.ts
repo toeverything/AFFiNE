@@ -1,3 +1,6 @@
+/**
+ * @deprecated Remove this file after we migrate to the new cloud.
+ */
 import { setupGlobal } from '@affine/env/global';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 
