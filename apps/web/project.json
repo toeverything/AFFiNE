@@ -7,7 +7,7 @@
   "targets": {
     "build": {
       "executor": "@nx/next:build",
-      "outputs": ["{options.outputPath}"],
+      "outputs": ["{options.outputPath}", "{projectRoot}/out"],
       "options": {
         "outputPath": "dist/apps/web",
         "experimentalAppOnly": false
