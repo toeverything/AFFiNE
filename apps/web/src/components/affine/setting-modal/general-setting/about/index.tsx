@@ -21,7 +21,11 @@ export const AboutAffine = () => {
   );
   return (
     <>
-      <SettingHeader title={t['About AFFiNE']()} subtitle={t['None yet']()} />
+      <SettingHeader
+        title={t['About AFFiNE']()}
+        subtitle={t['None yet']()}
+        data-testid="about-title"
+      />
       {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
         <SettingWrapper title={t['Version']()}>
           <SettingRow
@@ -56,7 +60,7 @@ export const AboutAffine = () => {
             style={{ cursor: 'pointer' }}
             onClick={() => {
               window.open(
-                'https://github.com/toeverything/AFFiNE/releases',
+                'https://affine.pro/blog/whats-new-affine-0630',
                 '_blank'
               );
             }}
