@@ -88,8 +88,6 @@
     "nx-cloud": "latest",
     "nyc": "^15.1.0",
     "prettier": "^2.8.8",
-    "react": "18.3.0-canary-8ec962d82-20230623",
-    "react-dom": "18.3.0-canary-8ec962d82-20230623",
     "serve": "^14.2.0",
     "typescript": "^5.1.5",
     "vite": "^4.3.9",
@@ -99,15 +97,5 @@
     "vitest-fetch-mock": "^0.2.2",
     "vitest-mock-extended": "^1.1.3"
   },
-  "resolutions": {
-    "lit": "^2.7.2",
-    "idb": "^7.1.1",
-    "@emotion/cache": "^11.10.7",
-    "@types/cacheable-request": "^6.0.2",
-    "@types/responselike": "^1.0.0"
-  },
-  "packageManager": "yarn@3.6.0",
-  "dependencies": {
-    "marked-mangle": "^1.0.1"
-  }
+  "packageManager": "yarn@3.6.0"
 }
