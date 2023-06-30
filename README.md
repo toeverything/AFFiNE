@@ -199,5 +199,5 @@ See [LICENSE] for details.
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
-[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/react?color=rgb%2897%2C%20218%2C%20251%29
+[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fweb%2Fpackage.json&color=rgb(97%2C228%2C251)
 [blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fweb%2Fpackage.json&label=blocksuite
