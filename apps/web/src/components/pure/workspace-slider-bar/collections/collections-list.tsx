@@ -58,10 +58,10 @@ const CollectionOperations = ({
           name: string;
           click: () => void;
           className?: string;
-          render?: undefined;
+          element?: undefined;
         }
       | {
-          render: ReactElement;
+          element: ReactElement;
         }
     >
   >(
@@ -82,7 +82,7 @@ const CollectionOperations = ({
         },
       },
       {
-        render: <div key="divider" className={styles.menuDividerStyle}></div>,
+        element: <div key="divider" className={styles.menuDividerStyle}></div>,
       },
       {
         icon: <DeleteIcon style={{ color: 'var(--affine-warning-color)' }} />,
@@ -98,8 +98,8 @@ const CollectionOperations = ({
   return (
     <div style={{ minWidth: 150 }}>
       {actions.map(action => {
-        if (action.render) {
-          return action.render;
+        if (action.element) {
+          return action.element;
         }
         return (
           <MenuItem
