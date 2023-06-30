@@ -421,7 +421,8 @@ jobs:
           fail_ci_if_error: true
 
   build-unstable-desktop:
-    name: Unit Test
+    name: Build Unstable Desktop
+    if: github.event_name == 'pull_request'
     environment: development
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
