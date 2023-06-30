@@ -53,7 +53,7 @@
     "@faker-js/faker": "^8.0.2",
     "@istanbuljs/schema": "^0.1.3",
     "@magic-works/i18n-codegen": "^0.5.0",
-    "@perfsee/sdk": "^1.8.2",
+    "@perfsee/sdk": "^1.8.3",
     "@playwright/test": "=1.33.0",
     "@taplo/cli": "^0.5.2",
     "@testing-library/react": "^14.0.0",
@@ -80,7 +80,7 @@
     "fake-indexeddb": "4.0.1",
     "happy-dom": "^9.20.3",
     "husky": "^8.0.3",
-    "lint-staged": "^13.2.2",
+    "lint-staged": "^13.2.3",
     "madge": "^6.1.0",
     "msw": "^1.2.2",
     "nanoid": "^4.0.2",
@@ -91,7 +91,7 @@
     "react": "18.3.0-canary-8ec962d82-20230623",
     "react-dom": "18.3.0-canary-8ec962d82-20230623",
     "serve": "^14.2.0",
-    "typescript": "^5.1.5",
+    "typescript": "^5.1.6",
     "vite": "^4.3.9",
     "vite-plugin-istanbul": "^4.1.0",
     "vite-tsconfig-paths": "^4.2.0",
@@ -108,6 +108,6 @@
   },
   "packageManager": "yarn@3.6.0",
   "dependencies": {
-    "marked-mangle": "^1.0.1"
+    "marked-mangle": "^1.1.0"
   }
 }

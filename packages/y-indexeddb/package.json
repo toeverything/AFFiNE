@@ -39,7 +39,7 @@
     "@blocksuite/blocks": "0.0.0-20230629103121-76e6587d-nightly",
     "@blocksuite/store": "0.0.0-20230629103121-76e6587d-nightly",
     "vite": "^4.3.9",
-    "vite-plugin-dts": "2.3.0",
+    "vite-plugin-dts": "3.0.0",
     "y-indexeddb": "^9.0.11"
   },
   "peerDependencies": {

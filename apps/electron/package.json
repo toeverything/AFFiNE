@@ -50,7 +50,7 @@
     "electron-log": "^5.0.0-beta.24",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",
-    "esbuild": "^0.18.9",
+    "esbuild": "^0.18.10",
     "fs-extra": "^11.1.1",
     "jotai": "^2.2.1",
     "playwright": "=1.33.0",
@@ -63,7 +63,7 @@
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "electron-updater": "^5.3.0",
+    "electron-updater": "^6.1.1",
     "link-preview-js": "^3.0.4",
     "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
