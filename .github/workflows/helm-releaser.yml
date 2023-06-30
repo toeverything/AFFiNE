@@ -3,8 +3,8 @@ name: Release Charts
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
+    paths:
+      - '.github/helm/**/Chart.yml'
 
 jobs:
   release:
@@ -43,11 +43,12 @@ jobs:
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
 
+          helm dependencies build ../.github/helm/affine
           helm dependencies build ../.github/helm/affine-cloud
+          cr package ../.github/helm/affine
           cr package ../.github/helm/affine-cloud
 
-      - name: Package charts
-        if: github.ref == 'refs/heads/master'
+      - name: Publish charts
         working-directory: .helm-chart-repo
         run: |
           set -ex
