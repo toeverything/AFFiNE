@@ -7,13 +7,13 @@
     "build": {
       "executor": "@nx/vite:build",
       "options": {
-        "outputPath": "dist/packages/y-indexeddb"
+        "outputPath": "packages/y-indexeddb/dist"
       }
     },
     "serve": {
       "executor": "@nx/vite:build",
       "options": {
-        "outputPath": "dist/packages/y-indexeddb",
+        "outputPath": "packages/y-indexeddb/dist",
         "watch": true
       }
     }

@@ -7,13 +7,13 @@
     "build": {
       "executor": "@nx/vite:build",
       "options": {
-        "outputPath": "dist/packages/infra"
+        "outputPath": "packages/infra/dist"
       }
     },
     "serve": {
       "executor": "@nx/vite:build",
       "options": {
-        "outputPath": "dist/packages/infra",
+        "outputPath": "packages/infra/dist",
         "watch": true
       }
     }
