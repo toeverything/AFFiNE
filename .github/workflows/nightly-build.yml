@@ -11,6 +11,8 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/nightly-build.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
 
 permissions:
@@ -58,10 +60,6 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          API_SERVER_PROFILE: prod
-          ENABLE_TEST_PROPERTIES: false
-          ENABLE_BOOKMARK_OPERATION: true
-          ENABLE_SQLITE_PROVIDER: false
           RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
 
       - name: Upload Artifact (web-static)
@@ -125,8 +123,14 @@ jobs:
           name: before-make-web-static
           path: apps/electron/resources/web-static
 
-      - name: Build layers
-        run: yarn workspace @affine/electron build
+      - name: Build Infra
+        run: yarn run build:infra
+
+      - name: Build Plugins
+        run: yarn run build:plugins
+
+      - name: Build Desktop Layers
+        run: yarn nx build @affine/electron
 
       - name: Signing By Apple Developer ID
         if: ${{ matrix.spec.platform == 'darwin' }}

@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.7.0-canary.24",
+  "version": "0.7.0-canary.26",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -11,8 +11,7 @@
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
-    "watch": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs --watch",
-    "prod": "yarn node scripts/dev.mjs",
+    "dev:prod": "yarn node scripts/dev.mjs",
     "build": "zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
@@ -23,16 +22,13 @@
     "forge": "./forge.config.js"
   },
   "main": "./dist/main.js",
-  "exports": {
-    "./scripts/plugins/build-plugins.mjs": "./scripts/plugins/build-plugins.mjs"
-  },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/native": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230629103121-76e6587d-nightly",
-    "@blocksuite/editor": "0.0.0-20230629103121-76e6587d-nightly",
-    "@blocksuite/lit": "0.0.0-20230629103121-76e6587d-nightly",
-    "@blocksuite/store": "0.0.0-20230629103121-76e6587d-nightly",
+    "@blocksuite/blocks": "0.0.0-20230630081054-55a25248-nightly",
+    "@blocksuite/editor": "0.0.0-20230630081054-55a25248-nightly",
+    "@blocksuite/lit": "0.0.0-20230630081054-55a25248-nightly",
+    "@blocksuite/store": "0.0.0-20230630081054-55a25248-nightly",
     "@electron-forge/cli": "^6.2.1",
     "@electron-forge/core": "^6.2.1",
     "@electron-forge/core-utils": "^6.2.1",

@@ -100,7 +100,7 @@ export function createEmptyBlockSuiteWorkspace(
   } else {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
-      if (isDesktop) {
+      if (isDesktop && runtimeConfig.enableSQLiteProvider) {
         blobStorages.push(createSQLiteStorage);
       }
     }
