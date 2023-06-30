@@ -125,6 +125,9 @@ jobs:
           name: before-make-web-static
           path: apps/electron/resources/web-static
 
+      - name: Build Infra
+        run: yarn nx run-many -t build -p plugin-infra infra
+
       - name: Build layers
         run: yarn workspace @affine/electron build
 
