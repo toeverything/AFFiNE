@@ -13,24 +13,12 @@
       },
       "outputs": ["{projectRoot}/out"]
     },
-    "serve": {
-      "executor": "@nx/next:server",
-      "defaultConfiguration": "development",
+    "dev": {
+      "executor": "nx:run-script",
       "options": {
-        "buildTarget": "@affine/web:build",
-        "dev": true,
-        "port": 8080
+        "script": "dev"
       },
-      "configurations": {
-        "development": {
-          "buildTarget": "@affine/web:build:development",
-          "dev": true
-        },
-        "production": {
-          "buildTarget": "@affine/web:build:production",
-          "dev": false
-        }
-      }
+      "outputs": ["{projectRoot}/.next"]
     }
   }
 }
