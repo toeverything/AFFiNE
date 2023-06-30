@@ -13,13 +13,14 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
-  zIndex: 2,
+  zIndex: 1,
   paddingBottom: '8px',
   backgroundColor: 'transparent',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
       position: 'absolute',
       width: `calc(${navWidthVar})`,
+      zIndex: 4,
       backgroundColor: 'var(--affine-background-primary-color)',
       selectors: {
         '&[data-open="false"]': {
@@ -97,7 +98,6 @@ export const sidebarFloatMaskStyle = style({
   left: 0,
   right: '100%',
   bottom: 0,
-  zIndex: 1,
   background: 'var(--affine-background-modal-color)',
   '@media': {
     [`(max-width: ${floatingMaxWidth}px)`]: {
@@ -106,6 +106,7 @@ export const sidebarFloatMaskStyle = style({
           opacity: 1,
           pointerEvents: 'auto',
           right: '0',
+          zIndex: 3,
         },
       },
     },
