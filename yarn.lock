@@ -77,7 +77,7 @@ __metadata:
   peerDependencies:
     ts-node: "*"
   bin:
-    dev-web: ./src/dev.mts
+    dev-web: ./src/dev.mjs
   languageName: unknown
   linkType: soft
 
