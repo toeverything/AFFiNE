@@ -115,43 +115,51 @@ function runBlockMigration(
 }
 
 function migrateSurface(data: Y.Map<unknown>) {
-  for (const [, value] of <IterableIterator<[string, Y.Map<unknown>]>>data.entries()) {
+  for (const [, value] of <IterableIterator<[string, Y.Map<unknown>]>>(
+    data.entries()
+  )) {
     if (value.get('type') === 'connector') {
       migrateSurfaceConnector(value);
     }
-
   }
 }
 
 function migrateSurfaceConnector(data: Y.Map<any>) {
-  let id = data.get("startElement")?.id
-  const controllers = data.get('controllers')
-  const length = controllers.length
-  const xywh = deserializeXYWH(data.get('xywh'))
+  let id = data.get('startElement')?.id;
+  const controllers = data.get('controllers');
+  const length = controllers.length;
+  const xywh = deserializeXYWH(data.get('xywh'));
   if (id) {
-    data.set('source', { id })
+    data.set('source', { id });
   } else {
-    data.set('source', { position: [controllers[0].x + xywh[0], controllers[0].y + xywh[1]] })
-  }
-  
-  id = data.get("endElement")?.id
-  if (id) {
-    data.set('target', { id })
-  } else {
-    data.set('target', { position: [controllers[length - 1].x + xywh[0], controllers[length - 1].y + xywh[1]] })
+    data.set('source', {
+      position: [controllers[0].x + xywh[0], controllers[0].y + xywh[1]],
+    });
   }
 
-  const width = data.get('lineWidth') ?? 4
-  data.set('strokeWidth', width)
-  const color = data.get('color') 
-  data.set('stroke', color)
+  id = data.get('endElement')?.id;
+  if (id) {
+    data.set('target', { id });
+  } else {
+    data.set('target', {
+      position: [
+        controllers[length - 1].x + xywh[0],
+        controllers[length - 1].y + xywh[1],
+      ],
+    });
+  }
 
-  data.delete('startElement')
-  data.delete('endElement')
-  data.delete('controllers')
-  data.delete('lineWidth')
-  data.delete('color')
-  data.delete('xywh')
+  const width = data.get('lineWidth') ?? 4;
+  data.set('strokeWidth', width);
+  const color = data.get('color');
+  data.set('stroke', color);
+
+  data.delete('startElement');
+  data.delete('endElement');
+  data.delete('controllers');
+  data.delete('lineWidth');
+  data.delete('color');
+  data.delete('xywh');
 }
 
 function updateBlockVersions(versions: Y.Map<number>) {
