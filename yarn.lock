@@ -356,7 +356,6 @@ __metadata:
     husky: ^8.0.3
     lint-staged: ^13.2.2
     madge: ^6.1.0
-    marked-mangle: ^1.0.1
     msw: ^1.2.2
     nanoid: ^4.0.2
     nx: 16.3.2
