@@ -1,3 +1,6 @@
+/**
+ * @deprecated Remove this file after we migrate to the new cloud.
+ */
 import { DebugLogger } from '@affine/debug';
 import { assertExists } from '@blocksuite/global/utils';
 import { Slot } from '@blocksuite/store';

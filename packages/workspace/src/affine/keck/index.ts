@@ -1,3 +1,6 @@
+/**
+ * @deprecated Remove this file after we migrate to the new cloud.
+ */
 import { isBrowser } from '@affine/env/constant';
 import * as encoding from 'lib0/encoding';
 import * as math from 'lib0/math';
