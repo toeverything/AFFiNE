@@ -1,6 +1,7 @@
 import { Content, displayFlex } from '@affine/component';
 import { AffineWatermark } from '@affine/component/affine-watermark';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import { NotificationCenter } from '@affine/component/notification-center';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
 import {
@@ -444,6 +445,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
+      <NotificationCenter />
       <Setting />
     </>
   );

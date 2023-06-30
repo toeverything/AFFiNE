@@ -65,6 +65,8 @@ export const mainContainerStyle = style({
       '@media': {
         print: {
           overflow: 'visible',
+          margin: '0px',
+          borderRadius: '0px',
         },
       },
     },
