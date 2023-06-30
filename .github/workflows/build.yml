@@ -223,7 +223,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: next-js-static
-          path: ./apps/web/.next
+          path: ./apps/web/out
 
       - name: Download storybook artifact
         uses: actions/download-artifact@v3
