@@ -106,26 +106,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: next-js
-          path: ./apps/web/.next
-          if-no-files-found: error
-
-  build-web-desktop:
-    name: Build @affine/web (Desktop)
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-
-      - name: Export static resources
-        run: yarn nx export @affine/web
-
-      - name: Upload static resources artifact
-        uses: actions/upload-artifact@v3
-        with:
           name: next-js-static
           path: ./apps/web/out
           if-no-files-found: error
@@ -242,18 +222,14 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js
-          path: ./apps/web/.next
+          name: next-js-static
+          path: ./apps/web/out
 
       - name: Download storybook artifact
         uses: actions/download-artifact@v3
         with:
           name: storybook
           path: ./apps/storybook/storybook-static
-
-      - name: Wait for Octobase Ready
-        run: |
-          node ./scripts/wait-3000-healthz.mjs
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
@@ -356,7 +332,7 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
-    needs: [build-web-desktop]
+    needs: [build-web]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js

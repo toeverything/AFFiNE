@@ -1,0 +1,24 @@
+{
+  "name": "@affine/web",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "root": "apps/web",
+  "sourceRoot": "apps/web/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "dependsOn": ["^build"],
+      "options": {
+        "script": "build"
+      },
+      "outputs": ["{projectRoot}/out"]
+    },
+    "dev": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "dev"
+      },
+      "outputs": ["{projectRoot}/.next"]
+    }
+  }
+}
