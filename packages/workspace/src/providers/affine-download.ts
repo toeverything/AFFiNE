@@ -1,3 +1,6 @@
+/**
+ * @deprecated Remove this file after we migrate to the new cloud.
+ */
 import { DebugLogger } from '@affine/debug';
 import type { AffineDownloadProvider } from '@affine/env/workspace';
 import type { DocProviderCreator } from '@blocksuite/store';

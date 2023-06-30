@@ -4,7 +4,7 @@ import {
   appSidebarOpenAtom,
 } from '@affine/component/app-sidebar';
 import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
-import { isBrowser, isDesktop } from '@affine/env/constant';
+import { isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
@@ -123,7 +123,10 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
         });
       }, []);
       return (
-        <div className={styles.windowAppControlsWrapper}>
+        <div
+          data-platform-target="win32"
+          className={styles.windowAppControlsWrapper}
+        >
           <button
             data-type="minimize"
             className={styles.windowAppControl}
@@ -149,7 +152,7 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       );
     },
     availableWhen: () => {
-      return isDesktop && isBrowser;
+      return isDesktop && globalThis.platform === 'win32';
     },
   },
 };

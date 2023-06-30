@@ -1,5 +1,5 @@
 import { migrateToSubdoc } from '@affine/env/blocksuite';
-import { setupGlobal } from '@affine/env/global';
+import { platformSchema, setupGlobal } from '@affine/env/global';
 import type {
   LocalIndexedDBDownloadProvider,
   WorkspaceAdapter,
@@ -37,6 +37,13 @@ if (runtimeConfig.enablePlugin && !environment.isServer) {
 
 if (!environment.isServer) {
   import('@affine/bookmark-block');
+}
+
+// platform check
+{
+  if (globalThis.platform) {
+    platformSchema.parse(globalThis.platform);
+  }
 }
 
 if (!environment.isDesktop && !environment.isServer) {
