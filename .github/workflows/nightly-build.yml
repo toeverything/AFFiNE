@@ -11,6 +11,8 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/nightly-build.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
 
 permissions:
