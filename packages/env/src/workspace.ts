@@ -7,7 +7,7 @@ import type {
 } from '@blocksuite/store';
 import type { FC, PropsWithChildren } from 'react';
 
-import type { View } from './filter';
+import type { Collection } from './filter';
 import type { Workspace as RemoteWorkspace } from './workspace/legacy-cloud';
 
 export enum WorkspaceVersion {
@@ -185,7 +185,7 @@ type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
 type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
-  view: View;
+  collection: Collection;
 };
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {

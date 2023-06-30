@@ -28,7 +28,6 @@ export const filterItemStyle = style({
   border: '1px solid var(--affine-border-color)',
   borderRadius: '8px',
   background: 'var(--affine-white)',
-  margin: '4px',
   padding: '4px 8px',
 });
 
