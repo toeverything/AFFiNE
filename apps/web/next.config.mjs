@@ -56,6 +56,10 @@ const profileTarget = {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  typescript: {
+    // We use `yarn typecheck` on top level to check types
+    ignoreBuildErrors: true,
+  },
   sentry: {
     hideSourceMaps: true,
   },
