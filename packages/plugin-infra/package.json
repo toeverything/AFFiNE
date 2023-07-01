@@ -31,7 +31,7 @@
   "devDependencies": {
     "jotai": "^2.2.1",
     "vite": "^4.3.9",
-    "vite-plugin-dts": "2.3.0"
+    "vite-plugin-dts": "3.0.2"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
