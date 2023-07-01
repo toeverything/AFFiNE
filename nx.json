@@ -32,9 +32,7 @@
         "{projectRoot}/dist",
         "{projectRoot}/build",
         "{projectRoot}/out",
-        "{projectRoot}/node_modules/.cache",
-        "{projectRoot}/target",
-        "{workspaceRoot}/apps/storybook/storybook-static",
+        "{projectRoot}/storybook-static",
         "{workspaceRoot}/packages/i18n/src/i18n-generated.ts"
       ],
       "inputs": [
