@@ -153,8 +153,11 @@ jobs:
         uses: ./.github/actions/setup-rust
         with:
           target: 'x86_64-unknown-linux-gnu'
+      - name: Build Storage
+        run: yarn build:storage
       - name: Run server tests
-        run: yarn nx test:coverage @affine/server
+        run: yarn test:coverage
+        working-directory: apps/server
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -358,7 +361,7 @@ jobs:
         run: yarn run build:plugins
 
       - name: Build Desktop Layers
-        run: yarn nx build @affine/electron
+        run: yarn workspace @affine/electron build
 
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
@@ -404,20 +407,13 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    services:
-      octobase:
-        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-        ports:
-          - 3000:3000
-        env:
-          SIGN_KEY: 'test123'
-          RUST_LOG: 'debug'
-          JWST_DEV: '1'
-
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+
+      - name: Build Infra
+        run: yarn run build:infra
 
       - name: Unit Test
         run: yarn nx test:coverage @affine/monorepo
