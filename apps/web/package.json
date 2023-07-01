@@ -51,7 +51,7 @@
     "react-is": "^18.2.0",
     "react-resizable-panels": "^0.0.51",
     "rxjs": "^7.8.1",
-    "swr": "^2.2.0",
+    "swr": "^2.1.5",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.6",
     "zod": "^3.21.4"
