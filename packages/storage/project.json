@@ -1,9 +1,9 @@
 {
-  "name": "@affine/native",
+  "name": "storage",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "root": "packages/native",
-  "sourceRoot": "packages/native/src",
+  "root": "packages/storage",
+  "sourceRoot": "packages/storage/src",
   "targets": {
     "build": {
       "executor": "nx:run-script",
