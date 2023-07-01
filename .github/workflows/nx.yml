@@ -30,7 +30,7 @@ jobs:
     name: Nx Cloud - Main Job
     uses: nrwl/ci/.github/workflows/nx-cloud-main.yml@v0.13.0
     with:
-      main-branch-name: main
+      main-branch-name: master
       number-of-agents: 5
       init-commands: |
         yarn exec nx-cloud start-ci-run --stop-agents-after="build" --agent-count=3
