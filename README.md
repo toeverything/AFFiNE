@@ -135,7 +135,7 @@ We would also like to give thanks to open-source projects that make AFFiNE possi
 
 - [BlockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
 - [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
-- [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) - Fundamental support of CRDTs for our implementation on state management and data sync.
+- [Yjs](https://github.com/yjs/yjs) - Fundamental support of CRDTs for our implementation on state management and data sync.
 - [Electron](https://github.com/electron/electron) - Build cross-platform desktop apps with JavaScript, HTML, and CSS.
 - [React](https://github.com/facebook/react) - View layer support and web GUI framework.
 - [Rust](https://github.com/rust-lang/rust) - High performance language that extends the ability and availability of our real-time backend, OctoBase.

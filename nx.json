@@ -35,10 +35,7 @@
         "{projectRoot}/node_modules/.cache",
         "{projectRoot}/target",
         "{workspaceRoot}/apps/storybook/storybook-static",
-        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
-        "{workspaceRoot}/packages/native/*.node",
-        "{workspaceRoot}/packages/storage/*.node",
-        "{workspaceRoot}/affine.db"
+        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts"
       ],
       "inputs": [
         {

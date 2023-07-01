@@ -203,18 +203,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5]
     environment: development
-    needs: [build-web, build-storybook]
-    services:
-      octobase:
-        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-        ports:
-          - 3000:3000
-        env:
-          SIGN_KEY: 'test123'
-          RUST_LOG: 'debug'
-          JWST_DEV: '1'
+    needs: build-web
 
     steps:
       - uses: actions/checkout@v3
@@ -227,12 +218,6 @@ jobs:
         with:
           name: next-js-static
           path: ./apps/web/out
-
-      - name: Download storybook artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: storybook
-          path: ./apps/storybook/storybook-static
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
