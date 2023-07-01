@@ -71,7 +71,7 @@
     "@vitest/ui": "^0.32.2",
     "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-i": "^2.27.5-3",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
