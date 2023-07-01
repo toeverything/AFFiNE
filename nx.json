@@ -108,6 +108,9 @@
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
+          "env": "NATIVE_TEST"
+        },
+        {
           "env": "ENABLE_PRELOADING"
         },
         {
@@ -118,6 +121,9 @@
     "test:ui": {
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
+        {
+          "env": "NATIVE_TEST"
+        },
         {
           "env": "ENABLE_PRELOADING"
         },
@@ -130,19 +136,12 @@
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
+          "env": "NATIVE_TEST"
+        },
+        {
           "env": "ENABLE_PRELOADING"
         }
       ]
-    }
-  },
-  "generators": {
-    "@nx/react": {
-      "application": {
-        "babel": true
-      },
-      "library": {
-        "unitTestRunner": "jest"
-      }
     }
   }
 }
