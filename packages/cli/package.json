@@ -19,5 +19,5 @@
   "peerDependencies": {
     "ts-node": "*"
   },
-  "version": "0.7.0-canary.26"
+  "version": "0.7.0-canary.27"
 }
