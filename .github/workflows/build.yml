@@ -205,7 +205,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     environment: development
-    needs: [build-web, build-storybook]
+    needs: build-web
 
     steps:
       - uses: actions/checkout@v3
@@ -218,12 +218,6 @@ jobs:
         with:
           name: next-js-static
           path: ./apps/web/out
-
-      - name: Download storybook artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: storybook
-          path: ./apps/storybook/storybook-static
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
