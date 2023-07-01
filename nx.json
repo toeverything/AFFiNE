@@ -34,13 +34,11 @@
         "{projectRoot}/out",
         "{projectRoot}/node_modules/.cache",
         "{projectRoot}/target",
-        "{workspaceRoot}/apps/web/.next",
         "{workspaceRoot}/apps/storybook/storybook-static",
         "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
         "{workspaceRoot}/packages/native/affine.*.node",
         "{workspaceRoot}/packages/storage/*.node",
-        "{workspaceRoot}/affine.db",
-        "{workspaceRoot/apps/electron/dist"
+        "{workspaceRoot}/affine.db"
       ],
       "inputs": [
         {
@@ -109,22 +107,31 @@
       ]
     },
     "test": {
+      "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
           "env": "ENABLE_PRELOADING"
+        },
+        {
+          "env": "COVERAGE"
         }
       ],
       "dependsOn": ["^build"]
     },
     "test:ui": {
+      "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
           "env": "ENABLE_PRELOADING"
+        },
+        {
+          "env": "COVERAGE"
         }
       ],
       "dependsOn": ["^build"]
     },
     "test:coverage": {
+      "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
           "env": "ENABLE_PRELOADING"
