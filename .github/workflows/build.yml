@@ -153,8 +153,8 @@ jobs:
         uses: ./.github/actions/setup-rust
         with:
           target: 'x86_64-unknown-linux-gnu'
-      - name: Build Server
-        run: yarn build:server
+      - name: Build Storage
+        run: yarn build:storage
       - name: Run server tests
         run: yarn test:coverage
         working-directory: apps/server
