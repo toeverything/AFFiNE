@@ -19,6 +19,7 @@
     "dev:plugins": "./apps/electron/scripts/plugins/dev-plugins.mjs",
     "build": "yarn nx build @affine/web",
     "build:electron": "yarn nx build @affine/electron",
+    "build:storage": "yarn nx run-many -t build -p @affine/storage",
     "build:infra": "yarn nx run-many -t build -p plugin-infra infra",
     "build:plugins": "yarn nx run-many -t build -p @affine/bookmark-block",
     "build:storybook": "yarn nx build @affine/storybook",
