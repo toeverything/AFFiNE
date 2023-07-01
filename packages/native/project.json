@@ -19,11 +19,7 @@
           "runtime": "node -v"
         }
       ],
-      "outputs": [
-        "{projectRoot}/*.node",
-        "{projectRoot}/target",
-        "{workspaceRoot}/affine.db"
-      ]
+      "outputs": ["{projectRoot}/*.node", "{workspaceRoot}/affine.db"]
     }
   }
 }
