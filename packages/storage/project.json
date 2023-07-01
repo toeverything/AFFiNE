@@ -1,5 +1,5 @@
 {
-  "name": "storage",
+  "name": "@affine/storage",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "root": "packages/storage",
