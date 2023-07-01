@@ -358,7 +358,7 @@ jobs:
         run: yarn run build:plugins
 
       - name: Build Desktop Layers
-        run: yarn nx build @affine/electron
+        run: yarn workspace @affine/electron build
 
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
