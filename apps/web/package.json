@@ -1,7 +1,7 @@
 {
   "name": "@affine/web",
   "private": true,
-  "version": "0.7.0-canary.29",
+  "version": "0.7.0-canary.30",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

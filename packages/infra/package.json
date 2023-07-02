@@ -28,5 +28,5 @@
     "vite": "^4.3.9",
     "vite-plugin-dts": "3.0.2"
   },
-  "version": "0.7.0-canary.29"
+  "version": "0.7.0-canary.30"
 }
