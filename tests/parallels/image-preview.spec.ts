@@ -251,7 +251,58 @@ test('image should able to go left and right by buttons', async ({ page }) => {
   }
 });
 
-test('image able to fit to screen', async ({ page }) => {
+test('image able to fit to screen by button', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  let blobId: string;
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('img').first().dblclick();
+    await page.waitForTimeout(500);
+    blobId = (await page
+      .locator('img')
+      .nth(1)
+      .getAttribute('data-blob-id')) as string;
+    expect(blobId).toBeTruthy();
+  }
+  const locator = page.getByTestId('image-content');
+  expect(locator.isVisible()).toBeTruthy();
+  const naturalWidth = await locator.evaluate(
+    (img: HTMLImageElement) => img.naturalWidth
+  );
+  const [viewportWidth, viewportHeight] = await page.evaluate(() => {
+    return [window.innerWidth, window.innerHeight];
+  });
+
+  // zooom in
+  await page.getByTestId('zoom-in-button').dblclick();
+  await page.waitForTimeout(1000);
+  let imageBoundary = await locator.boundingBox();
+  let imageWidth = await imageBoundary?.width;
+  if (imageWidth) {
+    expect((imageWidth / naturalWidth).toFixed(2)).toBe('1.04');
+  } else {
+    throw new Error("Image doesn't exist!");
+  }
+
+  //reset zoom
+  await page.getByTestId('fit-to-screen-button').click();
+  imageBoundary = await locator.boundingBox();
+  imageWidth = await imageBoundary?.width;
+  const imageHeight = await imageBoundary?.height;
+  if (imageWidth && imageHeight) {
+    expect(imageWidth).toBeLessThan(viewportWidth);
+    expect(imageHeight).toBeLessThan(viewportHeight);
+  } else {
+    throw new Error("Image doesn't exist!");
+  }
+});
+
+test('image able to reset zoom to 100%', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -287,11 +338,11 @@ test('image able to fit to screen', async ({ page }) => {
   }
 
   //reset zoom
-  await page.getByTestId('fit-to-screen-button').click();
+  await page.getByTestId('reset-scale-button').click();
   imageBoundary = await locator.boundingBox();
   imageWidth = await imageBoundary?.width;
   if (imageWidth) {
-    expect((imageWidth / naturalWidth).toFixed(2)).toBe('0.84');
+    expect((imageWidth / naturalWidth).toFixed(2)).toBe('1.00');
   } else {
     throw new Error("Image doesn't exist!");
   }
