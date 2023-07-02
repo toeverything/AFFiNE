@@ -404,3 +404,54 @@ test('image able to download', async ({ page }) => {
     fs.existsSync(`download/ + ${download.suggestedFilename()}`)
   ).toBeTruthy();
 });
+
+test('image should only able to move when image is larger than viewport', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  let blobId: string;
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('img').first().dblclick();
+    await page.waitForTimeout(500);
+    blobId = (await page
+      .locator('img')
+      .nth(1)
+      .getAttribute('data-blob-id')) as string;
+    expect(blobId).toBeTruthy();
+  }
+  const locator = page.getByTestId('image-content');
+  expect(locator.isVisible()).toBeTruthy();
+  const { width, height } = await page.evaluate(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
+  let imageBoundary = await locator.boundingBox();
+  const initialXPos = imageBoundary?.x;
+  const initialYPos = imageBoundary?.y;
+  // check will it able to move when zoomed in
+  await page.getByTestId('zoom-in-button').dblclick();
+  await page.getByTestId('zoom-in-button').dblclick();
+  await page.mouse.move(width / 2, height / 2);
+  await page.mouse.down();
+  await page.mouse.move(20, 20);
+  await page.mouse.up();
+  imageBoundary = await locator.boundingBox();
+  expect(initialXPos).not.toBe(imageBoundary?.x);
+  expect(initialYPos).not.toBe(imageBoundary?.y);
+
+  // check will it able to move when zoomed out
+  await page.getByTestId('fit-to-screen-button').click();
+  await page.mouse.move(width / 2, height / 2);
+  await page.mouse.down();
+  await page.mouse.move(20, 20);
+  await page.mouse.up();
+  imageBoundary = await locator.boundingBox();
+  expect(initialXPos).toBe(imageBoundary?.x);
+  expect(initialYPos).toBe(imageBoundary?.y);
+});
