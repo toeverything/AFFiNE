@@ -347,3 +347,29 @@ test('image able to reset zoom to 100%', async ({ page }) => {
     throw new Error("Image doesn't exist!");
   }
 });
+
+test('image able to copy to clipboard', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  let blobId: string;
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('img').first().dblclick();
+    await page.waitForTimeout(500);
+    blobId = (await page
+      .locator('img')
+      .nth(1)
+      .getAttribute('data-blob-id')) as string;
+    expect(blobId).toBeTruthy();
+  }
+  const locator = page.getByTestId('image-preview-modal');
+  expect(locator.isVisible()).toBeTruthy();
+  await page.getByTestId('copy-to-clipboard-button').click();
+  await page.on('console', message => {
+    expect(message.text()).toBe('Image copied to clipboard');
+  });
+});
