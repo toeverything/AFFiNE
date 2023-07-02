@@ -455,3 +455,77 @@ test('image should only able to move when image is larger than viewport', async 
   expect(initialXPos).toBe(imageBoundary?.x);
   expect(initialYPos).toBe(imageBoundary?.y);
 });
+
+test('image should able to delete and when delete, it will move to previous/next image', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  let blobId: string;
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('img').first().dblclick();
+    await page.waitForTimeout(500);
+    blobId = (await page
+      .locator('img')
+      .nth(1)
+      .getAttribute('data-blob-id')) as string;
+    expect(blobId).toBeTruthy();
+    await closeImagePreviewModal(page);
+  }
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/affine-preview.png');
+  }
+  const locator = page.getByTestId('image-preview-modal');
+  expect(locator.isVisible()).toBeTruthy();
+  await page.locator('img').first().dblclick();
+  // ensure the new image was imported
+  await page.waitForTimeout(1000);
+  {
+    const newBlobId = (await page
+      .getByTestId('image-content')
+      .getAttribute('data-blob-id')) as string;
+    expect(newBlobId).not.toBe(blobId);
+  }
+  await page.getByTestId('delete-button').click();
+  {
+    const newBlobId = (await page
+      .getByTestId('image-content')
+      .getAttribute('data-blob-id')) as string;
+    expect(newBlobId).toBe(blobId);
+    await closeImagePreviewModal(page);
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/affine-preview.png');
+  }
+  await page.locator('img').first().dblclick();
+  await page.getByTestId('next-image-button').click();
+  await page.waitForTimeout(1000);
+  {
+    const newBlobId = (await page
+      .getByTestId('image-content')
+      .getAttribute('data-blob-id')) as string;
+    expect(newBlobId).toBe(blobId);
+  }
+  await page.getByTestId('delete-button').click();
+  {
+    const newBlobId = (await page
+      .getByTestId('image-content')
+      .getAttribute('data-blob-id')) as string;
+    expect(newBlobId).not.toBe(blobId);
+  }
+  await page.getByTestId('delete-button').click();
+  await page.waitForTimeout(500);
+  {
+    const locator = await page.getByTestId('image-preview-modal').count();
+    expect(locator).toBe(0);
+  }
+});
