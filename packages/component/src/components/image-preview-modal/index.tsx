@@ -324,6 +324,7 @@ const ImagePreviewModalImpl = (
           <div>
             <Tooltip content={'Previous'} disablePortal={false}>
               <Button
+                data-testid="previous-image-button"
                 icon={<ArrowLeftSmallIcon className={buttonIconStyle} />}
                 noBorder={true}
                 className={buttonStyle}
@@ -336,6 +337,7 @@ const ImagePreviewModalImpl = (
             </Tooltip>
             <Tooltip content={'Next'} disablePortal={false}>
               <Button
+                data-testid="next-image-button"
                 icon={<ArrowRightSmallIcon className={buttonIconStyle} />}
                 noBorder={true}
                 className={buttonStyle}
@@ -354,6 +356,7 @@ const ImagePreviewModalImpl = (
             showArrow={false}
           >
             <Button
+              data-testid="fit-to-screen-button"
               icon={<ViewBarIcon className={buttonIconStyle} />}
               noBorder={true}
               hoverColor={'-moz-initial'}
@@ -363,6 +366,7 @@ const ImagePreviewModalImpl = (
           </Tooltip>
           <Tooltip content={'Zoom out'} disablePortal={false}>
             <Button
+              data-testid="zoom-out-button"
               icon={<MinusIcon className={buttonIconStyle} />}
               noBorder={true}
               className={buttonStyle}
@@ -372,6 +376,7 @@ const ImagePreviewModalImpl = (
           </Tooltip>
           <Tooltip content={'Reset Scale'} disablePortal={false}>
             <Button
+              data-testid="reset-scale-button"
               noBorder={true}
               size={'middle'}
               className={scaleIndicatorButtonStyle}
@@ -383,6 +388,7 @@ const ImagePreviewModalImpl = (
           </Tooltip>
           <Tooltip content={'Zoom in'} disablePortal={false}>
             <Button
+              data-testid="zoom-in-button"
               icon={<PlusIcon className={buttonIconStyle} />}
               noBorder={true}
               className={buttonStyle}
@@ -393,6 +399,7 @@ const ImagePreviewModalImpl = (
           <div className={groupStyle}></div>
           <Tooltip content={'Download'} disablePortal={false}>
             <Button
+              data-testid="download-button"
               icon={<DownloadIcon className={buttonIconStyle} />}
               noBorder={true}
               className={buttonStyle}
@@ -407,6 +414,7 @@ const ImagePreviewModalImpl = (
           </Tooltip>
           <Tooltip content={'Copy to clipboard'} disablePortal={false}>
             <Button
+              data-testid="copy-to-clipboard-button"
               icon={<CopyIcon className={buttonIconStyle} />}
               noBorder={true}
               className={buttonStyle}
@@ -448,6 +456,7 @@ const ImagePreviewModalImpl = (
           <div className={groupStyle}></div>
           <Tooltip content={'Delete'} disablePortal={false}>
             <Button
+              data-testid="delete-button"
               icon={<DeleteIcon className={buttonIconStyle} />}
               noBorder={true}
               className={buttonStyle}
