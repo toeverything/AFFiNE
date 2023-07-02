@@ -196,3 +196,57 @@ test('image able to zoom in and out with button click', async ({ page }) => {
     expect((imageWidth / naturalWidth).toFixed(2)).toBe('0.84');
   }
 });
+
+test('image should able to go left and right by buttons', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  let blobId: string;
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('img').first().dblclick();
+    await page.waitForTimeout(500);
+    blobId = (await page
+      .locator('img')
+      .nth(1)
+      .getAttribute('data-blob-id')) as string;
+    expect(blobId).toBeTruthy();
+    await closeImagePreviewModal(page);
+  }
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/affine-preview.png');
+  }
+  const locator = page.getByTestId('image-preview-modal');
+  expect(locator.isVisible()).toBeTruthy();
+  await page.locator('img').first().dblclick();
+  // ensure the new image was imported
+  await page.waitForTimeout(1000);
+  {
+    const newBlobId = (await page
+      .getByTestId('image-content')
+      .getAttribute('data-blob-id')) as string;
+    expect(newBlobId).not.toBe(blobId);
+  }
+  await page.getByTestId('next-image-button').click();
+  await page.waitForTimeout(1000);
+  {
+    const newBlobId = (await page
+      .getByTestId('image-content')
+      .getAttribute('data-blob-id')) as string;
+    expect(newBlobId).toBe(blobId);
+  }
+  await page.getByTestId('previous-image-button').click();
+  await page.waitForTimeout(1000);
+  {
+    const newBlobId = (await page
+      .getByTestId('image-content')
+      .getAttribute('data-blob-id')) as string;
+    expect(newBlobId).not.toBe(blobId);
+  }
+});
