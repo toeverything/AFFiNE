@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
+import fs from 'fs';
 
 import { openHomePage } from '../libs/load-page';
 import {
@@ -372,4 +373,34 @@ test('image able to copy to clipboard', async ({ page }) => {
   await page.on('console', message => {
     expect(message.text()).toBe('Image copied to clipboard');
   });
+});
+
+test('image able to download', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  let blobId: string;
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('img').first().dblclick();
+    await page.waitForTimeout(500);
+    blobId = (await page
+      .locator('img')
+      .nth(1)
+      .getAttribute('data-blob-id')) as string;
+    expect(blobId).toBeTruthy();
+  }
+  const locator = page.getByTestId('image-preview-modal');
+  expect(locator.isVisible()).toBeTruthy();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByTestId('download-button').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe(`${blobId}.png`);
+  await download.saveAs(`download/ + ${download.suggestedFilename()}`);
+  expect(
+    fs.existsSync(`download/ + ${download.suggestedFilename()}`)
+  ).toBeTruthy();
 });
