@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/store';
 import { Observable } from 'lib0/observable';
 import type { Socket } from 'socket.io-client';
 import { io } from 'socket.io-client';
@@ -23,6 +22,9 @@ export class SocketIOProvider extends Observable<string> {
   subdocsHandlerWeakMap = new WeakMap<Doc, SubdocsHandler>();
   destroyHandlerWeakMap = new WeakMap<Doc, DestroyHandler>();
   docMap = new Map<string, Doc>();
+  updateCache = new Map<string, Uint8Array[]>();
+  intervalId: number | null = null;
+  cacheClearingInterval = 1000;
   socket: Socket;
   awareness: awarenessProtocol.Awareness;
   rootDoc: Doc;
@@ -74,7 +76,16 @@ export class SocketIOProvider extends Observable<string> {
   serverHandshakeHandler = (message: { guid: string; update: string }) => {
     const update = base64ToUint8Array(message.update);
     const doc = this.docMap.get(message.guid);
-    assertExists(doc);
+    if (!doc) {
+      const updates = this.updateCache.get(message.guid) || [];
+      updates.push(update);
+      !this.intervalId &&
+        (this.intervalId = window.setInterval(
+          this.applyCachedUpdate,
+          this.cacheClearingInterval
+        ));
+      return;
+    }
 
     // sending missing update for server
     const diffUpdate = Y.encodeStateAsUpdate(doc, update);
@@ -98,10 +109,17 @@ export class SocketIOProvider extends Observable<string> {
   handlerServerUpdate = (message: { guid: string; update: string }) => {
     const update = base64ToUint8Array(message.update);
     const doc = this.docMap.get(message.guid);
-    assertExists(doc);
-
-    // apply update from server
-    Y.applyUpdate(doc, update, 'server');
+    if (!doc) {
+      const updates = this.updateCache.get(message.guid) || [];
+      updates.push(update);
+      !this.intervalId &&
+        (this.intervalId = window.setInterval(
+          this.applyCachedUpdate,
+          this.cacheClearingInterval
+        ));
+    } else {
+      Y.applyUpdate(doc, update, 'server');
+    }
   };
 
   newClientAwarenessInitHandler = () => {
@@ -155,6 +173,27 @@ export class SocketIOProvider extends Observable<string> {
     doc.subdocs.forEach(this.initDocMap);
   };
 
+  applyCachedUpdate = () => {
+    let appliedDocCnt = 0;
+    for (const [guid, updates] of this.updateCache) {
+      if (updates.length > 0) {
+        appliedDocCnt++;
+        const doc = this.docMap.get(guid);
+        if (doc) {
+          for (const update of updates) {
+            Y.applyUpdate(doc, update, 'server');
+          }
+        }
+      }
+    }
+
+    // If there's no cached update, cancel periodical applyCachedUpdate
+    if (!appliedDocCnt) {
+      this.intervalId && window.clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  };
+
   createOrGetUpdateHandler = (doc: Doc): UpdateHandler => {
     if (this.updateHandlerWeakMap.has(doc)) {
       return this.updateHandlerWeakMap.get(doc) as UpdateHandler;
@@ -183,8 +222,10 @@ export class SocketIOProvider extends Observable<string> {
     }
 
     const handler: SubdocsHandler = event => {
-      event.added.forEach(doc => {
+      new Set([...event.added, ...event.loaded]).forEach(doc => {
         this.docMap.set(doc.guid, doc);
+        // if there are cached updates, apply them instantly
+        this.intervalId && this.applyCachedUpdate();
         doc.on('update', this.createOrGetUpdateHandler(doc));
       });
 
