@@ -3,7 +3,7 @@ import {
   type SettingModalProps,
 } from '@affine/component/setting-components';
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -77,7 +77,7 @@ export const SettingModal: React.FC<SettingModalProps> = ({
         generalSettingList={generalSettingList}
         onGeneralSettingClick={onGeneralSettingClick}
         currentWorkspace={
-          currentWorkspace as AffineLegacyCloudWorkspace | LocalWorkspace
+          currentWorkspace as AffineCloudWorkspace | LocalWorkspace
         }
         workspaceList={workspaceList}
         onWorkspaceSettingClick={onWorkspaceSettingClick}

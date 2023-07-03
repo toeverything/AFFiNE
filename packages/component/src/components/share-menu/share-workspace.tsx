@@ -1,5 +1,5 @@
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -30,9 +30,10 @@ const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
 };
 
 const ShareAffineWorkspace: FC<
-  ShareMenuProps<AffineLegacyCloudWorkspace>
+  ShareMenuProps<AffineCloudWorkspace>
 > = props => {
-  const isPublicWorkspace = props.workspace.public;
+  // fixme: regression
+  const isPublicWorkspace = false;
   const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
@@ -58,10 +59,10 @@ export const ShareWorkspace: FC<ShareMenuProps> = props => {
     return (
       <ShareLocalWorkspace {...(props as ShareMenuProps<LocalWorkspace>)} />
     );
-  } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
+  } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     return (
       <ShareAffineWorkspace
-        {...(props as ShareMenuProps<AffineLegacyCloudWorkspace>)}
+        {...(props as ShareMenuProps<AffineCloudWorkspace>)}
       />
     );
   }
