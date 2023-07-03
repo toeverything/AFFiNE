@@ -9,5 +9,5 @@
     "allowSyntheticDefaultImports": true,
     "noEmit": false
   },
-  "include": ["./scripts"]
+  "include": ["./scripts", "esbuild.main.config.ts", "esbuild.plugin.config.ts"]
 }

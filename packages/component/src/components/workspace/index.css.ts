@@ -54,7 +54,7 @@ export const mainContainerStyle = style({
   position: 'relative',
   flexGrow: 1,
   maxWidth: '100%',
-  zIndex: 0,
+  zIndex: 2,
   backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-is-desktop="true"]': {
@@ -65,6 +65,8 @@ export const mainContainerStyle = style({
       '@media': {
         print: {
           overflow: 'visible',
+          margin: '0px',
+          borderRadius: '0px',
         },
       },
     },

@@ -49,3 +49,9 @@ export async function clickPageMoreActions(page: Page) {
     .getByTestId('editor-option-menu')
     .click();
 }
+
+export const closeDownloadTip = async (page: Page) => {
+  await page
+    .locator('[data-testid="download-client-tip-close-button"]')
+    .click();
+};

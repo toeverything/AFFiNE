@@ -29,7 +29,7 @@ export function useAppHelper() {
     addLocalWorkspace: useCallback(
       async (workspaceId: string): Promise<string> => {
         saveWorkspaceToLocalStorage(workspaceId);
-        set(workspaces => [
+        await set(workspaces => [
           ...workspaces,
           {
             id: workspaceId,
@@ -50,7 +50,7 @@ export function useAppHelper() {
         );
         blockSuiteWorkspace.meta.setName(name);
         const id = await LocalAdapter.CRUD.create(blockSuiteWorkspace);
-        set(workspaces => [
+        await set(workspaces => [
           ...workspaces,
           {
             id,
@@ -79,7 +79,7 @@ export function useAppHelper() {
           targetWorkspace as any
         );
         // delete workspace from jotai storage
-        set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
+        await set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
       },
       [jotaiWorkspaces, set, workspaces]
     ),

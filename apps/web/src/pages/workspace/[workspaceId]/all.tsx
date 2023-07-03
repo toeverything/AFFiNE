@@ -51,7 +51,7 @@ const AllPage: NextPageWithLayout = () => {
         }}
       />
       <PageList
-        view={setting.currentView}
+        collection={setting.currentCollection}
         onOpenPage={onClickPage}
         blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
       />

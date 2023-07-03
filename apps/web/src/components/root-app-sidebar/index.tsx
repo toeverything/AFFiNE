@@ -10,17 +10,16 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { config } from '@affine/env';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
   SettingsIcon,
-  ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
+import { NoSsr } from '@mui/material';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -28,8 +27,10 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
+import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
+import ImportPage from './import-page';
 
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
@@ -100,19 +101,20 @@ export const RootAppSidebar = ({
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
+    await page.waitForLoaded();
     openPage(page.id);
   }, [createPage, openPage]);
 
   // Listen to the "New Page" action from the menu
   useEffect(() => {
-    if (environment.isDesktop) {
+    if (isDesktop) {
       return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
     }
   }, [onClickNewPage]);
 
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
-    if (environment.isDesktop && typeof sidebarOpen === 'boolean') {
+    if (isDesktop && typeof sidebarOpen === 'boolean') {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
         console.error(err);
       });
@@ -154,10 +156,12 @@ export const RootAppSidebar = ({
         hasBackground={!appSettings.disableBlurBackground}
       >
         <SidebarContainer>
-          <WorkspaceSelector
-            currentWorkspace={currentWorkspace}
-            onClick={onOpenWorkspaceListModal}
-          />
+          <NoSsr>
+            <WorkspaceSelector
+              currentWorkspace={currentWorkspace}
+              onClick={onOpenWorkspaceListModal}
+            />
+          </NoSsr>
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}
@@ -169,30 +173,20 @@ export const RootAppSidebar = ({
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
           </RouteMenuLinkItem>
-          <RouteMenuLinkItem
-            data-testid="slider-bar-workspace-setting-button"
-            icon={<SettingsIcon />}
-            currentPath={currentPath}
-            path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
-          >
-            <span data-testid="settings">{t['Settings']()}</span>
-          </RouteMenuLinkItem>
-          {config.enableNewSettingModal ? (
+          {!runtimeConfig.enableNewSettingModal && (
+            <RouteMenuLinkItem
+              data-testid="slider-bar-workspace-setting-button"
+              icon={<SettingsIcon />}
+              currentPath={currentPath}
+              path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
+            >
+              <span data-testid="settings">{t['Settings']()}</span>
+            </RouteMenuLinkItem>
+          )}
+          {runtimeConfig.enableNewSettingModal ? (
             <MenuItem icon={<SettingsIcon />} onClick={onOpenSettingModal}>
-              <span data-testid="new-settings">
+              <span data-testid="settings-modal-trigger">
                 {t['Settings']()}
-                <i
-                  style={{
-                    background: 'var(--affine-palette-line-blue)',
-                    borderRadius: '2px',
-                    fontSize: '8px',
-                    padding: '0 5px',
-                    color: 'var(--affine-white)',
-                    marginLeft: '15px',
-                  }}
-                >
-                  NEW
-                </i>
               </span>
             </MenuItem>
           ) : null}
@@ -203,26 +197,10 @@ export const RootAppSidebar = ({
           {blockSuiteWorkspace && (
             <FavoriteList currentWorkspace={currentWorkspace} />
           )}
-          {config.enableLegacyCloud &&
-            (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
-            currentWorkspace.public ? (
-              <RouteMenuLinkItem
-                icon={<ShareIcon />}
-                currentPath={currentPath}
-                path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
-              >
-                <span data-testid="Published-to-web">Published to web</span>
-              </RouteMenuLinkItem>
-            ) : (
-              <RouteMenuLinkItem
-                icon={<ShareIcon />}
-                currentPath={currentPath}
-                path={currentWorkspaceId && paths.shared(currentWorkspaceId)}
-              >
-                <span data-testid="shared-pages">{t['Shared Pages']()}</span>
-              </RouteMenuLinkItem>
-            ))}
-
+          <CategoryDivider label={t['Collections']()} />
+          {blockSuiteWorkspace && (
+            <CollectionsList currentWorkspace={currentWorkspace} />
+          )}
           <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}
@@ -233,9 +211,12 @@ export const RootAppSidebar = ({
           >
             <span data-testid="trash-page">{t['Trash']()}</span>
           </RouteMenuLinkItem>
+          {blockSuiteWorkspace && (
+            <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
+          )}
         </SidebarScrollableContainer>
         <SidebarContainer>
-          {environment.isDesktop && <AppUpdaterButton />}
+          {isDesktop && <AppUpdaterButton />}
           <div />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>

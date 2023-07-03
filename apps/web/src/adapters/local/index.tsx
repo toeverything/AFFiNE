@@ -1,12 +1,12 @@
 import { DebugLogger } from '@affine/debug';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import {
-  config,
   DEFAULT_HELLO_WORLD_PAGE_ID,
   DEFAULT_WORKSPACE_NAME,
-} from '@affine/env';
-import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { PageNotFoundError } from '@affine/env/constant';
+  PageNotFoundError,
+} from '@affine/env/constant';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
+import type { WorkspaceAdapter } from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -25,9 +25,7 @@ import {
   NewWorkspaceSettingDetail,
   PageDetailEditor,
   WorkspaceHeader,
-  WorkspaceSettingDetail,
 } from '../shared';
-import type { WorkspaceAdapter } from '../type';
 
 const logger = new DebugLogger('use-create-first-workspace');
 
@@ -45,7 +43,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       const page = blockSuiteWorkspace.createPage({
         id: DEFAULT_HELLO_WORLD_PAGE_ID,
       });
-      if (config.enablePreloading) {
+      if (runtimeConfig.enablePreloading) {
         initPageWithPreloading(page).catch(err => {
           logger.error('init page with preloading failed', err);
         });
@@ -96,30 +94,13 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         </>
       );
     },
-    PageList: ({ blockSuiteWorkspace, onOpenPage, view }) => {
+    PageList: ({ blockSuiteWorkspace, onOpenPage, collection }) => {
       return (
         <BlockSuitePageList
           listType="all"
-          view={view}
+          collection={collection}
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
-        />
-      );
-    },
-    SettingsDetail: ({
-      currentWorkspace,
-      onChangeTab,
-      currentTab,
-      onDeleteWorkspace,
-      onTransformWorkspace,
-    }) => {
-      return (
-        <WorkspaceSettingDetail
-          onDeleteWorkspace={onDeleteWorkspace}
-          onChangeTab={onChangeTab}
-          currentTab={currentTab}
-          workspace={currentWorkspace}
-          onTransferWorkspace={onTransformWorkspace}
         />
       );
     },

@@ -1,5 +1,7 @@
 import { RadioButton, RadioButtonGroup, Switch } from '@affine/component';
-import { env } from '@affine/env';
+import { SettingHeader } from '@affine/component/setting-components';
+import { SettingRow } from '@affine/component/setting-components';
+import { SettingWrapper } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useTheme } from 'next-themes';
 import { useCallback } from 'react';
@@ -10,10 +12,6 @@ import {
   windowFrameStyleOptions,
 } from '../../../../../atoms/settings';
 import { LanguageMenu } from '../../../language-menu';
-import { SettingHeader } from '../../common/setting-header';
-import { SettingRow } from '../../common/setting-row';
-import { Wrapper } from '../../common/wrapper';
-import { IS_EXHIBITION } from '../../config';
 import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
 
@@ -32,9 +30,15 @@ export const ThemeSettings = () => {
         [setTheme]
       )}
     >
-      <RadioButton value="system">{t['system']()}</RadioButton>
-      <RadioButton value="light">{t['light']()}</RadioButton>
-      <RadioButton value="dark">{t['dark']()}</RadioButton>
+      <RadioButton value="system" data-testid="system-theme-trigger">
+        {t['system']()}
+      </RadioButton>
+      <RadioButton value="light" data-testid="light-theme-trigger">
+        {t['light']()}
+      </RadioButton>
+      <RadioButton value="dark" data-testid="dark-theme-trigger">
+        {t['dark']()}
+      </RadioButton>
     </RadioButtonGroup>
   );
 };
@@ -56,7 +60,7 @@ export const AppearanceSettings = () => {
         subtitle={t['Customize your  AFFiNE Appearance']()}
       />
 
-      <Wrapper title={t['Theme']()}>
+      <SettingWrapper title={t['Theme']()}>
         <SettingRow
           name={t['Color Scheme']()}
           desc={t['Choose your color scheme']()}
@@ -71,7 +75,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu />
           </div>
         </SettingRow>
-        {IS_EXHIBITION && env.isDesktop ? (
+        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
             name={t['Client Border Style']()}
             desc={t['Customize the appearance of the client.']()}
@@ -88,11 +92,12 @@ export const AppearanceSettings = () => {
           desc={t['Maximum display of content within a page.']()}
         >
           <Switch
+            data-testid="full-width-layout-trigger"
             checked={appSettings.fullWidthLayout}
             onChange={checked => changeSwitch('fullWidthLayout', checked)}
           />
         </SettingRow>
-        {IS_EXHIBITION && env.isDesktop ? (
+        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
             name={t['Window frame style']()}
             desc={t['Customize appearance of Windows Client.']()}
@@ -114,9 +119,9 @@ export const AppearanceSettings = () => {
             </RadioButtonGroup>
           </SettingRow>
         ) : null}
-      </Wrapper>
-      {IS_EXHIBITION ? (
-        <Wrapper title={t['Date']()}>
+      </SettingWrapper>
+      {runtimeConfig.enableNewSettingUnstableApi ? (
+        <SettingWrapper title={t['Date']()}>
           <SettingRow
             name={t['Date Format']()}
             desc={t['Customize your date style.']()}
@@ -134,11 +139,11 @@ export const AppearanceSettings = () => {
               onChange={checked => changeSwitch('startWeekOnMonday', checked)}
             />
           </SettingRow>
-        </Wrapper>
+        </SettingWrapper>
       ) : null}
 
-      {env.isDesktop ? (
-        <Wrapper title={t['Sidebar']()}>
+      {environment.isDesktop ? (
+        <SettingWrapper title={t['Sidebar']()}>
           <SettingRow
             name={t['Disable the noise background on the sidebar']()}
             desc={t['None yet']()}
@@ -155,13 +160,13 @@ export const AppearanceSettings = () => {
             desc={t['None yet']()}
           >
             <Switch
-              checked={appSettings.disableBlurBackground}
+              checked={!appSettings.disableBlurBackground}
               onChange={checked =>
-                changeSwitch('disableBlurBackground', checked)
+                changeSwitch('disableBlurBackground', !checked)
               }
             />
           </SettingRow>
-        </Wrapper>
+        </SettingWrapper>
       ) : null}
     </>
   );

@@ -1,4 +1,5 @@
 import type {
+  ClipboardHandlerManager,
   DebugHandlerManager,
   ExportHandlerManager,
   UIHandlerManager,
@@ -7,6 +8,7 @@ import type {
 } from '@toeverything/infra';
 import { ipcMain } from 'electron';
 
+import { clipboardHandlers } from './clipboard';
 import { exportHandlers } from './export';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { uiHandlers } from './ui';
@@ -26,6 +28,10 @@ type AllHandlers = {
     Electron.IpcMainInvokeEvent,
     DebugHandlerManager
   >;
+  clipboard: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    ClipboardHandlerManager
+  >;
   export: UnwrapManagerHandlerToServerSide<
     Electron.IpcMainInvokeEvent,
     ExportHandlerManager
@@ -44,6 +50,7 @@ type AllHandlers = {
 export const allHandlers = {
   debug: debugHandlers,
   ui: uiHandlers,
+  clipboard: clipboardHandlers,
   export: exportHandlers,
   updater: updaterHandlers,
 } satisfies AllHandlers;

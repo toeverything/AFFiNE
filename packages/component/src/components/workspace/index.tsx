@@ -1,3 +1,4 @@
+import { isDesktop } from '@affine/env/constant';
 import { clsx } from 'clsx';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 
@@ -22,7 +23,7 @@ export const AppContainer: FC<WorkspaceRootProps> = ({
     <div
       className={clsx(appStyle, {
         'noisy-background': noisyBackground,
-        'blur-background': environment.isDesktop && useBlurBackground,
+        'blur-background': isDesktop && useBlurBackground,
       })}
       data-noise-background={noisyBackground}
       data-is-resizing={resizing}
@@ -40,7 +41,7 @@ export const MainContainer = (props: MainContainerProps): ReactElement => {
   return (
     <div
       className={clsx(mainContainerStyle, 'main-container', props.className)}
-      data-is-desktop={environment.isDesktop}
+      data-is-desktop={isDesktop}
     >
       {props.children}
     </div>

@@ -1,0 +1,69 @@
+replicaCount: 1
+image:
+  repository: ghcr.io/toeverything/affine-graphql
+  pullPolicy: IfNotPresent
+  tag: ''
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+# map to NODE_ENV environment variable
+env: 'production'
+database:
+  user: 'postgres'
+  url: 'pg-postgresql'
+  port: '5432'
+  name: 'affine'
+app:
+  # AFFINE_SERVER_SUB_PATH
+  path: ''
+  # AFFINE_SERVER_HOST
+  host: '0.0.0.0'
+  jwt:
+    secretName: jwt-private-key
+    # base64 encoded ecdsa private key
+    privateKey: ''
+  objectStorage:
+    r2:
+      enabled: false
+      secretName: r2
+      accountId: ''
+      accessKeyId: ''
+      secretAccessKey: ''
+      bucket: ''
+  oauth:
+    google:
+      enabled: false
+      secretName: oauth-google
+      clientId: ''
+      clientSecret: ''
+    github:
+      enabled: false
+      secretName: oauth-github
+      clientId: ''
+      clientSecret: ''
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: 'affine-graphql'
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+resources:
+  limits:
+    cpu: '2000m'
+    memory: 4Gi
+  requests:
+    cpu: '1000m'
+    memory: 2Gi
+
+probe:
+  initialDelaySeconds: 20
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

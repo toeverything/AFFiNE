@@ -7,8 +7,7 @@ import type {
 } from '@blocksuite/store';
 import type { FC, PropsWithChildren } from 'react';
 
-import type { View } from './filter';
-import type { Workspace as RemoteWorkspace } from './workspace/legacy-cloud';
+import type { Collection } from './filter';
 
 export enum WorkspaceVersion {
   SubDoc = 2,
@@ -51,18 +50,10 @@ export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
   flavour: 'sqlite-download';
 }
 
-export interface AffineWebSocketProvider extends PassiveDocProvider {
-  flavour: 'affine-websocket';
-}
-
-export interface AffineLegacyCloudWorkspace extends RemoteWorkspace {
-  flavour: WorkspaceFlavour.AFFINE;
-  // empty
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-}
-
 // todo: update type with nest.js
-export type AffineCloudWorkspace = LocalWorkspace;
+export type AffineCloudWorkspace = Omit<LocalWorkspace, 'flavour'> & {
+  flavour: WorkspaceFlavour.AFFINE_CLOUD;
+};
 
 export interface LocalWorkspace {
   flavour: WorkspaceFlavour.LOCAL;
@@ -90,14 +81,6 @@ export enum LoadPriority {
 
 export enum WorkspaceFlavour {
   /**
-   * AFFiNE Workspace is the workspace
-   * that hosted on the Legacy AFFiNE Cloud Server.
-   *
-   * @deprecated
-   *  We no longer maintain this kind of workspace, please use AFFiNE-Cloud instead.
-   */
-  AFFINE = 'affine',
-  /**
    * New AFFiNE Cloud Workspace using Nest.js Server.
    */
   AFFINE_CLOUD = 'affine-cloud',
@@ -117,10 +100,8 @@ export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 
 // built-in workspaces
 export interface WorkspaceRegistry {
-  [WorkspaceFlavour.AFFINE]: AffineLegacyCloudWorkspace;
   [WorkspaceFlavour.LOCAL]: LocalWorkspace;
   [WorkspaceFlavour.PUBLIC]: AffinePublicWorkspace;
-  // todo: update workspace type to new
   [WorkspaceFlavour.AFFINE_CLOUD]: AffineCloudWorkspace;
 }
 
@@ -148,21 +129,6 @@ export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
         };
   };
 
-type SettingProps<Flavour extends keyof WorkspaceRegistry> =
-  UIBaseProps<Flavour> & {
-    currentTab: SettingPanel;
-    onChangeTab: (tab: SettingPanel) => void;
-    onDeleteWorkspace: () => Promise<void>;
-    onTransformWorkspace: <
-      From extends keyof WorkspaceRegistry,
-      To extends keyof WorkspaceRegistry
-    >(
-      from: From,
-      to: To,
-      workspace: WorkspaceRegistry[From]
-    ) => void;
-  };
-
 type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
     onDeleteWorkspace: () => Promise<void>;
@@ -185,14 +151,13 @@ type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
 type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
-  view: View;
+  collection: Collection;
 };
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   Header: FC<WorkspaceHeaderProps<Flavour>>;
   PageDetail: FC<PageDetailProps<Flavour>>;
   PageList: FC<PageListProps<Flavour>>;
-  SettingsDetail: FC<SettingProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
 }
@@ -205,4 +170,15 @@ export interface AppEvents {
   'workspace:access': () => Promise<void>;
   // request to revoke access to workspace plugin
   'workspace:revoke': () => Promise<void>;
+}
+
+export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
+  releaseType: ReleaseType;
+  flavour: Flavour;
+  // The Adapter will be loaded according to the priority
+  loadPriority: LoadPriority;
+  Events: Partial<AppEvents>;
+  // Fetch necessary data for the first render
+  CRUD: WorkspaceCRUD<Flavour>;
+  UI: WorkspaceUISchema<Flavour>;
 }

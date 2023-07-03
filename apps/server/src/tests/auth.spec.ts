@@ -1,3 +1,4 @@
+/// <reference types="../global.d.ts" />
 import { ok } from 'node:assert';
 import { beforeEach, test } from 'node:test';
 
@@ -5,13 +6,10 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 
 import { ConfigModule } from '../config';
-import { getDefaultAFFiNEConfig } from '../config/default';
 import { GqlModule } from '../graphql.module';
 import { AuthModule } from '../modules/auth';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
-
-globalThis.AFFiNE = getDefaultAFFiNEConfig();
 
 let auth: AuthService;
 

@@ -1,29 +1,29 @@
-import type { Filter, VariableMap, View } from '@affine/env/filter';
+import type { Collection, Filter, VariableMap } from '@affine/env/filter';
 import type { DBSchema } from 'idb';
 import { openDB } from 'idb';
 import type { IDBPDatabase } from 'idb/build/entry';
 import { useAtom } from 'jotai';
-import { atomWithReset } from 'jotai/utils';
+import { atomWithReset, RESET } from 'jotai/utils';
 import { useCallback } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
 
-type PersistenceView = View;
+type PersistenceCollection = Collection;
 
-export interface PageViewDBV1 extends DBSchema {
+export interface PageCollectionDBV1 extends DBSchema {
   view: {
-    key: PersistenceView['id'];
-    value: PersistenceView;
+    key: PersistenceCollection['id'];
+    value: PersistenceCollection;
   };
 }
 
-const pageViewDBPromise: Promise<IDBPDatabase<PageViewDBV1>> =
+const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
   typeof window === 'undefined'
     ? // never resolve in SSR
       new Promise<any>(() => {})
-    : openDB<PageViewDBV1>('page-view', 1, {
+    : openDB<PageCollectionDBV1>('page-view', 1, {
         upgrade(database) {
           database.createObjectStore('view', {
             keyPath: 'id',
@@ -31,18 +31,24 @@ const pageViewDBPromise: Promise<IDBPDatabase<PageViewDBV1>> =
         },
       });
 
-const currentViewAtom = atomWithReset<View>({
-  name: 'default',
-  id: NIL,
-  filterList: [],
+const collectionAtom = atomWithReset<{
+  currentId: string;
+  defaultCollection: Collection;
+}>({
+  currentId: NIL,
+  defaultCollection: {
+    id: NIL,
+    name: 'All',
+    filterList: [],
+  },
 });
 
-export const useAllPageSetting = () => {
-  const { data: savedViews, mutate } = useSWRImmutable(
-    ['affine', 'page-view'],
+export const useSavedCollections = () => {
+  const { data: savedCollections, mutate } = useSWRImmutable<Collection[]>(
+    ['affine', 'page-collection'],
     {
       fetcher: async () => {
-        const db = await pageViewDBPromise;
+        const db = await pageCollectionDBPromise;
         const t = db.transaction('view').objectStore('view');
         return await t.getAll();
       },
@@ -51,29 +57,98 @@ export const useAllPageSetting = () => {
       revalidateOnMount: true,
     }
   );
-
-  const [currentView, setCurrentView] = useAtom(currentViewAtom);
-
-  const createView = useCallback(
-    async (view: View) => {
-      if (view.id === NIL) {
+  const saveCollection = useCallback(
+    async (collection: Collection) => {
+      if (collection.id === NIL) {
         return;
       }
-      const db = await pageViewDBPromise;
+      const db = await pageCollectionDBPromise;
       const t = db.transaction('view', 'readwrite').objectStore('view');
-      await t.put(view);
+      await t.put(collection);
       await mutate();
     },
     [mutate]
   );
-
+  const deleteCollection = useCallback(
+    async (id: string) => {
+      if (id === NIL) {
+        return;
+      }
+      const db = await pageCollectionDBPromise;
+      const t = db.transaction('view', 'readwrite').objectStore('view');
+      await t.delete(id);
+      await mutate();
+    },
+    [mutate]
+  );
+  const addPage = useCallback(
+    async (collectionId: string, pageId: string) => {
+      const collection = savedCollections?.find(v => v.id === collectionId);
+      if (!collection) {
+        return;
+      }
+      await saveCollection({
+        ...collection,
+        allowList: [pageId, ...(collection.allowList ?? [])],
+      });
+    },
+    [saveCollection, savedCollections]
+  );
   return {
-    currentView,
-    savedViews: savedViews as View[],
+    savedCollections: savedCollections ?? [],
+    saveCollection,
+    deleteCollection,
+    addPage,
+  };
+};
+
+export const useAllPageSetting = () => {
+  const { savedCollections, saveCollection, deleteCollection, addPage } =
+    useSavedCollections();
+  const [collectionData, setCollectionData] = useAtom(collectionAtom);
+
+  const updateCollection = useCallback(
+    async (collection: Collection) => {
+      if (collection.id === NIL) {
+        setCollectionData({
+          ...collectionData,
+          defaultCollection: collection,
+        });
+      } else {
+        await saveCollection(collection);
+      }
+    },
+    [collectionData, saveCollection, setCollectionData]
+  );
+  const selectCollection = useCallback(
+    (id: string) => {
+      setCollectionData({
+        ...collectionData,
+        currentId: id,
+      });
+    },
+    [collectionData, setCollectionData]
+  );
+  const backToAll = useCallback(() => {
+    setCollectionData(RESET);
+  }, [setCollectionData]);
+  const currentCollection =
+    collectionData.currentId === NIL
+      ? collectionData.defaultCollection
+      : savedCollections.find(v => v.id === collectionData.currentId) ??
+        collectionData.defaultCollection;
+  return {
+    currentCollection: currentCollection,
+    savedCollections,
+    isDefault: currentCollection.id === NIL,
 
     // actions
-    createView,
-    setCurrentView,
+    saveCollection,
+    updateCollection,
+    selectCollection,
+    backToAll,
+    deleteCollection,
+    addPage,
   };
 };
 export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>

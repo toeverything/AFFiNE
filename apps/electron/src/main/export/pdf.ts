@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, shell } from 'electron';
+import { BrowserWindow, dialog } from 'electron';
 import fs from 'fs-extra';
 
 import { logger } from '../logger';
@@ -39,6 +39,13 @@ export async function savePDFFileAs(
 
     await BrowserWindow.getFocusedWindow()
       ?.webContents.printToPDF({
+        margins: {
+          marginType: 'custom',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+        },
         pageSize: 'A4',
         printBackground: true,
         landscape: false,
@@ -49,8 +56,6 @@ export async function savePDFFileAs(
           logger.log(`Wrote PDF successfully to ${filePath}`);
         });
       });
-
-    await shell.openPath(filePath);
     return { filePath };
   } catch (err) {
     logger.error('savePDFFileAs', err);

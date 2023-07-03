@@ -17,10 +17,12 @@ test('should create a page with a local first avatar', async ({ page }) => {
   await page.getByTestId('create-workspace-create-button').click();
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('workspace-card').nth(1).click();
-  await page.getByTestId('slider-bar-workspace-setting-button').click();
+  await page.getByTestId('settings-modal-trigger').click();
+  await page.getByText('current').click();
   await page
     .getByTestId('upload-avatar')
     .setInputFiles('./tests/fixtures/smile.png');
+  await page.mouse.click(0, 0);
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('workspace-card').nth(0).click();
   await page.waitForTimeout(1000);

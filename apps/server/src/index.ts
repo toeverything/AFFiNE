@@ -1,5 +1,4 @@
-import './prelude';
-
+/// <reference types="./global.d.ts" />
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { static as staticMiddleware } from 'express';
@@ -28,12 +27,12 @@ app.use(
   })
 );
 
-const host = process.env.HOST ?? 'localhost';
-const port = process.env.PORT ?? 3010;
-
 const config = app.get(Config);
 
-if (!config.objectStorage.enable) {
+const host = config.host ?? 'localhost';
+const port = config.port ?? 3010;
+
+if (!config.objectStorage.r2.enabled) {
   app.use('/assets', staticMiddleware(config.objectStorage.fs.path));
 }
 

@@ -5,6 +5,7 @@ import { v4 } from 'uuid';
 import { afterEach, expect, test, vi } from 'vitest';
 import * as Y from 'yjs';
 
+import { removeWithRetry } from '../../../../tests/utils';
 import { dbSubjects } from '../subjects';
 
 const tmpDir = path.join(__dirname, 'tmp');
@@ -17,7 +18,7 @@ vi.doMock('../../main-rpc', () => ({
 }));
 
 afterEach(async () => {
-  await fs.remove(tmpDir);
+  await removeWithRetry(tmpDir);
 });
 
 let testYDoc: Y.Doc;

@@ -1,4 +1,3 @@
-import { env } from '@affine/env';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
@@ -16,9 +15,6 @@ import {
   openOnboardingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
-import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
-import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
-import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces } from '../hooks/use-workspaces';
 
@@ -69,7 +65,7 @@ export function CurrentWorkspaceModals() {
           }, [setOpenDisableCloudAlertModal])}
         />
       </Suspense>
-      {env.isDesktop && (
+      {environment.isDesktop && (
         <Suspense>
           <OnboardingModal
             open={openOnboardingModal}
@@ -91,7 +87,6 @@ export const AllWorkspaceModals = (): ReactElement => {
 
   const router = useRouter();
   const { jumpToSubPath } = useRouterHelper(router);
-  const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
@@ -103,7 +98,6 @@ export const AllWorkspaceModals = (): ReactElement => {
       <Suspense>
         <WorkspaceListModal
           disabled={transitioning}
-          user={user}
           workspaces={workspaces}
           currentWorkspaceId={currentWorkspaceId}
           open={
@@ -117,11 +111,11 @@ export const AllWorkspaceModals = (): ReactElement => {
             (activeId, overId) => {
               const oldIndex = workspaces.findIndex(w => w.id === activeId);
               const newIndex = workspaces.findIndex(w => w.id === overId);
-              transition(() =>
+              transition(() => {
                 setWorkspaces(workspaces =>
                   arrayMove(workspaces, oldIndex, newIndex)
-                )
-              );
+                ).catch(console.error);
+              });
             },
             [setWorkspaces, workspaces]
           )}
@@ -147,8 +141,6 @@ export const AllWorkspaceModals = (): ReactElement => {
             },
             [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}
-          onClickLogin={useAffineLogIn()}
-          onClickLogout={useAffineLogOut()}
           onNewWorkspace={useCallback(() => {
             setOpenCreateWorkspaceModal('new');
           }, [setOpenCreateWorkspaceModal])}

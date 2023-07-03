@@ -20,6 +20,9 @@
   "references": [
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "../../packages/storage/tsconfig.json"
     }
   ],
   "ts-node": {

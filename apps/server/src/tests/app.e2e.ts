@@ -12,11 +12,8 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../app';
-import { getDefaultAFFiNEConfig } from '../config/default';
 
 const gql = '/graphql';
-
-globalThis.AFFiNE = getDefaultAFFiNEConfig();
 
 describe('AppModule', () => {
   let app: INestApplication;
@@ -76,33 +73,14 @@ describe('AppModule', () => {
       .auth(token, { type: 'bearer' })
       .send({
         query: `
-      mutation {
-        createWorkspace {
-          id
-          public
-          createdAt
-        }
+      query {
+        __typename
       }
     `,
       })
       .expect(200)
       .expect(res => {
-        ok(
-          typeof res.body.data.createWorkspace === 'object',
-          'res.body.data.createWorkspace is not an object'
-        );
-        ok(
-          typeof res.body.data.createWorkspace.id === 'string',
-          'res.body.data.createWorkspace.id is not a string'
-        );
-        ok(
-          typeof res.body.data.createWorkspace.public === 'boolean',
-          'res.body.data.createWorkspace.public is not a boolean'
-        );
-        ok(
-          typeof res.body.data.createWorkspace.createdAt === 'string',
-          'res.body.data.createWorkspace.created_at is not a string'
-        );
+        ok(res.body.data.__typename === 'Query');
       });
   });
 

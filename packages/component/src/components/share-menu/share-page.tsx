@@ -1,4 +1,3 @@
-import { prefixUrl } from '@affine/env';
 import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
@@ -125,7 +124,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
 export const SharePage: FC<ShareMenuProps> = props => {
   if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalSharePage {...props} />;
-  } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
+  } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     return <AffineSharePage {...props} />;
   }
   throw new Error('Unreachable');

@@ -1,4 +1,5 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import type { Storage } from '@affine/storage';
+import { ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -16,8 +17,12 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, Workspace } from '@prisma/client';
+// @ts-expect-error graphql-upload is not typed
+import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma';
+import { StorageProvide } from '../../storage';
+import type { FileUpload } from '../../types';
 import { Auth, CurrentUser } from '../auth';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
@@ -55,7 +60,8 @@ export class UpdateWorkspaceInput extends PickType(
 export class WorkspaceResolver {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly permissionProvider: PermissionService
+    private readonly permissionProvider: PermissionService,
+    @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
   @ResolveField(() => Permission, {
@@ -174,8 +180,25 @@ export class WorkspaceResolver {
   @Mutation(() => WorkspaceType, {
     description: 'Create a new workspace',
   })
-  async createWorkspace(@CurrentUser() user: User) {
-    return this.prisma.workspace.create({
+  async createWorkspace(
+    @CurrentUser() user: User,
+    @Args({ name: 'init', type: () => GraphQLUpload })
+    update: FileUpload
+  ) {
+    // convert stream to buffer
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const stream = update.createReadStream();
+      const chunks: Uint8Array[] = [];
+      stream.on('data', chunk => {
+        chunks.push(chunk);
+      });
+      stream.on('error', reject);
+      stream.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
+
+    const workspace = await this.prisma.workspace.create({
       data: {
         public: false,
         users: {
@@ -191,6 +214,10 @@ export class WorkspaceResolver {
         },
       },
     });
+
+    await this.storage.createWorkspace(workspace.id, buffer);
+
+    return workspace;
   }
 
   @Mutation(() => WorkspaceType, {
@@ -221,8 +248,15 @@ export class WorkspaceResolver {
       },
     });
 
+    await this.prisma.userWorkspacePermission.deleteMany({
+      where: {
+        workspaceId: id,
+      },
+    });
+
     // TODO:
     // delete all related data, like websocket connections, blobs, etc.
+    await this.storage.deleteWorkspace(id);
 
     return true;
   }
@@ -282,5 +316,29 @@ export class WorkspaceResolver {
     await this.permissionProvider.check(workspaceId, user.id);
 
     return this.permissionProvider.revoke(workspaceId, user.id);
+  }
+
+  @Mutation(() => String)
+  async uploadBlob(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args({ name: 'blob', type: () => GraphQLUpload })
+    blob: FileUpload
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const stream = blob.createReadStream();
+      const chunks: Uint8Array[] = [];
+      stream.on('data', chunk => {
+        chunks.push(chunk);
+      });
+      stream.on('error', reject);
+      stream.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
+
+    return this.storage.uploadBlob(workspaceId, buffer);
   }
 }

@@ -1,8 +1,10 @@
+import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
 
@@ -35,19 +37,20 @@ export const SettingSidebar = ({
   currentWorkspace: Workspace;
   workspaceList: Workspace[];
   onWorkspaceSettingClick: (
-    workspace: AffineLegacyCloudWorkspace | LocalWorkspace
+    workspace: AffineCloudWorkspace | LocalWorkspace
   ) => void;
 
   selectedWorkspace: Workspace | null;
   selectedGeneralKey: string | null;
   onAccountSettingClick: () => void;
 }) => {
+  const t = useAFFiNEI18N();
   return (
-    <div className={settingSlideBar}>
-      <div className={sidebarTitle}>Settings</div>
-      <div className={sidebarSubtitle}>General</div>
+    <div className={settingSlideBar} data-testid="settings-sidebar">
+      <div className={sidebarTitle}>{t['Settings']()}</div>
+      <div className={sidebarSubtitle}>{t['General']()}</div>
       <div className={sidebarItemsWrapper}>
-        {generalSettingList.map(({ title, icon, key }) => {
+        {generalSettingList.map(({ title, icon, key, testId }) => {
           return (
             <div
               className={clsx(sidebarSelectItem, {
@@ -58,6 +61,7 @@ export const SettingSidebar = ({
               onClick={() => {
                 onGeneralSettingClick(key);
               }}
+              data-testid={testId}
             >
               {icon({ className: 'icon' })}
               <span className="setting-name">{title}</span>
@@ -66,7 +70,9 @@ export const SettingSidebar = ({
         })}
       </div>
 
-      <div className={sidebarSubtitle}>Workspace</div>
+      <div className={sidebarSubtitle}>
+        {t['com.affine.settings.workspace']()}
+      </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
         {workspaceList.map(workspace => {
           return (
@@ -83,17 +89,25 @@ export const SettingSidebar = ({
         })}
       </div>
 
-      <div className={accountButton} onClick={onAccountSettingClick}>
-        <div className="avatar"></div>
-        <div className="content">
-          <div className="name" title="xxx">
-            Account NameAccount Name
-          </div>
-          <div className="email" title="xxx">
-            xxxxxxxx@gmail.comxxxxxxxx@gmail.com
+      {runtimeConfig.enableCloud && (
+        <div className={accountButton} onClick={onAccountSettingClick}>
+          <UserAvatar
+            size={28}
+            name="Account NameAccount Name"
+            url={''}
+            className="avatar"
+          />
+
+          <div className="content">
+            <div className="name" title="xxx">
+              Account NameAccount Name
+            </div>
+            <div className="email" title="xxx">
+              xxxxxxxx@gmail.comxxxxxxxx@gmail.com
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -104,7 +118,7 @@ const WorkspaceListItem = ({
   isCurrent,
   isActive,
 }: {
-  workspace: AffineLegacyCloudWorkspace | LocalWorkspace;
+  workspace: AffineCloudWorkspace | LocalWorkspace;
   onClick: () => void;
   isCurrent: boolean;
   isActive: boolean;

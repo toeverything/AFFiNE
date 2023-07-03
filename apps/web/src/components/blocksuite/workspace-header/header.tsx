@@ -4,6 +4,7 @@ import {
   appSidebarOpenAtom,
 } from '@affine/component/app-sidebar';
 import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
+import { isDesktop } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
@@ -28,7 +29,6 @@ import { DownloadClientTip } from './download-tips';
 import EditPage from './header-right-items/edit-page';
 import { EditorOptionMenu } from './header-right-items/editor-option-menu';
 import { HeaderShareMenu } from './header-right-items/share-menu';
-import SyncUser from './header-right-items/sync-user';
 import TrashButtonGroup from './header-right-items/trash-button-group';
 import UserAvatar from './header-right-items/user-avatar';
 import * as styles from './styles.css';
@@ -46,7 +46,6 @@ export type BaseHeaderProps<
 export enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
   TrashButtonGroup = 'trashButtonGroup',
-  SyncUser = 'syncUser',
   ShareMenu = 'shareMenu',
   EditPage = 'editPage',
   UserAvatar = 'userAvatar',
@@ -72,12 +71,6 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
     Component: TrashButtonGroup,
     availableWhen: (_, currentPage) => {
       return currentPage?.meta.trash === true;
-    },
-  },
-  [HeaderRightItemName.SyncUser]: {
-    Component: SyncUser,
-    availableWhen: (_, currentPage, { isPublic }) => {
-      return !isPublic;
     },
   },
   [HeaderRightItemName.ShareMenu]: {
@@ -122,7 +115,10 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
         });
       }, []);
       return (
-        <div className={styles.windowAppControlsWrapper}>
+        <div
+          data-platform-target="win32"
+          className={styles.windowAppControlsWrapper}
+        >
           <button
             data-type="minimize"
             className={styles.windowAppControl}
@@ -148,7 +144,7 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       );
     },
     availableWhen: () => {
-      return environment.isDesktop && environment.isWindows;
+      return isDesktop && globalThis.platform === 'win32';
     },
   },
 };

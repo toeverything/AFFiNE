@@ -1,12 +1,7 @@
 import { Empty } from '@affine/component';
 import type { ListData, TrashListData } from '@affine/component/page-list';
-import {
-  filterByFilterList,
-  PageList,
-  PageListTrashView,
-} from '@affine/component/page-list';
-import { env } from '@affine/env';
-import type { View } from '@affine/env/filter';
+import { PageList, PageListTrashView } from '@affine/component/page-list';
+import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
@@ -19,8 +14,10 @@ import { useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
+import { filterPage } from '../../../utils/filter';
 import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
 import { usePageHelper } from './utils';
 
@@ -29,7 +26,7 @@ export type BlockSuitePageListProps = {
   listType: 'all' | 'trash' | 'shared' | 'public';
   isPublic?: true;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
-  view?: View;
+  collection?: Collection;
 };
 
 const filter = {
@@ -56,8 +53,8 @@ const PageListEmpty = (props: {
           New Page
         </button>
       );
-      if (env.isDesktop) {
-        const shortcut = env.isMacOs ? '⌘ + N' : 'Ctrl + N';
+      if (environment.isDesktop) {
+        const shortcut = environment.isMacOs ? '⌘ + N' : 'Ctrl + N';
         return (
           <Trans i18nKey="emptyAllPagesClient">
             Click on the <CreateNewPageButton /> button Or press
@@ -98,7 +95,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   onOpenPage,
   listType,
   isPublic = false,
-  view,
+  collection,
 }) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const {
@@ -112,6 +109,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
+  const getPageInfo = useGetPageInfoById();
   const list = useMemo(
     () =>
       pageMetas
@@ -132,16 +130,12 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
           if (!filter[listType](pageMeta, pageMetas)) {
             return false;
           }
-          if (!view) {
+          if (!collection) {
             return true;
           }
-          return filterByFilterList(view.filterList, {
-            'Is Favourited': !!pageMeta.favorite,
-            Created: pageMeta.createDate,
-            Updated: pageMeta.updatedDate ?? pageMeta.createDate,
-          });
+          return filterPage(collection, pageMeta);
         }),
-    [pageMetas, filterMode, isPreferredEdgeless, listType, view]
+    [pageMetas, filterMode, isPreferredEdgeless, listType, collection]
   );
 
   if (listType === 'trash') {
@@ -223,9 +217,9 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       },
     };
   });
-
   return (
     <PageList
+      getPageInfo={getPageInfo}
       onCreateNewPage={createPage}
       onCreateNewEdgeless={createEdgeless}
       onImportFile={importFile}

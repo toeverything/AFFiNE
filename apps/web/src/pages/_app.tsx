@@ -5,18 +5,16 @@ import '../bootstrap';
 
 import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { config } from '@affine/env';
-import { createI18n, I18nextProvider } from '@affine/i18n';
+import { createI18n, I18nextProvider, setUpLanguage } from '@affine/i18n';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { PropsWithChildren, ReactElement } from 'react';
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
-import { MessageCenter } from '../components/pure/message-center';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
 
@@ -42,9 +40,6 @@ const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
 };
 
 const i18n = createI18n();
-if (process.env.NODE_ENV === 'development') {
-  console.log('Runtime Preset', config);
-}
 
 const App = function App({
   Component,
@@ -53,27 +48,33 @@ const App = function App({
 }: AppPropsWithLayout & {
   emotionCache?: EmotionCache;
 }) {
+  useEffect(() => {
+    document.documentElement.lang = i18n.language;
+    // todo(himself65): this is a hack, we should use a better way to set the language
+    setUpLanguage(i18n)?.catch(error => {
+      console.error(error);
+    });
+  }, []);
   const getLayout = Component.getLayout || EmptyLayout;
 
   return (
     <CacheProvider value={emotionCache}>
       <I18nextProvider i18n={i18n}>
-        <MessageCenter />
         <AffineErrorBoundary router={useRouter()}>
-          <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
-            <AffineContext>
-              <Head>
-                <title>AFFiNE</title>
-                <meta
-                  name="viewport"
-                  content="initial-scale=1, width=device-width"
-                />
-              </Head>
-              <DebugProvider>
+          <AffineContext>
+            <Head>
+              <title>AFFiNE</title>
+              <meta
+                name="viewport"
+                content="initial-scale=1, width=device-width"
+              />
+            </Head>
+            <DebugProvider>
+              <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
                 {getLayout(<Component {...pageProps} />)}
-              </DebugProvider>
-            </AffineContext>
-          </Suspense>
+              </Suspense>
+            </DebugProvider>
+          </AffineContext>
         </AffineErrorBoundary>
       </I18nextProvider>
     </CacheProvider>

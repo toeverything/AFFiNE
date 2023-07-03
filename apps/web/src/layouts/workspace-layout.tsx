@@ -1,6 +1,7 @@
 import { Content, displayFlex } from '@affine/component';
 import { AffineWatermark } from '@affine/component/affine-watermark';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import { NotificationCenter } from '@affine/component/notification-center';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
 import {
@@ -8,13 +9,9 @@ import {
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
-import { DebugLogger } from '@affine/debug';
-import { config, DEFAULT_HELLO_WORLD_PAGE_ID, env } from '@affine/env';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import { setUpLanguage, useI18N } from '@affine/i18n';
+import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import {
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
@@ -33,7 +30,6 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { rootStore } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -47,13 +43,10 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
-import {
-  publicWorkspaceAtom,
-  publicWorkspaceIdAtom,
-} from '../atoms/public-workspace';
 import { AppContainer } from '../components/affine/app-container';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
+import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
 import {
   DROPPABLE_SIDEBAR_TRASH,
   RootAppSidebar,
@@ -81,24 +74,6 @@ const SettingModal = lazy(() =>
   }))
 );
 
-export const PublicQuickSearch: FC = () => {
-  const publicWorkspace = useAtomValue(publicWorkspaceAtom);
-  const router = useRouter();
-  const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
-    openQuickSearchModalAtom
-  );
-  return (
-    <Suspense>
-      <QuickSearchModal
-        blockSuiteWorkspace={publicWorkspace.blockSuiteWorkspace}
-        open={openQuickSearchModal}
-        setOpen={setOpenQuickSearchModalAtom}
-        router={router}
-      />
-    </Suspense>
-  );
-};
-
 function DefaultProvider({ children }: PropsWithChildren) {
   return <>{children}</>;
 }
@@ -110,13 +85,7 @@ export const QuickSearch: FC = () => {
     openQuickSearchModalAtom
   );
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
-  const isPublicWorkspace =
-    router.pathname.split('/')[1] === 'public-workspace';
-  const publicWorkspaceId = useAtomValue(publicWorkspaceIdAtom);
   if (!blockSuiteWorkspace) {
-    if (isPublicWorkspace && publicWorkspaceId) {
-      return <PublicQuickSearch />;
-    }
     return null;
   }
   return (
@@ -130,29 +99,16 @@ export const QuickSearch: FC = () => {
 };
 export const Setting: FC = () => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const router = useRouter();
   const [openSettingModal, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
-  const isPublicWorkspace =
-    router.pathname.split('/')[1] === 'public-workspace';
-  if (!blockSuiteWorkspace || isPublicWorkspace) {
+  if (!blockSuiteWorkspace) {
     return null;
   }
   return (
-    <SettingModal
-      open={openSettingModal}
-      setOpen={setOpenSettingModalAtom}
-      router={router}
-    />
+    <SettingModal open={openSettingModal} setOpen={setOpenSettingModalAtom} />
   );
 };
-
-const logger = new DebugLogger('workspace-layout');
-
-const affineGlobalChannel = createAffineGlobalChannel(
-  WorkspaceAdapters[WorkspaceFlavour.AFFINE].CRUD
-);
 
 export const AllWorkspaceContext = ({
   children,
@@ -230,14 +186,6 @@ export const CurrentWorkspaceContext = ({
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    const i18n = useI18N();
-    useEffect(() => {
-      document.documentElement.lang = i18n.language;
-      // todo(himself65): this is a hack, we should use a better way to set the language
-      setUpLanguage(i18n)?.catch(error => {
-        console.error(error);
-      });
-    }, [i18n]);
     useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
@@ -245,67 +193,6 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
       [currentWorkspaceId, jotaiWorkspaces]
     );
-    const set = useSetAtom(rootWorkspacesMetadataAtom);
-    useEffect(() => {
-      logger.info('mount');
-      const controller = new AbortController();
-      const lists = Object.values(WorkspaceAdapters)
-        .sort((a, b) => a.loadPriority - b.loadPriority)
-        .map(({ CRUD }) => CRUD.list);
-
-      async function fetch() {
-        const jotaiWorkspaces = rootStore.get(rootWorkspacesMetadataAtom);
-        const items = [];
-        for (const list of lists) {
-          try {
-            const item = await list();
-            if (jotaiWorkspaces.length) {
-              item.sort((a, b) => {
-                return (
-                  jotaiWorkspaces.findIndex(x => x.id === a.id) -
-                  jotaiWorkspaces.findIndex(x => x.id === b.id)
-                );
-              });
-            }
-            items.push(
-              ...item.map(x => ({
-                id: x.id,
-                flavour: x.flavour,
-                version: undefined,
-              }))
-            );
-          } catch (e) {
-            logger.error('list data error:', e);
-          }
-        }
-        if (controller.signal.aborted) {
-          return;
-        }
-        set([...items]);
-        logger.info('mount first data:', items);
-      }
-
-      fetch().catch(e => {
-        logger.error('fetch error:', e);
-      });
-      return () => {
-        controller.abort();
-        logger.info('unmount');
-      };
-    }, [set]);
-
-    useEffect(() => {
-      const flavour = jotaiWorkspaces.find(
-        x => x.id === currentWorkspaceId
-      )?.flavour;
-      if (flavour === WorkspaceFlavour.AFFINE) {
-        affineGlobalChannel.connect();
-        return () => {
-          affineGlobalChannel.disconnect();
-        };
-      }
-      return;
-    }, [currentWorkspaceId, jotaiWorkspaces]);
 
     const Provider =
       (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
@@ -339,34 +226,51 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
 
-  // fixme(himself65):
-  //  we should move the page into jotai atom since it's an async value
-
   //#region init workspace
-  if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  if (currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty !== true) {
     // this is a new workspace, so we should redirect to the new page
     const pageId = DEFAULT_HELLO_WORLD_PAGE_ID;
-    const page = currentWorkspace.blockSuiteWorkspace.createPage({
-      id: pageId,
-    });
-    assertEquals(page.id, pageId);
-    if (config.enablePreloading) {
-      initPageWithPreloading(page).catch(error => {
-        console.error('import error:', error);
+    if (currentWorkspace.blockSuiteWorkspace.getPage(pageId) === null) {
+      const page = currentWorkspace.blockSuiteWorkspace.createPage({
+        id: pageId,
       });
-    } else {
-      initEmptyPage(page).catch(error => {
-        console.error('init empty page error', error);
-      });
-    }
-    if (!router.query.pageId) {
-      setCurrentPageId(pageId);
-      jumpToPage(currentWorkspace.id, pageId).catch(err => {
-        console.error(err);
-      });
+      assertEquals(page.id, pageId);
+      if (runtimeConfig.enablePreloading) {
+        initPageWithPreloading(page).catch(error => {
+          console.error('import error:', error);
+        });
+      } else {
+        initEmptyPage(page).catch(error => {
+          console.error('init empty page error', error);
+        });
+      }
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty = false;
+      if (!router.query.pageId) {
+        setCurrentPageId(pageId);
+        jumpToPage(currentWorkspace.id, pageId).catch(console.error);
+      }
     }
   }
   //#endregion
+
+  if (currentPageId) {
+    const pageExist =
+      currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+    if (router.pathname === '/[workspaceId]/[pageId]' && !pageExist) {
+      router.push('/404').catch(console.error);
+    }
+  } else if (
+    router.pathname === '/[workspaceId]/[pageId]' &&
+    typeof router.query.pageId === 'string' &&
+    router.query.pageId !== currentPageId
+  ) {
+    setCurrentPageId(router.query.pageId);
+    jumpToPage(currentWorkspace.id, router.query.pageId).catch(console.error);
+  }
 
   useEffect(() => {
     const backgroundProviders =
@@ -385,9 +289,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   }, [currentWorkspace]);
 
   useEffect(() => {
-    if (!currentWorkspace) {
-      return;
-    }
     const page = currentWorkspace.blockSuiteWorkspace.getPage(
       DEFAULT_HELLO_WORLD_PAGE_ID
     );
@@ -455,7 +356,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   );
   const t = useAFFiNEI18N();
 
-  const showList: IslandItemNames[] = env.isDesktop
+  const showList: IslandItemNames[] = isDesktop
     ? ['whatNew', 'contact', 'guide']
     : ['whatNew', 'contact'];
 
@@ -472,6 +373,8 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         moveToTrash(pageId);
         toast(t['Successfully deleted']());
       }
+      // Drag page into Collections
+      processCollectionsDrag(e);
     },
     [moveToTrash, t]
   );
@@ -524,6 +427,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
+      {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
       <Setting />
     </>
   );

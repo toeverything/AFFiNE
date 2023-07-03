@@ -1,10 +1,10 @@
 import assert from 'node:assert';
 import path from 'node:path';
-import { setTimeout } from 'node:timers/promises';
 
 import fs from 'fs-extra';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { removeWithRetry } from '../../../tests/utils';
 import type { MainIPCHandlerMap } from '../exposed';
 
 const registeredHandlers = new Map<
@@ -121,11 +121,7 @@ beforeEach(async () => {
 afterEach(async () => {
   // reset registered handlers
   registeredHandlers.get('before-quit')?.forEach(fn => fn());
-  // wait for the db to be closed on Windows
-  if (process.platform === 'win32') {
-    await setTimeout(200);
-  }
-  await fs.remove(SESSION_DATA_PATH);
+  await removeWithRetry(SESSION_DATA_PATH);
 });
 
 describe('UI handlers', () => {
