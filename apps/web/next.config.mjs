@@ -88,7 +88,7 @@ const nextConfig = {
       // ['@swc-jotai/react-refresh', {}],
     ].filter(Boolean),
   },
-  reactStrictMode: true,
+  reactStrictMode: false,
   transpilePackages: [
     'jotai-devtools',
     '@affine/component',
