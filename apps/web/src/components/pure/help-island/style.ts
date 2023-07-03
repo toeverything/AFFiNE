@@ -50,7 +50,6 @@ export const StyledIconWrapper = styled('div')(() => {
     transition: 'background-color 0.2s',
     position: 'relative',
     ':hover': {
-      color: 'var(--affine-primary-color)',
       backgroundColor: 'var(--affine-hover-color)',
     },
   };
@@ -74,7 +73,6 @@ export const StyledTriggerWrapper = styled('div')<{
     ...displayFlex('center', 'center'),
     ...positionAbsolute({ left: '4px', bottom: '4px' }),
     ':hover': {
-      color: 'var(--affine-primary-color)',
       backgroundColor: spread ? 'var(--affine-hover-color)' : null,
     },
   };
