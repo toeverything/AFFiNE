@@ -52,7 +52,10 @@ jobs:
       - name: Run ESLint
         run: yarn lint --max-warnings=0 --cache
       - name: Run Prettier
-        run: yarn prettier . --ignore-unknown --cache --check
+        # Set nmMode in `actions/setup-node` will modify the .yarnrc.yml
+        run: |
+          git checkout .yarnrc.yml
+          yarn prettier . --ignore-unknown --cache --check
       - name: Run circular
         run: yarn circular
       - name: Upload server dist
@@ -336,6 +339,7 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
+          hard-link-nm: false
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:

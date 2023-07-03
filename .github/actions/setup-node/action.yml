@@ -21,6 +21,10 @@ inputs:
     description: 'The NPM token to use for private packages.'
     required: false
     default: ''
+  hard-link-nm:
+    description: 'set nmMode to hardlinks-local in .yarnrc.yml'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -32,6 +36,11 @@ runs:
         registry-url: https://npm.pkg.github.com
         scope: '@toeverything'
         cache: 'yarn'
+
+    - name: Set nmMode
+      if: ${{ inputs.hard-link-nm == 'true' }}
+      shell: bash
+      run: yarn config set nmMode hardlinks-local
 
     - name: yarn install
       if: ${{ inputs.package-install == 'true' }}
