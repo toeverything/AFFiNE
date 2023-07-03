@@ -25,7 +25,6 @@ export const UI = {
   Header: unimplemented,
   PageDetail: unimplemented,
   PageList: unimplemented,
-  SettingsDetail: unimplemented,
   NewSettingsDetail: unimplemented,
   LoginCard,
 } satisfies WorkspaceUISchema<WorkspaceFlavour.AFFINE_CLOUD>;
