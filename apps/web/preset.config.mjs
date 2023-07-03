@@ -19,7 +19,6 @@ export const blockSuiteFeatureFlags = {
  */
 const buildPreset = {
   stable: {
-    enableAllPageSaving: false,
     enablePlugin: false,
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
@@ -36,7 +35,6 @@ const buildPreset = {
   internal: {},
   // canary will be aggressive and enable all features
   canary: {
-    enableAllPageSaving: true,
     enablePlugin: true,
     enableTestProperties: true,
     enableBroadcastChannelProvider: true,
@@ -67,9 +65,6 @@ const environmentPreset = {
   enablePlugin: process.env.ENABLE_PLUGIN
     ? process.env.ENABLE_PLUGIN === 'true'
     : currentBuildPreset.enablePlugin,
-  enableAllPageSaving: process.env.ENABLE_ALL_PAGE_SAVING
-    ? process.env.ENABLE_ALL_PAGE_FILTER === 'true'
-    : currentBuildPreset.enableAllPageSaving,
   enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
     ? process.env.ENABLE_TEST_PROPERTIES === 'true'
     : currentBuildPreset.enableTestProperties,
