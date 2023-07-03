@@ -195,6 +195,7 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   SettingsDetail: FC<SettingProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
+  LoginCard?: FC;
 }
 
 export interface AppEvents {

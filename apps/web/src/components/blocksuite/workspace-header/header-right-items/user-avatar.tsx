@@ -3,7 +3,6 @@ import { AffineLogoSBlue2_1Icon, SignOutIcon } from '@blocksuite/icons';
 import type { CSSProperties } from 'react';
 import { forwardRef } from 'react';
 
-import { useCurrentUser } from '../../../../hooks/current/use-current-user';
 const EditMenu = (
   <MenuItem data-testid="editor-option-menu-favorite" icon={<SignOutIcon />}>
     Sign Out
@@ -11,7 +10,6 @@ const EditMenu = (
 );
 
 export const UserAvatar = () => {
-  const user = useCurrentUser();
   return (
     <Menu
       width={276}
@@ -20,15 +18,7 @@ export const UserAvatar = () => {
       disablePortal={true}
       trigger="click"
     >
-      {user ? (
-        <WorkspaceAvatar
-          size={24}
-          name={user.name}
-          avatar={user.avatar_url}
-        ></WorkspaceAvatar>
-      ) : (
-        <WorkspaceAvatar size={24}></WorkspaceAvatar>
-      )}
+      <WorkspaceAvatar size={24}></WorkspaceAvatar>
     </Menu>
   );
 };

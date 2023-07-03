@@ -1,8 +1,18 @@
+import type {
+  WorkspaceFlavour,
+  WorkspaceUISchema,
+} from '@affine/env/workspace';
 import { lazy } from 'react';
 
 const Provider = lazy(() =>
   import('../../components/cloud/provider').then(({ Provider }) => ({
     default: Provider,
+  }))
+);
+
+const LoginCard = lazy(() =>
+  import('../../components/cloud/login-card').then(({ LoginCard }) => ({
+    default: LoginCard,
   }))
 );
 
@@ -17,4 +27,5 @@ export const UI = {
   PageList: unimplemented,
   SettingsDetail: unimplemented,
   NewSettingsDetail: unimplemented,
-};
+  LoginCard,
+} satisfies WorkspaceUISchema<WorkspaceFlavour.AFFINE_CLOUD>;

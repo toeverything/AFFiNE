@@ -1,76 +1,22 @@
-import { FlexWrapper } from '@affine/component';
-import { IconButton } from '@affine/component';
-import { Tooltip } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { AccessTokenMessage } from '@affine/workspace/affine/login';
-import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
-import { useSetAtom } from 'jotai';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { CSSProperties } from 'react';
 import type React from 'react';
 import { forwardRef } from 'react';
 
-import { openDisableCloudAlertModalAtom } from '../../../atoms';
+import { WorkspaceAdapters } from '../../../adapters/workspace';
 import { stringToColour } from '../../../utils';
-import { StyledFooter, StyledSignInButton, StyleUserInfo } from './styles';
+import { StyledFooter } from './styles';
 
-export type FooterProps = {
-  user: AccessTokenMessage | null;
-  onLogin: () => void;
-  onLogout: () => void;
-};
-
-export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
-  const t = useAFFiNEI18N();
-  const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
+export const Footer: React.FC = () => {
+  // todo(himself65): force to use AFFiNE_CLOUD here, but it's not a good approach, make it dynamic
+  const Provider = WorkspaceAdapters[WorkspaceFlavour.AFFINE_CLOUD].UI.Provider;
+  const LoginCard =
+    WorkspaceAdapters[WorkspaceFlavour.AFFINE_CLOUD].UI.LoginCard;
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
-      {user && (
-        <>
-          <FlexWrapper>
-            <WorkspaceAvatar
-              size={40}
-              name={user.name}
-              avatar={user.avatar_url}
-            ></WorkspaceAvatar>
-            <StyleUserInfo>
-              <p>{user.name}</p>
-              <p>{user.email}</p>
-            </StyleUserInfo>
-          </FlexWrapper>
-          <Tooltip content={t['Sign out']()} disablePortal={true}>
-            <IconButton
-              data-testid="workspace-list-modal-sign-out"
-              onClick={() => {
-                onLogout();
-              }}
-            >
-              <SignOutIcon />
-            </IconButton>
-          </Tooltip>
-        </>
-      )}
-
-      {!user && (
-        <StyledSignInButton
-          data-testid="sign-in-button"
-          noBorder
-          bold
-          icon={
-            <div className="circle">
-              <CloudWorkspaceIcon />
-            </div>
-          }
-          onClick={async () => {
-            if (!runtimeConfig.enableLegacyCloud) {
-              setOpen(true);
-            } else {
-              onLogin();
-            }
-          }}
-        >
-          {t['Sign in']()}
-        </StyledSignInButton>
-      )}
+      <Provider>
+        <LoginCard />
+      </Provider>
     </StyledFooter>
   );
 };

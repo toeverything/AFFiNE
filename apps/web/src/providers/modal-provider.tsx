@@ -15,9 +15,6 @@ import {
   openOnboardingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
-import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
-import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
-import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces } from '../hooks/use-workspaces';
 
@@ -90,7 +87,6 @@ export const AllWorkspaceModals = (): ReactElement => {
 
   const router = useRouter();
   const { jumpToSubPath } = useRouterHelper(router);
-  const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
@@ -102,7 +98,6 @@ export const AllWorkspaceModals = (): ReactElement => {
       <Suspense>
         <WorkspaceListModal
           disabled={transitioning}
-          user={user}
           workspaces={workspaces}
           currentWorkspaceId={currentWorkspaceId}
           open={
@@ -146,8 +141,6 @@ export const AllWorkspaceModals = (): ReactElement => {
             },
             [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}
-          onClickLogin={useAffineLogIn()}
-          onClickLogout={useAffineLogOut()}
           onNewWorkspace={useCallback(() => {
             setOpenCreateWorkspaceModal('new');
           }, [setOpenCreateWorkspaceModal])}

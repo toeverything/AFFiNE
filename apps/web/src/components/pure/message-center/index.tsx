@@ -4,7 +4,6 @@ import { affineAuth } from '@affine/workspace/affine/shared';
 import type { FC } from 'react';
 import { memo, useEffect, useState } from 'react';
 
-import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
 import { toast } from '../../../utils';
 
 declare global {
@@ -17,7 +16,6 @@ declare global {
 
 export const MessageCenter: FC = memo(function MessageCenter() {
   const [popup, setPopup] = useState(false);
-  const onLogout = useAffineLogOut();
   useEffect(() => {
     const listener = (
       event: CustomEvent<{
@@ -43,7 +41,6 @@ export const MessageCenter: FC = memo(function MessageCenter() {
           })
           .catch(() => {
             setPopup(false);
-            return onLogout();
           });
       } else {
         toast(Messages[event.detail.code].message);
@@ -54,6 +51,6 @@ export const MessageCenter: FC = memo(function MessageCenter() {
     return () => {
       document.removeEventListener('affine-error', listener);
     };
-  }, [onLogout, popup]);
+  }, [popup]);
   return null;
 });

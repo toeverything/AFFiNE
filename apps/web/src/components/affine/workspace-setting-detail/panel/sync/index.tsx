@@ -6,7 +6,6 @@ import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-s
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type React from 'react';
 
-import { useCurrentUser } from '../../../../../hooks/current/use-current-user';
 import { WorkspaceAvatar } from '../../../../pure/footer';
 import type { PanelProps } from '../../index';
 
@@ -25,7 +24,7 @@ export const SyncPanel: React.FC<PanelProps> = ({ workspace }) => {
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(
     workspace.blockSuiteWorkspace
   );
-  const user = useCurrentUser();
+
   const t = useAFFiNEI18N();
   return (
     <>
@@ -43,7 +42,7 @@ export const SyncPanel: React.FC<PanelProps> = ({ workspace }) => {
       <Trans i18nKey="Cloud Workspace Description">
         All data will be synchronised and saved to the AFFiNE account
         {{
-          email: user?.email,
+          email: 'UNKNOWN',
         }}
       </Trans>
     </>
