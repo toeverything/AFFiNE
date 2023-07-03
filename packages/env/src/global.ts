@@ -35,6 +35,12 @@ declare global {
     events: any;
   }
 
+  interface WindowEventMap {
+    'migration-done': CustomEvent;
+  }
+
+  // eslint-disable-next-line no-var
+  var $migrationDone: boolean;
   // eslint-disable-next-line no-var
   var platform: Platform | undefined;
   // eslint-disable-next-line no-var
