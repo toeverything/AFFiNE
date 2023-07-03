@@ -529,3 +529,99 @@ test('image should able to delete and when delete, it will move to previous/next
     expect(locator).toBe(0);
   }
 });
+
+test('tooltips for all buttons should be visible when hovering', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  let blobId: string;
+  {
+    const title = await getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('img').first().dblclick();
+    await page.waitForTimeout(500);
+    blobId = (await page
+      .locator('img')
+      .nth(1)
+      .getAttribute('data-blob-id')) as string;
+    expect(blobId).toBeTruthy();
+  }
+
+  await page.getByTestId('previous-image-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const previousImageTooltip = await element.getByText('Previous').count();
+    expect(previousImageTooltip).toBe(1);
+  }
+
+  await page.getByTestId('next-image-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const nextImageTooltip = await element.getByText('Next').count();
+    expect(nextImageTooltip).toBe(1);
+  }
+
+  await page.getByTestId('fit-to-screen-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const fitToScreenToolTip = await element.getByText('Fit to Screen').count();
+    expect(fitToScreenToolTip).toBe(1);
+  }
+
+  await page.getByTestId('zoom-out-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const zoomOutToolTip = await element.getByText('Zoom out').count();
+    expect(zoomOutToolTip).toBe(1);
+  }
+
+  await page.getByTestId('reset-scale-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const resetScaleTooltip = await element.getByText('Reset Scale').count();
+    expect(resetScaleTooltip).toBe(1);
+  }
+
+  await page.getByTestId('zoom-in-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const zoominToolTip = await element.getByText('Zoom in').count();
+    expect(zoominToolTip).toBe(1);
+  }
+
+  await page.getByTestId('download-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const downloadTooltip = await element.getByText('Download').count();
+    expect(downloadTooltip).toBe(1);
+  }
+
+  await page.getByTestId('copy-to-clipboard-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const downloadTooltip = await element
+      .getByText('Copy to clipboard')
+      .count();
+    expect(downloadTooltip).toBe(1);
+  }
+
+  await page.getByTestId('delete-button').hover();
+  await page.waitForTimeout(500);
+  {
+    const element = await page.getByRole('tooltip');
+    const downloadTooltip = await element.getByText('Delete').count();
+    expect(downloadTooltip).toBe(1);
+  }
+});
