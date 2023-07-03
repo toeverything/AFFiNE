@@ -1,0 +1,69 @@
+name: 'Deploy to Cluster'
+description: 'Deploy AFFiNE Cloud to cluster'
+inputs:
+  dry-run:
+    description: '--dry-run'
+    required: true
+  env:
+    description: 'Environment to deploy, dev|beta|prod'
+    required: true
+  gcp-project-number:
+    description: 'GCP project number'
+    required: true
+  gcp-project-id:
+    description: 'GCP project id'
+    required: true
+  service-account:
+    description: 'Service account'
+  cluster-name:
+    description: 'Cluster name'
+  cluster-location:
+    description: 'Cluster location'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v3
+    - name: Setup Git short hash
+      shell: bash
+      run: |
+        echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+    - uses: azure/setup-helm@v3
+    - name: Set deploy flag
+      if: ${{ inputs.dry-run == 'true' }}
+      shell: bash
+      run: |
+        echo "DEPLOY_FLAG=--dry-run" >> "$GITHUB_ENV"
+    - name: Set deploy flag
+      if: ${{ inputs.dry-run != 'true' }}
+      shell: bash
+      run: |
+        echo "DEPLOY_FLAG=--atomic" >> "$GITHUB_ENV"
+    - name: 'Setup gcloud cli'
+      uses: 'google-github-actions/setup-gcloud@v1'
+
+    - id: get-gke-credentials
+      shell: bash
+      run: |
+        gcloud container clusters get-credentials ${{ inputs.cluster-name }} --region ${{ inputs.cluster-location }} --project ${{ inputs.gcp-project-id }}
+
+    - name: Deploy
+      shell: bash
+      run: >-
+        helm upgrade --install affine .github/helm/affine
+        --namespace  ${{ inputs.env }}
+        --set        global.ingress.enabled=true
+        --set-json   global.ingress.annotations="{ \"kubernetes.io/ingress.class\": \"gce\", \"kubernetes.io/ingress.allow-http\": \"true\", \"kubernetes.io/ingress.global-static-ip-name\": \"affine-cluster-dev\" }"
+        --set-string global.ingress.host="${{ env.DEV_ENV_HOST }}"
+        --set-string web.image.tag="${{ env.GIT_SHORT_HASH }}"
+        --set-string graphql.image.tag="${{ env.GIT_SHORT_HASH }}"
+        --set        graphql.app.objectStorage.r2.enabled=true
+        --set-string graphql.app.objectStorage.r2.accountId="${{ env.R2_ACCOUNT_ID }}"
+        --set-string graphql.app.objectStorage.r2.accessKeyId="${{ env.R2_ACCESS_KEY_ID }}"
+        --set-string graphql.app.objectStorage.r2.secretAccessKey="${{ env.R2_SECRET_ACCESS_KEY }}"
+        --set-string graphql.app.objectStorage.r2.bucket="${{ env.R2_BUCKET }}"
+        --set-string graphql.app.oauth.email.sender="${{ env.OAUTH_EMAIL_SENDER }}"
+        --set-string graphql.app.oauth.email.login="${{ env.OAUTH_EMAIL_LOGIN }}"
+        --set-string graphql.app.oauth.email.password="${{ env.OAUTH_EMAIL_PASSWORD }}"
+        --version "0.0.0-alpha.${{ env.GIT_SHORT_HASH }}"
+        ${{ env.DEPLOY_FLAG }}
