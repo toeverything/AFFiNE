@@ -31,10 +31,10 @@ export class EventsGateway {
     @ConnectedSocket() client: Socket
   ) {
     const docs = await this.storageService.getDocsFromWorkspaceId(workspace_id);
+    await client.join(workspace_id);
 
     for (const { guid, update } of docs) {
-      await client.join(guid);
-      client.emit('server-handshake', {
+      this.server.to(workspace_id).emit('server-handshake', {
         guid,
         update: uint8ArrayToBase64(update),
       });
@@ -51,8 +51,9 @@ export class EventsGateway {
     }
   ) {
     const update = base64ToUint8Array(message.update);
-    this.server.to(message.guid).emit('server-update', message);
+    this.server.to(message.workspaceId).emit('server-update', message);
 
+    console.log('sync', message.workspaceId, message.guid, update);
     await this.storage.sync(
       message.workspaceId,
       message.guid,
