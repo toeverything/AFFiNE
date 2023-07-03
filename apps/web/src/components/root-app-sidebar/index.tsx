@@ -32,6 +32,7 @@ import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
+import ImportPage from './import-page';
 
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
@@ -241,6 +242,9 @@ export const RootAppSidebar = ({
           >
             <span data-testid="trash-page">{t['Trash']()}</span>
           </RouteMenuLinkItem>
+          {blockSuiteWorkspace && (
+            <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
+          )}
         </SidebarScrollableContainer>
         <SidebarContainer>
           {isDesktop && <AppUpdaterButton />}
