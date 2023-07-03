@@ -1,6 +1,6 @@
 import { Button } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { PlusIcon,ResetIcon } from '@blocksuite/icons';
+import { PlusIcon, ResetIcon } from '@blocksuite/icons';
 import { clsx } from 'clsx';
 import type { MessageType } from 'langchain/schema';
 import { marked } from 'marked';
