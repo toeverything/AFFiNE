@@ -39,6 +39,13 @@ export async function savePDFFileAs(
 
     await BrowserWindow.getFocusedWindow()
       ?.webContents.printToPDF({
+        margins: {
+          marginType: 'custom',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+        },
         pageSize: 'A4',
         printBackground: true,
         landscape: false,

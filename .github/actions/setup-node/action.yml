@@ -13,10 +13,18 @@ inputs:
     description: 'Run the install step for Playwright.'
     required: false
     default: 'false'
+  electron-install:
+    description: 'Download the Electron binary'
+    required: false
+    default: 'true'
   npm-token:
     description: 'The NPM token to use for private packages.'
     required: false
     default: ''
+  hard-link-nm:
+    description: 'set nmMode to hardlinks-local in .yarnrc.yml'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -29,33 +37,10 @@ runs:
         scope: '@toeverything'
         cache: 'yarn'
 
-    - name: Expose yarn config as "$GITHUB_OUTPUT"
-      id: yarn-config
+    - name: Set nmMode
+      if: ${{ inputs.hard-link-nm == 'true' }}
       shell: bash
-      run: |
-        echo "CACHE_FOLDER=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
-
-    - name: Restore yarn cache
-      uses: actions/cache@v3
-      id: yarn-download-cache
-      with:
-        path: ${{ steps.yarn-config.outputs.CACHE_FOLDER }}
-        key: yarn-download-cache-${{ hashFiles('yarn.lock') }}
-        restore-keys: |
-          yarn-download-cache-
-
-    - name: Restore node_modules cache
-      uses: actions/cache@v3
-      with:
-        path: '**/node_modules'
-        key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
-
-    - name: Restore yarn install state
-      id: yarn-install-state-cache
-      uses: actions/cache@v3
-      with:
-        path: .yarn/ci-cache/
-        key: ${{ runner.os }}-yarn-install-state-cache-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
+      run: yarn config set nmMode hardlinks-local
 
     - name: yarn install
       if: ${{ inputs.package-install == 'true' }}
@@ -64,9 +49,9 @@ runs:
       run: yarn install ${{ inputs.extra-flags }}
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-        YARN_ENABLE_GLOBAL_CACHE: 'false'
-        YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
         HUSKY: '0'
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
 
     - name: yarn install (try again)
       if: ${{ steps.install.outcome == 'failure' }}
@@ -74,9 +59,9 @@ runs:
       run: yarn install ${{ inputs.extra-flags }}
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-        YARN_ENABLE_GLOBAL_CACHE: 'false'
-        YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
         HUSKY: '0'
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
 
     - name: Get installed Playwright version
       id: playwright-version
@@ -113,3 +98,26 @@ runs:
       shell: bash
       if: inputs.playwright-install == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
       run: yarn playwright install --with-deps
+
+    - name: Get installed Electron version
+      id: electron-version
+      if: ${{ inputs.electron-install == 'true' }}
+      shell: bash
+      run: |
+        echo "version=$(yarn why --json electron | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://' | head -n 1)" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache@v3
+      id: electron-cache
+      if: ${{ inputs.electron-install == 'true' }}
+      with:
+        path: 'node_modules/.cache/electron'
+        key: '${{ runner.os }}-electron-${{ steps.electron-version.outputs.version }}'
+        restore-keys: |
+          ${{ runner.os }}-electron-
+
+    - name: Install Electron binary
+      shell: bash
+      if: inputs.electron-install == 'true'
+      run: node apps/electron/node_modules/electron/install.js
+      env:
+        ELECTRON_OVERRIDE_DIST_PATH: ./node_modules/.cache/electron

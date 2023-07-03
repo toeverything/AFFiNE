@@ -387,5 +387,9 @@
   "Members hint": "Manage members here, invite new member by email.",
   "Workspace Settings with name": "{{name}}'s Settings",
   "com.affine.settings.workspace": "Workspace",
-  "com.affine.settings.appearance": "Appearance"
+  "com.affine.settings.appearance": "Appearance",
+  "com.affine.export.success.title": "Exported successfully",
+  "com.affine.export.success.message": "Please open the download folder to check.",
+  "com.affine.export.error.title": "Export failed due to an unexpected error",
+  "com.affine.export.error.message": "Please try it again later."
 }
