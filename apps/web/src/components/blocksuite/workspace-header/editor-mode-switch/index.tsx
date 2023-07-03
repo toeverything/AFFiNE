@@ -3,6 +3,7 @@ import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtom } from 'jotai';
 import type { CSSProperties } from 'react';
+import { useEffect } from 'react';
 
 import { pageSettingFamily } from '../../../../atoms';
 import type { BlockSuiteWorkspace } from '../../../../shared';
@@ -30,7 +31,25 @@ export const EditorModeSwitch = ({
   const t = useAFFiNEI18N();
   assertExists(pageMeta);
   const { trash } = pageMeta;
-
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if ((e.key === 's' && e.metaKey) || (e.key === 's' && e.altKey)) {
+        e.preventDefault();
+        setSetting(setting => {
+          if (setting?.mode !== 'page') {
+            toast(t['com.affine.pageMode']());
+            return { ...setting, mode: 'page' };
+          } else {
+            toast(t['com.affine.edgelessMode']());
+            return { ...setting, mode: 'edgeless' };
+          }
+        });
+      }
+    };
+    document.addEventListener('keydown', keydown, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', keydown, { capture: true });
+  }, [setSetting, t]);
   return (
     <StyledEditorModeSwitch
       style={style}
@@ -57,7 +76,7 @@ export const EditorModeSwitch = ({
         onClick={() => {
           setSetting(setting => {
             if (setting?.mode !== 'edgeless') {
-              toast(t['com.affine.pageMode']());
+              toast(t['com.affine.edgelessMode']());
             }
             return { ...setting, mode: 'edgeless' };
           });
