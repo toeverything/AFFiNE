@@ -352,14 +352,8 @@ jobs:
         env:
           NATIVE_TEST: 'true'
 
-      - name: Build Infra
-        run: yarn run build:infra
-
-      - name: Build Plugins
-        run: yarn run build:plugins
-
       - name: Build Desktop Layers
-        run: yarn workspace @affine/electron build
+        run: yarn nx build @affine/electron
 
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
