@@ -38,8 +38,8 @@ const ExportToPdfMenuItem = ({
           onSelect?.({ type: 'pdf' });
           setPushNotification({
             key: 'export-to-pdf',
-            title: 'export',
-            message: 'Export success',
+            title: 'Exported successfully',
+            message: 'Please open the download folder to check.',
             type: 'success',
           });
         })
@@ -47,8 +47,8 @@ const ExportToPdfMenuItem = ({
           console.error(err);
           setPushNotification({
             key: 'export-to-pdf',
-            title: 'export',
-            message: 'Export error',
+            title: 'Export failed due to an unexpected error',
+            message: 'Please try it again later.',
             type: 'error',
           });
         });
@@ -63,8 +63,8 @@ const ExportToPdfMenuItem = ({
           onSelect?.({ type: 'pdf' });
           setPushNotification({
             key: 'export-to-pdf',
-            title: 'export',
-            message: 'Export success',
+            title: 'Exported successfully',
+            message: 'Please open the download folder to check.',
             type: 'success',
           });
         })
@@ -72,8 +72,8 @@ const ExportToPdfMenuItem = ({
           console.error(err);
           setPushNotification({
             key: 'export-to-pdf',
-            title: 'export',
-            message: 'Export error',
+            title: 'Export failed due to an unexpected error',
+            message: 'Please try it again later.',
             type: 'error',
           });
         });
@@ -144,8 +144,8 @@ const ExportToPngMenuItem = ({
         onSelect?.({ type: 'png' });
         setPushNotification({
           key: 'export-to-pdf',
-          title: 'export',
-          message: 'Export success',
+          title: 'Exported successfully',
+          message: 'Please open the download folder to check.',
           type: 'success',
         });
       })
@@ -153,8 +153,8 @@ const ExportToPngMenuItem = ({
         console.error(err);
         setPushNotification({
           key: 'export-to-pdf',
-          title: 'export',
-          message: 'Export error',
+          title: 'Export failed due to an unexpected error',
+          message: 'Please try it again later.',
           type: 'error',
         });
       });
