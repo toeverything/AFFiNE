@@ -23,7 +23,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # - uses: actions/checkout@v3
     - name: Setup Git short hash
       shell: bash
       run: |
@@ -41,6 +40,8 @@ runs:
         echo "DEPLOY_FLAG=--atomic" >> "$GITHUB_ENV"
     - name: 'Setup gcloud cli'
       uses: 'google-github-actions/setup-gcloud@v1'
+      with:
+        install_components: 'gke-gcloud-auth-plugin'
 
     - id: get-gke-credentials
       shell: bash
