@@ -65,6 +65,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       OAUTH_GOOGLE_CLIENT_SECRET: 'auth.oauthProviders.google.clientSecret',
       OAUTH_GITHUB_CLIENT_ID: 'auth.oauthProviders.github.clientId',
       OAUTH_GITHUB_CLIENT_SECRET: 'auth.oauthProviders.github.clientSecret',
+      OAUTH_EMAIL_LOGIN: 'auth.email.login',
       OAUTH_EMAIL_SENDER: 'auth.email.sender',
       OAUTH_EMAIL_SERVER: 'auth.email.server',
       OAUTH_EMAIL_PORT: 'auth.email.port',
@@ -124,6 +125,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       email: {
         server: 'smtp.gmail.com',
         port: 465,
+        login: '',
         sender: '',
         password: '',
       },

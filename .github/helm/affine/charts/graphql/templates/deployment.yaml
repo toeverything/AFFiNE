@@ -35,6 +35,8 @@ spec:
                 key: key
           - name: NODE_ENV
             value: "{{ .Values.env }}"
+          - name: NEXTAUTH_URL
+            value: "{{ .Values.global.ingress.host }}"
           - name: DATABSE_PASSWORD
             valueFrom:
               secretKeyRef:
@@ -50,6 +52,31 @@ spec:
             value: "{{ .Values.app.host }}"
           - name: ENABLE_R2_OBJECT_STORAGE
             value: "{{ .Values.app.objectStorage.r2.enabled }}"
+          - name: OAUTH_EMAIL_SENDER
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: sender
+          - name: OAUTH_EMAIL_LOGIN
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: login
+          - name: OAUTH_EMAIL_SERVER
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: server
+          - name: OAUTH_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: port
+          - name: OAUTH_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: password
           {{ if .Values.app.objectStorage.r2.enabled }}
           - name: R2_OBJECT_STORAGE_ACCOUNT_ID
             valueFrom:

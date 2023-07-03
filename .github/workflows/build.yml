@@ -428,7 +428,7 @@ jobs:
           fail_ci_if_error: false
 
   build-docker:
-    if: github.ref == 'refs/heads/master'
+    # if: github.ref == 'refs/heads/master'
     name: Build Docker
     needs:
       - lint

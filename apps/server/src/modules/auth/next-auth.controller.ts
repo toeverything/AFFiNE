@@ -47,11 +47,11 @@ export class NextAuthController {
             host: config.auth.email.server,
             port: config.auth.email.port,
             auth: {
-              user: config.auth.email.sender,
+              user: config.auth.email.login,
               pass: config.auth.email.password,
             },
           },
-          from: `AFFiNE <no-reply@toeverything.info>`,
+          from: config.auth.email.sender,
         }),
       ],
       // @ts-expect-error Third part library type mismatch
