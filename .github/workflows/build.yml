@@ -353,7 +353,7 @@ jobs:
           NATIVE_TEST: 'true'
 
       - name: Build Desktop Layers
-        run: yarn nx build @affine/electron
+        run: yarn run build:electron
 
       - name: Download static resource artifact
         uses: actions/download-artifact@v3

@@ -140,7 +140,11 @@ export const test = base.extend<{
           const location = await page.evaluate(async () => {
             return window.location;
           });
-          await page.goto(location.origin + `/workspace/${w.id}/${path}`);
+          let origin = location.origin;
+          if (location.origin.startsWith('file://')) {
+            origin = location.origin + '.';
+          }
+          await page.goto(origin + `/workspace/${w.id}/${path}`);
         }
       },
     });
