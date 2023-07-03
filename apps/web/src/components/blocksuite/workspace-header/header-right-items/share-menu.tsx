@@ -1,7 +1,7 @@
 import { ShareMenu } from '@affine/component/share-menu';
 import { Unreachable } from '@affine/env/constant';
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
@@ -11,21 +11,20 @@ import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useState } from 'react';
 
-import { useToggleWorkspacePublish } from '../../../../hooks/affine/use-toggle-workspace-publish';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import { useRouterHelper } from '../../../../hooks/use-router-helper';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 import type { BaseHeaderProps } from '../header';
 
 const AffineHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
-  // todo: these hooks should be moved to the top level
-  const togglePublish = useToggleWorkspacePublish(
-    props.workspace as AffineLegacyCloudWorkspace
-  );
+  // fixme: cloud regression
+  // const togglePublish = useToggleWorkspacePublish(
+  //   props.workspace as AffineCloudWorkspace
+  // );
   const helper = useRouterHelper(useRouter());
   return (
     <ShareMenu
-      workspace={props.workspace as AffineLegacyCloudWorkspace}
+      workspace={props.workspace as AffineCloudWorkspace}
       currentPage={props.currentPage as Page}
       onEnableAffineCloud={useCallback(async () => {
         throw new Unreachable(
@@ -42,12 +41,12 @@ const AffineHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
         page.workspace.setPageMeta(page.id, { isPublic });
       }, [])}
       toggleWorkspacePublish={useCallback(
-        async (workspace, publish) => {
-          assertEquals(workspace.flavour, WorkspaceFlavour.AFFINE);
+        async workspace => {
+          assertEquals(workspace.flavour, WorkspaceFlavour.AFFINE_CLOUD);
           assertEquals(workspace.id, props.workspace.id);
-          await togglePublish(publish);
+          throw new Error('unreachable');
         },
-        [props.workspace.id, togglePublish]
+        [props.workspace.id]
       )}
     />
   );
@@ -98,7 +97,7 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
         onConform={async () => {
           await onTransformWorkspace(
             WorkspaceFlavour.LOCAL,
-            WorkspaceFlavour.AFFINE,
+            WorkspaceFlavour.AFFINE_CLOUD,
             props.workspace as LocalWorkspace
           );
           setOpen(false);
@@ -112,7 +111,7 @@ export const HeaderShareMenu: React.FC<BaseHeaderProps> = props => {
   if (!runtimeConfig.enableLegacyCloud) {
     return null;
   }
-  if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
+  if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     return <AffineHeaderShareMenu {...props} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalHeaderShareMenu {...props} />;

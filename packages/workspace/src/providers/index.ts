@@ -1,9 +1,8 @@
 import type {
-  AffineWebSocketProvider,
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
-import type { Disposable, DocProviderCreator } from '@blocksuite/store';
+import type { DocProviderCreator } from '@blocksuite/store';
 import { assertExists, Workspace } from '@blocksuite/store';
 import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
@@ -13,10 +12,7 @@ import {
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 
-import { KeckProvider } from '../affine/keck';
-import { getLoginStorage, storageChangeSlot } from '../affine/login';
 import { CallbackSet } from '../utils';
-import { createAffineDownloadProvider } from './affine-download';
 import { localProviderLogger as logger } from './logger';
 import {
   createSQLiteDBDownloadProvider,
@@ -24,59 +20,6 @@ import {
 } from './sqlite-providers';
 
 const Y = Workspace.Y;
-
-const createAffineWebSocketProvider: DocProviderCreator = (
-  id,
-  doc,
-  { awareness }
-): AffineWebSocketProvider => {
-  let webSocketProvider: KeckProvider | null = null;
-  let dispose: Disposable | undefined = undefined;
-  const callbacks = new CallbackSet();
-  const cb = () => callbacks.forEach(cb => cb());
-  const apis = {
-    flavour: 'affine-websocket',
-    passive: true,
-    get connected() {
-      return callbacks.ready;
-    },
-    cleanup: () => {
-      assertExists(webSocketProvider);
-      webSocketProvider.destroy();
-      webSocketProvider = null;
-      dispose?.dispose();
-    },
-    connect: () => {
-      dispose = storageChangeSlot.on(() => {
-        apis.disconnect();
-        apis.connect();
-      });
-      webSocketProvider = new KeckProvider(
-        websocketPrefixUrl + '/api/sync/',
-        id,
-        doc,
-        {
-          params: { token: getLoginStorage()?.token ?? '' },
-          awareness,
-          // we maintain a broadcast channel by ourselves
-          connect: false,
-        }
-      );
-      logger.info('connect', webSocketProvider.url);
-      webSocketProvider.on('synced', cb);
-      webSocketProvider.connect();
-    },
-    disconnect: () => {
-      assertExists(webSocketProvider);
-      logger.info('disconnect', webSocketProvider.url);
-      webSocketProvider.disconnect();
-      webSocketProvider.off('synced', cb);
-      dispose?.dispose();
-    },
-  } satisfies AffineWebSocketProvider;
-
-  return apis;
-};
 
 const createIndexedDBBackgroundProvider: DocProviderCreator = (
   id,
@@ -153,8 +96,6 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
 };
 
 export {
-  createAffineDownloadProvider,
-  createAffineWebSocketProvider,
   createBroadcastChannelProvider,
   createIndexedDBBackgroundProvider,
   createIndexedDBDownloadProvider,
@@ -182,8 +123,6 @@ export const createLocalProviders = (): DocProviderCreator[] => {
 export const createAffineProviders = (): DocProviderCreator[] => {
   return (
     [
-      createAffineDownloadProvider,
-      createAffineWebSocketProvider,
       runtimeConfig.enableBroadcastChannelProvider &&
         createBroadcastChannelProvider,
       createIndexedDBDownloadProvider,

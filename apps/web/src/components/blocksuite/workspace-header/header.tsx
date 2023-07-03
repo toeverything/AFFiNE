@@ -29,7 +29,6 @@ import { DownloadClientTip } from './download-tips';
 import EditPage from './header-right-items/edit-page';
 import { EditorOptionMenu } from './header-right-items/editor-option-menu';
 import { HeaderShareMenu } from './header-right-items/share-menu';
-import SyncUser from './header-right-items/sync-user';
 import TrashButtonGroup from './header-right-items/trash-button-group';
 import UserAvatar from './header-right-items/user-avatar';
 import * as styles from './styles.css';
@@ -47,7 +46,6 @@ export type BaseHeaderProps<
 export enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
   TrashButtonGroup = 'trashButtonGroup',
-  SyncUser = 'syncUser',
   ShareMenu = 'shareMenu',
   EditPage = 'editPage',
   UserAvatar = 'userAvatar',
@@ -73,12 +71,6 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
     Component: TrashButtonGroup,
     availableWhen: (_, currentPage) => {
       return currentPage?.meta.trash === true;
-    },
-  },
-  [HeaderRightItemName.SyncUser]: {
-    Component: SyncUser,
-    availableWhen: (_, currentPage, { isPublic }) => {
-      return !isPublic;
     },
   },
   [HeaderRightItemName.ShareMenu]: {

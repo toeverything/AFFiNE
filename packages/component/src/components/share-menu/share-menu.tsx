@@ -1,5 +1,5 @@
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { ExportIcon, PublishIcon, ShareIcon } from '@blocksuite/icons';
@@ -27,8 +27,8 @@ const tabIcons = {
   ShareWorkspace: <PublishIcon />,
 };
 export type ShareMenuProps<
-  Workspace extends AffineLegacyCloudWorkspace | LocalWorkspace =
-    | AffineLegacyCloudWorkspace
+  Workspace extends AffineCloudWorkspace | LocalWorkspace =
+    | AffineCloudWorkspace
     | LocalWorkspace
 > = {
   workspace: Workspace;

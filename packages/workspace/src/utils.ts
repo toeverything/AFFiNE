@@ -14,9 +14,7 @@ import type {
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 
-import type { createWorkspaceApis } from './affine/api';
 import { rootWorkspacesMetadataAtom } from './atom';
-import { createAffineBlobStorage } from './blob';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
 
 export function cleanupWorkspace(flavour: WorkspaceFlavour) {
@@ -49,9 +47,8 @@ export const _cleanupBlockSuiteWorkspaceCache = () => hashMap.clear();
 
 export function createEmptyBlockSuiteWorkspace(
   id: string,
-  flavour: WorkspaceFlavour.AFFINE,
+  flavour: WorkspaceFlavour.AFFINE_CLOUD,
   config: {
-    workspaceApis: ReturnType<typeof createWorkspaceApis>;
     cachePrefix?: string;
     idGenerator?: Generator;
   }
@@ -60,7 +57,6 @@ export function createEmptyBlockSuiteWorkspace(
   id: string,
   flavour: WorkspaceFlavour.LOCAL,
   config?: {
-    workspaceApis?: ReturnType<typeof createWorkspaceApis>;
     cachePrefix?: string;
     idGenerator?: Generator;
   }
@@ -69,18 +65,10 @@ export function createEmptyBlockSuiteWorkspace(
   id: string,
   flavour: WorkspaceFlavour,
   config?: {
-    workspaceApis?: ReturnType<typeof createWorkspaceApis>;
     cachePrefix?: string;
     idGenerator?: Generator;
   }
 ): Workspace {
-  if (
-    flavour === WorkspaceFlavour.AFFINE &&
-    !config?.workspaceApis?.getBlob &&
-    !config?.workspaceApis?.uploadBlob
-  ) {
-    throw new Error('workspaceApis is required for affine flavour');
-  }
   const providerCreators: DocProviderCreator[] = [];
   const prefix: string = config?.cachePrefix ?? '';
   const cacheKey = `${prefix}${id}`;
@@ -91,10 +79,14 @@ export function createEmptyBlockSuiteWorkspace(
 
   const blobStorages: StoreOptions['blobStorages'] = [];
 
-  if (flavour === WorkspaceFlavour.AFFINE) {
-    if (config && config.workspaceApis) {
-      const workspaceApis = config.workspaceApis;
-      blobStorages.push(id => createAffineBlobStorage(id, workspaceApis));
+  if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+    if (isBrowser) {
+      blobStorages.push(createIndexeddbStorage);
+      if (isDesktop && runtimeConfig.enableSQLiteProvider) {
+        blobStorages.push(createSQLiteStorage);
+      }
+
+      // todo: add support for cloud storage
     }
     providerCreators.push(...createAffineProviders());
   } else {
