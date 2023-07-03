@@ -175,30 +175,20 @@ export const RootAppSidebar = ({
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
           </RouteMenuLinkItem>
-          <RouteMenuLinkItem
-            data-testid="slider-bar-workspace-setting-button"
-            icon={<SettingsIcon />}
-            currentPath={currentPath}
-            path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
-          >
-            <span data-testid="settings">{t['Settings']()}</span>
-          </RouteMenuLinkItem>
+          {!runtimeConfig.enableNewSettingModal && (
+            <RouteMenuLinkItem
+              data-testid="slider-bar-workspace-setting-button"
+              icon={<SettingsIcon />}
+              currentPath={currentPath}
+              path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
+            >
+              <span data-testid="settings">{t['Settings']()}</span>
+            </RouteMenuLinkItem>
+          )}
           {runtimeConfig.enableNewSettingModal ? (
             <MenuItem icon={<SettingsIcon />} onClick={onOpenSettingModal}>
               <span data-testid="settings-modal-trigger">
                 {t['Settings']()}
-                <i
-                  style={{
-                    background: 'var(--affine-palette-line-blue)',
-                    borderRadius: '2px',
-                    fontSize: '8px',
-                    padding: '0 5px',
-                    color: 'var(--affine-white)',
-                    marginLeft: '15px',
-                  }}
-                >
-                  NEW
-                </i>
               </span>
             </MenuItem>
           ) : null}
