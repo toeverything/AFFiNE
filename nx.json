@@ -40,7 +40,7 @@
           "runtime": "node -v"
         },
         {
-          "env": "BUILD_ENV"
+          "env": "BUILD_TYPE"
         },
         {
           "env": "ENABLE_BOOKMARK_OPERATION"
