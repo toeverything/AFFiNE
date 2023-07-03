@@ -8,7 +8,7 @@ test('compare config', async () => {
   const { default: nextConfig } = await import(
     '../../apps/web/next.config.mjs'
   );
-  const config = nextConfig.publicRuntimeConfig;
+  const config = nextConfig.publicRuntimeConfig!;
 
   Object.keys(config).forEach(key => {
     expect(key in mockConfig, `${key} should be in the mockConfig`).toBe(true);
