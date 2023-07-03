@@ -6042,7 +6042,7 @@
           "sys:flavour": "affine:bookmark",
           "sys:children": [],
           "prop:url": "https://github.com/toeverything/affine",
-          "prop:title": { "_shouldTransact": true, "_yText": [] },
+          "prop:bookmarkTitle": "GitHub - toeverything/AFFiNE: There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together. Privacy first, open-source, customizable and ready to use.",
           "prop:description": "There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together. Privacy first, open-source, customizable and ready to use.  - Gi...",
           "prop:icon": "https://github.githubassets.com/favicons/favicon.svg",
           "prop:image": "https://repository-images.githubusercontent.com/519859998/a99cfab6-8d58-4c05-9523-ea31e0cda7f8",

@@ -29,6 +29,7 @@
   "Edit": "编辑",
   "Members": "成员",
   "Please make sure you are online": "请确保你在线",
+  "Collections": "精选",
   "Add to Favorites": "加入收藏",
   "All pages": "全部页面",
   "Cancel": "取消",
@@ -43,7 +44,6 @@
   "com.affine.filter": "筛选",
   "com.affine.currentYear": "今年",
   "com.affine.draw_with_a_blank_whiteboard": "在空白白板画画",
-  "com.affine.earlier": "更早",
   "com.affine.import_file": "支持 Markdown/Notion",
   "com.affine.emptyDesc": "这里还没有页面",
   "com.affine.last7Days": "过去 7 天",
@@ -71,6 +71,9 @@
   "com.affine.workspace.cannot-delete": "您无法删除最后一个工作区",
   "com.affine.write_with_a_blank_page": "在空白页面书写",
   "com.affine.yesterday": "昨天",
+  "com.affine.earlier": "更早",
+  "com.affine.settings.workspace": "工作区",
+  "com.affine.settings.appearance": "外观",
   "com.affine.filter.before": "早于",
   "AFFiNE Community": "AFFiNE 社区",
   "All changes are saved locally": "所有改动已保存到本地",
@@ -385,7 +388,5 @@
   "system": "跟随系统",
   "emptyAllPagesClient": "点击 <1>$t(New Page)</1> 按钮或按 <3>{{shortcut}}</3> 以创建您的第一个页面。",
   "frameless": "无边框",
-  "Export to PDF": "导出为 PDF",
-  "com.affine.settings.workspace": "工作区",
-  "com.affine.settings.appearance": "外观"
+  "Export to PDF": "导出为 PDF"
 }

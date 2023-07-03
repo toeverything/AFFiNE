@@ -51,7 +51,7 @@ export const StyledIconButton = styled('button', {
       borderRadius,
 
       ':hover': {
-        color: hoverColor ?? 'var(--affine-primary-color)',
+        color: hoverColor ?? 'var(--affine-icon-color)',
         background: hoverBackground || 'var(--affine-hover-color)',
         ...(hoverStyle ?? {}),
       },
@@ -169,7 +169,7 @@ export const StyledButton = styled('button', {
       border: noBorder ? 'none' : '1px solid',
       WebkitAppRegion: 'no-drag',
       ...displayInlineFlex('center', 'center'),
-      gap: '10px',
+      gap: '8px',
       position: 'relative',
       // TODO: disabled color is not decided
       ...(disabled
