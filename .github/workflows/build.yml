@@ -43,6 +43,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
       - name: Run i18n codegen
         run: yarn i18n-codegen gen
       - name: Run Type Check
@@ -50,7 +52,10 @@ jobs:
       - name: Run ESLint
         run: yarn lint --max-warnings=0 --cache
       - name: Run Prettier
-        run: yarn prettier . --ignore-unknown --cache --check
+        # Set nmMode in `actions/setup-node` will modify the .yarnrc.yml
+        run: |
+          git checkout .yarnrc.yml
+          yarn prettier . --ignore-unknown --cache --check
       - name: Run circular
         run: yarn circular
       - name: Upload server dist
@@ -69,6 +74,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
       - run: yarn nx build @affine/docs
         env:
           NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -82,6 +89,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
       - run: yarn nx build @affine/storybook
         env:
           NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -187,6 +196,7 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
+          electron-install: false
       - name: Download storybook artifact
         uses: actions/download-artifact@v3
         with:
@@ -213,6 +223,7 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
+          electron-install: false
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -256,6 +267,7 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
+          electron-install: false
 
       - name: Download next static
         uses: actions/download-artifact@v3
@@ -327,6 +339,7 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
+          hard-link-nm: false
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
@@ -396,6 +409,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
 
       - name: Build Infra
         run: yarn run build:infra
