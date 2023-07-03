@@ -25,9 +25,6 @@ on:
       - '!.github/actions/build-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
 
-env:
-  BUILD_TYPE: canary
-
 jobs:
   main:
     name: Nx Cloud - Main Job
@@ -37,6 +34,8 @@ jobs:
       number-of-agents: 5
       init-commands: |
         yarn exec nx-cloud start-ci-run --stop-agents-after="build" --agent-count=3
+      environment-variables: |
+        BUILD_TYPE=canary
       parallel-commands: |
         yarn exec nx-cloud record -- yarn exec nx format:check
       parallel-commands-on-agents: |
