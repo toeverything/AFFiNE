@@ -59,7 +59,7 @@
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "electron-updater": "^5.3.0",
+    "electron-updater": "^6.0.0",
     "link-preview-js": "^3.0.4",
     "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
