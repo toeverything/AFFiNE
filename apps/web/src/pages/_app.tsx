@@ -11,8 +11,9 @@ import { CacheProvider } from '@emotion/react';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { SessionProvider } from 'next-auth/react';
 import type { PropsWithChildren, ReactElement } from 'react';
-import React, { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { MessageCenter } from '../components/pure/message-center';
@@ -59,27 +60,31 @@ const App = function App({
   const getLayout = Component.getLayout || EmptyLayout;
 
   return (
-    <CacheProvider value={emotionCache}>
-      <I18nextProvider i18n={i18n}>
-        <MessageCenter />
-        <AffineErrorBoundary router={useRouter()}>
-          <AffineContext>
-            <Head>
-              <title>AFFiNE</title>
-              <meta
-                name="viewport"
-                content="initial-scale=1, width=device-width"
-              />
-            </Head>
-            <DebugProvider>
-              <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
-                {getLayout(<Component {...pageProps} />)}
-              </Suspense>
-            </DebugProvider>
-          </AffineContext>
-        </AffineErrorBoundary>
-      </I18nextProvider>
-    </CacheProvider>
+    <SessionProvider>
+      <CacheProvider value={emotionCache}>
+        <I18nextProvider i18n={i18n}>
+          <MessageCenter />
+          <AffineErrorBoundary router={useRouter()}>
+            <AffineContext>
+              <Head>
+                <title>AFFiNE</title>
+                <meta
+                  name="viewport"
+                  content="initial-scale=1, width=device-width"
+                />
+              </Head>
+              <DebugProvider>
+                <Suspense
+                  fallback={<WorkspaceFallback key="RootPageLoading" />}
+                >
+                  {getLayout(<Component {...pageProps} />)}
+                </Suspense>
+              </DebugProvider>
+            </AffineContext>
+          </AffineErrorBoundary>
+        </I18nextProvider>
+      </CacheProvider>
+    </SessionProvider>
   );
 };
 

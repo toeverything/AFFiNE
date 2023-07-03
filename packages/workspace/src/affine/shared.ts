@@ -26,7 +26,7 @@ if (!globalThis.AFFINE_APIS) {
   };
   const loginMockUser1 = async () => {
     const user1 = await import('@affine-test/fixtures/built-in-user1.json');
-    const data = await fetch(prefixUrl + 'api/user/token', {
+    const data = await fetch(prefixUrl + '/api/user/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ if (!globalThis.AFFINE_APIS) {
   };
   const loginMockUser2 = async () => {
     const user2 = await import('@affine-test/fixtures/built-in-user2.json');
-    const data = await fetch(prefixUrl + 'api/user/token', {
+    const data = await fetch(prefixUrl + '/api/user/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

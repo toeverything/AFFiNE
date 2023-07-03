@@ -65,6 +65,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       OAUTH_GOOGLE_CLIENT_SECRET: 'auth.oauthProviders.google.clientSecret',
       OAUTH_GITHUB_CLIENT_ID: 'auth.oauthProviders.github.clientId',
       OAUTH_GITHUB_CLIENT_SECRET: 'auth.oauthProviders.github.clientSecret',
+      OAUTH_EMAIL_SENDER: 'auth.email.sender',
+      OAUTH_EMAIL_SERVER: 'auth.email.server',
+      OAUTH_EMAIL_PORT: 'auth.email.port',
+      OAUTH_EMAIL_PASSWORD: 'auth.email.password',
     } satisfies AFFiNEConfig['ENV_MAP'],
     env: process.env.NODE_ENV ?? 'development',
     get prod() {
@@ -102,7 +106,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       },
       introspection: true,
       playground: true,
-      debug: true,
     },
     auth: {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -114,8 +117,16 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       publicKey: jwtKeyPair.publicKey,
       enableSignup: true,
       enableOauth: false,
-      nextAuthSecret: '',
+      get nextAuthSecret() {
+        return this.privateKey;
+      },
       oauthProviders: {},
+      email: {
+        server: 'smtp.gmail.com',
+        port: 465,
+        sender: '',
+        password: '',
+      },
     },
     objectStorage: {
       r2: {
@@ -129,7 +140,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         path: join(homedir(), '.affine-storage'),
       },
     },
-  } as const;
+  } satisfies AFFiNEConfig;
 
   applyEnvToConfig(defaultConfig);
 

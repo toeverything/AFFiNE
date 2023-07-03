@@ -45,6 +45,7 @@
     "jotai-devtools": "^0.6.0",
     "lit": "^2.7.5",
     "lottie-web": "^5.12.2",
+    "next-auth": "^4.22.1",
     "next-themes": "^0.2.1",
     "react": "18.3.0-canary-8ec962d82-20230623",
     "react-dom": "18.3.0-canary-8ec962d82-20230623",

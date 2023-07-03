@@ -151,6 +151,12 @@ const nextConfig = {
 
     return config;
   },
+  rewrites: async () => [
+    {
+      source: '/api/auth/:path*/:path2*',
+      destination: 'http://localhost:3010/api/auth/:path*/:path2*',
+    },
+  ],
   basePath: process.env.NEXT_BASE_PATH,
   assetPrefix: process.env.NEXT_ASSET_PREFIX,
   pageExtensions: [
