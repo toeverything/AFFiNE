@@ -11,7 +11,14 @@ export const updaterHandlers = {
     return quitAndInstall();
   },
   checkForUpdatesAndNotify: async () => {
-    return checkForUpdatesAndNotify(true);
+    const res = await checkForUpdatesAndNotify(true);
+    if (res) {
+      const { updateInfo } = res;
+      return {
+        updateInfo,
+      };
+    }
+    return null;
   },
 } satisfies NamespaceHandlers;
 

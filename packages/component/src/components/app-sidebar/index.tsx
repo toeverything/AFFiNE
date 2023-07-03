@@ -28,6 +28,7 @@ import { SidebarHeader } from './sidebar-header';
 export type AppSidebarProps = PropsWithChildren<
   SidebarHeaderProps & {
     hasBackground?: boolean;
+    isFallback?: boolean;
   }
 >;
 
@@ -52,7 +53,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   const [appSidebarFloating, setAppSidebarFloating] = useAtom(
     appSidebarFloatingAtom
   );
-  const initialRender = open === undefined;
+  const initialRender = open === undefined && !props.isFallback;
 
   const isResizing = useAtomValue(appSidebarResizingAtom);
   const navRef = useRef<HTMLDivElement>(null);
@@ -126,7 +127,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
 
 export const AppSidebarFallback = (): ReactElement | null => {
   return (
-    <AppSidebar>
+    <AppSidebar isFallback>
       <div className={fallbackStyle}>
         <div className={fallbackHeaderStyle}>
           <Skeleton variant="circular" width={40} height={40} />
