@@ -8,15 +8,11 @@ import { stringToColour } from '../../../utils';
 import { StyledFooter } from './styles';
 
 export const Footer: React.FC = () => {
-  // todo(himself65): force to use AFFiNE_CLOUD here, but it's not a good approach, make it dynamic
-  const Provider = WorkspaceAdapters[WorkspaceFlavour.AFFINE_CLOUD].UI.Provider;
   const LoginCard =
     WorkspaceAdapters[WorkspaceFlavour.AFFINE_CLOUD].UI.LoginCard;
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
-      <Provider>
-        <LoginCard />
-      </Provider>
+      <LoginCard />
     </StyledFooter>
   );
 };

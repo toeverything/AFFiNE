@@ -4,11 +4,7 @@ import type {
 } from '@affine/env/workspace';
 import { lazy } from 'react';
 
-const Provider = lazy(() =>
-  import('../../components/cloud/provider').then(({ Provider }) => ({
-    default: Provider,
-  }))
-);
+import { Provider } from '../shared';
 
 const LoginCard = lazy(() =>
   import('../../components/cloud/login-card').then(({ LoginCard }) => ({

@@ -24,6 +24,7 @@ import {
   BlockSuitePageList,
   NewWorkspaceSettingDetail,
   PageDetailEditor,
+  Provider,
   WorkspaceHeader,
 } from '../shared';
 
@@ -72,9 +73,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   CRUD,
   UI: {
     Header: WorkspaceHeader,
-    Provider: ({ children }) => {
-      return <>{children}</>;
-    },
+    Provider,
     PageDetail: ({ currentWorkspace, currentPageId, onLoadEditor }) => {
       const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
       if (!page) {
