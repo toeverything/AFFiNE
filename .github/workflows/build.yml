@@ -432,7 +432,7 @@ jobs:
     name: Build Docker
     needs:
       - lint
-      - desktop-test
+      - build-web
       - server-test
     runs-on: ubuntu-latest
     steps:
