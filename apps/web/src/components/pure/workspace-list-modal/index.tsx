@@ -9,12 +9,11 @@ import {
 import { ScrollableContainer } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { HelpIcon, ImportIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useCallback, useRef } from 'react';
@@ -41,15 +40,12 @@ import {
 
 interface WorkspaceModalProps {
   disabled?: boolean;
-  user: AccessTokenMessage | null;
   workspaces: AllWorkspace[];
   currentWorkspaceId: AllWorkspace['id'] | null;
   open: boolean;
   onClose: () => void;
   onClickWorkspace: (workspace: AllWorkspace) => void;
   onClickWorkspaceSetting: (workspace: AllWorkspace) => void;
-  onClickLogin: () => void;
-  onClickLogout: () => void;
   onNewWorkspace: () => void;
   onAddWorkspace: () => void;
   onMoveWorkspace: (activeId: string, overId: string) => void;
@@ -161,9 +157,6 @@ export const WorkspaceListModal = ({
   open,
   onClose,
   workspaces,
-  user,
-  onClickLogin,
-  onClickLogout,
   onClickWorkspace,
   onClickWorkspaceSetting,
   onNewWorkspace,
@@ -213,7 +206,7 @@ export const WorkspaceListModal = ({
               items={
                 workspaces.filter(
                   ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
-                ) as (AffineLegacyCloudWorkspace | LocalWorkspace)[]
+                ) as (AffineCloudWorkspace | LocalWorkspace)[]
               }
               currentWorkspaceId={currentWorkspaceId}
               onClick={onClickWorkspace}
@@ -234,7 +227,7 @@ export const WorkspaceListModal = ({
             />
           </StyledModalContent>
         </ScrollableContainer>
-        <Footer user={user} onLogin={onClickLogin} onLogout={onClickLogout} />
+        <Footer />
       </ModalWrapper>
     </Modal>
   );

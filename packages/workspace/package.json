@@ -3,16 +3,11 @@
   "private": true,
   "exports": {
     "./atom": "./src/atom.ts",
-    "./blob": "./src/blob/index.ts",
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
-    "./providers": "./src/providers/index.ts",
-    "./affine/*": "./src/affine/*.ts",
-    "./affine/api": "./src/affine/api/index.ts",
-    "./affine/keck": "./src/affine/keck/index.ts",
-    "./affine/shared": "./src/affine/shared.ts"
+    "./providers": "./src/providers/index.ts"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
@@ -26,7 +21,6 @@
     "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "firebase": "^9.23.0",
     "jotai": "^2.2.1",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",

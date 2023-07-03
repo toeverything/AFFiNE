@@ -1,5 +1,5 @@
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   AffinePublicWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
@@ -16,7 +16,7 @@ import { avatarImageStyle, avatarStyle } from './index.css';
 export type WorkspaceAvatarProps = {
   size?: number;
   workspace:
-    | AffineLegacyCloudWorkspace
+    | AffineCloudWorkspace
     | LocalWorkspace
     | AffinePublicWorkspace
     | null;

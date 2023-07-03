@@ -3,7 +3,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { type FC, useState } from 'react';
 
-import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
 import type { AffineOfficialWorkspace } from '../../../../shared';
 import type { WorkspaceSettingDetailProps } from '../index';
 import { WorkspaceDeleteModal } from './delete';
@@ -14,7 +13,8 @@ export const DeleteLeaveWorkspace: FC<{
   onDeleteWorkspace: WorkspaceSettingDetailProps['onDeleteWorkspace'];
 }> = ({ workspace, onDeleteWorkspace }) => {
   const t = useAFFiNEI18N();
-  const isOwner = useIsWorkspaceOwner(workspace);
+  // fixme: cloud regression
+  const isOwner = true;
 
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);

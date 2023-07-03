@@ -14,7 +14,6 @@ import type { FC } from 'react';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
-import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
 import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
@@ -59,11 +58,6 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
       </SettingWrapper>
       <SettingWrapper title={t['AFFiNE Cloud']()}>
         <PublishPanel
-          workspace={workspace}
-          onDeleteWorkspace={onDeleteWorkspace}
-          {...props}
-        />
-        <MembersPanel
           workspace={workspace}
           onDeleteWorkspace={onDeleteWorkspace}
           {...props}
