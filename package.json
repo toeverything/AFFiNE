@@ -41,8 +41,12 @@
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown --cache",
-    "*.{ts,tsx,mjs,js,jsx}": "eslint --cache --fix",
+    "*.{ts,tsx,mjs,js,jsx}": [
+      "prettier . --ignore-unknown --write",
+      "eslint --cache --fix"
+    ],
     "*.toml": [
+      "prettier . --ignore-unknown --write",
       "taplo format"
     ]
   },
