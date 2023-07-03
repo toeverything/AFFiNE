@@ -85,8 +85,7 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   doc,
   { awareness }
 ): AffineSocketIOProvider => {
-  console.log(prefixUrl);
-  const provider = new SocketIOProvider('http://127.0.0.1:3010', id, doc, {
+  const provider = new SocketIOProvider(prefixUrl, id, doc, {
     awareness,
   });
   return {
