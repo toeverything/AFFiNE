@@ -14,7 +14,7 @@
     "noImplicitOverride": true
   },
   "include": ["./src"],
-  "exclude": ["node_modules", "out", "dist"],
+  "exclude": ["node_modules", "out", "dist", "**/__tests__/**/*"],
   "references": [
     {
       "path": "../../packages/plugin-infra"
@@ -31,7 +31,7 @@
       "path": "./tsconfig.node.json"
     },
     {
-      "path": "./tests/tsconfig.json"
+      "path": "./e2e/tsconfig.json"
     },
     { "path": "../../tests/kit" }
   ],

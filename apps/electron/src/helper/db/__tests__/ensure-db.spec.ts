@@ -1,9 +1,10 @@
 import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import fs from 'fs-extra';
 import { v4 } from 'uuid';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+
+import { removeWithRetry } from '../../../../tests/utils';
 
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
@@ -44,11 +45,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   existProcess();
-  // wait for the db to be closed on Windows
-  if (process.platform === 'win32') {
-    await setTimeout(200);
-  }
-  await fs.remove(tmpDir);
+  await removeWithRetry(tmpDir);
   vi.useRealTimers();
 });
 

@@ -11,7 +11,7 @@ import type { PlaywrightTestConfig } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration.
  */
 const config: PlaywrightTestConfig = {
-  testDir: './tests',
+  testDir: './e2e',
   testIgnore: '**/lib/**',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
