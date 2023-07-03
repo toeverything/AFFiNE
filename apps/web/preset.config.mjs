@@ -23,6 +23,8 @@ const buildPreset = {
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
+    // never set this to true in stable, because legacy cloud has deprecated
+    //  and related code will be removed in the future
     enableLegacyCloud: false,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
     enablePreloading: true,
@@ -30,6 +32,7 @@ const buildPreset = {
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
     enableNotificationCenter: false,
+    enableCloud: false,
   },
   beta: {},
   internal: {},
@@ -46,6 +49,7 @@ const buildPreset = {
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
     enableNotificationCenter: true,
+    enableCloud: false,
   },
 };
 
@@ -56,7 +60,7 @@ buildPreset.internal = buildPreset.stable;
 const currentBuild = process.env.BUILD_TYPE || 'stable';
 
 if (process.env.CI && !process.env.BUILD_TYPE) {
-  throw new Error('BUILD_TYPE is required in CI');
+  throw new Error('BUILD_ENV is required in CI');
 }
 
 const currentBuildPreset = buildPreset[currentBuild];
@@ -90,6 +94,9 @@ const environmentPreset = {
   enableNotificationCenter: process.env.ENABLE_NOTIFICATION_CENTER
     ? process.env.ENABLE_NOTIFICATION_CENTER === 'true'
     : currentBuildPreset.enableNotificationCenter,
+  enableCloud: process.env.ENABLE_CLOUD
+    ? process.env.ENABLE_CLOUD === 'true'
+    : currentBuildPreset.enableCloud,
 };
 
 /**
