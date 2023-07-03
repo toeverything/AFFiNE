@@ -1,13 +1,14 @@
 import { Storage } from '@affine/storage';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Doc } from 'yjs';
 import * as Y from 'yjs';
 
+import { StorageProvide } from '../../../storage';
 import { assertExists } from '../utils';
 
 @Injectable()
 export class WorkspaceService {
-  constructor(private readonly storage: Storage) {}
+  constructor(@Inject(StorageProvide) private readonly storage: Storage) {}
 
   async getDocsFromWorkspaceId(workspaceId: string): Promise<
     Array<{
@@ -39,7 +40,6 @@ export class WorkspaceService {
       }
     }
 
-    docs[0].guid = workspaceId;
     return docs;
   }
 

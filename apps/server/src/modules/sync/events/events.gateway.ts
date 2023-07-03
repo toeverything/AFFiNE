@@ -1,4 +1,5 @@
 import { Storage } from '@affine/storage';
+import { Inject } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -8,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
+import { StorageProvide } from '../../../storage';
 import { base64ToUint8Array, uint8ArrayToBase64 } from '../utils';
 import { WorkspaceService } from './workspace';
 
@@ -17,7 +19,7 @@ const port = parseInt(process.env.PORT ?? '3010');
 export class EventsGateway {
   constructor(
     private readonly storageService: WorkspaceService,
-    private readonly storage: Storage
+    @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
   @WebSocketServer()
