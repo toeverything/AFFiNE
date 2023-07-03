@@ -1,0 +1,46 @@
+name: NX
+
+on:
+  push:
+    branches:
+      - master
+      - v[0-9]+.[0-9]+.x-staging
+      - v[0-9]+.[0-9]+.x
+    paths-ignore:
+      - README.md
+      - .github/**
+      - '!.github/workflows/nx.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-node/action.yml'
+  pull_request:
+  merge_group:
+    branches:
+      - master
+      - v[0-9]+.[0-9]+.x-staging
+      - v[0-9]+.[0-9]+.x
+    paths-ignore:
+      - README.md
+      - .github/**
+      - '!.github/workflows/nx.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-node/action.yml'
+
+jobs:
+  main:
+    name: Nx Cloud - Main Job
+    uses: nrwl/ci/.github/workflows/nx-cloud-main.yml@v0.13.0
+    with:
+      main-branch-name: master
+      number-of-agents: 5
+      init-commands: |
+        yarn exec nx-cloud start-ci-run --stop-agents-after="build" --agent-count=3
+      parallel-commands: |
+        yarn exec nx-cloud record -- yarn exec nx format:check
+      parallel-commands-on-agents: |
+        yarn exec nx affected --target=build --parallel=5
+
+  agents:
+    name: Nx Cloud - Agents
+    uses: nrwl/ci/.github/workflows/nx-cloud-agents.yml@v0.13.0
+    with:
+      number-of-agents: 5

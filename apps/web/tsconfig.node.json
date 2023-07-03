@@ -4,10 +4,10 @@
     "composite": true,
     "target": "ESNext",
     "module": "ESNext",
-    "resolveJsonModule": true,
     "moduleResolution": "Node",
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "noEmit": false
+    "outDir": "./lib"
   },
-  "include": ["./scripts", "esbuild.main.config.ts", "esbuild.plugin.config.ts"]
+  "include": ["server.mts"]
 }

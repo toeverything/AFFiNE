@@ -18,7 +18,12 @@
     "experimentalDecorators": true,
     "types": ["react/experimental"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/types/types.d.ts"],
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/types/types.d.ts"
+  ],
   "exclude": ["node_modules"],
   "references": [
     {
@@ -55,6 +60,11 @@
     },
     {
       "path": "../../plugins/copilot"
+    },
+
+    // Static Server
+    {
+      "path": "./tsconfig.node.json"
     }
   ]
 }

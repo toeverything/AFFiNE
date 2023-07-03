@@ -1,5 +1,10 @@
 import * as Y from 'yjs';
 
+type XYWH = [number, number, number, number];
+function deserializeXYWH(xywh: string): XYWH {
+  return JSON.parse(xywh) as XYWH;
+}
+
 function migrateDatabase(data: Y.Map<unknown>) {
   data.delete('prop:mode');
   data.set('prop:views', new Y.Array());
@@ -93,6 +98,7 @@ function runBlockMigration(
   if (flavour === 'affine:surface' && version <= 3) {
     if (data.has('elements')) {
       const elements = data.get('elements') as Y.Map<unknown>;
+      migrateSurface(elements);
       data.set('prop:elements', elements.clone());
       data.delete('elements');
     } else {
@@ -106,6 +112,54 @@ function runBlockMigration(
   if (flavour === 'affine:database' && version < 2) {
     migrateDatabase(data);
   }
+}
+
+function migrateSurface(data: Y.Map<unknown>) {
+  for (const [, value] of <IterableIterator<[string, Y.Map<unknown>]>>(
+    data.entries()
+  )) {
+    if (value.get('type') === 'connector') {
+      migrateSurfaceConnector(value);
+    }
+  }
+}
+
+function migrateSurfaceConnector(data: Y.Map<any>) {
+  let id = data.get('startElement')?.id;
+  const controllers = data.get('controllers');
+  const length = controllers.length;
+  const xywh = deserializeXYWH(data.get('xywh'));
+  if (id) {
+    data.set('source', { id });
+  } else {
+    data.set('source', {
+      position: [controllers[0].x + xywh[0], controllers[0].y + xywh[1]],
+    });
+  }
+
+  id = data.get('endElement')?.id;
+  if (id) {
+    data.set('target', { id });
+  } else {
+    data.set('target', {
+      position: [
+        controllers[length - 1].x + xywh[0],
+        controllers[length - 1].y + xywh[1],
+      ],
+    });
+  }
+
+  const width = data.get('lineWidth') ?? 4;
+  data.set('strokeWidth', width);
+  const color = data.get('color');
+  data.set('stroke', color);
+
+  data.delete('startElement');
+  data.delete('endElement');
+  data.delete('controllers');
+  data.delete('lineWidth');
+  data.delete('color');
+  data.delete('xywh');
 }
 
 function updateBlockVersions(versions: Y.Map<number>) {

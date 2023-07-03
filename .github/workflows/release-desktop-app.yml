@@ -123,7 +123,13 @@ jobs:
           name: before-make-web-static
           path: apps/electron/resources/web-static
 
-      - name: Build layers
+      - name: Build Infra
+        run: yarn run build:infra
+
+      - name: Build Plugins
+        run: yarn run build:plugins
+
+      - name: Build Desktop Layers
         run: yarn workspace @affine/electron build
 
       - name: Signing By Apple Developer ID

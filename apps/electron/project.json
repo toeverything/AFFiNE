@@ -1,0 +1,24 @@
+{
+  "name": "@affine/electron",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "root": "apps/electron",
+  "sourceRoot": "apps/electron/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "dependsOn": [
+        {
+          "projects": ["@affine/bookmark-block"],
+          "target": "build",
+          "params": "ignore"
+        },
+        "^build"
+      ],
+      "options": {
+        "script": "build"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    }
+  }
+}
