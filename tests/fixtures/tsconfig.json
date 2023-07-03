@@ -4,7 +4,8 @@
     "composite": true,
     "noEmit": false,
     "outDir": "lib",
-    "moduleResolution": "nodenext",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
     "resolveJsonModule": true
   },
   "include": [".", "./*.json"]

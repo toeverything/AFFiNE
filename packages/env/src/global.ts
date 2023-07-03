@@ -52,7 +52,6 @@ declare global {
 }
 
 export const buildFlagsSchema = z.object({
-  enableAllPageSaving: z.boolean(),
   enablePlugin: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
