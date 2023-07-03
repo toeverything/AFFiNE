@@ -1,9 +1,8 @@
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { PermissionType } from '@affine/env/workspace/legacy-cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -19,7 +18,7 @@ import {
 } from './styles';
 
 export type WorkspaceTypeProps = {
-  workspace: AffineLegacyCloudWorkspace | LocalWorkspace;
+  workspace: AffineCloudWorkspace | LocalWorkspace;
 };
 
 import {
@@ -27,7 +26,6 @@ import {
   CollaborationIcon as DefaultJoinedWorkspaceIcon,
   LocalDataIcon as DefaultLocalDataIcon,
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
-  PublishIcon as DefaultPublishIcon,
 } from '@blocksuite/icons';
 
 const JoinedWorkspaceIcon = () => {
@@ -44,18 +42,11 @@ const CloudWorkspaceIcon = () => {
 const LocalDataIcon = () => {
   return <DefaultLocalDataIcon style={{ color: '#62CD80' }} />;
 };
-const PublishIcon = () => {
-  return <DefaultPublishIcon style={{ color: '#8699FF' }} />;
-};
 
 const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
   const t = useAFFiNEI18N();
-  let isOwner = true;
-  if (workspace.flavour === WorkspaceFlavour.AFFINE) {
-    isOwner = workspace.permission === PermissionType.Owner;
-  } else if (workspace.flavour === WorkspaceFlavour.LOCAL) {
-    isOwner = true;
-  }
+  // fixme: cloud regression
+  const isOwner = true;
 
   if (workspace.flavour === WorkspaceFlavour.LOCAL) {
     return (
@@ -81,11 +72,9 @@ const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
 
 export type WorkspaceCardProps = {
   currentWorkspaceId: string | null;
-  workspace: AffineLegacyCloudWorkspace | LocalWorkspace;
-  onClick: (workspace: AffineLegacyCloudWorkspace | LocalWorkspace) => void;
-  onSettingClick: (
-    workspace: AffineLegacyCloudWorkspace | LocalWorkspace
-  ) => void;
+  workspace: AffineCloudWorkspace | LocalWorkspace;
+  onClick: (workspace: AffineCloudWorkspace | LocalWorkspace) => void;
+  onSettingClick: (workspace: AffineCloudWorkspace | LocalWorkspace) => void;
 };
 
 export const WorkspaceCard: FC<WorkspaceCardProps> = ({
@@ -116,12 +105,12 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
             <span>{t['Available Offline']()}</span>
           </p>
         )}
-        {workspace.flavour === WorkspaceFlavour.AFFINE && workspace.public && (
+        {/* {workspace.flavour === WorkspaceFlavour.AFFINE && workspace.public && (
           <p title={t['Published to Web']()}>
             <PublishIcon />
             <span>{t['Published to Web']()}</span>
           </p>
-        )}
+        )} */}
       </StyleWorkspaceInfo>
       <StyledSettingLink
         className="setting-entry"

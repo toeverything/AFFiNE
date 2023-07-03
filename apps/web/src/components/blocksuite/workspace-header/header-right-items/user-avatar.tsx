@@ -10,6 +10,8 @@ const EditMenu = (
 );
 
 export const UserAvatar = () => {
+  // fixme: cloud regression
+  const user: any = null;
   return (
     <Menu
       width={276}

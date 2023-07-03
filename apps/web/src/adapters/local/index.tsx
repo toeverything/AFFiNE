@@ -25,7 +25,6 @@ import {
   NewWorkspaceSettingDetail,
   PageDetailEditor,
   WorkspaceHeader,
-  WorkspaceSettingDetail,
 } from '../shared';
 
 const logger = new DebugLogger('use-create-first-workspace');
@@ -102,23 +101,6 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           collection={collection}
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
-        />
-      );
-    },
-    SettingsDetail: ({
-      currentWorkspace,
-      onChangeTab,
-      currentTab,
-      onDeleteWorkspace,
-      onTransformWorkspace,
-    }) => {
-      return (
-        <WorkspaceSettingDetail
-          onDeleteWorkspace={onDeleteWorkspace}
-          onChangeTab={onChangeTab}
-          currentTab={currentTab}
-          workspace={currentWorkspace}
-          onTransferWorkspace={onTransformWorkspace}
         />
       );
     },

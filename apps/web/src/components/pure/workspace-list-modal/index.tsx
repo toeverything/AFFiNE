@@ -9,7 +9,7 @@ import {
 import { ScrollableContainer } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -206,7 +206,7 @@ export const WorkspaceListModal = ({
               items={
                 workspaces.filter(
                   ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
-                ) as (AffineLegacyCloudWorkspace | LocalWorkspace)[]
+                ) as (AffineCloudWorkspace | LocalWorkspace)[]
               }
               currentWorkspaceId={currentWorkspaceId}
               onClick={onClickWorkspace}
