@@ -1,3 +1,4 @@
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
@@ -7,7 +8,9 @@ import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   ExportToPdfIcon,
+  ExportToPngIcon,
 } from '@blocksuite/icons';
+import { useSetAtom } from 'jotai';
 import { useCallback, useRef } from 'react';
 
 import { Menu, MenuItem } from '../../..';
@@ -19,43 +22,73 @@ const ExportToPdfMenuItem = ({
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
+  const setPushNotification = useSetAtom(pushNotificationAtom);
+
   const onClickDownloadPDF = useCallback(() => {
     if (!currentEditor) {
       return;
     }
-    const contentParser =
-      contentParserRef.current ??
-      (contentParserRef.current = new ContentParser(currentEditor.page));
 
-    window.apis?.export
-      .savePDFFileAs(
-        (currentEditor.page.root as PageBlockModel).title.toString()
-      )
-      .then(result => {
-        if (result !== undefined) {
-          return;
-        }
-        return contentParser.exportPdf();
-      })
-      .then(() => {
-        onSelect?.({ type: 'pdf' });
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [currentEditor, onSelect]);
-  if (currentEditor && currentEditor.mode === 'page') {
-    return (
-      <MenuItem
-        data-testid="export-to-pdf"
-        onClick={onClickDownloadPDF}
-        icon={<ExportToPdfIcon />}
-      >
-        {t['Export to PDF']()}
-      </MenuItem>
-    );
-  }
-  return null;
+    if (environment.isDesktop && currentEditor.mode === 'page') {
+      window.apis?.export
+        .savePDFFileAs(
+          (currentEditor.page.root as PageBlockModel).title.toString()
+        )
+        .then(() => {
+          onSelect?.({ type: 'pdf' });
+          setPushNotification({
+            key: 'export-to-pdf',
+            title: 'export',
+            message: 'Export success',
+            type: 'success',
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          setPushNotification({
+            key: 'export-to-pdf',
+            title: 'export',
+            message: 'Export error',
+            type: 'error',
+          });
+        });
+    } else {
+      const contentParser =
+        contentParserRef.current ??
+        (contentParserRef.current = new ContentParser(currentEditor.page));
+
+      contentParser
+        .exportPdf()
+        .then(() => {
+          onSelect?.({ type: 'pdf' });
+          setPushNotification({
+            key: 'export-to-pdf',
+            title: 'export',
+            message: 'Export success',
+            type: 'success',
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          setPushNotification({
+            key: 'export-to-pdf',
+            title: 'export',
+            message: 'Export error',
+            type: 'error',
+          });
+        });
+    }
+  }, [currentEditor, onSelect, setPushNotification]);
+
+  return (
+    <MenuItem
+      data-testid="export-to-pdf"
+      onClick={onClickDownloadPDF}
+      icon={<ExportToPdfIcon />}
+    >
+      {t['Export to PDF']()}
+    </MenuItem>
+  );
 };
 
 const ExportToHtmlMenuItem = ({
@@ -89,33 +122,56 @@ const ExportToHtmlMenuItem = ({
   );
 };
 
-// const ExportToPngMenuItem = ({
-//   onSelect,
-// }: CommonMenuItemProps<{ type: 'png' }>) => {
-//   const t = useAFFiNEI18N();
-//   const contentParserRef = useRef<ContentParser>();
-//   return (
-//     <>
-//       {globalThis.currentEditor!.mode === 'page' && (
-//         <MenuItem
-//           data-testid="export-to-png"
-//           onClick={() => {
-//             if (!contentParserRef.current) {
-//               contentParserRef.current = new ContentParser(
-//                 globalThis.currentEditor!.page
-//               );
-//             }
-//             contentParserRef.current.exportPng();
-//             onSelect?.({ type: 'png' });
-//           }}
-//           icon={<ExportToPngIcon />}
-//         >
-//           {t['Export to PNG']()}
-//         </MenuItem>
-//       )}
-//     </>
-//   );
-// };
+const ExportToPngMenuItem = ({
+  onSelect,
+}: CommonMenuItemProps<{ type: 'png' }>) => {
+  const t = useAFFiNEI18N();
+  const contentParserRef = useRef<ContentParser>();
+  const { currentEditor } = globalThis;
+  const setPushNotification = useSetAtom(pushNotificationAtom);
+
+  const onClickDownloadPNG = useCallback(() => {
+    if (!currentEditor) {
+      return;
+    }
+    const contentParser =
+      contentParserRef.current ??
+      (contentParserRef.current = new ContentParser(currentEditor.page));
+
+    contentParser
+      .exportPng()
+      .then(() => {
+        onSelect?.({ type: 'png' });
+        setPushNotification({
+          key: 'export-to-pdf',
+          title: 'export',
+          message: 'Export success',
+          type: 'success',
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        setPushNotification({
+          key: 'export-to-pdf',
+          title: 'export',
+          message: 'Export error',
+          type: 'error',
+        });
+      });
+  }, [currentEditor, onSelect, setPushNotification]);
+
+  return (
+    <>
+      <MenuItem
+        data-testid="export-to-png"
+        onClick={onClickDownloadPNG}
+        icon={<ExportToPngIcon />}
+      >
+        {t['Export to PNG']()}
+      </MenuItem>
+    </>
+  );
+};
 
 const ExportToMarkdownMenuItem = ({
   onSelect,
@@ -161,7 +217,7 @@ export const Export = ({
         <>
           <ExportToPdfMenuItem></ExportToPdfMenuItem>
           <ExportToHtmlMenuItem></ExportToHtmlMenuItem>
-          {/* <ExportToPngMenuItem></ExportToPngMenuItem> */}
+          <ExportToPngMenuItem></ExportToPngMenuItem>
           <ExportToMarkdownMenuItem></ExportToMarkdownMenuItem>
         </>
       }

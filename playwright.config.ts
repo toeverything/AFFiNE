@@ -52,27 +52,14 @@ const config: PlaywrightTestConfig = {
         ENABLE_DEBUG_PAGE: '1',
       },
     },
-    {
-      // Intentionally not building the storybook, reminds you to run it by yourself.
-      command: 'yarn run start:storybook',
-      port: 6006,
-      timeout: 120 * 1000,
-      reuseExistingServer: !process.env.CI,
-      env: {
-        COVERAGE: process.env.COVERAGE || 'false',
-        ENABLE_DEBUG_PAGE: '1',
-      },
-    },
     // Intentionally not building the web, reminds you to run it by yourself.
     {
-      command: 'yarn run start:web -p 8080',
+      command: 'yarn run start:web-static',
       port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
-        ENABLE_DEBUG_PAGE: '1',
-        API_SERVER_PROFILE: 'local',
       },
     },
   ],

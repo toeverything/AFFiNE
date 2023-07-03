@@ -1,10 +1,19 @@
-import { Storage } from '@affine/storage';
-import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
+import type { Storage } from '@affine/storage';
+import {
+  Controller,
+  Get,
+  Inject,
+  NotFoundException,
+  Param,
+  Res,
+} from '@nestjs/common';
 import type { Response } from 'express';
+
+import { StorageProvide } from '../../storage';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
-  constructor(private readonly storage: Storage) {}
+  constructor(@Inject(StorageProvide) private readonly storage: Storage) {}
 
   @Get('/:id/blobs/:name')
   async blob(

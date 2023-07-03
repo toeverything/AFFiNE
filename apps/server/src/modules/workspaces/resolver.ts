@@ -1,5 +1,5 @@
-import { Storage } from '@affine/storage';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import type { Storage } from '@affine/storage';
+import { ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -21,6 +21,7 @@ import type { User, Workspace } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma';
+import { StorageProvide } from '../../storage';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser } from '../auth';
 import { UserType } from '../users/resolver';
@@ -60,7 +61,7 @@ export class WorkspaceResolver {
   constructor(
     private readonly prisma: PrismaService,
     private readonly permissionProvider: PermissionService,
-    private readonly storage: Storage
+    @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
   @ResolveField(() => Permission, {

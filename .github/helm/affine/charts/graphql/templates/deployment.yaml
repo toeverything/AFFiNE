@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "graphql.fullname" . }}
+  labels:
+    {{- include "graphql.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "graphql.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "graphql.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "graphql.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: AUTH_PRIVATE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.jwt.secretName }}"
+                key: key
+          - name: NODE_ENV
+            value: "{{ .Values.env }}"
+          - name: DATABSE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pg-postgresql
+                key: postgres-password
+          - name: DATABASE_URL
+            value: postgres://{{ .Values.database.user }}:$(DATABSE_PASSWORD)@{{ .Values.database.url }}:{{ .Values.database.port }}/{{ .Values.database.name }}
+          - name: AFFINE_SERVER_PORT
+            value: "{{ .Values.service.port }}"
+          - name: AFFINE_SERVER_SUB_PATH
+            value: "{{ .Values.app.path }}"
+          - name: AFFINE_SERVER_HOST
+            value: "{{ .Values.app.host }}"
+          - name: ENABLE_R2_OBJECT_STORAGE
+            value: "{{ .Values.app.objectStorage.r2.enabled }}"
+          {{ if .Values.app.objectStorage.r2.enabled }}
+          - name: R2_OBJECT_STORAGE_ACCOUNT_ID
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.objectStorage.r2.secretName }}"
+                key: accountId
+          - name: R2_OBJECT_STORAGE_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.objectStorage.r2.secretName }}"
+                key: accessKeyId
+          - name: R2_OBJECT_STORAGE_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.objectStorage.r2.secretName }}"
+                key: secretAccessKey
+          - name: R2_OBJECT_STORAGE_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.objectStorage.r2.secretName }}"
+                key: bucket
+          {{ end }}
+          {{ if .Values.app.oauth.google.enabled }}
+          - name: OAUTH_GOOGLE_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.google.secretName }}"
+                key: clientId
+          - name: OAUTH_GOOGLE_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.google.secretName }}"
+                key: clientSecret
+          {{ end }}
+          {{ if .Values.app.oauth.github.enabled }}
+          - name: OAUTH_GITHUB_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.github.secretName }}"
+                key: clientId
+          - name: OAUTH_GITHUB_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.github.secretName }}"
+                key: clientSecret
+          {{ end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

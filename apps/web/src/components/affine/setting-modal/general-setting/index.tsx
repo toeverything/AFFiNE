@@ -1,3 +1,4 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   AppearanceIcon,
   InformationIcon,
@@ -15,25 +16,32 @@ export type GeneralSettingList = {
   key: GeneralSettingKeys;
   title: string;
   icon: FC<SVGProps<SVGSVGElement>>;
+  testId: string;
 }[];
 
-export const generalSettingList: GeneralSettingList = [
-  {
-    key: 'appearance',
-    title: 'Appearance',
-    icon: AppearanceIcon,
-  },
-  {
-    key: 'shortcuts',
-    title: 'Keyboard Shortcuts',
-    icon: KeyboardIcon,
-  },
-  {
-    key: 'about',
-    title: 'About AFFiNE',
-    icon: InformationIcon,
-  },
-];
+export const useGeneralSettingList = (): GeneralSettingList => {
+  const t = useAFFiNEI18N();
+  return [
+    {
+      key: 'appearance',
+      title: t['com.affine.settings.appearance'](),
+      icon: AppearanceIcon,
+      testId: 'appearance-panel-trigger',
+    },
+    {
+      key: 'shortcuts',
+      title: t['Keyboard Shortcuts'](),
+      icon: KeyboardIcon,
+      testId: 'shortcuts-panel-trigger',
+    },
+    {
+      key: 'about',
+      title: t['About AFFiNE'](),
+      icon: InformationIcon,
+      testId: 'about-panel-trigger',
+    },
+  ];
+};
 
 export const GeneralSetting = ({
   generalKey,

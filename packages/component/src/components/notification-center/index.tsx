@@ -91,7 +91,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const pointerStartYRef = useRef<number | null>(null);
   const notificationsHeightBefore = useMemo(() => {
     return heights.reduce((prev, curr, reducerIndex) => {
-      // Calculate offset up untill current  notification
+      // Calculate offset up until current  notification
       if (reducerIndex >= heightIndex) {
         return prev;
       }

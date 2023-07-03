@@ -6,6 +6,7 @@ import {
   PageNotFoundError,
 } from '@affine/env/constant';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
+import type { WorkspaceAdapter } from '@affine/env/workspace';
 import {
   LoadPriority,
   ReleaseType,
@@ -26,7 +27,6 @@ import {
   WorkspaceHeader,
   WorkspaceSettingDetail,
 } from '../shared';
-import type { WorkspaceAdapter } from '../type';
 
 const logger = new DebugLogger('use-create-first-workspace');
 
@@ -95,11 +95,11 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         </>
       );
     },
-    PageList: ({ blockSuiteWorkspace, onOpenPage, view }) => {
+    PageList: ({ blockSuiteWorkspace, onOpenPage, collection }) => {
       return (
         <BlockSuitePageList
           listType="all"
-          view={view}
+          collection={collection}
           onOpenPage={onOpenPage}
           blockSuiteWorkspace={blockSuiteWorkspace}
         />

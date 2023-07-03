@@ -1,4 +1,6 @@
+import { CollectionBar } from '@affine/component/page-list';
 import { DEFAULT_SORT_KEY } from '@affine/env/constant';
+import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -31,12 +33,14 @@ const AllPagesHead = ({
   createNewPage,
   createNewEdgeless,
   importFile,
+  getPageInfo,
 }: {
   isPublicWorkspace: boolean;
   sorter: ReturnType<typeof useSorter<ListData>>;
   createNewPage: () => void;
   createNewEdgeless: () => void;
   importFile: () => void;
+  getPageInfo: GetPageInfoById;
 }) => {
   const t = useAFFiNEI18N();
   const titleList = [
@@ -72,7 +76,6 @@ const AllPagesHead = ({
       } satisfies CSSProperties,
     },
   ];
-
   return (
     <TableHead>
       <TableHeadRow>
@@ -107,6 +110,7 @@ const AllPagesHead = ({
             </TableCell>
           ))}
       </TableHeadRow>
+      <CollectionBar getPageInfo={getPageInfo} />
     </TableHead>
   );
 };
@@ -118,6 +122,7 @@ export const PageList = ({
   onCreateNewEdgeless,
   onImportFile,
   fallback,
+  getPageInfo,
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
@@ -160,6 +165,7 @@ export const PageList = ({
             createNewPage={onCreateNewPage}
             createNewEdgeless={onCreateNewEdgeless}
             importFile={onImportFile}
+            getPageInfo={getPageInfo}
           />
           <AllPagesBody
             isPublicWorkspace={isPublicWorkspace}

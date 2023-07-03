@@ -1,3 +1,6 @@
+/**
+ * @deprecated Remove this file after we migrate to the new cloud.
+ */
 import { MessageCode, Messages } from '@affine/env/constant';
 import type {
   AcceptInvitingParams,

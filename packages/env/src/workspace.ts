@@ -7,7 +7,7 @@ import type {
 } from '@blocksuite/store';
 import type { FC, PropsWithChildren } from 'react';
 
-import type { View } from './filter';
+import type { Collection } from './filter';
 import type { Workspace as RemoteWorkspace } from './workspace/legacy-cloud';
 
 export enum WorkspaceVersion {
@@ -189,7 +189,7 @@ type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
 type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
-  view: View;
+  collection: Collection;
 };
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
@@ -209,4 +209,15 @@ export interface AppEvents {
   'workspace:access': () => Promise<void>;
   // request to revoke access to workspace plugin
   'workspace:revoke': () => Promise<void>;
+}
+
+export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
+  releaseType: ReleaseType;
+  flavour: Flavour;
+  // The Adapter will be loaded according to the priority
+  loadPriority: LoadPriority;
+  Events: Partial<AppEvents>;
+  // Fetch necessary data for the first render
+  CRUD: WorkspaceCRUD<Flavour>;
+  UI: WorkspaceUISchema<Flavour>;
 }

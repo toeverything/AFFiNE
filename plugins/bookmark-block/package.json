@@ -7,10 +7,14 @@
     ".": "./src/index.ts",
     "./server": "./src/server.ts"
   },
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "dev": "node ./scripts/dev.mjs"
+  },
   "dependencies": {
     "@affine/component": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
-    "foxact": "^0.2.10",
+    "foxact": "^0.2.11",
     "link-preview-js": "^3.0.4"
   },
   "devDependencies": {
@@ -21,5 +25,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.7.0-canary.23"
+  "version": "0.7.0-canary.30"
 }

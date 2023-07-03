@@ -1,0 +1,37 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/toeverything/affine-front
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "affine-web"
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+resources:
+  limits:
+    cpu: '500m'
+    memory: 2Gi
+  requests:
+    cpu: '500m'
+    memory: 2Gi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+probe:
+  initialDelaySeconds: 1

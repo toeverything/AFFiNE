@@ -21,6 +21,7 @@ import {
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
+import { NoSsr } from '@mui/material';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -28,6 +29,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
+import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 
@@ -100,6 +102,7 @@ export const RootAppSidebar = ({
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
+    await page.waitForLoaded();
     openPage(page.id);
   }, [createPage, openPage]);
 
@@ -154,10 +157,12 @@ export const RootAppSidebar = ({
         hasBackground={!appSettings.disableBlurBackground}
       >
         <SidebarContainer>
-          <WorkspaceSelector
-            currentWorkspace={currentWorkspace}
-            onClick={onOpenWorkspaceListModal}
-          />
+          <NoSsr>
+            <WorkspaceSelector
+              currentWorkspace={currentWorkspace}
+              onClick={onOpenWorkspaceListModal}
+            />
+          </NoSsr>
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}
@@ -179,7 +184,7 @@ export const RootAppSidebar = ({
           </RouteMenuLinkItem>
           {runtimeConfig.enableNewSettingModal ? (
             <MenuItem icon={<SettingsIcon />} onClick={onOpenSettingModal}>
-              <span data-testid="new-settings">
+              <span data-testid="settings-modal-trigger">
                 {t['Settings']()}
                 <i
                   style={{
@@ -222,7 +227,10 @@ export const RootAppSidebar = ({
                 <span data-testid="shared-pages">{t['Shared Pages']()}</span>
               </RouteMenuLinkItem>
             ))}
-
+          <CategoryDivider label={t['Collections']()} />
+          {blockSuiteWorkspace && (
+            <CollectionsList currentWorkspace={currentWorkspace} />
+          )}
           <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}

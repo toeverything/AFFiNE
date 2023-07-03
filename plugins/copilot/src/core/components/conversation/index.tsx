@@ -2,8 +2,6 @@ import { clsx } from 'clsx';
 import type { MessageType } from 'langchain/schema';
 import { marked } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
 import { mangle } from 'marked-mangle';
 import { type ReactElement, useMemo } from 'react';
 

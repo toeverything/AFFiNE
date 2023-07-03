@@ -12,6 +12,7 @@ export interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
   disabled?: boolean;
   collapsed?: boolean; // true, false, undefined. undefined means no collapse
   onCollapsedChange?: (collapsed: boolean) => void;
+  postfix?: React.ReactElement;
 }
 
 export interface MenuLinkItemProps
@@ -28,6 +29,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       disabled,
       collapsed,
       onCollapsedChange,
+      postfix,
       ...props
     },
     ref
@@ -43,7 +45,6 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
         ref={ref}
         {...props}
         className={clsx([styles.root, props.className])}
-        onClick={onClick}
         data-active={active}
         data-disabled={disabled}
         data-collapsible={collapsible}
@@ -68,11 +69,15 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
             )}
             {React.cloneElement(icon, {
               className: clsx([styles.icon, icon.props.className]),
+              onClick: onClick,
             })}
           </div>
         )}
 
-        <div className={styles.content}>{children}</div>
+        <div onClick={onClick} className={styles.content}>
+          {children}
+        </div>
+        {postfix}
       </div>
     );
   }

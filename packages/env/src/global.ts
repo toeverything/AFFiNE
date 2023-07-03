@@ -36,6 +36,8 @@ declare global {
   }
 
   // eslint-disable-next-line no-var
+  var platform: Platform | undefined;
+  // eslint-disable-next-line no-var
   var environment: Environment;
   // eslint-disable-next-line no-var
   var runtimeConfig: PublicRuntimeConfig;
@@ -50,12 +52,7 @@ declare global {
 }
 
 export const buildFlagsSchema = z.object({
-  /**
-   * todo: remove this build flag when filter feature is ready.
-   *
-   * filter feature in the all pages.
-   */
-  enableAllPageFilter: z.boolean(),
+  enableAllPageSaving: z.boolean(),
   enablePlugin: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
@@ -64,7 +61,9 @@ export const buildFlagsSchema = z.object({
   changelogUrl: z.string(),
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
+  enableNewSettingUnstableApi: z.boolean(),
   enableSQLiteProvider: z.boolean(),
+  enableNotificationCenter: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({
@@ -88,7 +87,6 @@ export const publicRuntimeConfigSchema = buildFlagsSchema.extend({
   gitVersion: z.string(),
   hash: z.string(),
   serverAPI: z.string(),
-  editorVersion: z.string(),
   editorFlags: blockSuiteFeatureFlags,
 });
 
@@ -99,6 +97,22 @@ const { publicRuntimeConfig: config } = getConfig() as {
 };
 
 publicRuntimeConfigSchema.parse(config);
+
+export const platformSchema = z.enum([
+  'aix',
+  'android',
+  'darwin',
+  'freebsd',
+  'haiku',
+  'linux',
+  'openbsd',
+  'sunos',
+  'win32',
+  'cygwin',
+  'netbsd',
+]);
+
+export type Platform = z.infer<typeof platformSchema>;
 
 type BrowserBase = {
   /**
@@ -158,7 +172,6 @@ function printBuildInfo() {
     'Build date:',
     config.BUILD_DATE ? new Date(config.BUILD_DATE).toLocaleString() : 'Unknown'
   );
-  console.log('Editor Version:', config.editorVersion);
 
   console.log('Version:', config.gitVersion);
   console.log(

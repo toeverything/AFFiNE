@@ -1,3 +1,6 @@
+/**
+ * @deprecated Remove this file after we migrate to the new cloud.
+ */
 import { DebugLogger } from '@affine/debug';
 import type { WorkspaceCRUD } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
@@ -52,7 +55,7 @@ export function createAffineGlobalChannel(
 
       // If the workspace is not in the current workspace list, remove it
       if (workspaceIndex === -1) {
-        rootStore.set(rootWorkspacesMetadataAtom, workspaces => {
+        await rootStore.set(rootWorkspacesMetadataAtom, workspaces => {
           const idx = workspaces.findIndex(workspace => workspace.id === id);
           workspaces.splice(idx, 1);
           return [...workspaces];
