@@ -5,14 +5,10 @@ import {
 } from '@affine/component/share-menu';
 import { ShareMenu } from '@affine/component/share-menu';
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import {
-  PermissionType,
-  WorkspaceType,
-} from '@affine/env/workspace/legacy-cloud';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
@@ -59,13 +55,10 @@ const localWorkspace: LocalWorkspace = {
   blockSuiteWorkspace,
 };
 
-const affineWorkspace: AffineLegacyCloudWorkspace = {
+const affineWorkspace: AffineCloudWorkspace = {
   id: 'test-workspace',
-  flavour: WorkspaceFlavour.AFFINE,
+  flavour: WorkspaceFlavour.AFFINE_CLOUD,
   blockSuiteWorkspace,
-  public: false,
-  type: WorkspaceType.Normal,
-  permission: PermissionType.Owner,
 };
 
 async function unimplemented() {

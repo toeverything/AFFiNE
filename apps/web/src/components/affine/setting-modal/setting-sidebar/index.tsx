@@ -1,7 +1,7 @@
 import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -37,7 +37,7 @@ export const SettingSidebar = ({
   currentWorkspace: Workspace;
   workspaceList: Workspace[];
   onWorkspaceSettingClick: (
-    workspace: AffineLegacyCloudWorkspace | LocalWorkspace
+    workspace: AffineCloudWorkspace | LocalWorkspace
   ) => void;
 
   selectedWorkspace: Workspace | null;
@@ -118,7 +118,7 @@ const WorkspaceListItem = ({
   isCurrent,
   isActive,
 }: {
-  workspace: AffineLegacyCloudWorkspace | LocalWorkspace;
+  workspace: AffineCloudWorkspace | LocalWorkspace;
   onClick: () => void;
   isCurrent: boolean;
   isActive: boolean;

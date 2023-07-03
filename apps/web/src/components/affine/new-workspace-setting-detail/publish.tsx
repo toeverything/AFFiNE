@@ -2,7 +2,7 @@ import { Button, FlexWrapper, Switch } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Unreachable } from '@affine/env/constant';
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -11,7 +11,6 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
-import { useToggleWorkspacePublish } from '../../../hooks/affine/use-toggle-workspace-publish';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
@@ -26,13 +25,13 @@ export type PublishPanelLocalProps = WorkspaceSettingDetailProps & {
   workspace: LocalWorkspace;
 };
 export type PublishPanelAffineProps = WorkspaceSettingDetailProps & {
-  workspace: AffineLegacyCloudWorkspace;
+  workspace: AffineCloudWorkspace;
 };
 
 const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
   const { workspace } = props;
   const t = useAFFiNEI18N();
-  const toggleWorkspacePublish = useToggleWorkspacePublish(workspace);
+  // const toggleWorkspacePublish = useToggleWorkspacePublish(workspace);
 
   const [origin, setOrigin] = useState('');
   const shareUrl = origin + '/public-workspace/' + workspace.id;
@@ -54,13 +53,14 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
       <SettingRow
         name={t['Publish']()}
         desc={
-          workspace.public ? t['Unpublished hint']() : t['Published hint']()
+          // workspace.public ? t['Unpublished hint']() : t['Published hint']()
+          'UNFINISHED'
         }
       >
-        <Switch
+        {/* <Switch
           checked={workspace.public}
           onChange={checked => toggleWorkspacePublish(checked)}
-        />
+        /> */}
       </SettingRow>
       <FlexWrapper justifyContent="space-between">
         <Button
@@ -150,7 +150,7 @@ const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
           onConfirm={() => {
             onTransferWorkspace(
               WorkspaceFlavour.LOCAL,
-              WorkspaceFlavour.AFFINE,
+              WorkspaceFlavour.AFFINE_CLOUD,
               workspace
             );
             setOpen(false);
@@ -169,7 +169,7 @@ const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
 };
 
 export const PublishPanel: FC<PublishPanelProps> = props => {
-  if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
+  if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     return <PublishPanelAffine {...props} workspace={props.workspace} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <PublishPanelLocal {...props} workspace={props.workspace} />;

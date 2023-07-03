@@ -3,7 +3,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
 import type React from 'react';
 
-import { useCurrentUser } from '../../../hooks/current/use-current-user';
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 
 export type TransformWorkspaceToAffineModalProps = {
@@ -16,7 +15,6 @@ export const TransformWorkspaceToAffineModal: React.FC<
   TransformWorkspaceToAffineModalProps
 > = ({ open, onClose, onConform }) => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
 
   return (
     <Modal
@@ -41,7 +39,7 @@ export const TransformWorkspaceToAffineModal: React.FC<
               type="primary"
               onClick={onConform}
             >
-              {user ? t['Enable']() : t['Sign in and Enable']()}
+              {t['Sign in and Enable']()}
             </StyleButton>
             <StyleButton
               shape="round"
