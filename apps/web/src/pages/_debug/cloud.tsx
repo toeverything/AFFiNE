@@ -1,8 +1,10 @@
 import { Button, Input } from '@affine/component';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { registerMutation } from '@affine/graphql';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useId, useState } from 'react';
 
+import { WorkspaceAdapters } from '../../adapters/workspace';
 import { useMutation } from '../../shared/gql';
 
 function CloudUnLoggedPage(): ReactElement {
@@ -57,10 +59,14 @@ function CloudDevPageImpl(): ReactElement {
   return <div>{!login && <CloudUnLoggedPage />}</div>;
 }
 
+const Provider = WorkspaceAdapters[WorkspaceFlavour.AFFINE_CLOUD].UI.Provider;
+
 export default function CloudDevPage(): ReactElement {
   return (
-    <Suspense fallback="loading...">
-      <CloudDevPageImpl />
-    </Suspense>
+    <Provider>
+      <Suspense fallback="loading...">
+        <CloudDevPageImpl />
+      </Suspense>
+    </Provider>
   );
 }

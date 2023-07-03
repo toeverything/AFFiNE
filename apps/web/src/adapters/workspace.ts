@@ -11,6 +11,7 @@ import {
 } from '@affine/env/workspace';
 
 import { AffineAdapter } from './affine';
+import { UI as CloudUI } from './cloud/ui';
 import { LocalAdapter } from './local';
 
 const unimplemented = () => {
@@ -36,15 +37,7 @@ export const WorkspaceAdapters = {
       delete: unimplemented,
       create: unimplemented,
     },
-    // todo: implement this
-    UI: {
-      Provider: unimplemented,
-      Header: unimplemented,
-      PageDetail: unimplemented,
-      PageList: unimplemented,
-      SettingsDetail: unimplemented,
-      NewSettingsDetail: unimplemented,
-    },
+    UI: CloudUI,
   },
   [WorkspaceFlavour.PUBLIC]: {
     releaseType: ReleaseType.UNRELEASED,
