@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true
+  },
+  "include": ["**/__tests__/**/*", "./tests"],
+  "references": [
+    {
+      "path": "./tsconfig.json"
+    }
+  ]
+}
