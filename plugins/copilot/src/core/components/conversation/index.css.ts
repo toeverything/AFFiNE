@@ -25,6 +25,7 @@ export const insertButtonsStyle = style({
   marginTop: '10px',
   display: 'flex',
   flexWrap: 'wrap',
+  gap: '8px',
 });
 export const insertButtonStyle = style({
   maxWidth: '100%',
@@ -34,7 +35,6 @@ export const insertButtonStyle = style({
   border: '1px solid var(--affine-border-color)',
   cursor: 'pointer',
   backgroundColor: 'var(--affine-white)',
-  margin: '0 4px',
   gap: '8px',
   ':hover': {
     background: 'var(--affine-white),var(--affine-hover-color)',
