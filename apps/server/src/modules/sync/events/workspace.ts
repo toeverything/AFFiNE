@@ -20,8 +20,10 @@ export class WorkspaceService {
       update: Uint8Array;
     }> = [];
     const queue: Array<Doc> = [];
-    const doc = await this.getWorkspace(workspaceId);
-    queue.push(doc);
+    // Workspace Doc's guid is the same as workspaceId. This is achieved by when creating a new workspace, the doc guid
+    // is manually set to workspaceId.
+    const doc = await this.getDocFromGuid(workspaceId);
+    doc && queue.push(doc);
 
     while (queue.length > 0) {
       const doc = queue.pop();
@@ -41,21 +43,10 @@ export class WorkspaceService {
     return docs;
   }
 
-  async getWorkspace(workspaceId: string): Promise<Doc> {
-    let workspace = await this.storage.getWorkspace(workspaceId);
-    if (!workspace) {
-      await this.storage.createWorkspace(workspaceId);
-      workspace = await this.storage.getWorkspace(workspaceId);
-    }
-    assertExists(workspace);
-    const doc = await this.getDocFromGuid(workspace.doc.guid);
-    assertExists(doc);
-    return doc;
-  }
-
   async getDocFromGuid(guid: string): Promise<Doc | null> {
     const doc = new Y.Doc({ guid });
     try {
+      // TODO load method return null if doc doesn't exist, error throwing is not needed.
       const update = await this.storage.load(guid);
       update && Y.applyUpdate(doc, update);
       return doc;

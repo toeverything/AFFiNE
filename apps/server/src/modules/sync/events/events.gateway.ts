@@ -51,11 +51,11 @@ export class EventsGateway {
     const update = base64ToUint8Array(message.update);
     this.server.to(message.guid).emit('server-update', message);
 
-    let guid = message.guid;
-    if (message.workspaceId === message.guid) {
-      guid = (await this.storageService.getWorkspace(message.workspaceId)).guid;
-    }
-    await this.storage.sync(message.workspaceId, guid, Buffer.from(update));
+    await this.storage.sync(
+      message.workspaceId,
+      message.guid,
+      Buffer.from(update)
+    );
   }
 
   @SubscribeMessage('init-awareness')
