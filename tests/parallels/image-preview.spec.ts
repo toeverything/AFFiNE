@@ -625,3 +625,19 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(downloadTooltip).toBe(1);
   }
 });
+
+test('keypress esc should close the modal', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  const title = await getBlockSuiteEditorTitle(page);
+  await title.click();
+  await page.keyboard.press('Enter');
+  await importImage(page, 'http://localhost:8081/large-image.png');
+  await page.locator('img').first().dblclick();
+  const locator = page.getByTestId('image-preview-modal');
+  expect(locator.isVisible()).toBeTruthy();
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(1000);
+  expect(await locator.isVisible()).toBeFalsy();
+});
