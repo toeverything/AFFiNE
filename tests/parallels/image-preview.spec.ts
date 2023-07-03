@@ -661,3 +661,31 @@ test('when mouse moves outside, the modal should be closed', async ({
   await page.waitForTimeout(1000);
   expect(await locator.isVisible()).toBeFalsy();
 });
+
+test('caption should be visible and different styles were applied if image zoomed larger than viewport', async ({
+  page,
+}) => {
+  const sampleCaption = 'affine owns me and all';
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  const title = await getBlockSuiteEditorTitle(page);
+  await title.click();
+  await page.keyboard.press('Enter');
+  await importImage(page, 'http://localhost:8081/large-image.png');
+  await page.locator('img').first().hover();
+  await page.locator('format-bar-button').first().click();
+  await page.getByPlaceholder('Write a caption').fill(sampleCaption);
+  await page.locator('img').first().dblclick();
+  const locator = page.getByTestId('image-preview-modal');
+  expect(await locator.isVisible()).toBeTruthy();
+  await page.waitForTimeout(1000);
+  let captionLocator = page.getByTestId('image-caption-zoomedout');
+  expect(await captionLocator.isVisible()).toBeTruthy();
+  expect(await captionLocator.innerText()).toBe(sampleCaption);
+  await page.getByTestId('zoom-in-button').click({ clickCount: 4 });
+  expect(await captionLocator.isVisible()).not.toBeTruthy();
+  captionLocator = page.getByTestId('image-caption-zoomedin');
+  expect(await captionLocator.isVisible()).toBeTruthy();
+  expect(await captionLocator.innerText()).toBe(sampleCaption);
+});

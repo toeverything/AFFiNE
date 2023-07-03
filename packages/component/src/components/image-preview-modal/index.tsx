@@ -307,7 +307,12 @@ const ImagePreviewModalImpl = (
               onLoad={resetZoom}
             />
             {isZoomedBigger ? null : (
-              <p className={imagePreviewModalCaptionStyle}>{caption}</p>
+              <p
+                data-testid={'image-caption-zoomedout'}
+                className={imagePreviewModalCaptionStyle}
+              >
+                {caption}
+              </p>
             )}
           </div>
         </div>
@@ -318,7 +323,9 @@ const ImagePreviewModalImpl = (
         onClick={event => event.stopPropagation()}
       >
         {isZoomedBigger && caption !== '' ? (
-          <p className={captionStyle}>{caption}</p>
+          <p data-testid={'image-caption-zoomedin'} className={captionStyle}>
+            {caption}
+          </p>
         ) : null}
         <div className={imagePreviewActionBarStyle}>
           <div>
