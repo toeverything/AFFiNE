@@ -1,4 +1,5 @@
-import { Button, Input } from '@affine/component';
+import { IconButton } from '@affine/component';
+import { SendIcon } from '@blocksuite/icons';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { Provider, useAtomValue, useSetAtom } from 'jotai';
@@ -12,8 +13,8 @@ import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
 import {
   detailContentActionsStyle,
   detailContentStyle,
-  inputStyle,
   sendButtonStyle,
+  textareaStyle,
 } from './index.css';
 
 if (typeof window === 'undefined') {
@@ -71,22 +72,23 @@ const Actions = () => {
     <>
       <FollowingUp questions={questions} />
       <div className={detailContentActionsStyle}>
-        <Input
-          className={inputStyle}
+        <textarea
+          className={textareaStyle}
           value={input}
-          onChange={text => {
-            setInput(text);
+          placeholder="Type here ask Copilot some thing..."
+          onChange={e => {
+            setInput(e.target.value);
           }}
         />
-        <Button
+        <IconButton
           className={sendButtonStyle}
           onClick={useCallback(async () => {
             await call(input);
             await generateFollowingUp();
           }, [call, generateFollowingUp, input])}
         >
-          send
-        </Button>
+          <SendIcon />
+        </IconButton>
       </div>
     </>
   );

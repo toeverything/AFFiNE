@@ -13,15 +13,31 @@ export const detailContentStyle = style({
 
 export const detailContentActionsStyle = style({
   marginTop: 'auto',
-  alignItems: 'flex-end',
   marginBottom: '10px',
   fontSize: 'var(--affine-font-xs)',
+  display: 'flex',
+  width: '100%',
+  justifyContent: 'space-between',
 });
-export const inputStyle = style({
+export const textareaStyle = style({
   fontSize: 'var(--affine-font-xs)',
+  border: '1px solid var(--affine-border-color)',
+  width: '100%',
+  borderRadius: '4px',
+  background: 'var(--affine-hover-color)',
+  height: '117px',
+  padding: '8px 10px',
+  '::placeholder': {
+    color: 'var(--affine-text-secondary-color)',
+  },
 });
 export const sendButtonStyle = style({
-  marginTop: '10px',
-  borderRadius: '8px',
   fontSize: 'var(--affine-font-xs)',
+  width: '16px',
+  height: '16px',
+  marginLeft: '8px',
+  ':hover': {
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+  },
 });
