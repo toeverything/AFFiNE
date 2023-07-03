@@ -25,6 +25,9 @@ on:
       - '!.github/actions/build-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
 
+env:
+  BUILD_TYPE: canary
+
 jobs:
   main:
     name: Nx Cloud - Main Job
