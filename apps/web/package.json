@@ -4,8 +4,8 @@
   "version": "0.7.0-canary.30",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "ts-node-esm server.mts"
+    "build": "next build && next export",
+    "start": "next start"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",

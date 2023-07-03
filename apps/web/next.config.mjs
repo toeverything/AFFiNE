@@ -55,7 +55,6 @@ const profileTarget = {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   typescript: {
     // We use `yarn typecheck` on top level to check types
     ignoreBuildErrors: true,
@@ -155,16 +154,13 @@ const nextConfig = {
   pageExtensions: [
     ...(buildFlags.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx']),
   ],
-};
-
-if (!process.env.CI) {
-  nextConfig.rewrites = async () => [
+  rewrites: async () => [
     {
       source: '/api/auth/:path*/:path2*',
       destination: 'http://localhost:3010/api/auth/:path*/:path2*',
     },
-  ];
-}
+  ],
+};
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
 const withDebugLocal = debugLocal(
