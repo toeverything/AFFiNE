@@ -45,17 +45,12 @@ if (process.env.COVERAGE === 'true') {
 }
 
 const profileTarget = {
-  ac: '100.85.73.88:12001',
-  dev: '100.84.105.99:11001',
-  test: '100.84.105.99:11001',
-  stage: '',
-  prod: 'https://app.affine.pro',
   local: '127.0.0.1:3000',
 };
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  output: process.env.NODE_ENV === 'development' ? 'standalone' : 'export',
   typescript: {
     // We use `yarn typecheck` on top level to check types
     ignoreBuildErrors: true,
@@ -109,9 +104,7 @@ const nextConfig = {
     BUILD_DATE: new Date().toISOString(),
     gitVersion: getGitVersion(),
     hash: getCommitHash(),
-    serverAPI:
-      profileTarget[process.env.API_SERVER_PROFILE || 'dev'] ??
-      profileTarget.dev,
+    serverAPI: profileTarget.local,
     editorFlags: blockSuiteFeatureFlags,
     ...buildFlags,
   },
@@ -156,6 +149,15 @@ const nextConfig = {
     ...(buildFlags.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx']),
   ],
 };
+
+if (process.env.NODE_ENV === 'development') {
+  nextConfig.rewrites = async () => [
+    {
+      source: '/api/auth/:path*/:path2*',
+      destination: 'http://localhost:3010/api/auth/:path*/:path2*',
+    },
+  ];
+}
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
 const withDebugLocal = debugLocal(
