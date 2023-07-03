@@ -1,3 +1,4 @@
+import { Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
@@ -51,37 +52,39 @@ export const EditorModeSwitch = ({
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [setSetting, t]);
   return (
-    <StyledEditorModeSwitch
-      style={style}
-      switchLeft={currentMode === 'page'}
-      showAlone={trash}
-    >
-      <PageSwitchItem
-        data-testid="switch-page-mode-button"
-        active={currentMode === 'page'}
-        hide={trash && currentMode !== 'page'}
-        onClick={() => {
-          setSetting(setting => {
-            if (setting?.mode !== 'page') {
-              toast(t['com.affine.pageMode']());
-            }
-            return { ...setting, mode: 'page' };
-          });
-        }}
-      />
-      <EdgelessSwitchItem
-        data-testid="switch-edgeless-mode-button"
-        active={currentMode === 'edgeless'}
-        hide={trash && currentMode !== 'edgeless'}
-        onClick={() => {
-          setSetting(setting => {
-            if (setting?.mode !== 'edgeless') {
-              toast(t['com.affine.edgelessMode']());
-            }
-            return { ...setting, mode: 'edgeless' };
-          });
-        }}
-      />
-    </StyledEditorModeSwitch>
+    <Tooltip content={'Switch ⌘ + S'}>
+      <StyledEditorModeSwitch
+        style={style}
+        switchLeft={currentMode === 'page'}
+        showAlone={trash}
+      >
+        <PageSwitchItem
+          data-testid="switch-page-mode-button"
+          active={currentMode === 'page'}
+          hide={trash && currentMode !== 'page'}
+          onClick={() => {
+            setSetting(setting => {
+              if (setting?.mode !== 'page') {
+                toast(t['com.affine.pageMode']());
+              }
+              return { ...setting, mode: 'page' };
+            });
+          }}
+        />
+        <EdgelessSwitchItem
+          data-testid="switch-edgeless-mode-button"
+          active={currentMode === 'edgeless'}
+          hide={trash && currentMode !== 'edgeless'}
+          onClick={() => {
+            setSetting(setting => {
+              if (setting?.mode !== 'edgeless') {
+                toast(t['com.affine.edgelessMode']());
+              }
+              return { ...setting, mode: 'edgeless' };
+            });
+          }}
+        />
+      </StyledEditorModeSwitch>
+    </Tooltip>
   );
 };
