@@ -33,13 +33,14 @@ declare global {
       workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
     };
     events: any;
-    __migration_done__: boolean;
   }
 
   interface WindowEventMap {
     'migration-done': CustomEvent;
   }
 
+  // eslint-disable-next-line no-var
+  var $migrationDone: boolean;
   // eslint-disable-next-line no-var
   var platform: Platform | undefined;
   // eslint-disable-next-line no-var
