@@ -129,6 +129,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         path: join(homedir(), '.affine-storage'),
       },
     },
+    redis: {
+      enabled: false,
+      host: '',
+    },
   } as const;
 
   applyEnvToConfig(defaultConfig);

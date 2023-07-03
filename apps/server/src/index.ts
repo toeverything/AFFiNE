@@ -28,10 +28,6 @@ app.use(
   })
 );
 
-const redisIoAdapter = new RedisIoAdapter(app);
-await redisIoAdapter.connectToRedis();
-app.useWebSocketAdapter(redisIoAdapter);
-
 const config = app.get(Config);
 
 const host = config.host ?? 'localhost';
@@ -39,6 +35,12 @@ const port = config.port ?? 3010;
 
 if (!config.objectStorage.r2.enabled) {
   app.use('/assets', staticMiddleware(config.objectStorage.fs.path));
+}
+
+if (config.redis.enabled) {
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis(config.redis.host);
+  app.useWebSocketAdapter(redisIoAdapter);
 }
 
 await app.listen(port, host);
