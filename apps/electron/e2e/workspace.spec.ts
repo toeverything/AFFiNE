@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 
 import { test } from './fixture';
 
-test.skip('check workspace has a DB file', async ({ appInfo, workspace }) => {
+test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   const w = await workspace.current();
   const dbPath = path.join(
     appInfo.sessionData,
@@ -17,11 +17,8 @@ test.skip('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
+test('move workspace db file', async ({ page, appInfo, workspace, router }) => {
   const w = await workspace.current();
-  const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
-  // goto settings
-  await settingButton.click();
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp-dir');
 
@@ -33,6 +30,7 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
     });
   }, tmpPath);
 
+  await router.goto('setting');
   await page.getByTestId('move-folder').click();
   // check if db file exists
   await page.waitForSelector('text="Move folder success"');
@@ -42,11 +40,10 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
   expect(files.some(f => f.endsWith('.affine'))).toBe(true);
 });
 
-test.skip('export then add', async ({ page, appInfo, workspace }) => {
+test('export then add', async ({ page, appInfo, workspace, router }) => {
   const w = await workspace.current();
-  const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
-  // goto settings
-  await settingButton.click();
+
+  await router.goto('setting');
 
   const originalId = w.id;
 

@@ -16,6 +16,8 @@ function generateUUID() {
   return crypto.randomUUID();
 }
 
+type RoutePath = 'setting';
+
 export const test = base.extend<{
   page: Page;
   electronApp: ElectronApplication;
@@ -27,6 +29,9 @@ export const test = base.extend<{
   workspace: {
     // get current workspace
     current: () => Promise<any>; // todo: type
+  };
+  router: {
+    goto: (path: RoutePath) => Promise<void>;
   };
 }>({
   page: async ({ electronApp }, use) => {
@@ -41,10 +46,6 @@ export const test = base.extend<{
         });
       });
     }
-    const logFilePath = await page.evaluate(async () => {
-      // @ts-expect-error
-      return window.apis?.debug.logFilePath();
-    });
     // wat for blocksuite to be loaded
     await page.waitForSelector('v-line');
     if (enableCoverage) {
@@ -71,10 +72,6 @@ export const test = base.extend<{
       );
     }
     await page.close();
-    if (logFilePath) {
-      const logs = await fs.readFile(logFilePath, 'utf-8');
-      console.log(logs);
-    }
   },
   electronApp: async ({}, use) => {
     // a random id to avoid conflicts between tests
@@ -131,6 +128,20 @@ export const test = base.extend<{
           // @ts-expect-error
           return globalThis.currentWorkspace;
         });
+      },
+    });
+  },
+  router: async ({ page, workspace }, use) => {
+    await use({
+      goto: async (path: RoutePath) => {
+        // todo - deal with other paths
+        if (path === 'setting') {
+          const w = await workspace.current();
+          const location = await page.evaluate(async () => {
+            return window.location;
+          });
+          await page.goto(location.origin + `/workspace/${w.id}/${path}`);
+        }
       },
     });
   },
