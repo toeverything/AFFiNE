@@ -12,8 +12,34 @@ export const conversationStyle = style({
   fontSize: 'var(--affine-font-xs)',
   lineHeight: '16px',
   borderRadius: '18px',
-  maxWidth: 'calc(100% - 30px)',
   position: 'relative',
+});
+export const conversationContainerStyle = style({
+  maxWidth: '90%',
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'relative',
+});
+export const insertButtonsStyle = style({
+  width: '100%',
+  marginTop: '10px',
+  display: 'flex',
+  flexWrap: 'wrap',
+});
+export const insertButtonStyle = style({
+  maxWidth: '100%',
+  padding: '16px 8px',
+  fontSize: 'var(--affine-font-xs)',
+  borderRadius: '8px',
+  border: '1px solid var(--affine-border-color)',
+  cursor: 'pointer',
+  backgroundColor: 'var(--affine-white)',
+  margin: '0 4px',
+  gap: '8px',
+  ':hover': {
+    background: 'var(--affine-white),var(--affine-hover-color)',
+    borderColor: 'var(--affine-border-color)',
+  },
 });
 export const avatarRightStyle = style({
   flexDirection: 'row-reverse',

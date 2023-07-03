@@ -1,5 +1,6 @@
+import { Button } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { ResetIcon } from '@blocksuite/icons';
+import { PlusIcon,ResetIcon } from '@blocksuite/icons';
 import { clsx } from 'clsx';
 import type { MessageType } from 'langchain/schema';
 import { marked } from 'marked';
@@ -31,25 +32,47 @@ export const Conversation = (props: ConversationProps): ReactElement => {
       })}
     >
       <WorkspaceAvatar workspace={null} />
-      <div
-        className={clsx(styles.conversationStyle, {
-          [styles.aiMessageStyle]: props.type === 'ai',
-          [styles.humanMessageStyle]: props.type === 'human',
-        })}
-      >
-        {props.type === 'ai' ? (
-          <div className={styles.regenerateButtonStyle}>
-            <div className={styles.resetIconStyle}>
-              <ResetIcon />
+      <div className={styles.conversationContainerStyle}>
+        <div
+          className={clsx(styles.conversationStyle, {
+            [styles.aiMessageStyle]: props.type === 'ai',
+            [styles.humanMessageStyle]: props.type === 'human',
+          })}
+        >
+          {props.type === 'ai' ? (
+            <div className={styles.regenerateButtonStyle}>
+              <div className={styles.resetIconStyle}>
+                <ResetIcon />
+              </div>
+              Regenerate
             </div>
-            Regenerate
+          ) : null}
+          <div
+            dangerouslySetInnerHTML={{
+              __html: html,
+            }}
+          ></div>
+        </div>
+        {props.type === 'ai' ? (
+          <div className={styles.insertButtonsStyle}>
+            <Button
+              icon={<PlusIcon />}
+              size="small"
+              className={styles.insertButtonStyle}
+              hoverColor="var(--affine-text-primary-color)"
+            >
+              Insert list block only
+            </Button>
+            <Button
+              icon={<PlusIcon />}
+              size="small"
+              className={styles.insertButtonStyle}
+              hoverColor="var(--affine-text-primary-color)"
+            >
+              Insert all
+            </Button>
           </div>
         ) : null}
-        <div
-          dangerouslySetInnerHTML={{
-            __html: html,
-          }}
-        ></div>
       </div>
     </div>
   );
