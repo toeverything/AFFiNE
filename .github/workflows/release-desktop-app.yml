@@ -130,7 +130,7 @@ jobs:
         run: yarn run build:plugins
 
       - name: Build Desktop Layers
-        run: yarn nx build @affine/electron
+        run: yarn workspace @affine/electron build
 
       - name: Signing By Apple Developer ID
         if: ${{ matrix.spec.platform == 'darwin' }}

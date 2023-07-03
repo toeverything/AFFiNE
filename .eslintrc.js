@@ -83,7 +83,7 @@ const config = {
     '@typescript-eslint',
     'simple-import-sort',
     'sonarjs',
-    'import',
+    'i',
     'unused-imports',
     'unicorn',
   ],

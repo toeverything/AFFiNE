@@ -1,0 +1,25 @@
+{
+  "name": "@affine/native",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "root": "packages/native",
+  "sourceRoot": "packages/native/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "dependsOn": ["^build"],
+      "options": {
+        "script": "build"
+      },
+      "inputs": [
+        {
+          "runtime": "rustc --version"
+        },
+        {
+          "runtime": "node -v"
+        }
+      ],
+      "outputs": ["{projectRoot}/*.node", "{workspaceRoot}/affine.db"]
+    }
+  }
+}

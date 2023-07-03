@@ -157,11 +157,11 @@ export const EditCollection = ({
         className={styles.scrollContainer}
         viewPortClassName={styles.container}
       >
-        <div className={styles.excludeList}>
-          <div className={styles.excludeTitle}>
-            Exclude from this collection
-          </div>
-          {value.excludeList ? (
+        {value.excludeList?.length ? (
+          <div className={styles.excludeList}>
+            <div className={styles.excludeTitle}>
+              Exclude from this collection
+            </div>
             <div className={styles.excludeListContent}>
               {value.excludeList.map(id => {
                 return (
@@ -174,11 +174,11 @@ export const EditCollection = ({
                 );
               })}
             </div>
-          ) : null}
-          <div className={styles.excludeTip}>
-            These pages will never appear in the current collection
+            <div className={styles.excludeTip}>
+              These pages will never appear in the current collection
+            </div>
           </div>
-        </div>
+        ) : null}
         <div
           style={{
             backgroundColor: 'var(--affine-hover-color)',

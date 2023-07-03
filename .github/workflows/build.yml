@@ -106,26 +106,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: next-js
-          path: ./apps/web/.next
-          if-no-files-found: error
-
-  build-web-desktop:
-    name: Build @affine/web (Desktop)
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-
-      - name: Export static resources
-        run: yarn nx export @affine/web
-
-      - name: Upload static resources artifact
-        uses: actions/upload-artifact@v3
-        with:
           name: next-js-static
           path: ./apps/web/out
           if-no-files-found: error
@@ -173,8 +153,11 @@ jobs:
         uses: ./.github/actions/setup-rust
         with:
           target: 'x86_64-unknown-linux-gnu'
+      - name: Build Storage
+        run: yarn build:storage
       - name: Run server tests
-        run: yarn nx test:coverage @affine/server
+        run: yarn test:coverage
+        working-directory: apps/server
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -220,18 +203,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5]
     environment: development
-    needs: [build-web, build-storybook]
-    services:
-      octobase:
-        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-        ports:
-          - 3000:3000
-        env:
-          SIGN_KEY: 'test123'
-          RUST_LOG: 'debug'
-          JWST_DEV: '1'
+    needs: build-web
 
     steps:
       - uses: actions/checkout@v3
@@ -242,18 +216,8 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js
-          path: ./apps/web/.next
-
-      - name: Download storybook artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: storybook
-          path: ./apps/storybook/storybook-static
-
-      - name: Wait for Octobase Ready
-        run: |
-          node ./scripts/wait-3000-healthz.mjs
+          name: next-js-static
+          path: ./apps/web/out
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
@@ -356,7 +320,7 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
-    needs: [build-web-desktop]
+    needs: [build-web]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -382,7 +346,7 @@ jobs:
         run: yarn run build:plugins
 
       - name: Build Desktop Layers
-        run: yarn nx build @affine/electron
+        run: yarn workspace @affine/electron build
 
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
@@ -392,13 +356,13 @@ jobs:
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn nx test @affine/electron
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine/electron test
         env:
           COVERAGE: true
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
-        run: yarn nx test @affine/electron
+        run: yarn workspace @affine/electron test
         env:
           COVERAGE: true
 
@@ -428,20 +392,13 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    services:
-      octobase:
-        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-        ports:
-          - 3000:3000
-        env:
-          SIGN_KEY: 'test123'
-          RUST_LOG: 'debug'
-          JWST_DEV: '1'
-
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+
+      - name: Build Infra
+        run: yarn run build:infra
 
       - name: Unit Test
         run: yarn nx test:coverage @affine/monorepo

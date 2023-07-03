@@ -5,7 +5,7 @@
     "default": {
       "runner": "nx-cloud",
       "options": {
-        "cacheableOperations": ["build", "test"],
+        "cacheableOperations": ["build", "test", "e2e", "lint"],
         "accessToken": "YmQ2NTg1ODktZTk5Mi00YzhiLTk2ZmUtNWQzMDg0NDBkOWM3fHJlYWQtb25seQ=="
       }
     }
@@ -15,12 +15,15 @@
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
-    "packages": ["{workspaceRoot}/packages/**/*"],
     "sharedGlobals": [
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/nx.json"
     ],
-    "production": ["default"]
+    "production": [
+      "default",
+      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)"
+    ]
   },
   "targetDefaults": {
     "build": {
@@ -29,18 +32,10 @@
         "{projectRoot}/dist",
         "{projectRoot}/build",
         "{projectRoot}/out",
-        "{projectRoot}/node_modules/.cache",
-        "{projectRoot}/target",
-        "{workspaceRoot}/apps/web/.next",
-        "{workspaceRoot}/apps/storybook/storybook-static",
-        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
-        "{workspaceRoot}/packages/native/affine.*.node",
-        "{workspaceRoot}/packages/storage/*.node",
-        "{workspaceRoot}/affine.db",
-        "{workspaceRoot/apps/electron/dist"
+        "{projectRoot}/storybook-static",
+        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts"
       ],
       "inputs": [
-        "packages",
         {
           "runtime": "node -v"
         },
@@ -83,7 +78,7 @@
       ]
     },
     "e2e": {
-      "dependsOn": ["^build"],
+      "outputs": ["{workspaceRoot}/.nyc_output", "{projectRoot}/test-results"],
       "inputs": [
         {
           "runtime": "node -v"
@@ -93,23 +88,55 @@
         }
       ]
     },
-    "export": {
-      "dependsOn": ["build"]
-    },
-    "dev": {
-      "dependsOn": ["^dev"]
-    },
     "e2e:coverage": {
-      "dependsOn": ["^build"]
+      "outputs": ["{workspaceRoot}/.nyc_output", "{projectRoot}/test-results"],
+      "inputs": [
+        {
+          "runtime": "node -v"
+        },
+        {
+          "runtime": "yarn playwright --version"
+        }
+      ]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "outputs": ["{workspaceRoot}/.nyc_output"],
+      "inputs": [
+        {
+          "env": "NATIVE_TEST"
+        },
+        {
+          "env": "ENABLE_PRELOADING"
+        },
+        {
+          "env": "COVERAGE"
+        }
+      ]
     },
     "test:ui": {
-      "dependsOn": ["^build"]
+      "outputs": ["{workspaceRoot}/.nyc_output"],
+      "inputs": [
+        {
+          "env": "NATIVE_TEST"
+        },
+        {
+          "env": "ENABLE_PRELOADING"
+        },
+        {
+          "env": "COVERAGE"
+        }
+      ]
     },
     "test:coverage": {
-      "dependsOn": ["^build"]
+      "outputs": ["{workspaceRoot}/.nyc_output"],
+      "inputs": [
+        {
+          "env": "NATIVE_TEST"
+        },
+        {
+          "env": "ENABLE_PRELOADING"
+        }
+      ]
     }
   }
 }
