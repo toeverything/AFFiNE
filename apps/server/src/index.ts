@@ -1,6 +1,7 @@
 /// <reference types="./global.d.ts" />
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import cookieParser from 'cookie-parser';
 import { static as staticMiddleware } from 'express';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
@@ -26,6 +27,8 @@ app.use(
     maxFiles: 5,
   })
 );
+
+app.use(cookieParser());
 
 const config = app.get(Config);
 
