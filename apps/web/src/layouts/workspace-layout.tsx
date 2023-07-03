@@ -43,10 +43,6 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
-import {
-  publicWorkspaceAtom,
-  publicWorkspaceIdAtom,
-} from '../atoms/public-workspace';
 import { AppContainer } from '../components/affine/app-container';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
@@ -78,24 +74,6 @@ const SettingModal = lazy(() =>
   }))
 );
 
-export const PublicQuickSearch: FC = () => {
-  const publicWorkspace = useAtomValue(publicWorkspaceAtom);
-  const router = useRouter();
-  const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
-    openQuickSearchModalAtom
-  );
-  return (
-    <Suspense>
-      <QuickSearchModal
-        blockSuiteWorkspace={publicWorkspace.blockSuiteWorkspace}
-        open={openQuickSearchModal}
-        setOpen={setOpenQuickSearchModalAtom}
-        router={router}
-      />
-    </Suspense>
-  );
-};
-
 function DefaultProvider({ children }: PropsWithChildren) {
   return <>{children}</>;
 }
@@ -107,13 +85,7 @@ export const QuickSearch: FC = () => {
     openQuickSearchModalAtom
   );
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
-  const isPublicWorkspace =
-    router.pathname.split('/')[1] === 'public-workspace';
-  const publicWorkspaceId = useAtomValue(publicWorkspaceIdAtom);
   if (!blockSuiteWorkspace) {
-    if (isPublicWorkspace && publicWorkspaceId) {
-      return <PublicQuickSearch />;
-    }
     return null;
   }
   return (
@@ -127,13 +99,10 @@ export const QuickSearch: FC = () => {
 };
 export const Setting: FC = () => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const router = useRouter();
   const [openSettingModal, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
-  const isPublicWorkspace =
-    router.pathname.split('/')[1] === 'public-workspace';
-  if (!blockSuiteWorkspace || isPublicWorkspace) {
+  if (!blockSuiteWorkspace) {
     return null;
   }
   return (
