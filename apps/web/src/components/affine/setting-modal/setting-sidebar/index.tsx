@@ -89,23 +89,25 @@ export const SettingSidebar = ({
         })}
       </div>
 
-      <div className={accountButton} onClick={onAccountSettingClick}>
-        <UserAvatar
-          size={28}
-          name="Account NameAccount Name"
-          url={''}
-          className="avatar"
-        />
+      {runtimeConfig.enableCloud && (
+        <div className={accountButton} onClick={onAccountSettingClick}>
+          <UserAvatar
+            size={28}
+            name="Account NameAccount Name"
+            url={''}
+            className="avatar"
+          />
 
-        <div className="content">
-          <div className="name" title="xxx">
-            Account NameAccount Name
-          </div>
-          <div className="email" title="xxx">
-            xxxxxxxx@gmail.comxxxxxxxx@gmail.com
+          <div className="content">
+            <div className="name" title="xxx">
+              Account NameAccount Name
+            </div>
+            <div className="email" title="xxx">
+              xxxxxxxx@gmail.comxxxxxxxx@gmail.com
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -52,6 +52,7 @@ declare global {
 }
 
 export const buildFlagsSchema = z.object({
+  enableAllPageSaving: z.boolean(),
   enablePlugin: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
@@ -63,6 +64,7 @@ export const buildFlagsSchema = z.object({
   enableNewSettingUnstableApi: z.boolean(),
   enableSQLiteProvider: z.boolean(),
   enableNotificationCenter: z.boolean(),
+  enableCloud: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({

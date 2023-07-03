@@ -19,10 +19,13 @@ export const blockSuiteFeatureFlags = {
  */
 const buildPreset = {
   stable: {
+    enableAllPageSaving: false,
     enablePlugin: false,
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
+    // never set this to true in stable, because legacy cloud has deprecated
+    //  and related code will be removed in the future
     enableLegacyCloud: false,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
     enablePreloading: true,
@@ -30,11 +33,13 @@ const buildPreset = {
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
     enableNotificationCenter: false,
+    enableCloud: false,
   },
   beta: {},
   internal: {},
   // canary will be aggressive and enable all features
   canary: {
+    enableAllPageSaving: true,
     enablePlugin: true,
     enableTestProperties: true,
     enableBroadcastChannelProvider: true,
@@ -46,6 +51,7 @@ const buildPreset = {
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
     enableNotificationCenter: true,
+    enableCloud: false,
   },
 };
 
@@ -56,7 +62,7 @@ buildPreset.internal = buildPreset.stable;
 const currentBuild = process.env.BUILD_TYPE || 'stable';
 
 if (process.env.CI && !process.env.BUILD_TYPE) {
-  throw new Error('BUILD_TYPE is required in CI');
+  throw new Error('BUILD_ENV is required in CI');
 }
 
 const currentBuildPreset = buildPreset[currentBuild];
@@ -65,6 +71,9 @@ const environmentPreset = {
   enablePlugin: process.env.ENABLE_PLUGIN
     ? process.env.ENABLE_PLUGIN === 'true'
     : currentBuildPreset.enablePlugin,
+  enableAllPageSaving: process.env.ENABLE_ALL_PAGE_SAVING
+    ? process.env.ENABLE_ALL_PAGE_FILTER === 'true'
+    : currentBuildPreset.enableAllPageSaving,
   enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
     ? process.env.ENABLE_TEST_PROPERTIES === 'true'
     : currentBuildPreset.enableTestProperties,
