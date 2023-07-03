@@ -1,4 +1,4 @@
-import { useAllPageSetting } from '@affine/component/page-list';
+import { useCollectionManager } from '@affine/component/page-list';
 import { QueryParamError } from '@affine/env/constant';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -16,7 +16,7 @@ import type { NextPageWithLayout } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
-  const setting = useAllPageSetting();
+  const setting = useCollectionManager();
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const t = useAFFiNEI18N();

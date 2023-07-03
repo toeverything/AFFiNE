@@ -1,4 +1,5 @@
 import { EditCollectionModel } from '@affine/component/page-list';
+import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import {
   DeleteIcon,
@@ -13,15 +14,17 @@ import type { ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '../../../ui/button/button';
-import { useAllPageSetting } from '../use-all-page-setting';
+import { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
 
 export const CollectionBar = ({
   getPageInfo,
+  propertiesMeta,
 }: {
   getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
 }) => {
-  const setting = useAllPageSetting();
+  const setting = useCollectionManager();
   const collection = setting.currentCollection;
   const [open, setOpen] = useState(false);
   const actions: {
@@ -80,6 +83,7 @@ export const CollectionBar = ({
       <td>
         <div className={styles.view}>
           <EditCollectionModel
+            propertiesMeta={propertiesMeta}
             getPageInfo={getPageInfo}
             init={collection}
             open={open}

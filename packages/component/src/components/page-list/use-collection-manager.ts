@@ -31,16 +31,17 @@ const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
         },
       });
 
+const defaultCollection = {
+  id: NIL,
+  name: 'All',
+  filterList: [],
+};
 const collectionAtom = atomWithReset<{
   currentId: string;
   defaultCollection: Collection;
 }>({
   currentId: NIL,
-  defaultCollection: {
-    id: NIL,
-    name: 'All',
-    filterList: [],
-  },
+  defaultCollection: defaultCollection,
 });
 
 export const useSavedCollections = () => {
@@ -102,7 +103,7 @@ export const useSavedCollections = () => {
   };
 };
 
-export const useAllPageSetting = () => {
+export const useCollectionManager = () => {
   const { savedCollections, saveCollection, deleteCollection, addPage } =
     useSavedCollections();
   const [collectionData, setCollectionData] = useAtom(collectionAtom);
@@ -132,6 +133,18 @@ export const useAllPageSetting = () => {
   const backToAll = useCallback(() => {
     setCollectionData(RESET);
   }, [setCollectionData]);
+  const setTemporaryFilter = useCallback(
+    (filterList: Filter[]) => {
+      setCollectionData({
+        currentId: NIL,
+        defaultCollection: {
+          ...defaultCollection,
+          filterList: filterList,
+        },
+      });
+    },
+    [setCollectionData]
+  );
   const currentCollection =
     collectionData.currentId === NIL
       ? collectionData.defaultCollection
@@ -149,6 +162,7 @@ export const useAllPageSetting = () => {
     backToAll,
     deleteCollection,
     addPage,
+    setTemporaryFilter,
   };
 };
 export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>

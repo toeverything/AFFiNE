@@ -7,20 +7,24 @@ import { renderHook } from '@testing-library/react';
 import { expect, test } from 'vitest';
 
 import { createDefaultFilter, vars } from '../filter/vars';
-import { useAllPageSetting } from '../use-all-page-setting';
+import { useCollectionManager } from '../use-collection-manager';
+
+const defaultMeta = { tags: { options: [] } };
 
 test('useAllPageSetting', async () => {
-  const settingHook = renderHook(() => useAllPageSetting());
+  const settingHook = renderHook(() => useCollectionManager());
   const prevCollection = settingHook.result.current.currentCollection;
   expect(settingHook.result.current.savedCollections).toEqual([]);
   await settingHook.result.current.updateCollection({
     ...settingHook.result.current.currentCollection,
-    filterList: [createDefaultFilter(vars[0])],
+    filterList: [createDefaultFilter(vars[0], defaultMeta)],
   });
   settingHook.rerender();
   const nextCollection = settingHook.result.current.currentCollection;
   expect(nextCollection).not.toBe(prevCollection);
-  expect(nextCollection.filterList).toEqual([createDefaultFilter(vars[0])]);
+  expect(nextCollection.filterList).toEqual([
+    createDefaultFilter(vars[0], defaultMeta),
+  ]);
   settingHook.result.current.backToAll();
   await settingHook.result.current.saveCollection({
     ...settingHook.result.current.currentCollection,

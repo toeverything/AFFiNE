@@ -1,4 +1,5 @@
 import type { Collection } from '@affine/env/filter';
+import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import {
   EdgelessIcon,
@@ -25,6 +26,7 @@ type CreateCollectionProps = {
   onConfirm: (collection: Collection) => void;
   onConfirmText?: string;
   getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
 };
 export const EditCollectionModel = ({
   init,
@@ -32,12 +34,14 @@ export const EditCollectionModel = ({
   open,
   onClose,
   getPageInfo,
+  propertiesMeta,
 }: {
   init?: Collection;
   onConfirm: (view: Collection) => void;
   open: boolean;
   onClose: () => void;
   getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
 }) => {
   return (
     <Modal open={open} onClose={onClose}>
@@ -56,6 +60,7 @@ export const EditCollectionModel = ({
         />
         {init ? (
           <EditCollection
+            propertiesMeta={propertiesMeta}
             title="Update Collection"
             onConfirmText="Save"
             init={init}
@@ -120,6 +125,7 @@ export const EditCollection = ({
   onCancel,
   onConfirmText,
   getPageInfo,
+  propertiesMeta,
 }: CreateCollectionProps & {
   onCancel: () => void;
 }) => {
@@ -189,6 +195,7 @@ export const EditCollection = ({
         >
           <div className={styles.filterTitle}>Filters</div>
           <FilterList
+            propertiesMeta={propertiesMeta}
             value={value.filterList}
             onChange={list =>
               onChange({
@@ -262,6 +269,7 @@ export const SaveCollectionButton = ({
   init,
   onConfirm,
   getPageInfo,
+  propertiesMeta,
 }: CreateCollectionProps) => {
   const [show, changeShow] = useState(false);
   return (
@@ -280,6 +288,7 @@ export const SaveCollectionButton = ({
         </div>
       </Button>
       <EditCollectionModel
+        propertiesMeta={propertiesMeta}
         init={init}
         onConfirm={onConfirm}
         open={show}
