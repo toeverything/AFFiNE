@@ -249,6 +249,22 @@ impl SqliteConnection {
             acc
           }
         }) == 2
+        // also check if updates table has data and doc_id column
+        && if let Ok(res) = sqlx::query("PRAGMA table_info(updates)")
+          .fetch_all(&pool)
+          .await
+        {
+          let names = res.iter().map(|row| row.get(1));
+          names.fold(0, |acc, cur: String| {
+            if cur == "data" || cur == "doc_id" {
+              acc + 1
+            } else {
+              acc
+            }
+          }) == 2
+        } else {
+          false
+        }
       } else {
         false
       }
