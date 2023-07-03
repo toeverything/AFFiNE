@@ -151,18 +151,21 @@ const nextConfig = {
 
     return config;
   },
-  rewrites: async () => [
-    {
-      source: '/api/auth/:path*/:path2*',
-      destination: 'http://localhost:3010/api/auth/:path*/:path2*',
-    },
-  ],
   basePath: process.env.NEXT_BASE_PATH,
   assetPrefix: process.env.NEXT_ASSET_PREFIX,
   pageExtensions: [
     ...(buildFlags.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx']),
   ],
 };
+
+if (!process.env.CI) {
+  nextConfig.rewrites = async () => [
+    {
+      source: '/api/auth/:path*/:path2*',
+      destination: 'http://localhost:3010/api/auth/:path*/:path2*',
+    },
+  ];
+}
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
 const withDebugLocal = debugLocal(
