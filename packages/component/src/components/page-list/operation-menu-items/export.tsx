@@ -38,8 +38,8 @@ const ExportToPdfMenuItem = ({
           onSelect?.({ type: 'pdf' });
           setPushNotification({
             key: 'export-to-pdf',
-            title: 'export',
-            message: 'Export success',
+            title: t['com.affine.export.success.title'](),
+            message: t['com.affine.export.success.message'](),
             type: 'success',
           });
         })
@@ -47,8 +47,8 @@ const ExportToPdfMenuItem = ({
           console.error(err);
           setPushNotification({
             key: 'export-to-pdf',
-            title: 'export',
-            message: 'Export error',
+            title: t['com.affine.export.error.title'](),
+            message: t['com.affine.export.error.message'](),
             type: 'error',
           });
         });
@@ -63,8 +63,8 @@ const ExportToPdfMenuItem = ({
           onSelect?.({ type: 'pdf' });
           setPushNotification({
             key: 'export-to-pdf',
-            title: 'export',
-            message: 'Export success',
+            title: t['com.affine.export.success.title'](),
+            message: t['com.affine.export.success.message'](),
             type: 'success',
           });
         })
@@ -72,13 +72,13 @@ const ExportToPdfMenuItem = ({
           console.error(err);
           setPushNotification({
             key: 'export-to-pdf',
-            title: 'export',
-            message: 'Export error',
+            title: t['com.affine.export.error.title'](),
+            message: t['com.affine.export.error.message'](),
             type: 'error',
           });
         });
     }
-  }, [currentEditor, onSelect, setPushNotification]);
+  }, [currentEditor, onSelect, setPushNotification, t]);
 
   return (
     <MenuItem
@@ -144,8 +144,8 @@ const ExportToPngMenuItem = ({
         onSelect?.({ type: 'png' });
         setPushNotification({
           key: 'export-to-pdf',
-          title: 'export',
-          message: 'Export success',
+          title: t['com.affine.export.success.title'](),
+          message: t['com.affine.export.success.message'](),
           type: 'success',
         });
       })
@@ -153,12 +153,12 @@ const ExportToPngMenuItem = ({
         console.error(err);
         setPushNotification({
           key: 'export-to-pdf',
-          title: 'export',
-          message: 'Export error',
+          title: t['com.affine.export.error.title'](),
+          message: t['com.affine.export.error.message'](),
           type: 'error',
         });
       });
-  }, [currentEditor, onSelect, setPushNotification]);
+  }, [currentEditor, onSelect, setPushNotification, t]);
 
   return (
     <>
