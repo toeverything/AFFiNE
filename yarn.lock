@@ -11436,8 +11436,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/infra@workspace:packages/infra"
   dependencies:
+    async-call-rpc: ^6.3.1
+    electron: "link:../../apps/electron/node_modules/electron"
     vite: ^4.3.9
     vite-plugin-dts: 3.0.2
+  peerDependencies:
+    async-call-rpc: "*"
+    electron: "*"
+  peerDependenciesMeta:
+    async-call-rpc:
+      optional: true
+    electron:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -17051,6 +17061,12 @@ __metadata:
   checksum: a283b1ee0b0355a54602c807dcf55e7cef92b79ddd08de8ec1e0913ca0c976ed0c03ec651fb0cc69ff86d6a21f2caef7d6992b83c03af772cc03ddf17fd68151
   languageName: node
   linkType: hard
+
+"electron@link:../../apps/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Finfra":
+  version: 0.0.0-use.local
+  resolution: "electron@link:../../apps/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Finfra"
+  languageName: node
+  linkType: soft
 
 "electron@npm:^25.2.0":
   version: 25.2.0

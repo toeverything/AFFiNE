@@ -1,12 +1,16 @@
+import type {
+  HelperToMain,
+  MainToHelper,
+} from '@toeverything/infra/preload/electron';
 import { AsyncCall } from 'async-call-rpc';
 
 import { getExposedMeta } from './exposed';
 
-const helperToMainServer: PeersAPIs.HelperToMain = {
+const helperToMainServer: HelperToMain = {
   getMeta: () => getExposedMeta(),
 };
 
-export const mainRPC = AsyncCall<PeersAPIs.MainToHelper>(helperToMainServer, {
+export const mainRPC = AsyncCall<MainToHelper>(helperToMainServer, {
   strict: {
     unknownMessage: false,
   },
