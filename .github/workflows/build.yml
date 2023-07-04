@@ -351,6 +351,7 @@ jobs:
         run: yarn nx test @affine/monorepo
         env:
           NATIVE_TEST: 'true'
+          ENABLE_TEST_PROPERTIES: 'true'
 
       - name: Build Infra
         run: yarn run build:infra
