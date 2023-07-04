@@ -12,7 +12,7 @@ export const Footer: React.FC = () => {
     WorkspaceAdapters[WorkspaceFlavour.AFFINE_CLOUD].UI.LoginCard;
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
-      <LoginCard />
+      {runtimeConfig.enableCloud && <LoginCard />}
     </StyledFooter>
   );
 };
