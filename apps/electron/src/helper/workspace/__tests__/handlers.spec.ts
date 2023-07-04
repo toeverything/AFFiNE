@@ -4,6 +4,8 @@ import fs from 'fs-extra';
 import { v4 } from 'uuid';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
+import { removeWithRetry } from '../../../../tests/utils';
+
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
 
@@ -20,7 +22,7 @@ vi.doMock('../../main-rpc', () => ({
 }));
 
 afterEach(async () => {
-  await fs.remove(tmpDir);
+  await removeWithRetry(tmpDir);
 });
 
 describe('list workspaces', () => {

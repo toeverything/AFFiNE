@@ -129,16 +129,10 @@ if (environment.isBrowser) {
         })
         .finally(() => {
           window.dispatchEvent(new CustomEvent('migration-done'));
+          window.$migrationDone = true;
         });
     } catch (e) {
       console.error('error when migrating data', e);
     }
-  }
-}
-
-declare global {
-  // global Events
-  interface WindowEventMap {
-    'migration-done': CustomEvent;
   }
 }

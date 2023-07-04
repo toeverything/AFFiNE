@@ -4,7 +4,7 @@ import type {
   WorkspaceAdapter,
   WorkspaceRegistry,
 } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import type { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -26,16 +26,9 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
     const flavours: string[] = Object.values(WorkspaceAdapters).map(
       plugin => plugin.flavour
     );
-    const jotaiWorkspaces = (await get(rootWorkspacesMetadataAtom))
-      .filter(
-        workspace => flavours.includes(workspace.flavour)
-        // TODO: remove this when we remove the legacy cloud
-      )
-      .filter(workspace =>
-        !runtimeConfig.enableLegacyCloud
-          ? workspace.flavour !== WorkspaceFlavour.AFFINE
-          : true
-      );
+    const jotaiWorkspaces = (await get(rootWorkspacesMetadataAtom)).filter(
+      workspace => flavours.includes(workspace.flavour)
+    );
     if (jotaiWorkspaces.some(meta => !('version' in meta))) {
       // wait until all workspaces have migrated to v2
       await new Promise((resolve, reject) => {
@@ -63,7 +56,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
       })
     ).then(workspaces =>
       workspaces.filter(
-        (workspace): workspace is WorkspaceRegistry['affine' | 'local'] =>
+        (workspace): workspace is WorkspaceRegistry['affine-cloud' | 'local'] =>
           workspace !== null
       )
     );

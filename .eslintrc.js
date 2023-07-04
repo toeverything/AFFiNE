@@ -204,6 +204,7 @@ const config = {
         'scripts/**/*',
         '**/benchmark/**/*',
         '**/__debug__/**/*',
+        '**/e2e/**/*',
       ],
       rules: {
         '@typescript-eslint/no-non-null-assertion': 0,

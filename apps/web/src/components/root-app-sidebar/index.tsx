@@ -11,13 +11,11 @@ import {
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { isDesktop } from '@affine/env/constant';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
   SettingsIcon,
-  ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
@@ -32,6 +30,7 @@ import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
+import ImportPage from './import-page';
 
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
@@ -174,30 +173,20 @@ export const RootAppSidebar = ({
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
           </RouteMenuLinkItem>
-          <RouteMenuLinkItem
-            data-testid="slider-bar-workspace-setting-button"
-            icon={<SettingsIcon />}
-            currentPath={currentPath}
-            path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
-          >
-            <span data-testid="settings">{t['Settings']()}</span>
-          </RouteMenuLinkItem>
+          {!runtimeConfig.enableNewSettingModal && (
+            <RouteMenuLinkItem
+              data-testid="slider-bar-workspace-setting-button"
+              icon={<SettingsIcon />}
+              currentPath={currentPath}
+              path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
+            >
+              <span data-testid="settings">{t['Settings']()}</span>
+            </RouteMenuLinkItem>
+          )}
           {runtimeConfig.enableNewSettingModal ? (
             <MenuItem icon={<SettingsIcon />} onClick={onOpenSettingModal}>
               <span data-testid="settings-modal-trigger">
                 {t['Settings']()}
-                <i
-                  style={{
-                    background: 'var(--affine-palette-line-blue)',
-                    borderRadius: '2px',
-                    fontSize: '8px',
-                    padding: '0 5px',
-                    color: 'var(--affine-white)',
-                    marginLeft: '15px',
-                  }}
-                >
-                  NEW
-                </i>
               </span>
             </MenuItem>
           ) : null}
@@ -208,25 +197,6 @@ export const RootAppSidebar = ({
           {blockSuiteWorkspace && (
             <FavoriteList currentWorkspace={currentWorkspace} />
           )}
-          {runtimeConfig.enableLegacyCloud &&
-            (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
-            currentWorkspace.public ? (
-              <RouteMenuLinkItem
-                icon={<ShareIcon />}
-                currentPath={currentPath}
-                path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
-              >
-                <span data-testid="Published-to-web">Published to web</span>
-              </RouteMenuLinkItem>
-            ) : (
-              <RouteMenuLinkItem
-                icon={<ShareIcon />}
-                currentPath={currentPath}
-                path={currentWorkspaceId && paths.shared(currentWorkspaceId)}
-              >
-                <span data-testid="shared-pages">{t['Shared Pages']()}</span>
-              </RouteMenuLinkItem>
-            ))}
           <CategoryDivider label={t['Collections']()} />
           {blockSuiteWorkspace && (
             <CollectionsList currentWorkspace={currentWorkspace} />
@@ -241,6 +211,9 @@ export const RootAppSidebar = ({
           >
             <span data-testid="trash-page">{t['Trash']()}</span>
           </RouteMenuLinkItem>
+          {blockSuiteWorkspace && (
+            <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
+          )}
         </SidebarScrollableContainer>
         <SidebarContainer>
           {isDesktop && <AppUpdaterButton />}

@@ -28,7 +28,7 @@ const buildPreset = {
     enableLegacyCloud: false,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
     enablePreloading: true,
-    enableNewSettingModal: false,
+    enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
     enableNotificationCenter: false,

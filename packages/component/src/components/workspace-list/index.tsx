@@ -1,5 +1,5 @@
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -18,17 +18,15 @@ import { workspaceItemStyle } from './index.css';
 export type WorkspaceListProps = {
   disabled?: boolean;
   currentWorkspaceId: string | null;
-  items: (AffineLegacyCloudWorkspace | LocalWorkspace)[];
-  onClick: (workspace: AffineLegacyCloudWorkspace | LocalWorkspace) => void;
-  onSettingClick: (
-    workspace: AffineLegacyCloudWorkspace | LocalWorkspace
-  ) => void;
+  items: (AffineCloudWorkspace | LocalWorkspace)[];
+  onClick: (workspace: AffineCloudWorkspace | LocalWorkspace) => void;
+  onSettingClick: (workspace: AffineCloudWorkspace | LocalWorkspace) => void;
   onDragEnd: (event: DragEndEvent) => void;
 };
 
 const SortableWorkspaceItem: FC<
   Omit<WorkspaceListProps, 'items'> & {
-    item: AffineLegacyCloudWorkspace | LocalWorkspace;
+    item: AffineCloudWorkspace | LocalWorkspace;
   }
 > = props => {
   const { setNodeRef, attributes, listeners, transform } = useSortable({
