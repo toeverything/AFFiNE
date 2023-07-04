@@ -81,7 +81,7 @@ export abstract class UIHandlerManager extends HandlerManager<
 > {}
 
 type ClipboardHandlers = {
-  copyAsPng: (dataURL: string) => Promise<void>;
+  copyAsImageFromString: (dataURL: string) => Promise<void>;
 };
 
 export abstract class ClipboardHandlerManager extends HandlerManager<
