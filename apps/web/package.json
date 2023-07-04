@@ -73,7 +73,7 @@
     "eslint-config-next": "^13.4.7",
     "eslint-plugin-unicorn": "^47.0.0",
     "express": "^4.18.2",
-    "next": "=13.4.2",
+    "next": "^13.4.8",
     "next-debug-local": "^0.1.5",
     "next-router-mock": "^0.9.7",
     "raw-loader": "^4.0.2",
