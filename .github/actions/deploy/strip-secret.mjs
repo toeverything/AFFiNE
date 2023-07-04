@@ -39,8 +39,9 @@ const createHelmCommand = isDryRun => {
 };
 
 const output = execSync(createHelmCommand(true), {
-  stdio: 'inherit',
-}).toString('utf-8');
+  encoding: 'utf-8',
+  stdio: ['inherit', 'pipe', 'inherit'],
+});
 const templates = output
   .split('---')
   .filter(yml => !yml.split('\n').some(line => line.trim() === 'kind: Secret'))
