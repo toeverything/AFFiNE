@@ -23,7 +23,7 @@ export const AboutAffine = () => {
     <>
       <SettingHeader
         title={t['About AFFiNE']()}
-        subtitle={t['Information about AFFiNE']()}
+        subtitle={t['com.affine.settings.about.message']()}
         data-testid="about-title"
       />
       {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
@@ -34,9 +34,7 @@ export const AboutAffine = () => {
           ></SettingRow>
           <SettingRow
             name={t['Check for updates automatically']()}
-            desc={t[
-              'If enabled, it will automatically check for new versions at regular intervals.'
-            ]()}
+            desc={t['com.affine.settings.about.update.check.message']()}
           >
             <Switch
               checked={appSettings.autoCheckUpdate}
@@ -45,9 +43,7 @@ export const AboutAffine = () => {
           </SettingRow>
           <SettingRow
             name={t['Download updates automatically']()}
-            desc={t[
-              'If enabled, new versions will be automatically downloaded to the current device.'
-            ]()}
+            desc={t['com.affine.settings.about.update.download.message']()}
           >
             <Switch
               checked={appSettings.autoCheckUpdate}
