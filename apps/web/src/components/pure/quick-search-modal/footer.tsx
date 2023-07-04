@@ -1,8 +1,9 @@
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
+import { assertEquals } from '@blocksuite/global/utils';
 import { PlusIcon } from '@blocksuite/icons';
-import { assertEquals, nanoid } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
 import type { NextRouter } from 'next/router';

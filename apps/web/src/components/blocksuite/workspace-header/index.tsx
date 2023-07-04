@@ -1,4 +1,4 @@
-import { assertExists } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useSetAtom } from 'jotai';
 import type {

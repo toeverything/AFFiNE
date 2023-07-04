@@ -6,8 +6,8 @@ import {
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
+import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtom, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';

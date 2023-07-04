@@ -1,5 +1,5 @@
+import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 
