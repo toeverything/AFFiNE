@@ -21,7 +21,7 @@ const outputList = [
     'dist',
     [
       'main.js',
-      'preload.js',
+      'helper.js',
       'preload.js',
       'affine.darwin-arm64.node',
       'plugins',
