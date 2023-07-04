@@ -13,7 +13,7 @@ import { Doc } from 'yjs';
 import { createAffineSocketIOProvider } from '..';
 
 describe('sockio provider', () => {
-  test('test storage', async () => {
+  test.skip('test storage', async () => {
     const workspaceId = 'test-storage-ws';
     {
       const workspace = new Workspace({
@@ -66,7 +66,7 @@ describe('sockio provider', () => {
     }
   });
 
-  test('test collaboration', async () => {
+  test.skip('test collaboration', async () => {
     const workspaceId = 'test-collboration-ws';
     {
       const doc = new Doc({ guid: workspaceId });

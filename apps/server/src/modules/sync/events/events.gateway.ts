@@ -53,7 +53,6 @@ export class EventsGateway {
     const update = base64ToUint8Array(message.update);
     this.server.to(message.workspaceId).emit('server-update', message);
 
-    console.log('sync', message.workspaceId, message.guid, update);
     await this.storage.sync(
       message.workspaceId,
       message.guid,

@@ -156,6 +156,7 @@ export const createAffineProviders = (): DocProviderCreator[] => {
     [
       runtimeConfig.enableBroadcastChannelProvider &&
         createBroadcastChannelProvider,
+      runtimeConfig.enableSocketIOProvider && createAffineSocketIOProvider,
       createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));

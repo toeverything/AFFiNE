@@ -22,6 +22,7 @@ const buildPreset = {
     enablePlugin: false,
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
+    enableSocketIOProvider: false,
     enableDebugPage: true,
     // never set this to true in stable, because legacy cloud has deprecated
     //  and related code will be removed in the future
@@ -41,6 +42,7 @@ const buildPreset = {
     enablePlugin: true,
     enableTestProperties: true,
     enableBroadcastChannelProvider: true,
+    enableSocketIOProvider: true,
     enableDebugPage: true,
     enableLegacyCloud: false,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
