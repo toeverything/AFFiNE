@@ -80,6 +80,9 @@ const environmentPreset = {
   enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER
     ? process.env.ENABLE_BC_PROVIDER !== 'false'
     : currentBuildPreset.enableBroadcastChannelProvider,
+  enableSocketIOProvider: process.env.ENABLE_SOCKET_IO_PROVIDER
+    ? process.env.ENABLE_SOCKET_IO_PROVIDER === 'true'
+    : currentBuildPreset.enableSocketIOProvider,
   changelogUrl: process.env.CHANGELOG_URL ?? currentBuildPreset.changelogUrl,
   enablePreloading: process.env.ENABLE_PRELOADING
     ? process.env.ENABLE_PRELOADING === 'true'

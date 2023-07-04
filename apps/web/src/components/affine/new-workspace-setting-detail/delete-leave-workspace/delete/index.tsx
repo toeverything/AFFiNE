@@ -86,7 +86,6 @@ export const WorkspaceDeleteModal = ({
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
             placeholder={t['Placeholder of delete workspace']()}
-            value={deleteStr}
             width={315}
             height={42}
           />
