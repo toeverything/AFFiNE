@@ -4,8 +4,9 @@
   "version": "0.7.0-beta.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "ts-node-esm server.mts"
+    "build": "next build && next export",
+    "start": "NODE_ENV=development next start",
+    "static-server": "ts-node-esm server.mts"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
