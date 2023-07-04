@@ -5,8 +5,8 @@ import { filterMatcher } from './vars';
 const evalRef = (ref: Ref, variableMap: VariableMap) => {
   return variableMap[ref.name];
 };
-const evalLiteral = (lit: Literal) => {
-  return lit.value;
+const evalLiteral = (lit?: Literal) => {
+  return lit?.value;
 };
 const evalFilter = (filter: Filter, variableMap: VariableMap): boolean => {
   const impl = filterMatcher.findData(v => v.name === filter.funcName)?.impl;

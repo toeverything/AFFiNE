@@ -1,5 +1,6 @@
 import { CollectionBar } from '@affine/component/page-list';
 import { DEFAULT_SORT_KEY } from '@affine/env/constant';
+import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
@@ -34,6 +35,7 @@ const AllPagesHead = ({
   createNewEdgeless,
   importFile,
   getPageInfo,
+  propertiesMeta,
 }: {
   isPublicWorkspace: boolean;
   sorter: ReturnType<typeof useSorter<ListData>>;
@@ -41,6 +43,7 @@ const AllPagesHead = ({
   createNewEdgeless: () => void;
   importFile: () => void;
   getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
 }) => {
   const t = useAFFiNEI18N();
   const titleList = [
@@ -50,16 +53,20 @@ const AllPagesHead = ({
       proportion: 0.5,
     },
     {
+      key: 'tags',
+      content: t['Tags'](),
+      proportion: 0.2,
+    },
+    {
       key: 'createDate',
       content: t['Created'](),
-      proportion: 0.2,
+      proportion: 0.1,
     },
     {
       key: 'updatedDate',
       content: t['Updated'](),
-      proportion: 0.2,
+      proportion: 0.1,
     },
-
     {
       key: 'unsortable_action',
       content: (
@@ -110,7 +117,11 @@ const AllPagesHead = ({
             </TableCell>
           ))}
       </TableHeadRow>
-      <CollectionBar getPageInfo={getPageInfo} />
+      <CollectionBar
+        columnsCount={titleList.length}
+        getPageInfo={getPageInfo}
+        propertiesMeta={propertiesMeta}
+      />
     </TableHead>
   );
 };
@@ -123,6 +134,7 @@ export const PageList = ({
   onImportFile,
   fallback,
   getPageInfo,
+  propertiesMeta,
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
@@ -160,6 +172,7 @@ export const PageList = ({
       <StyledTableContainer ref={ref}>
         <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
           <AllPagesHead
+            propertiesMeta={propertiesMeta}
             isPublicWorkspace={isPublicWorkspace}
             sorter={sorter}
             createNewPage={onCreateNewPage}

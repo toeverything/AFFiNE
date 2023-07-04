@@ -6,6 +6,7 @@ import { openHomePage } from '../libs/load-page';
 import {
   closeDownloadTip,
   getBlockSuiteEditorTitle,
+  newPage,
   waitEditorLoad,
 } from '../libs/page-logic';
 import { clickSideBarAllPageButton } from '../libs/sidebar';
@@ -25,6 +26,7 @@ function getAllPage(page: Page) {
     await newPageDropdown.click();
     await edgelessBlockCard.click();
   }
+
   return { clickNewPageButton, clickNewEdgelessDropdown };
 }
 
@@ -301,4 +303,63 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   nextMonth.setMonth(nextMonth.getMonth() + 1);
   await selectMonthFromMonthPicker(page, nextMonth);
   await checkDatePickerMonth(page, nextMonth);
+});
+const createTag = async (page: Page, name: string) => {
+  await page.keyboard.type(name);
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Enter');
+};
+const createPageWithTag = async (
+  page: Page,
+  options: {
+    title: string;
+    tags: string[];
+  }
+) => {
+  await page.getByTestId('all-pages').click();
+  await newPage(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('test page');
+  await page.locator('affine-page-meta-data').click();
+  await page.locator('.add-tag').click();
+  for (const name of options.tags) {
+    await createTag(page, name);
+  }
+  await page.keyboard.press('Escape');
+};
+const changeFilter = async (page: Page, to: string | RegExp) => {
+  await page.getByTestId('filter-name').click();
+  await page
+    .getByTestId('filter-name-select')
+    .locator('button', { hasText: to })
+    .click();
+};
+
+async function selectTag(page: Page, name: string | RegExp) {
+  await page.getByTestId('filter-arg').click();
+  await page
+    .getByTestId('multi-select')
+    .getByTestId('select-option')
+    .getByText(name)
+    .click();
+  await page.getByTestId('filter-arg').click();
+}
+
+test('allow creation of filters by tags', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await closeDownloadTip(page);
+  await createPageWithTag(page, { title: 'Page A', tags: ['A'] });
+  await createPageWithTag(page, { title: 'Page B', tags: ['B'] });
+  await clickSideBarAllPageButton(page);
+  await createFirstFilter(page, 'Tags');
+  await checkFilterName(page, 'is not empty');
+  await checkPagesCount(page, 2);
+  await changeFilter(page, /^contains all/);
+  await checkPagesCount(page, 3);
+  await selectTag(page, 'A');
+  await checkPagesCount(page, 1);
+  await changeFilter(page, /^does not contains all/);
+  await selectTag(page, 'B');
+  await checkPagesCount(page, 2);
 });

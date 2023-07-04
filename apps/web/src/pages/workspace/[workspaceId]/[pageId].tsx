@@ -1,4 +1,9 @@
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import {
+  createTagFilter,
+  useCollectionManager,
+} from '@affine/component/page-list';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -19,29 +24,41 @@ import type { NextPageWithLayout } from '../../../shared';
 
 const WorkspaceDetail: React.FC = () => {
   const router = useRouter();
-  const { openPage } = useRouterHelper(router);
+  const { openPage, jumpToSubPath } = useRouterHelper(router);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const [setting, setSetting] = useAtom(pageSettingFamily(currentPageId));
+  const collectionManager = useCollectionManager();
   if (!setting) {
     setSetting({
       mode: 'page',
     });
   }
-
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });
+      const disposeTagClick = editor.slots.tagClicked.on(async ({ tagId }) => {
+        await jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
+        collectionManager.backToAll();
+        collectionManager.setTemporaryFilter([createTagFilter(tagId)]);
+      });
       return () => {
         dispose.dispose();
+        disposeTagClick.dispose();
       };
     },
-    [blockSuiteWorkspace.id, openPage]
+    [
+      blockSuiteWorkspace.id,
+      collectionManager,
+      currentWorkspace.id,
+      jumpToSubPath,
+      openPage,
+    ]
   );
 
   const { PageDetail, Header } = getUIAdapter(currentWorkspace.flavour);

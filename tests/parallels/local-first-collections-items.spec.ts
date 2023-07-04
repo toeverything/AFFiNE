@@ -101,3 +101,26 @@ test('edit collection', async ({ page }) => {
   await page.getByTestId('save-collection').click();
   expect(await first.textContent()).toBe('123');
 });
+
+test('create temporary filter by click tag', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('test page');
+  await page.locator('affine-page-meta-data').click();
+  await page.locator('.add-tag').click();
+  await page.keyboard.type('TODO Tag');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await page.locator('.tag', { hasText: 'TODO Tag' }).click();
+  await closeDownloadTip(page);
+  const cell = page.getByRole('cell', {
+    name: 'test page',
+  });
+  await expect(cell).toBeVisible();
+  expect(await page.getByTestId('title').count()).toBe(1);
+  await page.getByTestId('filter-arg').click();
+  await page.getByRole('tooltip').getByText('TODO Tag').click();
+  expect(await page.getByTestId('title').count()).toBe(2);
+});
