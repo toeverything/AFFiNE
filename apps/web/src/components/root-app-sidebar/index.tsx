@@ -153,7 +153,7 @@ export const RootAppSidebar = ({
     <>
       <AppSidebar
         router={router}
-        hasBackground={!appSettings.disableBlurBackground}
+        hasBackground={!appSettings.enableBlurBackground}
       >
         <SidebarContainer>
           <NoSsr>

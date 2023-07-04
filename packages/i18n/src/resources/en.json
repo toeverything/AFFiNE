@@ -364,8 +364,8 @@
   "Discover what's new": "Discover what's new",
   "Info of legal": "Info of legal",
   "New version is ready": "New version is ready",
-  "Disable the noise background on the sidebar": "Disable the noise background on the sidebar",
-  "Disable the blur sidebar": "Disable the blur sidebar",
+  "Noise background on the sidebar": "Noise background on the sidebar",
+  "Translucent UI on the sidebar": "Translucent UI on the sidebar",
   "Window frame style": "Window frame style",
   "Move Up": "Move Up",
   "Curve Connector": "Curve Connector",
@@ -392,5 +392,8 @@
   "com.affine.export.success.title": "Exported successfully",
   "com.affine.export.success.message": "Please open the download folder to check.",
   "com.affine.export.error.title": "Export failed due to an unexpected error",
-  "com.affine.export.error.message": "Please try it again later."
+  "com.affine.export.error.message": "Please try it again later.",
+  "Use background noise effect on the sidebar.": "Use background noise effect on the sidebar.",
+  "Use transparency effect on the sidebar.": "Use transparency effect on the sidebar.",
+  "Information about AFFiNE": "Information about AFFiNE"
 }

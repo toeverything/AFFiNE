@@ -145,24 +145,24 @@ export const AppearanceSettings = () => {
       {environment.isDesktop ? (
         <SettingWrapper title={t['Sidebar']()}>
           <SettingRow
-            name={t['Disable the noise background on the sidebar']()}
+            name={t['Noise background on the sidebar']()}
             desc={t['None yet']()}
           >
             <Switch
-              checked={appSettings.disableNoisyBackground}
+              checked={appSettings.enableNoisyBackground}
               onChange={checked =>
-                changeSwitch('disableNoisyBackground', checked)
+                changeSwitch('enableNoisyBackground', checked)
               }
             />
           </SettingRow>
           <SettingRow
-            name={t['Disable the blur sidebar']()}
+            name={t['Translucent UI on the sidebar']()}
             desc={t['None yet']()}
           >
             <Switch
-              checked={!appSettings.disableBlurBackground}
+              checked={appSettings.enableBlurBackground}
               onChange={checked =>
-                changeSwitch('disableBlurBackground', !checked)
+                changeSwitch('enableBlurBackground', checked)
               }
             />
           </SettingRow>
