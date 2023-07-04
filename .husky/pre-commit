@@ -2,10 +2,13 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 # check lockfile is up to date
-yarn install --mode=update-lockfile
+yarn install --mode=skip-build --inline-builds --immutable
 
 # build infra code
 yarn -T run build:infra
+
+# generate prisma client type
+yarn workspace @affine/server prisma generate
 
 # lint staged files
 yarn exec lint-staged
