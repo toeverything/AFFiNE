@@ -173,17 +173,18 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
       Y.applyUpdate(doc, updates, sqliteOrigin);
     }
 
-    const diff = Y.encodeStateAsUpdate(doc, updates);
+    const mergedUpdates = Y.encodeStateAsUpdate(doc);
 
     // also apply updates to sqlite
-    await apis.db.applyDocUpdate(id, diff, subdocId);
+    await apis.db.applyDocUpdate(id, mergedUpdates, subdocId);
 
     return true;
   }
 
   async function syncAllUpdates(doc: Doc) {
     if (await syncUpdates(doc)) {
-      const subdocs = Array.from(doc.subdocs).filter(d => d.shouldLoad);
+      // load all subdocs
+      const subdocs = Array.from(doc.subdocs);
       await Promise.all(subdocs.map(syncAllUpdates));
     }
   }
@@ -198,7 +199,7 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
       disconnected = true;
     },
     sync: async () => {
-      logger.info('connect indexeddb provider', id);
+      logger.info('connect sqlite download provider', id);
       try {
         await syncAllUpdates(rootDoc);
         _resolve();
