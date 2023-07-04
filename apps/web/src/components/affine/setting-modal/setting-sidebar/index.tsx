@@ -5,8 +5,11 @@ import type {
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
+import { useSession } from 'next-auth/react';
+import type { ReactElement } from 'react';
 
 import type {
   GeneralSettingKeys,
@@ -21,6 +24,44 @@ import {
   sidebarSubtitle,
   sidebarTitle,
 } from './style.css';
+
+export type UserInfoProps = {
+  onAccountSettingClick: () => void;
+};
+
+export const UserInfo = ({
+  onAccountSettingClick,
+}: UserInfoProps): ReactElement => {
+  const session = useSession();
+  if (session.status !== 'authenticated') {
+    return <></>;
+  }
+  const user = session.data.user;
+  assertExists(user);
+  return (
+    <>
+      {runtimeConfig.enableCloud && (
+        <div className={accountButton} onClick={onAccountSettingClick}>
+          <UserAvatar
+            size={28}
+            name={user.name ?? ''}
+            url={user.image ?? ''}
+            className="avatar"
+          />
+
+          <div className="content">
+            <div className="name" title="xxx">
+              {user.name}
+            </div>
+            <div className="email" title="xxx">
+              {user.email}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
 
 export const SettingSidebar = ({
   generalSettingList,
@@ -90,23 +131,7 @@ export const SettingSidebar = ({
       </div>
 
       {runtimeConfig.enableCloud && (
-        <div className={accountButton} onClick={onAccountSettingClick}>
-          <UserAvatar
-            size={28}
-            name="Account NameAccount Name"
-            url={''}
-            className="avatar"
-          />
-
-          <div className="content">
-            <div className="name" title="xxx">
-              Account NameAccount Name
-            </div>
-            <div className="email" title="xxx">
-              xxxxxxxx@gmail.comxxxxxxxx@gmail.com
-            </div>
-          </div>
-        </div>
+        <UserInfo onAccountSettingClick={onAccountSettingClick} />
       )}
     </div>
   );

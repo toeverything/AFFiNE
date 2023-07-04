@@ -1,3 +1,4 @@
+import { UserAvatar } from '@affine/component/user-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
@@ -42,7 +43,12 @@ const UserCard = () => {
   assertExists(user);
   return (
     <div>
-      <img alt="user avatar" src={user.image as string} />
+      <UserAvatar
+        size={28}
+        name={user.name ?? ''}
+        url={user.image ?? ''}
+        className="avatar"
+      />
       <div>{user.name}</div>
       <div>{user.email}</div>
     </div>
