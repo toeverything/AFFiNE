@@ -13,5 +13,6 @@ export const filterPage = (collection: Collection, page: PageMeta) => {
     'Is Favourited': !!page.favorite,
     Created: page.createDate,
     Updated: page.updatedDate ?? page.createDate,
+    Tags: page.tags,
   });
 };

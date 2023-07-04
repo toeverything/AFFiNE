@@ -1,3 +1,5 @@
+import type { Tag } from '@affine/env/filter';
+import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 
 /**
@@ -14,6 +16,7 @@ export type ListData = {
   icon: JSX.Element;
   title: string;
   preview?: string;
+  tags: Tag[];
   favorite: boolean;
   createDate: Date;
   updatedDate: Date;
@@ -48,6 +51,7 @@ export type PageListProps = {
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;
   getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
 };
 
 export type DraggableTitleCellData = {
