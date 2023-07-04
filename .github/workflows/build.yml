@@ -352,8 +352,10 @@ jobs:
         env:
           NATIVE_TEST: 'true'
 
-      - name: Build Desktop Layers
-        run: yarn run build:electron
+      - name: Build Desktop Dependencies
+        run: |
+          - yarn run build:electron
+          - ls -l ./apps/electron/dist
 
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
