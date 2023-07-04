@@ -17,8 +17,9 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import { assertEquals, assertExists } from '@blocksuite/global/utils';
 import type { PassiveDocProvider } from '@blocksuite/store';
-import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,

@@ -1,5 +1,5 @@
+import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import type { Atom, WritableAtom } from 'jotai';
 import { atom, useAtom } from 'jotai';
 
