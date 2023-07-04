@@ -36,7 +36,13 @@ if (!config.objectStorage.r2.enabled) {
 
 if (config.redis.enabled) {
   const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis(config.redis.host);
+  await redisIoAdapter.connectToRedis(
+    config.redis.host,
+    config.redis.port,
+    config.redis.username,
+    config.redis.password,
+    config.redis.database
+  );
   app.useWebSocketAdapter(redisIoAdapter);
 }
 

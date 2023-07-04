@@ -32,7 +32,7 @@ const buildPreset = {
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: false,
     enableNotificationCenter: false,
-    enableCloud: false,
+    enableCloud: true,
   },
   beta: {},
   internal: {},

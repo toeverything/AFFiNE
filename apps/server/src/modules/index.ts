@@ -1,11 +1,25 @@
+import type { Type } from '@nestjs/common';
+
 import { AuthModule } from './auth';
 import { SyncModule } from './sync';
 import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
 
-export const BusinessModules = [
-  AuthModule,
-  WorkspaceModule,
-  UsersModule,
-  SyncModule,
-];
+const { SERVER_FLAVOR } = process.env;
+
+const BusinessModules: Type<any>[] = [];
+
+switch (SERVER_FLAVOR) {
+  case 'sync':
+    BusinessModules.push(SyncModule);
+    break;
+  case 'graphql':
+    BusinessModules.push(WorkspaceModule, UsersModule, AuthModule);
+    break;
+  case 'allinone':
+  default:
+    BusinessModules.push(WorkspaceModule, UsersModule, AuthModule, SyncModule);
+    break;
+}
+
+export { BusinessModules };

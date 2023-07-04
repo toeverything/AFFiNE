@@ -39,6 +39,13 @@ spec:
     - host: "{{ .Values.global.ingress.host }}"
       http:
         paths:
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: affine-sync
+                port:
+                  number: {{ .Values.sync.service.port }}
           - path: /graphql
             pathType: Prefix
             backend:

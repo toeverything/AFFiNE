@@ -181,6 +181,13 @@ export interface AFFiNEConfig {
      * url of redis host
      */
     host: string;
+    /**
+     * port of redis
+     */
+    port: number;
+    username: string;
+    password: string;
+    database: number;
   };
 
   /**

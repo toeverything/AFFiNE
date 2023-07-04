@@ -1,4 +1,4 @@
-import { Storage } from '@affine/storage';
+import type { Storage } from '@affine/storage';
 import { Inject } from '@nestjs/common';
 import {
   ConnectedSocket,
@@ -13,18 +13,10 @@ import { StorageProvide } from '../../../storage';
 import { uint8ArrayToBase64 } from '../utils';
 import { WorkspaceService } from './workspace';
 
-const port = parseInt(process.env.PORT ?? '3010');
-export const CORSConfig = {
-  origin:
-    process.env.AFFINE_ENV === 'preview'
-      ? ['https://affine-preview.vercel.app']
-      : ['http://localhost:8080'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['x-operation-name', 'x-definition-name'],
-};
+const port = Number(process.env.AFFINE_SERVER_PORT ?? '3010');
 
 @WebSocketGateway(port, {
-  cors: CORSConfig,
+  cors: process.env.NODE_ENV !== 'production',
 })
 export class EventsGateway {
   constructor(
