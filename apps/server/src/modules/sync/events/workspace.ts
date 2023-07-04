@@ -1,4 +1,4 @@
-import { Storage } from '@affine/storage';
+import type { Storage } from '@affine/storage';
 import { Inject, Injectable } from '@nestjs/common';
 import { Doc } from 'yjs';
 import * as Y from 'yjs';

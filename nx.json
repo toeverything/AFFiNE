@@ -33,6 +33,7 @@
         "{projectRoot}/build",
         "{projectRoot}/out",
         "{projectRoot}/storybook-static",
+        "{projectRoot}/next-routes.conf",
         "{workspaceRoot}/packages/i18n/src/i18n-generated.ts"
       ],
       "inputs": [
