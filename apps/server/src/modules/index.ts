@@ -1,5 +1,6 @@
 import type { Type } from '@nestjs/common';
 
+import { GqlModule } from '../graphql.module';
 import { AuthModule } from './auth';
 import { SyncModule } from './sync';
 import { UsersModule } from './users';
@@ -14,11 +15,17 @@ switch (SERVER_FLAVOR) {
     BusinessModules.push(SyncModule);
     break;
   case 'graphql':
-    BusinessModules.push(WorkspaceModule, UsersModule, AuthModule);
+    BusinessModules.push(GqlModule, WorkspaceModule, UsersModule, AuthModule);
     break;
   case 'allinone':
   default:
-    BusinessModules.push(WorkspaceModule, UsersModule, AuthModule, SyncModule);
+    BusinessModules.push(
+      GqlModule,
+      WorkspaceModule,
+      UsersModule,
+      AuthModule,
+      SyncModule
+    );
     break;
 }
 
