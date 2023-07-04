@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && next export && next-nginx-routes",
-    "start": "NODE_ENV=development next start",
+    "start": "cross-env NODE_ENV=development next start",
     "static-server": "ts-node-esm server.mts"
   },
   "dependencies": {
@@ -71,6 +71,7 @@
     "@types/webpack-env": "^1.18.1",
     "@vanilla-extract/css": "^1.12.0",
     "@vanilla-extract/next-plugin": "=2.1.2",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
     "eslint": "^8.44.0",
     "eslint-config-next": "^13.4.7",

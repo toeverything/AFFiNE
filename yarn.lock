@@ -562,6 +562,7 @@ __metadata:
     "@vanilla-extract/next-plugin": =2.1.2
     async-call-rpc: ^6.3.1
     cmdk: ^0.2.0
+    cross-env: ^7.0.3
     css-spring: ^4.1.0
     dotenv: ^16.3.1
     eslint: ^8.44.0
