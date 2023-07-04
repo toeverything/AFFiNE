@@ -352,22 +352,17 @@ jobs:
         env:
           NATIVE_TEST: 'true'
 
-      - name: Build Plugins
-        run: |
-          yarn run build:plugins
-          ls -l ./apps/electron/dist/
-
-      - name: Build Desktop Layers
-        run: yarn workspace @affine/electron build
-
-      - name: Build Desktop & Dependencies
-        run: yarn nx build @affine/electron
-
       - name: Download static resource artifact
         uses: actions/download-artifact@v3
         with:
           name: next-js-static
-          path: ./apps/electron/resources/web-static
+          path: apps/electron/resources/web-static
+
+      - name: Build Plugins
+        run: yarn run build:plugins
+
+      - name: Build Desktop Layers
+        run: yarn workspace @affine/electron build
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
