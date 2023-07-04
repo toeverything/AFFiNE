@@ -1,6 +1,6 @@
 import { Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtom } from 'jotai';
 import type { CSSProperties } from 'react';
