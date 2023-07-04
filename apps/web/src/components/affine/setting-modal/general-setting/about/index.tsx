@@ -23,7 +23,7 @@ export const AboutAffine = () => {
     <>
       <SettingHeader
         title={t['About AFFiNE']()}
-        subtitle={t['None yet']()}
+        subtitle={t['Information about AFFiNE']()}
         data-testid="about-title"
       />
       {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
