@@ -30,7 +30,7 @@ const buildPreset = {
     enablePreloading: true,
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
-    enableSQLiteProvider: false,
+    enableSQLiteProvider: true,
     enableNotificationCenter: false,
     enableCloud: false,
   },
