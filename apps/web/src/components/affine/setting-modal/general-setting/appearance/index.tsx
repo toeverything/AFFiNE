@@ -146,7 +146,7 @@ export const AppearanceSettings = () => {
         <SettingWrapper title={t['Sidebar']()}>
           <SettingRow
             name={t['Noise background on the sidebar']()}
-            desc={t['None yet']()}
+            desc={t['Use background noise effect on the sidebar.']()}
           >
             <Switch
               checked={appSettings.enableNoisyBackground}
@@ -157,7 +157,7 @@ export const AppearanceSettings = () => {
           </SettingRow>
           <SettingRow
             name={t['Translucent UI on the sidebar']()}
-            desc={t['None yet']()}
+            desc={t['Use transparency effect on the sidebar.']()}
           >
             <Switch
               checked={appSettings.enableBlurBackground}
