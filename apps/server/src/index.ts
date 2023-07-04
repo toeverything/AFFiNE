@@ -8,11 +8,17 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';
 import { Config } from './config';
-import { CORSConfig } from './modules/sync/events/events.gateway';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-  cors: CORSConfig,
+  cors: {
+    origin:
+      process.env.AFFINE_ENV === 'preview'
+        ? ['https://affine-preview.vercel.app']
+        : ['http://localhost:8080'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['x-operation-name', 'x-definition-name'],
+  },
   bodyParser: true,
 });
 

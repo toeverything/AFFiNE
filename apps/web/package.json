@@ -1,11 +1,11 @@
 {
   "name": "@affine/web",
   "private": true,
-  "version": "0.7.0-canary.31",
+  "version": "0.7.0-canary.32",
   "scripts": {
     "dev": "next dev",
     "build": "next build && next export && next-nginx-routes",
-    "start": "next start",
+    "start": "NODE_ENV=development next start",
     "static-server": "ts-node-esm server.mts"
   },
   "dependencies": {
