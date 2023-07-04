@@ -1,15 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { readdir } from 'node:fs/promises';
 
-if (process.platform !== 'darwin') {
-  throw new Error('This script is only for macOS');
-}
-
-const arch = process.arch;
-if (arch !== 'arm64') {
-  throw new Error(`This script is only for arm64, but current arch is ${arch}`);
-}
-
 const outputRoot = fileURLToPath(
   new URL(
     '../zip-out/AFFiNE-canary.app/Contents/Resources/app',
