@@ -5,12 +5,13 @@ export abstract class HandlerManager<
   Handlers extends Record<string, PrimitiveHandlers>
 > {
   static instance: HandlerManager<string, Record<string, PrimitiveHandlers>>;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  private _app: App<Namespace, Handlers> = null!;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  private _namespace: Namespace = null!;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  private _handlers: Handlers = null!;
+  private _app: App<Namespace, Handlers>;
+  private _namespace: Namespace;
+  private _handlers: Handlers;
+
+  constructor() {
+    throw new Error('Method not implemented.');
+  }
 
   private _initialized = false;
 
