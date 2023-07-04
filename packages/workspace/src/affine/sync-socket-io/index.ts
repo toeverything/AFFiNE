@@ -28,6 +28,7 @@ export class SocketIOProvider extends Observable<string> {
   socket: Socket;
   awareness: awarenessProtocol.Awareness;
   rootDoc: Doc;
+  startedConnecting = false;
   _connected: boolean;
   synced: boolean;
   connectPromise: Promise<void>;
@@ -280,6 +281,8 @@ export class SocketIOProvider extends Observable<string> {
   }
 
   connect = () => {
+    if (this.startedConnecting) return;
+    this.startedConnecting = true;
     const rootDoc = this.rootDoc;
     const socket = this.socket;
     socket.connect();
@@ -293,6 +296,7 @@ export class SocketIOProvider extends Observable<string> {
   };
 
   disconnect = () => {
+    this.startedConnecting = false;
     this.connectPromise = new Promise(resolve => {
       this.connectResolve = resolve;
     });

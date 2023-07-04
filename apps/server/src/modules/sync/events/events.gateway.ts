@@ -10,7 +10,7 @@ import {
 import { Socket } from 'socket.io';
 
 import { StorageProvide } from '../../../storage';
-import { base64ToUint8Array, uint8ArrayToBase64 } from '../utils';
+import { uint8ArrayToBase64 } from '../utils';
 import { WorkspaceService } from './workspace';
 
 const port = parseInt(process.env.PORT ?? '3010');
@@ -50,14 +50,10 @@ export class EventsGateway {
       update: string;
     }
   ) {
-    const update = base64ToUint8Array(message.update);
+    const update = Buffer.from(message.update, 'base64');
     this.server.to(message.workspaceId).emit('server-update', message);
 
-    await this.storage.sync(
-      message.workspaceId,
-      message.guid,
-      Buffer.from(update)
-    );
+    await this.storage.sync(message.workspaceId, message.guid, update);
   }
 
   @SubscribeMessage('init-awareness')
