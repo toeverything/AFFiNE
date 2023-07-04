@@ -71,7 +71,7 @@ export const ProfilePanel: FC<{
         <Input
           width={280}
           height={32}
-          value={input}
+          defaultValue={input}
           data-testid="workspace-name-input"
           placeholder={t['Workspace Name']()}
           maxLength={64}
