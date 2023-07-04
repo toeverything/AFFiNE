@@ -352,6 +352,17 @@ jobs:
         env:
           NATIVE_TEST: 'true'
 
+      - name: Build Infra
+        run: yarn run build:infra
+
+      - name: Build Plugins
+        run: |
+          yarn run build:plugins
+          ls -l ./apps/electron/dist/
+
+      - name: Build Desktop Layers
+        run: yarn workspace @affine/electron build
+
       - name: Build Desktop & Dependencies
         run: |
           yarn run build:electron
