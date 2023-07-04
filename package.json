@@ -23,7 +23,7 @@
     "build:infra": "yarn nx run-many -t build -p plugin-infra infra",
     "build:plugins": "yarn nx run-many -t build -p @affine/bookmark-block",
     "build:storybook": "yarn nx build @affine/storybook",
-    "start:web-static": "yarn workspace @affine/web start",
+    "start:web-static": "yarn workspace @affine/web static-server",
     "start:storybook": "yarn exec serve apps/storybook/storybook-static -l 6006",
     "serve:test-static": "yarn exec serve tests/fixtures --cors -p 8081",
     "lint": "eslint . --ext .js,mjs,.ts,.tsx --cache",
