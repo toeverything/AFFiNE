@@ -22,7 +22,6 @@ const buildPreset = {
     enablePlugin: false,
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
-    enableSocketIOProvider: false,
     enableDebugPage: true,
     // never set this to true in stable, because legacy cloud has deprecated
     //  and related code will be removed in the future
@@ -42,7 +41,6 @@ const buildPreset = {
     enablePlugin: true,
     enableTestProperties: true,
     enableBroadcastChannelProvider: true,
-    enableSocketIOProvider: true,
     enableDebugPage: true,
     enableLegacyCloud: false,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
@@ -80,9 +78,6 @@ const environmentPreset = {
   enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER
     ? process.env.ENABLE_BC_PROVIDER !== 'false'
     : currentBuildPreset.enableBroadcastChannelProvider,
-  enableSocketIOProvider: process.env.ENABLE_SOCKET_IO_PROVIDER
-    ? process.env.ENABLE_SOCKET_IO_PROVIDER === 'true'
-    : currentBuildPreset.enableSocketIOProvider,
   changelogUrl: process.env.CHANGELOG_URL ?? currentBuildPreset.changelogUrl,
   enablePreloading: process.env.ENABLE_PRELOADING
     ? process.env.ENABLE_PRELOADING === 'true'

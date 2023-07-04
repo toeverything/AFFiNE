@@ -61,7 +61,6 @@ export const buildFlagsSchema = z.object({
   enablePlugin: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
-  enableSocketIOProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   enableLegacyCloud: z.boolean(),
   changelogUrl: z.string(),
