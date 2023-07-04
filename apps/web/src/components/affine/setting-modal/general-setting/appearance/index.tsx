@@ -145,8 +145,8 @@ export const AppearanceSettings = () => {
       {environment.isDesktop ? (
         <SettingWrapper title={t['Sidebar']()}>
           <SettingRow
-            name={t['Disable the noise background on the sidebar']()}
-            desc={t['None yet']()}
+            name={t['com.affine.settings.appearance.sidebar.noise']()}
+            desc={t['com.affine.settings.appearance.sidebar.noise.message']()}
           >
             <Switch
               checked={appSettings.disableNoisyBackground}
@@ -156,8 +156,10 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
           <SettingRow
-            name={t['Disable the blur sidebar']()}
-            desc={t['None yet']()}
+            name={t['com.affine.settings.appearance.sidebar.translucent']()}
+            desc={t[
+              'com.affine.settings.appearance.sidebar.translucent.message'
+            ]()}
           >
             <Switch
               checked={!appSettings.disableBlurBackground}
