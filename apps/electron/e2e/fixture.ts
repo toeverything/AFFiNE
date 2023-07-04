@@ -131,22 +131,4 @@ export const test = base.extend<{
       },
     });
   },
-  router: async ({ page, workspace }, use) => {
-    await use({
-      goto: async (path: RoutePath) => {
-        // todo - deal with other paths
-        if (path === 'setting') {
-          const w = await workspace.current();
-          const location = await page.evaluate(async () => {
-            return window.location;
-          });
-          let origin = location.origin;
-          if (location.origin.startsWith('file://')) {
-            origin = location.origin + '.';
-          }
-          await page.goto(origin + `/workspace/${w.id}/${path}`);
-        }
-      },
-    });
-  },
 });

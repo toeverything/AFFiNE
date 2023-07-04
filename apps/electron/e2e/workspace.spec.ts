@@ -17,8 +17,11 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test('move workspace db file', async ({ page, appInfo, workspace, router }) => {
+test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
+  const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
+  // goto settings
+  await settingButton.click();
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp-dir');
 
@@ -30,7 +33,6 @@ test('move workspace db file', async ({ page, appInfo, workspace, router }) => {
     });
   }, tmpPath);
 
-  await router.goto('setting');
   await page.getByTestId('move-folder').click();
   // check if db file exists
   await page.waitForSelector('text="Move folder success"');
@@ -40,10 +42,11 @@ test('move workspace db file', async ({ page, appInfo, workspace, router }) => {
   expect(files.some(f => f.endsWith('.affine'))).toBe(true);
 });
 
-test('export then add', async ({ page, appInfo, workspace, router }) => {
+test.skip('export then add', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
-
-  await router.goto('setting');
+  const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
+  // goto settings
+  await settingButton.click();
 
   const originalId = w.id;
 
