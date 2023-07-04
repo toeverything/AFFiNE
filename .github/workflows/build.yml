@@ -379,11 +379,11 @@ jobs:
         env:
           COVERAGE: true
 
-      - name: Make
+      - name: Make bundle
         if: ${{ matrix.spec.test && matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
-        run: yarn workspace @affine/electron make
+        run: yarn workspace @affine/electron make --platform=darwin --arch=arm64
 
-      - name: Output bundle check
+      - name: Bundle output check
         if: ${{ matrix.spec.test && matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
         run: |
           ./scripts/unzip-macos-arm64.sh
