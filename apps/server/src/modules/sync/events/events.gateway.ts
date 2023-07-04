@@ -9,12 +9,19 @@ import {
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
-import { CORSConfig } from '../../../index';
 import { StorageProvide } from '../../../storage';
 import { uint8ArrayToBase64 } from '../utils';
 import { WorkspaceService } from './workspace';
 
 const port = parseInt(process.env.PORT ?? '3010');
+export const CORSConfig = {
+  origin:
+    process.env.AFFINE_ENV === 'preview'
+      ? ['https://affine-preview.vercel.app']
+      : ['http://localhost:8080'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['x-operation-name', 'x-definition-name'],
+};
 
 @WebSocketGateway(port, {
   cors: CORSConfig,
