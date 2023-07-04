@@ -13,3 +13,5 @@ resources/web-static
 !.yarn/sdks
 !.yarn/versions
 dev.json
+
+zip-out

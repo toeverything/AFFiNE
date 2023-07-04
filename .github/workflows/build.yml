@@ -379,6 +379,17 @@ jobs:
         env:
           COVERAGE: true
 
+      - name: Make
+        if: ${{ matrix.spec.test && matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        run: yarn workspace @affine/electron make
+
+      - name: Output bundle check
+        if: ${{ matrix.spec.test && matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        run: |
+          ./scripts/unzip-macos-arm64.sh
+          ts-node-esm ./scripts/macos-arm64-output-check.mts
+        working-directory: apps/electron
+
       - name: Collect code coverage report
         if: ${{ matrix.spec.test }}
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
