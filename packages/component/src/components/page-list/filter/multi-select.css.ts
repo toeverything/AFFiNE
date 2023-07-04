@@ -46,4 +46,5 @@ export const done = style({
   display: 'flex',
   alignItems: 'center',
   color: 'var(--affine-primary-color)',
+  marginLeft: 8,
 });

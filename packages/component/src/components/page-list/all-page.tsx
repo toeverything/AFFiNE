@@ -118,6 +118,7 @@ const AllPagesHead = ({
           ))}
       </TableHeadRow>
       <CollectionBar
+        columnsCount={titleList.length}
         getPageInfo={getPageInfo}
         propertiesMeta={propertiesMeta}
       />

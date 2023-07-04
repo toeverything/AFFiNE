@@ -25,7 +25,7 @@ export const MultiSelect = ({
     <Menu
       trigger="click"
       content={
-        <div className={styles.optionList}>
+        <div data-testid="multi-select" className={styles.optionList}>
           {options.map(option => {
             const selected = value.includes(option.value);
             const click = (e: MouseEvent<HTMLDivElement>) => {
@@ -39,6 +39,7 @@ export const MultiSelect = ({
             return (
               <div
                 className={styles.selectOption}
+                data-testid="select-option"
                 style={{
                   backgroundColor: selected
                     ? 'var(--affine-hover-color)'

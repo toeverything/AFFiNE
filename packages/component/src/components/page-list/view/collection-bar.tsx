@@ -20,9 +20,11 @@ import * as styles from './collection-bar.css';
 export const CollectionBar = ({
   getPageInfo,
   propertiesMeta,
+  columnsCount,
 }: {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
+  columnsCount: number;
 }) => {
   const setting = useCollectionManager();
   const collection = setting.currentCollection;
@@ -113,8 +115,9 @@ export const CollectionBar = ({
           })}
         </div>
       </td>
-      <td></td>
-      <td></td>
+      {Array.from({ length: columnsCount - 2 }).map((_, i) => (
+        <td key={i}></td>
+      ))}
       <td
         style={{
           display: 'flex',
