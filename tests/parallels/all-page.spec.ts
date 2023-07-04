@@ -79,7 +79,7 @@ test('allow creation of filters by favorite', async ({ page }) => {
   await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await closeDownloadTip(page);
-  await createFirstFilter(page, 'Is Favourited');
+  await createFirstFilter(page, 'Favourited');
   await page
     .locator('[data-testid="filter-arg"]', { hasText: 'true' })
     .locator('div')
