@@ -13,7 +13,7 @@ const {
   OAUTH_EMAIL_PASSWORD,
 } = process.env;
 
-const createHelmCommand = isDryRun => {
+const createHelmCommand = ({ isDryRun }) => {
   const flag = isDryRun ? '--dry-run' : '--atomic';
   const deployCommand = [
     `helm upgrade --install affine .github/helm/affine`,
@@ -38,7 +38,7 @@ const createHelmCommand = isDryRun => {
   return deployCommand;
 };
 
-const output = execSync(createHelmCommand(true), {
+const output = execSync(createHelmCommand({ isDryRun: true }), {
   encoding: 'utf-8',
   stdio: ['inherit', 'pipe', 'inherit'],
 });
@@ -47,3 +47,8 @@ const templates = output
   .filter(yml => !yml.split('\n').some(line => line.trim() === 'kind: Secret'))
   .join('---');
 console.log(templates);
+
+execSync(createHelmCommand({ isDryRun: false }), {
+  encoding: 'utf-8',
+  stdio: 'inherit',
+});

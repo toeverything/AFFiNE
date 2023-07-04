@@ -509,8 +509,8 @@ jobs:
     permissions:
       contents: 'write'
       id-token: 'write'
-    # needs:
-    #   - build-docker
+    needs:
+      - build-docker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

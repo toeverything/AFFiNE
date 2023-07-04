@@ -45,6 +45,6 @@ runs:
 
     - name: Deploy
       shell: bash
-      run: node ./.github/actions/deploy/strip-secret.mjs
+      run: node ./.github/actions/deploy/deploy.mjs
       env:
         DEPLOY_ENV: '${{ inputs.env }}'
