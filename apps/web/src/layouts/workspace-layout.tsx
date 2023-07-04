@@ -74,10 +74,6 @@ const SettingModal = lazy(() =>
   }))
 );
 
-function DefaultProvider({ children }: PropsWithChildren) {
-  return <>{children}</>;
-}
-
 export const QuickSearch: FC = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const router = useRouter();
@@ -194,10 +190,14 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       [currentWorkspaceId, jotaiWorkspaces]
     );
 
-    const Provider =
-      (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
+    if (!currentWorkspaceId) {
+      return null;
+    }
+
+    const Provider = meta && WorkspaceAdapters[meta.flavour].UI.Provider;
+    assertExists(Provider);
     return (
-      <>
+      <Provider>
         {/* load all workspaces is costly, do not block the whole UI */}
         <Suspense fallback={null}>
           <AllWorkspaceContext>
@@ -210,12 +210,10 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
         </Suspense>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
-            <Provider>
-              <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
-            </Provider>
+            <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
           </Suspense>
         </CurrentWorkspaceContext>
-      </>
+      </Provider>
     );
   };
 

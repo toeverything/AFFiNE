@@ -60,6 +60,43 @@ export type CreateWorkspaceMutation = {
   };
 };
 
+export type RegisterMutationVariables = Exact<{
+  name: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+export type RegisterMutation = {
+  __typename?: 'Mutation';
+  register: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    createdAt: string | null;
+    token: { __typename?: 'TokenType'; token: string; refresh: string };
+  };
+};
+
+export type SignInMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+export type SignInMutation = {
+  __typename?: 'Mutation';
+  signIn: {
+    __typename?: 'UserType';
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+    createdAt: string | null;
+    token: { __typename?: 'TokenType'; token: string; refresh: string };
+  };
+};
+
 export type UploadAvatarMutationVariables = Exact<{
   id: Scalars['String']['input'];
   avatar: Scalars['Upload']['input'];
@@ -101,6 +138,16 @@ export type Mutations =
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;
       response: CreateWorkspaceMutation;
+    }
+  | {
+      name: 'registerMutation';
+      variables: RegisterMutationVariables;
+      response: RegisterMutation;
+    }
+  | {
+      name: 'signInMutation';
+      variables: SignInMutationVariables;
+      response: SignInMutation;
     }
   | {
       name: 'uploadAvatarMutation';

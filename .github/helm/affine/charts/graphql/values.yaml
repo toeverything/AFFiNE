@@ -32,6 +32,13 @@ app:
       secretAccessKey: ''
       bucket: ''
   oauth:
+    email:
+      secretName: 'oauth-email'
+      sender: 'noreply@toeverything.info'
+      login: ''
+      password: ''
+      server: 'smtp.gmail.com'
+      port: '465'
     google:
       enabled: false
       secretName: oauth-google

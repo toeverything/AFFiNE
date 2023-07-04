@@ -12,7 +12,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { PropsWithChildren, ReactElement } from 'react';
-import React, { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import type { NextPageWithLayout } from '../shared';

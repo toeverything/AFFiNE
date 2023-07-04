@@ -164,6 +164,7 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   PageList: FC<PageListProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
+  LoginCard?: FC;
 }
 
 export interface AppEvents {

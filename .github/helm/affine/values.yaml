@@ -1,10 +1,11 @@
-ingress:
-  enabled: false
-  className: ''
-  annotations:
-    kubernetes.io/ingress.class: nginx
-  host: affine.pro
-  tls: []
+global:
+  ingress:
+    enabled: false
+    className: ''
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    host: affine.pro
+    tls: []
 
 graphql:
   service:

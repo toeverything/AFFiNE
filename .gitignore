@@ -75,3 +75,4 @@ target
 tsconfig.node.tsbuildinfo
 lib
 affine.db
+apps/web/next-routes.conf

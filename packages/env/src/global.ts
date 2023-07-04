@@ -14,7 +14,7 @@ import type {
 import getConfig from 'next/config';
 import { z } from 'zod';
 
-import { isBrowser, isDesktop, isServer } from './constant';
+import { isDesktop, isServer } from './constant';
 import { isValidIPAddress } from './is-valid-ip-address';
 import { UaHelper } from './ua-helper';
 
@@ -240,24 +240,16 @@ export function setupGlobal() {
   }
 
   let prefixUrl: string;
-  if (!isBrowser || isDesktop) {
-    // SSR or Desktop
-    const serverAPI = runtimeConfig.serverAPI;
-    if (isValidIPAddress(serverAPI.split(':')[0])) {
-      // This is for Server side rendering support
-      prefixUrl = new URL('http://' + runtimeConfig.serverAPI + '/').origin;
-    } else {
-      prefixUrl = serverAPI;
-    }
-    prefixUrl = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
+
+  const serverAPI = runtimeConfig.serverAPI;
+  if (isValidIPAddress(serverAPI.split(':')[0])) {
+    // This is for Server side rendering support
+    prefixUrl = new URL('http://' + runtimeConfig.serverAPI + '/').origin;
   } else {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('prefixUrl')) {
-      prefixUrl = params.get('prefixUrl') as string;
-    } else {
-      prefixUrl = window.location.origin + '/';
-    }
+    prefixUrl = serverAPI;
   }
+
+  prefixUrl = prefixUrl.endsWith('/') ? prefixUrl.slice(0, -1) : prefixUrl;
 
   const apiUrl = new URL(prefixUrl);
   const wsProtocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws';
