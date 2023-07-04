@@ -11,7 +11,7 @@
       "options": {
         "script": "build"
       },
-      "outputs": ["{workspaceRoot}/electron/dist/plugins/bookmark-block"]
+      "outputs": ["{workspaceRoot}/apps/electron/dist/plugins/bookmark-block"]
     }
   }
 }
