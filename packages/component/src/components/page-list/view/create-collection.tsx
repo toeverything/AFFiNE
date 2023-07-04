@@ -219,7 +219,7 @@ export const EditCollection = ({
           <Input
             data-testid="input-collection-title"
             placeholder="Untitled Collection"
-            value={value.name}
+            defaultValue={value.name}
             onChange={text =>
               onChange({
                 ...value,
