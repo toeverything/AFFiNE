@@ -1,32 +1,50 @@
 {
   "name": "@toeverything/infra",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
+  "type": "module",
+  "module": "./dist/index.mjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
-  },
-  "publishConfig": {
-    "module": "./dist/index.mjs",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.js"
-      }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
-    "files": [
-      "dist"
-    ]
+    "./core/*": {
+      "types": "./dist/core/*.d.ts",
+      "import": "./dist/core/*.js",
+      "require": "./dist/core/*.cjs"
+    },
+    "./preload/*": {
+      "types": "./dist/preload/*.d.ts",
+      "import": "./dist/preload/*.js",
+      "require": "./dist/preload/*.cjs"
+    }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch"
   },
   "devDependencies": {
+    "async-call-rpc": "^6.3.1",
+    "electron": "link:../../apps/electron/node_modules/electron",
     "vite": "^4.3.9",
     "vite-plugin-dts": "3.0.2"
+  },
+  "peerDependencies": {
+    "async-call-rpc": "*",
+    "electron": "*"
+  },
+  "peerDependenciesMeta": {
+    "async-call-rpc": {
+      "optional": true
+    },
+    "electron": {
+      "optional": true
+    }
   },
   "version": "0.7.0-beta.0"
 }
