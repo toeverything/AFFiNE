@@ -568,6 +568,7 @@ __metadata:
     next: =13.4.2
     next-auth: ^4.22.1
     next-debug-local: ^0.1.5
+    next-nginx-routes: ^1.1.1
     next-router-mock: ^0.9.7
     next-themes: ^0.2.1
     raw-loader: ^4.0.2
@@ -24104,6 +24105,17 @@ __metadata:
   version: 0.1.5
   resolution: "next-debug-local@npm:0.1.5"
   checksum: 430a95bf3a3e788353a581f89f0d997534cb6ccf43eb022b511f4eb78f989000f829c7a88f39315c7686f187e8a8337672c8a954c602c2185b19a8676e630f9f
+  languageName: node
+  linkType: hard
+
+"next-nginx-routes@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "next-nginx-routes@npm:1.1.1"
+  peerDependencies:
+    next: ^12.x || ^13.x
+  bin:
+    next-nginx-routes: generate.js
+  checksum: 417b6dab470244668d07c685349bf032f59cbc85719e348eb4ddcb65fd1c76dea574fd581794630eca1ae85f67a1a4e4a70d2bfbcffb1002d27fad04cba0aab6
   languageName: node
   linkType: hard
 

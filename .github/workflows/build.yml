@@ -119,6 +119,12 @@ jobs:
           name: next-js-static
           path: ./apps/web/out
           if-no-files-found: error
+      - name: Upload next routes conf
+        uses: actions/upload-artifact@v3
+        with:
+          name: next-routes-conf
+          path: ./apps/web/next-routes.conf
+          if-no-files-found: error
 
   server-test:
     name: Server Test
@@ -443,6 +449,11 @@ jobs:
         with:
           name: next-js-static
           path: ./apps/web/out
+      - name: Download next routes conf
+        uses: actions/download-artifact@v3
+        with:
+          name: next-routes-conf
+          path: ./apps/web
       - name: Download server dist
         uses: actions/download-artifact@v3
         with:

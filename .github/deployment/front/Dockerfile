@@ -3,6 +3,7 @@ WORKDIR /app
 COPY ./apps/web/out ./dist
 COPY ./.github/deployment/front/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 COPY ./.github/deployment/front/affine.nginx.conf /etc/nginx/conf.d/affine.nginx.conf
+COPY ./apps/web/next-routes.conf /etc/nginx/conf.d/affine.routes.locations
 
 RUN mkdir -p /var/log/nginx && \
   rm /etc/nginx/conf.d/default.conf
