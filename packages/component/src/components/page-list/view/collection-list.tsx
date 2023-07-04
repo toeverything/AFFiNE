@@ -1,5 +1,6 @@
 import { EditCollectionModel } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
+import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -19,7 +20,7 @@ import { Button, MenuItem } from '../../..';
 import Menu from '../../../ui/menu/menu';
 import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
-import type { useAllPageSetting } from '../use-all-page-setting';
+import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
 
 const CollectionOption = ({
@@ -28,7 +29,7 @@ const CollectionOption = ({
   updateCollection,
 }: {
   collection: Collection;
-  setting: ReturnType<typeof useAllPageSetting>;
+  setting: ReturnType<typeof useCollectionManager>;
   updateCollection: (view: Collection) => void;
 }) => {
   const actions: {
@@ -118,9 +119,11 @@ const CollectionOption = ({
 export const CollectionList = ({
   setting,
   getPageInfo,
+  propertiesMeta,
 }: {
-  setting: ReturnType<typeof useAllPageSetting>;
+  setting: ReturnType<typeof useCollectionManager>;
   getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
 }) => {
   const t = useAFFiNEI18N();
   const [open] = useAtom(appSidebarOpenAtom);
@@ -205,6 +208,7 @@ export const CollectionList = ({
         placement="bottom-start"
         content={
           <CreateFilterMenu
+            propertiesMeta={propertiesMeta}
             value={setting.currentCollection.filterList}
             onChange={onChange}
           />
@@ -221,6 +225,7 @@ export const CollectionList = ({
         </Button>
       </Menu>
       <EditCollectionModel
+        propertiesMeta={propertiesMeta}
         getPageInfo={getPageInfo}
         init={collection}
         open={!!collection}

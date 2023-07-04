@@ -110,6 +110,13 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const getPageInfo = useGetPageInfoById();
+  const tagOptionMap = useMemo(
+    () =>
+      Object.fromEntries(
+        blockSuiteWorkspace.meta.properties.tags.options.map(v => [v.id, v])
+      ),
+    [blockSuiteWorkspace.meta.properties.tags.options]
+  );
   const list = useMemo(
     () =>
       pageMetas
@@ -180,11 +187,15 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   const pageList: ListData[] = list.map(pageMeta => {
     const page = blockSuiteWorkspace.getPage(pageMeta.id);
     const preview = page ? getPagePreviewText(page) : undefined;
+
     return {
       icon: isPreferredEdgeless(pageMeta.id) ? <EdgelessIcon /> : <PageIcon />,
       pageId: pageMeta.id,
       title: pageMeta.title,
       preview,
+      tags:
+        page?.meta.tags.map(id => tagOptionMap[id]).filter(v => v != null) ??
+        [],
       favorite: !!pageMeta.favorite,
       isPublicPage: !!pageMeta.isPublic,
       createDate: new Date(pageMeta.createDate),
@@ -219,6 +230,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   });
   return (
     <PageList
+      propertiesMeta={blockSuiteWorkspace.meta.properties}
       getPageInfo={getPageInfo}
       onCreateNewPage={createPage}
       onCreateNewEdgeless={createEdgeless}
