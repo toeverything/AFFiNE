@@ -5,8 +5,8 @@ import type {
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { assertEquals } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { assertEquals } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useState } from 'react';

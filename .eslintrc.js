@@ -24,7 +24,7 @@ const createPattern = packageName => [
   {
     group: ['@blocksuite/store'],
     message: "Import from '@blocksuite/global/utils'",
-    importNames: ['assertExists'],
+    importNames: ['assertExists', 'assertEquals'],
   },
 ];
 
@@ -142,7 +142,7 @@ const config = {
           {
             group: ['@blocksuite/store'],
             message: "Import from '@blocksuite/global/utils'",
-            importNames: ['assertExists'],
+            importNames: ['assertExists', 'assertEquals'],
           },
         ],
       },
