@@ -11,13 +11,11 @@ import {
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { isDesktop } from '@affine/env/constant';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
   FolderIcon,
   SettingsIcon,
-  ShareIcon,
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
@@ -199,25 +197,6 @@ export const RootAppSidebar = ({
           {blockSuiteWorkspace && (
             <FavoriteList currentWorkspace={currentWorkspace} />
           )}
-          {runtimeConfig.enableLegacyCloud &&
-            (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE &&
-            currentWorkspace.public ? (
-              <RouteMenuLinkItem
-                icon={<ShareIcon />}
-                currentPath={currentPath}
-                path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
-              >
-                <span data-testid="Published-to-web">Published to web</span>
-              </RouteMenuLinkItem>
-            ) : (
-              <RouteMenuLinkItem
-                icon={<ShareIcon />}
-                currentPath={currentPath}
-                path={currentWorkspaceId && paths.shared(currentWorkspaceId)}
-              >
-                <span data-testid="shared-pages">{t['Shared Pages']()}</span>
-              </RouteMenuLinkItem>
-            ))}
           <CategoryDivider label={t['Collections']()} />
           {blockSuiteWorkspace && (
             <CollectionsList currentWorkspace={currentWorkspace} />

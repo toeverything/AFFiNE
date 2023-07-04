@@ -1,6 +1,6 @@
 import type {
-  AffineLegacyCloudWorkspace,
+  AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
 
-export type Workspace = AffineLegacyCloudWorkspace | LocalWorkspace;
+export type Workspace = AffineCloudWorkspace | LocalWorkspace;

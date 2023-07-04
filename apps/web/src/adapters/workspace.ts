@@ -10,7 +10,6 @@ import {
   WorkspaceFlavour,
 } from '@affine/env/workspace';
 
-import { AffineAdapter } from './affine';
 import { LocalAdapter } from './local';
 
 const unimplemented = () => {
@@ -22,7 +21,6 @@ const bypassList = async () => {
 };
 
 export const WorkspaceAdapters = {
-  [WorkspaceFlavour.AFFINE]: AffineAdapter,
   [WorkspaceFlavour.LOCAL]: LocalAdapter,
   [WorkspaceFlavour.AFFINE_CLOUD]: {
     releaseType: ReleaseType.UNRELEASED,
@@ -42,7 +40,6 @@ export const WorkspaceAdapters = {
       Header: unimplemented,
       PageDetail: unimplemented,
       PageList: unimplemented,
-      SettingsDetail: unimplemented,
       NewSettingsDetail: unimplemented,
     },
   },
@@ -64,7 +61,6 @@ export const WorkspaceAdapters = {
       Header: unimplemented,
       PageDetail: unimplemented,
       PageList: unimplemented,
-      SettingsDetail: unimplemented,
       NewSettingsDetail: unimplemented,
     },
   },
