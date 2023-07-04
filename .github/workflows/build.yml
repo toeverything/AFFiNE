@@ -514,17 +514,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - id: auth
-        uses: google-github-actions/auth@v1
-        with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-helm-deploy'
-          service_account: '${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}'
-          token_format: 'access_token'
-          project_id: '${{ secrets.GCP_PROJECT_ID }}'
       - name: Deploy to dev
         uses: ./.github/actions/deploy
         with:
-          dry-run: 'true'
           env: 'dev'
           gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
           gcp-project-id: ${{ secrets.GCP_PROJECT_ID }}
