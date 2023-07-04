@@ -31,6 +31,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string graphql.app.oauth.email.sender="${OAUTH_EMAIL_SENDER}"`,
     `--set-string graphql.app.oauth.email.login="${OAUTH_EMAIL_LOGIN}"`,
     `--set-string graphql.app.oauth.email.password="${OAUTH_EMAIL_PASSWORD}"`,
+    `--set-string sync.image.tag="${GIT_SHORT_HASH}"`,
     `--version "0.0.0-alpha.${GIT_SHORT_HASH}" --timeout 10m`,
     flag,
   ].join(' ');
