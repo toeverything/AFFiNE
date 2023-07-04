@@ -2,7 +2,7 @@ import { Menu } from '@affine/component';
 import { MenuItem } from '@affine/component/app-sidebar';
 import {
   EditCollectionModel,
-  useAllPageSetting,
+  useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
@@ -49,7 +49,7 @@ const CollectionOperations = ({
 }: {
   view: Collection;
   showUpdateCollection: () => void;
-  setting: ReturnType<typeof useAllPageSetting>;
+  setting: ReturnType<typeof useCollectionManager>;
 }) => {
   const actions = useMemo<
     Array<
@@ -128,7 +128,7 @@ const CollectionRenderer = ({
   getPageInfo: GetPageInfoById;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
-  const setting = useAllPageSetting();
+  const setting = useCollectionManager();
   const router = useRouter();
   const clickCollection = useCallback(() => {
     router
@@ -187,6 +187,7 @@ const CollectionRenderer = ({
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModel
+        propertiesMeta={workspace.blockSuiteWorkspace.meta.properties}
         getPageInfo={getPageInfo}
         init={collection}
         onConfirm={setting.saveCollection}

@@ -6,6 +6,7 @@ import { Fragment } from 'react';
 import { styled } from '../../styles';
 import { TableBody, TableCell } from '../../ui/table';
 import { FavoriteTag } from './components/favorite-tag';
+import { Tags } from './components/tags';
 import { TitleCell } from './components/title-cell';
 import { OperationCell } from './operation-cell';
 import { StyledTableBodyRow } from './styles';
@@ -51,6 +52,7 @@ export const AllPagesBody = ({
             pageId,
             title,
             preview,
+            tags,
             icon,
             isPublicPage,
             favorite,
@@ -86,6 +88,14 @@ export const AllPagesBody = ({
                   data-testid="title"
                   onClick={onClickPage}
                 />
+                <TableCell
+                  data-testid="tags"
+                  hidden={isSmallDevices}
+                  onClick={onClickPage}
+                  style={{ fontSize: 'var(--affine-font-xs)' }}
+                >
+                  <Tags value={tags}></Tags>
+                </TableCell>
                 <TableCell
                   data-testid="created-date"
                   ellipsis={true}

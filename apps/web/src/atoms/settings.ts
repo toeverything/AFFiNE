@@ -17,8 +17,8 @@ export type AppSetting = {
   windowFrameStyle: 'frameless' | 'NativeTitleBar';
   dateFormat: DateFormats;
   startWeekOnMonday: boolean;
-  disableBlurBackground: boolean;
-  disableNoisyBackground: boolean;
+  enableBlurBackground: boolean;
+  enableNoisyBackground: boolean;
   autoCheckUpdate: boolean;
   autoDownloadUpdate: boolean;
 };
@@ -43,8 +43,8 @@ export const AppSettingAtom = atomWithStorage<AppSetting>('AFFiNE settings', {
   windowFrameStyle: 'frameless',
   dateFormat: dateFormatOptions[0],
   startWeekOnMonday: false,
-  disableBlurBackground: false,
-  disableNoisyBackground: false,
+  enableBlurBackground: true,
+  enableNoisyBackground: true,
   autoCheckUpdate: true,
   autoDownloadUpdate: true,
 });

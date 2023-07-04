@@ -9,3 +9,6 @@ yarn exec lint-staged
 
 # type check
 yarn typecheck
+
+# circular dependency check
+yarn circular

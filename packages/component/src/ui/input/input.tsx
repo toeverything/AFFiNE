@@ -1,7 +1,7 @@
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
+import { useCompositionInput } from 'foxact/use-composition-input';
 import type {
-  ChangeEventHandler,
   CSSProperties,
   FocusEventHandler,
   ForwardedRef,
@@ -12,8 +12,10 @@ import { forwardRef, useCallback } from 'react';
 
 import { heightVar, inputStyle, widthVar } from './index.css';
 
-type inputProps = {
-  value?: string;
+type InputProps = {
+  // We don't have `value` props here,
+  //  see https://foxact.skk.moe/use-composition-input
+  defaultValue?: string | undefined;
   placeholder?: string;
   disabled?: boolean;
   width?: CSSProperties['width'];
@@ -24,12 +26,19 @@ type inputProps = {
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   noBorder?: boolean;
-} & Omit<HTMLAttributes<HTMLInputElement>, 'onChange'>;
+} & Omit<
+  HTMLAttributes<HTMLInputElement>,
+  | 'onChange'
+  | 'value'
+  | 'defaultValue'
+  | 'onCompositionStart'
+  | 'onCompositionEnd'
+>;
 
-export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
     disabled,
-    value,
+    defaultValue,
     placeholder,
     maxLength,
     minLength,
@@ -39,15 +48,16 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
     noBorder = false,
     className,
     ...otherProps
-  }: inputProps,
+  }: InputProps,
   ref: ForwardedRef<HTMLInputElement>
 ) {
-  const handleChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
-    e => {
-      const { value } = e.target;
-      onChange && onChange(value);
-    },
-    [onChange]
+  const inputProps = useCompositionInput(
+    useCallback(
+      (value: string) => {
+        onChange && onChange(value);
+      },
+      [onChange]
+    )
   );
 
   return (
@@ -60,15 +70,15 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
       data-no-border={noBorder}
       data-disabled={disabled}
       ref={ref}
-      value={value}
+      defaultValue={defaultValue}
       disabled={disabled}
       placeholder={placeholder}
       width={width}
       maxLength={maxLength}
       minLength={minLength}
-      onChange={handleChange}
       height={height}
       {...otherProps}
+      {...inputProps}
     />
   );
 });
