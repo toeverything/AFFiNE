@@ -57,8 +57,6 @@ export class NextAuthController {
       // @ts-expect-error Third part library type mismatch
       adapter: prismaAdapter,
       debug: !config.prod,
-      // @ts-expect-error Third part library type mismatch
-      logger: console,
     };
 
     if (config.auth.oauthProviders.github) {
