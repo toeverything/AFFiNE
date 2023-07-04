@@ -11,7 +11,10 @@ if (arch !== 'arm64') {
 }
 
 const outputRoot = fileURLToPath(
-  new URL('../output/AFFiNE-canary.app/Contents/Resources/app', import.meta.url)
+  new URL(
+    '../zip-out/AFFiNE-canary.app/Contents/Resources/app',
+    import.meta.url
+  )
 );
 const outputList = [
   [
