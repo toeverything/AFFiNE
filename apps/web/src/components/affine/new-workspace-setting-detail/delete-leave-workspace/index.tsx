@@ -23,10 +23,12 @@ export const DeleteLeaveWorkspace: FC<{
       <SettingRow
         name={
           <span style={{ color: 'var(--affine-error-color)' }}>
-            {isOwner ? t['Delete Workspace']() : t['Leave Workspace']()}
+            {isOwner
+              ? t['com.affine.settings.workspace.remove']()
+              : t['Leave Workspace']()}
           </span>
         }
-        desc={t['None yet']()}
+        desc={t['com.affine.settings.workspace.remove.message']()}
         style={{ cursor: 'pointer' }}
         onClick={() => {
           setShowDelete(true);
