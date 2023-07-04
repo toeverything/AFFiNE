@@ -149,9 +149,9 @@ export const AppearanceSettings = () => {
             desc={t['com.affine.settings.appearance.sidebar.noise.message']()}
           >
             <Switch
-              checked={appSettings.disableNoisyBackground}
+              checked={appSettings.enableNoisyBackground}
               onChange={checked =>
-                changeSwitch('disableNoisyBackground', checked)
+                changeSwitch('enableNoisyBackground', checked)
               }
             />
           </SettingRow>
@@ -162,9 +162,9 @@ export const AppearanceSettings = () => {
             ]()}
           >
             <Switch
-              checked={!appSettings.disableBlurBackground}
+              checked={appSettings.enableBlurBackground}
               onChange={checked =>
-                changeSwitch('disableBlurBackground', !checked)
+                changeSwitch('enableBlurBackground', checked)
               }
             />
           </SettingRow>

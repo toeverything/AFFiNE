@@ -123,9 +123,6 @@ jobs:
           name: before-make-web-static
           path: apps/electron/resources/web-static
 
-      - name: Build Infra
-        run: yarn run build:infra
-
       - name: Build Plugins
         run: yarn run build:plugins
 
