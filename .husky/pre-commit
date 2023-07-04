@@ -4,6 +4,9 @@
 # check lockfile is up to date
 yarn install --mode=update-lockfile
 
+# build infra code
+yarn -T run build:infra
+
 # lint staged files
 yarn exec lint-staged
 

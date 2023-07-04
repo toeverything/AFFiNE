@@ -351,8 +351,6 @@ jobs:
         run: yarn nx test @affine/monorepo
         env:
           NATIVE_TEST: 'true'
-      - name: Build Infra
-        run: yarn run build:infra
 
       - name: Build Plugins
         run: |
@@ -415,9 +413,6 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
-
-      - name: Build Infra
-        run: yarn run build:infra
 
       - name: Unit Test
         run: yarn nx test:coverage @affine/monorepo
