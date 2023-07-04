@@ -22,6 +22,10 @@ const outputList = [
   ['dist/plugins', ['bookmark-block']],
   ['dist/plugins/bookmark-block', ['index.mjs']],
   ['dist/workers', ['plugin.worker.js']],
+  [
+    'node_modules/@toeverything/plugin-infra/dist',
+    ['manager.js', 'manager.cjs'],
+  ],
 ] as [entry: string, expected: string[]][];
 
 await Promise.all(
