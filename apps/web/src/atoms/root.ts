@@ -9,8 +9,8 @@ import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
+import { assertExists } from '@blocksuite/global/utils';
 import type { ActiveDocProvider } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
 
 import type { AllWorkspace } from '../shared';

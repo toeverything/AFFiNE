@@ -6,8 +6,8 @@ import {
   getCurrentNativeRange,
   getVirgoByModel,
 } from '@blocksuite/blocks/std';
+import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 

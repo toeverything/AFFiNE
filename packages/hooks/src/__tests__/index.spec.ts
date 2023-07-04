@@ -5,8 +5,8 @@ import 'fake-indexeddb/auto';
 
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';

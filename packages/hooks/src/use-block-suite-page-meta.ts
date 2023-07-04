@@ -1,6 +1,6 @@
 import type { PageBlockModel } from '@blocksuite/blocks';
+import { assertExists } from '@blocksuite/global/utils';
 import type { PageMeta, Workspace } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 import { useMemo } from 'react';

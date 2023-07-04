@@ -21,6 +21,11 @@ const createPattern = packageName => [
     message: 'Do not import package itself',
     allowTypeImports: false,
   },
+  {
+    group: ['@blocksuite/store'],
+    message: "Import from '@blocksuite/global/utils'",
+    importNames: ['assertExists', 'assertEquals'],
+  },
 ];
 
 const allPackages = [
@@ -133,6 +138,11 @@ const config = {
             group: ['**/src'],
             message: "Don't import from src",
             allowTypeImports: false,
+          },
+          {
+            group: ['@blocksuite/store'],
+            message: "Import from '@blocksuite/global/utils'",
+            importNames: ['assertExists', 'assertEquals'],
           },
         ],
       },

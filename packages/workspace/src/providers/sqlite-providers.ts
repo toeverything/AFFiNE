@@ -2,11 +2,9 @@ import type {
   SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
+import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
-import {
-  assertExists,
-  Workspace as BlockSuiteWorkspace,
-} from '@blocksuite/store';
+import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { Doc } from 'yjs';
 
 import { localProviderLogger as logger } from './logger';
