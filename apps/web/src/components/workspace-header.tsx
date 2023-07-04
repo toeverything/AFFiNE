@@ -2,7 +2,7 @@ import {
   CollectionList,
   FilterList,
   SaveCollectionButton,
-  useAllPageSetting,
+  useCollectionManager,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
@@ -22,7 +22,7 @@ export function WorkspaceHeader({
   currentWorkspace,
   currentEntry,
 }: WorkspaceHeaderProps<WorkspaceFlavour>): ReactElement {
-  const setting = useAllPageSetting();
+  const setting = useCollectionManager();
   const t = useAFFiNEI18N();
   const saveToCollection = useCallback(
     async (collection: Collection) => {
@@ -38,6 +38,7 @@ export function WorkspaceHeader({
         <CollectionList
           setting={setting}
           getPageInfo={getPageInfoById}
+          propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
         ></CollectionList>
       );
       const filterContainer =
@@ -45,6 +46,9 @@ export function WorkspaceHeader({
           <div className={filterContainerStyle}>
             <div style={{ flex: 1 }}>
               <FilterList
+                propertiesMeta={
+                  currentWorkspace.blockSuiteWorkspace.meta.properties
+                }
                 value={setting.currentCollection.filterList}
                 onChange={filterList => {
                   return setting.updateCollection({
@@ -57,6 +61,9 @@ export function WorkspaceHeader({
             <div>
               {setting.currentCollection.filterList.length > 0 ? (
                 <SaveCollectionButton
+                  propertiesMeta={
+                    currentWorkspace.blockSuiteWorkspace.meta.properties
+                  }
                   getPageInfo={getPageInfoById}
                   init={{
                     id: uuidv4(),

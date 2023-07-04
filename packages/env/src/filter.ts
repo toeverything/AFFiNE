@@ -1,3 +1,5 @@
+import type { Workspace } from '@blocksuite/store';
+
 export type LiteralValue =
   | number
   | string
@@ -33,3 +35,11 @@ export type Collection = {
   allowList?: string[];
   excludeList?: string[];
 };
+
+export type Tag = {
+  id: string;
+  value: string;
+  color: string;
+  parentId?: string;
+};
+export type PropertiesMeta = Workspace['meta']['properties'];
