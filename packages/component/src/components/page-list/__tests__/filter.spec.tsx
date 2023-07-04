@@ -6,6 +6,7 @@ import 'fake-indexeddb/auto';
 import type {
   Filter,
   LiteralValue,
+  PropertiesMeta,
   Ref,
   VariableMap,
 } from '@affine/env/filter';
@@ -21,7 +22,7 @@ import { tBoolean, tDate } from '../filter/logical/custom-type';
 import { toLiteral } from '../filter/shared-types';
 import type { FilterMatcherDataType } from '../filter/vars';
 import { filterMatcher } from '../filter/vars';
-import { filterByFilterList } from '../use-all-page-setting';
+import { filterByFilterList } from '../use-collection-manager';
 const ref = (name: keyof VariableMap): Ref => {
   return {
     type: 'ref',
@@ -33,7 +34,16 @@ const mockVariableMap = (vars: Partial<VariableMap>): VariableMap => {
     Created: 0,
     Updated: 0,
     'Is Favourited': false,
+    Tags: [],
     ...vars,
+  };
+};
+const mockPropertiesMeta = (meta: Partial<PropertiesMeta>): PropertiesMeta => {
+  return {
+    tags: {
+      options: [],
+    },
+    ...meta,
   };
 };
 const filter = (
@@ -127,7 +137,11 @@ describe('render filter', () => {
 
       return (
         <I18nextProvider i18n={i18n}>
-          <Condition value={value} onChange={onChange} />
+          <Condition
+            propertiesMeta={mockPropertiesMeta({})}
+            value={value}
+            onChange={onChange}
+          />
         </I18nextProvider>
       );
     };
@@ -143,7 +157,13 @@ describe('render filter', () => {
       const [value, onChange] = useState(
         filter(fn, ref('Created'), [new Date(2023, 5, 29).getTime()])
       );
-      return <Condition value={value} onChange={onChange} />;
+      return (
+        <Condition
+          propertiesMeta={mockPropertiesMeta({})}
+          value={value}
+          onChange={onChange}
+        />
+      );
     };
 
   test('date condition function change', async () => {
