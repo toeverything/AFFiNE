@@ -45,6 +45,8 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
+      - name: Build Infra
+        run: yarn build:infra
       - name: Run i18n codegen
         run: yarn i18n-codegen gen
       - name: Run Type Check
