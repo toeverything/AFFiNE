@@ -14,6 +14,7 @@ test('Click right-bottom corner contact icon', async ({ page }) => {
   expect(await rightBottomContactUs.isVisible()).toEqual(true);
 
   await rightBottomContactUs.click();
-  const contactUsModal = page.locator('[data-testid=contact-us-modal-content]');
-  await expect(contactUsModal).toContainText('Check Our Docs');
+
+  const title = await page.getByTestId('about-title');
+  await expect(title).toBeVisible();
 });
