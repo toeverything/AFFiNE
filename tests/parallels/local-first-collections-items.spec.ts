@@ -37,7 +37,9 @@ const createAndPinCollection = async (
   await title.isVisible();
   await title.fill(options?.collectionName ?? 'test collection');
   await page.getByTestId('save-collection').click();
+  await page.waitForTimeout(100);
   await page.getByTestId('collection-bar-option-pin').click();
+  await page.waitForTimeout(100);
 };
 test('Show collections items in sidebar', async ({ page }) => {
   await createAndPinCollection(page);
@@ -82,6 +84,7 @@ test('pin and unpin collection', async ({ page }) => {
   });
   await option.hover();
   await option.getByTestId('collection-select-option-pin').click();
+  await page.waitForTimeout(100);
   expect(await items.count()).toBe(1);
 });
 
@@ -99,5 +102,29 @@ test('edit collection', async ({ page }) => {
   const title = page.getByTestId('input-collection-title');
   await title.fill('123');
   await page.getByTestId('save-collection').click();
+  await page.waitForTimeout(100);
   expect(await first.textContent()).toBe('123');
+});
+
+test('create temporary filter by click tag', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('test page');
+  await page.locator('affine-page-meta-data').click();
+  await page.locator('.add-tag').click();
+  await page.keyboard.type('TODO Tag');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await page.locator('.tag', { hasText: 'TODO Tag' }).click();
+  await closeDownloadTip(page);
+  const cell = page.getByRole('cell', {
+    name: 'test page',
+  });
+  await expect(cell).toBeVisible();
+  expect(await page.getByTestId('title').count()).toBe(1);
+  await page.getByTestId('filter-arg').click();
+  await page.getByRole('tooltip').getByText('TODO Tag').click();
+  expect(await page.getByTestId('title').count()).toBe(2);
 });

@@ -4,8 +4,9 @@
 import 'fake-indexeddb/auto';
 
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
+import { uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { IndexeddbPersistence } from 'y-indexeddb';

@@ -14,7 +14,7 @@ import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useEffect } from 'react';
 import { useLayoutEffect } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { useAppHelper } from '../../../hooks/use-workspaces';
@@ -45,7 +45,6 @@ const NameWorkspaceContent = ({
   onClose,
 }: NameWorkspaceContentProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
-  const isComposition = useRef(false);
 
   const handleCreateWorkspace = useCallback(() => {
     onConfirmName(workspaceName);
@@ -53,7 +52,7 @@ const NameWorkspaceContent = ({
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === 'Enter' && workspaceName && !isComposition.current) {
+      if (event.key === 'Enter' && workspaceName) {
         handleCreateWorkspace();
       }
     },
@@ -76,12 +75,6 @@ const NameWorkspaceContent = ({
         maxLength={64}
         minLength={0}
         onChange={setWorkspaceName}
-        onCompositionStart={() => {
-          isComposition.current = true;
-        }}
-        onCompositionEnd={() => {
-          isComposition.current = false;
-        }}
       />
       <div className={style.buttonGroup}>
         <Button

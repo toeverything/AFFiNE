@@ -1,3 +1,4 @@
+import type { RendererToHelper } from '@toeverything/infra/preload/electron';
 import { AsyncCall } from 'async-call-rpc';
 
 import { events, handlers } from './exposed';
@@ -30,7 +31,7 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
       });
     }
   );
-  const rpc = AsyncCall<PeersAPIs.RendererToHelper>(
+  const rpc = AsyncCall<RendererToHelper>(
     Object.fromEntries(flattenedHandlers),
     {
       channel: {

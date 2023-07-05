@@ -12,7 +12,7 @@ export const DebugContent: PluginUIAdapter['debugContent'] = () => {
     <div>
       <span>OpenAI API Key:</span>
       <Input
-        value={key ?? ''}
+        defaultValue={key ?? undefined}
         onChange={useCallback(
           (newValue: string) => {
             setKey(newValue);

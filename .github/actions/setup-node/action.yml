@@ -121,3 +121,7 @@ runs:
       run: node apps/electron/node_modules/electron/install.js
       env:
         ELECTRON_OVERRIDE_DIST_PATH: ./node_modules/.cache/electron
+
+    - name: Build Infra
+      shell: bash
+      run: yarn run build:infra

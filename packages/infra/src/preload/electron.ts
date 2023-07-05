@@ -1,14 +1,38 @@
-// NOTE: we will generate preload types from this file
+// Please add modules to `external` in `rollupOptions` to avoid wrong bundling.
 import { AsyncCall, type EventBasedChannel } from 'async-call-rpc';
+import type { app, dialog, shell } from 'electron';
 import { ipcRenderer } from 'electron';
 import { Subject } from 'rxjs';
 
-type ExposedMeta = {
-  handlers: [namespace: string, handlerNames: string[]][];
-  events: [namespace: string, eventNames: string[]][];
-};
+export interface ExposedMeta {
+  handlers: [string, string[]][];
+  events: [string, string[]][];
+}
 
-export function getAffineAPIs() {
+// render <-> helper
+export interface RendererToHelper {
+  postEvent: (channel: string, ...args: any[]) => void;
+}
+
+export interface HelperToRenderer {
+  [key: string]: (...args: any[]) => Promise<any>;
+}
+
+// helper <-> main
+export interface HelperToMain {
+  getMeta: () => ExposedMeta;
+}
+
+export type MainToHelper = Pick<
+  typeof dialog & typeof shell & typeof app,
+  | 'showOpenDialog'
+  | 'showSaveDialog'
+  | 'openExternal'
+  | 'showItemInFolder'
+  | 'getPath'
+>;
+
+export function getElectronAPIs() {
   const mainAPIs = getMainAPIs();
   const helperAPIs = getHelperAPIs();
 
@@ -126,13 +150,13 @@ function getHelperAPIs() {
     return val ? JSON.parse(val) : null;
   })();
 
-  const rendererToHelperServer: PeersAPIs.RendererToHelper = {
+  const rendererToHelperServer: RendererToHelper = {
     postEvent: (channel, ...args) => {
       events$.next({ channel, args });
     },
   };
 
-  const rpc = AsyncCall<PeersAPIs.HelperToRenderer>(rendererToHelperServer, {
+  const rpc = AsyncCall<HelperToRenderer>(rendererToHelperServer, {
     channel: helperPort$.then(helperPort =>
       createMessagePortChannel(helperPort)
     ),
@@ -157,10 +181,10 @@ function getHelperAPIs() {
   };
 
   const setup = (meta: ExposedMeta) => {
-    const { handlers: handlersMeta, events: eventsMeta } = meta;
+    const { handlers, events } = meta;
 
     const helperHandlers = Object.fromEntries(
-      handlersMeta.map(([namespace, functionNames]) => {
+      handlers.map(([namespace, functionNames]) => {
         return [
           namespace,
           Object.fromEntries(
@@ -173,7 +197,7 @@ function getHelperAPIs() {
     );
 
     const helperEvents = Object.fromEntries(
-      eventsMeta.map(([namespace, eventNames]) => {
+      events.map(([namespace, eventNames]) => {
         return [
           namespace,
           Object.fromEntries(

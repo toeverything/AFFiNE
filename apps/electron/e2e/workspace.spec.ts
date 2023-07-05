@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 
 import { test } from './fixture';
 
-test.skip('check workspace has a DB file', async ({ appInfo, workspace }) => {
+test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   const w = await workspace.current();
   const dbPath = path.join(
     appInfo.sessionData,

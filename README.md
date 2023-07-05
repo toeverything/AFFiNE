@@ -2,13 +2,13 @@
 
 <h1 style="border-bottom: none">
     <b><a href="https://affine.pro">AFFiNE.PRO</a></b><br />
-    The Next-Gen Collaborative Knowledge Base
+    Write, Draw and Plan All at Once
     <br>
 </h1>
 
 <p>
-    AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.<br />
-    Privacy first, open-source, customizable and ready to use - a free replacement for Notion & Miro. <br />
+  One hyper-fused platform for wildly creative minds. <br />
+  A privacy-focussed, local-first, open-source, and ready-to-use alternative for Notion & Miro.
 </p>
 
 </div>
@@ -60,7 +60,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 <br />
 <div align="center">
-<em>See docs, canvas and tables are hyper merged with AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
+<em>Docs, canvas and tables are hyper-merged with AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
 </div>
 <br />
 
@@ -156,7 +156,8 @@ We would like to express our gratitude to all the individuals who have already c
 
 ## Self-Host
 
-Get started with Docker and deploy your own feature-rich, restriction-free deployment of AFFiNE - check the [latest packages].
+Get started with Docker and deploy your own feature-rich, restriction-free deployment of AFFiNE.
+We are working hard to get this updated to the latest version, you can keep an eye on the [latest packages].
 
 ## Hiring
 
