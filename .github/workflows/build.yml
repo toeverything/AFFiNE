@@ -261,7 +261,7 @@ jobs:
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only
-        working-directory: test/affine-cloud
+        working-directory: tests/affine-cloud
         env:
           COVERAGE: true
 
