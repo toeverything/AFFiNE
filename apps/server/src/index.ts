@@ -11,14 +11,7 @@ import { Config } from './config';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-  cors: {
-    origin:
-      process.env.AFFINE_ENV === 'preview'
-        ? ['https://affine-preview.vercel.app']
-        : ['http://localhost:8080'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['x-operation-name', 'x-definition-name'],
-  },
+  cors: true,
   bodyParser: true,
 });
 

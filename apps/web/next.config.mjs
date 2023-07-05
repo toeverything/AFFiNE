@@ -45,7 +45,7 @@ if (process.env.COVERAGE === 'true') {
 }
 
 const profileTarget = {
-  local: '127.0.0.1:3010',
+  local: 'http://localhost:8080',
 };
 
 /** @type {import('next').NextConfig} */
@@ -154,7 +154,15 @@ if (process.env.NODE_ENV === 'development') {
   nextConfig.rewrites = async () => [
     {
       source: '/api/auth/:path*/:path2*',
-      destination: 'http://localhost:3010/api/auth/:path*/:path2*',
+      destination: 'http://127.0.0.1:3010/api/auth/:path*/:path2*',
+    },
+    {
+      source: '/graphql',
+      destination: 'http://127.0.0.1:3010/graphql',
+    },
+    {
+      source: '/socket.io/:path*',
+      destination: 'http://127.0.0.1:3010/socket.io/:path*',
     },
   ];
 }

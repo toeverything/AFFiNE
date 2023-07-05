@@ -1,9 +1,15 @@
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
-import { createParamDecorator, Injectable, UseGuards } from '@nestjs/common';
+import {
+  createParamDecorator,
+  Inject,
+  Injectable,
+  UseGuards,
+} from '@nestjs/common';
+import type { NextAuthOptions } from 'next-auth';
+import { AuthHandler } from 'next-auth/core';
 
-import { PrismaService } from '../../prisma';
 import { getRequestResponseFromContext } from '../../utils/nestjs';
-import { AuthService } from './service';
+import { NextAuthOptionsProvide } from './next-auth-options';
 
 export function getUserFromContext(context: ExecutionContext) {
   const req = getRequestResponseFromContext(context).req;
@@ -41,25 +47,36 @@ export const CurrentUser = createParamDecorator(
 
 @Injectable()
 class AuthGuard implements CanActivate {
-  constructor(private auth: AuthService, private prisma: PrismaService) {}
+  constructor(
+    @Inject(NextAuthOptionsProvide)
+    private readonly nextAuthOptions: NextAuthOptions
+  ) {}
 
   async canActivate(context: ExecutionContext) {
-    const { req } = getRequestResponseFromContext(context);
-    const token = req.headers.authorization;
-    if (!token) {
-      return false;
+    const { req, res } = getRequestResponseFromContext(context);
+    const session = await AuthHandler({
+      req: {
+        cookies: req.cookies,
+        action: 'session',
+        method: 'GET',
+        headers: req.headers,
+      },
+      options: this.nextAuthOptions,
+    });
+    const { body, cookies, status = 200 } = session;
+    // @ts-expect-error body is user here
+    req.user = body;
+    if (cookies && res) {
+      for (const cookie of cookies) {
+        res.cookie(cookie.name, cookie.value, cookie.options);
+      }
     }
-    const [type, jwt] = token.split(' ') ?? [];
-
-    if (type === 'Bearer') {
-      const claims = await this.auth.verify(jwt);
-      req.user = await this.prisma.user.findUnique({
-        where: { id: claims.id },
-      });
-      return !!req.user;
-    }
-
-    return false;
+    return Boolean(
+      status === 200 &&
+        body &&
+        typeof body !== 'string' &&
+        Object.keys(body).length
+    );
   }
 }
 

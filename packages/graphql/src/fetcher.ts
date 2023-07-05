@@ -159,6 +159,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
   ): Promise<QueryResponse<Query>> => {
     const body = formatRequestBody(options);
 
+    const isFormData = body instanceof FormData;
     const ret = fetch(
       endpoint,
       merge(options.context, {
@@ -166,11 +167,14 @@ export const gqlFetcherFactory = (endpoint: string) => {
         headers: {
           'x-operation-name': options.query.operationName,
           'x-definition-name': options.query.definitionName,
+          'content-type': isFormData
+            ? 'multipart/form-data'
+            : 'application/json',
         },
-        body: body instanceof FormData ? body : JSON.stringify(body),
+        body: isFormData ? body : JSON.stringify(body),
       })
     ).then(async res => {
-      if (res.headers.get('content-type') === 'application/json') {
+      if (res.headers.get('content-type')?.startsWith('application/json')) {
         const result = (await res.json()) as ExecutionResult;
         if (res.status >= 400) {
           if (result.errors && result.errors.length > 0) {
