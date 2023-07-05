@@ -1,9 +1,5 @@
 import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import type {
-  AffineCloudWorkspace,
-  LocalWorkspace,
-} from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -11,11 +7,11 @@ import clsx from 'clsx';
 import { useSession } from 'next-auth/react';
 import type { ReactElement } from 'react';
 
+import type { AllWorkspace } from '../../../../shared';
 import type {
   GeneralSettingKeys,
   GeneralSettingList,
 } from '../general-setting';
-import type { Workspace } from '../type';
 import {
   accountButton,
   settingSlideBar,
@@ -75,13 +71,11 @@ export const SettingSidebar = ({
 }: {
   generalSettingList: GeneralSettingList;
   onGeneralSettingClick: (key: GeneralSettingKeys) => void;
-  currentWorkspace: Workspace;
-  workspaceList: Workspace[];
-  onWorkspaceSettingClick: (
-    workspace: AffineCloudWorkspace | LocalWorkspace
-  ) => void;
+  currentWorkspace: AllWorkspace;
+  workspaceList: AllWorkspace[];
+  onWorkspaceSettingClick: (workspace: AllWorkspace) => void;
 
-  selectedWorkspace: Workspace | null;
+  selectedWorkspace: AllWorkspace | null;
   selectedGeneralKey: string | null;
   onAccountSettingClick: () => void;
 }) => {
@@ -143,7 +137,7 @@ const WorkspaceListItem = ({
   isCurrent,
   isActive,
 }: {
-  workspace: AffineCloudWorkspace | LocalWorkspace;
+  workspace: AllWorkspace;
   onClick: () => void;
   isCurrent: boolean;
   isActive: boolean;

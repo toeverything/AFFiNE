@@ -34,6 +34,7 @@ export const sidebarItemsWrapper = style({
   selectors: {
     '&.scroll': {
       flexGrow: 1,
+      overflowY: 'auto',
     },
   },
 });
