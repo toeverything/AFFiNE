@@ -22,7 +22,7 @@ export const Footer: FC = () => {
           </div>
         }
         onClick={async () => {
-          if (!runtimeConfig.enableLegacyCloud) {
+          if (!runtimeConfig.enableCloud) {
             setOpen(true);
           }
         }}
