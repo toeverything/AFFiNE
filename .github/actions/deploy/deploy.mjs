@@ -35,7 +35,6 @@ const createHelmCommand = ({ isDryRun }) => {
     `--version "0.0.0-alpha.${GIT_SHORT_HASH}" --timeout 10m`,
     flag,
   ].join(' ');
-  console.info(deployCommand);
   return deployCommand;
 };
 
