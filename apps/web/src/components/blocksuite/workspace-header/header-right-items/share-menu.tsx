@@ -108,7 +108,7 @@ const LocalHeaderShareMenu: React.FC<BaseHeaderProps> = props => {
 };
 
 export const HeaderShareMenu: React.FC<BaseHeaderProps> = props => {
-  if (!runtimeConfig.enableLegacyCloud) {
+  if (!runtimeConfig.enableCloud) {
     return null;
   }
   if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
