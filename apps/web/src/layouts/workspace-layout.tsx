@@ -38,6 +38,7 @@ import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
+import type { SettingAtom } from '../atoms';
 import {
   openQuickSearchModalAtom,
   openSettingModalAtom,
@@ -100,14 +101,33 @@ export const QuickSearch: FC = () => {
 };
 export const Setting: FC = () => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const [openSettingModal, setOpenSettingModalAtom] =
+  const [{ open, workspace, activeTab }, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+
+  const onSettingClick = useCallback(
+    ({
+      activeTab,
+      workspace,
+    }: Pick<SettingAtom, 'activeTab' | 'workspace'>) => {
+      setOpenSettingModalAtom(prev => ({ ...prev, activeTab, workspace }));
+    },
+    [setOpenSettingModalAtom]
+  );
+
   if (!blockSuiteWorkspace) {
     return null;
   }
   return (
-    <SettingModal open={openSettingModal} setOpen={setOpenSettingModalAtom} />
+    <SettingModal
+      open={open}
+      activeTab={activeTab || 'appearance'}
+      workspace={workspace}
+      onSettingClick={onSettingClick}
+      setOpen={open => {
+        setOpenSettingModalAtom(prev => ({ ...prev, open }));
+      }}
+    />
   );
 };
 
@@ -336,7 +356,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(() => {
-    setOpenSettingModalAtom(true);
+    setOpenSettingModalAtom({ activeTab: 'appearance', open: true });
   }, [setOpenSettingModalAtom]);
 
   const resizing = useAtomValue(appSidebarResizingAtom);

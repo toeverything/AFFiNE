@@ -2,9 +2,9 @@ import { MuiFade, Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
-import { lazy, Suspense, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import { openOnboardingModalAtom } from '../../../atoms';
+import { openOnboardingModalAtom, openSettingModalAtom } from '../../../atoms';
 import { useCurrentMode } from '../../../hooks/current/use-current-mode';
 import { ShortcutsModal } from '../shortcuts-modal';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
@@ -14,11 +14,7 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-const ContactModal = lazy(() =>
-  import('@affine/component/contact-modal').then(({ ContactModal }) => ({
-    default: ContactModal,
-  }))
-);
+
 const DEFAULT_SHOW_LIST: IslandItemNames[] = [
   'whatNew',
   'contact',
@@ -33,6 +29,7 @@ export const HelpIsland = ({
 }) => {
   const mode = useCurrentMode();
   const [, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
+  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
   // const { triggerShortcutsModal, triggerContactModal } = useModal();
   // const blockHub = useGlobalState(store => store.blockHub);
@@ -52,8 +49,18 @@ export const HelpIsland = ({
   // useEffect(() => {
   //   spread && blockHub?.toggleMenu(false);
   // }, [blockHub, spread]);
-  const [open, setOpen] = useState(false);
+
   const [openShortCut, setOpenShortCut] = useState(false);
+
+  const openAbout = useCallback(() => {
+    setShowSpread(false);
+
+    setOpenSettingModalAtom({
+      open: true,
+      activeTab: 'about',
+    });
+  }, [setOpenSettingModalAtom]);
+
   return (
     <>
       <StyledIsland
@@ -83,10 +90,7 @@ export const HelpIsland = ({
             <Tooltip content={t['Contact Us']()} placement="left-end">
               <StyledIconWrapper
                 data-testid="right-bottom-contact-us-icon"
-                onClick={() => {
-                  setShowSpread(false);
-                  setOpen(true);
-                }}
+                onClick={openAbout}
               >
                 <ContactIcon />
               </StyledIconWrapper>
@@ -136,13 +140,6 @@ export const HelpIsland = ({
           </StyledTriggerWrapper>
         </MuiFade>
       </StyledIsland>
-      <Suspense>
-        <ContactModal
-          open={open}
-          onClose={() => setOpen(false)}
-          logoSrc="/imgs/affine-text-logo.png"
-        />
-      </Suspense>
       <ShortcutsModal
         open={openShortCut}
         onClose={() => setOpenShortCut(false)}

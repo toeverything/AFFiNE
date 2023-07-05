@@ -7,21 +7,21 @@ import { SIZE_DEFAULT, SIZE_MIDDLE, SIZE_SMALL } from './interface';
 export const SIZE_CONFIG = {
   [SIZE_SMALL]: {
     iconSize: 16,
-    fontSize: 16,
+    fontSize: 'var(--affine-font-xs)',
     borderRadius: 4,
-    height: 26,
+    height: 28,
     padding: 6,
   },
   [SIZE_MIDDLE]: {
     iconSize: 20,
-    fontSize: 16,
+    fontSize: 'var(--affine-font-sm)',
     borderRadius: 4,
     height: 32,
     padding: 12,
   },
   [SIZE_DEFAULT]: {
     iconSize: 24,
-    fontSize: 16,
+    fontSize: 'var(--affine-font-base)',
     height: 38,
     padding: 24,
     borderRadius: 4,

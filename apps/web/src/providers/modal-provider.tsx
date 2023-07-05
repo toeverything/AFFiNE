@@ -13,10 +13,12 @@ import {
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openOnboardingModalAtom,
+  openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces } from '../hooks/use-workspaces';
+import type { AllWorkspace } from '../shared';
 
 const WorkspaceListModal = lazy(() =>
   import('../components/pure/workspace-list-modal').then(module => ({
@@ -93,6 +95,20 @@ export const AllWorkspaceModals = (): ReactElement => {
     rootCurrentWorkspaceIdAtom
   );
   const [transitioning, transition] = useTransition();
+  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+
+  const handleOpenSettingModal = useCallback(
+    (workspace: AllWorkspace) => {
+      setOpenWorkspacesModal(false);
+
+      setOpenSettingModalAtom({
+        open: true,
+        activeTab: 'workspace',
+        workspace,
+      });
+    },
+    [setOpenSettingModalAtom, setOpenWorkspacesModal]
+  );
   return (
     <>
       <Suspense>
@@ -129,18 +145,7 @@ export const AllWorkspaceModals = (): ReactElement => {
             },
             [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}
-          onClickWorkspaceSetting={useCallback(
-            workspace => {
-              setOpenWorkspacesModal(false);
-              setCurrentWorkspaceId(workspace.id);
-              jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING).catch(
-                error => {
-                  console.error(error);
-                }
-              );
-            },
-            [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
-          )}
+          onClickWorkspaceSetting={handleOpenSettingModal}
           onNewWorkspace={useCallback(() => {
             setOpenCreateWorkspaceModal('new');
           }, [setOpenCreateWorkspaceModal])}
