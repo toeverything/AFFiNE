@@ -1,4 +1,4 @@
-import { globalStyle, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
 export const dropdownBtn = style({
   display: 'inline-flex',
@@ -53,6 +53,9 @@ export const dropdownIcon = style({
   },
 });
 
+export const radioButton = style({
+  flexGrow: 1,
+});
 export const radioButtonContent = style({
   fontSize: 'var(--affine-font-xs)',
   display: 'flex',
@@ -96,8 +99,4 @@ export const radioButtonGroup = style({
   padding: '2px',
   // @ts-expect-error - fix electron drag
   WebkitAppRegion: 'no-drag',
-});
-
-globalStyle(`${radioButtonGroup} > button`, {
-  flexGrow: 1,
 });

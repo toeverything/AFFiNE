@@ -11,9 +11,13 @@ import * as styles from './styles.css';
 export const RadioButton = forwardRef<
   HTMLButtonElement,
   RadioGroupItemProps & { bold?: boolean }
->(({ children, bold, ...props }, ref) => {
+>(({ children, bold, className, ...props }, ref) => {
   return (
-    <RadioGroup.Item ref={ref} {...props}>
+    <RadioGroup.Item
+      ref={ref}
+      {...props}
+      className={clsx(styles.radioButton, className)}
+    >
       <span className={clsx(styles.radioUncheckedButton, { bold })}>
         {children}
       </span>
@@ -29,13 +33,13 @@ RadioButton.displayName = 'RadioButton';
 
 export const RadioButtonGroup = forwardRef<
   HTMLDivElement,
-  RadioGroupProps & { width: CSSProperties['width'] }
+  RadioGroupProps & { width?: CSSProperties['width'] }
 >(({ className, style, width, ...props }, ref) => {
   return (
     <RadioGroup.Root
       ref={ref}
       className={clsx(styles.radioButtonGroup, className)}
-      style={{ width: width, ...style }}
+      style={{ width, ...style }}
       {...props}
     ></RadioGroup.Root>
   );
