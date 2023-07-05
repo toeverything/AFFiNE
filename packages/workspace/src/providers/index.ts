@@ -155,6 +155,7 @@ export const createLocalProviders = (): DocProviderCreator[] => {
 export const createAffineProviders = (): DocProviderCreator[] => {
   return (
     [
+      ...createLocalProviders(),
       runtimeConfig.enableBroadcastChannelProvider &&
         createBroadcastChannelProvider,
       runtimeConfig.enableCloud && createAffineSocketIOProvider,

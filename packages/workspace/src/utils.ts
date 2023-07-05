@@ -78,17 +78,17 @@ export function createEmptyBlockSuiteWorkspace(
   const idGenerator = config?.idGenerator;
 
   const blobStorages: StoreOptions['blobStorages'] = [];
-  providerCreators.push(...createAffineProviders());
   if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
       if (isDesktop && runtimeConfig.enableSQLiteProvider) {
         blobStorages.push(createSQLiteStorage);
       }
+      providerCreators.push(...createAffineProviders());
 
       // todo: add support for cloud storage
     }
-  } else {
+  } else if (flavour === WorkspaceFlavour.LOCAL) {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
       if (isDesktop && runtimeConfig.enableSQLiteProvider) {
@@ -96,6 +96,8 @@ export function createEmptyBlockSuiteWorkspace(
       }
     }
     providerCreators.push(...createLocalProviders());
+  } else {
+    throw new Error('unsupported flavour');
   }
 
   const workspace = new Workspace({
