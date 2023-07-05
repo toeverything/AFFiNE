@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import type { AppUpdater } from 'electron-updater';
+import { autoUpdater } from 'electron-updater';
 import { z } from 'zod';
 
 import { logger } from '../logger';
@@ -20,56 +20,55 @@ export const buildType = ReleaseTypeSchema.parse(envBuildType);
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
 
-let _autoUpdater: AppUpdater | null = null;
-
 export const quitAndInstall = async () => {
-  _autoUpdater?.quitAndInstall();
+  autoUpdater.quitAndInstall();
 };
 
 let lastCheckTime = 0;
 export const checkForUpdatesAndNotify = async (force = true) => {
-  if (!_autoUpdater) {
-    return void 0;
-  }
   // check every 30 minutes (1800 seconds) at most
   if (force || lastCheckTime + 1000 * 1800 < Date.now()) {
     lastCheckTime = Date.now();
-    return await _autoUpdater.checkForUpdatesAndNotify();
+    return await autoUpdater.checkForUpdatesAndNotify();
   }
   return void 0;
 };
 
 export const registerUpdater = async () => {
-  // so we wrap it in a function
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { autoUpdater } = require('electron-updater');
-
-  _autoUpdater = autoUpdater;
-
   // skip auto update in dev mode
-  if (!_autoUpdater || isDev) {
+  if (isDev) {
     return;
   }
 
   // TODO: support auto update on windows and linux
   const allowAutoUpdate = isMacOS();
 
-  _autoUpdater.autoDownload = false;
-  _autoUpdater.allowPrerelease = buildType !== 'stable';
-  _autoUpdater.autoInstallOnAppQuit = false;
-  _autoUpdater.autoRunAppAfterInstall = true;
-  _autoUpdater.setFeedURL({
+  autoUpdater.logger = logger;
+  autoUpdater.autoDownload = false;
+  autoUpdater.allowPrerelease = buildType !== 'stable';
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.autoRunAppAfterInstall = true;
+
+  const feedUrl: Parameters<typeof autoUpdater.setFeedURL>[0] = {
     channel: buildType,
     provider: 'github',
     repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
-  });
+  };
+
+  logger.debug('auto-updater feed config', feedUrl);
+
+  autoUpdater.setFeedURL(feedUrl);
 
   // register events for checkForUpdatesAndNotify
-  _autoUpdater.on('update-available', info => {
+  autoUpdater.on('checking-for-update', () => {
+    logger.info('Checking for update');
+  });
+  autoUpdater.on('update-available', info => {
+    logger.info('Update available', info);
     if (allowAutoUpdate) {
-      _autoUpdater?.downloadUpdate().catch(e => {
+      autoUpdater?.downloadUpdate().catch(e => {
         logger.error('Failed to download update', e);
       });
       logger.info('Update available, downloading...', info);
@@ -79,11 +78,14 @@ export const registerUpdater = async () => {
       allowAutoUpdate,
     });
   });
-  _autoUpdater.on('download-progress', e => {
+  autoUpdater.on('update-not-available', info => {
+    logger.info('Update not available', info);
+  });
+  autoUpdater.on('download-progress', e => {
     logger.info(`Download progress: ${e.percent}`);
     updaterSubjects.downloadProgress.next(e.percent);
   });
-  _autoUpdater.on('update-downloaded', e => {
+  autoUpdater.on('update-downloaded', e => {
     updaterSubjects.updateReady.next({
       version: e.version,
       allowAutoUpdate,
@@ -92,10 +94,10 @@ export const registerUpdater = async () => {
     // updaterSubjects.clientDownloadProgress.next(100);
     logger.info('Update downloaded, ready to install');
   });
-  _autoUpdater.on('error', e => {
+  autoUpdater.on('error', e => {
     logger.error('Error while updating client', e);
   });
-  _autoUpdater.forceDevUpdateConfig = isDev;
+  autoUpdater.forceDevUpdateConfig = isDev;
 
   app.on('activate', async () => {
     await checkForUpdatesAndNotify(false);

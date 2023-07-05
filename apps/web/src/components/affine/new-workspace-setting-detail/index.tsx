@@ -20,7 +20,7 @@ import { StoragePanel } from './storage';
 
 export type WorkspaceSettingDetailProps = {
   workspace: AffineOfficialWorkspace;
-  onDeleteWorkspace: () => Promise<void>;
+  onDeleteWorkspace: (id: string) => Promise<void>;
   onTransferWorkspace: <
     From extends WorkspaceFlavour,
     To extends WorkspaceFlavour
