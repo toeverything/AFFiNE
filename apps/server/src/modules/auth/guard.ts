@@ -70,6 +70,9 @@ class AuthGuard implements CanActivate {
         options: this.nextAuthOptions,
       });
       const { body, cookies, status = 200 } = session;
+      if (!body) {
+        return false;
+      }
       // @ts-expect-error body is user here
       req.user = body.user;
       if (cookies && res) {
@@ -78,10 +81,7 @@ class AuthGuard implements CanActivate {
         }
       }
       return Boolean(
-        status === 200 &&
-          body &&
-          typeof body !== 'string' &&
-          Object.keys(body).length
+        status === 200 && typeof body !== 'string' && Object.keys(body).length
       );
     } else {
       const [type, jwt] = token.split(' ') ?? [];
