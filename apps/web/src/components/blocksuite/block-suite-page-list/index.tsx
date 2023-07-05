@@ -194,7 +194,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       title: pageMeta.title,
       preview,
       tags:
-        page?.meta.tags.map(id => tagOptionMap[id]).filter(v => v != null) ??
+        page?.meta.tags?.map(id => tagOptionMap[id]).filter(v => v != null) ??
         [],
       favorite: !!pageMeta.favorite,
       isPublicPage: !!pageMeta.isPublic,
