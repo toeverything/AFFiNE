@@ -55,6 +55,7 @@ describe('GraphQL fetcher', () => {
       {
         "body": "{\\"query\\":\\"query { field }\\",\\"variables\\":{\\"a\\":1,\\"b\\":\\"2\\",\\"c\\":{\\"d\\":false}},\\"operationName\\":\\"query\\"}",
         "headers": {
+          "content-type": "application/json",
           "x-definition-name": "query",
           "x-operation-name": "query",
         },
