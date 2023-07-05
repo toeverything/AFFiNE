@@ -141,7 +141,7 @@ const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
         </Button>
       </SettingRow>
       <FakePublishPanelAffine workspace={workspace} />
-      {runtimeConfig.enableLegacyCloud ? (
+      {runtimeConfig.enableCloud ? (
         <EnableAffineCloudModal
           open={open}
           onClose={() => {

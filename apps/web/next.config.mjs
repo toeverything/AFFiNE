@@ -45,7 +45,7 @@ if (process.env.COVERAGE === 'true') {
 }
 
 const profileTarget = {
-  local: '127.0.0.1:3000',
+  local: '127.0.0.1:3010',
 };
 
 /** @type {import('next').NextConfig} */

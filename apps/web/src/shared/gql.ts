@@ -1,3 +1,4 @@
+import { setupGlobal } from '@affine/env/global';
 import type {
   GraphQLQuery,
   MutationOptions,
@@ -14,6 +15,9 @@ import type {
   SWRMutationResponse,
 } from 'swr/mutation';
 import useSWRMutation from 'swr/mutation';
+
+// fixme: this is a hack to get around the fact that we can't import
+setupGlobal();
 
 export const fetcher = gqlFetcherFactory(prefixUrl + '/graphql');
 

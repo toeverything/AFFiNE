@@ -10,6 +10,7 @@ import {
   WorkspaceFlavour,
 } from '@affine/env/workspace';
 
+import { CRUD as CloudCRUD } from './cloud/crud';
 import { UI as CloudUI } from './cloud/ui';
 import { LocalAdapter } from './local';
 
@@ -28,13 +29,7 @@ export const WorkspaceAdapters = {
     flavour: WorkspaceFlavour.AFFINE_CLOUD,
     loadPriority: LoadPriority.HIGH,
     Events: {} as Partial<AppEvents>,
-    // todo: implement this
-    CRUD: {
-      get: unimplemented,
-      list: bypassList,
-      delete: unimplemented,
-      create: unimplemented,
-    },
+    CRUD: CloudCRUD,
     UI: CloudUI,
   },
   [WorkspaceFlavour.PUBLIC]: {
