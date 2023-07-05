@@ -123,6 +123,8 @@ If you have questions, you are welcome to contact us. One of the best places to 
 ## Plugins
 
 > Plugins are a way to extend the functionality of AFFiNE.
+>
+> (Currently, plugins are under heavy development, and the SDK is not yet available.)
 
 | Name                                             |                                           |
 | ------------------------------------------------ | ----------------------------------------- |
