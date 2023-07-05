@@ -26,7 +26,6 @@ const Y = Workspace.Y;
 
 export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
   create: async blockSuiteWorkspace => {
-    // wrong implementation
     const { createWorkspace } = await fetcher({
       query: createWorkspaceMutation,
       variables: {
@@ -75,39 +74,49 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     });
   },
   get: async id => {
-    await fetcher({
-      query: getWorkspaceQuery,
-      variables: {
+    try {
+      await fetcher({
+        query: getWorkspaceQuery,
+        variables: {
+          id,
+        },
+      });
+      return {
         id,
-      },
-    });
-    return {
-      id,
-      flavour: WorkspaceFlavour.AFFINE_CLOUD,
-      blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
-        id,
-        WorkspaceFlavour.AFFINE_CLOUD,
-        {}
-      ),
-    } satisfies AffineCloudWorkspace;
+        flavour: WorkspaceFlavour.AFFINE_CLOUD,
+        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+          id,
+          WorkspaceFlavour.AFFINE_CLOUD,
+          {}
+        ),
+      } satisfies AffineCloudWorkspace;
+    } catch (e) {
+      console.error('error when fetching cloud workspace:', e);
+      return null;
+    }
   },
   list: async () => {
-    const { workspaces } = await fetcher({
-      query: getWorkspacesQuery,
-    });
-    const ids = workspaces.map(({ id }) => id);
+    try {
+      const { workspaces } = await fetcher({
+        query: getWorkspacesQuery,
+      });
+      const ids = workspaces.map(({ id }) => id);
 
-    return ids.map(
-      id =>
-        ({
-          id,
-          flavour: WorkspaceFlavour.AFFINE_CLOUD,
-          blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+      return ids.map(
+        id =>
+          ({
             id,
-            WorkspaceFlavour.AFFINE_CLOUD,
-            {}
-          ),
-        } satisfies AffineCloudWorkspace)
-    );
+            flavour: WorkspaceFlavour.AFFINE_CLOUD,
+            blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+              id,
+              WorkspaceFlavour.AFFINE_CLOUD,
+              {}
+            ),
+          } satisfies AffineCloudWorkspace)
+      );
+    } catch (e) {
+      console.error('error when fetching cloud workspaces:', e);
+      return [];
+    }
   },
 };
