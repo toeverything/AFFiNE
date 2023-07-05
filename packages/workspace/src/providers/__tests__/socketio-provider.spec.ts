@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 
 import type { AffineSocketIOProvider } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { assertExists, Workspace } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 import { describe, expect, test } from 'vitest';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import { Doc } from 'yjs';
@@ -58,8 +58,7 @@ describe('sockio provider', () => {
       provider.connect();
 
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const page = workspace.getPage('page');
-      assertExists(page);
+      const page = workspace.getPage('page')!;
       await page.waitForLoaded();
       const block = page.getBlockByFlavour('affine:page');
       expect(block[0].flavour).toEqual('affine:page');
