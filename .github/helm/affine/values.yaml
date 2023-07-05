@@ -15,7 +15,7 @@ graphql:
 sync:
   service:
     type: ClusterIP
-    port: 3000
+    port: 3010
 
 web:
   service:
