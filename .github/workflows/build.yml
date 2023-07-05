@@ -229,6 +229,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
       - name: Initialize database
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE affine;"
