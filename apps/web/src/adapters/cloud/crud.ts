@@ -9,6 +9,10 @@ import {
   getWorkspaceQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
+import {
+  deleteLocalBlobStorage,
+  moveLocalBlobStorage,
+} from '@affine/workspace/migration';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { Workspace } from '@blocksuite/store';
 import {
@@ -26,7 +30,10 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     const { createWorkspace } = await fetcher({
       query: createWorkspaceMutation,
       variables: {
-        init: new File([], 'empty'),
+        init: new File(
+          [Y.encodeStateAsUpdate(blockSuiteWorkspace.doc)],
+          'initBinary.yDoc'
+        ),
       },
     });
     const newBLockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
@@ -51,7 +58,12 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     );
     provider.connect();
     await provider.whenSynced;
-    // todo: delete old workspace in the future
+    moveLocalBlobStorage(blockSuiteWorkspace.id, createWorkspace.id)
+      .then(() => deleteLocalBlobStorage(blockSuiteWorkspace.id))
+      .catch(e => {
+        console.error('error when moving blob storage:', e);
+      });
+    // todo(himself65): delete old workspace in the future
     return createWorkspace.id;
   },
   delete: async workspace => {

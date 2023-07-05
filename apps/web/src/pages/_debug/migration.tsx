@@ -7,7 +7,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { RootWorkspaceMetadataV1 } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
-  migrateLocalBlobStorage,
+  moveLocalBlobStorage,
   upgradeV1ToV2,
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
@@ -71,7 +71,7 @@ const workspaceAtom = atom<Promise<Workspace>>(async get => {
     flavour: WorkspaceFlavour.LOCAL,
   } satisfies LocalWorkspace;
   const newWorkspace = upgradeV1ToV2(localWorkspace);
-  await migrateLocalBlobStorage(localWorkspace.id, newWorkspace.id);
+  await moveLocalBlobStorage(localWorkspace.id, newWorkspace.id);
   newWorkspace.blockSuiteWorkspace;
   return newWorkspace.blockSuiteWorkspace;
 });

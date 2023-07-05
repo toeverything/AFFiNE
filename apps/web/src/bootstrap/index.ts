@@ -8,7 +8,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { workspaceAdaptersAtom } from '@affine/workspace/atom';
 import {
-  migrateLocalBlobStorage,
+  moveLocalBlobStorage,
   upgradeV1ToV2,
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
@@ -112,7 +112,7 @@ if (environment.isBrowser) {
             );
 
             await adapter.CRUD.delete(workspace as any);
-            await migrateLocalBlobStorage(workspace.id, newId);
+            await moveLocalBlobStorage(workspace.id, newId);
           };
 
           // create a new workspace and push it to metadata

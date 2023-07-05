@@ -36,7 +36,7 @@ export function upgradeV1ToV2(oldWorkspace: LocalWorkspace): LocalWorkspace {
   }
 }
 
-export async function migrateLocalBlobStorage(from: string, to: string) {
+export async function moveLocalBlobStorage(from: string, to: string) {
   const fromStorage = createIndexeddbStorage(from);
   const toStorage = createIndexeddbStorage(to);
   const keys = await fromStorage.crud.list();
@@ -47,5 +47,13 @@ export async function migrateLocalBlobStorage(from: string, to: string) {
       continue;
     }
     await toStorage.crud.set(key, value);
+  }
+}
+
+export async function deleteLocalBlobStorage(id: string) {
+  const storage = createIndexeddbStorage(id);
+  const keys = await storage.crud.list();
+  for (const key of keys) {
+    await storage.crud.delete(key);
   }
 }
