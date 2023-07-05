@@ -1,12 +1,12 @@
 import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
-import { useSession } from 'next-auth/react';
 import type { ReactElement } from 'react';
 
+import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
+import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import type { AllWorkspace } from '../../../../shared';
 import type {
   GeneralSettingKeys,
@@ -28,34 +28,25 @@ export type UserInfoProps = {
 export const UserInfo = ({
   onAccountSettingClick,
 }: UserInfoProps): ReactElement => {
-  const session = useSession();
-  if (session.status !== 'authenticated') {
-    return <></>;
-  }
-  const user = session.data.user;
-  assertExists(user);
+  const user = useCurrentUser();
   return (
-    <>
-      {runtimeConfig.enableCloud && (
-        <div className={accountButton} onClick={onAccountSettingClick}>
-          <UserAvatar
-            size={28}
-            name={user.name ?? ''}
-            url={user.image ?? ''}
-            className="avatar"
-          />
+    <div className={accountButton} onClick={onAccountSettingClick}>
+      <UserAvatar
+        size={28}
+        name={user.name}
+        url={user.image}
+        className="avatar"
+      />
 
-          <div className="content">
-            <div className="name" title="xxx">
-              {user.name}
-            </div>
-            <div className="email" title="xxx">
-              {user.email}
-            </div>
-          </div>
+      <div className="content">
+        <div className="name" title="xxx">
+          {user.name}
         </div>
-      )}
-    </>
+        <div className="email" title="xxx">
+          {user.email}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -80,6 +71,7 @@ export const SettingSidebar = ({
   onAccountSettingClick: () => void;
 }) => {
   const t = useAFFiNEI18N();
+  const loginStatus = useCurrenLoginStatus();
   return (
     <div className={settingSlideBar} data-testid="settings-sidebar">
       <div className={sidebarTitle}>{t['Settings']()}</div>
@@ -124,7 +116,7 @@ export const SettingSidebar = ({
         })}
       </div>
 
-      {runtimeConfig.enableCloud && (
+      {runtimeConfig.enableCloud && loginStatus === 'authenticated' && (
         <UserInfo onAccountSettingClick={onAccountSettingClick} />
       )}
     </div>
