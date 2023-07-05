@@ -146,19 +146,6 @@ export const AllWorkspaceModals = (): ReactElement => {
             [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
           )}
           onClickWorkspaceSetting={handleOpenSettingModal}
-          // onClickWorkspaceSetting={useCallback(
-          //   workspace => {
-          //
-          //     setOpenWorkspacesModal(false);
-          //     setCurrentWorkspaceId(workspace.id);
-          //     jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING).catch(
-          //       error => {
-          //         console.error(error);
-          //       }
-          //     );
-          //   },
-          //   [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
-          // )}
           onNewWorkspace={useCallback(() => {
             setOpenCreateWorkspaceModal('new');
           }, [setOpenCreateWorkspaceModal])}
