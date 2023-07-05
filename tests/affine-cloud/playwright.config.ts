@@ -40,7 +40,9 @@ const config: PlaywrightTestConfig = {
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
-        DATABASE_URL: 'postgresql://affine@localhost:5432/affine',
+        DATABASE_URL:
+          process.env.DATABASE_URL ??
+          'postgresql://affine@localhost:5432/affine',
         NEXTAUTH_URL: 'http://localhost:8080',
         OAUTH_EMAIL_SENDER: 'noreply@toeverything.info',
       },

@@ -264,6 +264,7 @@ jobs:
         working-directory: tests/affine-cloud
         env:
           COVERAGE: true
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Collect code coverage report
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
