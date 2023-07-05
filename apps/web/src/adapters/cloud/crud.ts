@@ -75,7 +75,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     });
   },
   get: async id => {
-    if (!navigator.onLine) {
+    if (!environment.isServer && !navigator.onLine) {
       // no network
       return null;
     }
@@ -108,7 +108,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     }
   },
   list: async () => {
-    if (!navigator.onLine) {
+    if (!environment.isServer && !navigator.onLine) {
       // no network
       return [];
     }
