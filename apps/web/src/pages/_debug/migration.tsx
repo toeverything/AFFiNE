@@ -12,7 +12,8 @@ import {
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { assertExists, Workspace } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/global/utils';
+import { Workspace } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 import {

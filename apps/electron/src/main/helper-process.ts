@@ -1,5 +1,9 @@
 import path from 'node:path';
 
+import type {
+  HelperToMain,
+  MainToHelper,
+} from '@toeverything/infra/preload/electron';
 import { type _AsyncVersionOf, AsyncCall } from 'async-call-rpc';
 import {
   app,
@@ -36,7 +40,7 @@ class HelperProcessManager {
   #process: UtilityProcess;
 
   // a rpc server for the main process -> helper process
-  rpc?: _AsyncVersionOf<PeersAPIs.HelperToMain>;
+  rpc?: _AsyncVersionOf<HelperToMain>;
 
   static instance = new HelperProcessManager();
 
@@ -86,13 +90,13 @@ class HelperProcessManager {
     ]);
     const appMethods = pickAndBind(app, ['getPath']);
 
-    const mainToHelperServer: PeersAPIs.MainToHelper = {
+    const mainToHelperServer: MainToHelper = {
       ...dialogMethods,
       ...shellMethods,
       ...appMethods,
     };
 
-    this.rpc = AsyncCall<PeersAPIs.HelperToMain>(mainToHelperServer, {
+    this.rpc = AsyncCall<HelperToMain>(mainToHelperServer, {
       strict: {
         // the channel is shared for other purposes as well so that we do not want to
         // restrict to only JSONRPC messages

@@ -13,8 +13,8 @@ import {
 } from '@affine/workspace/atom';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import {
   useBlockSuitePageMeta,

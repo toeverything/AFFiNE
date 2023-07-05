@@ -2,6 +2,7 @@
 import { FlexWrapper, IconButton, Menu, MenuItem } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { assertExists } from '@blocksuite/global/utils';
 import {
   EdgelessIcon,
   FavoritedIcon,
@@ -9,7 +10,6 @@ import {
   MoreVerticalIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import { assertExists } from '@blocksuite/store';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,

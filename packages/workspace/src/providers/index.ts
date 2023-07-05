@@ -3,8 +3,9 @@ import type {
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
+import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
-import { assertExists, Workspace } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
   createIndexedDBProvider as create,

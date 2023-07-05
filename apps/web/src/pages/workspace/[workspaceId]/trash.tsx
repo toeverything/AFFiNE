@@ -1,6 +1,6 @@
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/global/utils';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
