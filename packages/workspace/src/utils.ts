@@ -78,7 +78,7 @@ export function createEmptyBlockSuiteWorkspace(
   const idGenerator = config?.idGenerator;
 
   const blobStorages: StoreOptions['blobStorages'] = [];
-
+  providerCreators.push(...createAffineProviders());
   if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
@@ -88,7 +88,6 @@ export function createEmptyBlockSuiteWorkspace(
 
       // todo: add support for cloud storage
     }
-    providerCreators.push(...createAffineProviders());
   } else {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);

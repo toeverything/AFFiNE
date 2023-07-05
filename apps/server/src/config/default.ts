@@ -70,6 +70,12 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       OAUTH_EMAIL_SERVER: 'auth.email.server',
       OAUTH_EMAIL_PORT: 'auth.email.port',
       OAUTH_EMAIL_PASSWORD: 'auth.email.password',
+      REDIS_SERVER_ENABLED: 'redis.enabled',
+      REDIS_SERVER_HOST: 'redis.host',
+      REDIS_SERVER_PORT: ['redis.port', 'int'],
+      REDIS_SERVER_USER: 'redis.username',
+      REDIS_SERVER_PASSWORD: 'redis.password',
+      REDIS_SERVER_DATABASE: ['redis.database', 'int'],
     } satisfies AFFiNEConfig['ENV_MAP'],
     env: process.env.NODE_ENV ?? 'development',
     get prod() {
@@ -141,6 +147,14 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       fs: {
         path: join(homedir(), '.affine-storage'),
       },
+    },
+    redis: {
+      enabled: false,
+      host: '127.0.0.1',
+      port: 6379,
+      username: '',
+      password: '',
+      database: 0,
     },
   } satisfies AFFiNEConfig;
 

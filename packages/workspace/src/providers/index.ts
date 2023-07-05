@@ -1,4 +1,5 @@
 import type {
+  AffineSocketIOProvider,
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
@@ -13,6 +14,7 @@ import {
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 
+import { SocketIOProvider } from '../affine/sync-socket-io';
 import { CallbackSet } from '../utils';
 import { localProviderLogger as logger } from './logger';
 import {
@@ -21,6 +23,32 @@ import {
 } from './sqlite-providers';
 
 const Y = Workspace.Y;
+
+const createAffineSocketIOProvider: DocProviderCreator = (
+  id,
+  doc,
+  { awareness }
+): AffineSocketIOProvider => {
+  const provider = new SocketIOProvider(prefixUrl, id, doc, {
+    awareness,
+  });
+  return {
+    flavour: 'affine-socket-io',
+    passive: true,
+    get connected() {
+      return provider.connected;
+    },
+    connect: () => {
+      provider.connect();
+    },
+    disconnect: () => {
+      provider.disconnect();
+    },
+    cleanup: () => {
+      provider.destroy();
+    },
+  } satisfies AffineSocketIOProvider;
+};
 
 const createIndexedDBBackgroundProvider: DocProviderCreator = (
   id,
@@ -73,6 +101,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     _resolve = resolve;
     _reject = reject;
   });
+
   async function downloadBinaryRecursively(doc: Doc) {
     const binary = await downloadBinary(doc.guid);
     if (binary) {
@@ -80,6 +109,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
       await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
     }
   }
+
   return {
     flavour: 'local-indexeddb',
     active: true,
@@ -97,6 +127,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
 };
 
 export {
+  createAffineSocketIOProvider,
   createBroadcastChannelProvider,
   createIndexedDBBackgroundProvider,
   createIndexedDBDownloadProvider,
@@ -126,6 +157,7 @@ export const createAffineProviders = (): DocProviderCreator[] => {
     [
       runtimeConfig.enableBroadcastChannelProvider &&
         createBroadcastChannelProvider,
+      runtimeConfig.enableCloud && createAffineSocketIOProvider,
       createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));

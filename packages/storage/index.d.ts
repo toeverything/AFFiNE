@@ -13,8 +13,8 @@ export class Storage {
   ): Promise<Storage>;
   /** Get a workspace by id */
   getWorkspace(workspaceId: string): Promise<Workspace | null>;
-  /** Create a new workspace with a init update. */
-  createWorkspace(workspaceId: string, init: Buffer): Promise<Workspace>;
+  /** Create a new workspace. */
+  createWorkspace(workspaceId: string): Promise<Workspace>;
   /** Delete a workspace. */
   deleteWorkspace(workspaceId: string): Promise<void>;
   /** Sync doc updates. */

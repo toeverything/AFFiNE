@@ -13,9 +13,6 @@ model Workspace {
   public         Boolean
   createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   users          UserWorkspacePermission[]
-  blobs          Blob[]
-  docs           Doc[]
-  optimizedBlobs OptimizedBlob[]
 
   @@map("workspaces")
 }
@@ -98,8 +95,6 @@ model Blob {
   length      Int
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
   @@unique([workspaceId, hash])
   @@map("blobs")
 }
@@ -112,8 +107,6 @@ model OptimizedBlob {
   length      Int
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
   @@unique([workspaceId, hash, params])
   @@map("optimized_blobs")
 }
@@ -125,8 +118,6 @@ model Doc {
   is_workspace Boolean  @default(true) @db.Boolean
   blob         Bytes    @db.ByteA
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, guid])
   @@map("docs")

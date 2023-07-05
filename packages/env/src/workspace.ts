@@ -55,6 +55,10 @@ export type AffineCloudWorkspace = Omit<LocalWorkspace, 'flavour'> & {
   flavour: WorkspaceFlavour.AFFINE_CLOUD;
 };
 
+export interface AffineSocketIOProvider extends PassiveDocProvider {
+  flavour: 'affine-socket-io';
+}
+
 export interface LocalWorkspace {
   flavour: WorkspaceFlavour.LOCAL;
   id: string;

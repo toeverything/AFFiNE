@@ -35,6 +35,8 @@ spec:
                 key: key
           - name: NODE_ENV
             value: "{{ .Values.env }}"
+          - name: SERVER_FLAVOR
+            value: "graphql"
           - name: NEXTAUTH_URL
             value: "{{ .Values.global.ingress.host }}"
           - name: DATABSE_PASSWORD

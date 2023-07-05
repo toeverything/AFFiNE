@@ -167,6 +167,28 @@ export interface AFFiNEConfig {
       path: string;
     };
   };
+  /**
+   * Redis Config
+   *
+   * whether to use redis as Socket.IO adapter
+   */
+  redis: {
+    /**
+     * if not enabled, use in-memory adapter by default
+     */
+    enabled: boolean;
+    /**
+     * url of redis host
+     */
+    host: string;
+    /**
+     * port of redis
+     */
+    port: number;
+    username: string;
+    password: string;
+    database: number;
+  };
 
   /**
    * authentication config

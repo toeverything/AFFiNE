@@ -7,7 +7,7 @@ use std::{
 };
 
 use jwst::{BlobStorage, SearchResult as JwstSearchResult, Workspace as JwstWorkspace, DocStorage};
-use jwst_storage::{JwstStorage, JwstStorageError};
+use jwst_storage::{JwstStorage, JwstStorageError, BlobStorageType};
 use yrs::{Doc as YDoc, ReadTxn, StateVector, Transact};
 
 use napi::{bindgen_prelude::*, Error, Result, Status};
@@ -98,9 +98,9 @@ impl Storage {
   #[napi]
   pub async fn connect(database: String, debug_only_auto_migrate: Option<bool>) -> Result<Storage> {
     let inner = match if cfg!(debug_assertions) && debug_only_auto_migrate.unwrap_or(false) {
-      JwstStorage::new_with_migration(&database).await
+      JwstStorage::new_with_migration(&database, BlobStorageType::DB).await
     } else {
-      JwstStorage::new(&database).await
+      JwstStorage::new(&database, BlobStorageType::DB).await
     } {
       Ok(storage) => storage,
       Err(JwstStorageError::Db(e)) => {
@@ -125,9 +125,9 @@ impl Storage {
     }
   }
 
-  /// Create a new workspace with a init update.
+  /// Create a new workspace.
   #[napi]
-  pub async fn create_workspace(&self, workspace_id: String, init: Buffer) -> Result<Workspace> {
+  pub async fn create_workspace(&self, workspace_id: String) -> Result<Workspace> {
     if map_err!(self.0.docs().detect_workspace(&workspace_id).await)? {
       return Err(Error::new(
         Status::GenericFailure,
@@ -136,10 +136,6 @@ impl Storage {
     }
 
     let workspace = map_err!(self.0.create_workspace(workspace_id).await)?;
-
-    let init = init.as_ref();
-    let guid = workspace.doc_guid().to_string();
-    map_err!(self.docs().update_doc(workspace.id(), guid, init).await)?;
 
     Ok(workspace.into())
   }

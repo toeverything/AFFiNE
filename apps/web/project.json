@@ -11,7 +11,7 @@
       "options": {
         "script": "build"
       },
-      "outputs": ["{projectRoot}/out"]
+      "outputs": ["{projectRoot}/out", "{projectRoot}/next-routes.conf"]
     },
     "dev": {
       "executor": "nx:run-script",

@@ -17,10 +17,9 @@ describe('Test jwst storage binding', () => {
   });
 
   test('should be able to create workspace', async () => {
-    const workspace = await storage.createWorkspace('test-workspace', init);
+    const workspace = await storage.createWorkspace('test-workspace');
 
     assert(workspace.id === 'test-workspace');
-    assert.deepEqual(init, await storage.load(workspace.doc.guid));
   });
 
   test('should not create workspace with same id', async () => {
