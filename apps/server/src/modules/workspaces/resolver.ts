@@ -121,17 +121,11 @@ export class WorkspaceResolver {
     description: 'Members of workspace',
     complexity: 2,
   })
-  async members(
-    @CurrentUser() user: UserType,
-    @Parent() workspace: WorkspaceType
-  ) {
+  async members(@Parent() workspace: WorkspaceType) {
     const data = await this.prisma.userWorkspacePermission.findMany({
       where: {
         workspaceId: workspace.id,
         accepted: true,
-        userId: {
-          not: user.id,
-        },
       },
       include: {
         user: true,
