@@ -44,10 +44,6 @@ if (process.env.COVERAGE === 'true') {
   console.info('Enable coverage report');
 }
 
-const profileTarget = {
-  local: 'http://localhost:8080',
-};
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: process.env.NODE_ENV === 'development' ? 'standalone' : 'export',
@@ -104,7 +100,6 @@ const nextConfig = {
     BUILD_DATE: new Date().toISOString(),
     gitVersion: getGitVersion(),
     hash: getCommitHash(),
-    serverAPI: profileTarget.local,
     editorFlags: blockSuiteFeatureFlags,
     ...buildFlags,
   },

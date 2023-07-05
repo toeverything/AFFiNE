@@ -29,7 +29,7 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   doc,
   { awareness }
 ): AffineSocketIOProvider => {
-  const provider = new SocketIOProvider(prefixUrl, id, doc, {
+  const provider = new SocketIOProvider('/', id, doc, {
     awareness,
   });
   return {

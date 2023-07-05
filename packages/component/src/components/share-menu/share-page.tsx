@@ -46,7 +46,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   const [showDisable, setShowDisable] = useState(false);
   const t = useAFFiNEI18N();
   const sharingUrl = useMemo(() => {
-    return `${prefixUrl}public-workspace/${props.workspace.id}/${props.currentPage.id}`;
+    return `/public-workspace/${props.workspace.id}/${props.currentPage.id}`;
   }, [props.workspace.id, props.currentPage.id]);
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);

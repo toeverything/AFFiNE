@@ -15,7 +15,6 @@ import getConfig from 'next/config';
 import { z } from 'zod';
 
 import { isDesktop, isServer } from './constant';
-import { isValidIPAddress } from './is-valid-ip-address';
 import { UaHelper } from './ua-helper';
 
 declare global {
@@ -51,10 +50,6 @@ declare global {
   var $AFFINE_SETUP: boolean | undefined;
   // eslint-disable-next-line no-var
   var editorVersion: string | undefined;
-  // eslint-disable-next-line no-var
-  var prefixUrl: string;
-  // eslint-disable-next-line no-var
-  var websocketPrefixUrl: string;
 }
 
 export const buildFlagsSchema = z.object({
@@ -91,7 +86,6 @@ export const publicRuntimeConfigSchema = buildFlagsSchema.extend({
   BUILD_DATE: z.string(),
   gitVersion: z.string(),
   hash: z.string(),
-  serverAPI: z.string(),
   editorFlags: blockSuiteFeatureFlags,
 });
 
@@ -238,23 +232,5 @@ export function setupGlobal() {
     globalThis.editorVersion = global.editorVersion;
   }
 
-  let prefixUrl: string;
-
-  const serverAPI = runtimeConfig.serverAPI;
-  if (isValidIPAddress(serverAPI.split(':')[0])) {
-    // This is for Server side rendering support
-    prefixUrl = new URL('http://' + runtimeConfig.serverAPI + '/').origin;
-  } else {
-    prefixUrl = serverAPI;
-  }
-
-  prefixUrl = prefixUrl.endsWith('/') ? prefixUrl.slice(0, -1) : prefixUrl;
-
-  const apiUrl = new URL(prefixUrl);
-  const wsProtocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws';
-  const websocketPrefixUrl = `${wsProtocol}://${apiUrl.host}`;
-
-  globalThis.prefixUrl = prefixUrl;
-  globalThis.websocketPrefixUrl = websocketPrefixUrl;
   globalThis.$AFFINE_SETUP = true;
 }
