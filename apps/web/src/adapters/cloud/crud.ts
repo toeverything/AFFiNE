@@ -11,6 +11,10 @@ import {
 } from '@affine/graphql';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { Workspace } from '@blocksuite/store';
+import {
+  createIndexedDBProvider,
+  DEFAULT_DB_NAME,
+} from '@toeverything/y-indexeddb';
 
 import { fetcher } from '../../shared/gql';
 
@@ -22,12 +26,32 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     const { createWorkspace } = await fetcher({
       query: createWorkspaceMutation,
       variables: {
-        init: new File(
-          [Y.encodeStateAsUpdate(blockSuiteWorkspace.doc)],
-          'binary.yDoc'
-        ),
+        init: new File([], 'empty'),
       },
     });
+    const newBLockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+      createWorkspace.id,
+      WorkspaceFlavour.AFFINE_CLOUD,
+      {}
+    );
+    Y.applyUpdate(
+      newBLockSuiteWorkspace.doc,
+      Y.encodeStateAsUpdate(newBLockSuiteWorkspace.doc)
+    );
+    blockSuiteWorkspace.doc.subdocs.forEach(subdoc => {
+      newBLockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
+        Y.applyUpdate(newSubdoc, Y.encodeStateAsUpdate(subdoc));
+      });
+    });
+
+    const provider = createIndexedDBProvider(
+      newBLockSuiteWorkspace.doc,
+      DEFAULT_DB_NAME,
+      false
+    );
+    provider.connect();
+    await provider.whenSynced;
+    // todo: delete old workspace in the future
     return createWorkspace.id;
   },
   delete: async workspace => {
