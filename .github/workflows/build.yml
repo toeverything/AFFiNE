@@ -212,7 +212,7 @@ jobs:
     name: Server E2E Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [server-test, build-web]
+    needs: [build-storage, build-web]
     services:
       postgres:
         image: postgres
