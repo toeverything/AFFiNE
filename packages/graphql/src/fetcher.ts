@@ -182,7 +182,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
     ).then(async res => {
       if (res.headers.get('content-type')?.startsWith('application/json')) {
         const result = (await res.json()) as ExecutionResult;
-        if (res.status >= 400) {
+        if (res.status >= 400 || result.errors) {
           if (result.errors && result.errors.length > 0) {
             throw result.errors.map(
               error => new GraphQLError(error.message, error)
