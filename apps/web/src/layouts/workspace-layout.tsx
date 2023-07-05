@@ -191,41 +191,41 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
       [currentWorkspaceId, jotaiWorkspaces]
     );
-
-    // fixme(himself65): move provider into inner component
-    //  and remove this `useEffect`
-    useEffect(() => {
-      if (!meta) {
-        router.push('/').catch(console.error);
-      }
-    }, [meta, router]);
-
-    if (!meta) {
-      return null;
+    if (!meta && currentWorkspaceId) {
+      console.warn('cannot find workspace id', currentWorkspaceId);
+      router.push('/').catch(console.error);
     }
 
-    const Provider = meta && WorkspaceAdapters[meta.flavour].UI.Provider;
-    assertExists(Provider);
+    if (!meta) {
+      return <WorkspaceFallback />;
+    }
+
     return (
-      <Provider>
-        {/* load all workspaces is costly, do not block the whole UI */}
-        <Suspense fallback={null}>
-          <AllWorkspaceContext>
-            <AllWorkspaceModals />
-            <CurrentWorkspaceContext>
-              {/* fixme(himself65): don't re-render whole modals */}
-              <CurrentWorkspaceModals key={currentWorkspaceId} />
-            </CurrentWorkspaceContext>
-          </AllWorkspaceContext>
-        </Suspense>
+      <AdapterProviderWrapper>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
-            <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+            <WorkspaceLayoutInner>
+              {/* load all workspaces is costly, do not block the whole UI */}
+              <Suspense fallback={null}>
+                <AllWorkspaceContext>
+                  <AllWorkspaceModals />
+                  <CurrentWorkspaceModals />
+                </AllWorkspaceContext>
+              </Suspense>
+              {children}
+            </WorkspaceLayoutInner>
           </Suspense>
         </CurrentWorkspaceContext>
-      </Provider>
+      </AdapterProviderWrapper>
     );
   };
+
+const AdapterProviderWrapper: FC<PropsWithChildren> = ({ children }) => {
+  const [currentWorkspace] = useCurrentWorkspace();
+  const Provider = WorkspaceAdapters[currentWorkspace.flavour].UI.Provider;
+  assertExists(Provider);
+  return <Provider>{children}</Provider>;
+};
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
