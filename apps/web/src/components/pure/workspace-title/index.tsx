@@ -54,6 +54,7 @@ export const WorkspaceModeFilterTab = ({ ...props }: WorkspaceTitleProps) => {
     <Header {...props}>
       <div className={styles.allPageListTitleWrapper}>
         <RadioButtonGroup
+          width={300}
           defaultValue={value}
           onValueChange={handleValueChange}
         >

@@ -2,13 +2,21 @@ import { atom } from 'jotai';
 import { atomFamily, atomWithStorage } from 'jotai/utils';
 
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
+import type { SettingProps } from '../components/affine/setting-modal';
 
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
 export const openQuickSearchModalAtom = atom(false);
 export const openOnboardingModalAtom = atom(false);
-export const openSettingModalAtom = atom(false);
+
+export type SettingAtom = Pick<SettingProps, 'activeTab' | 'workspace'> & {
+  open: boolean;
+};
+
+export const openSettingModalAtom = atom<SettingAtom>({
+  open: false,
+});
 
 export const openDisableCloudAlertModalAtom = atom(false);
 
