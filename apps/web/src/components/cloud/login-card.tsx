@@ -1,20 +1,16 @@
 import { UserAvatar } from '@affine/component/user-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
-import { signIn, useSession } from 'next-auth/react';
-import { useEffect } from 'react';
+import { signIn } from 'next-auth/react';
 
+import { useCurrenLoginStatus } from '../../hooks/affine/use-curren-login-status';
+import { useCurrentUser } from '../../hooks/affine/use-current-user';
 import { StyledSignInButton } from '../pure/footer/styles';
 
 export const LoginCard = () => {
   const t = useAFFiNEI18N();
-  const session = useSession();
-  useEffect(() => {
-    // fixme: remove debug log in the future
-    console.log('session', session);
-  }, [session]);
-  if (session.status === 'authenticated') {
+  const loginStatus = useCurrenLoginStatus();
+  if (loginStatus === 'authenticated') {
     return <UserCard />;
   }
   return (
@@ -38,15 +34,13 @@ export const LoginCard = () => {
 };
 
 const UserCard = () => {
-  const session = useSession();
-  const user = session.data?.user;
-  assertExists(user);
+  const user = useCurrentUser();
   return (
     <div>
       <UserAvatar
         size={28}
-        name={user.name ?? ''}
-        url={user.image ?? ''}
+        name={user.name}
+        url={user.image}
         className="avatar"
       />
       <div>{user.name}</div>

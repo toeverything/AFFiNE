@@ -1,8 +1,9 @@
 import { Menu, MenuItem } from '@affine/component';
 import { AffineLogoSBlue2_1Icon, SignOutIcon } from '@blocksuite/icons';
-import { useSession } from 'next-auth/react';
 import type { CSSProperties } from 'react';
 import { forwardRef } from 'react';
+
+import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 
 const EditMenu = (
   <MenuItem data-testid="editor-option-menu-favorite" icon={<SignOutIcon />}>
@@ -11,7 +12,7 @@ const EditMenu = (
 );
 
 export const UserAvatar = () => {
-  const { data } = useSession();
+  const user = useCurrentUser();
   return (
     <Menu
       width={276}
@@ -20,11 +21,7 @@ export const UserAvatar = () => {
       disablePortal={true}
       trigger="click"
     >
-      <WorkspaceAvatar
-        name={data?.user?.name}
-        avatar={data?.user?.image}
-        size={24}
-      />
+      <WorkspaceAvatar name={user.name} avatar={user.image} size={24} />
     </Menu>
   );
 };
