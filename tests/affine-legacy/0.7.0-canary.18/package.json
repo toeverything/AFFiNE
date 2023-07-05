@@ -22,5 +22,5 @@
     "serve": "^14.2.0",
     "vitest": "^0.32.2"
   },
-  "version": "0.7.0-canary.34"
+  "version": "0.7.0-canary.35"
 }
