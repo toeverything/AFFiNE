@@ -10,14 +10,9 @@ import {
   BlockSuitePageList,
   NewWorkspaceSettingDetail,
   PageDetailEditor,
+  Provider,
   WorkspaceHeader,
 } from '../shared';
-
-const Provider = lazy(() =>
-  import('../../components/cloud/provider').then(({ Provider }) => ({
-    default: Provider,
-  }))
-);
 
 const LoginCard = lazy(() =>
   import('../../components/cloud/login-card').then(({ LoginCard }) => ({
