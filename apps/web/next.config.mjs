@@ -161,8 +161,8 @@ if (process.env.NODE_ENV === 'development') {
       destination: 'http://localhost:3010/graphql',
     },
     {
-      source: '/socket.io/:path*',
-      destination: 'http://localhost:3010/socket.io/:path*',
+      source: '/socket.io',
+      destination: 'http://localhost:3010/socket.io/',
     },
   ];
 }
