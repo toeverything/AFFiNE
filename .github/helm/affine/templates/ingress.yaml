@@ -20,6 +20,7 @@ metadata:
   {{- with .Values.global.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
+    cloud.google.com/backend-config: '{"default": "affine-backendconfig"}'
   {{- end }}
 spec:
   {{- if and .Values.global.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}

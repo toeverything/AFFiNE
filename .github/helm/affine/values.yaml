@@ -7,6 +7,9 @@ global:
     host: affine.pro
     tls: []
 
+gke:
+  enabled: true
+
 graphql:
   service:
     type: ClusterIP
