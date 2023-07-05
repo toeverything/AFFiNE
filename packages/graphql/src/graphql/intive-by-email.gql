@@ -1,0 +1,7 @@
+mutation inviteByEmail(
+  $workspaceId: String!
+  $email: String!
+  $permission: Permission!
+) {
+  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
+}

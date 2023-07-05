@@ -14,6 +14,7 @@ import type { FC } from 'react';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
+import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
 import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
@@ -62,6 +63,7 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
           onDeleteWorkspace={onDeleteWorkspace}
           {...props}
         />
+        <MembersPanel workspace={workspace} />
       </SettingWrapper>
       {environment.isDesktop ? (
         <SettingWrapper title={t['Storage and Export']()}>

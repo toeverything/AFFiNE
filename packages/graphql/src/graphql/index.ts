@@ -7,6 +7,17 @@ export interface GraphQLQuery {
   containsFile?: boolean;
 }
 
+export const acceptInviteByWorkspaceIdMutation = {
+  id: 'acceptInviteByWorkspaceIdMutation' as const,
+  operationName: 'acceptInviteByWorkspaceId',
+  definitionName: 'acceptInvite',
+  containsFile: false,
+  query: `
+mutation acceptInviteByWorkspaceId($workspaceId: String!) {
+  acceptInvite(workspaceId: $workspaceId)
+}`,
+};
+
 export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',
@@ -30,6 +41,24 @@ export const deleteWorkspaceMutation = {
   query: `
 mutation deleteWorkspace($id: String!) {
   deleteWorkspace(id: $id)
+}`,
+};
+
+export const getMembersByWorkspaceIdQuery = {
+  id: 'getMembersByWorkspaceIdQuery' as const,
+  operationName: 'getMembersByWorkspaceId',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getMembersByWorkspaceId($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    members {
+      id
+      name
+      email
+      avatarUrl
+    }
+  }
 }`,
 };
 
@@ -69,6 +98,17 @@ query getWorkspaces {
   workspaces {
     id
   }
+}`,
+};
+
+export const inviteByEmailMutation = {
+  id: 'inviteByEmailMutation' as const,
+  operationName: 'inviteByEmail',
+  definitionName: 'invite',
+  containsFile: false,
+  query: `
+mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!) {
+  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
 }`,
 };
 

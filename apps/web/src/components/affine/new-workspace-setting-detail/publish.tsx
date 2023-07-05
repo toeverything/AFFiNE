@@ -9,7 +9,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type { FC } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useIsPublicCloudWorkspace } from '../../../hooks/affine/use-is-public-cloud-workspace';
 import { useShareLink } from '../../../hooks/affine/use-share-link';
@@ -77,24 +77,15 @@ const FakePublishPanelAffine: FC<{
   workspace: AffineOfficialWorkspace;
 }> = ({ workspace }) => {
   const t = useAFFiNEI18N();
-  const [origin, setOrigin] = useState('');
-  const shareUrl = origin + '/public-workspace/' + workspace.id;
-
-  useEffect(() => {
-    setOrigin(
-      typeof window !== 'undefined' && window.location.origin
-        ? window.location.origin
-        : ''
-    );
-  }, []);
+  const shareLink = useShareLink(workspace.id);
   return (
     <div className={style.fakeWrapper}>
       <SettingRow name={t['Publish']()} desc={t['Unpublished hint']()}>
         <Switch checked={false} />
       </SettingRow>
       <FlexWrapper justifyContent="space-between">
-        <Button className={style.urlButton} size="middle" title={shareUrl}>
-          {shareUrl}
+        <Button className={style.urlButton} size="middle" title={shareLink}>
+          {shareLink}
         </Button>
         <Button size="middle">{t['Copy']()}</Button>
       </FlexWrapper>
