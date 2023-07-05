@@ -11,6 +11,7 @@
     "packages/*",
     "tests/fixtures",
     "tests/kit",
+    "tests/affine-cloud",
     "tests/affine-legacy/*"
   ],
   "scripts": {

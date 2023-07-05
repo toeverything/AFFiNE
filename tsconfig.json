@@ -53,6 +53,7 @@
     "skipLibCheck": true, // skip all type checks for .d.ts files
 
     "paths": {
+      "@affine/server/*": ["./apps/server/src/*"],
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [
         "./packages/component/src/components/*/index",
@@ -156,6 +157,9 @@
     },
     {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
+    },
+    {
+      "path": "./tests/affine-cloud"
     }
   ],
   "files": [],

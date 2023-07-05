@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 
-import { test } from '@playwright/test';
+import { test } from '@affine-test/kit/playwright';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 

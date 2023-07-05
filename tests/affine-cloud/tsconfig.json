@@ -1,5 +1,5 @@
 {
-  "extends": "../../../tsconfig.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "esModuleInterop": true,
     "outDir": "lib"
@@ -7,10 +7,7 @@
   "include": ["e2e"],
   "references": [
     {
-      "path": "../../kit"
-    },
-    {
-      "path": "./tsconfig.node.json"
+      "path": "../kit"
     }
   ]
 }

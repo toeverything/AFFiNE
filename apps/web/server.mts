@@ -1,10 +1,36 @@
 // static server for web app
 import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 const app = express();
 
 const PORT = process.env.PORT || 8080;
 
 app.use('/', express.static('out'));
+
+app.use(
+  '/api/auth',
+  createProxyMiddleware({
+    target: 'http://localhost:3010/api/auth',
+    pathFilter: ['**'],
+    changeOrigin: true,
+  })
+);
+
+app.use(
+  '/graphql',
+  createProxyMiddleware({
+    target: 'http://localhost:3010/graphql',
+    changeOrigin: true,
+  })
+);
+
+app.use(
+  '/socket.io',
+  createProxyMiddleware({
+    target: 'http://localhost:3010/socket.io/',
+    changeOrigin: true,
+  })
+);
 
 app.use('/_debug/*', express.static('out/_debug/*.html'));
 app.use(
