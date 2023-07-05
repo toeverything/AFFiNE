@@ -20,7 +20,7 @@ interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
   workspace: AffineOfficialWorkspace;
-  onDeleteWorkspace: () => Promise<void>;
+  onDeleteWorkspace: (id: string) => Promise<void>;
 }
 
 export const WorkspaceDeleteModal = ({
@@ -37,16 +37,17 @@ export const WorkspaceDeleteModal = ({
   const t = useAFFiNEI18N();
 
   const handleDelete = useCallback(() => {
-    onDeleteWorkspace()
+    onDeleteWorkspace(workspace.id)
       .then(() => {
         toast(t['Successfully deleted'](), {
           portal: document.body,
         });
+        onClose();
       })
       .catch(() => {
         // ignore error
       });
-  }, [onDeleteWorkspace, t]);
+  }, [onClose, onDeleteWorkspace, t, workspace.id]);
 
   return (
     <Modal open={open} onClose={onClose}>

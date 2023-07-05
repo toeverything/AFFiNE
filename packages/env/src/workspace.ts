@@ -131,7 +131,7 @@ export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
 
 type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
-    onDeleteWorkspace: () => Promise<void>;
+    onDeleteWorkspace: (id: string) => Promise<void>;
     onTransformWorkspace: <
       From extends keyof WorkspaceRegistry,
       To extends keyof WorkspaceRegistry
