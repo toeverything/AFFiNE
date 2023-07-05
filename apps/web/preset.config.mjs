@@ -23,9 +23,6 @@ const buildPreset = {
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
-    // never set this to true in stable, because legacy cloud has deprecated
-    //  and related code will be removed in the future
-    enableLegacyCloud: false,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
     enablePreloading: true,
     enableNewSettingModal: true,
@@ -42,7 +39,6 @@ const buildPreset = {
     enableTestProperties: true,
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
-    enableLegacyCloud: false,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
     enablePreloading: true,
     enableNewSettingModal: true,
@@ -72,9 +68,6 @@ const environmentPreset = {
   enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
     ? process.env.ENABLE_TEST_PROPERTIES === 'true'
     : currentBuildPreset.enableTestProperties,
-  enableLegacyCloud: process.env.ENABLE_LEGACY_PROVIDER
-    ? process.env.ENABLE_LEGACY_PROVIDER === 'true'
-    : currentBuildPreset.enableLegacyCloud,
   enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER
     ? process.env.ENABLE_BC_PROVIDER !== 'false'
     : currentBuildPreset.enableBroadcastChannelProvider,

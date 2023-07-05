@@ -298,7 +298,7 @@ export const CreateWorkspaceModal = ({
   const onConfirmEnableCloudSyncing = useCallback(
     (enableCloudSyncing: boolean) => {
       (async function () {
-        if (!runtimeConfig.enableLegacyCloud && enableCloudSyncing) {
+        if (!runtimeConfig.enableCloud && enableCloudSyncing) {
           setOpenDisableCloudAlertModal(true);
         } else {
           let id = addedId;
