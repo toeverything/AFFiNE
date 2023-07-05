@@ -116,19 +116,24 @@ export function transformToForm(body: RequestBody) {
   if (body.operationName) {
     gqlBody.name = body.operationName;
   }
-
+  const map: Record<string, [string]> = {};
+  const files: File[] = [];
   if (body.variables) {
     let i = 0;
     Object.entries(body.variables).forEach(([key, value]) => {
       if (value instanceof File) {
-        gqlBody.map['0'] = [`variables.${key}`];
-        form.append(`${i}`, value);
+        map['0'] = [`variables.${key}`];
+        files[i] = value;
         i++;
       }
     });
   }
 
-  form.append('operations', JSON.stringify(gqlBody));
+  form.set('operations', JSON.stringify(gqlBody));
+  form.set('map', JSON.stringify(map));
+  for (const [i, file] of files.entries()) {
+    form.set(`${i}`, file);
+  }
   return form;
 }
 
@@ -160,17 +165,18 @@ export const gqlFetcherFactory = (endpoint: string) => {
     const body = formatRequestBody(options);
 
     const isFormData = body instanceof FormData;
+    const headers: Record<string, string> = {
+      'x-operation-name': options.query.operationName,
+      'x-definition-name': options.query.definitionName,
+    };
+    if (!isFormData) {
+      headers['content-type'] = 'application/json';
+    }
     const ret = fetch(
       endpoint,
       merge(options.context, {
         method: 'POST',
-        headers: {
-          'x-operation-name': options.query.operationName,
-          'x-definition-name': options.query.definitionName,
-          'content-type': isFormData
-            ? 'multipart/form-data'
-            : 'application/json',
-        },
+        headers,
         body: isFormData ? body : JSON.stringify(body),
       })
     ).then(async res => {

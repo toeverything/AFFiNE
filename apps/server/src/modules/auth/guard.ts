@@ -65,7 +65,7 @@ class AuthGuard implements CanActivate {
     });
     const { body, cookies, status = 200 } = session;
     // @ts-expect-error body is user here
-    req.user = body;
+    req.user = body.user;
     if (cookies && res) {
       for (const cookie of cookies) {
         res.cookie(cookie.name, cookie.value, cookie.options);
