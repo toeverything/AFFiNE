@@ -45,7 +45,7 @@ const buildPreset = {
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: true,
     enableNotificationCenter: true,
-    enableCloud: false,
+    enableCloud: true,
   },
 };
 
