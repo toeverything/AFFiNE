@@ -101,7 +101,6 @@ type Query {
 type Mutation {
   register(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
-  signUp(email: String!, password: String!, name: String!): UserType!
 
   """
   Create a new workspace
