@@ -248,10 +248,9 @@ export class SocketIOProvider extends Observable<string> {
 
     const handler: SubdocsHandler = event => {
       new Set([...event.added, ...event.loaded]).forEach(doc => {
-        this.docMap.set(doc.guid, doc);
+        this.registerDoc(doc);
         // if there are cached updates, apply them instantly
         this.intervalId && this.applyCachedUpdate();
-        doc.on('update', this.createOrGetUpdateHandler(doc));
       });
 
       event.removed.forEach(this.unregisterDoc);
