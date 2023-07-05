@@ -33,6 +33,19 @@ mutation deleteWorkspace($id: String!) {
 }`,
 };
 
+export const getWorkspacePublicByIdQuery = {
+  id: 'getWorkspacePublicByIdQuery' as const,
+  operationName: 'getWorkspacePublicById',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspacePublicById($id: String!) {
+  workspace(id: $id) {
+    public
+  }
+}`,
+};
+
 export const getWorkspaceQuery = {
   id: 'getWorkspaceQuery' as const,
   operationName: 'getWorkspace',
@@ -59,6 +72,19 @@ query getWorkspaces {
 }`,
 };
 
+export const setWorkspacePublicByIdMutation = {
+  id: 'setWorkspacePublicByIdMutation' as const,
+  operationName: 'setWorkspacePublicById',
+  definitionName: 'updateWorkspace',
+  containsFile: false,
+  query: `
+mutation setWorkspacePublicById($id: ID!, $public: Boolean!) {
+  updateWorkspace(input: {id: $id, public: $public}) {
+    id
+  }
+}`,
+};
+
 export const uploadAvatarMutation = {
   id: 'uploadAvatarMutation' as const,
   operationName: 'uploadAvatar',
@@ -71,21 +97,6 @@ mutation uploadAvatar($id: String!, $avatar: Upload!) {
     name
     avatarUrl
     email
-  }
-}`,
-};
-
-export const workspaceByIdQuery = {
-  id: 'workspaceByIdQuery' as const,
-  operationName: 'workspaceById',
-  definitionName: 'workspace',
-  containsFile: false,
-  query: `
-query workspaceById($id: String!) {
-  workspace(id: $id) {
-    id
-    public
-    createdAt
   }
 }`,
 };

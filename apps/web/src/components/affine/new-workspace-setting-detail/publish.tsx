@@ -11,6 +11,9 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { useIsPublicCloudWorkspace } from '../../../hooks/affine/use-is-public-cloud-workspace';
+import { useShareLink } from '../../../hooks/affine/use-share-link';
+import { useToggleCloudPublic } from '../../../hooks/affine/use-toggle-cloud-public';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
@@ -31,47 +34,36 @@ export type PublishPanelAffineProps = WorkspaceSettingDetailProps & {
 const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
   const { workspace } = props;
   const t = useAFFiNEI18N();
-  // const toggleWorkspacePublish = useToggleWorkspacePublish(workspace);
+  const isPublic = useIsPublicCloudWorkspace(workspace.id);
+  const toggleWorkspacePublic = useToggleCloudPublic(workspace.id);
 
-  const [origin, setOrigin] = useState('');
-  const shareUrl = origin + '/public-workspace/' + workspace.id;
-
-  useEffect(() => {
-    setOrigin(
-      typeof window !== 'undefined' && window.location.origin
-        ? window.location.origin
-        : ''
-    );
-  }, []);
+  const shareLink = useShareLink(workspace.id);
 
   const copyUrl = useCallback(async () => {
-    await navigator.clipboard.writeText(shareUrl);
+    await navigator.clipboard.writeText(shareLink);
     toast(t['Copied link to clipboard']());
-  }, [shareUrl, t]);
+  }, [shareLink, t]);
   return (
     <>
       <SettingRow
         name={t['Publish']()}
-        desc={
-          // workspace.public ? t['Unpublished hint']() : t['Published hint']()
-          'UNFINISHED'
-        }
+        desc={isPublic ? t['Unpublished hint']() : t['Published hint']()}
       >
-        {/* <Switch
-          checked={workspace.public}
-          onChange={checked => toggleWorkspacePublish(checked)}
-        /> */}
+        <Switch
+          checked={isPublic}
+          onChange={checked => toggleWorkspacePublic(checked)}
+        />
       </SettingRow>
       <FlexWrapper justifyContent="space-between">
         <Button
           className={style.urlButton}
           size="middle"
           onClick={useCallback(() => {
-            window.open(shareUrl, '_blank');
-          }, [shareUrl])}
-          title={shareUrl}
+            window.open(shareLink, '_blank');
+          }, [shareLink])}
+          title={shareLink}
         >
-          {shareUrl}
+          {shareLink}
         </Button>
         <Button size="middle" onClick={copyUrl}>
           {t['Copy']()}

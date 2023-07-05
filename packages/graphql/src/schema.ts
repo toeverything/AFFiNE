@@ -69,6 +69,15 @@ export type DeleteWorkspaceMutation = {
   deleteWorkspace: boolean;
 };
 
+export type GetWorkspacePublicByIdQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type GetWorkspacePublicByIdQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; public: boolean };
+};
+
 export type GetWorkspaceQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -83,6 +92,16 @@ export type GetWorkspacesQueryVariables = Exact<{ [key: string]: never }>;
 export type GetWorkspacesQuery = {
   __typename?: 'Query';
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
+};
+
+export type SetWorkspacePublicByIdMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  public: Scalars['Boolean']['input'];
+}>;
+
+export type SetWorkspacePublicByIdMutation = {
+  __typename?: 'Mutation';
+  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
 export type UploadAvatarMutationVariables = Exact<{
@@ -101,21 +120,12 @@ export type UploadAvatarMutation = {
   };
 };
 
-export type WorkspaceByIdQueryVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type WorkspaceByIdQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    id: string;
-    public: boolean;
-    createdAt: string;
-  };
-};
-
 export type Queries =
+  | {
+      name: 'getWorkspacePublicByIdQuery';
+      variables: GetWorkspacePublicByIdQueryVariables;
+      response: GetWorkspacePublicByIdQuery;
+    }
   | {
       name: 'getWorkspaceQuery';
       variables: GetWorkspaceQueryVariables;
@@ -125,11 +135,6 @@ export type Queries =
       name: 'getWorkspacesQuery';
       variables: GetWorkspacesQueryVariables;
       response: GetWorkspacesQuery;
-    }
-  | {
-      name: 'workspaceByIdQuery';
-      variables: WorkspaceByIdQueryVariables;
-      response: WorkspaceByIdQuery;
     };
 
 export type Mutations =
@@ -142,6 +147,11 @@ export type Mutations =
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
+    }
+  | {
+      name: 'setWorkspacePublicByIdMutation';
+      variables: SetWorkspacePublicByIdMutationVariables;
+      response: SetWorkspacePublicByIdMutation;
     }
   | {
       name: 'uploadAvatarMutation';

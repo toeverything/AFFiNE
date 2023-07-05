@@ -37,7 +37,13 @@ export const fetcher = gqlFetcherFactory('/graphql');
  */
 export function useQuery<Query extends GraphQLQuery>(
   options: QueryOptions<Query>
-): SWRResponse<QueryResponse<Query>, GraphQLError | GraphQLError[]>;
+): SWRResponse<
+  QueryResponse<Query>,
+  GraphQLError | GraphQLError[],
+  {
+    suspense: true;
+  }
+>;
 export function useQuery<Query extends GraphQLQuery>(
   options: QueryOptions<Query>,
   config: Omit<
@@ -48,7 +54,13 @@ export function useQuery<Query extends GraphQLQuery>(
     >,
     'fetcher'
   >
-): SWRResponse<QueryResponse<Query>, GraphQLError | GraphQLError[]>;
+): SWRResponse<
+  QueryResponse<Query>,
+  GraphQLError | GraphQLError[],
+  {
+    suspense: true;
+  }
+>;
 export function useQuery<Query extends GraphQLQuery>(
   options: QueryOptions<Query>,
   config?: any
