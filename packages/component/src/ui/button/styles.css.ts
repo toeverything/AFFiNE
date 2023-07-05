@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const dropdownBtn = style({
   display: 'inline-flex',
@@ -53,12 +53,11 @@ export const dropdownIcon = style({
   },
 });
 
-export const radioButton = style({
+export const radioButtonContent = style({
   fontSize: 'var(--affine-font-xs)',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  padding: '0 30px',
   height: '24px',
   borderRadius: '8px',
   filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1))',
@@ -71,11 +70,14 @@ export const radioButton = style({
     '&[data-state="checked"]': {
       background: 'var(--affine-white)',
     },
+    '&.bold': {
+      fontWeight: 600,
+    },
   },
 });
 
 export const radioUncheckedButton = style([
-  radioButton,
+  radioButtonContent,
   {
     selectors: {
       '[data-state="checked"] > &': {
@@ -87,10 +89,15 @@ export const radioUncheckedButton = style([
 
 export const radioButtonGroup = style({
   display: 'inline-flex',
-  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  alignItems: 'center',
   background: 'var(--affine-hover-color)',
   borderRadius: '10px',
   padding: '2px',
   // @ts-expect-error - fix electron drag
   WebkitAppRegion: 'no-drag',
+});
+
+globalStyle(`${radioButtonGroup} > button`, {
+  flexGrow: 1,
 });

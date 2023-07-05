@@ -31,7 +31,8 @@ export const SettingModal: FC<PropsWithChildren<SettingModalProps>> = ({
           maxWidth: '70vw',
           overflow: 'hidden',
           display: 'flex',
-          backgroundColor: 'var(--affine-white)',
+          backgroundColor: 'var(--affine-background-overlay-panel-color)',
+          boxShadow: 'var(--affine-popover-shadow)',
         }}
       >
         <ModalCloseButton top={16} right={20} onClick={handleClose} />
