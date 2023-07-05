@@ -60,41 +60,29 @@ export type CreateWorkspaceMutation = {
   };
 };
 
-export type RegisterMutationVariables = Exact<{
-  name: Scalars['String']['input'];
-  email: Scalars['String']['input'];
-  password: Scalars['String']['input'];
+export type DeleteWorkspaceMutationVariables = Exact<{
+  id: Scalars['String']['input'];
 }>;
 
-export type RegisterMutation = {
+export type DeleteWorkspaceMutation = {
   __typename?: 'Mutation';
-  register: {
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-    createdAt: string | null;
-    token: { __typename?: 'TokenType'; token: string; refresh: string };
-  };
+  deleteWorkspace: boolean;
 };
 
-export type SignInMutationVariables = Exact<{
-  email: Scalars['String']['input'];
-  password: Scalars['String']['input'];
+export type GetWorkspaceQueryVariables = Exact<{
+  id: Scalars['String']['input'];
 }>;
 
-export type SignInMutation = {
-  __typename?: 'Mutation';
-  signIn: {
-    __typename?: 'UserType';
-    id: string;
-    email: string;
-    name: string;
-    avatarUrl: string | null;
-    createdAt: string | null;
-    token: { __typename?: 'TokenType'; token: string; refresh: string };
-  };
+export type GetWorkspaceQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
+export type GetWorkspacesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetWorkspacesQuery = {
+  __typename?: 'Query';
+  workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
 export type UploadAvatarMutationVariables = Exact<{
@@ -127,11 +115,22 @@ export type WorkspaceByIdQuery = {
   };
 };
 
-export type Queries = {
-  name: 'workspaceByIdQuery';
-  variables: WorkspaceByIdQueryVariables;
-  response: WorkspaceByIdQuery;
-};
+export type Queries =
+  | {
+      name: 'getWorkspaceQuery';
+      variables: GetWorkspaceQueryVariables;
+      response: GetWorkspaceQuery;
+    }
+  | {
+      name: 'getWorkspacesQuery';
+      variables: GetWorkspacesQueryVariables;
+      response: GetWorkspacesQuery;
+    }
+  | {
+      name: 'workspaceByIdQuery';
+      variables: WorkspaceByIdQueryVariables;
+      response: WorkspaceByIdQuery;
+    };
 
 export type Mutations =
   | {
@@ -140,14 +139,9 @@ export type Mutations =
       response: CreateWorkspaceMutation;
     }
   | {
-      name: 'registerMutation';
-      variables: RegisterMutationVariables;
-      response: RegisterMutation;
-    }
-  | {
-      name: 'signInMutation';
-      variables: SignInMutationVariables;
-      response: SignInMutation;
+      name: 'deleteWorkspaceMutation';
+      variables: DeleteWorkspaceMutationVariables;
+      response: DeleteWorkspaceMutation;
     }
   | {
       name: 'uploadAvatarMutation';

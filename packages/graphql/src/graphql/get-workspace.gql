@@ -1,0 +1,5 @@
+query getWorkspace($id: String!) {
+  workspace(id: $id) {
+    id
+  }
+}

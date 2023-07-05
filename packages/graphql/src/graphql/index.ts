@@ -22,44 +22,39 @@ mutation createWorkspace($init: Upload!) {
 }`,
 };
 
-export const registerMutation = {
-  id: 'registerMutation' as const,
-  operationName: 'register',
-  definitionName: 'register',
+export const deleteWorkspaceMutation = {
+  id: 'deleteWorkspaceMutation' as const,
+  operationName: 'deleteWorkspace',
+  definitionName: 'deleteWorkspace',
   containsFile: false,
   query: `
-mutation register($name: String!, $email: String!, $password: String!) {
-  register(name: $name, email: $email, password: $password) {
+mutation deleteWorkspace($id: String!) {
+  deleteWorkspace(id: $id)
+}`,
+};
+
+export const getWorkspaceQuery = {
+  id: 'getWorkspaceQuery' as const,
+  operationName: 'getWorkspace',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspace($id: String!) {
+  workspace(id: $id) {
     id
-    name
-    email
-    avatarUrl
-    createdAt
-    token {
-      token
-      refresh
-    }
   }
 }`,
 };
 
-export const signInMutation = {
-  id: 'signInMutation' as const,
-  operationName: 'signIn',
-  definitionName: 'signIn',
+export const getWorkspacesQuery = {
+  id: 'getWorkspacesQuery' as const,
+  operationName: 'getWorkspaces',
+  definitionName: 'workspaces',
   containsFile: false,
   query: `
-mutation signIn($email: String!, $password: String!) {
-  signIn(email: $email, password: $password) {
+query getWorkspaces {
+  workspaces {
     id
-    email
-    name
-    avatarUrl
-    createdAt
-    token {
-      token
-      refresh
-    }
   }
 }`,
 };

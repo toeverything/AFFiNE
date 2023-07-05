@@ -15,7 +15,7 @@ import type {
 } from 'swr/mutation';
 import useSWRMutation from 'swr/mutation';
 
-const fetcher = gqlFetcherFactory(prefixUrl + '/graphql');
+export const fetcher = gqlFetcherFactory(prefixUrl + '/graphql');
 
 /**
  * A `useSWR` wrapper for sending graphql queries
