@@ -1,5 +1,5 @@
+import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 import { useMemo } from 'react';
 
 export function useBlockSuiteWorkspaceHelper(blockSuiteWorkspace: Workspace) {

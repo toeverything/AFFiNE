@@ -1,4 +1,4 @@
-import { assertExists } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/global/utils';
 import React, { Suspense, useCallback } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';

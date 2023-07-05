@@ -232,29 +232,40 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn validate(path: String) -> bool {
-    if let Ok(pool) = SqlitePoolOptions::new()
+    let pool = match SqlitePoolOptions::new()
       .max_connections(1)
       .connect(&path)
       .await
     {
-      if let Ok(res) = sqlx::query("SELECT name FROM sqlite_master WHERE type='table'")
-        .fetch_all(&pool)
-        .await
-      {
-        let names = res.iter().map(|row| row.get(0));
-        names.fold(0, |acc, cur: String| {
-          if cur == "updates" || cur == "blobs" {
-            acc + 1
-          } else {
-            acc
-          }
-        }) == 2
-      } else {
-        false
+      Ok(pool) => pool,
+      Err(_) => return false,
+    };
+
+    let tables_res = sqlx::query("SELECT name FROM sqlite_master WHERE type='table'")
+      .fetch_all(&pool)
+      .await;
+
+    let tables_exist = match tables_res {
+      Ok(res) => {
+        let names: Vec<String> = res.iter().map(|row| row.get(0)).collect();
+        names.contains(&"updates".to_string()) && names.contains(&"blobs".to_string())
       }
-    } else {
-      false
-    }
+      Err(_) => return false,
+    };
+
+    let columns_res = sqlx::query("PRAGMA table_info(updates)")
+      .fetch_all(&pool)
+      .await;
+
+    let columns_exist = match columns_res {
+      Ok(res) => {
+        let names: Vec<String> = res.iter().map(|row| row.get(1)).collect();
+        names.contains(&"data".to_string()) && names.contains(&"doc_id".to_string())
+      }
+      Err(_) => return false,
+    };
+
+    tables_exist && columns_exist
   }
 
   // todo: have a better way to handle migration

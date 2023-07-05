@@ -1,5 +1,5 @@
+import { assertExists } from '@blocksuite/global/utils';
 import type { BlobStorage } from '@blocksuite/store';
-import { assertExists } from '@blocksuite/store';
 
 export const createSQLiteStorage = (workspaceId: string): BlobStorage => {
   const apis = window.apis;
