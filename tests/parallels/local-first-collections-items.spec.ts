@@ -37,7 +37,9 @@ const createAndPinCollection = async (
   await title.isVisible();
   await title.fill(options?.collectionName ?? 'test collection');
   await page.getByTestId('save-collection').click();
+  await page.waitForTimeout(100);
   await page.getByTestId('collection-bar-option-pin').click();
+  await page.waitForTimeout(100);
 };
 test('Show collections items in sidebar', async ({ page }) => {
   await createAndPinCollection(page);
@@ -82,6 +84,7 @@ test('pin and unpin collection', async ({ page }) => {
   });
   await option.hover();
   await option.getByTestId('collection-select-option-pin').click();
+  await page.waitForTimeout(100);
   expect(await items.count()).toBe(1);
 });
 
@@ -99,6 +102,7 @@ test('edit collection', async ({ page }) => {
   const title = page.getByTestId('input-collection-title');
   await title.fill('123');
   await page.getByTestId('save-collection').click();
+  await page.waitForTimeout(100);
   expect(await first.textContent()).toBe('123');
 });
 
