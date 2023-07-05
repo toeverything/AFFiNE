@@ -237,7 +237,7 @@ __metadata:
     electron: ^25.2.0
     electron-log: ^5.0.0-beta.24
     electron-squirrel-startup: 1.0.0
-    electron-updater: ^6.0.0
+    electron-updater: ^5.0.0
     electron-window-state: ^5.0.3
     esbuild: ^0.18.11
     fs-extra: ^11.1.1
@@ -12027,7 +12027,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/semver@npm:^7.3.12, @types/semver@npm:^7.3.4":
+"@types/semver@npm:^7.3.12, @types/semver@npm:^7.3.4, @types/semver@npm:^7.3.6":
   version: 7.5.0
   resolution: "@types/semver@npm:7.5.0"
   checksum: 0a64b9b9c7424d9a467658b18dd70d1d781c2d6f033096a6e05762d20ebbad23c1b69b0083b0484722aabf35640b78ccc3de26368bcae1129c87e9df028a22e2
@@ -14355,13 +14355,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"builder-util-runtime@npm:9.2.1":
-  version: 9.2.1
-  resolution: "builder-util-runtime@npm:9.2.1"
+"builder-util-runtime@npm:9.1.1":
+  version: 9.1.1
+  resolution: "builder-util-runtime@npm:9.1.1"
   dependencies:
     debug: ^4.3.4
     sax: ^1.2.4
-  checksum: 6933e086b8ff9902cbd6d4c08d21d4a0437663ac849bc0939ec20a59cb2b084d7ab655c4dc2c71f854e77da152ff1f8e1240372665cb70e7b954afbfbf4d525a
+  checksum: 3458f9c8accad6e934c841cffa93f5d4b342c22b10b9c1a2eb3fd44ca96ea2c662b1048f9a075da9b8a4fada17206887b7e92ebdca331b1071520916e013e245
   languageName: node
   linkType: hard
 
@@ -16831,19 +16831,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron-updater@npm:^6.0.0":
-  version: 6.1.3
-  resolution: "electron-updater@npm:6.1.3"
+"electron-updater@npm:^5.0.0":
+  version: 5.3.0
+  resolution: "electron-updater@npm:5.3.0"
   dependencies:
-    builder-util-runtime: 9.2.1
-    fs-extra: ^10.1.0
+    "@types/semver": ^7.3.6
+    builder-util-runtime: 9.1.1
+    fs-extra: ^10.0.0
     js-yaml: ^4.1.0
     lazy-val: ^1.0.5
     lodash.escaperegexp: ^4.1.2
     lodash.isequal: ^4.5.0
-    semver: ^7.3.8
-    tiny-typed-emitter: ^2.1.0
-  checksum: 4c983783e24157b85816e868604f8091f6e9f79c45f227c430df5d57f35d3ed2ec17bf9433989d4bfc0a830312c9f1fed2f14d72ec0469d2d5b99447dda8400c
+    semver: ^7.3.5
+    typed-emitter: ^2.1.0
+  checksum: 975381ffb0d9e17686f7f0b90739320922ca52d06ee548e89ceeb3b56bfc23180c20e7049e5c33ef789b228eb4c960c9886986e1332577866dca2437c315ed4e
   languageName: node
   linkType: hard
 
@@ -27562,21 +27563,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rxjs@npm:*, rxjs@npm:^7.5.5, rxjs@npm:^7.8.0, rxjs@npm:^7.8.1":
+  version: 7.8.1
+  resolution: "rxjs@npm:7.8.1"
+  dependencies:
+    tslib: ^2.1.0
+  checksum: de4b53db1063e618ec2eca0f7965d9137cabe98cf6be9272efe6c86b47c17b987383df8574861bcced18ebd590764125a901d5506082be84a8b8e364bf05f119
+  languageName: node
+  linkType: hard
+
 "rxjs@npm:^6.6.3":
   version: 6.6.7
   resolution: "rxjs@npm:6.6.7"
   dependencies:
     tslib: ^1.9.0
   checksum: bc334edef1bb8bbf56590b0b25734ba0deaf8825b703256a93714308ea36dff8a11d25533671adf8e104e5e8f256aa6fdfe39b2e248cdbd7a5f90c260acbbd1b
-  languageName: node
-  linkType: hard
-
-"rxjs@npm:^7.5.5, rxjs@npm:^7.8.0, rxjs@npm:^7.8.1":
-  version: 7.8.1
-  resolution: "rxjs@npm:7.8.1"
-  dependencies:
-    tslib: ^2.1.0
-  checksum: de4b53db1063e618ec2eca0f7965d9137cabe98cf6be9272efe6c86b47c17b987383df8574861bcced18ebd590764125a901d5506082be84a8b8e364bf05f119
   languageName: node
   linkType: hard
 
@@ -29270,13 +29271,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tiny-typed-emitter@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "tiny-typed-emitter@npm:2.1.0"
-  checksum: 709bca410054e08df4dc29d5ea0916328bb2900d60245c6a743068ea223887d9fd2c945b6070eb20336275a557a36c2808e5c87d2ed4b60633458632be4a3e10
-  languageName: node
-  linkType: hard
-
 "tinybench@npm:^2.5.0":
   version: 2.5.0
   resolution: "tinybench@npm:2.5.0"
@@ -29726,6 +29720,18 @@ __metadata:
     for-each: ^0.3.3
     is-typed-array: ^1.1.9
   checksum: 2228febc93c7feff142b8c96a58d4a0d7623ecde6c7a24b2b98eb3170e99f7c7eff8c114f9b283085cd59dcd2bd43aadf20e25bba4b034a53c5bb292f71f8956
+  languageName: node
+  linkType: hard
+
+"typed-emitter@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "typed-emitter@npm:2.1.0"
+  dependencies:
+    rxjs: "*"
+  dependenciesMeta:
+    rxjs:
+      optional: true
+  checksum: 95821a9e05784b972cc9d152891fd12a56cb4b1a7c57e768c02bea6a8984da7aff8f19404a7b69eea11fae2a3b6c0c510a4c510f575f50162c759ae9059f2520
   languageName: node
   linkType: hard
 
