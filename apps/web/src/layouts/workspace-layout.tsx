@@ -37,7 +37,6 @@ import { useRouter } from 'next/router';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
-import { WorkspaceAdapters } from '../adapters/workspace';
 import type { SettingAtom } from '../atoms';
 import {
   openQuickSearchModalAtom,
@@ -45,6 +44,7 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
+import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
@@ -239,13 +239,6 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       </AdapterProviderWrapper>
     );
   };
-
-const AdapterProviderWrapper: FC<PropsWithChildren> = ({ children }) => {
-  const [currentWorkspace] = useCurrentWorkspace();
-  const Provider = WorkspaceAdapters[currentWorkspace.flavour].UI.Provider;
-  assertExists(Provider);
-  return <Provider>{children}</Provider>;
-};
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();

@@ -14,8 +14,10 @@ import type {
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
 import { HelpIcon, ImportIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
+import { useAtomValue } from 'jotai';
 import { useCallback, useRef } from 'react';
 
 import type { AllWorkspace } from '../../../shared';
@@ -165,6 +167,7 @@ export const WorkspaceListModal = ({
   onMoveWorkspace,
 }: WorkspaceModalProps) => {
   const t = useAFFiNEI18N();
+  const workspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
   return (
     <Modal open={open} onClose={onClose}>
       <ModalWrapper
@@ -227,7 +230,7 @@ export const WorkspaceListModal = ({
             />
           </StyledModalContent>
         </ScrollableContainer>
-        <Footer />
+        {workspaceId && <Footer />}
       </ModalWrapper>
     </Modal>
   );

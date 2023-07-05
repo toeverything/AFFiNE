@@ -19,6 +19,7 @@ import {
   createIndexedDBProvider,
   DEFAULT_DB_NAME,
 } from '@toeverything/y-indexeddb';
+import { getSession } from 'next-auth/react';
 
 import { fetcher } from '../../shared/gql';
 
@@ -74,6 +75,17 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     });
   },
   get: async id => {
+    if (!navigator.onLine) {
+      // no network
+      return null;
+    }
+    if (
+      !(await getSession()
+        .then(() => true)
+        .catch(() => false))
+    ) {
+      return null;
+    }
     try {
       await fetcher({
         query: getWorkspaceQuery,
@@ -96,6 +108,17 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     }
   },
   list: async () => {
+    if (!navigator.onLine) {
+      // no network
+      return [];
+    }
+    if (
+      !(await getSession()
+        .then(() => true)
+        .catch(() => false))
+    ) {
+      return [];
+    }
     try {
       const { workspaces } = await fetcher({
         query: getWorkspacesQuery,

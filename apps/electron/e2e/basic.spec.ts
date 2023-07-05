@@ -110,18 +110,6 @@ test('app theme', async ({ page, electronApp }) => {
   }
 });
 
-test('affine cloud disabled', async ({ page }) => {
-  await page.getByTestId('new-page-button').click({
-    delay: 100,
-  });
-  await page.waitForSelector('v-line');
-  await page.getByTestId('current-workspace').click();
-  await page.getByTestId('sign-in-button').click();
-  await page.getByTestId('disable-affine-cloud-modal').waitFor({
-    state: 'visible',
-  });
-});
-
 test('affine onboarding button', async ({ page }) => {
   await page.getByTestId('help-island').click();
   await page.getByTestId('easy-guide').click();

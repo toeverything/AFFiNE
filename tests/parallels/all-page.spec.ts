@@ -41,6 +41,7 @@ test('all page can create new page', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
+  await page.getByTestId('download-client-tip-close-button').click();
   await clickNewPageButton();
   const title = getBlockSuiteEditorTitle(page);
   await title.fill('this is a new page');
