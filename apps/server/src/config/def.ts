@@ -233,5 +233,11 @@ export interface AFFiNEConfig {
         }
       >
     >;
+    email: {
+      server: string;
+      port: number;
+      sender: string;
+      password: string;
+    };
   };
 }
