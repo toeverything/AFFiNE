@@ -35,6 +35,7 @@ export class SocketIOProvider extends Observable<string> {
   connectResolve: () => void = () => {};
   syncPromise: Promise<void>;
   syncResolve: () => void = () => {};
+  subDocsHasHandshake = false;
 
   constructor(
     serverUrl: string,
@@ -100,11 +101,33 @@ export class SocketIOProvider extends Observable<string> {
       })
       .catch(err => console.log(err));
 
+    if (!this.subDocsHasHandshake) {
+      this.subDocsHandshake(this.rootDoc.guid, doc.subdocs);
+      this.subDocsHasHandshake = true;
+    }
+
     // apply update from server
     Y.applyUpdate(doc, update, 'server');
     doc.emit('load', []);
     this.syncResolve();
     this.synced = true;
+  };
+
+  subDocsHandshake = (workspaceId: string, subDocs: Set<Doc>) => {
+    subDocs.forEach(doc => {
+      const update = Y.encodeStateAsUpdate(doc);
+      uint8ArrayToBase64(update)
+        .then(encodedUpdate => {
+          this.socket.emit('client-update', {
+            workspaceId,
+            guid: doc.guid,
+            update: encodedUpdate,
+          });
+        })
+        .catch(err => console.error(err));
+
+      this.subDocsHandshake(workspaceId, doc.subdocs);
+    });
   };
 
   handlerServerUpdate = (message: { guid: string; update: string }) => {
