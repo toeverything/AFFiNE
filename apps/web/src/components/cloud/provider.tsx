@@ -36,7 +36,7 @@ const cloudConfig: SWRConfiguration = {
           }
           return d;
         },
-        [fetcher]
+        [fetcher, pushNotification]
       );
       return useSWRNext(key, fetcher ? fetcherWrapper : fetcher, config);
     },
