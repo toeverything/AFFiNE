@@ -184,6 +184,7 @@ export const CurrentWorkspaceContext = ({
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     useTrackRouterHistoryEffect();
+    const router = useRouter();
     const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const meta = useMemo(
@@ -191,7 +192,15 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       [currentWorkspaceId, jotaiWorkspaces]
     );
 
-    if (!currentWorkspaceId) {
+    // fixme(himself65): move provider into inner component
+    //  and remove this `useEffect`
+    useEffect(() => {
+      if (!meta) {
+        router.push('/').catch(console.error);
+      }
+    }, [meta, router]);
+
+    if (!meta) {
       return null;
     }
 
