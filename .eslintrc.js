@@ -26,6 +26,12 @@ const createPattern = packageName => [
     message: "Import from '@blocksuite/global/utils'",
     importNames: ['assertExists', 'assertEquals'],
   },
+  {
+    group: ['next-auth/react'],
+    message: "Import hooks from 'use-current-user.tsx'",
+    // useSession is type unsafe
+    importNames: ['useSession'],
+  },
 ];
 
 const allPackages = [
@@ -143,6 +149,12 @@ const config = {
             group: ['@blocksuite/store'],
             message: "Import from '@blocksuite/global/utils'",
             importNames: ['assertExists', 'assertEquals'],
+          },
+          {
+            group: ['next-auth/react'],
+            message: "Import hooks from 'use-current-user.tsx'",
+            // useSession is type unsafe
+            importNames: ['useSession'],
           },
         ],
       },
