@@ -114,6 +114,7 @@ export class SocketIOProvider extends Observable<string> {
   };
 
   subDocsHandshake = (workspaceId: string, subDocs: Set<Doc>) => {
+    if (!subDocs) return;
     subDocs.forEach(doc => {
       const update = Y.encodeStateAsUpdate(doc);
       uint8ArrayToBase64(update)
