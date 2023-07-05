@@ -13,9 +13,7 @@ import { StorageProvide } from '../../../storage';
 import { uint8ArrayToBase64 } from '../utils';
 import { WorkspaceService } from './workspace';
 
-const port = Number(process.env.AFFINE_SERVER_PORT ?? '3010');
-
-@WebSocketGateway(port, {
+@WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
 })
 export class EventsGateway {
