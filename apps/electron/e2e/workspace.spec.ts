@@ -17,11 +17,13 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
+test('move workspace db file', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
-  const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
-  // goto settings
-  await settingButton.click();
+  await page.getByTestId('slider-bar-workspace-setting-button').click();
+  await expect(page.getByTestId('setting-modal')).toBeVisible();
+
+  // goto workspace setting
+  await page.getByTestId('workspace-list-item').click();
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp-dir');
 
@@ -42,21 +44,24 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
   expect(files.some(f => f.endsWith('.affine'))).toBe(true);
 });
 
-test.skip('export then add', async ({ page, appInfo, workspace }) => {
+test('export then add', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
-  const settingButton = page.getByTestId('slider-bar-workspace-setting-button');
-  // goto settings
-  await settingButton.click();
+
+  await page.getByTestId('slider-bar-workspace-setting-button').click();
+  await expect(page.getByTestId('setting-modal')).toBeVisible();
 
   const originalId = w.id;
 
   const newWorkspaceName = 'new-test-name';
 
+  // goto workspace setting
+  await page.getByTestId('workspace-list-item').click();
+
   // change workspace name
   await page.getByTestId('workspace-name-input').fill(newWorkspaceName);
   await page.getByTestId('save-workspace-name').click();
   await page.waitForSelector('text="Update workspace name success"');
-  await page.click('[data-tab-key="export"]');
+  await page.waitForTimeout(500);
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
 
@@ -73,10 +78,11 @@ test.skip('export then add', async ({ page, appInfo, workspace }) => {
 
   expect(await fs.exists(tmpPath)).toBe(true);
 
+  await page.getByTestId('modal-close-button').click();
+
   // add workspace
   // we are reusing the same db file so that we don't need to maintain one
   // in the codebase
-
   await page.getByTestId('current-workspace').click();
   await page.getByTestId('add-or-new-workspace').click();
 

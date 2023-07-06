@@ -15,6 +15,8 @@ export type SettingAtom = Pick<SettingProps, 'activeTab' | 'workspace'> & {
 };
 
 export const openSettingModalAtom = atom<SettingAtom>({
+  activeTab: 'appearance',
+  workspace: null,
   open: false,
 });
 

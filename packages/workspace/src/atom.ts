@@ -1,6 +1,6 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
-import type { EditorContainer } from '@blocksuite/editor';
+import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { atom } from 'jotai';
 import Router from 'next/router';
@@ -264,8 +264,7 @@ rootCurrentPageIdAtom.onMount = set => {
   return;
 };
 
-// current editor atom, each app should have only one editor in the same time
-export const rootCurrentEditorAtom = atom<Readonly<EditorContainer> | null>(
-  null
-);
+// blocksuite atoms,
+// each app should have only one block-hub in the same time
+export const rootBlockHubAtom = atom<Readonly<BlockHub> | null>(null);
 //#endregion
