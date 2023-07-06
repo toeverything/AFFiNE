@@ -125,7 +125,6 @@ export class WorkspaceResolver {
     const data = await this.prisma.userWorkspacePermission.findMany({
       where: {
         workspaceId: workspace.id,
-        accepted: true,
       },
       include: {
         user: true,
