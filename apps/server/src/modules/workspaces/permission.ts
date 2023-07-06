@@ -165,6 +165,17 @@ export class PermissionService {
     return data?.accepted || false;
   }
 
+  async getPages(ws: string, user?: string) {
+    const data = await this.prisma.userWorkspacePermission.findMany({
+      where: {
+        workspaceId: ws,
+        userId: user,
+      },
+    });
+
+    return data.map(item => item.subPageId);
+  }
+
   async checkPage(ws: string, page: string, user?: string) {
     if (!(await this.tryCheckPage(ws, page, user))) {
       throw new ForbiddenException('Permission denied');
@@ -206,16 +217,18 @@ export class PermissionService {
       return data.accepted;
     }
 
-    return this.prisma.userWorkspacePermission.create({
-      data: {
-        workspaceId: ws,
-        subPageId: page,
-        userId: user,
-        // if provide user id, user need to accept the invitation
-        accepted: user ? false : true,
-        type: permission,
-      },
-    });
+    return this.prisma.userWorkspacePermission
+      .create({
+        data: {
+          workspaceId: ws,
+          subPageId: page,
+          userId: user,
+          // if provide user id, user need to accept the invitation
+          accepted: user ? false : true,
+          type: permission,
+        },
+      })
+      .then(ret => ret.accepted);
   }
 
   async revokePage(ws: string, page: string, user?: string) {

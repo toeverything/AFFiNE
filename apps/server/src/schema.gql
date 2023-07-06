@@ -61,6 +61,11 @@ type WorkspaceType {
   memberCount: Int!
 
   """
+  Shared pages of workspace
+  """
+  sharedPages: [String!]!
+
+  """
   Owner of workspace
   """
   owner: UserType!
@@ -117,6 +122,8 @@ type Mutation {
   revoke(workspaceId: String!, userId: String!): Boolean!
   acceptInvite(workspaceId: String!): Boolean!
   leaveWorkspace(workspaceId: String!): Boolean!
+  sharePage(workspaceId: String!, pageId: String!): Boolean!
+  revokePage(workspaceId: String!, pageId: String!): Boolean!
   uploadBlob(workspaceId: String!, blob: Upload!): String!
 
   """

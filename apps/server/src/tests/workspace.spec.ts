@@ -161,6 +161,44 @@ describe('Workspace Module', () => {
     return res.body.data.revoke;
   }
 
+  async function sharePage(
+    token: string,
+    workspaceId: string,
+    pageId: string
+  ): Promise<boolean | string> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .auth(token, { type: 'bearer' })
+      .send({
+        query: `
+          mutation {
+            sharePage(workspaceId: "${workspaceId}", pageId: "${pageId}")
+          }
+        `,
+      })
+      .expect(200);
+    return res.body.errors?.[0]?.message || res.body.data?.sharePage;
+  }
+
+  async function revokePage(
+    token: string,
+    workspaceId: string,
+    pageId: string
+  ): Promise<boolean | string> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .auth(token, { type: 'bearer' })
+      .send({
+        query: `
+          mutation {
+            revokePage(workspaceId: "${workspaceId}", pageId: "${pageId}")
+          }
+        `,
+      })
+      .expect(200);
+    return res.body.errors?.[0]?.message || res.body.data?.revokePage;
+  }
+
   it('should register a user', async () => {
     const user = await registerUser('u1', 'u1@affine.pro', '123456');
     ok(typeof user.id === 'string', 'user.id is not a string');
@@ -222,5 +260,31 @@ describe('Workspace Module', () => {
 
     const revoke = await revokeUser(u1.token.token, workspace.id, u2.id);
     ok(revoke === true, 'failed to revoke user');
+  });
+
+  it('should share a page', async () => {
+    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
+    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+
+    const workspace = await createWorkspace(u1.token.token);
+
+    const share = await sharePage(u1.token.token, workspace.id, 'page1');
+    ok(share === true, 'failed to share page');
+
+    const msg1 = await sharePage(u2.token.token, workspace.id, 'page2');
+    ok(msg1 === 'Permission denied', 'unauthorized user can share page');
+    const msg2 = await revokePage(u2.token.token, 'not_exists_ws', 'page2');
+    ok(msg2 === 'Permission denied', 'unauthorized user can share page');
+
+    await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
+    await acceptInvite(u2.token.token, workspace.id);
+    const invited = await sharePage(u2.token.token, workspace.id, 'page2');
+    ok(invited === true, 'failed to share page');
+
+    const revoke = await revokePage(u1.token.token, workspace.id, 'page1');
+    ok(revoke === true, 'failed to revoke page');
+
+    const msg3 = await revokePage(u1.token.token, workspace.id, 'page3');
+    ok(msg3 === false, 'can revoke non-exists page');
   });
 });

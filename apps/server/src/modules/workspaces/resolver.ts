@@ -99,6 +99,14 @@ export class WorkspaceResolver {
     });
   }
 
+  @ResolveField(() => [String], {
+    description: 'Shared pages of workspace',
+    complexity: 2,
+  })
+  sharedPages(@Parent() workspace: WorkspaceType) {
+    return this.permissionProvider.getPages(workspace.id);
+  }
+
   @ResolveField(() => UserType, {
     description: 'Owner of workspace',
     complexity: 2,
@@ -310,6 +318,28 @@ export class WorkspaceResolver {
     await this.permissionProvider.check(workspaceId, user.id);
 
     return this.permissionProvider.revoke(workspaceId, user.id);
+  }
+
+  @Mutation(() => Boolean)
+  async sharePage(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('pageId') pageId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+
+    return this.permissionProvider.grantPage(workspaceId, pageId);
+  }
+
+  @Mutation(() => Boolean)
+  async revokePage(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('pageId') pageId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+
+    return this.permissionProvider.revokePage(workspaceId, pageId);
   }
 
   @Mutation(() => String)
