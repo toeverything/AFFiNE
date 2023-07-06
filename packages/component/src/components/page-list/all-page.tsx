@@ -6,7 +6,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
-import { type CSSProperties } from 'react';
+import { type CSSProperties, useMemo } from 'react';
 
 import {
   ScrollableContainer,
@@ -46,53 +46,67 @@ const AllPagesHead = ({
   propertiesMeta: PropertiesMeta;
 }) => {
   const t = useAFFiNEI18N();
-  const titleList = [
-    {
-      key: 'title',
-      content: t['Title'](),
-      proportion: 0.5,
-    },
-    {
-      key: 'tags',
-      content: t['Tags'](),
-      proportion: 0.2,
-    },
-    {
-      key: 'createDate',
-      content: t['Created'](),
-      proportion: 0.1,
-    },
-    {
-      key: 'updatedDate',
-      content: t['Updated'](),
-      proportion: 0.1,
-    },
-    {
-      key: 'unsortable_action',
-      content: (
-        <NewPageButton
-          createNewPage={createNewPage}
-          createNewEdgeless={createNewEdgeless}
-          importFile={importFile}
-        />
-      ),
-      showWhen: () => !isPublicWorkspace,
-      sortable: false,
-      styles: {
-        justifyContent: 'flex-end',
-      } satisfies CSSProperties,
-    },
-  ];
-  return (
-    <TableHead>
-      <TableHeadRow>
-        {titleList
-          .filter(({ showWhen = () => true }) => showWhen())
-          .map(({ key, content, proportion, sortable = true, styles }) => (
+  const titleList = useMemo(
+    () => [
+      {
+        key: 'title',
+        content: t['Title'](),
+        proportion: 0.5,
+      },
+      {
+        key: 'tags',
+        content: t['Tags'](),
+        proportion: 0.2,
+      },
+      {
+        key: 'createDate',
+        content: t['Created'](),
+        proportion: 0.1,
+      },
+      {
+        key: 'updatedDate',
+        content: t['Updated'](),
+        proportion: 0.1,
+      },
+      {
+        key: 'unsortable_action',
+        content: (
+          <NewPageButton
+            createNewPage={createNewPage}
+            createNewEdgeless={createNewEdgeless}
+            importFile={importFile}
+          />
+        ),
+        showWhen: () => !isPublicWorkspace,
+        sortable: false,
+        tableCellStyle: {
+          minWidth: '130px',
+        } satisfies CSSProperties,
+        styles: {
+          justifyContent: 'flex-end',
+        } satisfies CSSProperties,
+      },
+    ],
+    [createNewEdgeless, createNewPage, importFile, isPublicWorkspace, t]
+  );
+  const tableItem = useMemo(
+    () =>
+      titleList
+        .filter(({ showWhen = () => true }) => showWhen())
+        .map(
+          ({
+            key,
+            content,
+            proportion,
+            sortable = true,
+            styles,
+            tableCellStyle,
+          }) => (
             <TableCell
               key={key}
               proportion={proportion}
               active={sorter.key === key}
+              style={tableCellStyle}
               onClick={
                 sortable
                   ? () => sorter.shiftOrder(key as keyof ListData)
@@ -115,8 +129,13 @@ const AllPagesHead = ({
                   ))}
               </div>
             </TableCell>
-          ))}
-      </TableHeadRow>
+          )
+        ),
+    [sorter, titleList]
+  );
+  return (
+    <TableHead>
+      <TableHeadRow>{tableItem}</TableHeadRow>
       <CollectionBar
         columnsCount={titleList.length}
         getPageInfo={getPageInfo}

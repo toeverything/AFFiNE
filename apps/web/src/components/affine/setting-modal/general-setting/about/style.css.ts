@@ -24,22 +24,21 @@ globalStyle(`${link} .icon`, {
 export const communityWrapper = style({
   display: 'grid',
   justifyContent: 'space-between',
-  gridTemplateColumns: 'repeat(auto-fill, 84px)',
+  gridTemplateColumns: 'repeat(auto-fill, 70px)',
   gridGap: '6px',
 });
 export const communityItem = style({
-  width: '84px',
-  height: '58px',
   borderRadius: '8px',
   border: '1px solid var(--affine-border-color)',
   color: 'var(--affine-text-primary-color)',
   cursor: 'pointer',
+  padding: '6px 8px',
 });
 globalStyle(`${communityItem} svg`, {
   width: '24px',
   height: '24px',
   display: 'block',
-  margin: '8px auto 4px',
+  margin: '0 auto 2px',
 });
 globalStyle(`${communityItem} p`, {
   fontSize: 'var(--affine-font-xs)',
