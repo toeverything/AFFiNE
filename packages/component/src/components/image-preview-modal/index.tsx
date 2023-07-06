@@ -562,7 +562,7 @@ export const ImagePreviewModal = (
           isOpen ? loaded : unloaded
         }`}
       >
-        <Suspense fallback={<div />}>
+        <Suspense>
           <ImagePreviewModalImpl
             {...props}
             blockId={blockId}
