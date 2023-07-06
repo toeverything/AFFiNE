@@ -41,13 +41,13 @@ export class AuthResolver {
   }
 
   @Mutation(() => UserType)
-  async register(
+  async signUp(
     @Context() ctx: { req: Request },
     @Args('name') name: string,
     @Args('email') email: string,
     @Args('password') password: string
   ) {
-    const user = await this.auth.register(name, email, password);
+    const user = await this.auth.signUp(name, email, password);
     ctx.req.user = user;
     return user;
   }

@@ -147,6 +147,36 @@ mutation setWorkspacePublicById($id: ID!, $public: Boolean!) {
 }`,
 };
 
+export const signInMutation = {
+  id: 'signInMutation' as const,
+  operationName: 'signIn',
+  definitionName: 'signIn',
+  containsFile: false,
+  query: `
+mutation signIn($email: String!, $password: String!) {
+  signIn(email: $email, password: $password) {
+    token {
+      token
+    }
+  }
+}`,
+};
+
+export const signUpMutation = {
+  id: 'signUpMutation' as const,
+  operationName: 'signUp',
+  definitionName: 'signUp',
+  containsFile: false,
+  query: `
+mutation signUp($name: String!, $email: String!, $password: String!) {
+  signUp(name: $name, email: $email, password: $password) {
+    token {
+      token
+    }
+  }
+}`,
+};
+
 export const uploadAvatarMutation = {
   id: 'uploadAvatarMutation' as const,
   operationName: 'uploadAvatar',

@@ -162,6 +162,33 @@ export type SetWorkspacePublicByIdMutation = {
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
+export type SignInMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+export type SignInMutation = {
+  __typename?: 'Mutation';
+  signIn: {
+    __typename?: 'UserType';
+    token: { __typename?: 'TokenType'; token: string };
+  };
+};
+
+export type SignUpMutationVariables = Exact<{
+  name: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+}>;
+
+export type SignUpMutation = {
+  __typename?: 'Mutation';
+  signUp: {
+    __typename?: 'UserType';
+    token: { __typename?: 'TokenType'; token: string };
+  };
+};
+
 export type UploadAvatarMutationVariables = Exact<{
   id: Scalars['String']['input'];
   avatar: Scalars['Upload']['input'];
@@ -235,6 +262,16 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'signInMutation';
+      variables: SignInMutationVariables;
+      response: SignInMutation;
+    }
+  | {
+      name: 'signUpMutation';
+      variables: SignUpMutationVariables;
+      response: SignUpMutation;
     }
   | {
       name: 'uploadAvatarMutation';
