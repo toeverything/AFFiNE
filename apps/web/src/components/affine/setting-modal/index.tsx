@@ -23,11 +23,11 @@ import { WorkSpaceSetting } from './workspace-setting';
 
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
 export type SettingProps = {
-  activeTab?: ActiveTab;
-  workspace?: AllWorkspace;
+  activeTab: ActiveTab;
+  workspace: AllWorkspace | null;
   onSettingClick: (params: {
     activeTab: ActiveTab;
-    workspace?: AllWorkspace;
+    workspace: AllWorkspace | null;
   }) => void;
 };
 export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
@@ -52,6 +52,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
     (key: GeneralSettingKeys) => {
       onSettingClick({
         activeTab: key,
+        workspace: null,
       });
     },
     [onSettingClick]
@@ -66,7 +67,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
     [onSettingClick]
   );
   const onAccountSettingClick = useCallback(() => {
-    onSettingClick({ activeTab: 'account' });
+    onSettingClick({ activeTab: 'account', workspace: null });
   }, [onSettingClick]);
 
   return (

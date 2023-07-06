@@ -31,24 +31,7 @@ export const HelpIsland = ({
   const [, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
-  // const { triggerShortcutsModal, triggerContactModal } = useModal();
-  // const blockHub = useGlobalState(store => store.blockHub);
   const t = useAFFiNEI18N();
-  //
-  // useEffect(() => {
-  //   blockHub?.blockHubStatusUpdated.on(status => {
-  //     if (status) {
-  //       setShowSpread(false);
-  //     }
-  //   });
-  //   return () => {
-  //     blockHub?.blockHubStatusUpdated.dispose();
-  //   };
-  // }, [blockHub]);
-  //
-  // useEffect(() => {
-  //   spread && blockHub?.toggleMenu(false);
-  // }, [blockHub, spread]);
 
   const [openShortCut, setOpenShortCut] = useState(false);
 
@@ -58,6 +41,7 @@ export const HelpIsland = ({
     setOpenSettingModalAtom({
       open: true,
       activeTab: 'about',
+      workspace: null,
     });
   }, [setOpenSettingModalAtom]);
 

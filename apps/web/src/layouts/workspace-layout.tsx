@@ -38,7 +38,6 @@ import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
-import type { SettingAtom } from '../atoms';
 import {
   openQuickSearchModalAtom,
   openSettingModalAtom,
@@ -70,11 +69,6 @@ const QuickSearchModal = lazy(() =>
     default: module.QuickSearchModal,
   }))
 );
-const SettingModal = lazy(() =>
-  import('../components/affine/setting-modal').then(module => ({
-    default: module.SettingModal,
-  }))
-);
 
 function DefaultProvider({ children }: PropsWithChildren) {
   return <>{children}</>;
@@ -96,37 +90,6 @@ export const QuickSearch: FC = () => {
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
       router={router}
-    />
-  );
-};
-export const Setting: FC = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
-  const [{ open, workspace, activeTab }, setOpenSettingModalAtom] =
-    useAtom(openSettingModalAtom);
-  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
-
-  const onSettingClick = useCallback(
-    ({
-      activeTab,
-      workspace,
-    }: Pick<SettingAtom, 'activeTab' | 'workspace'>) => {
-      setOpenSettingModalAtom(prev => ({ ...prev, activeTab, workspace }));
-    },
-    [setOpenSettingModalAtom]
-  );
-
-  if (!blockSuiteWorkspace) {
-    return null;
-  }
-  return (
-    <SettingModal
-      open={open}
-      activeTab={activeTab || 'appearance'}
-      workspace={workspace}
-      onSettingClick={onSettingClick}
-      setOpen={open => {
-        setOpenSettingModalAtom(prev => ({ ...prev, open }));
-      }}
     />
   );
 };
@@ -356,7 +319,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(() => {
-    setOpenSettingModalAtom({ activeTab: 'appearance', open: true });
+    setOpenSettingModalAtom({
+      activeTab: 'appearance',
+      workspace: null,
+      open: true,
+    });
   }, [setOpenSettingModalAtom]);
 
   const resizing = useAtomValue(appSidebarResizingAtom);
@@ -449,7 +416,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       </DndContext>
       <QuickSearch />
       {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
-      <Setting />
     </>
   );
 };
