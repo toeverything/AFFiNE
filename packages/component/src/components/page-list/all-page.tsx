@@ -78,6 +78,9 @@ const AllPagesHead = ({
       ),
       showWhen: () => !isPublicWorkspace,
       sortable: false,
+      tableCellStyle: {
+        minWidth: '130px',
+      } satisfies CSSProperties,
       styles: {
         justifyContent: 'flex-end',
       } satisfies CSSProperties,
@@ -88,34 +91,44 @@ const AllPagesHead = ({
       <TableHeadRow>
         {titleList
           .filter(({ showWhen = () => true }) => showWhen())
-          .map(({ key, content, proportion, sortable = true, styles }) => (
-            <TableCell
-              key={key}
-              proportion={proportion}
-              active={sorter.key === key}
-              onClick={
-                sortable
-                  ? () => sorter.shiftOrder(key as keyof ListData)
-                  : undefined
-              }
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  ...styles,
-                }}
+          .map(
+            ({
+              key,
+              content,
+              proportion,
+              sortable = true,
+              styles,
+              tableCellStyle,
+            }) => (
+              <TableCell
+                key={key}
+                proportion={proportion}
+                active={sorter.key === key}
+                style={{ ...tableCellStyle }}
+                onClick={
+                  sortable
+                    ? () => sorter.shiftOrder(key as keyof ListData)
+                    : undefined
+                }
               >
-                {content}
-                {sorter.key === key &&
-                  (sorter.order === 'asc' ? (
-                    <ArrowUpBigIcon width={24} height={24} />
-                  ) : (
-                    <ArrowDownBigIcon width={24} height={24} />
-                  ))}
-              </div>
-            </TableCell>
-          ))}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    ...styles,
+                  }}
+                >
+                  {content}
+                  {sorter.key === key &&
+                    (sorter.order === 'asc' ? (
+                      <ArrowUpBigIcon width={24} height={24} />
+                    ) : (
+                      <ArrowDownBigIcon width={24} height={24} />
+                    ))}
+                </div>
+              </TableCell>
+            )
+          )}
       </TableHeadRow>
       <CollectionBar
         columnsCount={titleList.length}
