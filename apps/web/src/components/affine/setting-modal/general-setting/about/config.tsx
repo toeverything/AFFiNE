@@ -4,6 +4,7 @@ import {
   RedditIcon,
   TelegramIcon,
   TwitterIcon,
+  YouTubeIcon,
 } from './icons';
 
 export const relatedLinks = [
@@ -13,14 +14,19 @@ export const relatedLinks = [
     link: 'https://github.com/toeverything/AFFiNE',
   },
   {
-    icon: <RedditIcon />,
-    title: 'Reddit',
-    link: 'https://www.reddit.com/r/Affine/',
-  },
-  {
     icon: <TwitterIcon />,
     title: 'Twitter',
     link: 'https://twitter.com/AffineOfficial',
+  },
+  {
+    icon: <DiscordIcon />,
+    title: 'Discord',
+    link: 'https://discord.gg/Arn7TqJBvG',
+  },
+  {
+    icon: <YouTubeIcon />,
+    title: 'YouTube',
+    link: 'https://www.youtube.com/@affinepro',
   },
   {
     icon: <TelegramIcon />,
@@ -28,8 +34,8 @@ export const relatedLinks = [
     link: 'https://t.me/affineworkos',
   },
   {
-    icon: <DiscordIcon />,
-    title: 'Discord',
-    link: 'https://discord.gg/Arn7TqJBvG',
+    icon: <RedditIcon />,
+    title: 'Reddit',
+    link: 'https://www.reddit.com/r/Affine/',
   },
 ];
