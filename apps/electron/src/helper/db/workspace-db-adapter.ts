@@ -52,9 +52,11 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   };
 
   setupListener(docId?: string) {
+    logger.debug('WorkspaceSQLiteDB: setupListener', this.workspaceId, docId);
     const doc = this.getDoc(docId);
     if (doc) {
       const onUpdate = async (update: Uint8Array, origin: YOrigin) => {
+        logger.debug('onUpdate', this.workspaceId, docId, update.length);
         const insertRows = [{ data: update, docId }];
         if (origin === 'renderer') {
           await this.addUpdateToSQLite(insertRows);
@@ -68,7 +70,11 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
           logger.debug('external update', this.workspaceId);
         }
       };
+      doc.subdocs.forEach(subdoc => {
+        this.setupListener(subdoc.guid);
+      });
       const onSubdocs = ({ added }: { added: Set<Y.Doc> }) => {
+        logger.info('onSubdocs', this.workspaceId, docId, added);
         added.forEach(subdoc => {
           this.setupListener(subdoc.guid);
         });

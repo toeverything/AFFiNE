@@ -27,11 +27,11 @@ export const ModalCloseButton = ({
   ...props
 }: ModalCloseButtonProps) => {
   return absolute ? (
-    <StyledIconButton {...props}>
+    <StyledIconButton data-testid="modal-close-button" {...props}>
       <CloseIcon />
     </StyledIconButton>
   ) : (
-    <IconButton {...props}>
+    <IconButton data-testid="modal-close-button" {...props}>
       <CloseIcon />
     </IconButton>
   );
