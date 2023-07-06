@@ -2,6 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
+import { checkDatePicker, selectDateFromDatePicker } from '../libs/filter';
 import { openHomePage } from '../libs/load-page';
 import {
   closeDownloadTip,
@@ -101,6 +102,27 @@ test('edit collection', async ({ page }) => {
   await editCollection.click();
   const title = page.getByTestId('input-collection-title');
   await title.fill('123');
+  await page.getByTestId('save-collection').click();
+  await page.waitForTimeout(100);
+  expect(await first.textContent()).toBe('123');
+});
+test('edit collection and change filter date', async ({ page }) => {
+  await createAndPinCollection(page);
+  const collections = page.getByTestId('collections');
+  const items = collections.getByTestId('collection-item');
+  expect(await items.count()).toBe(1);
+  const first = items.first();
+  await first.getByTestId('collection-options').click();
+  const editCollection = page
+    .getByTestId('collection-option')
+    .getByText('Edit Filter');
+  await editCollection.click();
+  const title = page.getByTestId('input-collection-title');
+  await title.fill('123');
+  const today = new Date();
+  await page.locator('[data-testid="filter-arg"]').locator('input').click();
+  await selectDateFromDatePicker(page, today);
+  await checkDatePicker(page, today);
   await page.getByTestId('save-collection').click();
   await page.waitForTimeout(100);
   expect(await first.textContent()).toBe('123');

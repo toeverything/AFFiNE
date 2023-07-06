@@ -2,11 +2,24 @@ import { test } from '@affine-test/kit/playwright';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
+import {
+  changeFilter,
+  checkDatePicker,
+  checkDatePickerMonth,
+  checkFilterName,
+  checkPagesCount,
+  clickDatePicker,
+  createFirstFilter,
+  createPageWithTag,
+  fillDatePicker,
+  selectDateFromDatePicker,
+  selectMonthFromMonthPicker,
+  selectTag,
+} from '../libs/filter';
 import { openHomePage } from '../libs/load-page';
 import {
   closeDownloadTip,
   getBlockSuiteEditorTitle,
-  newPage,
   waitEditorLoad,
 } from '../libs/page-logic';
 import { clickSideBarAllPageButton } from '../libs/sidebar';
@@ -58,22 +71,6 @@ test('all page can create new edgeless page', async ({ page }) => {
   await expect(page.locator('affine-edgeless-page')).toBeVisible();
 });
 
-const createFirstFilter = async (page: Page, name: string) => {
-  await page
-    .locator('[data-testid="editor-header-items"]')
-    .locator('button', { hasText: 'Filter' })
-    .click();
-  await page
-    .locator('[data-testid="variable-select-item"]', { hasText: name })
-    .click();
-};
-
-const checkFilterName = async (page: Page, name: string) => {
-  await expect(
-    await page.locator('[data-testid="filter-name"]').textContent()
-  ).toBe(name);
-};
-
 test('allow creation of filters by favorite', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -89,51 +86,6 @@ test('allow creation of filters by favorite', async ({ page }) => {
   ).toBe('false');
 });
 
-const monthNames = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-const dateFormat = (date: Date) => {
-  const month = monthNames[date.getMonth()];
-  const day = date.getDate().toString().padStart(2, '0');
-  return `${month} ${day}`;
-};
-const checkPagesCount = async (page: Page, count: number) => {
-  await expect((await page.locator('[data-testid="title"]').all()).length).toBe(
-    count
-  );
-};
-const checkDatePicker = async (page: Page, date: Date) => {
-  expect(
-    await page
-      .locator('[data-testid="filter-arg"]')
-      .locator('input')
-      .inputValue()
-  ).toBe(dateFormat(date));
-};
-const clickDatePicker = async (page: Page) => {
-  await page.locator('[data-testid="filter-arg"]').locator('input').click();
-};
-const clickMonthPicker = async (page: Page) => {
-  await page.locator('[data-testid="month-picker-button"]').click();
-};
-const fillDatePicker = async (page: Page, date: Date) => {
-  await page
-    .locator('[data-testid="filter-arg"]')
-    .locator('input')
-    .fill(dateFormat(date));
-};
 test('allow creation of filters by created time', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -162,53 +114,6 @@ test('allow creation of filters by created time', async ({ page }) => {
   await checkDatePicker(page, tomorrow);
   await checkPagesCount(page, 1);
 });
-
-const checkIsLastMonth = (date: Date): boolean => {
-  const targetMonth = date.getMonth();
-  const currentMonth = new Date().getMonth();
-  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-  return targetMonth === lastMonth;
-};
-const checkIsNextMonth = (date: Date): boolean => {
-  const targetMonth = date.getMonth();
-  const currentMonth = new Date().getMonth();
-  const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-  return targetMonth === nextMonth;
-};
-const selectDateFromDatePicker = async (page: Page, date: Date) => {
-  const datePickerPopup = page.locator('.react-datepicker-popper');
-  const day = date.getDate().toString();
-  const month = date.toLocaleString('en-US', { month: 'long' });
-  const weekday = date.toLocaleString('en-US', { weekday: 'long' });
-  const year = date.getFullYear().toString();
-  // Open the date picker popup
-  await clickDatePicker(page);
-  const selectDate = async (): Promise<void> => {
-    if (checkIsLastMonth(date)) {
-      const lastMonthButton = page.locator(
-        '[data-testid="date-picker-prev-button"]'
-      );
-      await lastMonthButton.click();
-    } else if (checkIsNextMonth(date)) {
-      const nextMonthButton = page.locator(
-        '[data-testid="date-picker-next-button"]'
-      );
-      await nextMonthButton.click();
-    }
-    const map = ['th', 'st', 'nd', 'rd'];
-    // Click on the day cell
-    const dateCell = page.locator(
-      `[aria-disabled="false"][aria-label="Choose ${weekday}, ${month} ${day}${
-        map[Number.parseInt(day) % 10] ?? 'th'
-      }, ${year}"]`
-    );
-    await dateCell.click();
-  };
-  await selectDate();
-
-  // Wait for the date picker popup to close
-  await datePickerPopup.waitFor({ state: 'hidden' });
-};
 
 test('creation of filters by created time, then click date picker to modify the date', async ({
   page,
@@ -240,46 +145,7 @@ test('creation of filters by created time, then click date picker to modify the 
   await checkDatePicker(page, tomorrow);
   await checkPagesCount(page, 1);
 });
-const checkIsLastYear = (date: Date): boolean => {
-  const targetYear = date.getFullYear();
-  const currentYear = new Date().getFullYear();
-  const lastYear = currentYear - 1;
-  return targetYear === lastYear;
-};
-const checkIsNextYear = (date: Date): boolean => {
-  const targetYear = date.getFullYear();
-  const currentYear = new Date().getFullYear();
-  const nextYear = currentYear + 1;
-  return targetYear === nextYear;
-};
-const selectMonthFromMonthPicker = async (page: Page, date: Date) => {
-  const month = date.toLocaleString('en-US', { month: 'long' });
-  const year = date.getFullYear().toString();
-  // Open the month picker popup
-  await clickMonthPicker(page);
-  const selectMonth = async (): Promise<void> => {
-    if (checkIsLastYear(date)) {
-      const lastYearButton = page.locator(
-        '[data-testid="month-picker-prev-button"]'
-      );
-      await lastYearButton.click();
-    } else if (checkIsNextYear(date)) {
-      const nextYearButton = page.locator(
-        '[data-testid="month-picker-next-button"]'
-      );
-      await nextYearButton.click();
-    }
-    // Click on the day cell
-    const monthCell = page.locator(`[aria-label="Choose ${month} ${year}"]`);
-    await monthCell.click();
-  };
-  await selectMonth();
-};
-const checkDatePickerMonth = async (page: Page, date: Date) => {
-  expect(
-    await page.locator('[data-testid="date-picker-current-month"]').innerText()
-  ).toBe(date.toLocaleString('en-US', { month: 'long' }));
-};
+
 test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -304,46 +170,6 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await selectMonthFromMonthPicker(page, nextMonth);
   await checkDatePickerMonth(page, nextMonth);
 });
-const createTag = async (page: Page, name: string) => {
-  await page.keyboard.type(name);
-  await page.keyboard.press('ArrowUp');
-  await page.keyboard.press('Enter');
-};
-const createPageWithTag = async (
-  page: Page,
-  options: {
-    title: string;
-    tags: string[];
-  }
-) => {
-  await page.getByTestId('all-pages').click();
-  await newPage(page);
-  await getBlockSuiteEditorTitle(page).click();
-  await getBlockSuiteEditorTitle(page).fill('test page');
-  await page.locator('affine-page-meta-data').click();
-  await page.locator('.add-tag').click();
-  for (const name of options.tags) {
-    await createTag(page, name);
-  }
-  await page.keyboard.press('Escape');
-};
-const changeFilter = async (page: Page, to: string | RegExp) => {
-  await page.getByTestId('filter-name').click();
-  await page
-    .getByTestId('filter-name-select')
-    .locator('button', { hasText: to })
-    .click();
-};
-
-async function selectTag(page: Page, name: string | RegExp) {
-  await page.getByTestId('filter-arg').click();
-  await page
-    .getByTestId('multi-select')
-    .getByTestId('select-option')
-    .getByText(name)
-    .click();
-  await page.getByTestId('filter-arg').click();
-}
 
 test('allow creation of filters by tags', async ({ page }) => {
   await openHomePage(page);
