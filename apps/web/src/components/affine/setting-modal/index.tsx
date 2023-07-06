@@ -87,7 +87,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
         <div className="wrapper">
           <div className="content">
             {activeTab === 'workspace' && workspace ? (
-              <WorkSpaceSetting workspace={workspace} />
+              <WorkSpaceSetting key={workspace.id} workspace={workspace} />
             ) : null}
             {generalSettingList.find(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
