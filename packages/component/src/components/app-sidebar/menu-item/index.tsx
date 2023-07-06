@@ -19,6 +19,10 @@ export interface MenuLinkItemProps
   extends MenuItemProps,
     Pick<LinkProps, 'href'> {}
 
+const stopPropagation: React.MouseEventHandler = e => {
+  e.stopPropagation();
+};
+
 export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
   (
     {
@@ -44,6 +48,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       <div
         ref={ref}
         {...props}
+        onClick={onClick}
         className={clsx([styles.root, props.className])}
         data-active={active}
         data-disabled={disabled}
@@ -69,15 +74,16 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
             )}
             {React.cloneElement(icon, {
               className: clsx([styles.icon, icon.props.className]),
-              onClick: onClick,
             })}
           </div>
         )}
 
-        <div onClick={onClick} className={styles.content}>
-          {children}
-        </div>
-        {postfix}
+        <div className={styles.content}>{children}</div>
+        {postfix ? (
+          <div className={styles.postfix} onClick={stopPropagation}>
+            {postfix}
+          </div>
+        ) : null}
       </div>
     );
   }
