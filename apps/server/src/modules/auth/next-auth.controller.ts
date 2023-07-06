@@ -28,7 +28,10 @@ const BASE_URL = '/api/auth/';
 export class NextAuthController {
   private readonly nextAuthOptions: AuthOptions;
 
-  constructor(readonly config: Config, readonly prisma: PrismaService) {
+  constructor(
+    readonly config: Config,
+    readonly prisma: PrismaService
+  ) {
     const prismaAdapter = PrismaAdapter(prisma);
     // createUser exists in the adapter
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

@@ -1,36 +1,36 @@
 import { styled, textEllipsis } from '../../styles';
 import type { TableCellProps } from './interface';
 
-export const StyledTable = styled('table')<{ showBorder?: boolean }>(
-  ({ showBorder }) => {
-    return {
-      fontSize: 'var(--affine-font-base)',
-      color: 'var(--affine-text-primary-color)',
-      tableLayout: 'fixed',
-      width: '100%',
-      borderCollapse: 'collapse',
-      borderSpacing: '0',
+export const StyledTable = styled('table')<{ showBorder?: boolean }>(({
+  showBorder,
+}) => {
+  return {
+    fontSize: 'var(--affine-font-base)',
+    color: 'var(--affine-text-primary-color)',
+    tableLayout: 'fixed',
+    width: '100%',
+    borderCollapse: 'collapse',
+    borderSpacing: '0',
 
-      ...(typeof showBorder === 'boolean'
-        ? {
-            thead: {
-              '::after': {
-                display: 'block',
-                position: 'absolute',
-                content: '""',
-                width: '100%',
-                height: '1px',
-                left: 0,
-                background: 'var(--affine-border-color)',
-                transition: 'opacity .15s',
-                opacity: showBorder ? 1 : 0,
-              },
+    ...(typeof showBorder === 'boolean'
+      ? {
+          thead: {
+            '::after': {
+              display: 'block',
+              position: 'absolute',
+              content: '""',
+              width: '100%',
+              height: '1px',
+              left: 0,
+              background: 'var(--affine-border-color)',
+              transition: 'opacity .15s',
+              opacity: showBorder ? 1 : 0,
             },
-          }
-        : {}),
-    };
-  }
-);
+          },
+        }
+      : {}),
+  };
+});
 
 export const StyledTableBody = styled('tbody')(() => {
   return {
@@ -43,31 +43,29 @@ export const StyledTableCell = styled('td')<
     TableCellProps,
     'ellipsis' | 'align' | 'proportion' | 'active' | 'onClick'
   >
->(
-  ({
-    align = 'left',
-    ellipsis = false,
-    proportion,
-    active = false,
-    onClick,
-  }) => {
-    const width = proportion ? `${proportion * 100}%` : 'auto';
-    return {
-      width,
-      height: '52px',
-      paddingLeft: '16px',
-      boxSizing: 'border-box',
-      textAlign: align,
-      verticalAlign: 'middle',
-      whiteSpace: 'nowrap',
-      userSelect: 'none',
-      fontSize: 'var(--affine-font-sm)',
-      ...(active ? { color: 'var(--affine-text-primary-color)' } : {}),
-      ...(ellipsis ? textEllipsis(1) : {}),
-      ...(onClick ? { cursor: 'pointer' } : {}),
-    };
-  }
-);
+>(({
+  align = 'left',
+  ellipsis = false,
+  proportion,
+  active = false,
+  onClick,
+}) => {
+  const width = proportion ? `${proportion * 100}%` : 'auto';
+  return {
+    width,
+    height: '52px',
+    paddingLeft: '16px',
+    boxSizing: 'border-box',
+    textAlign: align,
+    verticalAlign: 'middle',
+    whiteSpace: 'nowrap',
+    userSelect: 'none',
+    fontSize: 'var(--affine-font-sm)',
+    ...(active ? { color: 'var(--affine-text-primary-color)' } : {}),
+    ...(ellipsis ? textEllipsis(1) : {}),
+    ...(onClick ? { cursor: 'pointer' } : {}),
+  };
+});
 
 export const StyledTableHead = styled('thead')(() => {
   return {

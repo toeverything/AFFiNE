@@ -1,10 +1,12 @@
 import { styled } from '../../styles';
 import type { ButtonProps } from './interface';
 import { getButtonColors } from './utils';
-export const LoadingContainer = styled('div')<Pick<ButtonProps, 'type'>>(
-  ({ theme, type = 'default' }) => {
-    const { color } = getButtonColors(theme, type, false);
-    return `
+export const LoadingContainer = styled('div')<Pick<ButtonProps, 'type'>>(({
+  theme,
+  type = 'default',
+}) => {
+  const { color } = getButtonColors(theme, type, false);
+  return `
     margin: 0px auto;
     width: 38px;
     text-align: center;
@@ -45,8 +47,7 @@ export const LoadingContainer = styled('div')<Pick<ButtonProps, 'type'>>(
       }
     }
   `;
-  }
-);
+});
 
 export const Loading = ({ type }: Pick<ButtonProps, 'type'>) => {
   return (

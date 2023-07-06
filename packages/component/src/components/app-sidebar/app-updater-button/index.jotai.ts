@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 function rpcToObservable<
   T,
   H extends () => Promise<T>,
-  E extends (callback: (t: T) => void) => () => void
+  E extends (callback: (t: T) => void) => () => void,
 >(
   initialValue: T,
   {
