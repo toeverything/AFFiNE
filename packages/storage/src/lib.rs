@@ -217,6 +217,24 @@ impl Storage {
     map_err!(self.blobs().put_blob(Some(workspace_id), blob).await)
   }
 
+  #[napi]
+  pub async fn delete_blob(&self, workspace_id: String, name: String) -> Result<()> {
+    let (id, params) = {
+      let path = PathBuf::from(name.clone());
+      let ext = path
+        .extension()
+        .and_then(|s| s.to_str().map(|s| s.to_string()));
+      let id = path
+        .file_stem()
+        .and_then(|s| s.to_str().map(|s| s.to_string()))
+        .unwrap_or(name);
+
+      (id, ext.map(|ext| HashMap::from([("format".into(), ext)])))
+    };
+
+    map_err!(self.blobs().delete_blob(Some(workspace_id), id, params).await)
+  }
+
   /// Workspace size taken by blobs.
   #[napi]
   pub async fn blobs_size(&self, workspace_id: String) -> Result<i64> {
