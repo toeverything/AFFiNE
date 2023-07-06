@@ -112,6 +112,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         <NewWorkspaceSettingDetail
           onDeleteWorkspace={onDeleteWorkspace}
           workspace={currentWorkspace}
+          key={currentWorkspace.id}
           onTransferWorkspace={onTransformWorkspace}
         />
       );
