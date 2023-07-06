@@ -1,5 +1,3 @@
-import type { Storage } from '@affine/storage';
-import { Inject } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,7 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
-import { StorageProvide } from '../../../storage';
+import { PrismaService } from '../../../prisma';
 import { uint8ArrayToBase64 } from '../utils';
 import { WorkspaceService } from './workspace';
 
@@ -19,7 +17,7 @@ import { WorkspaceService } from './workspace';
 export class EventsGateway {
   constructor(
     private readonly storageService: WorkspaceService,
-    @Inject(StorageProvide) private readonly storage: Storage
+    private prisma: PrismaService
   ) {}
 
   @WebSocketServer()
@@ -53,7 +51,15 @@ export class EventsGateway {
     const update = Buffer.from(message.update, 'base64');
     this.server.to(message.workspaceId).emit('server-update', message);
 
-    await this.storage.sync(message.workspaceId, message.guid, update);
+    // TODO replace with publishing directly to message queue
+    await this.prisma.doc.create({
+      data: {
+        workspaceId: message.workspaceId,
+        guid: message.guid,
+        is_workspace: message.workspaceId == message.guid,
+        blob: update,
+      },
+    });
   }
 
   @SubscribeMessage('init-awareness')

@@ -1,14 +1,13 @@
-import type { Storage } from '@affine/storage';
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Doc } from 'yjs';
 import * as Y from 'yjs';
 
-import { StorageProvide } from '../../../storage';
+import { PrismaService } from '../../../prisma';
 import { assertExists } from '../utils';
 
 @Injectable()
 export class WorkspaceService {
-  constructor(@Inject(StorageProvide) private readonly storage: Storage) {}
+  constructor(private prisma: PrismaService) {}
 
   async getDocsFromWorkspaceId(workspaceId: string): Promise<
     Array<{
@@ -44,14 +43,19 @@ export class WorkspaceService {
   }
 
   async getDocFromGuid(guid: string): Promise<Doc | null> {
+    const updates = await this.prisma.doc.findMany({
+      where: {
+        guid: guid,
+      },
+    });
+
+    if (!updates.length) return null;
+
     const doc = new Y.Doc({ guid });
-    try {
-      // TODO load method return null if doc doesn't exist, error throwing is not needed.
-      const update = await this.storage.load(guid);
-      update && Y.applyUpdate(doc, update);
-      return doc;
-    } catch (e) {
-      return null;
+    for (const update of updates) {
+      Y.applyUpdate(doc, update.blob);
     }
+
+    return doc;
   }
 }
