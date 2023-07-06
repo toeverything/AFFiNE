@@ -30,10 +30,9 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230705162600-2cb608e4-nightly
     "@blocksuite/global": 0.0.0-20230705162600-2cb608e4-nightly
     "@blocksuite/store": 0.0.0-20230705162600-2cb608e4-nightly
-    "@playwright/test": =1.33.0
+    "@playwright/test": ^1.35.1
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
-    playwright: =1.33.0
     serve: ^14.2.0
     vitest: ^0.32.2
   languageName: unknown
@@ -49,11 +48,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine-test/kit@workspace:tests/kit"
   dependencies:
-    "@playwright/test": =1.33.0
-    playwright: =1.33.0
+    "@playwright/test": ^1.35.1
   peerDependencies:
     "@playwright/test": "*"
-    playwright: "*"
   languageName: unknown
   linkType: soft
 
@@ -245,7 +242,6 @@ __metadata:
     link-preview-js: ^3.0.4
     lodash-es: ^4.17.21
     nanoid: ^4.0.2
-    playwright: =1.33.0
     rxjs: ^7.8.1
     ts-node: ^10.9.1
     undici: ^5.22.1
@@ -254,7 +250,6 @@ __metadata:
     yjs: ^13.6.6
     zx: ^7.2.2
   peerDependencies:
-    playwright: "*"
     ts-node: "*"
   languageName: unknown
   linkType: soft
@@ -339,7 +334,7 @@ __metadata:
     "@magic-works/i18n-codegen": ^0.5.0
     "@nx/vite": 16.4.3
     "@perfsee/sdk": ^1.8.3
-    "@playwright/test": =1.33.0
+    "@playwright/test": ^1.35.1
     "@taplo/cli": ^0.5.2
     "@testing-library/react": ^14.0.0
     "@toeverything/infra": "workspace:*"
@@ -7956,19 +7951,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:=1.33.0":
-  version: 1.33.0
-  resolution: "@playwright/test@npm:1.33.0"
+"@playwright/test@npm:^1.35.1":
+  version: 1.35.1
+  resolution: "@playwright/test@npm:1.35.1"
   dependencies:
     "@types/node": "*"
     fsevents: 2.3.2
-    playwright-core: 1.33.0
+    playwright-core: 1.35.1
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     playwright: cli.js
-  checksum: cec3215fc92c1cb9f5bfba357ea1cbe97b54979ab82f9d34a2287b1687cda5e0966b8ea7290dcd35416e18668e56d5781b6b8c4cec64baf12f3ae8dde0f68f5e
+  checksum: 3509d2f2c7397f9b0d4f49088cab8625f17d186f7e9b3389ddebf7c52ee8aae6407eab48f66b300b7bf6a33f6e3533fd5951e72bfdb001b68838af98596d5a53
   languageName: node
   linkType: hard
 
@@ -25622,32 +25617,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.33.0":
-  version: 1.33.0
-  resolution: "playwright-core@npm:1.33.0"
-  bin:
-    playwright: cli.js
-  checksum: 5fb7bda06a8b73b56b85b5a0b8f711211dde57a375d9379289e22239b2de879c6d93c8fdc9ba44b932bf100914ab1ca1a55697ad88440fdd0a39101fc020b77f
-  languageName: node
-  linkType: hard
-
 "playwright-core@npm:1.35.1, playwright-core@npm:>=1.2.0":
   version: 1.35.1
   resolution: "playwright-core@npm:1.35.1"
   bin:
     playwright-core: cli.js
   checksum: 179abc0051f00474e528935b507fa8cedc986b2803b020d7679878ba28cdd7036ad5a779792aad2ad281f8dc625eb1d2fb77663cb8de0d20c7ffbda7c18febdd
-  languageName: node
-  linkType: hard
-
-"playwright@npm:=1.33.0":
-  version: 1.33.0
-  resolution: "playwright@npm:1.33.0"
-  dependencies:
-    playwright-core: 1.33.0
-  bin:
-    playwright: cli.js
-  checksum: fb3934c56ed749cf412ea35b82052f013872d7f7b7747ab7042580af473dfc1b038956a31c132ee8c0098f74150c75e2073e9c737fd4c1ed54700a23fffc079f
   languageName: node
   linkType: hard
 
