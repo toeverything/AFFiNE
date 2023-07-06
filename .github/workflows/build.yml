@@ -645,3 +645,5 @@ jobs:
           OAUTH_EMAIL_LOGIN: ${{ secrets.OAUTH_EMAIL_LOGIN }}
           OAUTH_EMAIL_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
+          AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
