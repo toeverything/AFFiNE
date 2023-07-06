@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DoneIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { type FC, useCallback, useRef, useState } from 'react';
+import { type FC, useCallback, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { Upload } from '../../pure/file-upload';
@@ -38,16 +38,12 @@ export const ProfilePanel: FC<{
     workspace.blockSuiteWorkspace
   );
 
-  const [prevName, setPrevName] = useState(
-    workspace.blockSuiteWorkspace.meta.name
-  );
   const [name, setName] = useBlockSuiteWorkspaceName(
     workspace.blockSuiteWorkspace
   );
 
   const [input, setInput] = useState<string>(name);
 
-  const inputRef = useRef<HTMLInputElement>(null);
   const handleUpdateWorkspaceName = useCallback(
     (name: string) => {
       setName(name);
@@ -55,13 +51,6 @@ export const ProfilePanel: FC<{
     },
     [setName, t]
   );
-
-  if (prevName !== name) {
-    setPrevName(name);
-    if (inputRef.current) {
-      inputRef.current.value = name;
-    }
-  }
 
   return (
     <div className={style.profileWrapper}>
@@ -81,7 +70,6 @@ export const ProfilePanel: FC<{
       </div>
       <div className={style.profileHandlerWrapper}>
         <Input
-          ref={inputRef}
           width={280}
           height={32}
           defaultValue={input}
