@@ -44,6 +44,19 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           },
           from: config.auth.email.sender,
         }),
+      ],
+      // @ts-expect-error Third part library type mismatch
+      adapter: prismaAdapter,
+      debug: !config.prod,
+      session: {
+        strategy: config.prod ? 'database' : 'jwt',
+      },
+      // @ts-expect-error Third part library type mismatch
+      logger: console,
+    };
+
+    if (!config.prod) {
+      nextAuthOptions.providers.push(
         // @ts-expect-error esm interop issue
         Credentials.default({
           name: 'Password',
@@ -72,14 +85,9 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             }
             return body;
           },
-        }),
-      ],
-      // @ts-expect-error Third part library type mismatch
-      adapter: prismaAdapter,
-      debug: !config.prod,
-      // @ts-expect-error Third part library type mismatch
-      logger: console,
-    };
+        })
+      );
+    }
 
     if (config.auth.oauthProviders.github) {
       nextAuthOptions.providers.push(
@@ -158,7 +166,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
 
     nextAuthOptions.callbacks = {
       session: async ({ session, user }) => {
-        if (session.user) {
+        if (user && session.user) {
           // @ts-expect-error Third part library type mismatch
           session.user.id = user.id;
         }
