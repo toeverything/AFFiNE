@@ -166,7 +166,7 @@ export const excludeTip = style({
 });
 
 export const scrollContainer = style({
-  overflow: 'hidden',
+  maxHeight: '70vh',
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
