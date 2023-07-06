@@ -25,10 +25,30 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const createUser = prismaAdapter.createUser!.bind(prismaAdapter);
     prismaAdapter.createUser = async data => {
+      const userData = {
+        name: data.name,
+        email: data.email,
+        avatarUrl: '',
+        emailVerified: data.emailVerified,
+      };
       if (data.email && !data.name) {
-        data.name = data.email.split('@')[0];
+        userData.name = data.email.split('@')[0];
       }
-      return createUser(data);
+      if (data.image) {
+        userData.avatarUrl = data.image;
+      }
+      return createUser(userData);
+    };
+    // getUser exists in the adapter
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const getUser = prismaAdapter.getUser!.bind(prismaAdapter)!;
+    prismaAdapter.getUser = async id => {
+      const result = await getUser(id);
+      if (result) {
+        // @ts-expect-error Third part library type mismatch
+        result.image = result.avatarUrl;
+      }
+      return result;
     };
     const nextAuthOptions: NextAuthOptions = {
       providers: [
@@ -105,6 +125,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         Google.default({
           clientId: config.auth.oauthProviders.google.clientId,
           clientSecret: config.auth.oauthProviders.google.clientSecret,
+          checks: 'nonce',
         })
       );
     }
@@ -126,6 +147,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
               id: user.id,
               name: user.name,
               email: user.email,
+              picture: user.avatarUrl,
               createdAt: user.createdAt.toISOString(),
             },
             iat: now,
@@ -147,17 +169,20 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         if (!token) {
           return null;
         }
-        const { name, email, id } = (
+        const { name, email, id, picture } = (
           await jwtVerify(token, config.auth.publicKey, {
             algorithms: [Algorithm.ES256],
             iss: [config.serverId],
             leeway: config.auth.leeway,
             requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
           })
-        ).data as UserClaim;
+        ).data as Omit<UserClaim, 'avatarUrl'> & {
+          picture: string | undefined;
+        };
         return {
           name,
           email,
+          picture,
           sub: id,
         };
       },
@@ -165,10 +190,16 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     nextAuthOptions.secret ??= config.auth.nextAuthSecret;
 
     nextAuthOptions.callbacks = {
-      session: async ({ session, user }) => {
-        if (user && session.user) {
-          // @ts-expect-error Third part library type mismatch
-          session.user.id = user.id;
+      session: async ({ session, user, token }) => {
+        if (session.user) {
+          if (user) {
+            // @ts-expect-error Third part library type mismatch
+            session.user.id = user.id;
+            session.user.image = user.image;
+          }
+          if (token && token.picture) {
+            session.user.image = token.picture;
+          }
         }
         return session;
       },
