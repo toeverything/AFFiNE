@@ -51,6 +51,7 @@ globalStyle(`${urlButton} span`, {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  fontWeight: '500',
 });
 
 export const fakeWrapper = style({
