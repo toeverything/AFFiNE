@@ -28,36 +28,34 @@ export const StyledIconButton = styled('button', {
   hoverStyle?: CSSProperties;
   // In some cases, button is in a normal hover status, it should be darkened
   fontSize?: CSSProperties['fontSize'];
-}>(
-  ({
+}>(({
+  width,
+  height,
+  borderRadius,
+  disabled,
+  hoverBackground,
+  hoverColor,
+  hoverStyle,
+  fontSize,
+}) => {
+  return {
     width,
     height,
-    borderRadius,
-    disabled,
-    hoverBackground,
-    hoverColor,
-    hoverStyle,
     fontSize,
-  }) => {
-    return {
-      width,
-      height,
-      fontSize,
-      WebkitAppRegion: 'no-drag',
-      color: 'var(--affine-icon-color)',
-      ...displayInlineFlex('center', 'center'),
-      ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
-      transition: 'background .15s',
-      borderRadius,
+    WebkitAppRegion: 'no-drag',
+    color: 'var(--affine-icon-color)',
+    ...displayInlineFlex('center', 'center'),
+    ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
+    transition: 'background .15s',
+    borderRadius,
 
-      ':hover': {
-        color: hoverColor ?? 'var(--affine-icon-color)',
-        background: hoverBackground || 'var(--affine-hover-color)',
-        ...(hoverStyle ?? {}),
-      },
-    };
-  }
-);
+    ':hover': {
+      color: hoverColor ?? 'var(--affine-icon-color)',
+      background: hoverBackground || 'var(--affine-hover-color)',
+      ...(hoverStyle ?? {}),
+    },
+  };
+});
 
 export const StyledTextButton = styled('button', {
   shouldForwardProp: prop => {
@@ -85,42 +83,40 @@ export const StyledTextButton = styled('button', {
     | 'type'
     | 'bold'
   >
->(
-  ({
-    size = 'default',
-    disabled,
-    hoverBackground,
-    hoverColor,
-    hoverStyle,
-    bold = false,
-    shape = 'default',
-    // TODO: Implement type
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    // type = 'default',
-  }) => {
-    const { fontSize, borderRadius, padding, height } = getSize(size);
+>(({
+  size = 'default',
+  disabled,
+  hoverBackground,
+  hoverColor,
+  hoverStyle,
+  bold = false,
+  shape = 'default',
+  // TODO: Implement type
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // type = 'default',
+}) => {
+  const { fontSize, borderRadius, padding, height } = getSize(size);
 
-    return {
-      height,
-      paddingLeft: padding,
-      paddingRight: padding,
-      ...displayInlineFlex('flex-start', 'center'),
-      position: 'relative',
-      ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
-      transition: 'background .15s',
-      // TODO: Implement circle shape
-      borderRadius: shape === 'default' ? borderRadius : height / 2,
-      fontSize,
-      fontWeight: bold ? '500' : '400',
+  return {
+    height,
+    paddingLeft: padding,
+    paddingRight: padding,
+    ...displayInlineFlex('flex-start', 'center'),
+    position: 'relative',
+    ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
+    transition: 'background .15s',
+    // TODO: Implement circle shape
+    borderRadius: shape === 'default' ? borderRadius : height / 2,
+    fontSize,
+    fontWeight: bold ? '500' : '400',
 
-      ':hover': {
-        color: hoverColor ?? 'var(--affine-primary-color)',
-        background: hoverBackground ?? 'var(--affine-hover-color)',
-        ...(hoverStyle ?? {}),
-      },
-    };
-  }
-);
+    ':hover': {
+      color: hoverColor ?? 'var(--affine-primary-color)',
+      background: hoverBackground ?? 'var(--affine-hover-color)',
+      ...(hoverStyle ?? {}),
+    },
+  };
+});
 
 export const StyledButton = styled('button', {
   shouldForwardProp: prop => {
@@ -147,70 +143,68 @@ export const StyledButton = styled('button', {
     | 'bold'
     | 'noBorder'
   >
->(
-  ({
-    theme,
-    size = 'default',
-    disabled,
-    hoverBackground,
-    hoverColor,
-    hoverStyle,
-    bold = false,
-    shape = 'default',
-    type = 'default',
-    noBorder = false,
-  }) => {
-    const { fontSize, borderRadius, padding, height } = getSize(size);
+>(({
+  theme,
+  size = 'default',
+  disabled,
+  hoverBackground,
+  hoverColor,
+  hoverStyle,
+  bold = false,
+  shape = 'default',
+  type = 'default',
+  noBorder = false,
+}) => {
+  const { fontSize, borderRadius, padding, height } = getSize(size);
 
-    return {
-      height,
-      paddingLeft: padding,
-      paddingRight: padding,
-      border: noBorder ? 'none' : '1px solid',
-      WebkitAppRegion: 'no-drag',
-      ...displayInlineFlex('center', 'center'),
-      gap: '8px',
-      position: 'relative',
-      // TODO: disabled color is not decided
-      ...(disabled
-        ? {
-            cursor: 'not-allowed',
-            pointerEvents: 'none',
-            color: 'var(--affine-text-disable-color)',
-          }
-        : {}),
-      transition: 'background .15s',
-      // TODO: Implement circle shape
-      borderRadius: shape === 'default' ? borderRadius : height / 2,
-      fontSize,
-      fontWeight: bold ? '500' : '400',
-      '.affine-button-icon': {
-        color: 'var(--affine-icon-color)',
-      },
-      '.affine-button-icon__fixed': {
-        color: 'var(--affine-icon-color)',
-      },
-      '>span': {
-        width: 'max-content',
-      },
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      ...getButtonColors(theme, type, disabled, {
-        hoverBackground,
-        hoverColor,
-        hoverStyle,
-      }),
+  return {
+    height,
+    paddingLeft: padding,
+    paddingRight: padding,
+    border: noBorder ? 'none' : '1px solid',
+    WebkitAppRegion: 'no-drag',
+    ...displayInlineFlex('center', 'center'),
+    gap: '8px',
+    position: 'relative',
+    // TODO: disabled color is not decided
+    ...(disabled
+      ? {
+          cursor: 'not-allowed',
+          pointerEvents: 'none',
+          color: 'var(--affine-text-disable-color)',
+        }
+      : {}),
+    transition: 'background .15s',
+    // TODO: Implement circle shape
+    borderRadius: shape === 'default' ? borderRadius : height / 2,
+    fontSize,
+    fontWeight: bold ? '500' : '400',
+    '.affine-button-icon': {
+      color: 'var(--affine-icon-color)',
+    },
+    '.affine-button-icon__fixed': {
+      color: 'var(--affine-icon-color)',
+    },
+    '>span': {
+      width: 'max-content',
+    },
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    ...getButtonColors(theme, type, disabled, {
+      hoverBackground,
+      hoverColor,
+      hoverStyle,
+    }),
 
-      // TODO: disabled hover should be implemented
-      //
-      // ':hover': {
-      //   color: hoverColor ?? 'var(--affine-primary-color)',
-      //   background: hoverBackground ?? 'var(--affine-hover-color)',
-      //   '.affine-button-icon':{
-      //
-      //   }
-      //   ...(hoverStyle ?? {}),
-      // },
-    };
-  }
-);
+    // TODO: disabled hover should be implemented
+    //
+    // ':hover': {
+    //   color: hoverColor ?? 'var(--affine-primary-color)',
+    //   background: hoverBackground ?? 'var(--affine-hover-color)',
+    //   '.affine-button-icon':{
+    //
+    //   }
+    //   ...(hoverStyle ?? {}),
+    // },
+  };
+});

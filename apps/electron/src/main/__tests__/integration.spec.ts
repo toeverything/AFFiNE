@@ -21,7 +21,7 @@ type WithoutFirstParameter<T> = T extends (_: any, ...args: infer P) => infer R
 // however this is too hard to be typed correctly
 async function dispatch<
   T extends keyof MainIPCHandlerMap,
-  F extends keyof MainIPCHandlerMap[T]
+  F extends keyof MainIPCHandlerMap[T],
 >(
   namespace: T,
   functionName: F,

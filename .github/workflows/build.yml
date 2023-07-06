@@ -51,7 +51,7 @@ jobs:
       - name: Run Type Check
         run: yarn typecheck
       - name: Run ESLint
-        run: yarn lint:eslint --max-warnings=0 --cache
+        run: yarn lint:eslint --max-warnings=0
       - name: Run Prettier
         # Set nmMode in `actions/setup-node` will modify the .yarnrc.yml
         run: |

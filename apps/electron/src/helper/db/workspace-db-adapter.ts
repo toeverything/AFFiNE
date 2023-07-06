@@ -18,7 +18,10 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
   update$ = new Subject<void>();
 
-  constructor(public override path: string, public workspaceId: string) {
+  constructor(
+    public override path: string,
+    public workspaceId: string
+  ) {
     super(path);
   }
 

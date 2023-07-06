@@ -24,7 +24,7 @@ export type WorkspaceSettingDetailProps = {
   onDeleteWorkspace: (id: string) => Promise<void>;
   onTransferWorkspace: <
     From extends WorkspaceFlavour,
-    To extends WorkspaceFlavour
+    To extends WorkspaceFlavour,
   >(
     from: From,
     to: To,
