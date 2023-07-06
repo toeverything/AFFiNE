@@ -28,7 +28,7 @@ export type LeafPaths<
   T,
   Path extends string = '',
   MaxDepth extends string = '...',
-  Depth extends string = ''
+  Depth extends string = '',
 > = Depth extends MaxDepth
   ? never
   : T extends Record<string | number, any>

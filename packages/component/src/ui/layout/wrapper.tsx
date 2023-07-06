@@ -47,8 +47,22 @@ export const Wrapper = styled('div', {
       'marginBottom',
     ].includes(prop as string);
   },
-})<WrapperProps>(
-  ({
+})<WrapperProps>(({
+  display,
+  width,
+  height,
+  padding,
+  margin,
+  paddingTop,
+  paddingRight,
+  paddingLeft,
+  paddingBottom,
+  marginTop,
+  marginLeft,
+  marginRight,
+  marginBottom,
+}) => {
+  return {
     display,
     width,
     height,
@@ -62,24 +76,8 @@ export const Wrapper = styled('div', {
     marginLeft,
     marginRight,
     marginBottom,
-  }) => {
-    return {
-      display,
-      width,
-      height,
-      padding,
-      margin,
-      paddingTop,
-      paddingRight,
-      paddingLeft,
-      paddingBottom,
-      marginTop,
-      marginLeft,
-      marginRight,
-      marginBottom,
-    };
-  }
-);
+  };
+});
 
 export const FlexWrapper = styled(Wrapper, {
   shouldForwardProp: prop => {
@@ -92,26 +90,24 @@ export const FlexWrapper = styled(Wrapper, {
       'flexGrow',
     ].includes(prop as string);
   },
-})<FlexWrapperProps>(
-  ({
+})<FlexWrapperProps>(({
+  justifyContent,
+  alignItems,
+  wrap = false,
+  flexDirection,
+  flexShrink,
+  flexGrow,
+}) => {
+  return {
+    display: 'flex',
     justifyContent,
     alignItems,
-    wrap = false,
+    flexWrap: wrap ? 'wrap' : 'nowrap',
     flexDirection,
     flexShrink,
     flexGrow,
-  }) => {
-    return {
-      display: 'flex',
-      justifyContent,
-      alignItems,
-      flexWrap: wrap ? 'wrap' : 'nowrap',
-      flexDirection,
-      flexShrink,
-      flexGrow,
-    };
-  }
-);
+  };
+});
 
 // TODO: Complete me
 export const GridWrapper = styled(Wrapper, {

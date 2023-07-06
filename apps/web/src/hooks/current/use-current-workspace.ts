@@ -11,7 +11,7 @@ import type { AllWorkspace } from '../../shared';
 
 export function useCurrentWorkspace(): [
   AllWorkspace,
-  (id: string | null) => void
+  (id: string | null) => void,
 ] {
   const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
   const [, setId] = useAtom(rootCurrentWorkspaceIdAtom);

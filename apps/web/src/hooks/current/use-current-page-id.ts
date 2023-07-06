@@ -6,7 +6,7 @@ import { useAtom } from 'jotai';
  */
 export function useCurrentPageId(): [
   string | null,
-  (newId: string | null) => void
+  (newId: string | null) => void,
 ] {
   return useAtom(rootCurrentPageIdAtom);
 }

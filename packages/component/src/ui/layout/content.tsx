@@ -29,30 +29,28 @@ export const Content = styled('div', {
       'align',
     ].includes(prop as string);
   },
-})<ContentProps>(
-  ({
-    color,
-    fontSize,
-    weight,
-    lineHeight,
-    ellipsis,
-    lineNum,
+})<ContentProps>(({
+  color,
+  fontSize,
+  weight,
+  lineHeight,
+  ellipsis,
+  lineNum,
+  width,
+  maxWidth,
+  align,
+}) => {
+  return {
     width,
     maxWidth,
-    align,
-  }) => {
-    return {
-      width,
-      maxWidth,
-      textAlign: align,
-      display: 'inline-block',
-      color: color ?? 'var(--affine-text-primary-color)',
-      fontSize: fontSize ?? 'var(--affine-font-base)',
-      fontWeight: weight ?? 400,
-      lineHeight: lineHeight ?? 1.5,
-      ...(ellipsis ? textEllipsis(lineNum) : {}),
-    };
-  }
-);
+    textAlign: align,
+    display: 'inline-block',
+    color: color ?? 'var(--affine-text-primary-color)',
+    fontSize: fontSize ?? 'var(--affine-font-base)',
+    fontWeight: weight ?? 400,
+    lineHeight: lineHeight ?? 1.5,
+    ...(ellipsis ? textEllipsis(lineNum) : {}),
+  };
+});
 
 export default Content;

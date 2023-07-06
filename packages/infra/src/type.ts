@@ -2,7 +2,7 @@ import type { TypedEventEmitter } from './core/event-emitter';
 
 export abstract class HandlerManager<
   Namespace extends string,
-  Handlers extends Record<string, PrimitiveHandlers>
+  Handlers extends Record<string, PrimitiveHandlers>,
 > {
   static instance: HandlerManager<string, Record<string, PrimitiveHandlers>>;
   private _app: App<Namespace, Handlers>;
@@ -128,7 +128,7 @@ export type UnwrapManagerHandlerToServerSide<
     frameId: number;
     processId: number;
   },
-  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>
+  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>,
 > = Manager extends HandlerManager<infer _, infer Handlers>
   ? {
       [K in keyof Handlers]: Handlers[K] extends (
@@ -140,7 +140,7 @@ export type UnwrapManagerHandlerToServerSide<
   : never;
 
 export type UnwrapManagerHandlerToClientSide<
-  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>
+  Manager extends HandlerManager<string, Record<string, PrimitiveHandlers>>,
 > = Manager extends HandlerManager<infer _, infer Handlers>
   ? {
       [K in keyof Handlers]: Handlers[K] extends (
@@ -156,7 +156,7 @@ export type UnwrapManagerHandlerToClientSide<
  */
 export type App<
   Namespace extends string,
-  Handlers extends Record<string, PrimitiveHandlers>
+  Handlers extends Record<string, PrimitiveHandlers>,
 > = TypedEventEmitter<{
   [K in keyof Handlers as `${Namespace}:${K & string}`]: Handlers[K];
 }>;
