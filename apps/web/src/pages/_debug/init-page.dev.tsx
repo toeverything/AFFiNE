@@ -1,4 +1,6 @@
+import { BlockHubWrapper } from '@affine/component/block-hub';
 import { MainContainer } from '@affine/component/workspace';
+import { rootBlockHubAtom } from '@affine/workspace/atom';
 import { useRouter } from 'next/router';
 import { lazy, Suspense } from 'react';
 
@@ -23,7 +25,7 @@ const InitPagePage: NextPageWithLayout = () => {
         <Suspense>
           <Editor />
         </Suspense>
-        <div id="toolWrapper" />
+        <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
       </MainContainer>
     </AppContainer>
   );

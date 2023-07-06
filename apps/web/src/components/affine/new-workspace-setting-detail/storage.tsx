@@ -1,18 +1,20 @@
-import { Button, toast } from '@affine/component';
+import { Button, FlexWrapper, toast, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useMemo } from 'react';
 import { type FC, useCallback, useEffect, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
+import * as style from './style.css';
 
-const useShowOpenDBFile = (workspaceId: string) => {
-  const [show, setShow] = useState(false);
+const useDBFileSecondaryPath = (workspaceId: string) => {
+  const [path, setPath] = useState<string | undefined>(undefined);
   useEffect(() => {
     if (window.apis && window.events && environment.isDesktop) {
       window.apis?.workspace
         .getMeta(workspaceId)
         .then(meta => {
-          setShow(!!meta.secondaryDBPath);
+          setPath(meta.secondaryDBPath);
         })
         .catch(err => {
           console.error(err);
@@ -20,12 +22,12 @@ const useShowOpenDBFile = (workspaceId: string) => {
       return window.events.workspace.onMetaChange((newMeta: any) => {
         if (newMeta.workspaceId === workspaceId) {
           const meta = newMeta.meta;
-          setShow(!!meta.secondaryDBPath);
+          setPath(meta.secondaryDBPath);
         }
       });
     }
   }, [workspaceId]);
-  return show;
+  return path;
 };
 
 export const StoragePanel: FC<{
@@ -33,7 +35,7 @@ export const StoragePanel: FC<{
 }> = ({ workspace }) => {
   const workspaceId = workspace.id;
   const t = useAFFiNEI18N();
-  const showOpenFolder = useShowOpenDBFile(workspaceId);
+  const secondaryPath = useDBFileSecondaryPath(workspaceId);
 
   const [moveToInProgress, setMoveToInProgress] = useState<boolean>(false);
   const onRevealDBFile = useCallback(() => {
@@ -65,23 +67,57 @@ export const StoragePanel: FC<{
       });
   }, [moveToInProgress, t, workspaceId]);
 
-  if (!showOpenFolder) {
-    return null;
-  }
+  const rowContent = useMemo(
+    () =>
+      secondaryPath ? (
+        <FlexWrapper justifyContent="space-between">
+          <Tooltip
+            zIndex={1000}
+            content={t['com.affine.settings.storage.db-location.change-hint']()}
+            placement="top-start"
+          >
+            <Button
+              data-testid="move-folder"
+              className={style.urlButton}
+              size="middle"
+              onClick={handleMoveTo}
+            >
+              {secondaryPath}
+            </Button>
+          </Tooltip>
+          <Button
+            size="small"
+            data-testid="reveal-folder"
+            data-disabled={moveToInProgress}
+            onClick={onRevealDBFile}
+          >
+            {t['Open folder']()}
+          </Button>
+        </FlexWrapper>
+      ) : (
+        <Button
+          size="small"
+          data-testid="move-folder"
+          data-disabled={moveToInProgress}
+          onClick={handleMoveTo}
+        >
+          {t['Move folder']()}
+        </Button>
+      ),
+    [handleMoveTo, moveToInProgress, onRevealDBFile, secondaryPath, t]
+  );
+
   return (
     <SettingRow
       name={t['Storage']()}
-      desc={t['Storage Folder Hint']()}
-      spreadCol={false}
+      desc={t[
+        secondaryPath
+          ? 'com.affine.settings.storage.description-alt'
+          : 'com.affine.settings.storage.description'
+      ]()}
+      spreadCol={!secondaryPath}
     >
-      <Button
-        data-testid="move-folder"
-        data-disabled={moveToInProgress}
-        onClick={handleMoveTo}
-      >
-        {t['Move folder']()}
-      </Button>
-      <Button onClick={onRevealDBFile}>{t['Open folder']()}</Button>
+      {rowContent}
     </SettingRow>
   );
 };

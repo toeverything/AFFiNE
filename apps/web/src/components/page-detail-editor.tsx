@@ -4,7 +4,7 @@ import {
   DEFAULT_HELLO_WORLD_PAGE_ID,
   PageNotFoundError,
 } from '@affine/env/constant';
-import { rootCurrentEditorAtom } from '@affine/workspace/atom';
+import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
@@ -22,13 +22,7 @@ import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type { FC, ReactElement } from 'react';
-import React, {
-  memo,
-  startTransition,
-  Suspense,
-  useCallback,
-  useMemo,
-} from 'react';
+import React, { memo, Suspense, useCallback, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
@@ -73,7 +67,7 @@ const EditorWrapper = memo(function EditorWrapper({
     pageSetting?.mode ??
     (DEFAULT_HELLO_WORLD_PAGE_ID === pageId ? 'edgeless' : 'page');
 
-  const setEditor = useSetAtom(rootCurrentEditorAtom);
+  const setBlockHub = useSetAtom(rootBlockHubAtom);
   const [appSettings] = useAppSetting();
 
   assertExists(meta);
@@ -88,18 +82,13 @@ const EditorWrapper = memo(function EditorWrapper({
       page={page}
       onInit={useCallback(
         (page: Page, editor: Readonly<EditorContainer>) => {
-          startTransition(() => {
-            setEditor(editor);
-          });
           onInit(page, editor);
         },
-        [onInit, setEditor]
+        [onInit]
       )}
+      setBlockHub={setBlockHub}
       onLoad={useCallback(
         (page: Page, editor: EditorContainer) => {
-          startTransition(() => {
-            setEditor(editor);
-          });
           page.workspace.setPageMeta(page.id, {
             updatedDate: Date.now(),
           });
@@ -119,7 +108,7 @@ const EditorWrapper = memo(function EditorWrapper({
             dispose();
           };
         },
-        [plugins, onLoad, setEditor]
+        [plugins, onLoad]
       )}
     />
   );
