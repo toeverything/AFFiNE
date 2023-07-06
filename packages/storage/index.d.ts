@@ -23,10 +23,14 @@ export class Storage {
   syncWithGuid(workspaceId: string, update: Buffer): Promise<void>;
   /** Load doc as update buffer. */
   load(guid: string): Promise<Buffer | null>;
+  /** List all blobs in a workspace. */
+  listBlobs(workspaceId?: string | undefined | null): Promise<Array<string>>;
   /** Fetch a workspace blob. */
-  blob(workspaceId: string, name: string): Promise<Blob | null>;
+  getBlob(workspaceId: string, name: string): Promise<Blob | null>;
   /** Upload a blob into workspace storage. */
   uploadBlob(workspaceId: string, blob: Buffer): Promise<string>;
+  /** Delete a blob from workspace storage. */
+  deleteBlob(workspaceId: string, hash: string): Promise<boolean>;
   /** Workspace size taken by blobs. */
   blobsSize(workspaceId: string): Promise<number>;
 }
