@@ -11,6 +11,8 @@ const {
   OAUTH_EMAIL_SENDER,
   OAUTH_EMAIL_LOGIN,
   OAUTH_EMAIL_PASSWORD,
+  AFFINE_GOOGLE_CLIENT_ID,
+  AFFINE_GOOGLE_CLIENT_SECRET,
 } = process.env;
 
 const createHelmCommand = ({ isDryRun }) => {
