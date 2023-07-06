@@ -1,6 +1,7 @@
 import { Button, FlexWrapper, toast, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useMemo } from 'react';
 import { type FC, useCallback, useEffect, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
@@ -66,40 +67,44 @@ export const StoragePanel: FC<{
       });
   }, [moveToInProgress, t, workspaceId]);
 
-  const rowContent = secondaryPath ? (
-    <FlexWrapper justifyContent="space-between">
-      <Tooltip
-        zIndex={1000}
-        content={t['com.affine.settings.storage.db-location.change-hint']()}
-        placement="top-start"
-      >
+  const rowContent = useMemo(
+    () =>
+      secondaryPath ? (
+        <FlexWrapper justifyContent="space-between">
+          <Tooltip
+            zIndex={1000}
+            content={t['com.affine.settings.storage.db-location.change-hint']()}
+            placement="top-start"
+          >
+            <Button
+              data-testid="move-folder"
+              className={style.urlButton}
+              size="middle"
+              onClick={handleMoveTo}
+            >
+              {secondaryPath}
+            </Button>
+          </Tooltip>
+          <Button
+            size="small"
+            data-testid="reveal-folder"
+            data-disabled={moveToInProgress}
+            onClick={onRevealDBFile}
+          >
+            {t['Open folder']()}
+          </Button>
+        </FlexWrapper>
+      ) : (
         <Button
+          size="small"
           data-testid="move-folder"
-          className={style.urlButton}
-          size="middle"
+          data-disabled={moveToInProgress}
           onClick={handleMoveTo}
         >
-          {secondaryPath}
+          {t['Move folder']()}
         </Button>
-      </Tooltip>
-      <Button
-        size="small"
-        data-testid="reveal-folder"
-        data-disabled={moveToInProgress}
-        onClick={onRevealDBFile}
-      >
-        {t['Open folder']()}
-      </Button>
-    </FlexWrapper>
-  ) : (
-    <Button
-      size="small"
-      data-testid="move-folder"
-      data-disabled={moveToInProgress}
-      onClick={handleMoveTo}
-    >
-      {t['Move folder']()}
-    </Button>
+      ),
+    [handleMoveTo, moveToInProgress, onRevealDBFile, secondaryPath, t]
   );
 
   return (
