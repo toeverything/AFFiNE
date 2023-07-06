@@ -1,4 +1,3 @@
----
 apiVersion: v1
 kind: Secret
 metadata:
@@ -10,8 +9,8 @@ data:
   password: "{{ .Values.app.oauth.email.password | b64enc }}"
   server: "{{ .Values.app.oauth.email.server | b64enc }}"
   port: "{{ .Values.app.oauth.email.port | b64enc }}"
-{{- if .Values.app.oauth.google.enabled -}}
 ---
+{{- if .Values.app.oauth.google.enabled -}}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -21,8 +20,8 @@ data:
   clientId: "{{ .Values.app.oauth.google.clientId | b64enc }}"
   clientSecret: "{{ .Values.app.oauth.google.clientSecret | b64enc }}"
 {{- end }}
-{{- if .Values.app.oauth.github.enabled -}}
 ---
+{{- if .Values.app.oauth.github.enabled -}}
 apiVersion: v1
 kind: Secret
 metadata:
