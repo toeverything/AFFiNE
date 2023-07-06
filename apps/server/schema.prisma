@@ -9,10 +9,10 @@ datasource db {
 }
 
 model Workspace {
-  id             String                    @id @default(uuid()) @db.VarChar
-  public         Boolean
-  createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  users          UserWorkspacePermission[]
+  id        String                    @id @default(uuid()) @db.VarChar
+  public    Boolean
+  createdAt DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  users     UserWorkspacePermission[]
 
   @@map("workspaces")
 }
@@ -20,15 +20,17 @@ model Workspace {
 model UserWorkspacePermission {
   id          String    @id @default(uuid()) @db.VarChar
   workspaceId String    @map("workspace_id") @db.VarChar
-  userId      String    @map("entity_id") @db.VarChar
+  subPageId   String?   @map("sub_page_id") @db.VarChar
+  userId      String?   @map("entity_id") @db.VarChar
   /// Read/Write/Admin/Owner
   type        Int       @db.SmallInt
   /// Whether the permission invitation is accepted by the user
   accepted    Boolean   @default(false)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  @@unique([workspaceId, subPageId, userId])
   @@map("user_workspace_permissions")
 }
 
