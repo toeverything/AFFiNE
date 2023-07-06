@@ -44,6 +44,10 @@ export const content = style({
   flex: 1,
 });
 
+export const postfix = style({
+  justifySelf: 'flex-end',
+});
+
 export const icon = style({
   color: 'var(--affine-icon-color)',
   fontSize: '20px',

@@ -131,9 +131,8 @@ const getFollowingUpAtoms = (
       throw new Error('followupLLMChain not set');
     }
     const messages = await chatHistory.getMessages();
-    const aiMessage = messages.findLast(
-      message => message._getType() === 'ai'
-    )?.text;
+    const aiMessage = messages.findLast(message => message._getType() === 'ai')
+      ?.text;
     const humanMessage = messages.findLast(
       message => message._getType() === 'human'
     )?.text;

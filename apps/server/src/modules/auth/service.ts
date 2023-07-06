@@ -19,7 +19,10 @@ export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
 
 @Injectable()
 export class AuthService {
-  constructor(private config: Config, private prisma: PrismaService) {}
+  constructor(
+    private config: Config,
+    private prisma: PrismaService
+  ) {}
 
   sign(user: UserClaim) {
     const now = getUtcTimestamp();

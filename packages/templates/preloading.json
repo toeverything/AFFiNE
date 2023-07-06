@@ -6316,7 +6316,7 @@
           "sys:flavour": "affine:image",
           "sys:children": [],
           "prop:type": "image",
-          "prop:sourceId": "https://cdn.affine.pro/27f983d0765289c19d10ee0b51c00c3c7665236a1a82406370d46e0a.gif",
+          "prop:sourceId": "/static/27f983d0765289c19d10ee0b51c00c3c7665236a1a82406370d46e0a.gif",
           "prop:caption": "",
           "prop:width": 0,
           "prop:height": 0
@@ -6326,7 +6326,7 @@
           "sys:flavour": "affine:image",
           "sys:children": [],
           "prop:type": "image",
-          "prop:sourceId": "https://cdn.affine.pro/1326bc48553a572c6756d9ee1b30a0dfdda26222fc2d2c872b14e609.gif",
+          "prop:sourceId": "/static/1326bc48553a572c6756d9ee1b30a0dfdda26222fc2d2c872b14e609.gif",
           "prop:caption": "",
           "prop:width": 0,
           "prop:height": 0
@@ -6336,7 +6336,7 @@
           "sys:flavour": "affine:image",
           "sys:children": [],
           "prop:type": "image",
-          "prop:sourceId": "https://cdn.affine.pro/28516717d63e469cd98729ff46be6595711898bab3dc43302319a987.gif",
+          "prop:sourceId": "/static/28516717d63e469cd98729ff46be6595711898bab3dc43302319a987.gif",
           "prop:caption": "",
           "prop:width": 0,
           "prop:height": 0
@@ -6346,7 +6346,7 @@
           "sys:flavour": "affine:image",
           "sys:children": [],
           "prop:type": "image",
-          "prop:sourceId": "https://cdn.affine.pro/9288be57321c8772d04e05dbb69a22742372b3534442607a2d6a9998.gif",
+          "prop:sourceId": "/static/9288be57321c8772d04e05dbb69a22742372b3534442607a2d6a9998.gif",
           "prop:caption": "",
           "prop:width": 0,
           "prop:height": 0
@@ -6356,7 +6356,7 @@
           "sys:flavour": "affine:image",
           "sys:children": [],
           "prop:type": "image",
-          "prop:sourceId": "https://cdn.affine.pro/c820edeeba50006b531883903f5bb0b96bf523c9a6b3ce5868f03db5.gif",
+          "prop:sourceId": "/static/c820edeeba50006b531883903f5bb0b96bf523c9a6b3ce5868f03db5.gif",
           "prop:caption": "",
           "prop:width": 0,
           "prop:height": 0
@@ -6366,7 +6366,7 @@
           "sys:flavour": "affine:image",
           "sys:children": [],
           "prop:type": "image",
-          "prop:sourceId": "https://cdn.affine.pro/e93536e1be97e3b5206d43bf0793fdef24e60044d174f0abdefebe08.gif",
+          "prop:sourceId": "/static/e93536e1be97e3b5206d43bf0793fdef24e60044d174f0abdefebe08.gif",
           "prop:caption": "",
           "prop:width": 0,
           "prop:height": 0
@@ -6376,7 +6376,7 @@
           "sys:flavour": "affine:image",
           "sys:children": [],
           "prop:type": "image",
-          "prop:sourceId": "https://cdn.affine.pro/047ebf2c9a5c7c9d8521c2ea5e6140ff7732ef9e28a9f944e9bf3ca4.png",
+          "prop:sourceId": "/static/047ebf2c9a5c7c9d8521c2ea5e6140ff7732ef9e28a9f944e9bf3ca4.png",
           "prop:caption": "",
           "prop:width": 0,
           "prop:height": 0
@@ -6386,7 +6386,7 @@
           "sys:flavour": "affine:image",
           "sys:children": [],
           "prop:type": "image",
-          "prop:sourceId": "https://cdn.affine.pro/6aa785ee927547ce9dd9d7b43e01eac948337fe57571443e87bc3a60.png",
+          "prop:sourceId": "/static/6aa785ee927547ce9dd9d7b43e01eac948337fe57571443e87bc3a60.png",
           "prop:caption": "",
           "prop:width": 0,
           "prop:height": 0
