@@ -53,6 +53,7 @@ globalStyle(`${urlButton} span`, {
 
 export const fakeWrapper = style({
   position: 'relative',
+  opacity: 0.4,
   selectors: {
     '&::after': {
       content: '""',
@@ -61,7 +62,7 @@ export const fakeWrapper = style({
       position: 'absolute',
       left: 0,
       top: 0,
-      background: 'var(--affine-white-60)',
+      cursor: 'not-allowed',
     },
   },
 });
