@@ -20,7 +20,7 @@
     "http-proxy-middleware": "^3.0.0-beta.1",
     "playwright": "=1.33.0",
     "serve": "^14.2.0",
-    "vitest": "^0.32.2"
+    "vitest": "^0.32.4"
   },
   "version": "0.7.0-canary.36"
 }
