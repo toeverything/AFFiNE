@@ -10,7 +10,7 @@
       "dependsOn": ["^build"],
       "inputs": [
         "{projectRoot}/**/*",
-        "{workspaceRoot}/packages/components/src/**/*",
+        "{workspaceRoot}/packages/component/src/**/*",
         "{workspaceRoot}/packages/debug/src/**/*",
         "{workspaceRoot}/packages/debug/graphql/**/*",
         "{workspaceRoot}/packages/hooks/src/**/*",
