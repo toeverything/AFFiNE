@@ -7,17 +7,6 @@ export interface GraphQLQuery {
   containsFile?: boolean;
 }
 
-export const acceptInviteByWorkspaceIdMutation = {
-  id: 'acceptInviteByWorkspaceIdMutation' as const,
-  operationName: 'acceptInviteByWorkspaceId',
-  definitionName: 'acceptInvite',
-  containsFile: false,
-  query: `
-mutation acceptInviteByWorkspaceId($workspaceId: String!) {
-  acceptInvite(workspaceId: $workspaceId)
-}`,
-};
-
 export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',
@@ -190,5 +179,27 @@ mutation uploadAvatar($id: String!, $avatar: Upload!) {
     avatarUrl
     email
   }
+}`,
+};
+
+export const acceptInviteByWorkspaceIdMutation = {
+  id: 'acceptInviteByWorkspaceIdMutation' as const,
+  operationName: 'acceptInviteByWorkspaceId',
+  definitionName: 'acceptInvite',
+  containsFile: false,
+  query: `
+mutation acceptInviteByWorkspaceId($workspaceId: String!) {
+  acceptInvite(workspaceId: $workspaceId)
+}`,
+};
+
+export const inviteByWorkspaceIdMutation = {
+  id: 'inviteByWorkspaceIdMutation' as const,
+  operationName: 'inviteByWorkspaceId',
+  definitionName: 'invite',
+  containsFile: false,
+  query: `
+mutation inviteByWorkspaceId($workspaceId: String!, $email: String!, $permission: Permission!) {
+  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
 }`,
 };

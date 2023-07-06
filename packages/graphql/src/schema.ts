@@ -46,15 +46,6 @@ export interface UpdateWorkspaceInput {
   public: InputMaybe<Scalars['Boolean']['input']>;
 }
 
-export type AcceptInviteByWorkspaceIdMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type AcceptInviteByWorkspaceIdMutation = {
-  __typename?: 'Mutation';
-  acceptInvite: boolean;
-};
-
 export type CreateWorkspaceMutationVariables = Exact<{
   init: Scalars['Upload']['input'];
 }>;
@@ -205,6 +196,26 @@ export type UploadAvatarMutation = {
   };
 };
 
+export type AcceptInviteByWorkspaceIdMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type AcceptInviteByWorkspaceIdMutation = {
+  __typename?: 'Mutation';
+  acceptInvite: boolean;
+};
+
+export type InviteByWorkspaceIdMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+  permission: Permission;
+}>;
+
+export type InviteByWorkspaceIdMutation = {
+  __typename?: 'Mutation';
+  invite: boolean;
+};
+
 export type Queries =
   | {
       name: 'getMembersByWorkspaceIdQuery';
@@ -228,11 +239,6 @@ export type Queries =
     };
 
 export type Mutations =
-  | {
-      name: 'acceptInviteByWorkspaceIdMutation';
-      variables: AcceptInviteByWorkspaceIdMutationVariables;
-      response: AcceptInviteByWorkspaceIdMutation;
-    }
   | {
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;
@@ -277,4 +283,14 @@ export type Mutations =
       name: 'uploadAvatarMutation';
       variables: UploadAvatarMutationVariables;
       response: UploadAvatarMutation;
+    }
+  | {
+      name: 'acceptInviteByWorkspaceIdMutation';
+      variables: AcceptInviteByWorkspaceIdMutationVariables;
+      response: AcceptInviteByWorkspaceIdMutation;
+    }
+  | {
+      name: 'inviteByWorkspaceIdMutation';
+      variables: InviteByWorkspaceIdMutationVariables;
+      response: InviteByWorkspaceIdMutation;
     };
