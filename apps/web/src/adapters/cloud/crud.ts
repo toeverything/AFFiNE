@@ -20,13 +20,23 @@ import {
   DEFAULT_DB_NAME,
 } from '@toeverything/y-indexeddb';
 import { getSession } from 'next-auth/react';
+import { proxy } from 'valtio/vanilla';
 
 import { fetcher } from '../../shared/gql';
 
 const Y = Workspace.Y;
 
+// we don't need to persistence the state into local storage
+//  because if a user clicks create multiple time and nothing happened
+//  because of the server delay or something, he/she will wait.
+// and also the user journey of creating workspace is long.
+const createdWorkspaces = proxy<string[]>([]);
+
 export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
   create: async blockSuiteWorkspace => {
+    if (createdWorkspaces.some(id => id === blockSuiteWorkspace.id)) {
+      throw new Error('workspace already created');
+    }
     const { createWorkspace } = await fetcher({
       query: createWorkspaceMutation,
       variables: {
@@ -36,6 +46,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
         ),
       },
     });
+    createdWorkspaces.push(blockSuiteWorkspace.id);
     const newBLockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
       createWorkspace.id,
       WorkspaceFlavour.AFFINE_CLOUD,
