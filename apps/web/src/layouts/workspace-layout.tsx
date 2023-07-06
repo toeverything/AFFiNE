@@ -1,6 +1,7 @@
 import { Content, displayFlex } from '@affine/component';
 import { AffineWatermark } from '@affine/component/affine-watermark';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import { BlockHubWrapper } from '@affine/component/block-hub';
 import { NotificationCenter } from '@affine/component/notification-center';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
@@ -13,6 +14,7 @@ import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
+  rootBlockHubAtom,
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -432,10 +434,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           <MainContainer>
             {children}
             <ToolContainer>
-              {/* fixme(himself65): remove this */}
-              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-                {/* Slot for block hub */}
-              </div>
+              <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
               {!isPublicWorkspace && (
                 <HelpIsland
                   showList={router.query.pageId ? undefined : showList}

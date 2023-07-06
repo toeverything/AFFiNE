@@ -1,6 +1,8 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
+import { BlockHubWrapper } from '@affine/component/block-hub';
 import type { EditorProps } from '@affine/component/block-suite-editor';
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
+import { rootBlockHubAtom } from '@affine/workspace/atom';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -54,13 +56,13 @@ const Template: StoryFn<EditorProps> = (props: Partial<EditorProps>) => {
       }}
     >
       <BlockSuiteEditor onInit={initPage} page={page} mode="page" {...props} />
-      <div
+      <BlockHubWrapper
         style={{
           position: 'absolute',
           right: 12,
           bottom: 12,
         }}
-        id="toolWrapper"
+        blockHubAtom={rootBlockHubAtom}
       />
     </div>
   );
