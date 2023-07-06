@@ -134,7 +134,7 @@ type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
     onDeleteWorkspace: (id: string) => Promise<void>;
     onTransformWorkspace: <
       From extends keyof WorkspaceRegistry,
-      To extends keyof WorkspaceRegistry
+      To extends keyof WorkspaceRegistry,
     >(
       from: From,
       to: To,

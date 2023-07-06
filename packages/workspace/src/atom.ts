@@ -88,7 +88,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
             flavour: Plugin.flavour,
             // new workspace should all support sub-doc feature
             version: WorkspaceVersion.SubDoc,
-          } satisfies RootWorkspaceMetadataV2)
+          }) satisfies RootWorkspaceMetadataV2
       );
     }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
   };

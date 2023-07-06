@@ -41,7 +41,10 @@ export const CurrentUser = createParamDecorator(
 
 @Injectable()
 class AuthGuard implements CanActivate {
-  constructor(private auth: AuthService, private prisma: PrismaService) {}
+  constructor(
+    private auth: AuthService,
+    private prisma: PrismaService
+  ) {}
 
   async canActivate(context: ExecutionContext) {
     const { req } = getRequestResponseFromContext(context);

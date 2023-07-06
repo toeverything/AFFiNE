@@ -56,22 +56,22 @@ export const StyledNewPageButton = styled('button')(() => {
     },
   };
 });
-export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
-  ({ active }) => {
-    return {
-      transition: 'opacity .15s',
-      pointerEvents: active ? 'auto' : 'none',
-      opacity: active ? 1 : 0,
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: active ? 0 : '100%',
-      bottom: 0,
-      zIndex: parseInt(baseTheme.zIndexModal) - 1,
-      background: 'var(--affine-background-modal-color)',
-    };
-  }
-);
+export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(({
+  active,
+}) => {
+  return {
+    transition: 'opacity .15s',
+    pointerEvents: active ? 'auto' : 'none',
+    opacity: active ? 1 : 0,
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: active ? 0 : '100%',
+    bottom: 0,
+    zIndex: parseInt(baseTheme.zIndexModal) - 1,
+    background: 'var(--affine-background-modal-color)',
+  };
+});
 
 export const StyledScrollWrapper = styled('div')<{
   showTopBorder: boolean;

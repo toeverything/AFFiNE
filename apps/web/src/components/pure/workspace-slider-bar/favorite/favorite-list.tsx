@@ -16,10 +16,13 @@ export const FavoriteList = ({ currentWorkspace }: FavoriteListProps) => {
 
   const metaMapping = useMemo(
     () =>
-      metas.reduce((acc, meta) => {
-        acc[meta.id] = meta;
-        return acc;
-      }, {} as Record<string, PageMeta>),
+      metas.reduce(
+        (acc, meta) => {
+          acc[meta.id] = meta;
+          return acc;
+        },
+        {} as Record<string, PageMeta>
+      ),
     [metas]
   );
 

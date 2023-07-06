@@ -138,7 +138,7 @@ const main = async () => {
 
   await fs.writeFile(
     path.resolve(RES_DIR, 'index.ts'),
-    format(code, {
+    await format(code, {
       parser: 'typescript',
       singleQuote: true,
       trailingComma: 'es5',

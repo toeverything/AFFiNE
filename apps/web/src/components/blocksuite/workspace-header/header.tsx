@@ -35,7 +35,7 @@ import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
 
 export type BaseHeaderProps<
-  Workspace extends AffineOfficialWorkspace = AffineOfficialWorkspace
+  Workspace extends AffineOfficialWorkspace = AffineOfficialWorkspace,
 > = {
   workspace: Workspace;
   currentPage: Page | null;

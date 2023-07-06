@@ -29,7 +29,7 @@ const tabIcons = {
 export type ShareMenuProps<
   Workspace extends AffineCloudWorkspace | LocalWorkspace =
     | AffineCloudWorkspace
-    | LocalWorkspace
+    | LocalWorkspace,
 > = {
   workspace: Workspace;
   currentPage: Page;
