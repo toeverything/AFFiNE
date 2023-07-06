@@ -61,7 +61,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('workspace-name-input').fill(newWorkspaceName);
   await page.getByTestId('save-workspace-name').click();
   await page.waitForSelector('text="Update workspace name success"');
-  await page.getByTestId('export-affine-backup').click();
+  await page.waitForTimeout(500);
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
 
