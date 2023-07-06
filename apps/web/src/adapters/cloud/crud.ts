@@ -135,7 +135,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
               WorkspaceFlavour.AFFINE_CLOUD,
               {}
             ),
-          } satisfies AffineCloudWorkspace)
+          }) satisfies AffineCloudWorkspace
       );
     } catch (e) {
       console.error('error when fetching cloud workspaces:', e);
