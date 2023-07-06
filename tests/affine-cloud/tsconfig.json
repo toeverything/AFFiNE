@@ -8,6 +8,9 @@
   "references": [
     {
       "path": "../kit"
+    },
+    {
+      "path": "../fixtures"
     }
   ]
 }
