@@ -86,7 +86,7 @@ const EditorWrapper = memo(function EditorWrapper({
         },
         [onInit]
       )}
-      onInitBlockHub={setBlockHub}
+      setBlockHub={setBlockHub}
       onLoad={useCallback(
         (page: Page, editor: EditorContainer) => {
           page.workspace.setPageMeta(page.id, {

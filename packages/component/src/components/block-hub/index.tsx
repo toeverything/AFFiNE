@@ -2,7 +2,7 @@ import type { BlockHub } from '@blocksuite/blocks';
 import type { Atom } from 'jotai';
 import { useAtomValue } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 export interface BlockHubProps extends HTMLAttributes<HTMLDivElement> {
   blockHubAtom: Atom<Readonly<BlockHub> | null>;
@@ -11,15 +11,15 @@ export interface BlockHubProps extends HTMLAttributes<HTMLDivElement> {
 export const BlockHubWrapper = (props: BlockHubProps): ReactElement => {
   const blockHub = useAtomValue(props.blockHubAtom);
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ref.current || !blockHub) {
-      return;
-    }
+  if (ref.current) {
     const div = ref.current;
-    div.appendChild(blockHub);
-    return () => {
-      div.removeChild(blockHub);
-    };
-  }, [blockHub]);
+    if (!blockHub) {
+      if (div.hasChildNodes()) {
+        div.removeChild(div.firstChild as ChildNode);
+      }
+    } else {
+      div.appendChild(blockHub);
+    }
+  }
   return <div ref={ref} data-testid="block-hub" />;
 };

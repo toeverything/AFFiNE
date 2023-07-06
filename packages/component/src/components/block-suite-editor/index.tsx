@@ -28,7 +28,7 @@ export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
-  onInitBlockHub?: (blockHub: BlockHub) => void;
+  setBlockHub?: (blockHub: BlockHub | null) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
@@ -97,7 +97,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
 
   const ref = useRef<HTMLDivElement>(null);
 
-  const onInitBlockHub = props.onInitBlockHub;
+  const setBlockHub = props.setBlockHub;
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -114,8 +114,8 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
             blockHubRef.current.remove();
           }
           blockHubRef.current = blockHub;
-          if (onInitBlockHub) {
-            onInitBlockHub(blockHub);
+          if (setBlockHub) {
+            setBlockHub(blockHub);
           }
         })
         .catch(err => {
@@ -125,10 +125,13 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
 
     container.appendChild(editor);
     return () => {
+      if (setBlockHub) {
+        setBlockHub(null);
+      }
       blockHubRef.current?.remove();
       container.removeChild(editor);
     };
-  }, [editor, onInitBlockHub, page]);
+  }, [editor, setBlockHub, page]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${
