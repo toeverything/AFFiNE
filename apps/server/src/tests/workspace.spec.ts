@@ -44,7 +44,7 @@ describe('Workspace Module', () => {
     await app.close();
   });
 
-  async function registerUser(
+  async function signUp(
     name: string,
     email: string,
     password: string
@@ -54,14 +54,14 @@ describe('Workspace Module', () => {
       .send({
         query: `
           mutation {
-            register(name: "${name}", email: "${email}", password: "${password}") {
+            signUp(name: "${name}", email: "${email}", password: "${password}") {
               id, name, email, token { token }
             }
           }
         `,
       })
       .expect(200);
-    return res.body.data.register;
+    return res.body.data.signUp;
   }
 
   async function createWorkspace(token: string): Promise<WorkspaceType> {
@@ -84,6 +84,27 @@ describe('Workspace Module', () => {
       .attach('0', Buffer.from([0, 0]), 'init.data')
       .expect(200);
     return res.body.data.createWorkspace;
+  }
+
+  async function updateWorkspace(
+    token: string,
+    workspaceId: string,
+    isPublic: boolean
+  ): Promise<boolean> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .auth(token, { type: 'bearer' })
+      .send({
+        query: `
+          mutation {
+            updateWorkspace(input: { id: "${workspaceId}", public: ${isPublic} }) {
+              public
+            }
+          }
+        `,
+      })
+      .expect(200);
+    return res.body.data.updateWorkspace.public;
   }
 
   async function inviteUser(
@@ -200,22 +221,41 @@ describe('Workspace Module', () => {
   }
 
   it('should register a user', async () => {
-    const user = await registerUser('u1', 'u1@affine.pro', '123456');
+    const user = await signUp('u1', 'u1@affine.pro', '123456');
     ok(typeof user.id === 'string', 'user.id is not a string');
     ok(user.name === 'u1', 'user.name is not valid');
     ok(user.email === 'u1@affine.pro', 'user.email is not valid');
   });
 
   it('should create a workspace', async () => {
-    const user = await registerUser('u1', 'u1@affine.pro', '1');
+    const user = await signUp('u1', 'u1@affine.pro', '1');
 
     const workspace = await createWorkspace(user.token.token);
     ok(typeof workspace.id === 'string', 'workspace.id is not a string');
   });
 
+  it('should can publish workspace', async () => {
+    const user = await signUp('u1', 'u1@affine.pro', '1');
+    const workspace = await createWorkspace(user.token.token);
+
+    const isPublic = await updateWorkspace(
+      user.token.token,
+      workspace.id,
+      true
+    );
+    ok(isPublic === true, 'failed to publish workspace');
+
+    const isPrivate = await updateWorkspace(
+      user.token.token,
+      workspace.id,
+      false
+    );
+    ok(isPrivate === false, 'failed to unpublish workspace');
+  });
+
   it('should invite a user', async () => {
-    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
-    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp('u1', 'u1@affine.pro', '1');
+    const u2 = await signUp('u2', 'u2@affine.pro', '1');
 
     const workspace = await createWorkspace(u1.token.token);
 
@@ -229,8 +269,8 @@ describe('Workspace Module', () => {
   });
 
   it('should accept an invite', async () => {
-    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
-    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp('u1', 'u1@affine.pro', '1');
+    const u2 = await signUp('u2', 'u2@affine.pro', '1');
 
     const workspace = await createWorkspace(u1.token.token);
     await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
@@ -240,8 +280,8 @@ describe('Workspace Module', () => {
   });
 
   it('should leave a workspace', async () => {
-    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
-    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp('u1', 'u1@affine.pro', '1');
+    const u2 = await signUp('u2', 'u2@affine.pro', '1');
 
     const workspace = await createWorkspace(u1.token.token);
     await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
@@ -252,8 +292,8 @@ describe('Workspace Module', () => {
   });
 
   it('should revoke a user', async () => {
-    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
-    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp('u1', 'u1@affine.pro', '1');
+    const u2 = await signUp('u2', 'u2@affine.pro', '1');
 
     const workspace = await createWorkspace(u1.token.token);
     await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
@@ -263,8 +303,8 @@ describe('Workspace Module', () => {
   });
 
   it('should share a page', async () => {
-    const u1 = await registerUser('u1', 'u1@affine.pro', '1');
-    const u2 = await registerUser('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp('u1', 'u1@affine.pro', '1');
+    const u2 = await signUp('u2', 'u2@affine.pro', '1');
 
     const workspace = await createWorkspace(u1.token.token);
 
