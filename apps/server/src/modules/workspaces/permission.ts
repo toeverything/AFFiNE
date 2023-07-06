@@ -111,6 +111,7 @@ export class PermissionService {
     return this.prisma.userWorkspacePermission.create({
       data: {
         workspaceId: ws,
+        subpageId: ws,
         userId: user,
         type: permission,
       },
