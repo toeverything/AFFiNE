@@ -125,6 +125,7 @@ const WorkspaceListItem = ({
       className={clsx(sidebarSelectItem, { active: isActive })}
       title={workspaceName}
       onClick={onClick}
+      data-testid="workspace-list-item"
     >
       <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
       <span className="setting-name">{workspaceName}</span>

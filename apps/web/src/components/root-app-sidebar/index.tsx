@@ -184,7 +184,11 @@ export const RootAppSidebar = ({
             </RouteMenuLinkItem>
           )}
           {runtimeConfig.enableNewSettingModal ? (
-            <MenuItem icon={<SettingsIcon />} onClick={onOpenSettingModal}>
+            <MenuItem
+              data-testid="slider-bar-workspace-setting-button"
+              icon={<SettingsIcon />}
+              onClick={onOpenSettingModal}
+            >
               <span data-testid="settings-modal-trigger">
                 {t['Settings']()}
               </span>
