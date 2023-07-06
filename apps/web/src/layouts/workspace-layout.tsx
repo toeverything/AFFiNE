@@ -18,7 +18,6 @@ import {
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { assertEquals, assertExists } from '@blocksuite/global/utils';
-import type { PassiveDocProvider } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -134,27 +133,8 @@ export const Setting: FC = () => {
 export const AllWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
-  const workspaces = useWorkspaces();
-  useEffect(() => {
-    const providers = workspaces
-      // ignore current workspace
-      .filter(workspace => workspace.id !== currentWorkspaceId)
-      .flatMap(workspace =>
-        workspace.blockSuiteWorkspace.providers.filter(
-          (provider): provider is PassiveDocProvider =>
-            'passive' in provider && provider.passive
-        )
-      );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspaceId, workspaces]);
+  // DON'T REMOVE THIS LINE, IT IS USED TO TRIGGER THE SUSPENSE
+  useWorkspaces();
   return <>{children}</>;
 };
 
@@ -292,22 +272,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setCurrentPageId(router.query.pageId);
     jumpToPage(currentWorkspace.id, router.query.pageId).catch(console.error);
   }
-
-  useEffect(() => {
-    const backgroundProviders =
-      currentWorkspace.blockSuiteWorkspace.providers.filter(
-        (provider): provider is PassiveDocProvider =>
-          'passive' in provider && provider.passive
-      );
-    backgroundProviders.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      backgroundProviders.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspace]);
 
   useEffect(() => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(

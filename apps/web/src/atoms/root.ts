@@ -11,6 +11,7 @@ import {
 } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import type { ActiveDocProvider } from '@blocksuite/store';
+import type { PassiveDocProvider } from '@blocksuite/store';
 import { atom } from 'jotai';
 
 import type { AllWorkspace } from '../shared';
@@ -26,6 +27,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
     const flavours: string[] = Object.values(WorkspaceAdapters).map(
       plugin => plugin.flavour
     );
+    const currentWorkspaceId = get(rootCurrentWorkspaceIdAtom);
     const jotaiWorkspaces = (await get(rootWorkspacesMetadataAtom)).filter(
       workspace => flavours.includes(workspace.flavour)
     );
@@ -60,12 +62,14 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
           workspace !== null
       )
     );
-    const workspaceProviders = workspaces.map(workspace =>
-      workspace.blockSuiteWorkspace.providers.filter(
-        (provider): provider is ActiveDocProvider =>
-          'active' in provider && provider.active
-      )
-    );
+    const workspaceProviders = workspaces
+      .filter(workspace => workspace.id !== currentWorkspaceId)
+      .map(workspace =>
+        workspace.blockSuiteWorkspace.providers.filter(
+          (provider): provider is ActiveDocProvider =>
+            'active' in provider && provider.active
+        )
+      );
     const promises: Promise<void>[] = [];
     for (const providers of workspaceProviders) {
       for (const provider of providers) {
@@ -73,6 +77,29 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
         promises.push(provider.whenReady);
       }
     }
+    const providers = workspaces
+      // ignore current workspace
+      .filter(workspace => workspace.id !== currentWorkspaceId)
+      .flatMap(workspace =>
+        workspace.blockSuiteWorkspace.providers.filter(
+          (provider): provider is PassiveDocProvider =>
+            'passive' in provider && provider.passive
+        )
+      );
+    providers.forEach(provider => {
+      provider.connect();
+    });
+    signal.addEventListener(
+      'abort',
+      () => {
+        providers.forEach(provider => {
+          provider.disconnect();
+        });
+      },
+      {
+        once: true,
+      }
+    );
     // we will wait for all the necessary providers to be ready
     await Promise.all(promises);
     logger.info('workspaces', workspaces);
@@ -131,6 +158,24 @@ export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
       // we will wait for the necessary providers to be ready
       await provider.whenReady;
     }
+    const backgroundProviders = workspace.blockSuiteWorkspace.providers.filter(
+      (provider): provider is PassiveDocProvider =>
+        'passive' in provider && provider.passive
+    );
+    backgroundProviders.forEach(provider => {
+      provider.connect();
+    });
+    signal.addEventListener(
+      'abort',
+      () => {
+        backgroundProviders.forEach(provider => {
+          provider.disconnect();
+        });
+      },
+      {
+        once: true,
+      }
+    );
     logger.info('current workspace', workspace);
     globalThis.currentWorkspace = workspace;
     globalThis.dispatchEvent(
