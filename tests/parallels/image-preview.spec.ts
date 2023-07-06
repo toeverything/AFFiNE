@@ -86,7 +86,7 @@ test('image go left and right', async ({ page }) => {
   await page.locator('img').first().dblclick();
   await page.waitForTimeout(1000);
   {
-    const newBlobId = (await page
+    const newBlobId = (await locator
       .locator('img[data-blob-id]')
       .first()
       .getAttribute('data-blob-id')) as string;
@@ -95,7 +95,7 @@ test('image go left and right', async ({ page }) => {
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(1000);
   {
-    const newBlobId = (await page
+    const newBlobId = (await locator
       .locator('img[data-blob-id]')
       .first()
       .getAttribute('data-blob-id')) as string;
@@ -181,8 +181,11 @@ test('image able to zoom in and out with button click', async ({ page }) => {
   );
 
   await page.waitForTimeout(500);
-  // zooom in
-  await page.getByTestId('zoom-in-button').dblclick();
+  // zoom in
+  {
+    const locator = page.getByTestId('image-preview-modal');
+    await locator.getByTestId('zoom-in-button').dblclick();
+  }
   await page.waitForTimeout(1000);
   let imageBoundary = await locator.boundingBox();
   let imageWidth = await imageBoundary?.width;
@@ -230,12 +233,12 @@ test('image should able to go left and right by buttons', async ({ page }) => {
   // ensure the new image was imported
   await page.waitForTimeout(1000);
   {
-    const newBlobId = (await page
+    const newBlobId = (await locator
       .getByTestId('image-content')
       .getAttribute('data-blob-id')) as string;
     expect(newBlobId).not.toBe(blobId);
   }
-  await page.getByTestId('next-image-button').click();
+  await locator.getByTestId('next-image-button').click();
   await page.waitForTimeout(1000);
   {
     const newBlobId = (await page
@@ -243,10 +246,10 @@ test('image should able to go left and right by buttons', async ({ page }) => {
       .getAttribute('data-blob-id')) as string;
     expect(newBlobId).toBe(blobId);
   }
-  await page.getByTestId('previous-image-button').click();
+  await locator.getByTestId('previous-image-button').click();
   await page.waitForTimeout(1000);
   {
-    const newBlobId = (await page
+    const newBlobId = (await locator
       .getByTestId('image-content')
       .getAttribute('data-blob-id')) as string;
     expect(newBlobId).not.toBe(blobId);
@@ -281,7 +284,10 @@ test('image able to fit to screen by button', async ({ page }) => {
   });
 
   // zooom in
-  await page.getByTestId('zoom-in-button').dblclick();
+  {
+    const locator = page.getByTestId('image-preview-modal');
+    await locator.getByTestId('zoom-in-button').dblclick();
+  }
   await page.waitForTimeout(1000);
   let imageBoundary = await locator.boundingBox();
   let imageWidth = await imageBoundary?.width;
@@ -292,7 +298,10 @@ test('image able to fit to screen by button', async ({ page }) => {
   }
 
   //reset zoom
-  await page.getByTestId('fit-to-screen-button').click();
+  {
+    const locator = page.getByTestId('image-preview-modal');
+    await locator.getByTestId('fit-to-screen-button').click();
+  }
   imageBoundary = await locator.boundingBox();
   imageWidth = await imageBoundary?.width;
   const imageHeight = await imageBoundary?.height;
@@ -330,7 +339,10 @@ test('image able to reset zoom to 100%', async ({ page }) => {
 
   await page.waitForTimeout(500);
   // zooom in
-  await page.getByTestId('zoom-in-button').dblclick();
+  {
+    const locator = page.getByTestId('image-preview-modal');
+    await locator.getByTestId('zoom-in-button').dblclick();
+  }
   await page.waitForTimeout(1000);
   let imageBoundary = await locator.boundingBox();
   let imageWidth = await imageBoundary?.width;
@@ -341,7 +353,10 @@ test('image able to reset zoom to 100%', async ({ page }) => {
   }
 
   //reset zoom
-  await page.getByTestId('reset-scale-button').click();
+  {
+    const locator = page.getByTestId('image-preview-modal');
+    await locator.getByTestId('reset-scale-button').click();
+  }
   imageBoundary = await locator.boundingBox();
   imageWidth = await imageBoundary?.width;
   if (imageWidth) {
@@ -372,7 +387,7 @@ test('image able to copy to clipboard', async ({ page }) => {
   const locator = page.getByTestId('image-preview-modal');
   expect(locator.isVisible()).toBeTruthy();
   await page.waitForTimeout(500);
-  await page.getByTestId('copy-to-clipboard-button').click();
+  await locator.getByTestId('copy-to-clipboard-button').click();
   await page.on('console', message => {
     expect(message.text()).toBe('Image copied to clipboard');
   });
@@ -399,7 +414,7 @@ test('image able to download', async ({ page }) => {
   const locator = page.getByTestId('image-preview-modal');
   expect(locator.isVisible()).toBeTruthy();
   const downloadPromise = page.waitForEvent('download');
-  await page.getByTestId('download-button').click();
+  await locator.getByTestId('download-button').click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe(`${blobId}.png`);
   await download.saveAs(`download/ + ${download.suggestedFilename()}`);
@@ -438,8 +453,11 @@ test('image should only able to move when image is larger than viewport', async 
   const initialXPos = imageBoundary?.x;
   const initialYPos = imageBoundary?.y;
   // check will it able to move when zoomed in
-  await page.getByTestId('zoom-in-button').dblclick();
-  await page.getByTestId('zoom-in-button').dblclick();
+  {
+    const locator = page.getByTestId('image-preview-modal');
+    await locator.getByTestId('zoom-in-button').dblclick();
+    await locator.getByTestId('zoom-in-button').dblclick();
+  }
   await page.mouse.move(width / 2, height / 2);
   await page.mouse.down();
   await page.mouse.move(20, 20);
@@ -449,7 +467,10 @@ test('image should only able to move when image is larger than viewport', async 
   expect(initialYPos).not.toBe(imageBoundary?.y);
 
   // check will it able to move when zoomed out
-  await page.getByTestId('fit-to-screen-button').click();
+  {
+    const locator = page.getByTestId('image-preview-modal');
+    await locator.getByTestId('fit-to-screen-button').click();
+  }
   await page.mouse.move(width / 2, height / 2);
   await page.mouse.down();
   await page.mouse.move(20, 20);
@@ -492,15 +513,15 @@ test('image should able to delete and when delete, it will move to previous/next
   // ensure the new image was imported
   await page.waitForTimeout(1000);
   {
-    const newBlobId = (await page
+    const newBlobId = (await locator
       .getByTestId('image-content')
       .getAttribute('data-blob-id')) as string;
     expect(newBlobId).not.toBe(blobId);
   }
   await page.waitForTimeout(500);
-  await page.getByTestId('delete-button').click();
+  await locator.getByTestId('delete-button').click();
   {
-    const newBlobId = (await page
+    const newBlobId = (await locator
       .getByTestId('image-content')
       .getAttribute('data-blob-id')) as string;
     expect(newBlobId).toBe(blobId);
@@ -511,7 +532,7 @@ test('image should able to delete and when delete, it will move to previous/next
     await importImage(page, 'http://localhost:8081/affine-preview.png');
   }
   await page.locator('img').first().dblclick();
-  await page.getByTestId('next-image-button').click();
+  await locator.getByTestId('next-image-button').click();
   await page.waitForTimeout(1000);
   {
     const newBlobId = (await page
@@ -519,14 +540,14 @@ test('image should able to delete and when delete, it will move to previous/next
       .getAttribute('data-blob-id')) as string;
     expect(newBlobId).toBe(blobId);
   }
-  await page.getByTestId('delete-button').click();
+  await locator.getByTestId('delete-button').click();
   {
-    const newBlobId = (await page
+    const newBlobId = (await locator
       .getByTestId('image-content')
       .getAttribute('data-blob-id')) as string;
     expect(newBlobId).not.toBe(blobId);
   }
-  await page.getByTestId('delete-button').click();
+  await locator.getByTestId('delete-button').click();
   await page.waitForTimeout(500);
   {
     const locator = await page.getByTestId('image-preview-modal').count();
@@ -554,9 +575,9 @@ test('tooltips for all buttons should be visible when hovering', async ({
       .getAttribute('data-blob-id')) as string;
     expect(blobId).toBeTruthy();
   }
-
+  const locator = page.getByTestId('image-preview-modal');
   await page.waitForTimeout(500);
-  await page.getByTestId('previous-image-button').hover();
+  await locator.getByTestId('previous-image-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -564,7 +585,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(previousImageTooltip).toBe(1);
   }
 
-  await page.getByTestId('next-image-button').hover();
+  await locator.getByTestId('next-image-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -572,7 +593,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(nextImageTooltip).toBe(1);
   }
 
-  await page.getByTestId('fit-to-screen-button').hover();
+  await locator.getByTestId('fit-to-screen-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -580,7 +601,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(fitToScreenToolTip).toBe(1);
   }
 
-  await page.getByTestId('zoom-out-button').hover();
+  await locator.getByTestId('zoom-out-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -588,7 +609,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(zoomOutToolTip).toBe(1);
   }
 
-  await page.getByTestId('reset-scale-button').hover();
+  await locator.getByTestId('reset-scale-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -596,7 +617,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(resetScaleTooltip).toBe(1);
   }
 
-  await page.getByTestId('zoom-in-button').hover();
+  await locator.getByTestId('zoom-in-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -604,7 +625,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(zoominToolTip).toBe(1);
   }
 
-  await page.getByTestId('download-button').hover();
+  await locator.getByTestId('download-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -612,7 +633,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(downloadTooltip).toBe(1);
   }
 
-  await page.getByTestId('copy-to-clipboard-button').hover();
+  await locator.getByTestId('copy-to-clipboard-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -622,7 +643,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(downloadTooltip).toBe(1);
   }
 
-  await page.getByTestId('delete-button').hover();
+  await locator.getByTestId('delete-button').hover();
   await page.waitForTimeout(500);
   {
     const element = await page.getByRole('tooltip');
@@ -685,12 +706,12 @@ test('caption should be visible and different styles were applied if image zoome
   const locator = page.getByTestId('image-preview-modal');
   expect(await locator.isVisible()).toBeTruthy();
   await page.waitForTimeout(1000);
-  let captionLocator = page.getByTestId('image-caption-zoomedout');
+  let captionLocator = locator.getByTestId('image-caption-zoomedout');
   await expect(captionLocator).toBeVisible();
   expect(await captionLocator.innerText()).toBe(sampleCaption);
   await page.getByTestId('zoom-in-button').click({ clickCount: 4 });
   expect(await captionLocator.isVisible()).not.toBeTruthy();
-  captionLocator = page.getByTestId('image-caption-zoomedin');
+  captionLocator = locator.getByTestId('image-caption-zoomedin');
   expect(await captionLocator.isVisible()).toBeTruthy();
   expect(await captionLocator.innerText()).toBe(sampleCaption);
 });

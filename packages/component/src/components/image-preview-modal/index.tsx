@@ -318,7 +318,7 @@ const ImagePreviewModalImpl = (
             />
             {isZoomedBigger ? null : (
               <p
-                data-testid={'image-caption-zoomedout'}
+                data-testid="image-caption-zoomedout"
                 className={imagePreviewModalCaptionStyle}
               >
                 {caption}
