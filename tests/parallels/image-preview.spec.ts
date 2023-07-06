@@ -180,6 +180,7 @@ test('image able to zoom in and out with button click', async ({ page }) => {
     (img: HTMLImageElement) => img.naturalWidth
   );
 
+  await page.waitForTimeout(500);
   // zooom in
   await page.getByTestId('zoom-in-button').dblclick();
   await page.waitForTimeout(1000);
@@ -327,6 +328,7 @@ test('image able to reset zoom to 100%', async ({ page }) => {
     (img: HTMLImageElement) => img.naturalWidth
   );
 
+  await page.waitForTimeout(500);
   // zooom in
   await page.getByTestId('zoom-in-button').dblclick();
   await page.waitForTimeout(1000);
@@ -369,6 +371,7 @@ test('image able to copy to clipboard', async ({ page }) => {
   }
   const locator = page.getByTestId('image-preview-modal');
   expect(locator.isVisible()).toBeTruthy();
+  await page.waitForTimeout(500);
   await page.getByTestId('copy-to-clipboard-button').click();
   await page.on('console', message => {
     expect(message.text()).toBe('Image copied to clipboard');
@@ -494,6 +497,7 @@ test('image should able to delete and when delete, it will move to previous/next
       .getAttribute('data-blob-id')) as string;
     expect(newBlobId).not.toBe(blobId);
   }
+  await page.waitForTimeout(500);
   await page.getByTestId('delete-button').click();
   {
     const newBlobId = (await page
@@ -551,6 +555,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
     expect(blobId).toBeTruthy();
   }
 
+  await page.waitForTimeout(500);
   await page.getByTestId('previous-image-button').hover();
   await page.waitForTimeout(500);
   {
@@ -681,7 +686,7 @@ test('caption should be visible and different styles were applied if image zoome
   expect(await locator.isVisible()).toBeTruthy();
   await page.waitForTimeout(1000);
   let captionLocator = page.getByTestId('image-caption-zoomedout');
-  expect(await captionLocator.isVisible()).toBeTruthy();
+  await expect(captionLocator).toBeVisible();
   expect(await captionLocator.innerText()).toBe(sampleCaption);
   await page.getByTestId('zoom-in-button').click({ clickCount: 4 });
   expect(await captionLocator.isVisible()).not.toBeTruthy();
