@@ -1,4 +1,10 @@
-import { Menu, MenuItem, MenuTrigger, styled } from '@affine/component';
+import {
+  type ButtonProps,
+  Menu,
+  MenuItem,
+  MenuTrigger,
+  styled,
+} from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
 import type { FC, ReactElement } from 'react';
@@ -41,7 +47,9 @@ const LanguageMenuContent: FC<{
     </>
   );
 };
-export const LanguageMenu: FC = () => {
+export const LanguageMenu: FC<{ triggerProps: ButtonProps }> = ({
+  triggerProps,
+}) => {
   const i18n = useI18N();
 
   const currentLanguage = LOCALES.find(item => item.tag === i18n.language);
@@ -62,6 +70,7 @@ export const LanguageMenu: FC = () => {
       <MenuTrigger
         data-testid="language-menu-button"
         style={{ textTransform: 'capitalize' }}
+        {...triggerProps}
       >
         {currentLanguage?.originalName}
       </MenuTrigger>

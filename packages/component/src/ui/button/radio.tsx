@@ -3,33 +3,45 @@ import type {
   RadioGroupProps,
 } from '@radix-ui/react-radio-group';
 import * as RadioGroup from '@radix-ui/react-radio-group';
-import { forwardRef } from 'react';
+import clsx from 'clsx';
+import { type CSSProperties, forwardRef } from 'react';
 
 import * as styles from './styles.css';
 
-export const RadioButton = forwardRef<HTMLButtonElement, RadioGroupItemProps>(
-  ({ children, ...props }, ref) => {
-    return (
-      <RadioGroup.Item ref={ref} {...props}>
-        <span className={styles.radioUncheckedButton}>{children}</span>
-        <RadioGroup.Indicator className={styles.radioButton}>
-          {children}
-        </RadioGroup.Indicator>
-      </RadioGroup.Item>
-    );
-  }
-);
+export const RadioButton = forwardRef<
+  HTMLButtonElement,
+  RadioGroupItemProps & { bold?: boolean }
+>(({ children, bold, className, ...props }, ref) => {
+  return (
+    <RadioGroup.Item
+      ref={ref}
+      {...props}
+      className={clsx(styles.radioButton, className)}
+    >
+      <span className={clsx(styles.radioUncheckedButton, { bold })}>
+        {children}
+      </span>
+      <RadioGroup.Indicator
+        className={clsx(styles.radioButtonContent, { bold })}
+      >
+        {children}
+      </RadioGroup.Indicator>
+    </RadioGroup.Item>
+  );
+});
 RadioButton.displayName = 'RadioButton';
 
-export const RadioButtonGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
-  ({ ...props }, ref) => {
-    return (
-      <RadioGroup.Root
-        ref={ref}
-        className={styles.radioButtonGroup}
-        {...props}
-      ></RadioGroup.Root>
-    );
-  }
-);
+export const RadioButtonGroup = forwardRef<
+  HTMLDivElement,
+  RadioGroupProps & { width?: CSSProperties['width'] }
+>(({ className, style, width, ...props }, ref) => {
+  return (
+    <RadioGroup.Root
+      ref={ref}
+      className={clsx(styles.radioButtonGroup, className)}
+      style={{ width, ...style }}
+      {...props}
+    ></RadioGroup.Root>
+  );
+});
 RadioButtonGroup.displayName = 'RadioButtonGroup';

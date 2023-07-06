@@ -21,6 +21,7 @@ export const ThemeSettings = () => {
 
   return (
     <RadioButtonGroup
+      width={250}
       className={settingWrapper}
       defaultValue={theme}
       onValueChange={useCallback(
@@ -30,13 +31,17 @@ export const ThemeSettings = () => {
         [setTheme]
       )}
     >
-      <RadioButton value="system" data-testid="system-theme-trigger">
+      <RadioButton
+        bold={true}
+        value="system"
+        data-testid="system-theme-trigger"
+      >
         {t['system']()}
       </RadioButton>
-      <RadioButton value="light" data-testid="light-theme-trigger">
+      <RadioButton bold={true} value="light" data-testid="light-theme-trigger">
         {t['light']()}
       </RadioButton>
-      <RadioButton value="dark" data-testid="dark-theme-trigger">
+      <RadioButton bold={true} value="dark" data-testid="dark-theme-trigger">
         {t['dark']()}
       </RadioButton>
     </RadioButtonGroup>
@@ -72,7 +77,7 @@ export const AppearanceSettings = () => {
           desc={t['Select the language for the interface.']()}
         >
           <div className={settingWrapper}>
-            <LanguageMenu />
+            <LanguageMenu triggerProps={{ size: 'small' }} />
           </div>
         </SettingRow>
         {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
@@ -104,6 +109,7 @@ export const AppearanceSettings = () => {
           >
             <RadioButtonGroup
               className={settingWrapper}
+              width={250}
               defaultValue={appSettings.windowFrameStyle}
               onValueChange={(value: AppSetting['windowFrameStyle']) => {
                 setAppSettings({ windowFrameStyle: value });

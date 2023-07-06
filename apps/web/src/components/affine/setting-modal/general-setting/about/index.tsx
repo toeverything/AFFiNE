@@ -1,5 +1,4 @@
 import { Switch } from '@affine/component';
-import { relatedLinks } from '@affine/component/contact-modal';
 import { SettingHeader } from '@affine/component/setting-components';
 import { SettingRow } from '@affine/component/setting-components';
 import { SettingWrapper } from '@affine/component/setting-components';
@@ -8,6 +7,7 @@ import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 
 import { type AppSetting, useAppSetting } from '../../../../../atoms/settings';
+import { relatedLinks } from './config';
 import { communityItem, communityWrapper, link } from './style.css';
 
 export const AboutAffine = () => {
