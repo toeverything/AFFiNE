@@ -124,7 +124,7 @@ __metadata:
     "@vanilla-extract/dynamic": ^2.0.3
     clsx: ^1.2.1
     dayjs: ^1.11.9
-    jotai: ^2.2.1
+    jotai: ^2.2.2
     lit: ^2.7.5
     lottie-web: ^5.12.2
     react: 18.3.0-canary-1fdacbefd-20230630
@@ -156,7 +156,7 @@ __metadata:
     "@types/react": ^18.2.14
     "@types/react-dom": ^18.2.6
     idb: ^7.1.1
-    jotai: ^2.2.1
+    jotai: ^2.2.2
     langchain: ^0.0.102
     marked: ^5.1.0
     marked-gfm-heading-id: ^3.0.4
@@ -196,7 +196,7 @@ __metadata:
     "@vanilla-extract/vite-plugin": ^3.8.2
     autoprefixer: ^10.4.14
     express: ^4.18.2
-    jotai: ^2.2.1
+    jotai: ^2.2.2
     react: 18.3.0-canary-1fdacbefd-20230630
     react-dom: 18.3.0-canary-1fdacbefd-20230630
     react-server-dom-webpack: 18.3.0-canary-1fdacbefd-20230630
@@ -238,7 +238,7 @@ __metadata:
     electron-window-state: ^5.0.3
     esbuild: ^0.18.11
     fs-extra: ^11.1.1
-    jotai: ^2.2.1
+    jotai: ^2.2.2
     link-preview-js: ^3.0.4
     lodash-es: ^4.17.21
     nanoid: ^4.0.2
@@ -309,7 +309,7 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230705162600-2cb608e4-nightly
     "@blocksuite/lit": 0.0.0-20230705162600-2cb608e4-nightly
     "@blocksuite/store": 0.0.0-20230705162600-2cb608e4-nightly
-    jotai: ^2.2.1
+    jotai: ^2.2.2
     lottie-web: ^5.12.2
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -556,7 +556,7 @@ __metadata:
     eslint-plugin-unicorn: ^47.0.0
     express: ^4.18.2
     graphql: ^16.7.1
-    jotai: ^2.2.1
+    jotai: ^2.2.2
     jotai-devtools: ^0.6.0
     lit: ^2.7.5
     lottie-web: ^5.12.2
@@ -594,7 +594,7 @@ __metadata:
     "@toeverything/y-indexeddb": "workspace:*"
     "@types/ws": ^8.5.5
     async-call-rpc: ^6.3.1
-    jotai: ^2.2.1
+    jotai: ^2.2.2
     js-base64: ^3.7.5
     ky: ^0.33.3
     lib0: ^0.2.78
@@ -11254,7 +11254,7 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230705162600-2cb608e4-nightly
     "@blocksuite/lit": 0.0.0-20230705162600-2cb608e4-nightly
     "@blocksuite/store": 0.0.0-20230705162600-2cb608e4-nightly
-    jotai: ^2.2.1
+    jotai: ^2.2.2
     vite: ^4.3.9
     vite-plugin-dts: 3.0.2
   peerDependencies:
@@ -21977,15 +21977,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai@npm:^2.2.1":
-  version: 2.2.1
-  resolution: "jotai@npm:2.2.1"
+"jotai@npm:^2.2.2":
+  version: 2.2.2
+  resolution: "jotai@npm:2.2.2"
   peerDependencies:
     react: ">=17.0.0"
   peerDependenciesMeta:
     react:
       optional: true
-  checksum: 1400d0320516966e23ff4d134e7ff525e32987f3a63e75246a49fed21790b9ff567c480e69a86b74d1bbfa354015de1581ab622664fdfe8a38d0fb8de00e424c
+  checksum: 6b3a62714a22984afd4f089e5bb904dc9d7dc8f6eb26135746bf154da760e485bcd5d83b08297e9f1f3f7843eb8d604c9b480fdae97786170f2d00de0ad2f87b
   languageName: node
   linkType: hard
 
