@@ -9,6 +9,7 @@ import {
   openSettingModal,
   openShortcutsPanel,
 } from '../libs/setting';
+import { createWorkspace } from '../libs/workspace';
 
 test('Open settings modal', async ({ page }) => {
   await openHomePage(page);
@@ -68,4 +69,22 @@ test('Open about panel', async ({ page }) => {
   await openAboutPanel(page);
   const title = await page.getByTestId('about-title');
   await expect(title).toBeVisible();
+});
+
+test('Different workspace should have different name in the setting panel', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await createWorkspace({ name: 'New Workspace 2' }, page);
+  await createWorkspace({ name: 'New Workspace 3' }, page);
+  await openSettingModal(page);
+  await page.getByTestId('current-workspace-label').click();
+  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+    'New Workspace 3'
+  );
+  await page.getByText('New Workspace 2').click();
+  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+    'New Workspace 2'
+  );
 });
