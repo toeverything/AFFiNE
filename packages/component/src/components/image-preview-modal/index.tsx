@@ -16,10 +16,13 @@ import {
 } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
 import clsx from 'clsx';
+import { useErrorBoundary } from 'foxact/use-error-boundary';
 import { useAtom } from 'jotai';
-import type { ReactElement } from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
 import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import type { FallbackProps } from 'react-error-boundary';
+import { ErrorBoundary } from 'react-error-boundary';
 import useSWR from 'swr';
 
 import { useZoomControls } from './hooks/use-zoom';
@@ -252,21 +255,28 @@ const ImagePreviewModalImpl = (
     assertExists(block);
     setCaption(block?.caption);
   }, [props.blockId, props.pageId, props.workspace]);
-  const { data } = useSWR(['workspace', 'image', props.pageId, props.blockId], {
-    fetcher: ([_, __, pageId, blockId]) => {
-      const page = props.workspace.getPage(pageId);
-      assertExists(page);
-      const block = page.getBlockById(blockId) as ImageBlockModel;
-      assertExists(block);
-      return props.workspace.blobs.get(block?.sourceId);
-    },
-    suspense: true,
-  });
+  const { data, error } = useSWR(
+    ['workspace', 'image', props.pageId, props.blockId],
+    {
+      fetcher: ([_, __, pageId, blockId]) => {
+        const page = props.workspace.getPage(pageId);
+        assertExists(page);
+        const block = page.getBlockById(blockId) as ImageBlockModel;
+        assertExists(block);
+        return props.workspace.blobs.get(block?.sourceId);
+      },
+      suspense: true,
+    }
+  );
+
+  useErrorBoundary(error);
 
   const [prevData, setPrevData] = useState<string | null>(() => data);
   const [url, setUrl] = useState<string | null>(null);
 
-  if (prevData !== data) {
+  if (data === null) {
+    return null;
+  } else if (prevData !== data) {
     if (url) {
       URL.revokeObjectURL(url);
     }
@@ -461,6 +471,21 @@ const ImagePreviewModalImpl = (
   );
 };
 
+const ErrorLogger = (props: FallbackProps) => {
+  useEffect(() => {
+    console.error('image preview modal error', props.error);
+  }, [props.error]);
+  return null;
+};
+
+export const ImagePreviewErrorBoundary = (
+  props: PropsWithChildren
+): ReactElement => {
+  return (
+    <ErrorBoundary fallbackRender={ErrorLogger}>{props.children}</ErrorBoundary>
+  );
+};
+
 export const ImagePreviewModal = (
   props: ImagePreviewModalProps
 ): ReactElement | null => {
@@ -530,39 +555,43 @@ export const ImagePreviewModal = (
   }
 
   return (
-    <div
-      data-testid="image-preview-modal"
-      className={`${imagePreviewBackgroundStyle} ${isOpen ? loaded : unloaded}`}
-    >
-      <Suspense fallback={<div />}>
-        <ImagePreviewModalImpl
-          {...props}
-          blockId={blockId}
-          onClose={() => setBlockId(null)}
-        />
-      </Suspense>
-      <button
-        data-testid="image-preview-close-button"
-        onClick={() => {
-          setBlockId(null);
-        }}
-        className={imagePreviewModalCloseButtonStyle}
+    <ImagePreviewErrorBoundary>
+      <div
+        data-testid="image-preview-modal"
+        className={`${imagePreviewBackgroundStyle} ${
+          isOpen ? loaded : unloaded
+        }`}
       >
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M0.286086 0.285964C0.530163 0.0418858 0.925891 0.0418858 1.16997 0.285964L5.00013 4.11613L8.83029 0.285964C9.07437 0.0418858 9.4701 0.0418858 9.71418 0.285964C9.95825 0.530041 9.95825 0.925769 9.71418 1.16985L5.88401 5.00001L9.71418 8.83017C9.95825 9.07425 9.95825 9.46998 9.71418 9.71405C9.4701 9.95813 9.07437 9.95813 8.83029 9.71405L5.00013 5.88389L1.16997 9.71405C0.925891 9.95813 0.530163 9.95813 0.286086 9.71405C0.0420079 9.46998 0.0420079 9.07425 0.286086 8.83017L4.11625 5.00001L0.286086 1.16985C0.0420079 0.925769 0.0420079 0.530041 0.286086 0.285964Z"
-            fill="#77757D"
+        <Suspense>
+          <ImagePreviewModalImpl
+            {...props}
+            blockId={blockId}
+            onClose={() => setBlockId(null)}
           />
-        </svg>
-      </button>
-    </div>
+        </Suspense>
+        <button
+          data-testid="image-preview-close-button"
+          onClick={() => {
+            setBlockId(null);
+          }}
+          className={imagePreviewModalCloseButtonStyle}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M0.286086 0.285964C0.530163 0.0418858 0.925891 0.0418858 1.16997 0.285964L5.00013 4.11613L8.83029 0.285964C9.07437 0.0418858 9.4701 0.0418858 9.71418 0.285964C9.95825 0.530041 9.95825 0.925769 9.71418 1.16985L5.88401 5.00001L9.71418 8.83017C9.95825 9.07425 9.95825 9.46998 9.71418 9.71405C9.4701 9.95813 9.07437 9.95813 8.83029 9.71405L5.00013 5.88389L1.16997 9.71405C0.925891 9.95813 0.530163 9.95813 0.286086 9.71405C0.0420079 9.46998 0.0420079 9.07425 0.286086 8.83017L4.11625 5.00001L0.286086 1.16985C0.0420079 0.925769 0.0420079 0.530041 0.286086 0.285964Z"
+              fill="#77757D"
+            />
+          </svg>
+        </button>
+      </div>
+    </ImagePreviewErrorBoundary>
   );
 };
