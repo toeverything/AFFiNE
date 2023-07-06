@@ -1,0 +1,3 @@
+mutation setSharePage($workspaceId: String!, $pageId: String!) {
+  sharePage(workspaceId: $workspaceId, pageId: $pageId)
+}

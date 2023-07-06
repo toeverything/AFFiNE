@@ -112,6 +112,28 @@ mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Perm
 }`,
 };
 
+export const setRevokePageMutation = {
+  id: 'setRevokePageMutation' as const,
+  operationName: 'setRevokePage',
+  definitionName: 'revokePage',
+  containsFile: false,
+  query: `
+mutation setRevokePage($workspaceId: String!, $pageId: String!) {
+  revokePage(workspaceId: $workspaceId, pageId: $pageId)
+}`,
+};
+
+export const setSharePageMutation = {
+  id: 'setSharePageMutation' as const,
+  operationName: 'setSharePage',
+  definitionName: 'sharePage',
+  containsFile: false,
+  query: `
+mutation setSharePage($workspaceId: String!, $pageId: String!) {
+  sharePage(workspaceId: $workspaceId, pageId: $pageId)
+}`,
+};
+
 export const setWorkspacePublicByIdMutation = {
   id: 'setWorkspacePublicByIdMutation' as const,
   operationName: 'setWorkspacePublicById',
