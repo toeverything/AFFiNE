@@ -21,5 +21,5 @@ export default defineConfig({
       external: ['idb', 'yjs'],
     },
   },
-  plugins: [dts()],
+  plugins: [dts() as any],
 });
