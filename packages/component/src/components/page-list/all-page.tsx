@@ -62,11 +62,17 @@ const AllPagesHead = ({
         key: 'createDate',
         content: t['Created'](),
         proportion: 0.1,
+        tableCellStyle: {
+          width: '80px',
+        } satisfies CSSProperties,
       },
       {
         key: 'updatedDate',
         content: t['Updated'](),
         proportion: 0.1,
+        tableCellStyle: {
+          width: '80px',
+        } satisfies CSSProperties,
       },
       {
         key: 'unsortable_action',
@@ -80,7 +86,7 @@ const AllPagesHead = ({
         showWhen: () => !isPublicWorkspace,
         sortable: false,
         tableCellStyle: {
-          minWidth: '130px',
+          width: '130px',
         } satisfies CSSProperties,
         styles: {
           justifyContent: 'flex-end',

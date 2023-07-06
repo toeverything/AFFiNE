@@ -15,6 +15,7 @@ import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 
 import { rootWorkspacesMetadataAtom } from './atom';
+import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
 
 export function cleanupWorkspace(flavour: WorkspaceFlavour) {
@@ -99,6 +100,7 @@ export function createEmptyBlockSuiteWorkspace(
   } else {
     throw new Error('unsupported flavour');
   }
+  blobStorages.push(createStaticStorage);
 
   const workspace = new Workspace({
     id,
