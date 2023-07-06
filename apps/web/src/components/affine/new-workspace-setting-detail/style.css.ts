@@ -43,6 +43,8 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
 
 export const urlButton = style({
   width: 'calc(100% - 64px - 15px)',
+  justifyContent: 'left',
+  textAlign: 'left',
 });
 globalStyle(`${urlButton} span`, {
   width: '100%',
