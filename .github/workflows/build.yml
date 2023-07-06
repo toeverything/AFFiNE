@@ -332,6 +332,13 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
+          - {
+              os: windows-latest,
+              platform: windows,
+              arch: arm64,
+              target: aarch64-pc-windows-msvc,
+              test: false,
+            }
     needs: [build-web]
     steps:
       - uses: actions/checkout@v3
