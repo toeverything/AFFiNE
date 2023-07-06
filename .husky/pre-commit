@@ -10,6 +10,9 @@ yarn -T run build:infra
 # generate prisma client type
 yarn workspace @affine/server prisma generate
 
+# generate i18n
+yarn i18n-codegen gen
+
 # lint staged files
 yarn exec lint-staged
 
