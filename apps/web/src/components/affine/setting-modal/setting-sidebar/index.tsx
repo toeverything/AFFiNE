@@ -128,7 +128,11 @@ const WorkspaceListItem = ({
     >
       <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
       <span className="setting-name">{workspaceName}</span>
-      {isCurrent ? <div className="current-label">Current</div> : null}
+      {isCurrent ? (
+        <div className="current-label" data-testid="current-workspace-label">
+          Current
+        </div>
+      ) : null}
     </div>
   );
 };
