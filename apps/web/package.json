@@ -32,7 +32,7 @@
     "@emotion/react": "^11.11.1",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.13.6",
+    "@mui/material": "^5.13.7",
     "@react-hookz/web": "^23.1.0",
     "@sentry/nextjs": "^7.57.0",
     "@toeverything/hooks": "workspace:*",
