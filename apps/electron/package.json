@@ -25,10 +25,10 @@
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/native": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230705162600-2cb608e4-nightly",
-    "@blocksuite/editor": "0.0.0-20230705162600-2cb608e4-nightly",
-    "@blocksuite/lit": "0.0.0-20230705162600-2cb608e4-nightly",
-    "@blocksuite/store": "0.0.0-20230705162600-2cb608e4-nightly",
+    "@blocksuite/blocks": "0.0.0-20230706100805-4dd03db9-nightly",
+    "@blocksuite/editor": "0.0.0-20230706100805-4dd03db9-nightly",
+    "@blocksuite/lit": "0.0.0-20230706100805-4dd03db9-nightly",
+    "@blocksuite/store": "0.0.0-20230706100805-4dd03db9-nightly",
     "@electron-forge/cli": "^6.2.1",
     "@electron-forge/core": "^6.2.1",
     "@electron-forge/core-utils": "^6.2.1",
@@ -54,7 +54,7 @@
     "undici": "^5.22.1",
     "uuid": "^9.0.0",
     "which": "^3.0.1",
-    "zx": "^7.2.2"
+    "zx": "^7.2.3"
   },
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
