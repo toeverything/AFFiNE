@@ -15,6 +15,7 @@ import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 
 import { rootWorkspacesMetadataAtom } from './atom';
+import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
 
 export function cleanupWorkspace(flavour: WorkspaceFlavour) {
@@ -98,6 +99,7 @@ export function createEmptyBlockSuiteWorkspace(
     }
     providerCreators.push(...createLocalProviders());
   }
+  blobStorages.push(createStaticStorage);
 
   const workspace = new Workspace({
     id,
