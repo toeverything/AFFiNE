@@ -3,5 +3,5 @@
   "exports": {
     "./*": "./*"
   },
-  "version": "0.7.0-canary.35"
+  "version": "0.7.0-canary.36"
 }
