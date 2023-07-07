@@ -24,21 +24,24 @@ const logger = new DebugLogger('web:atoms:root');
  * Fetch all workspaces from the Plugin CRUD
  */
 export const workspacesAtom = atomWithObservable(get => {
+  const WorkspaceAdapters = get(workspaceAdaptersAtom);
+  const metadataPromise = get(rootWorkspacesMetadataAtom);
   return new Observable<AllWorkspace[]>(subscriber => {
     const controller = new AbortController();
     const signal = controller.signal;
-    async function fetchWorkspaces(): Promise<AllWorkspace[] | undefined> {
-      const WorkspaceAdapters = get(workspaceAdaptersAtom);
+    async function fetchWorkspaces(): Promise<void> {
       const flavours: string[] = Object.values(WorkspaceAdapters).map(
         plugin => plugin.flavour
       );
-      const currentWorkspaceId = get(rootCurrentWorkspaceIdAtom);
-      const jotaiWorkspaces = (await get(rootWorkspacesMetadataAtom)).filter(
-        workspace => flavours.includes(workspace.flavour)
+      const metadata = (await metadataPromise).filter(workspace =>
+        flavours.includes(workspace.flavour)
       );
 
+      // get this atom here that will not be detected by the dependency graph
+      const currentWorkspaceId = get(rootCurrentWorkspaceIdAtom);
+
       const workspaces = await Promise.all(
-        jotaiWorkspaces.map(workspace => {
+        metadata.map(workspace => {
           const adapter = WorkspaceAdapters[
             workspace.flavour
           ] as WorkspaceAdapter<WorkspaceFlavour>;
@@ -103,18 +106,10 @@ export const workspacesAtom = atomWithObservable(get => {
         }
       );
       logger.info('workspaces', workspaces);
-      return workspaces;
+      subscriber.next(workspaces);
     }
 
-    fetchWorkspaces()
-      .then(workspaces => {
-        if (workspaces) {
-          subscriber.next(workspaces);
-        }
-      })
-      .catch(err => {
-        subscriber.error(err);
-      });
+    fetchWorkspaces().catch(subscriber.error);
 
     return () => {
       controller.abort();
@@ -128,18 +123,19 @@ export const workspacesAtom = atomWithObservable(get => {
  * use `rootCurrentWorkspaceIdAtom` instead
  */
 export const rootCurrentWorkspaceAtom = atomWithObservable(get => {
+  const WorkspaceAdapters = get(workspaceAdaptersAtom);
+  const targetId = get(rootCurrentWorkspaceIdAtom);
+  const metadataPromise = get(rootWorkspacesMetadataAtom);
   return new Observable<AllWorkspace>(subscriber => {
     const controller = new AbortController();
     const signal = controller.signal;
     async function fetchWorkspace() {
-      const { WorkspaceAdapters } = await import('../adapters/workspace');
-      const metadata = await get(rootWorkspacesMetadataAtom);
-      const targetId = get(rootCurrentWorkspaceIdAtom);
       if (targetId === null) {
         throw new Error(
           'current workspace id is null. this should not happen. If you see this error, please report it to the developer.'
         );
       }
+      const metadata = await metadataPromise;
       const targetWorkspace = metadata.find(meta => meta.id === targetId);
       if (!targetWorkspace) {
         throw new Error(`cannot find the workspace with id ${targetId}.`);
@@ -188,23 +184,17 @@ export const rootCurrentWorkspaceAtom = atomWithObservable(get => {
         }
       );
       logger.info('current workspace', workspace);
-      return workspace;
+      subscriber.next(workspace);
+      globalThis.currentWorkspace = workspace;
+      globalThis.dispatchEvent(
+        new CustomEvent('affine:workspace:change', {
+          detail: { id: workspace.id },
+        })
+      );
     }
-    fetchWorkspace()
-      .then(workspace => {
-        if (workspace) {
-          subscriber.next(workspace);
-          globalThis.currentWorkspace = workspace;
-          globalThis.dispatchEvent(
-            new CustomEvent('affine:workspace:change', {
-              detail: { id: workspace.id },
-            })
-          );
-        }
-      })
-      .catch(err => {
-        subscriber.error(err);
-      });
+    fetchWorkspace().catch(err => {
+      subscriber.error(err);
+    });
     return () => {
       controller.abort();
     };

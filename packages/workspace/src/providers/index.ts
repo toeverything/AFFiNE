@@ -61,6 +61,8 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
   };
 };
 
+const cache: WeakMap<Doc, Uint8Array> = new WeakMap();
+
 const createIndexedDBDownloadProvider: DocProviderCreator = (
   id,
   doc
@@ -72,11 +74,17 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     _reject = reject;
   });
   async function downloadBinaryRecursively(doc: Doc) {
-    const binary = await downloadBinary(doc.guid);
-    if (binary) {
+    if (cache.has(doc)) {
+      const binary = cache.get(doc) as Uint8Array;
       Y.applyUpdate(doc, binary);
-      await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
+    } else {
+      const binary = await downloadBinary(doc.guid);
+      if (binary) {
+        Y.applyUpdate(doc, binary);
+        cache.set(doc, binary);
+      }
     }
+    await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
   }
   return {
     flavour: 'local-indexeddb',
