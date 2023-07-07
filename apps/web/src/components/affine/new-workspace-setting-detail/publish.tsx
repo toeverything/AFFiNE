@@ -18,13 +18,22 @@ import { TmpDisableAffineCloudModal } from '../tmp-disable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from './index';
 import * as style from './style.css';
 
-export type PublishPanelProps = WorkspaceSettingDetailProps & {
+export type PublishPanelProps = Omit<
+  WorkspaceSettingDetailProps,
+  'workspaceId'
+> & {
   workspace: AffineOfficialWorkspace;
 };
-export type PublishPanelLocalProps = WorkspaceSettingDetailProps & {
+export type PublishPanelLocalProps = Omit<
+  WorkspaceSettingDetailProps,
+  'workspaceId'
+> & {
   workspace: LocalWorkspace;
 };
-export type PublishPanelAffineProps = WorkspaceSettingDetailProps & {
+export type PublishPanelAffineProps = Omit<
+  WorkspaceSettingDetailProps,
+  'workspaceId'
+> & {
   workspace: AffineCloudWorkspace;
 };
 

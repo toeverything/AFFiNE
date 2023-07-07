@@ -7,24 +7,18 @@ import {
 } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type {
+  ActiveDocProvider,
   DocProviderCreator,
   Generator,
   StoreOptions,
 } from '@blocksuite/store';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
-import { rootStore } from '@toeverything/plugin-infra/manager';
+import { useAtomValue } from 'jotai/react';
+import type { Atom } from 'jotai/vanilla';
+import { atom } from 'jotai/vanilla';
 
-import { rootWorkspacesMetadataAtom } from './atom';
 import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
-
-export function cleanupWorkspace(flavour: WorkspaceFlavour) {
-  rootStore
-    .set(rootWorkspacesMetadataAtom, metas =>
-      metas.filter(meta => meta.flavour !== flavour)
-    )
-    .catch(console.error);
-}
 
 function setEditorFlags(workspace: Workspace) {
   Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
@@ -39,12 +33,53 @@ function setEditorFlags(workspace: Workspace) {
   );
 }
 
-const hashMap = new Map<string, Workspace>();
+// guid -> Workspace
+export const workspaceHashMap = new Map<string, Workspace>();
 
-/**
- * @internal test only
- */
-export const _cleanupBlockSuiteWorkspaceCache = () => hashMap.clear();
+const workspacePassiveAtomWeakMap = new WeakMap<
+  Workspace,
+  Atom<Promise<Workspace>>
+>();
+const workspaceActiveWeakMap = new WeakMap<Workspace, boolean>();
+
+export function getWorkspace(id: string) {
+  if (!workspaceHashMap.has(id)) {
+    throw new Error('Workspace not found');
+  }
+  return workspaceHashMap.get(id) as Workspace;
+}
+
+export function getPassiveBlockSuiteWorkspaceAtom(
+  id: string
+): Atom<Promise<Workspace>> {
+  if (!workspaceHashMap.has(id)) {
+    throw new Error('Workspace not found');
+  }
+  const workspace = workspaceHashMap.get(id) as Workspace;
+  if (!workspacePassiveAtomWeakMap.has(workspace)) {
+    const baseAtom = atom(async () => {
+      if (workspaceActiveWeakMap.get(workspace) !== true) {
+        const providers = workspace.providers.filter(
+          (provider): provider is ActiveDocProvider =>
+            'active' in provider && provider.active === true
+        );
+        for (const provider of providers) {
+          provider.sync();
+          // we will wait for the necessary providers to be ready
+          await provider.whenReady;
+        }
+        workspaceActiveWeakMap.set(workspace, true);
+      }
+      return workspace;
+    });
+    workspacePassiveAtomWeakMap.set(workspace, baseAtom);
+  }
+  return workspacePassiveAtomWeakMap.get(workspace) as Atom<Promise<Workspace>>;
+}
+
+export function useStaticBlockSuiteWorkspace(id: string): Workspace {
+  return useAtomValue(getPassiveBlockSuiteWorkspaceAtom(id));
+}
 
 export function createEmptyBlockSuiteWorkspace(
   id: string,
@@ -73,8 +108,8 @@ export function createEmptyBlockSuiteWorkspace(
   const providerCreators: DocProviderCreator[] = [];
   const prefix: string = config?.cachePrefix ?? '';
   const cacheKey = `${prefix}${id}`;
-  if (hashMap.has(cacheKey)) {
-    return hashMap.get(cacheKey) as Workspace;
+  if (workspaceHashMap.has(cacheKey)) {
+    return workspaceHashMap.get(cacheKey) as Workspace;
   }
   const idGenerator = config?.idGenerator;
 
@@ -111,36 +146,6 @@ export function createEmptyBlockSuiteWorkspace(
     .register(AffineSchemas)
     .register(__unstableSchemas);
   setEditorFlags(workspace);
-  hashMap.set(cacheKey, workspace);
+  workspaceHashMap.set(cacheKey, workspace);
   return workspace;
-}
-
-export class CallbackSet extends Set<() => void> {
-  #ready = false;
-
-  get ready(): boolean {
-    return this.#ready;
-  }
-
-  set ready(v: boolean) {
-    this.#ready = v;
-  }
-
-  override add(cb: () => void) {
-    if (this.ready) {
-      cb();
-      return this;
-    }
-    if (this.has(cb)) {
-      return this;
-    }
-    return super.add(cb);
-  }
-
-  override delete(cb: () => void) {
-    if (this.has(cb)) {
-      return super.delete(cb);
-    }
-    return false;
-  }
 }

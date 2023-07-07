@@ -11,7 +11,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type { FC } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../shared';
+import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
 import { ProfilePanel } from './profile';
@@ -19,7 +19,7 @@ import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
 
 export type WorkspaceSettingDetailProps = {
-  workspace: AffineOfficialWorkspace;
+  workspaceId: string;
   onDeleteWorkspace: (id: string) => Promise<void>;
   onTransferWorkspace: <
     From extends WorkspaceFlavour,
@@ -32,11 +32,12 @@ export type WorkspaceSettingDetailProps = {
 };
 
 export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
-  workspace,
+  workspaceId,
   onDeleteWorkspace,
   ...props
 }) => {
   const t = useAFFiNEI18N();
+  const workspace = useWorkspace(workspaceId);
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
 
   return (

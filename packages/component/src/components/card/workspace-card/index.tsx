@@ -1,10 +1,14 @@
-import type {
-  AffineCloudWorkspace,
-  LocalWorkspace,
-} from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { SettingsIcon } from '@blocksuite/icons';
+import {
+  CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
+  CollaborationIcon as DefaultJoinedWorkspaceIcon,
+  LocalDataIcon as DefaultLocalDataIcon,
+  LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
+} from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type { FC } from 'react';
 import { useCallback } from 'react';
@@ -18,16 +22,8 @@ import {
 } from './styles';
 
 export type WorkspaceTypeProps = {
-  workspace: AffineCloudWorkspace | LocalWorkspace;
+  flavour: WorkspaceFlavour;
 };
-
-import {
-  CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
-  CollaborationIcon as DefaultJoinedWorkspaceIcon,
-  LocalDataIcon as DefaultLocalDataIcon,
-  LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
-} from '@blocksuite/icons';
-
 const JoinedWorkspaceIcon = () => {
   return <DefaultJoinedWorkspaceIcon style={{ color: '#FF646B' }} />;
 };
@@ -43,12 +39,12 @@ const LocalDataIcon = () => {
   return <DefaultLocalDataIcon style={{ color: '#62CD80' }} />;
 };
 
-const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
+const WorkspaceType: FC<WorkspaceTypeProps> = ({ flavour }) => {
   const t = useAFFiNEI18N();
   // fixme: cloud regression
   const isOwner = true;
 
-  if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+  if (flavour === WorkspaceFlavour.LOCAL) {
     return (
       <p title={t['Local Workspace']()}>
         <LocalWorkspaceIcon />
@@ -72,51 +68,46 @@ const WorkspaceType: FC<WorkspaceTypeProps> = ({ workspace }) => {
 
 export type WorkspaceCardProps = {
   currentWorkspaceId: string | null;
-  workspace: AffineCloudWorkspace | LocalWorkspace;
-  onClick: (workspace: AffineCloudWorkspace | LocalWorkspace) => void;
-  onSettingClick: (workspace: AffineCloudWorkspace | LocalWorkspace) => void;
+  meta: RootWorkspaceMetadata;
+  onClick: (workspaceId: string) => void;
+  onSettingClick: (workspaceId: string) => void;
 };
 
 export const WorkspaceCard: FC<WorkspaceCardProps> = ({
-  workspace,
   onClick,
   onSettingClick,
   currentWorkspaceId,
+  meta,
 }) => {
   const t = useAFFiNEI18N();
-  const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
+  const workspace = useStaticBlockSuiteWorkspace(meta.id);
+  const [name] = useBlockSuiteWorkspaceName(workspace);
 
   return (
     <StyledCard
       data-testid="workspace-card"
       onClick={useCallback(() => {
-        onClick(workspace);
-      }, [onClick, workspace])}
+        onClick(meta.id);
+      }, [onClick, meta.id])}
       active={workspace.id === currentWorkspaceId}
     >
       <WorkspaceAvatar size={58} workspace={workspace} />
 
       <StyleWorkspaceInfo>
         <StyleWorkspaceTitle>{name}</StyleWorkspaceTitle>
-        <WorkspaceType workspace={workspace} />
-        {workspace.flavour === WorkspaceFlavour.LOCAL && (
+        <WorkspaceType flavour={meta.flavour} />
+        {meta.flavour === WorkspaceFlavour.LOCAL && (
           <p title={t['Available Offline']()}>
             <LocalDataIcon />
             <span>{t['Available Offline']()}</span>
           </p>
         )}
-        {/* {workspace.flavour === WorkspaceFlavour.AFFINE && workspace.public && (
-          <p title={t['Published to Web']()}>
-            <PublishIcon />
-            <span>{t['Published to Web']()}</span>
-          </p>
-        )} */}
       </StyleWorkspaceInfo>
       <StyledSettingLink
         className="setting-entry"
         onClick={e => {
           e.stopPropagation();
-          onSettingClick(workspace);
+          onSettingClick(meta.id);
         }}
       >
         <SettingsIcon />

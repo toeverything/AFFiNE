@@ -1,6 +1,5 @@
 import type { WorkspaceAvatarProps } from '@affine/component/workspace-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 
@@ -25,16 +24,7 @@ const basicBlockSuiteWorkspace = new Workspace({
 basicBlockSuiteWorkspace.meta.setName('Hello World');
 
 export const Basic: StoryFn<WorkspaceAvatarProps> = props => {
-  return (
-    <WorkspaceAvatar
-      {...props}
-      workspace={{
-        flavour: WorkspaceFlavour.LOCAL,
-        id: 'local',
-        blockSuiteWorkspace: basicBlockSuiteWorkspace,
-      }}
-    />
-  );
+  return <WorkspaceAvatar {...props} workspace={basicBlockSuiteWorkspace} />;
 };
 
 Basic.args = {
@@ -60,16 +50,7 @@ fetch(new URL('@affine-test/fixtures/smile.png', import.meta.url))
   });
 
 export const BlobExample: StoryFn<WorkspaceAvatarProps> = props => {
-  return (
-    <WorkspaceAvatar
-      {...props}
-      workspace={{
-        flavour: WorkspaceFlavour.LOCAL,
-        id: 'local',
-        blockSuiteWorkspace: avatarBlockSuiteWorkspace,
-      }}
-    />
-  );
+  return <WorkspaceAvatar {...props} workspace={avatarBlockSuiteWorkspace} />;
 };
 
 BlobExample.args = {

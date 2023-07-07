@@ -4,14 +4,13 @@ import {
 } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import type { PassiveDocProvider } from '@blocksuite/store';
-import { noop } from 'foxact/noop';
+import { useAtomValue } from 'jotai';
 import type React from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { useWorkspaces } from '../../../hooks/use-workspaces';
 import type { AllWorkspace } from '../../../shared';
 import { AccountSetting } from './account-setting';
 import {
@@ -26,69 +25,51 @@ import { WorkspaceSetting } from './workspace-setting';
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
 export type SettingProps = {
   activeTab: ActiveTab;
-  workspace: AllWorkspace | null;
+  workspaceId: string | null;
   onSettingClick: (params: {
     activeTab: ActiveTab;
-    workspace: AllWorkspace | null;
+    workspaceId: string | null;
   }) => void;
 };
 export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
   open,
   setOpen,
   activeTab = 'appearance',
-  workspace = null,
+  workspaceId = null,
   onSettingClick,
 }) => {
   const t = useAFFiNEI18N();
 
-  const workspaces = useWorkspaces();
+  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   const generalSettingList = useGeneralSettingList();
   const workspaceList = useMemo(() => {
     return workspaces.filter(
       ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
-    ) as AllWorkspace[];
+    );
   }, [workspaces]);
 
   const onGeneralSettingClick = useCallback(
     (key: GeneralSettingKeys) => {
       onSettingClick({
         activeTab: key,
-        workspace: null,
+        workspaceId: null,
       });
     },
     [onSettingClick]
   );
   const onWorkspaceSettingClick = useCallback(
-    (workspace: AllWorkspace) => {
+    (workspaceId: string) => {
       onSettingClick({
         activeTab: 'workspace',
-        workspace,
+        workspaceId,
       });
     },
     [onSettingClick]
   );
   const onAccountSettingClick = useCallback(() => {
-    onSettingClick({ activeTab: 'account', workspace: null });
+    onSettingClick({ activeTab: 'account', workspaceId: null });
   }, [onSettingClick]);
-
-  useEffect(() => {
-    if (workspace && workspace !== currentWorkspace) {
-      const providers = workspace.blockSuiteWorkspace.providers.filter(
-        (provider): provider is PassiveDocProvider =>
-          'passive' in provider && provider.passive
-      );
-      providers.forEach(provider => {
-        provider.connect();
-      });
-      return () => {
-        providers.forEach(provider => {
-          provider.disconnect();
-        });
-      };
-    }
-    return noop;
-  }, [currentWorkspace, workspace]);
 
   return (
     <SettingModalBase open={open} setOpen={setOpen}>
@@ -99,15 +80,15 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
         workspaceList={workspaceList}
         onWorkspaceSettingClick={onWorkspaceSettingClick}
         selectedGeneralKey={activeTab}
-        selectedWorkspace={workspace}
+        selectedWorkspaceId={workspaceId}
         onAccountSettingClick={onAccountSettingClick}
       />
 
       <div className={settingContent}>
         <div className="wrapper">
           <div className="content">
-            {activeTab === 'workspace' && workspace ? (
-              <WorkspaceSetting key={workspace.id} workspace={workspace} />
+            {activeTab === 'workspace' && workspaceId ? (
+              <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
             ) : null}
             {generalSettingList.find(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />

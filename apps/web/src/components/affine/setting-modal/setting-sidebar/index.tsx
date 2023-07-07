@@ -1,6 +1,8 @@
 import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
 
@@ -24,17 +26,17 @@ export const SettingSidebar = ({
   currentWorkspace,
   workspaceList,
   onWorkspaceSettingClick,
-  selectedWorkspace,
+  selectedWorkspaceId,
   selectedGeneralKey,
   onAccountSettingClick,
 }: {
   generalSettingList: GeneralSettingList;
   onGeneralSettingClick: (key: GeneralSettingKeys) => void;
   currentWorkspace: AllWorkspace;
-  workspaceList: AllWorkspace[];
-  onWorkspaceSettingClick: (workspace: AllWorkspace) => void;
+  workspaceList: RootWorkspaceMetadata[];
+  onWorkspaceSettingClick: (workspaceId: string) => void;
 
-  selectedWorkspace: AllWorkspace | null;
+  selectedWorkspaceId: string | null;
   selectedGeneralKey: string | null;
   onAccountSettingClick: () => void;
 }) => {
@@ -72,12 +74,12 @@ export const SettingSidebar = ({
           return (
             <WorkspaceListItem
               key={workspace.id}
-              workspace={workspace}
+              meta={workspace}
               onClick={() => {
-                onWorkspaceSettingClick(workspace);
+                onWorkspaceSettingClick(workspace.id);
               }}
               isCurrent={workspace.id === currentWorkspace.id}
-              isActive={workspace.id === selectedWorkspace?.id}
+              isActive={workspace.id === selectedWorkspaceId}
             />
           );
         })}
@@ -107,19 +109,18 @@ export const SettingSidebar = ({
 };
 
 const WorkspaceListItem = ({
-  workspace,
+  meta,
   onClick,
   isCurrent,
   isActive,
 }: {
-  workspace: AllWorkspace;
+  meta: RootWorkspaceMetadata;
   onClick: () => void;
   isCurrent: boolean;
   isActive: boolean;
 }) => {
-  const [workspaceName] = useBlockSuiteWorkspaceName(
-    workspace.blockSuiteWorkspace ?? null
-  );
+  const workspace = useStaticBlockSuiteWorkspace(meta.id);
+  const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
   return (
     <div
       className={clsx(sidebarSelectItem, { active: isActive })}
