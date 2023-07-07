@@ -24,6 +24,7 @@ export function useAppHelper() {
   return {
     addLocalWorkspace: useCallback(
       async (workspaceId: string): Promise<string> => {
+        createEmptyBlockSuiteWorkspace(workspaceId, WorkspaceFlavour.LOCAL);
         saveWorkspaceToLocalStorage(workspaceId);
         await set(workspaces => [
           ...workspaces,
