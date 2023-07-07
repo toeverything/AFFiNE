@@ -58,7 +58,6 @@ import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-he
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { useWorkspaces } from '../hooks/use-workspaces';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
@@ -94,13 +93,6 @@ export const QuickSearch: FC = () => {
       router={router}
     />
   );
-};
-
-export const AllWorkspaceContext = ({
-  children,
-}: PropsWithChildren): ReactElement => {
-  useWorkspaces();
-  return <>{children}</>;
 };
 
 declare global {
@@ -166,13 +158,11 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       <>
         {/* load all workspaces is costly, do not block the whole UI */}
         <Suspense fallback={null}>
-          <AllWorkspaceContext>
-            <AllWorkspaceModals />
-            <CurrentWorkspaceContext>
-              {/* fixme(himself65): don't re-render whole modals */}
-              <CurrentWorkspaceModals key={currentWorkspaceId} />
-            </CurrentWorkspaceContext>
-          </AllWorkspaceContext>
+          <AllWorkspaceModals />
+          <CurrentWorkspaceContext>
+            {/* fixme(himself65): don't re-render whole modals */}
+            <CurrentWorkspaceModals key={currentWorkspaceId} />
+          </CurrentWorkspaceContext>
         </Suspense>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
@@ -303,7 +293,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const handleOpenSettingModal = useCallback(() => {
     setOpenSettingModalAtom({
       activeTab: 'appearance',
-      workspace: null,
+      workspaceId: null,
       open: true,
     });
   }, [setOpenSettingModalAtom]);

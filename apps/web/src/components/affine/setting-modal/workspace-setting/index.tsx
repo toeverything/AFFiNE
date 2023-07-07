@@ -1,17 +1,21 @@
-import { Suspense, useCallback } from 'react';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { assertExists } from '@blocksuite/global/utils';
+import { useAtomValue } from 'jotai';
+import { Suspense, useCallback, useMemo } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import { useAppHelper } from '../../../../hooks/use-workspaces';
-import type { AllWorkspace } from '../../../../shared';
 
-export const WorkspaceSetting = ({
-  workspace,
-}: {
-  workspace: AllWorkspace;
-}) => {
+export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
+  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
+  const flavour = useMemo(
+    () => metadata.find(({ id }) => id === workspaceId)?.flavour,
+    [metadata, workspaceId]
+  );
+  assertExists(flavour);
   const helper = useAppHelper();
-  const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
+  const { NewSettingsDetail } = getUIAdapter(flavour);
 
   const onDeleteWorkspace = useCallback(
     async (id: string) => {
@@ -26,7 +30,7 @@ export const WorkspaceSetting = ({
       <NewSettingsDetail
         onTransformWorkspace={onTransformWorkspace}
         onDeleteWorkspace={onDeleteWorkspace}
-        currentWorkspace={workspace}
+        currentWorkspaceId={workspaceId}
       />
     </Suspense>
   );

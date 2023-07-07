@@ -8,18 +8,23 @@ import type { Collection } from '@affine/env/filter';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { useStaticWorkspace } from '@affine/workspace/utils';
+import { assertExists } from '@blocksuite/global/utils';
 import { SettingsIcon } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
+import { useAtomValue } from 'jotai/index';
 import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
+import type { AffineOfficialWorkspace } from '../shared';
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { filterContainerStyle } from './filter-container.css';
 import { WorkspaceModeFilterTab, WorkspaceTitle } from './pure/workspace-title';
 
 export function WorkspaceHeader({
-  currentWorkspace,
+  currentWorkspaceId,
   currentEntry,
 }: WorkspaceHeaderProps<WorkspaceFlavour>): ReactElement {
   const setting = useCollectionManager();
@@ -31,6 +36,23 @@ export function WorkspaceHeader({
     },
     [setting]
   );
+  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
+  const blockSuiteWorkspace = useStaticWorkspace(currentWorkspaceId);
+  const flavour = useMemo(
+    () => metadata.find(({ id }) => id === currentWorkspaceId)?.flavour,
+    [metadata, currentWorkspaceId]
+  );
+  assertExists(flavour);
+  const currentWorkspace = useMemo(
+    () =>
+      ({
+        id: currentWorkspaceId,
+        flavour,
+        blockSuiteWorkspace,
+      }) satisfies AffineOfficialWorkspace,
+    [blockSuiteWorkspace, flavour, currentWorkspaceId]
+  );
+
   const getPageInfoById = useGetPageInfoById();
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {

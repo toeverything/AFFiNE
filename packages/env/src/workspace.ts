@@ -107,15 +107,15 @@ export interface WorkspaceRegistry {
 
 export interface WorkspaceCRUD<Flavour extends keyof WorkspaceRegistry> {
   create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;
-  delete: (workspace: WorkspaceRegistry[Flavour]) => Promise<void>;
+  delete: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<void>;
   get: (workspaceId: string) => Promise<WorkspaceRegistry[Flavour] | null>;
   // not supported yet
   // update: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
   list: () => Promise<WorkspaceRegistry[Flavour][]>;
 }
 
-type UIBaseProps<Flavour extends keyof WorkspaceRegistry> = {
-  currentWorkspace: WorkspaceRegistry[Flavour];
+type UIBaseProps<_Flavour extends keyof WorkspaceRegistry> = {
+  currentWorkspaceId: string;
 };
 
 export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =

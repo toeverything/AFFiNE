@@ -8,8 +8,13 @@ import type {
   WorkspaceRegistry,
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { useStaticWorkspace } from '@affine/workspace/utils';
+import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { useAtomValue } from 'jotai/index';
 import type { FC } from 'react';
+import { useMemo } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
@@ -19,7 +24,7 @@ import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
 
 export type WorkspaceSettingDetailProps = {
-  workspace: AffineOfficialWorkspace;
+  workspaceId: string;
   onDeleteWorkspace: (id: string) => Promise<void>;
   onTransferWorkspace: <
     From extends WorkspaceFlavour,
@@ -32,12 +37,28 @@ export type WorkspaceSettingDetailProps = {
 };
 
 export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
-  workspace,
+  workspaceId,
   onDeleteWorkspace,
   ...props
 }) => {
   const t = useAFFiNEI18N();
-  const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
+  const blockSuiteWorkspace = useStaticWorkspace(workspaceId);
+  const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
+  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
+  const flavour = useMemo(
+    () => metadata.find(({ id }) => id === workspaceId)?.flavour,
+    [metadata, workspaceId]
+  );
+  assertExists(flavour);
+  const workspace = useMemo(
+    () =>
+      ({
+        id: workspaceId,
+        flavour,
+        blockSuiteWorkspace,
+      }) satisfies AffineOfficialWorkspace,
+    [blockSuiteWorkspace, flavour, workspaceId]
+  );
 
   return (
     <>

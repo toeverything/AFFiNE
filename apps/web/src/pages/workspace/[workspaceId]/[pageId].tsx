@@ -65,13 +65,13 @@ const WorkspaceDetail: React.FC = () => {
   return (
     <>
       <Header
-        currentWorkspace={currentWorkspace}
+        currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           pageId: currentPageId,
         }}
       />
       <PageDetail
-        currentWorkspace={currentWorkspace}
+        currentWorkspaceId={currentWorkspace.id}
         currentPageId={currentPageId}
         onLoadEditor={onLoad}
       />

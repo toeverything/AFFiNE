@@ -40,7 +40,7 @@ const SharedPages: NextPageWithLayout = () => {
         <title>{t['Shared Pages']()} - AFFiNE</title>
       </Head>
       <Header
-        currentWorkspace={currentWorkspace}
+        currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           subPath: WorkspaceSubPath.SHARED,
         }}
