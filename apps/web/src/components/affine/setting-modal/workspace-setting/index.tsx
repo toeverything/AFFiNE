@@ -5,7 +5,7 @@ import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform
 import { useAppHelper } from '../../../../hooks/use-workspaces';
 import type { AllWorkspace } from '../../../../shared';
 
-export const WorkSpaceSetting = ({
+export const WorkspaceSetting = ({
   workspace,
 }: {
   workspace: AllWorkspace;
