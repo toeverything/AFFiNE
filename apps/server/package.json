@@ -8,11 +8,12 @@
     "run-test": "./scripts/run-test.ts"
   },
   "scripts": {
+    "generate": "prisma generate",
     "dev": "nodemon ./src/index.ts",
     "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",
     "test:watch": "yarn exec ts-node-esm ./scripts/run-test.ts all --watch",
     "test:coverage": "c8 yarn exec ts-node-esm ./scripts/run-test.ts all",
-    "postinstall": "prisma generate"
+    "postinstall": "yarn -T run nx run-many -t generate build -p @affine/server @affine/storage"
   },
   "dependencies": {
     "@apollo/server": "^4.7.5",
