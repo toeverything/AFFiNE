@@ -57,6 +57,8 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   // goto workspace setting
   await page.getByTestId('workspace-list-item').click();
 
+  await page.waitForTimeout(500);
+
   // change workspace name
   await page.getByTestId('workspace-name-input').fill(newWorkspaceName);
   await page.getByTestId('save-workspace-name').click();
