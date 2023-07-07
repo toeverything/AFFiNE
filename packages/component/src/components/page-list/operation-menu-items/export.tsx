@@ -16,7 +16,7 @@ import { useCallback, useRef } from 'react';
 import { Menu, MenuItem } from '../../..';
 import type { CommonMenuItemProps } from './types';
 
-const ExportToPdfMenuItem = ({
+export const ExportToPdfMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'pdf' }>) => {
   const t = useAFFiNEI18N();
@@ -91,12 +91,13 @@ const ExportToPdfMenuItem = ({
   );
 };
 
-const ExportToHtmlMenuItem = ({
+export const ExportToHtmlMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'html' }>) => {
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
+  const setPushNotification = useSetAtom(pushNotificationAtom);
   const onClickExportHtml = useCallback(() => {
     if (!currentEditor) {
       return;
@@ -104,11 +105,22 @@ const ExportToHtmlMenuItem = ({
     if (!contentParserRef.current) {
       contentParserRef.current = new ContentParser(currentEditor.page);
     }
-    contentParserRef.current.exportHtml().catch(err => {
-      console.error(err);
-    });
+    contentParserRef.current
+      .exportHtml()
+      .then(() => {
+        onSelect?.({ type: 'html' });
+        setPushNotification({
+          key: 'export-to-html',
+          title: t['com.affine.export.success.title'](),
+          message: t['com.affine.export.success.message'](),
+          type: 'success',
+        });
+      })
+      .catch(err => {
+        console.error(err);
+      });
     onSelect?.({ type: 'html' });
-  }, [onSelect, currentEditor]);
+  }, [currentEditor, onSelect, setPushNotification, t]);
   return (
     <>
       <MenuItem
@@ -122,7 +134,7 @@ const ExportToHtmlMenuItem = ({
   );
 };
 
-const ExportToPngMenuItem = ({
+export const ExportToPngMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'png' }>) => {
   const t = useAFFiNEI18N();
@@ -143,7 +155,7 @@ const ExportToPngMenuItem = ({
       .then(() => {
         onSelect?.({ type: 'png' });
         setPushNotification({
-          key: 'export-to-pdf',
+          key: 'export-to-png',
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
@@ -152,7 +164,7 @@ const ExportToPngMenuItem = ({
       .catch(err => {
         console.error(err);
         setPushNotification({
-          key: 'export-to-pdf',
+          key: 'export-to-png',
           title: t['com.affine.export.error.title'](),
           message: t['com.affine.export.error.message'](),
           type: 'error',
@@ -173,12 +185,13 @@ const ExportToPngMenuItem = ({
   );
 };
 
-const ExportToMarkdownMenuItem = ({
+export const ExportToMarkdownMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'markdown' }>) => {
   const t = useAFFiNEI18N();
   const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
+  const setPushNotification = useSetAtom(pushNotificationAtom);
   const onClickExportMarkdown = useCallback(() => {
     if (!currentEditor) {
       return;
@@ -186,11 +199,28 @@ const ExportToMarkdownMenuItem = ({
     if (!contentParserRef.current) {
       contentParserRef.current = new ContentParser(currentEditor.page);
     }
-    contentParserRef.current.exportMarkdown().catch(err => {
-      console.error(err);
-    });
+    contentParserRef.current
+      .exportMarkdown()
+      .then(() => {
+        onSelect?.({ type: 'markdown' });
+        setPushNotification({
+          key: 'export-to-markdown',
+          title: t['com.affine.export.success.title'](),
+          message: t['com.affine.export.success.message'](),
+          type: 'success',
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        setPushNotification({
+          key: 'export-to-markdown',
+          title: t['com.affine.export.error.title'](),
+          message: t['com.affine.export.error.message'](),
+          type: 'error',
+        });
+      });
     onSelect?.({ type: 'markdown' });
-  }, [onSelect, currentEditor]);
+  }, [currentEditor, onSelect, setPushNotification, t]);
   return (
     <>
       <MenuItem
