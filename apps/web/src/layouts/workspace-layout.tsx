@@ -99,27 +99,7 @@ export const QuickSearch: FC = () => {
 export const AllWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
-  const workspaces = useWorkspaces();
-  useEffect(() => {
-    const providers = workspaces
-      // ignore current workspace
-      .filter(workspace => workspace.id !== currentWorkspaceId)
-      .flatMap(workspace =>
-        workspace.blockSuiteWorkspace.providers.filter(
-          (provider): provider is PassiveDocProvider =>
-            'passive' in provider && provider.passive
-        )
-      );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspaceId, workspaces]);
+  useWorkspaces();
   return <>{children}</>;
 };
 

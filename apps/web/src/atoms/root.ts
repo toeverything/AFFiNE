@@ -8,6 +8,7 @@ import type { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
+  workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import type { ActiveDocProvider } from '@blocksuite/store';
@@ -22,7 +23,7 @@ const logger = new DebugLogger('web:atoms:root');
  */
 export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
   async (get, { signal }) => {
-    const { WorkspaceAdapters } = await import('../adapters/workspace');
+    const WorkspaceAdapters = get(workspaceAdaptersAtom);
     const flavours: string[] = Object.values(WorkspaceAdapters).map(
       plugin => plugin.flavour
     );
@@ -87,7 +88,7 @@ export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
  */
 export const rootCurrentWorkspaceAtom = atom<Promise<AllWorkspace>>(
   async (get, { signal }) => {
-    const { WorkspaceAdapters } = await import('../adapters/workspace');
+    const WorkspaceAdapters = get(workspaceAdaptersAtom);
     const metadata = await get(rootWorkspacesMetadataAtom);
     const targetId = get(rootCurrentWorkspaceIdAtom);
     if (targetId === null) {
