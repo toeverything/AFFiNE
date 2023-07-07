@@ -8,7 +8,7 @@ import { Storage } from '../index.js';
 
 // update binary by y.doc.text('content').insert('hello world')
 // prettier-ignore
-let init = Buffer.from([1,1,160,238,169,240,10,0,4,1,7,99,111,110,116,101,110,116,11,104,101,108,108,111,32,119,111,114,108,100,0])
+let init = Buffer.from([1,1,219,172,147,230,2,0,4,1,7,99,111,110,116,101,110,116,11,104,101,108,108,111,32,119,111,114,108,100,0])
 describe('Test jwst storage binding', () => {
   /** @type { Storage } */
   let storage;
@@ -23,7 +23,9 @@ describe('Test jwst storage binding', () => {
   });
 
   test('should not create workspace with same id', async () => {
-    await storage.createWorkspace('test-workspace', init);
+    const workspace = await storage.createWorkspace('test-workspace');
+    await storage.sync(workspace.id, workspace.doc.guid, init);
+
     await assert.rejects(
       storage.createWorkspace('test-workspace', init),
       /Workspace [\w-]+ already exists/
@@ -31,7 +33,8 @@ describe('Test jwst storage binding', () => {
   });
 
   test('should be able to delete workspace', async () => {
-    const workspace = await storage.createWorkspace('test-workspace', init);
+    const workspace = await storage.createWorkspace('test-workspace');
+    await storage.sync(workspace.id, workspace.doc.guid, init);
 
     await storage.deleteWorkspace(workspace.id);
 
@@ -42,7 +45,8 @@ describe('Test jwst storage binding', () => {
   });
 
   test('should be able to sync update', async () => {
-    const workspace = await storage.createWorkspace('test-workspace', init);
+    const workspace = await storage.createWorkspace('test-workspace');
+    await storage.sync(workspace.id, workspace.doc.guid, init);
 
     const update = await storage.load(workspace.doc.guid);
     assert(update !== null);
@@ -74,7 +78,8 @@ describe('Test jwst storage binding', () => {
   });
 
   test('should be able to sync update with guid encoded', async () => {
-    const workspace = await storage.createWorkspace('test-workspace', init);
+    const workspace = await storage.createWorkspace('test-workspace');
+    await storage.sync(workspace.id, workspace.doc.guid, init);
 
     const update = await storage.load(workspace.doc.guid);
     assert(update !== null);
@@ -110,13 +115,16 @@ describe('Test jwst storage binding', () => {
   });
 
   test('should be able to store blob', async () => {
-    let workspace = await storage.createWorkspace('test-workspace', init);
+    let workspace = await storage.createWorkspace('test-workspace');
+    await storage.sync(workspace.id, workspace.doc.guid, init);
     const blobId = await storage.uploadBlob(workspace.id, Buffer.from([1]));
 
     assert(blobId !== null);
 
-    let blob = await storage.blob(workspace.id, blobId);
+    let list = await storage.listBlobs(workspace.id);
+    assert.deepEqual(list, [blobId]);
 
+    let blob = await storage.getBlob(workspace.id, blobId);
     assert.deepEqual(blob.data, Buffer.from([1]));
     assert.strictEqual(blob.size, 1);
     assert.equal(blob.contentType, 'application/octet-stream');

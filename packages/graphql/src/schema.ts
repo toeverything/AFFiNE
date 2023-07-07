@@ -46,6 +46,29 @@ export interface UpdateWorkspaceInput {
   public: InputMaybe<Scalars['Boolean']['input']>;
 }
 
+export type DeleteBlobMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  hash: Scalars['String']['input'];
+}>;
+
+export type DeleteBlobMutation = {
+  __typename?: 'Mutation';
+  deleteBlob: boolean;
+};
+
+export type ListBlobsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type ListBlobsQuery = { __typename?: 'Query'; listBlobs: Array<string> };
+
+export type SetBlobMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  blob: Scalars['Upload']['input'];
+}>;
+
+export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
+
 export type CreateWorkspaceMutationVariables = Exact<{
   init: Scalars['Upload']['input'];
 }>;
@@ -218,6 +241,11 @@ export type InviteByWorkspaceIdMutation = {
 
 export type Queries =
   | {
+      name: 'listBlobsQuery';
+      variables: ListBlobsQueryVariables;
+      response: ListBlobsQuery;
+    }
+  | {
       name: 'getMembersByWorkspaceIdQuery';
       variables: GetMembersByWorkspaceIdQueryVariables;
       response: GetMembersByWorkspaceIdQuery;
@@ -239,6 +267,16 @@ export type Queries =
     };
 
 export type Mutations =
+  | {
+      name: 'deleteBlobMutation';
+      variables: DeleteBlobMutationVariables;
+      response: DeleteBlobMutation;
+    }
+  | {
+      name: 'setBlobMutation';
+      variables: SetBlobMutationVariables;
+      response: SetBlobMutation;
+    }
   | {
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;

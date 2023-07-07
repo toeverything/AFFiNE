@@ -7,6 +7,39 @@ export interface GraphQLQuery {
   containsFile?: boolean;
 }
 
+export const deleteBlobMutation = {
+  id: 'deleteBlobMutation' as const,
+  operationName: 'deleteBlob',
+  definitionName: 'deleteBlob',
+  containsFile: false,
+  query: `
+mutation deleteBlob($workspaceId: String!, $hash: String!) {
+  deleteBlob(workspaceId: $workspaceId, hash: $hash)
+}`,
+};
+
+export const listBlobsQuery = {
+  id: 'listBlobsQuery' as const,
+  operationName: 'listBlobs',
+  definitionName: 'listBlobs',
+  containsFile: false,
+  query: `
+query listBlobs($workspaceId: String!) {
+  listBlobs(workspaceId: $workspaceId)
+}`,
+};
+
+export const setBlobMutation = {
+  id: 'setBlobMutation' as const,
+  operationName: 'setBlob',
+  definitionName: 'setBlob',
+  containsFile: true,
+  query: `
+mutation setBlob($workspaceId: String!, $blob: Upload!) {
+  setBlob(workspaceId: $workspaceId, blob: $blob)
+}`,
+};
+
 export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',

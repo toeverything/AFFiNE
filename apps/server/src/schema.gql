@@ -98,6 +98,11 @@ type Query {
   workspace(id: String!): WorkspaceType!
 
   """
+  List blobs of workspace
+  """
+  listBlobs(workspaceId: String!): [String!]!
+
+  """
   Get user by email
   """
   user(email: String!): UserType!
@@ -124,7 +129,8 @@ type Mutation {
   leaveWorkspace(workspaceId: String!): Boolean!
   sharePage(workspaceId: String!, pageId: String!): Boolean!
   revokePage(workspaceId: String!, pageId: String!): Boolean!
-  uploadBlob(workspaceId: String!, blob: Upload!): String!
+  setBlob(workspaceId: String!, blob: Upload!): String!
+  deleteBlob(workspaceId: String!, hash: String!): Boolean!
 
   """
   Upload user avatar

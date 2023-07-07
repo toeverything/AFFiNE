@@ -173,9 +173,15 @@ impl Storage {
     }
   }
 
+  /// List all blobs in a workspace.
+  #[napi]
+  pub async fn list_blobs(&self, workspace_id: Option<String>) -> Result<Vec<String>> {
+    map_err!(self.blobs().list_blobs(workspace_id).await)
+  }
+
   /// Fetch a workspace blob.
   #[napi]
-  pub async fn blob(&self, workspace_id: String, name: String) -> Result<Option<Blob>> {
+  pub async fn get_blob(&self, workspace_id: String, name: String) -> Result<Option<Blob>> {
     let (id, params) = {
       let path = PathBuf::from(name.clone());
       let ext = path
@@ -211,6 +217,12 @@ impl Storage {
     // TODO: can optimize, avoid copy
     let blob = blob.as_ref().to_vec();
     map_err!(self.blobs().put_blob(Some(workspace_id), blob).await)
+  }
+
+  /// Delete a blob from workspace storage.
+  #[napi]
+  pub async fn delete_blob(&self, workspace_id: String, hash: String) -> Result<bool> {
+    map_err!(self.blobs().delete_blob(Some(workspace_id), hash).await)
   }
 
   /// Workspace size taken by blobs.

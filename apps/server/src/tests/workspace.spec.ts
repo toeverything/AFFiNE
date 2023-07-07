@@ -6,14 +6,21 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
-import request from 'supertest';
 
 import { AppModule } from '../app';
-import type { TokenType } from '../modules/auth';
-import type { UserType } from '../modules/users';
-import type { WorkspaceType } from '../modules/workspaces';
-
-const gql = '/graphql';
+import {
+  acceptInvite,
+  createWorkspace,
+  inviteUser,
+  leaveWorkspace,
+  listBlobs,
+  revokePage,
+  revokeUser,
+  setBlob,
+  sharePage,
+  signUp,
+  updateWorkspace,
+} from './utils';
 
 describe('Workspace Module', () => {
   let app: INestApplication;
@@ -44,201 +51,26 @@ describe('Workspace Module', () => {
     await app.close();
   });
 
-  async function signUp(
-    name: string,
-    email: string,
-    password: string
-  ): Promise<UserType & { token: TokenType }> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .send({
-        query: `
-          mutation {
-            signUp(name: "${name}", email: "${email}", password: "${password}") {
-              id, name, email, token { token }
-            }
-          }
-        `,
-      })
-      .expect(200);
-    return res.body.data.signUp;
-  }
-
-  async function createWorkspace(token: string): Promise<WorkspaceType> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .auth(token, { type: 'bearer' })
-      .field(
-        'operations',
-        JSON.stringify({
-          name: 'createWorkspace',
-          query: `mutation createWorkspace($init: Upload!) {
-            createWorkspace(init: $init) {
-              id
-            }
-          }`,
-          variables: { init: null },
-        })
-      )
-      .field('map', JSON.stringify({ '0': ['variables.init'] }))
-      .attach('0', Buffer.from([0, 0]), 'init.data')
-      .expect(200);
-    return res.body.data.createWorkspace;
-  }
-
-  async function updateWorkspace(
-    token: string,
-    workspaceId: string,
-    isPublic: boolean
-  ): Promise<boolean> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .auth(token, { type: 'bearer' })
-      .send({
-        query: `
-          mutation {
-            updateWorkspace(input: { id: "${workspaceId}", public: ${isPublic} }) {
-              public
-            }
-          }
-        `,
-      })
-      .expect(200);
-    return res.body.data.updateWorkspace.public;
-  }
-
-  async function inviteUser(
-    token: string,
-    workspaceId: string,
-    email: string,
-    permission: string
-  ): Promise<boolean> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .auth(token, { type: 'bearer' })
-      .send({
-        query: `
-          mutation {
-            invite(workspaceId: "${workspaceId}", email: "${email}", permission: ${permission})
-          }
-        `,
-      })
-      .expect(200);
-    return res.body.data.invite;
-  }
-
-  async function acceptInvite(
-    token: string,
-    workspaceId: string
-  ): Promise<boolean> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .auth(token, { type: 'bearer' })
-      .send({
-        query: `
-          mutation {
-            acceptInvite(workspaceId: "${workspaceId}")
-          }
-        `,
-      })
-      .expect(200);
-    return res.body.data.acceptInvite;
-  }
-
-  async function leaveWorkspace(
-    token: string,
-    workspaceId: string
-  ): Promise<boolean> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .auth(token, { type: 'bearer' })
-      .send({
-        query: `
-          mutation {
-            leaveWorkspace(workspaceId: "${workspaceId}")
-          }
-        `,
-      })
-      .expect(200);
-    return res.body.data.leaveWorkspace;
-  }
-
-  async function revokeUser(
-    token: string,
-    workspaceId: string,
-    userId: string
-  ): Promise<boolean> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .auth(token, { type: 'bearer' })
-      .send({
-        query: `
-          mutation {
-            revoke(workspaceId: "${workspaceId}", userId: "${userId}")
-          }
-        `,
-      })
-      .expect(200);
-    return res.body.data.revoke;
-  }
-
-  async function sharePage(
-    token: string,
-    workspaceId: string,
-    pageId: string
-  ): Promise<boolean | string> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .auth(token, { type: 'bearer' })
-      .send({
-        query: `
-          mutation {
-            sharePage(workspaceId: "${workspaceId}", pageId: "${pageId}")
-          }
-        `,
-      })
-      .expect(200);
-    return res.body.errors?.[0]?.message || res.body.data?.sharePage;
-  }
-
-  async function revokePage(
-    token: string,
-    workspaceId: string,
-    pageId: string
-  ): Promise<boolean | string> {
-    const res = await request(app.getHttpServer())
-      .post(gql)
-      .auth(token, { type: 'bearer' })
-      .send({
-        query: `
-          mutation {
-            revokePage(workspaceId: "${workspaceId}", pageId: "${pageId}")
-          }
-        `,
-      })
-      .expect(200);
-    return res.body.errors?.[0]?.message || res.body.data?.revokePage;
-  }
-
   it('should register a user', async () => {
-    const user = await signUp('u1', 'u1@affine.pro', '123456');
+    const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
     ok(typeof user.id === 'string', 'user.id is not a string');
     ok(user.name === 'u1', 'user.name is not valid');
     ok(user.email === 'u1@affine.pro', 'user.email is not valid');
   });
 
   it('should create a workspace', async () => {
-    const user = await signUp('u1', 'u1@affine.pro', '1');
+    const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
 
-    const workspace = await createWorkspace(user.token.token);
+    const workspace = await createWorkspace(app, user.token.token);
     ok(typeof workspace.id === 'string', 'workspace.id is not a string');
   });
 
   it('should can publish workspace', async () => {
-    const user = await signUp('u1', 'u1@affine.pro', '1');
-    const workspace = await createWorkspace(user.token.token);
+    const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const workspace = await createWorkspace(app, user.token.token);
 
     const isPublic = await updateWorkspace(
+      app,
       user.token.token,
       workspace.id,
       true
@@ -246,6 +78,7 @@ describe('Workspace Module', () => {
     ok(isPublic === true, 'failed to publish workspace');
 
     const isPrivate = await updateWorkspace(
+      app,
       user.token.token,
       workspace.id,
       false
@@ -254,12 +87,13 @@ describe('Workspace Module', () => {
   });
 
   it('should invite a user', async () => {
-    const u1 = await signUp('u1', 'u1@affine.pro', '1');
-    const u2 = await signUp('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
-    const workspace = await createWorkspace(u1.token.token);
+    const workspace = await createWorkspace(app, u1.token.token);
 
     const invite = await inviteUser(
+      app,
       u1.token.token,
       workspace.id,
       u2.email,
@@ -269,62 +103,82 @@ describe('Workspace Module', () => {
   });
 
   it('should accept an invite', async () => {
-    const u1 = await signUp('u1', 'u1@affine.pro', '1');
-    const u2 = await signUp('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
-    const workspace = await createWorkspace(u1.token.token);
-    await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
+    const workspace = await createWorkspace(app, u1.token.token);
+    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
 
-    const accept = await acceptInvite(u2.token.token, workspace.id);
+    const accept = await acceptInvite(app, u2.token.token, workspace.id);
     ok(accept === true, 'failed to accept invite');
   });
 
   it('should leave a workspace', async () => {
-    const u1 = await signUp('u1', 'u1@affine.pro', '1');
-    const u2 = await signUp('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
-    const workspace = await createWorkspace(u1.token.token);
-    await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
-    await acceptInvite(u2.token.token, workspace.id);
+    const workspace = await createWorkspace(app, u1.token.token);
+    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
+    await acceptInvite(app, u2.token.token, workspace.id);
 
-    const leave = await leaveWorkspace(u2.token.token, workspace.id);
+    const leave = await leaveWorkspace(app, u2.token.token, workspace.id);
     ok(leave === true, 'failed to leave workspace');
   });
 
   it('should revoke a user', async () => {
-    const u1 = await signUp('u1', 'u1@affine.pro', '1');
-    const u2 = await signUp('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
-    const workspace = await createWorkspace(u1.token.token);
-    await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
+    const workspace = await createWorkspace(app, u1.token.token);
+    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
 
-    const revoke = await revokeUser(u1.token.token, workspace.id, u2.id);
+    const revoke = await revokeUser(app, u1.token.token, workspace.id, u2.id);
     ok(revoke === true, 'failed to revoke user');
   });
 
   it('should share a page', async () => {
-    const u1 = await signUp('u1', 'u1@affine.pro', '1');
-    const u2 = await signUp('u2', 'u2@affine.pro', '1');
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
-    const workspace = await createWorkspace(u1.token.token);
+    const workspace = await createWorkspace(app, u1.token.token);
 
-    const share = await sharePage(u1.token.token, workspace.id, 'page1');
+    const share = await sharePage(app, u1.token.token, workspace.id, 'page1');
     ok(share === true, 'failed to share page');
 
-    const msg1 = await sharePage(u2.token.token, workspace.id, 'page2');
+    const msg1 = await sharePage(app, u2.token.token, workspace.id, 'page2');
     ok(msg1 === 'Permission denied', 'unauthorized user can share page');
-    const msg2 = await revokePage(u2.token.token, 'not_exists_ws', 'page2');
+    const msg2 = await revokePage(
+      app,
+      u2.token.token,
+      'not_exists_ws',
+      'page2'
+    );
     ok(msg2 === 'Permission denied', 'unauthorized user can share page');
 
-    await inviteUser(u1.token.token, workspace.id, u2.email, 'Admin');
-    await acceptInvite(u2.token.token, workspace.id);
-    const invited = await sharePage(u2.token.token, workspace.id, 'page2');
+    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
+    await acceptInvite(app, u2.token.token, workspace.id);
+    const invited = await sharePage(app, u2.token.token, workspace.id, 'page2');
     ok(invited === true, 'failed to share page');
 
-    const revoke = await revokePage(u1.token.token, workspace.id, 'page1');
+    const revoke = await revokePage(app, u1.token.token, workspace.id, 'page1');
     ok(revoke === true, 'failed to revoke page');
 
-    const msg3 = await revokePage(u1.token.token, workspace.id, 'page3');
+    const msg3 = await revokePage(app, u1.token.token, workspace.id, 'page3');
     ok(msg3 === false, 'can revoke non-exists page');
+  });
+
+  it('should list blobs', async () => {
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+
+    const workspace = await createWorkspace(app, u1.token.token);
+    const blobs = await listBlobs(app, u1.token.token, workspace.id);
+    ok(blobs.length === 0, 'failed to list blobs');
+
+    const buffer = Buffer.from([0, 0]);
+    const hash = await setBlob(app, u1.token.token, workspace.id, buffer);
+
+    const ret = await listBlobs(app, u1.token.token, workspace.id);
+    ok(ret.length === 1, 'failed to list blobs');
+    ok(ret[0] === hash, 'failed to list blobs');
   });
 });

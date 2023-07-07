@@ -21,7 +21,7 @@ export class WorkspacesController {
     @Param('name') name: string,
     @Res() res: Response
   ) {
-    const blob = await this.storage.blob(workspaceId, name);
+    const blob = await this.storage.getBlob(workspaceId, name);
 
     if (!blob) {
       throw new NotFoundException('Blob not found');
