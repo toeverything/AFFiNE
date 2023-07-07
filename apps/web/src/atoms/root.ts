@@ -168,6 +168,9 @@ export const rootCurrentWorkspaceAtom = atomWithObservable(get => {
         // we will wait for the necessary providers to be ready
         await provider.whenReady;
       }
+      if (signal.aborted) {
+        return;
+      }
       const backgroundProviders =
         workspace.blockSuiteWorkspace.providers.filter(
           (provider): provider is PassiveDocProvider =>
