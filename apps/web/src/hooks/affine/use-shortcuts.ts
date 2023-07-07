@@ -123,7 +123,8 @@ export const useMacPageKeyboardShortcuts = (): ShortcutTip => {
       [t['Increase indent']()]: 'Tab',
       [t['Reduce indent']()]: '⇧+Tab',
       [t['Group as Database']()]: '⌘ + G',
-      ['Switch']: '⌘ + S',
+      // TODO: i18N
+      ['Switch']: '⌥ + S',
       // not implement yet
       // [t['Move Up']()]: '⌘ + ⌥ + ↑',
       // [t['Move Down']()]: '⌘ + ⌥ + ↓',
