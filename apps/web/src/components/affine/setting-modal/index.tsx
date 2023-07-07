@@ -5,8 +5,10 @@ import {
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
+import type { PassiveDocProvider } from '@blocksuite/store';
+import { noop } from 'foxact/noop';
 import type React from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useWorkspaces } from '../../../hooks/use-workspaces';
@@ -19,7 +21,7 @@ import {
 } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
 import { settingContent } from './style.css';
-import { WorkSpaceSetting } from './workspace-setting';
+import { WorkspaceSetting } from './workspace-setting';
 
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
 export type SettingProps = {
@@ -70,6 +72,24 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
     onSettingClick({ activeTab: 'account', workspace: null });
   }, [onSettingClick]);
 
+  useEffect(() => {
+    if (workspace && workspace !== currentWorkspace) {
+      const providers = workspace.blockSuiteWorkspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive
+      );
+      providers.forEach(provider => {
+        provider.connect();
+      });
+      return () => {
+        providers.forEach(provider => {
+          provider.disconnect();
+        });
+      };
+    }
+    return noop;
+  }, [currentWorkspace, workspace]);
+
   return (
     <SettingModalBase open={open} setOpen={setOpen}>
       <SettingSidebar
@@ -87,7 +107,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
         <div className="wrapper">
           <div className="content">
             {activeTab === 'workspace' && workspace ? (
-              <WorkSpaceSetting key={workspace.id} workspace={workspace} />
+              <WorkspaceSetting key={workspace.id} workspace={workspace} />
             ) : null}
             {generalSettingList.find(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
