@@ -14,12 +14,13 @@ import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
+import { useWorkspace } from '../hooks/use-workspace';
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { filterContainerStyle } from './filter-container.css';
 import { WorkspaceModeFilterTab, WorkspaceTitle } from './pure/workspace-title';
 
 export function WorkspaceHeader({
-  currentWorkspace,
+  currentWorkspaceId,
   currentEntry,
 }: WorkspaceHeaderProps<WorkspaceFlavour>): ReactElement {
   const setting = useCollectionManager();
@@ -31,6 +32,9 @@ export function WorkspaceHeader({
     },
     [setting]
   );
+
+  const currentWorkspace = useWorkspace(currentWorkspaceId);
+
   const getPageInfoById = useGetPageInfoById();
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {

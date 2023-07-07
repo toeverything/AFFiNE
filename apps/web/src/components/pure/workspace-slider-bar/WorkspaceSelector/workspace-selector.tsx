@@ -57,7 +57,7 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
         data-testid="workspace-avatar"
         className={workspaceAvatarStyle}
         size={40}
-        workspace={currentWorkspace}
+        workspace={currentWorkspace?.blockSuiteWorkspace ?? null}
       />
       <StyledSelectorWrapper>
         <StyledWorkspaceName data-testid="workspace-name">

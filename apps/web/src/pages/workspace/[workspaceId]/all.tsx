@@ -45,7 +45,7 @@ const AllPage: NextPageWithLayout = () => {
         <title>{t['All pages']()} - AFFiNE</title>
       </Head>
       <Header
-        currentWorkspace={currentWorkspace}
+        currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           subPath: WorkspaceSubPath.ALL,
         }}

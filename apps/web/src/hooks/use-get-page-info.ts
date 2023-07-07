@@ -4,10 +4,10 @@ import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
 import { pageSettingsAtom } from '../atoms';
-import { rootCurrentWorkspaceAtom } from '../atoms/root';
+import { useCurrentWorkspace } from './current/use-current-workspace';
 
 export const useGetPageInfoById = (): GetPageInfoById => {
-  const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
+  const [currentWorkspace] = useCurrentWorkspace();
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const pageMap = useMemo(
     () => Object.fromEntries(pageMetas.map(page => [page.id, page])),

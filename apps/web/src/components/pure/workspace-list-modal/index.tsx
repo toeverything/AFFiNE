@@ -14,6 +14,7 @@ import type {
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { HelpIcon, ImportIcon, PlusIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useCallback, useRef } from 'react';
@@ -40,12 +41,12 @@ import {
 
 interface WorkspaceModalProps {
   disabled?: boolean;
-  workspaces: AllWorkspace[];
+  workspaces: RootWorkspaceMetadata[];
   currentWorkspaceId: AllWorkspace['id'] | null;
   open: boolean;
   onClose: () => void;
-  onClickWorkspace: (workspace: AllWorkspace) => void;
-  onClickWorkspaceSetting: (workspace: AllWorkspace) => void;
+  onClickWorkspace: (workspace: RootWorkspaceMetadata['id']) => void;
+  onClickWorkspaceSetting: (workspace: RootWorkspaceMetadata['id']) => void;
   onNewWorkspace: () => void;
   onAddWorkspace: () => void;
   onMoveWorkspace: (activeId: string, overId: string) => void;
