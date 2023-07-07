@@ -13,6 +13,7 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
     await openHomePage(page);
     await waitEditorLoad(page);
     await page.getByText('All Pages').click();
+    await page.waitForTimeout(500);
   }
 
   const title = 'AFFiNE - not just a note taking app';

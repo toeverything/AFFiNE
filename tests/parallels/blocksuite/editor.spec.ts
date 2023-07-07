@@ -19,6 +19,7 @@ test('database is useable', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
+  await waitEditorLoad(page);
   await page.keyboard.insertText('test title');
   await page.keyboard.press('Enter');
   const title = page.locator('.affine-default-page-block-title');
@@ -29,6 +30,7 @@ test('database is useable', async ({ page }) => {
   await page.reload();
   await waitEditorLoad(page);
   await newPage(page);
+  await waitEditorLoad(page);
   await page.keyboard.insertText('test title2');
   await page.keyboard.press('Enter');
   const title2 = page.locator('.affine-default-page-block-title');
@@ -42,11 +44,13 @@ test('link page is useable', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
+  await waitEditorLoad(page);
   await page.keyboard.insertText('page1');
   await page.keyboard.press('Enter');
   const title = page.locator('.affine-default-page-block-title');
   expect(await title.innerText()).toBe('page1');
   await newPage(page);
+  await waitEditorLoad(page);
   await page.keyboard.insertText('page2');
   await page.keyboard.press('Enter');
   const title2 = page.locator('.affine-default-page-block-title');
