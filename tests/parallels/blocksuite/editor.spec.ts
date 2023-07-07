@@ -34,6 +34,7 @@ test('database is useable', async ({ page }) => {
   await page.keyboard.insertText('test title2');
   await page.keyboard.press('Enter');
   const title2 = page.locator('.affine-default-page-block-title');
+  await page.waitForTimeout(500);
   expect(await title2.innerText()).toBe('test title2');
   await addDatabase(page);
   const database2 = page.locator('.affine-database-table');
@@ -63,7 +64,8 @@ test('link page is useable', async ({ page }) => {
   await page.keyboard.press('1');
   await page.keyboard.press('Enter');
   const link = page.locator('.affine-reference');
-  expect(link).toBeVisible();
+  await page.waitForTimeout(500);
+  await expect(link).toBeVisible();
   await page.click('.affine-reference');
   expect(await title.innerText()).toBe('page1');
 });
