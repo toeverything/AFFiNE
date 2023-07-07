@@ -220,6 +220,48 @@ describe('Workspace Module', () => {
     return res.body.errors?.[0]?.message || res.body.data?.revokePage;
   }
 
+  async function listBlobs(
+    token: string,
+    workspaceId: string
+  ): Promise<string[]> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .auth(token, { type: 'bearer' })
+      .send({
+        query: `
+          query {
+            listBlobs(workspaceId: "${workspaceId}")
+          }
+        `,
+      })
+      .expect(200);
+    return res.body.data.listBlobs;
+  }
+
+  async function setBlob(
+    token: string,
+    workspaceId: string,
+    buffer: Buffer
+  ): Promise<string> {
+    const res = await request(app.getHttpServer())
+      .post(gql)
+      .auth(token, { type: 'bearer' })
+      .field(
+        'operations',
+        JSON.stringify({
+          name: 'setBlob',
+          query: `mutation setBlob($blob: Upload!) {
+            setBlob(workspaceId: "${workspaceId}", blob: $blob)
+          }`,
+          variables: { blob: null },
+        })
+      )
+      .field('map', JSON.stringify({ '0': ['variables.blob'] }))
+      .attach('0', buffer, 'blob.data')
+      .expect(200);
+    return res.body.data.setBlob;
+  }
+
   it('should register a user', async () => {
     const user = await signUp('u1', 'u1@affine.pro', '123456');
     ok(typeof user.id === 'string', 'user.id is not a string');
@@ -326,5 +368,20 @@ describe('Workspace Module', () => {
 
     const msg3 = await revokePage(u1.token.token, workspace.id, 'page3');
     ok(msg3 === false, 'can revoke non-exists page');
+  });
+
+  it('should list blobs', async () => {
+    const u1 = await signUp('u1', 'u1@affine.pro', '1');
+
+    const workspace = await createWorkspace(u1.token.token);
+    const blobs = await listBlobs(u1.token.token, workspace.id);
+    ok(blobs.length === 0, 'failed to list blobs');
+
+    const buffer = Buffer.from([0, 0]);
+    const hash = await setBlob(u1.token.token, workspace.id, buffer);
+
+    const ret = await listBlobs(u1.token.token, workspace.id);
+    ok(ret.length === 1, 'failed to list blobs');
+    ok(ret[0] === hash, 'failed to list blobs');
   });
 });

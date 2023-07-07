@@ -342,14 +342,26 @@ export class WorkspaceResolver {
     return this.permissionProvider.revokePage(workspaceId, pageId);
   }
 
+  @Query(() => [String], {
+    description: 'List blobs of workspace',
+  })
+  async listBlobs(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    return this.storage.listBlobs(workspaceId);
+  }
+
   @Mutation(() => String)
-  async uploadBlob(
+  async setBlob(
     @CurrentUser() user: User,
     @Args('workspaceId') workspaceId: string,
     @Args({ name: 'blob', type: () => GraphQLUpload })
     blob: FileUpload
   ) {
-    await this.permissionProvider.check(workspaceId, user.id);
+    await this.permissionProvider.check(workspaceId, user.id, Permission.Write);
 
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const stream = blob.createReadStream();
@@ -364,5 +376,16 @@ export class WorkspaceResolver {
     });
 
     return this.storage.uploadBlob(workspaceId, buffer);
+  }
+
+  @Mutation(() => Boolean)
+  async deleteBlob(
+    @CurrentUser() user: User,
+    @Args('workspaceId') workspaceId: string,
+    @Args('hash') hash: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    return this.storage.deleteBlob(workspaceId, hash);
   }
 }
