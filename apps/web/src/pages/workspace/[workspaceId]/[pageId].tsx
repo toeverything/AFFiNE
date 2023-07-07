@@ -8,11 +8,11 @@ import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
+import { useRetimer } from 'foxact/use-retimer';
 import { useAtom, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { pageSettingFamily } from '../../../atoms';
@@ -82,10 +82,23 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  const page = useBlockSuiteWorkspacePage(
-    currentWorkspace.blockSuiteWorkspace,
-    currentPageId
-  );
+  const retimer = useRetimer();
+  const push = router.push;
+  const page = currentPageId
+    ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
+    : null;
+  useEffect(() => {
+    retimer(
+      window.setTimeout(() => {
+        if (
+          currentPageId &&
+          !currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
+        ) {
+          push('/404').catch(console.error);
+        }
+      }, globalThis.HALTING_PROBLEM_TIMEOUT)
+    );
+  }, [currentPageId, currentWorkspace.blockSuiteWorkspace, retimer, push]);
   if (!router.isReady) {
     return <PageDetailSkeleton key="router-not-ready" />;
   } else if (!currentPageId || !page) {
