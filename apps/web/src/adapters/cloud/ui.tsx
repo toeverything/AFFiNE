@@ -6,6 +6,7 @@ import type {
 } from '@affine/env/workspace';
 import { lazy } from 'react';
 
+import { useWorkspace } from '../../hooks/use-workspace';
 import {
   BlockSuitePageList,
   NewWorkspaceSettingDetail,
@@ -24,13 +25,11 @@ export const UI = {
   Provider,
   LoginCard,
   Header: WorkspaceHeader,
-  PageDetail: ({ currentWorkspace, currentPageId, onLoadEditor }) => {
-    const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+  PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
+    const workspace = useWorkspace(currentWorkspaceId);
+    const page = workspace.blockSuiteWorkspace.getPage(currentPageId);
     if (!page) {
-      throw new PageNotFoundError(
-        currentWorkspace.blockSuiteWorkspace,
-        currentPageId
-      );
+      throw new PageNotFoundError(workspace.blockSuiteWorkspace, currentPageId);
     }
     return (
       <>
@@ -38,7 +37,7 @@ export const UI = {
           pageId={currentPageId}
           onInit={initEmptyPage}
           onLoad={onLoadEditor}
-          workspace={currentWorkspace}
+          workspace={workspace.blockSuiteWorkspace}
         />
       </>
     );
@@ -54,14 +53,14 @@ export const UI = {
     );
   },
   NewSettingsDetail: ({
-    currentWorkspace,
+    currentWorkspaceId,
     onDeleteWorkspace,
     onTransformWorkspace,
   }) => {
     return (
       <NewWorkspaceSettingDetail
         onDeleteWorkspace={onDeleteWorkspace}
-        workspace={currentWorkspace}
+        workspaceId={currentWorkspaceId}
         onTransferWorkspace={onTransformWorkspace}
       />
     );

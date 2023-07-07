@@ -2,6 +2,7 @@ import type {
   AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
+import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -10,7 +11,8 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
-import type { FC } from 'react';
+import type { CSSProperties, FC } from 'react';
+import { useMemo } from 'react';
 
 import { WorkspaceCard } from '../../components/card/workspace-card';
 import { workspaceItemStyle } from './index.css';
@@ -19,26 +21,29 @@ export type WorkspaceListProps = {
   disabled?: boolean;
   currentWorkspaceId: string | null;
   items: (AffineCloudWorkspace | LocalWorkspace)[];
-  onClick: (workspace: AffineCloudWorkspace | LocalWorkspace) => void;
-  onSettingClick: (workspace: AffineCloudWorkspace | LocalWorkspace) => void;
+  onClick: (workspaceId: string) => void;
+  onSettingClick: (workspaceId: string) => void;
   onDragEnd: (event: DragEndEvent) => void;
 };
 
 const SortableWorkspaceItem: FC<
   Omit<WorkspaceListProps, 'items'> & {
-    item: AffineCloudWorkspace | LocalWorkspace;
+    item: RootWorkspaceMetadata;
   }
 > = props => {
   const { setNodeRef, attributes, listeners, transform } = useSortable({
     id: props.item.id,
   });
-  const style: React.CSSProperties = {
-    transform: transform
-      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-      : undefined,
-    pointerEvents: props.disabled ? 'none' : undefined,
-    opacity: props.disabled ? 0.6 : undefined,
-  };
+  const style: CSSProperties = useMemo(
+    () => ({
+      transform: transform
+        ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+        : undefined,
+      pointerEvents: props.disabled ? 'none' : undefined,
+      opacity: props.disabled ? 0.6 : undefined,
+    }),
+    [props.disabled, transform]
+  );
   return (
     <div
       className={workspaceItemStyle}
@@ -50,7 +55,7 @@ const SortableWorkspaceItem: FC<
     >
       <WorkspaceCard
         currentWorkspaceId={props.currentWorkspaceId}
-        workspace={props.item}
+        meta={props.item}
         onClick={props.onClick}
         onSettingClick={props.onSettingClick}
       />

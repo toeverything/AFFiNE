@@ -50,22 +50,29 @@ export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
   flavour: 'sqlite-download';
 }
 
-// todo: update type with nest.js
-export type AffineCloudWorkspace = Omit<LocalWorkspace, 'flavour'> & {
-  flavour: WorkspaceFlavour.AFFINE_CLOUD;
-};
-
 export interface AffineSocketIOProvider extends PassiveDocProvider {
   flavour: 'affine-socket-io';
 }
 
-export interface LocalWorkspace {
+type BaseWorkspace = {
+  flavour: string;
+  id: string;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+};
+
+export interface AffineCloudWorkspace extends BaseWorkspace {
+  flavour: WorkspaceFlavour.AFFINE_CLOUD;
+  id: string;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+}
+
+export interface LocalWorkspace extends BaseWorkspace {
   flavour: WorkspaceFlavour.LOCAL;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
 }
 
-export interface AffinePublicWorkspace {
+export interface AffinePublicWorkspace extends BaseWorkspace {
   flavour: WorkspaceFlavour.PUBLIC;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -111,15 +118,15 @@ export interface WorkspaceRegistry {
 
 export interface WorkspaceCRUD<Flavour extends keyof WorkspaceRegistry> {
   create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;
-  delete: (workspace: WorkspaceRegistry[Flavour]) => Promise<void>;
+  delete: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<void>;
   get: (workspaceId: string) => Promise<WorkspaceRegistry[Flavour] | null>;
   // not supported yet
   // update: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
   list: () => Promise<WorkspaceRegistry[Flavour][]>;
 }
 
-type UIBaseProps<Flavour extends keyof WorkspaceRegistry> = {
-  currentWorkspace: WorkspaceRegistry[Flavour];
+type UIBaseProps<_Flavour extends keyof WorkspaceRegistry> = {
+  currentWorkspaceId: string;
 };
 
 export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =

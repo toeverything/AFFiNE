@@ -1,22 +1,33 @@
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { getWorkspace } from '@affine/workspace/utils';
+import { useAtomValue } from 'jotai';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
 
-import { PageLoading } from '../components/pure/loading';
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
-import { useAppHelper, useWorkspaces } from '../hooks/use-workspaces';
-import { AllWorkspaceContext } from '../layouts/workspace-layout';
+import { useWorkspace } from '../hooks/use-workspace';
+import { useAppHelper } from '../hooks/use-workspaces';
 import { AllWorkspaceModals } from '../providers/modal-provider';
 
-const logger = new DebugLogger('index-page');
+const logger = new DebugLogger('index:router');
+
+type AllWorkspaceLoaderProps = {
+  id: string;
+};
+
+const WorkspaceLoader = (props: AllWorkspaceLoaderProps): null => {
+  useWorkspace(props.id);
+  return null;
+};
 
 const IndexPageInner = () => {
   const router = useRouter();
   const { jumpToPage, jumpToSubPath } = useRouterHelper(router);
-  const workspaces = useWorkspaces();
+  const meta = useAtomValue(rootWorkspacesMetadataAtom);
   const helper = useAppHelper();
 
   useEffect(() => {
@@ -25,15 +36,14 @@ const IndexPageInner = () => {
     }
     const lastId = localStorage.getItem('last_workspace_id');
     const lastPageId = localStorage.getItem('last_page_id');
-    const targetWorkspace =
-      (lastId && workspaces.find(({ id }) => id === lastId)) ||
-      workspaces.at(0);
 
-    if (targetWorkspace) {
-      const nonTrashPages =
-        targetWorkspace.blockSuiteWorkspace.meta.pageMetas.filter(
-          ({ trash }) => !trash
-        );
+    const target =
+      (lastId && meta.find(({ id }) => id === lastId)) || meta.at(0);
+    if (target) {
+      const targetWorkspace = getWorkspace(target.id);
+      const nonTrashPages = targetWorkspace.meta.pageMetas.filter(
+        ({ trash }) => !trash
+      );
       const pageId =
         nonTrashPages.find(({ id }) => id === lastPageId)?.id ??
         nonTrashPages.at(0)?.id;
@@ -56,38 +66,38 @@ const IndexPageInner = () => {
             console.error(err);
           });
         }, 1000);
-        const dispose =
-          targetWorkspace.blockSuiteWorkspace.slots.pageAdded.once(pageId => {
-            clearTimeout(clearId);
-            jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE).catch(
-              err => {
-                console.error(err);
-              }
-            );
-          });
+        const dispose = targetWorkspace.slots.pageAdded.once(pageId => {
+          clearTimeout(clearId);
+          jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE).catch(
+            err => {
+              console.error(err);
+            }
+          );
+        });
         return () => {
           clearTimeout(clearId);
           dispose.dispose();
         };
       }
     } else {
-      console.warn('No target workspace. This should not happen in production');
+      console.warn('No workspace found');
     }
     return;
-  }, [helper, jumpToPage, jumpToSubPath, router, workspaces]);
+  }, [meta, helper, jumpToPage, jumpToSubPath, router]);
 
   return (
-    <Suspense fallback={<WorkspaceFallback />}>
-      <AllWorkspaceContext>
-        <AllWorkspaceModals />
-      </AllWorkspaceContext>
-    </Suspense>
+    <>
+      {meta.map(({ id }) => (
+        <WorkspaceLoader key={id} id={id} />
+      ))}
+      <AllWorkspaceModals />
+    </>
   );
 };
 
 const IndexPage: NextPage = () => {
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<WorkspaceFallback />}>
       <IndexPageInner />
     </Suspense>
   );

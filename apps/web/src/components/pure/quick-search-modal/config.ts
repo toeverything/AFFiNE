@@ -1,9 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  DeleteTemporarilyIcon,
-  FolderIcon,
-  SettingsIcon,
-} from '@blocksuite/icons';
+import { DeleteTemporarilyIcon, FolderIcon } from '@blocksuite/icons';
 import type { FC, SVGProps } from 'react';
 import { useMemo } from 'react';
 
@@ -23,11 +19,11 @@ export const useSwitchToConfig = (
         href: pathGenerator.all(workspaceId),
         icon: FolderIcon,
       },
-      {
-        title: t['Workspace Settings'](),
-        href: pathGenerator.setting(workspaceId),
-        icon: SettingsIcon,
-      },
+      // {
+      //   title: t['Workspace Settings'](),
+      //   href: pathGenerator.setting(workspaceId),
+      //   icon: SettingsIcon,
+      // },
       {
         title: t['Trash'](),
         href: pathGenerator.trash(workspaceId),

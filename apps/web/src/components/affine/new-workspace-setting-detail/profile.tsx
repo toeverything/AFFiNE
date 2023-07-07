@@ -64,7 +64,10 @@ export const ProfilePanel: FC<{
             <div className="camera-icon-wrapper">
               <CameraIcon />
             </div>
-            <WorkspaceAvatar size={56} workspace={workspace} />
+            <WorkspaceAvatar
+              size={56}
+              workspace={workspace.blockSuiteWorkspace}
+            />
           </>
         </Upload>
       </div>

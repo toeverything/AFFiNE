@@ -52,15 +52,3 @@ export const inputButtonRowStyle = style({
   alignItems: 'center',
   marginTop: '16px',
 });
-export const exportButtonStyle = style({
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: '0',
-  border: 'none',
-});
-export const svgStyle = style({
-  fontSize: '20px',
-  marginRight: '12px',
-  verticalAlign: 'top',
-});

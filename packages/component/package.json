@@ -36,7 +36,7 @@
     "@radix-ui/react-toast": "^1.1.4",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
-    "@toeverything/theme": "^0.7.2",
+    "@toeverything/theme": "^0.7.4",
     "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^1.2.1",
     "dayjs": "^1.11.9",
@@ -66,5 +66,5 @@
     "vite": "^4.3.9",
     "yjs": "^13.6.6"
   },
-  "version": "0.7.0-canary.36"
+  "version": "0.7.0-canary.37"
 }
