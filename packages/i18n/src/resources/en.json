@@ -403,5 +403,7 @@
   "Unpublished hint": "Once published to the web, visitors can view the contents through the provided link.",
   "Members hint": "Manage members here, invite new member by email.",
   "Workspace Settings with name": "{{name}}'s Settings",
-  "You can customize your workspace here.": "You can customise your workspace here."
+  "You can customize your workspace here.": "You can customise your workspace here.",
+  "Font Style": "Font Style",
+  "Choose your font style": "Choose your font style"
 }
