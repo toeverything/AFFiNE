@@ -1,6 +1,7 @@
 import { Content, displayFlex } from '@affine/component';
 import { AffineWatermark } from '@affine/component/affine-watermark';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import { BlockHubWrapper } from '@affine/component/block-hub';
 import { NotificationCenter } from '@affine/component/notification-center';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
@@ -13,6 +14,7 @@ import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
+  rootBlockHubAtom,
   rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
@@ -38,7 +40,6 @@ import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
-import type { SettingAtom } from '../atoms';
 import {
   openQuickSearchModalAtom,
   openSettingModalAtom,
@@ -70,11 +71,6 @@ const QuickSearchModal = lazy(() =>
     default: module.QuickSearchModal,
   }))
 );
-const SettingModal = lazy(() =>
-  import('../components/affine/setting-modal').then(module => ({
-    default: module.SettingModal,
-  }))
-);
 
 function DefaultProvider({ children }: PropsWithChildren) {
   return <>{children}</>;
@@ -96,37 +92,6 @@ export const QuickSearch: FC = () => {
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
       router={router}
-    />
-  );
-};
-export const Setting: FC = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
-  const [{ open, workspace, activeTab }, setOpenSettingModalAtom] =
-    useAtom(openSettingModalAtom);
-  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
-
-  const onSettingClick = useCallback(
-    ({
-      activeTab,
-      workspace,
-    }: Pick<SettingAtom, 'activeTab' | 'workspace'>) => {
-      setOpenSettingModalAtom(prev => ({ ...prev, activeTab, workspace }));
-    },
-    [setOpenSettingModalAtom]
-  );
-
-  if (!blockSuiteWorkspace) {
-    return null;
-  }
-  return (
-    <SettingModal
-      open={open}
-      activeTab={activeTab || 'appearance'}
-      workspace={workspace}
-      onSettingClick={onSettingClick}
-      setOpen={open => {
-        setOpenSettingModalAtom(prev => ({ ...prev, open }));
-      }}
     />
   );
 };
@@ -356,7 +321,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(() => {
-    setOpenSettingModalAtom({ activeTab: 'appearance', open: true });
+    setOpenSettingModalAtom({
+      activeTab: 'appearance',
+      workspace: null,
+      open: true,
+    });
   }, [setOpenSettingModalAtom]);
 
   const resizing = useAtomValue(appSidebarResizingAtom);
@@ -432,10 +401,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           <MainContainer>
             {children}
             <ToolContainer>
-              {/* fixme(himself65): remove this */}
-              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-                {/* Slot for block hub */}
-              </div>
+              <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
               {!isPublicWorkspace && (
                 <HelpIsland
                   showList={router.query.pageId ? undefined : showList}
@@ -449,7 +415,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       </DndContext>
       <QuickSearch />
       {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
-      <Setting />
     </>
   );
 };
