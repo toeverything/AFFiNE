@@ -67,5 +67,6 @@ test('link page is useable', async ({ page }) => {
   await page.waitForTimeout(500);
   await expect(link).toBeVisible();
   await page.click('.affine-reference');
+  await page.waitForTimeout(500);
   expect(await title.innerText()).toBe('page1');
 });

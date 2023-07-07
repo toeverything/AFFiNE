@@ -103,7 +103,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('create-workspace-continue-button').click();
 
   // sleep for a while to wait for the workspace to be added :D
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(2000);
   const newWorkspace = await workspace.current();
   expect(newWorkspace.id).not.toBe(originalId);
   // check its name is correct
