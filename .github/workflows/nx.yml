@@ -34,11 +34,11 @@ jobs:
       main-branch-name: master
       number-of-agents: 5
       init-commands: |
-        yarn exec nx-cloud start-ci-run --stop-agents-after="build" --agent-count=3
+        yarn exec nx-cloud start-ci-run --stop-agents-after="build" --agent-count=5
       environment-variables: |
         BUILD_TYPE=canary
-      parallel-commands: |
-        yarn exec nx-cloud record -- yarn exec nx format:check
+      #      parallel-commands: |
+      #        yarn exec nx-cloud record -- yarn exec nx format:check
       parallel-commands-on-agents: |
         yarn exec nx affected --target=build --parallel=5
       timeout: 60
