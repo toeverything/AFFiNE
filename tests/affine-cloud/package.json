@@ -7,7 +7,6 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
-    "@playwright/test": "=1.33.0",
-    "playwright": "=1.33.0"
+    "@playwright/test": "^1.35.1"
   }
 }

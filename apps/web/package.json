@@ -42,7 +42,7 @@
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
     "graphql": "^16.7.1",
-    "jotai": "^2.2.1",
+    "jotai": "^2.2.2",
     "jotai-devtools": "^0.6.0",
     "lit": "^2.7.5",
     "lottie-web": "^5.12.2",
