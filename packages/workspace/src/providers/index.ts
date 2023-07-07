@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import type {
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
@@ -13,26 +14,25 @@ import {
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 
-import { CallbackSet } from '../utils';
-import { localProviderLogger as logger } from './logger';
 import {
   createSQLiteDBDownloadProvider,
   createSQLiteProvider,
 } from './sqlite-providers';
 
 const Y = Workspace.Y;
+const logger = new DebugLogger('indexeddb-provider');
 
 const createIndexedDBBackgroundProvider: DocProviderCreator = (
   id,
   blockSuiteWorkspace
 ): LocalIndexedDBBackgroundProvider => {
   const indexeddbProvider = create(blockSuiteWorkspace);
-  const callbacks = new CallbackSet();
+  let connected = false;
   return {
     flavour: 'local-indexeddb-background',
     passive: true,
     get connected() {
-      return callbacks.ready;
+      return connected;
     },
     cleanup: () => {
       indexeddbProvider.cleanup().catch(console.error);
@@ -42,23 +42,21 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
       indexeddbProvider.connect();
       indexeddbProvider.whenSynced
         .then(() => {
-          callbacks.ready = true;
-          callbacks.forEach(cb => cb());
+          connected = true;
         })
         .catch(error => {
-          callbacks.ready = false;
+          connected = false;
           if (error instanceof EarlyDisconnectError) {
             return;
-          } else {
-            throw error;
           }
+          throw error;
         });
     },
     disconnect: () => {
       assertExists(indexeddbProvider);
       logger.info('disconnect indexeddb provider', id);
       indexeddbProvider.disconnect();
-      callbacks.ready = false;
+      connected = false;
     },
   };
 };
@@ -90,7 +88,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
       // todo: cleanup data
     },
     sync: () => {
-      logger.info('connect indexeddb provider', id);
+      logger.info('sync indexeddb provider', id);
       downloadBinaryRecursively(doc).then(_resolve).catch(_reject);
     },
   };

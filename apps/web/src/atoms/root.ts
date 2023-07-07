@@ -27,7 +27,7 @@ export const workspacesAtom = atomWithObservable(get => {
   return new Observable<AllWorkspace[]>(subscriber => {
     const controller = new AbortController();
     const signal = controller.signal;
-    async function fetchWorkspace(): Promise<AllWorkspace[] | undefined> {
+    async function fetchWorkspaces(): Promise<AllWorkspace[] | undefined> {
       const WorkspaceAdapters = get(workspaceAdaptersAtom);
       const flavours: string[] = Object.values(WorkspaceAdapters).map(
         plugin => plugin.flavour
@@ -61,27 +61,25 @@ export const workspacesAtom = atomWithObservable(get => {
             workspace !== null
         )
       );
-      const workspaceProviders = workspaces
+      const activeProviders = workspaces
         .filter(workspace => workspace.id !== currentWorkspaceId)
-        .map(workspace =>
+        .flatMap(workspace =>
           workspace.blockSuiteWorkspace.providers.filter(
             (provider): provider is ActiveDocProvider =>
               'active' in provider && provider.active
           )
         );
       const promises: Promise<void>[] = [];
-      for (const providers of workspaceProviders) {
-        for (const provider of providers) {
-          provider.sync();
-          promises.push(provider.whenReady);
-        }
+      for (const provider of activeProviders) {
+        provider.sync();
+        promises.push(provider.whenReady);
       }
       // we will wait for all the necessary providers to be ready
       await Promise.all(promises);
       if (signal.aborted) {
         return;
       }
-      const providers = workspaces
+      const passiveProviders = workspaces
         // ignore current workspace
         .filter(workspace => workspace.id !== currentWorkspaceId)
         .flatMap(workspace =>
@@ -90,13 +88,13 @@ export const workspacesAtom = atomWithObservable(get => {
               'passive' in provider && provider.passive
           )
         );
-      providers.forEach(provider => {
+      passiveProviders.forEach(provider => {
         provider.connect();
       });
       signal.addEventListener(
         'abort',
         () => {
-          providers.forEach(provider => {
+          passiveProviders.forEach(provider => {
             provider.disconnect();
           });
         },
@@ -108,7 +106,7 @@ export const workspacesAtom = atomWithObservable(get => {
       return workspaces;
     }
 
-    fetchWorkspace()
+    fetchWorkspaces()
       .then(workspaces => {
         if (workspaces) {
           subscriber.next(workspaces);
@@ -159,11 +157,11 @@ export const rootCurrentWorkspaceAtom = atomWithObservable(get => {
         );
       }
 
-      const providers = workspace.blockSuiteWorkspace.providers.filter(
+      const activeProviders = workspace.blockSuiteWorkspace.providers.filter(
         (provider): provider is ActiveDocProvider =>
           'active' in provider && provider.active === true
       );
-      for (const provider of providers) {
+      for (const provider of activeProviders) {
         provider.sync();
         // we will wait for the necessary providers to be ready
         await provider.whenReady;
@@ -171,18 +169,17 @@ export const rootCurrentWorkspaceAtom = atomWithObservable(get => {
       if (signal.aborted) {
         return;
       }
-      const backgroundProviders =
-        workspace.blockSuiteWorkspace.providers.filter(
-          (provider): provider is PassiveDocProvider =>
-            'passive' in provider && provider.passive
-        );
-      backgroundProviders.forEach(provider => {
+      const passiveProviders = workspace.blockSuiteWorkspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive
+      );
+      passiveProviders.forEach(provider => {
         provider.connect();
       });
       signal.addEventListener(
         'abort',
         () => {
-          backgroundProviders.forEach(provider => {
+          passiveProviders.forEach(provider => {
             provider.disconnect();
           });
         },
