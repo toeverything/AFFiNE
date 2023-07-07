@@ -36,15 +36,22 @@ export const LoginCard = () => {
 const UserCard = () => {
   const user = useCurrentUser();
   return (
-    <div>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
       <UserAvatar
         size={28}
         name={user.name}
         url={user.image}
         className="avatar"
       />
-      <div>{user.name}</div>
-      <div>{user.email}</div>
+      <div style={{ marginLeft: '15px' }}>
+        <div>{user.name}</div>
+        <div>{user.email}</div>
+      </div>
     </div>
   );
 };
