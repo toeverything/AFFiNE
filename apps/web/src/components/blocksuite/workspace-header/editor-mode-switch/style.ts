@@ -53,3 +53,14 @@ export const StyledSwitchItem = styled('button')<{
     },
   };
 });
+
+export const StyledKeyboardItem = styled('span')(() => {
+  return {
+    marginLeft: '5px',
+    fontSize: '4px',
+    paddingLeft: '5px',
+    paddingRight: '5px',
+    backgroundColor: '#55545A',
+    borderRadius: '4px',
+  };
+});

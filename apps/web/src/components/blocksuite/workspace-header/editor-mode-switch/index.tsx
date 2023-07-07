@@ -3,13 +3,13 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtom } from 'jotai';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, JSXElementConstructor, ReactElement } from 'react';
 import { useEffect } from 'react';
 
 import { pageSettingFamily } from '../../../../atoms';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
-import { StyledEditorModeSwitch } from './style';
+import { StyledEditorModeSwitch, StyledKeyboardItem } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 
 export type EditorModeSwitchProps = {
@@ -34,7 +34,11 @@ export const EditorModeSwitch = ({
   const { trash } = pageMeta;
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
-      if ((e.key === 's' && e.metaKey) || (e.key === 's' && e.altKey)) {
+      if (
+        !environment.isServer && environment.isMacOs
+          ? e.key === 'ß'
+          : e.key === 's' && e.altKey
+      ) {
         e.preventDefault();
         setSetting(setting => {
           if (setting?.mode !== 'page') {
@@ -51,8 +55,28 @@ export const EditorModeSwitch = ({
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [setSetting, t]);
+
+  const TooltipContent = () => {
+    return (
+      <div>
+        Switch
+        <StyledKeyboardItem>
+          {!environment.isServer && environment.isMacOs ? '⌥ + S' : 'Alt + S'}
+        </StyledKeyboardItem>
+      </div>
+    );
+  };
+
   return (
-    <Tooltip content={'Switch ⌘ + S'}>
+    <Tooltip
+      content={
+        (<TooltipContent />) as ReactElement<
+          any,
+          string | JSXElementConstructor<any>
+        > &
+          string
+      }
+    >
       <StyledEditorModeSwitch
         style={style}
         switchLeft={currentMode === 'page'}
