@@ -28,6 +28,7 @@ export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
+  setBlockHub?: (blockHub: BlockHub | null) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
@@ -96,6 +97,8 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
 
   const ref = useRef<HTMLDivElement>(null);
 
+  const setBlockHub = props.setBlockHub;
+
   useEffect(() => {
     const editor = editorRef.current;
     assertExists(editor);
@@ -111,13 +114,8 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
             blockHubRef.current.remove();
           }
           blockHubRef.current = blockHub;
-          const toolWrapper = document.querySelector('#toolWrapper');
-          if (!toolWrapper) {
-            console.warn(
-              'toolWrapper not found, block hub feature will not be available.'
-            );
-          } else {
-            toolWrapper.appendChild(blockHub);
+          if (setBlockHub) {
+            setBlockHub(blockHub);
           }
         })
         .catch(err => {
@@ -127,10 +125,13 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
 
     container.appendChild(editor);
     return () => {
+      if (setBlockHub) {
+        setBlockHub(null);
+      }
       blockHubRef.current?.remove();
       container.removeChild(editor);
     };
-  }, [editor, page]);
+  }, [editor, setBlockHub, page]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${
