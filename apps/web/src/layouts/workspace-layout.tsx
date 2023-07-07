@@ -20,7 +20,6 @@ import {
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { assertEquals, assertExists } from '@blocksuite/global/utils';
-import type { PassiveDocProvider } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -55,7 +54,10 @@ import {
   RootAppSidebar,
 } from '../components/root-app-sidebar';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
+import {
+  useCurrentWorkspace,
+  usePassiveWorkspaceEffect,
+} from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import {
@@ -242,21 +244,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setWorkspaceId,
   ]);
 
-  useEffect(() => {
-    const backgroundProviders =
-      currentWorkspace.blockSuiteWorkspace.providers.filter(
-        (provider): provider is PassiveDocProvider =>
-          'passive' in provider && provider.passive
-      );
-    backgroundProviders.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      backgroundProviders.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspace]);
+  usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
   useEffect(() => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(

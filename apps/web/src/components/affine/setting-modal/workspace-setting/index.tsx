@@ -1,21 +1,17 @@
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { assertExists } from '@blocksuite/global/utils';
-import { useAtomValue } from 'jotai';
-import { Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useCallback } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';
+import { usePassiveWorkspaceEffect } from '../../../../hooks/current/use-current-workspace';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
+import { useWorkspace } from '../../../../hooks/use-workspace';
 import { useAppHelper } from '../../../../hooks/use-workspaces';
 
 export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
-  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
-  const flavour = useMemo(
-    () => metadata.find(({ id }) => id === workspaceId)?.flavour,
-    [metadata, workspaceId]
-  );
-  assertExists(flavour);
+  const workspace = useWorkspace(workspaceId);
+  usePassiveWorkspaceEffect(workspace.blockSuiteWorkspace);
   const helper = useAppHelper();
-  const { NewSettingsDetail } = getUIAdapter(flavour);
+
+  const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
 
   const onDeleteWorkspace = useCallback(
     async (id: string) => {

@@ -16,7 +16,6 @@ import { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { pageSettingFamily } from '../../../atoms';
-import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
@@ -81,7 +80,7 @@ const WorkspaceDetail: React.FC = () => {
 
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
-  const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
+  const [currentWorkspace] = useCurrentWorkspace();
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const page = useBlockSuiteWorkspacePage(
     currentWorkspace.blockSuiteWorkspace,
