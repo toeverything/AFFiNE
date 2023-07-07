@@ -5,7 +5,7 @@ import {
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { useStaticWorkspace } from '@affine/workspace/utils';
+import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { ContactWithUsIcon } from '@blocksuite/icons';
 import type { PassiveDocProvider } from '@blocksuite/store';
 import { noop } from 'foxact/noop';
@@ -74,7 +74,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
     onSettingClick({ activeTab: 'account', workspaceId: null });
   }, [onSettingClick]);
 
-  const workspace = useStaticWorkspace(workspaceId);
+  const workspace = useStaticBlockSuiteWorkspace(workspaceId);
 
   useEffect(() => {
     if (workspace && workspace !== currentWorkspace.blockSuiteWorkspace) {

@@ -19,7 +19,7 @@ import {
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import {
   createEmptyBlockSuiteWorkspace,
-  useStaticWorkspace,
+  useStaticBlockSuiteWorkspace,
 } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 
@@ -79,7 +79,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       return <>{children}</>;
     },
     PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
-      const workspace = useStaticWorkspace(currentWorkspaceId);
+      const workspace = useStaticBlockSuiteWorkspace(currentWorkspaceId);
       const page = workspace.getPage(currentPageId);
       if (!page) {
         throw new PageNotFoundError(workspace, currentPageId);

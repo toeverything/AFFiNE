@@ -1,7 +1,7 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { useStaticWorkspace } from '@affine/workspace/utils';
+import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { SettingsIcon } from '@blocksuite/icons';
 import {
   CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
@@ -80,7 +80,7 @@ export const WorkspaceCard: FC<WorkspaceCardProps> = ({
   meta,
 }) => {
   const t = useAFFiNEI18N();
-  const workspace = useStaticWorkspace(meta.id);
+  const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [name] = useBlockSuiteWorkspaceName(workspace);
 
   return (

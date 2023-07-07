@@ -2,7 +2,7 @@ import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { useStaticWorkspace } from '@affine/workspace/utils';
+import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
 
@@ -119,7 +119,7 @@ const WorkspaceListItem = ({
   isCurrent: boolean;
   isActive: boolean;
 }) => {
-  const workspace = useStaticWorkspace(meta.id);
+  const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
   return (
     <div

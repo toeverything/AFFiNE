@@ -49,7 +49,7 @@ export function getWorkspace(id: string) {
   return workspaceHashMap.get(id) as Workspace;
 }
 
-const emptyWorkspaceAtom = atom(async () =>
+const emptyBlockSuiteWorkspaceAtom = atom(async () =>
   new Workspace({
     id: 'null',
     isSSR: !isBrowser,
@@ -60,11 +60,11 @@ const emptyWorkspaceAtom = atom(async () =>
     .register(__unstableSchemas)
 );
 
-export function getPassiveWorkspaceAtom(
+export function getPassiveBlockSuiteWorkspaceAtom(
   id: string | null
 ): Atom<Promise<Workspace>> {
   if (id === null) {
-    return emptyWorkspaceAtom;
+    return emptyBlockSuiteWorkspaceAtom;
   }
   if (!workspaceHashMap.has(id)) {
     throw new Error('Workspace not found');
@@ -91,8 +91,8 @@ export function getPassiveWorkspaceAtom(
   return workspacePassiveAtomWeakMap.get(workspace) as Atom<Promise<Workspace>>;
 }
 
-export function useStaticWorkspace(id: string | null): Workspace {
-  return useAtomValue(getPassiveWorkspaceAtom(id));
+export function useStaticBlockSuiteWorkspace(id: string | null): Workspace {
+  return useAtomValue(getPassiveBlockSuiteWorkspaceAtom(id));
 }
 
 /**

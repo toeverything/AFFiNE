@@ -50,18 +50,25 @@ export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
   flavour: 'sqlite-download';
 }
 
-// todo: update type with nest.js
-export type AffineCloudWorkspace = Omit<LocalWorkspace, 'flavour'> & {
-  flavour: WorkspaceFlavour.AFFINE_CLOUD;
+type BaseWorkspace = {
+  flavour: string;
+  id: string;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
 };
 
-export interface LocalWorkspace {
+export interface AffineCloudWorkspace extends BaseWorkspace {
+  flavour: WorkspaceFlavour.AFFINE_CLOUD;
+  id: string;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+}
+
+export interface LocalWorkspace extends BaseWorkspace {
   flavour: WorkspaceFlavour.LOCAL;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
 }
 
-export interface AffinePublicWorkspace {
+export interface AffinePublicWorkspace extends BaseWorkspace {
   flavour: WorkspaceFlavour.PUBLIC;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
