@@ -40,7 +40,7 @@ const workspacePassiveAtomWeakMap = new WeakMap<
   Workspace,
   Atom<Promise<Workspace>>
 >();
-const workspacePassiveWeakMap = new WeakMap<Workspace, boolean>();
+const workspaceActiveWeakMap = new WeakMap<Workspace, boolean>();
 
 export function getWorkspace(id: string) {
   if (!workspaceHashMap.has(id)) {
@@ -58,7 +58,7 @@ export function getPassiveBlockSuiteWorkspaceAtom(
   const workspace = workspaceHashMap.get(id) as Workspace;
   if (!workspacePassiveAtomWeakMap.has(workspace)) {
     const baseAtom = atom(async () => {
-      if (workspacePassiveWeakMap.get(workspace) !== true) {
+      if (workspaceActiveWeakMap.get(workspace) !== true) {
         const providers = workspace.providers.filter(
           (provider): provider is ActiveDocProvider =>
             'active' in provider && provider.active === true
@@ -68,7 +68,7 @@ export function getPassiveBlockSuiteWorkspaceAtom(
           // we will wait for the necessary providers to be ready
           await provider.whenReady;
         }
-        workspacePassiveWeakMap.set(workspace, true);
+        workspaceActiveWeakMap.set(workspace, true);
       }
       return workspace;
     });
@@ -80,11 +80,6 @@ export function getPassiveBlockSuiteWorkspaceAtom(
 export function useStaticBlockSuiteWorkspace(id: string): Workspace {
   return useAtomValue(getPassiveBlockSuiteWorkspaceAtom(id));
 }
-
-/**
- * @internal test only
- */
-export const _cleanupBlockSuiteWorkspaceCache = () => workspaceHashMap.clear();
 
 export function createEmptyBlockSuiteWorkspace(
   id: string,
