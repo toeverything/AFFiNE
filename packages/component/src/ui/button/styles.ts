@@ -174,7 +174,6 @@ export const StyledButton = styled('button', {
           color: 'var(--affine-text-disable-color)',
         }
       : {}),
-    transition: 'background .15s',
     // TODO: Implement circle shape
     borderRadius: shape === 'default' ? borderRadius : height / 2,
     fontSize,

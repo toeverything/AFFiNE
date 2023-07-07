@@ -50,8 +50,13 @@ export const getButtonColors = (
         background: 'var(--affine-primary-color)',
         color: 'var(--affine-white)',
         borderColor: 'var(--affine-primary-color)',
+        backgroundBlendMode: 'overlay',
         '.affine-button-icon': {
           color: 'var(--affine-white)',
+        },
+        ':hover': {
+          background:
+            'linear-gradient(var(--affine-primary-color),var(--affine-primary-color)),var(--affine-hover-color)',
         },
       };
     case 'light':
