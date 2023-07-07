@@ -4,36 +4,47 @@ import {
   FolderIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
+import { useAtom } from 'jotai';
 import type { FC, SVGProps } from 'react';
 import { useMemo } from 'react';
 
-import { pathGenerator } from '../../../shared';
+import { openSettingModalAtom } from '../../../atoms';
+import { type AllWorkspace, pathGenerator } from '../../../shared';
+
 export const useSwitchToConfig = (
-  workspaceId: string
+  workspace: AllWorkspace
 ): {
   title: string;
-  href: string;
+  href?: string;
+  onClick?: () => void;
   icon: FC<SVGProps<SVGSVGElement>>;
 }[] => {
   const t = useAFFiNEI18N();
+  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
   return useMemo(
     () => [
       {
         title: t['All pages'](),
-        href: pathGenerator.all(workspaceId),
+        href: pathGenerator.all(workspace.id),
         icon: FolderIcon,
       },
       {
         title: t['Workspace Settings'](),
-        href: pathGenerator.setting(workspaceId),
+        onClick: () => {
+          setOpenSettingModalAtom({
+            open: true,
+            activeTab: 'workspace',
+            workspace: workspace,
+          });
+        },
         icon: SettingsIcon,
       },
       {
         title: t['Trash'](),
-        href: pathGenerator.trash(workspaceId),
+        href: pathGenerator.trash(workspace.id),
         icon: DeleteTemporarilyIcon,
       },
     ],
-    [workspaceId, t]
+    [t, workspace, setOpenSettingModalAtom]
   );
 };

@@ -26,14 +26,12 @@ export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
 
 export enum WorkspaceSubPath {
   ALL = 'all',
-  SETTING = 'setting',
   TRASH = 'trash',
   SHARED = 'shared',
 }
 
 export const WorkspaceSubPathName = {
   [WorkspaceSubPath.ALL]: 'All Pages',
-  [WorkspaceSubPath.SETTING]: 'Settings',
   [WorkspaceSubPath.TRASH]: 'Trash',
   [WorkspaceSubPath.SHARED]: 'Shared',
 } satisfies {
@@ -43,7 +41,6 @@ export const WorkspaceSubPathName = {
 export const pathGenerator = {
   all: workspaceId => `/workspace/${workspaceId}/all`,
   trash: workspaceId => `/workspace/${workspaceId}/trash`,
-  setting: workspaceId => `/workspace/${workspaceId}/setting`,
   shared: workspaceId => `/workspace/${workspaceId}/shared`,
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
@@ -52,7 +49,6 @@ export const pathGenerator = {
 export const publicPathGenerator = {
   all: workspaceId => `/public-workspace/${workspaceId}/all`,
   trash: workspaceId => `/public-workspace/${workspaceId}/trash`,
-  setting: workspaceId => `/public-workspace/${workspaceId}/setting`,
   shared: workspaceId => `/public-workspace/${workspaceId}/shared`,
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
