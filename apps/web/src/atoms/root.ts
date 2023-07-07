@@ -2,7 +2,6 @@
 import { DebugLogger } from '@affine/debug';
 import type {
   WorkspaceAdapter,
-  WorkspaceRegistry,
 } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import {
@@ -17,69 +16,6 @@ import { atom } from 'jotai';
 import type { AllWorkspace } from '../shared';
 
 const logger = new DebugLogger('web:atoms:root');
-
-/**
- * Fetch all workspaces from the Plugin CRUD
- */
-export const workspacesAtom = atom<Promise<AllWorkspace[]>>(
-  async (get, { signal }) => {
-    const WorkspaceAdapters = get(workspaceAdaptersAtom);
-    const flavours: string[] = Object.values(WorkspaceAdapters).map(
-      plugin => plugin.flavour
-    );
-    const jotaiWorkspaces = (await get(rootWorkspacesMetadataAtom)).filter(
-      workspace => flavours.includes(workspace.flavour)
-    );
-    if (jotaiWorkspaces.some(meta => !('version' in meta))) {
-      // wait until all workspaces have migrated to v2
-      await new Promise((resolve, reject) => {
-        signal.addEventListener('abort', reject);
-        setTimeout(resolve, 1000);
-      }).catch(() => {
-        // do nothing
-      });
-    }
-    const workspaces = await Promise.all(
-      jotaiWorkspaces.map(workspace => {
-        const adapter = WorkspaceAdapters[
-          workspace.flavour
-        ] as WorkspaceAdapter<WorkspaceFlavour>;
-        assertExists(adapter);
-        const { CRUD } = adapter;
-        return CRUD.get(workspace.id).then(workspace => {
-          if (workspace === null) {
-            console.warn(
-              'workspace is null. this should not happen. If you see this error, please report it to the developer.'
-            );
-          }
-          return workspace;
-        });
-      })
-    ).then(workspaces =>
-      workspaces.filter(
-        (workspace): workspace is WorkspaceRegistry['affine-cloud' | 'local'] =>
-          workspace !== null
-      )
-    );
-    const workspaceProviders = workspaces.map(workspace =>
-      workspace.blockSuiteWorkspace.providers.filter(
-        (provider): provider is ActiveDocProvider =>
-          'active' in provider && provider.active
-      )
-    );
-    const promises: Promise<void>[] = [];
-    for (const providers of workspaceProviders) {
-      for (const provider of providers) {
-        provider.sync();
-        promises.push(provider.whenReady);
-      }
-    }
-    // we will wait for all the necessary providers to be ready
-    await Promise.all(promises);
-    logger.info('workspaces', workspaces);
-    return workspaces;
-  }
-);
 
 /**
  * This will throw an error if the workspace is not found,

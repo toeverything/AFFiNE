@@ -22,8 +22,6 @@ export const openSettingModalAtom = atom<SettingAtom>({
 
 export const openDisableCloudAlertModalAtom = atom(false);
 
-export { workspacesAtom } from './root';
-
 type PageMode = 'page' | 'edgeless';
 type PageLocalSetting = {
   mode: PageMode;

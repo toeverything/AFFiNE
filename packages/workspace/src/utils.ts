@@ -36,9 +36,11 @@ function setEditorFlags(workspace: Workspace) {
 // guid -> Workspace
 export const workspaceHashMap = new Map<string, Workspace>();
 
-const workspaceAtomWeakMap = new WeakMap<Workspace, Atom<Promise<Workspace>>>();
-
-const workspaceDownloadedWeakMap = new WeakMap<Workspace, boolean>();
+const workspacePassiveAtomWeakMap = new WeakMap<
+  Workspace,
+  Atom<Promise<Workspace>>
+>();
+const workspacePassiveWeakMap = new WeakMap<Workspace, boolean>();
 
 export function getWorkspace(id: string) {
   if (!workspaceHashMap.has(id)) {
@@ -58,7 +60,7 @@ const emptyWorkspaceAtom = atom(async () =>
     .register(__unstableSchemas)
 );
 
-export function getStaticWorkspace(
+export function getPassiveWorkspaceAtom(
   id: string | null
 ): Atom<Promise<Workspace>> {
   if (id === null) {
@@ -68,9 +70,9 @@ export function getStaticWorkspace(
     throw new Error('Workspace not found');
   }
   const workspace = workspaceHashMap.get(id) as Workspace;
-  if (!workspaceAtomWeakMap.has(workspace)) {
+  if (!workspacePassiveAtomWeakMap.has(workspace)) {
     const baseAtom = atom(async () => {
-      if (workspaceDownloadedWeakMap.get(workspace) !== true) {
+      if (workspacePassiveWeakMap.get(workspace) !== true) {
         const providers = workspace.providers.filter(
           (provider): provider is ActiveDocProvider =>
             'active' in provider && provider.active === true
@@ -80,17 +82,17 @@ export function getStaticWorkspace(
           // we will wait for the necessary providers to be ready
           await provider.whenReady;
         }
-        workspaceDownloadedWeakMap.set(workspace, true);
+        workspacePassiveWeakMap.set(workspace, true);
       }
       return workspace;
     });
-    workspaceAtomWeakMap.set(workspace, baseAtom);
+    workspacePassiveAtomWeakMap.set(workspace, baseAtom);
   }
-  return workspaceAtomWeakMap.get(workspace) as Atom<Promise<Workspace>>;
+  return workspacePassiveAtomWeakMap.get(workspace) as Atom<Promise<Workspace>>;
 }
 
 export function useStaticWorkspace(id: string | null): Workspace {
-  return useAtomValue(getStaticWorkspace(id));
+  return useAtomValue(getPassiveWorkspaceAtom(id));
 }
 
 /**
