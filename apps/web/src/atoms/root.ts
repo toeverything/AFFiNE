@@ -1,8 +1,6 @@
 //#region async atoms that to load the real workspace data
 import { DebugLogger } from '@affine/debug';
-import type {
-  WorkspaceAdapter,
-} from '@affine/env/workspace';
+import type { WorkspaceAdapter } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   rootCurrentWorkspaceIdAtom,
