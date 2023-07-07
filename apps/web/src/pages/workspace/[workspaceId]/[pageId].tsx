@@ -87,10 +87,12 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   const page = currentPageId
     ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
     : null;
+  const pageId = router.query.pageId;
   useEffect(() => {
     retimer(
       window.setTimeout(() => {
         if (
+          pageId &&
           currentPageId &&
           !currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
         ) {
@@ -98,7 +100,13 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
         }
       }, globalThis.HALTING_PROBLEM_TIMEOUT)
     );
-  }, [currentPageId, currentWorkspace.blockSuiteWorkspace, retimer, push]);
+  }, [
+    currentPageId,
+    currentWorkspace.blockSuiteWorkspace,
+    retimer,
+    push,
+    pageId,
+  ]);
   if (!router.isReady) {
     return <PageDetailSkeleton key="router-not-ready" />;
   } else if (!currentPageId || !page) {
