@@ -230,7 +230,7 @@ export class WorkspaceResolver {
     @Args({ name: 'input', type: () => UpdateWorkspaceInput })
     { id, ...updates }: UpdateWorkspaceInput
   ) {
-    await this.permissionProvider.check('id', user.id, Permission.Admin);
+    await this.permissionProvider.check(id, user.id, Permission.Admin);
 
     return this.prisma.workspace.update({
       where: {

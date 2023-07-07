@@ -130,7 +130,7 @@ type Mutation {
   Upload user avatar
   """
   uploadAvatar(id: String!, avatar: Upload!): UserType!
-  register(name: String!, email: String!, password: String!): UserType!
+  signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
 }
 

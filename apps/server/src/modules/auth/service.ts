@@ -123,7 +123,7 @@ export class AuthService {
     return user;
   }
 
-  async register(name: string, email: string, password: string): Promise<User> {
+  async signUp(name: string, email: string, password: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
         email,

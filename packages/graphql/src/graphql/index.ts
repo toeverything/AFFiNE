@@ -7,17 +7,6 @@ export interface GraphQLQuery {
   containsFile?: boolean;
 }
 
-export const acceptInviteByWorkspaceIdMutation = {
-  id: 'acceptInviteByWorkspaceIdMutation' as const,
-  operationName: 'acceptInviteByWorkspaceId',
-  definitionName: 'acceptInvite',
-  containsFile: false,
-  query: `
-mutation acceptInviteByWorkspaceId($workspaceId: String!) {
-  acceptInvite(workspaceId: $workspaceId)
-}`,
-};
-
 export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',
@@ -147,6 +136,36 @@ mutation setWorkspacePublicById($id: ID!, $public: Boolean!) {
 }`,
 };
 
+export const signInMutation = {
+  id: 'signInMutation' as const,
+  operationName: 'signIn',
+  definitionName: 'signIn',
+  containsFile: false,
+  query: `
+mutation signIn($email: String!, $password: String!) {
+  signIn(email: $email, password: $password) {
+    token {
+      token
+    }
+  }
+}`,
+};
+
+export const signUpMutation = {
+  id: 'signUpMutation' as const,
+  operationName: 'signUp',
+  definitionName: 'signUp',
+  containsFile: false,
+  query: `
+mutation signUp($name: String!, $email: String!, $password: String!) {
+  signUp(name: $name, email: $email, password: $password) {
+    token {
+      token
+    }
+  }
+}`,
+};
+
 export const uploadAvatarMutation = {
   id: 'uploadAvatarMutation' as const,
   operationName: 'uploadAvatar',
@@ -160,5 +179,27 @@ mutation uploadAvatar($id: String!, $avatar: Upload!) {
     avatarUrl
     email
   }
+}`,
+};
+
+export const acceptInviteByWorkspaceIdMutation = {
+  id: 'acceptInviteByWorkspaceIdMutation' as const,
+  operationName: 'acceptInviteByWorkspaceId',
+  definitionName: 'acceptInvite',
+  containsFile: false,
+  query: `
+mutation acceptInviteByWorkspaceId($workspaceId: String!) {
+  acceptInvite(workspaceId: $workspaceId)
+}`,
+};
+
+export const inviteByWorkspaceIdMutation = {
+  id: 'inviteByWorkspaceIdMutation' as const,
+  operationName: 'inviteByWorkspaceId',
+  definitionName: 'invite',
+  containsFile: false,
+  query: `
+mutation inviteByWorkspaceId($workspaceId: String!, $email: String!, $permission: Permission!) {
+  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
 }`,
 };
