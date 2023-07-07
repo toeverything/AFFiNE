@@ -178,7 +178,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
   };
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
-  const [currentWorkspace, setWorkspaceId] = useCurrentWorkspace();
+  const [currentWorkspace] = useCurrentWorkspace();
   const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const router = useRouter();
@@ -214,35 +214,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     }
   }
   //#endregion
-
-  useEffect(() => {
-    if (currentPageId) {
-      const pageExist =
-        currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-      if (
-        router.pathname === '/workspace/[workspaceId]/[pageId]' &&
-        !pageExist
-      ) {
-        setWorkspaceId(null);
-        router.push('/404').catch(console.error);
-      }
-    } else if (
-      router.pathname === '/workspace/[workspaceId]/[pageId]' &&
-      typeof router.query.pageId === 'string' &&
-      router.query.pageId !== currentPageId
-    ) {
-      setCurrentPageId(router.query.pageId);
-      jumpToPage(currentWorkspace.id, router.query.pageId).catch(console.error);
-    }
-  }, [
-    currentPageId,
-    currentWorkspace.blockSuiteWorkspace,
-    currentWorkspace.id,
-    jumpToPage,
-    router,
-    setCurrentPageId,
-    setWorkspaceId,
-  ]);
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
