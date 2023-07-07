@@ -143,7 +143,7 @@ const ExportToPngMenuItem = ({
       .then(() => {
         onSelect?.({ type: 'png' });
         setPushNotification({
-          key: 'export-to-pdf',
+          key: 'export-to-png',
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
@@ -152,7 +152,7 @@ const ExportToPngMenuItem = ({
       .catch(err => {
         console.error(err);
         setPushNotification({
-          key: 'export-to-pdf',
+          key: 'export-to-png',
           title: t['com.affine.export.error.title'](),
           message: t['com.affine.export.error.message'](),
           type: 'error',
