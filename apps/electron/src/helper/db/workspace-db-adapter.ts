@@ -52,11 +52,21 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   };
 
   setupListener(docId?: string) {
-    logger.debug('WorkspaceSQLiteDB: setupListener', this.workspaceId, docId);
+    logger.debug(
+      'WorkspaceSQLiteDB:setupListener',
+      this.workspaceId,
+      docId,
+      this.getWorkspaceName()
+    );
     const doc = this.getDoc(docId);
     if (doc) {
       const onUpdate = async (update: Uint8Array, origin: YOrigin) => {
-        logger.debug('onUpdate', this.workspaceId, docId, update.length);
+        logger.debug(
+          'WorkspaceSQLiteDB:onUpdate',
+          this.workspaceId,
+          docId,
+          update.length
+        );
         const insertRows = [{ data: update, docId }];
         if (origin === 'renderer') {
           await this.addUpdateToSQLite(insertRows);
