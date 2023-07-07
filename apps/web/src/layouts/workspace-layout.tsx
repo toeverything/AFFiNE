@@ -176,7 +176,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
   };
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const [currentWorkspace, setWorkspaceId] = useCurrentWorkspace();
   const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
   const router = useRouter();
@@ -213,20 +213,34 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   }
   //#endregion
 
-  if (currentPageId) {
-    const pageExist =
-      currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-    if (router.pathname === '/[workspaceId]/[pageId]' && !pageExist) {
-      router.push('/404').catch(console.error);
+  useEffect(() => {
+    if (currentPageId) {
+      const pageExist =
+        currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+      if (
+        router.pathname === '/workspace/[workspaceId]/[pageId]' &&
+        !pageExist
+      ) {
+        setWorkspaceId(null);
+        router.push('/404').catch(console.error);
+      }
+    } else if (
+      router.pathname === '/workspace/[workspaceId]/[pageId]' &&
+      typeof router.query.pageId === 'string' &&
+      router.query.pageId !== currentPageId
+    ) {
+      setCurrentPageId(router.query.pageId);
+      jumpToPage(currentWorkspace.id, router.query.pageId).catch(console.error);
     }
-  } else if (
-    router.pathname === '/[workspaceId]/[pageId]' &&
-    typeof router.query.pageId === 'string' &&
-    router.query.pageId !== currentPageId
-  ) {
-    setCurrentPageId(router.query.pageId);
-    jumpToPage(currentWorkspace.id, router.query.pageId).catch(console.error);
-  }
+  }, [
+    currentPageId,
+    currentWorkspace.blockSuiteWorkspace,
+    currentWorkspace.id,
+    jumpToPage,
+    router,
+    setCurrentPageId,
+    setWorkspaceId,
+  ]);
 
   useEffect(() => {
     const backgroundProviders =

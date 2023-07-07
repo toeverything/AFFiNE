@@ -9,10 +9,20 @@ import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
 
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
+import { useWorkspace } from '../hooks/use-workspace';
 import { useAppHelper } from '../hooks/use-workspaces';
 import { AllWorkspaceModals } from '../providers/modal-provider';
 
 const logger = new DebugLogger('index:router');
+
+type AllWorkspaceLoaderProps = {
+  id: string;
+};
+
+const WorkspaceLoader = (props: AllWorkspaceLoaderProps): null => {
+  useWorkspace(props.id);
+  return null;
+};
 
 const IndexPageInner = () => {
   const router = useRouter();
@@ -76,9 +86,12 @@ const IndexPageInner = () => {
   }, [meta, helper, jumpToPage, jumpToSubPath, router]);
 
   return (
-    <Suspense fallback={<WorkspaceFallback />}>
+    <>
+      {meta.map(({ id }) => (
+        <WorkspaceLoader key={id} id={id} />
+      ))}
       <AllWorkspaceModals />
-    </Suspense>
+    </>
   );
 };
 
