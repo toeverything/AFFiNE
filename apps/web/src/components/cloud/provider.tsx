@@ -2,7 +2,6 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { assertExists } from '@blocksuite/global/utils';
 import { GraphQLError } from 'graphql/index';
 import { useSetAtom } from 'jotai';
-import { SessionProvider } from 'next-auth/react';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useCallback, useMemo } from 'react';
 import type { SWRConfiguration } from 'swr';
@@ -60,7 +59,7 @@ export const Provider = (props: PropsWithChildren): ReactElement => {
         )
       }
     >
-      <SessionProvider>{props.children}</SessionProvider>
+      {props.children}
     </SWRConfig>
   );
 };
