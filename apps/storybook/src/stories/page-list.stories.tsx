@@ -1,5 +1,6 @@
 import { Empty } from '@affine/component';
 import { toast } from '@affine/component';
+import { AffineLoading } from '@affine/component/affine-loading';
 import type { OperationCellProps } from '@affine/component/page-list';
 import { PageListTrashView } from '@affine/component/page-list';
 import { PageList } from '@affine/component/page-list';
@@ -12,7 +13,7 @@ import { userEvent } from '@storybook/testing-library';
 
 export default {
   title: 'AFFiNE/PageList',
-  component: PageList,
+  component: AffineLoading,
 };
 
 export const AffineOperationCell: StoryFn<OperationCellProps> = ({
