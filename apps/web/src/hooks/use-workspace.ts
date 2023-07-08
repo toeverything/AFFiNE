@@ -1,7 +1,7 @@
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 
