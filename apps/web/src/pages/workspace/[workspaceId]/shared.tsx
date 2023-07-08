@@ -7,11 +7,11 @@ import React, { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { BlockSuitePageList } from '../../../components/blocksuite/block-suite-page-list';
-import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
+import { WorkspaceFallback } from '@affine/component/workspace'
 const SharedPages: NextPageWithLayout = () => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
@@ -28,9 +28,6 @@ const SharedPages: NextPageWithLayout = () => {
     },
     [currentWorkspace, jumpToPage]
   );
-  if (currentWorkspace === null) {
-    return <PageLoading />;
-  }
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   assertExists(blockSuiteWorkspace);
   const { Header } = getUIAdapter(currentWorkspace.flavour);
