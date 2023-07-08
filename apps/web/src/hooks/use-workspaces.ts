@@ -2,11 +2,9 @@ import { DebugLogger } from '@affine/debug';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
-import {
-  createEmptyBlockSuiteWorkspace,
-  getWorkspace,
-} from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
+import { getWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

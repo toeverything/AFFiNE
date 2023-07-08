@@ -2,7 +2,7 @@ import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
 

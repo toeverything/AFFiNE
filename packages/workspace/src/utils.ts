@@ -7,15 +7,12 @@ import {
 } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type {
-  ActiveDocProvider,
   DocProviderCreator,
   Generator,
   StoreOptions,
 } from '@blocksuite/store';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
-import { useAtomValue } from 'jotai/react';
-import type { Atom } from 'jotai/vanilla';
-import { atom } from 'jotai/vanilla';
+import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/hooks/use-block-suite-workspace';
 
 import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
@@ -31,54 +28,6 @@ function setEditorFlags(workspace: Workspace) {
     'enable_bookmark_operation',
     environment.isDesktop
   );
-}
-
-// guid -> Workspace
-export const workspaceHashMap = new Map<string, Workspace>();
-
-const workspacePassiveAtomWeakMap = new WeakMap<
-  Workspace,
-  Atom<Promise<Workspace>>
->();
-const workspaceActiveWeakMap = new WeakMap<Workspace, boolean>();
-
-export function getWorkspace(id: string) {
-  if (!workspaceHashMap.has(id)) {
-    throw new Error('Workspace not found');
-  }
-  return workspaceHashMap.get(id) as Workspace;
-}
-
-export function getPassiveBlockSuiteWorkspaceAtom(
-  id: string
-): Atom<Promise<Workspace>> {
-  if (!workspaceHashMap.has(id)) {
-    throw new Error('Workspace not found');
-  }
-  const workspace = workspaceHashMap.get(id) as Workspace;
-  if (!workspacePassiveAtomWeakMap.has(workspace)) {
-    const baseAtom = atom(async () => {
-      if (workspaceActiveWeakMap.get(workspace) !== true) {
-        const providers = workspace.providers.filter(
-          (provider): provider is ActiveDocProvider =>
-            'active' in provider && provider.active === true
-        );
-        for (const provider of providers) {
-          provider.sync();
-          // we will wait for the necessary providers to be ready
-          await provider.whenReady;
-        }
-        workspaceActiveWeakMap.set(workspace, true);
-      }
-      return workspace;
-    });
-    workspacePassiveAtomWeakMap.set(workspace, baseAtom);
-  }
-  return workspacePassiveAtomWeakMap.get(workspace) as Atom<Promise<Workspace>>;
-}
-
-export function useStaticBlockSuiteWorkspace(id: string): Workspace {
-  return useAtomValue(getPassiveBlockSuiteWorkspaceAtom(id));
 }
 
 export function createEmptyBlockSuiteWorkspace(
@@ -108,8 +57,8 @@ export function createEmptyBlockSuiteWorkspace(
   const providerCreators: DocProviderCreator[] = [];
   const prefix: string = config?.cachePrefix ?? '';
   const cacheKey = `${prefix}${id}`;
-  if (workspaceHashMap.has(cacheKey)) {
-    return workspaceHashMap.get(cacheKey) as Workspace;
+  if (INTERNAL_BLOCKSUITE_HASH_MAP.has(cacheKey)) {
+    return INTERNAL_BLOCKSUITE_HASH_MAP.get(cacheKey) as Workspace;
   }
   const idGenerator = config?.idGenerator;
 
@@ -122,7 +71,7 @@ export function createEmptyBlockSuiteWorkspace(
         blobStorages.push(createSQLiteStorage);
       }
 
-      // todo: add support for cloud storage
+      // todo(JimmFly): add support for cloud storage
     }
     providerCreators.push(...createAffineProviders());
   } else {
@@ -146,6 +95,6 @@ export function createEmptyBlockSuiteWorkspace(
     .register(AffineSchemas)
     .register(__unstableSchemas);
   setEditorFlags(workspace);
-  workspaceHashMap.set(cacheKey, workspace);
+  INTERNAL_BLOCKSUITE_HASH_MAP.set(cacheKey, workspace);
   return workspace;
 }
