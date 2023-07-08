@@ -2,7 +2,7 @@ import { WorkspaceFallback } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { getWorkspace } from '@affine/workspace/utils';
+import { getWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
 import { useAtomValue } from 'jotai';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';

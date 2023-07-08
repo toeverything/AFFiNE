@@ -1,7 +1,7 @@
+import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { Suspense, useCallback } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';
-import { usePassiveWorkspaceEffect } from '../../../../hooks/current/use-current-workspace';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import { useWorkspace } from '../../../../hooks/use-workspace';
 import { useAppHelper } from '../../../../hooks/use-workspaces';
