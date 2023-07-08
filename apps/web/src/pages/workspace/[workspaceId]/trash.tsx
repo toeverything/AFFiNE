@@ -7,7 +7,6 @@ import React, { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { BlockSuitePageList } from '../../../components/blocksuite/block-suite-page-list';
-import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
@@ -31,9 +30,6 @@ const TrashPage: NextPageWithLayout = () => {
     },
     [currentWorkspace, jumpToPage]
   );
-  if (!router.isReady || currentWorkspace === null) {
-    return <PageLoading />;
-  }
   // todo(himself65): refactor to plugin
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   assertExists(blockSuiteWorkspace);
