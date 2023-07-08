@@ -36,10 +36,10 @@
     "idb": "^7.1.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230705162600-2cb608e4-nightly",
-    "@blocksuite/store": "0.0.0-20230705162600-2cb608e4-nightly",
-    "vite": "^4.3.9",
-    "vite-plugin-dts": "3.0.2",
+    "@blocksuite/blocks": "0.0.0-20230707101710-90a6e5e4-nightly",
+    "@blocksuite/store": "0.0.0-20230707101710-90a6e5e4-nightly",
+    "vite": "^4.4.2",
+    "vite-plugin-dts": "3.1.1",
     "y-indexeddb": "^9.0.11"
   },
   "peerDependencies": {
