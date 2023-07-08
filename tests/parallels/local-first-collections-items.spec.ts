@@ -63,6 +63,7 @@ test('Show collections items in sidebar', async ({ page }) => {
     .getByTestId('collection-option')
     .getByText('Delete');
   await deleteCollection.click();
+  await page.waitForTimeout(50);
   expect(await items.count()).toBe(0);
 });
 
@@ -71,6 +72,7 @@ test('pin and unpin collection', async ({ page }) => {
   await createAndPinCollection(page, { collectionName: name });
   const collections = page.getByTestId('collections');
   const items = collections.getByTestId('collection-item');
+  await page.waitForTimeout(50);
   expect(await items.count()).toBe(1);
   const first = items.first();
   await first.getByTestId('collection-options').click();
@@ -78,6 +80,7 @@ test('pin and unpin collection', async ({ page }) => {
     .getByTestId('collection-option')
     .getByText('Unpin');
   await deleteCollection.click();
+  await page.waitForTimeout(50);
   expect(await items.count()).toBe(0);
   await page.getByTestId('collection-select').click();
   const option = page.locator('[data-testid=collection-select-option]', {
