@@ -3,7 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtom } from 'jotai';
-import type { CSSProperties, JSXElementConstructor, ReactElement } from 'react';
+import type { CSSProperties } from 'react';
 import { useEffect } from 'react';
 
 import { pageSettingFamily } from '../../../../atoms';
@@ -18,7 +18,16 @@ export type EditorModeSwitchProps = {
   pageId: string;
   style?: CSSProperties;
 };
-
+const TooltipContent = () => {
+  return (
+    <div>
+      Switch
+      <StyledKeyboardItem>
+        {!environment.isServer && environment.isMacOs ? '⌥ + S' : 'Alt + S'}
+      </StyledKeyboardItem>
+    </div>
+  );
+};
 export const EditorModeSwitch = ({
   style,
   blockSuiteWorkspace,
@@ -56,27 +65,8 @@ export const EditorModeSwitch = ({
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [setSetting, t]);
 
-  const TooltipContent = () => {
-    return (
-      <div>
-        Switch
-        <StyledKeyboardItem>
-          {!environment.isServer && environment.isMacOs ? '⌥ + S' : 'Alt + S'}
-        </StyledKeyboardItem>
-      </div>
-    );
-  };
-
   return (
-    <Tooltip
-      content={
-        (<TooltipContent />) as ReactElement<
-          any,
-          string | JSXElementConstructor<any>
-        > &
-          string
-      }
-    >
+    <Tooltip content={<TooltipContent />}>
       <StyledEditorModeSwitch
         style={style}
         switchLeft={currentMode === 'page'}
