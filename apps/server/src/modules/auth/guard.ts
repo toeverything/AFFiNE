@@ -69,6 +69,7 @@ class AuthGuard implements CanActivate {
         },
         options: this.nextAuthOptions,
       });
+
       const { body, cookies, status = 200 } = session;
       if (!body) {
         return false;

@@ -69,7 +69,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async permission(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Parent() workspace: WorkspaceType
   ) {
     // may applied in workspaces query
@@ -182,7 +182,7 @@ export class WorkspaceResolver {
     description: 'Create a new workspace',
   })
   async createWorkspace(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args({ name: 'init', type: () => GraphQLUpload })
     update: FileUpload
   ) {
@@ -226,7 +226,7 @@ export class WorkspaceResolver {
     description: 'Update workspace',
   })
   async updateWorkspace(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args({ name: 'input', type: () => UpdateWorkspaceInput })
     { id, ...updates }: UpdateWorkspaceInput
   ) {
@@ -241,7 +241,7 @@ export class WorkspaceResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteWorkspace(@CurrentUser() user: User, @Args('id') id: string) {
+  async deleteWorkspace(@CurrentUser() user: UserType, @Args('id') id: string) {
     await this.permissionProvider.check(id, user.id, Permission.Owner);
 
     await this.prisma.workspace.delete({
@@ -265,7 +265,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async invite(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
     @Args('email') email: string,
     @Args('permission', { type: () => Permission }) permission: Permission
@@ -293,7 +293,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async revoke(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
@@ -304,7 +304,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async acceptInvite(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
     return this.permissionProvider.accept(workspaceId, user.id);
@@ -312,7 +312,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async leaveWorkspace(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
     await this.permissionProvider.check(workspaceId, user.id);
@@ -322,7 +322,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async sharePage(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
@@ -333,7 +333,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async revokePage(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
@@ -346,7 +346,7 @@ export class WorkspaceResolver {
     description: 'List blobs of workspace',
   })
   async listBlobs(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
     await this.permissionProvider.check(workspaceId, user.id);
@@ -356,7 +356,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => String)
   async setBlob(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
     @Args({ name: 'blob', type: () => GraphQLUpload })
     blob: FileUpload
@@ -380,7 +380,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async deleteBlob(
-    @CurrentUser() user: User,
+    @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
     @Args('hash') hash: string
   ) {
