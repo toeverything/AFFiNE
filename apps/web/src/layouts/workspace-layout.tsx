@@ -31,6 +31,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
@@ -54,10 +55,7 @@ import {
   RootAppSidebar,
 } from '../components/root-app-sidebar';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
-import {
-  useCurrentWorkspace,
-  usePassiveWorkspaceEffect,
-} from '../hooks/current/use-current-workspace';
+import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import {

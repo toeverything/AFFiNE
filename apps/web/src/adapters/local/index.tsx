@@ -17,11 +17,9 @@ import {
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import {
-  createEmptyBlockSuiteWorkspace,
-  useStaticBlockSuiteWorkspace,
-} from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
 
 import {
   BlockSuitePageList,
