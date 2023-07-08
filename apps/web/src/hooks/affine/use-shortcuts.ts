@@ -91,7 +91,7 @@ export const useWinEdgelessKeyboardShortcuts = (): ShortcutTip => {
       [t['Pen']()]: 'P',
       [t['Hand']()]: 'H',
       [t['Note']()]: 'N',
-      ['Switch']: 'Alt + S',
+      [t['Switch']()]: 'Alt + S',
       // not implement yet
       // [t['Group']()]: 'Ctrl + G',
       // [t['Ungroup']()]: 'Ctrl + Shift + G',
@@ -123,8 +123,7 @@ export const useMacPageKeyboardShortcuts = (): ShortcutTip => {
       [t['Increase indent']()]: 'Tab',
       [t['Reduce indent']()]: '⇧+Tab',
       [t['Group as Database']()]: '⌘ + G',
-      // TODO: i18N
-      ['Switch']: '⌥ + S',
+      [t['Switch']()]: '⌥ + S',
       // not implement yet
       // [t['Move Up']()]: '⌘ + ⌥ + ↑',
       // [t['Move Down']()]: '⌘ + ⌥ + ↓',
