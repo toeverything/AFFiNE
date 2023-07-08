@@ -151,7 +151,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     if (doc) {
       Y.applyUpdate(doc, data, origin);
     } else {
-      logger.warn('applyUpdate: doc not found', docId);
+      logger.warn('[WorkspaceSQLiteDB] applyUpdate: doc not found', docId);
     }
   };
 
