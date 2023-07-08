@@ -44,7 +44,7 @@ const TrashPage: NextPageWithLayout = () => {
         <title>{t['Trash']()} - AFFiNE</title>
       </Head>
       <Header
-        currentWorkspace={currentWorkspace}
+        currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           subPath: WorkspaceSubPath.TRASH,
         }}

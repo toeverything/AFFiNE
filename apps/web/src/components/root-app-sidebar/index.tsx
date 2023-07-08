@@ -44,7 +44,6 @@ export type RootAppSidebarProps = {
   paths: {
     all: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
-    setting: (workspaceId: string) => string;
     shared: (workspaceId: string) => string;
   };
 };
@@ -173,16 +172,6 @@ export const RootAppSidebar = ({
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
           </RouteMenuLinkItem>
-          {!runtimeConfig.enableNewSettingModal && (
-            <RouteMenuLinkItem
-              data-testid="slider-bar-workspace-setting-button"
-              icon={<SettingsIcon />}
-              currentPath={currentPath}
-              path={currentWorkspaceId && paths.setting(currentWorkspaceId)}
-            >
-              <span data-testid="settings">{t['Settings']()}</span>
-            </RouteMenuLinkItem>
-          )}
           {runtimeConfig.enableNewSettingModal ? (
             <MenuItem
               data-testid="slider-bar-workspace-setting-button"

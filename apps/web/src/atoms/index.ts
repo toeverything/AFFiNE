@@ -10,19 +10,17 @@ export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
 export const openQuickSearchModalAtom = atom(false);
 export const openOnboardingModalAtom = atom(false);
 
-export type SettingAtom = Pick<SettingProps, 'activeTab' | 'workspace'> & {
+export type SettingAtom = Pick<SettingProps, 'activeTab' | 'workspaceId'> & {
   open: boolean;
 };
 
 export const openSettingModalAtom = atom<SettingAtom>({
   activeTab: 'appearance',
-  workspace: null,
+  workspaceId: null,
   open: false,
 });
 
 export const openDisableCloudAlertModalAtom = atom(false);
-
-export { workspacesAtom } from './root';
 
 type PageMode = 'page' | 'edgeless';
 type PageLocalSetting = {

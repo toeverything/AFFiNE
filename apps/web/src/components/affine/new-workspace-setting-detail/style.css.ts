@@ -51,6 +51,7 @@ globalStyle(`${urlButton} span`, {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  color: 'var(--affine-placeholder-color)',
   fontWeight: '500',
 });
 

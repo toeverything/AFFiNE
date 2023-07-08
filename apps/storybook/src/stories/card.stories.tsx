@@ -2,27 +2,27 @@ import { toast } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
 import { WorkspaceCard } from '@affine/component/card/workspace-card';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import { Workspace } from '@blocksuite/store';
 
 export default {
   title: 'AFFiNE/Card',
   component: WorkspaceCard,
 };
 
-const blockSuiteWorkspace = new Workspace({
-  id: 'blocksuite-local',
-});
+const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+  'blocksuite-local',
+  WorkspaceFlavour.LOCAL
+);
 
 blockSuiteWorkspace.meta.setName('Hello World');
 
 export const AffineWorkspaceCard = () => {
   return (
     <WorkspaceCard
-      workspace={{
+      meta={{
+        id: 'blocksuite-local',
         flavour: WorkspaceFlavour.LOCAL,
-        id: 'local',
-        blockSuiteWorkspace,
       }}
       onClick={() => {}}
       onSettingClick={() => {}}

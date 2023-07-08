@@ -8,7 +8,6 @@ import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtom, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -16,7 +15,6 @@ import { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { pageSettingFamily } from '../../../atoms';
-import { rootCurrentWorkspaceAtom } from '../../../atoms/root';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
@@ -65,13 +63,13 @@ const WorkspaceDetail: React.FC = () => {
   return (
     <>
       <Header
-        currentWorkspace={currentWorkspace}
+        currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           pageId: currentPageId,
         }}
       />
       <PageDetail
-        currentWorkspace={currentWorkspace}
+        currentWorkspaceId={currentWorkspace.id}
         currentPageId={currentPageId}
         onLoadEditor={onLoad}
       />
@@ -81,12 +79,11 @@ const WorkspaceDetail: React.FC = () => {
 
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
-  const currentWorkspace = useAtomValue(rootCurrentWorkspaceAtom);
+  const [currentWorkspace] = useCurrentWorkspace();
   const currentPageId = useAtomValue(rootCurrentPageIdAtom);
-  const page = useBlockSuiteWorkspacePage(
-    currentWorkspace.blockSuiteWorkspace,
-    currentPageId
-  );
+  const page = currentPageId
+    ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
+    : null;
   if (!router.isReady) {
     return <PageDetailSkeleton key="router-not-ready" />;
   } else if (!currentPageId || !page) {

@@ -5,7 +5,7 @@ import {
 } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import { arrayMove } from '@dnd-kit/sortable';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import type { FC, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';
@@ -20,8 +20,6 @@ import {
 } from '../atoms';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
-import { useWorkspaces } from '../hooks/use-workspaces';
-import type { AllWorkspace } from '../shared';
 
 const SettingModal = lazy(() =>
   import('../components/affine/setting-modal').then(module => ({
@@ -57,16 +55,16 @@ const OnboardingModal = lazy(() =>
 
 export const Setting: FC = () => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const [{ open, workspace, activeTab }, setOpenSettingModalAtom] =
+  const [{ open, workspaceId, activeTab }, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
   assertExists(currentWorkspace);
 
   const onSettingClick = useCallback(
     ({
       activeTab,
-      workspace,
-    }: Pick<SettingAtom, 'activeTab' | 'workspace'>) => {
-      setOpenSettingModalAtom(prev => ({ ...prev, activeTab, workspace }));
+      workspaceId,
+    }: Pick<SettingAtom, 'activeTab' | 'workspaceId'>) => {
+      setOpenSettingModalAtom(prev => ({ ...prev, activeTab, workspaceId }));
     },
     [setOpenSettingModalAtom]
   );
@@ -75,7 +73,7 @@ export const Setting: FC = () => {
     <SettingModal
       open={open}
       activeTab={activeTab}
-      workspace={workspace}
+      workspaceId={workspaceId}
       onSettingClick={onSettingClick}
       setOpen={useCallback(
         open => {
@@ -132,7 +130,7 @@ export const AllWorkspaceModals = (): ReactElement => {
 
   const router = useRouter();
   const { jumpToSubPath } = useRouterHelper(router);
-  const workspaces = useWorkspaces();
+  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
     rootCurrentWorkspaceIdAtom
@@ -141,13 +139,13 @@ export const AllWorkspaceModals = (): ReactElement => {
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(
-    (workspace: AllWorkspace) => {
+    (workspaceId: string) => {
       setOpenWorkspacesModal(false);
 
       setOpenSettingModalAtom({
         open: true,
         activeTab: 'workspace',
-        workspace,
+        workspaceId,
       });
     },
     [setOpenSettingModalAtom, setOpenWorkspacesModal]
@@ -179,10 +177,10 @@ export const AllWorkspaceModals = (): ReactElement => {
             [setWorkspaces, workspaces]
           )}
           onClickWorkspace={useCallback(
-            workspace => {
+            workspaceId => {
               setOpenWorkspacesModal(false);
-              setCurrentWorkspaceId(workspace.id);
-              jumpToSubPath(workspace.id, WorkspaceSubPath.ALL).catch(error => {
+              setCurrentWorkspaceId(workspaceId);
+              jumpToSubPath(workspaceId, WorkspaceSubPath.ALL).catch(error => {
                 console.error(error);
               });
             },

@@ -1,8 +1,10 @@
 import type { TooltipProps } from '@mui/material';
+import { NoSsr } from '@mui/material';
 
 import { styled } from '../../styles';
 import { Popper, type PopperProps } from '../popper';
 import StyledPopperContainer from '../shared/container';
+
 const StyledTooltip = styled(StyledPopperContainer)(() => {
   return {
     maxWidth: '320px',
@@ -19,11 +21,13 @@ const StyledTooltip = styled(StyledPopperContainer)(() => {
 export const Tooltip = (props: PopperProps & Omit<TooltipProps, 'title'>) => {
   const { content, placement = 'top-start', children } = props;
   return (
-    <Popper
-      {...props}
-      content={<StyledTooltip placement={placement}>{content}</StyledTooltip>}
-    >
-      {children}
-    </Popper>
+    <NoSsr>
+      <Popper
+        {...props}
+        content={<StyledTooltip placement={placement}>{content}</StyledTooltip>}
+      >
+        {children}
+      </Popper>
+    </NoSsr>
   );
 };

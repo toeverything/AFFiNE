@@ -26,10 +26,10 @@
     "@blocksuite/global": "0.0.0-20230705162600-2cb608e4-nightly",
     "@blocksuite/lit": "0.0.0-20230705162600-2cb608e4-nightly",
     "@blocksuite/store": "0.0.0-20230705162600-2cb608e4-nightly",
-    "jotai": "^2.2.1"
+    "jotai": "^2.2.2"
   },
   "devDependencies": {
-    "jotai": "^2.2.1",
+    "jotai": "^2.2.2",
     "vite": "^4.3.9",
     "vite-plugin-dts": "3.0.2"
   },
@@ -43,5 +43,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.7.0-canary.36"
+  "version": "0.7.0-canary.37"
 }
