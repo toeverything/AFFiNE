@@ -1,5 +1,6 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { atom } from 'jotai';
@@ -171,6 +172,14 @@ const rootWorkspacesMetadataPromiseAtom = atom<
       }
     }
     const metadataMap = new Map(metadata.map(x => [x.id, x]));
+    // init workspace data
+    metadataMap.forEach((meta, id) => {
+      if (meta.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+        createEmptyBlockSuiteWorkspace(id, meta.flavour, {});
+      } else if (meta.flavour === WorkspaceFlavour.LOCAL) {
+        createEmptyBlockSuiteWorkspace(id, meta.flavour);
+      }
+    });
     return Array.from(metadataMap.values());
   }
 });
