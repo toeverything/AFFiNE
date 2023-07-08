@@ -45,6 +45,7 @@ const buildPreset = {
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: true,
+    enableMoveDatabase: false,
     enableNotificationCenter: true,
     enableCloud: false,
   },
