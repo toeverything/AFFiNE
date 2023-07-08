@@ -11,7 +11,6 @@ import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspac
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
-import { WorkspaceFallback } from '@affine/component/workspace'
 const SharedPages: NextPageWithLayout = () => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
