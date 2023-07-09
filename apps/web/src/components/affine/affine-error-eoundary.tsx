@@ -112,13 +112,14 @@ export class AffineErrorBoundary extends Component<
             </>
           </>
         );
+      } else {
+        errorDetail = (
+          <>
+            <h1>Sorry.. there was an error</h1>
+            {error.message ?? error.toString()}
+          </>
+        );
       }
-      errorDetail = (
-        <>
-          <h1>Sorry.. there was an error</h1>
-          {error.message ?? error.toString()}
-        </>
-      );
       return (
         <>
           {errorDetail}
