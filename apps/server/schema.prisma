@@ -91,10 +91,11 @@ model VerificationToken {
 }
 
 model Blob {
-  hash        String   @id @default(uuid()) @db.VarChar
+  id          Int      @id @default(autoincrement()) @db.Integer
+  hash        String   @db.VarChar
   workspaceId String   @map("workspace_id") @db.VarChar
   blob        Bytes    @db.ByteA
-  length      Int
+  length      BigInt
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([workspaceId, hash])
@@ -102,11 +103,12 @@ model Blob {
 }
 
 model OptimizedBlob {
-  hash        String   @id @default(uuid()) @db.VarChar
+  id          Int      @id @default(autoincrement()) @db.Integer
+  hash        String   @db.VarChar
   workspaceId String   @map("workspace_id") @db.VarChar
   params      String   @db.VarChar
   blob        Bytes    @db.ByteA
-  length      Int
+  length      BigInt
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([workspaceId, hash, params])
