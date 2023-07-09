@@ -4,8 +4,16 @@ import type {
   WorkspaceNotFoundError,
 } from '@affine/env/constant';
 import { PageNotFoundError } from '@affine/env/constant';
+import {
+  rootCurrentPageIdAtom,
+  rootCurrentWorkspaceIdAtom,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
+import { rootStore } from '@toeverything/plugin-infra/manager';
+import { useAtomValue } from 'jotai/react';
+import { Provider } from 'jotai/react';
 import type { NextRouter } from 'next/router';
-import type { ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactElement, ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';
 
@@ -23,6 +31,33 @@ type AffineError =
 interface AffineErrorBoundaryState {
   error: AffineError | null;
 }
+
+export const DumpInfo = (props: Pick<AffineErrorBoundaryProps, 'router'>) => {
+  const router = props.router;
+  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
+  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const path = router.asPath;
+  const query = router.query;
+  return (
+    <>
+      <div>
+        Please copy the following information and send it to the developer.
+      </div>
+      <div
+        style={{
+          border: '1px solid red',
+        }}
+      >
+        <div>path: {path}</div>
+        <div>query: {JSON.stringify(query)}</div>
+        <div>currentWorkspaceId: {currentWorkspaceId}</div>
+        <div>currentPageId: {currentPageId}</div>
+        <div>metadata: {JSON.stringify(metadata)}</div>
+      </div>
+    </>
+  );
+};
 
 export class AffineErrorBoundary extends Component<
   AffineErrorBoundaryProps,
@@ -44,9 +79,10 @@ export class AffineErrorBoundary extends Component<
 
   public override render(): ReactNode {
     if (this.state.error) {
+      let errorDetail: ReactElement | null = null;
       const error = this.state.error;
       if (error instanceof PageNotFoundError) {
-        return (
+        errorDetail = (
           <>
             <h1>Sorry.. there was an error</h1>
             <>
@@ -76,11 +112,20 @@ export class AffineErrorBoundary extends Component<
             </>
           </>
         );
+      } else {
+        errorDetail = (
+          <>
+            <h1>Sorry.. there was an error</h1>
+            {error.message ?? error.toString()}
+          </>
+        );
       }
       return (
         <>
-          <h1>Sorry.. there was an error</h1>
-          {error.message ?? error.toString()}
+          {errorDetail}
+          <Provider key="JotaiProvider" store={rootStore}>
+            <DumpInfo router={this.props.router} />
+          </Provider>
         </>
       );
     }
