@@ -38,6 +38,12 @@ export interface InsertRow {
   docId?: string;
   data: Uint8Array;
 }
+export const enum ValidationResult {
+  MissingTables = 0,
+  MissingDocIdColumn = 1,
+  GeneralError = 2,
+  VALID = 3,
+}
 export class Subscription {
   toString(): string;
   unsubscribe(): void;
@@ -71,5 +77,6 @@ export class SqliteConnection {
   ): Promise<void>;
   close(): Promise<void>;
   get isClose(): boolean;
-  static validate(path: string): Promise<boolean>;
+  static validate(path: string): Promise<ValidationResult>;
+  migrateAddDocId(): Promise<void>;
 }
