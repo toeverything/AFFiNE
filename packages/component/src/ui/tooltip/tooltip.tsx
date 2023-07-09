@@ -1,5 +1,5 @@
-import type { TooltipProps } from '@mui/material';
 import { NoSsr } from '@mui/material';
+import type { ReactElement } from 'react';
 
 import { styled } from '../../styles';
 import { Popper, type PopperProps } from '../popper';
@@ -18,6 +18,11 @@ const StyledTooltip = styled(StyledPopperContainer)(() => {
   };
 });
 
+interface TooltipProps {
+  content: string | ReactElement<any, any>;
+  placement?: PopperProps['placement'];
+  children: ReactElement<any, any>;
+}
 export const Tooltip = (props: PopperProps & Omit<TooltipProps, 'title'>) => {
   const { content, placement = 'top-start', children } = props;
   return (

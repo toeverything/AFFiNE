@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import { pageSettingFamily } from '../../../../atoms';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { toast } from '../../../../utils';
-import { StyledEditorModeSwitch } from './style';
+import { StyledEditorModeSwitch, StyledKeyboardItem } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 
 export type EditorModeSwitchProps = {
@@ -18,7 +18,16 @@ export type EditorModeSwitchProps = {
   pageId: string;
   style?: CSSProperties;
 };
-
+const TooltipContent = () => {
+  return (
+    <div>
+      Switch
+      <StyledKeyboardItem>
+        {!environment.isServer && environment.isMacOs ? '⌥ + S' : 'Alt + S'}
+      </StyledKeyboardItem>
+    </div>
+  );
+};
 export const EditorModeSwitch = ({
   style,
   blockSuiteWorkspace,
@@ -34,7 +43,11 @@ export const EditorModeSwitch = ({
   const { trash } = pageMeta;
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
-      if ((e.key === 's' && e.metaKey) || (e.key === 's' && e.altKey)) {
+      if (
+        !environment.isServer && environment.isMacOs
+          ? e.key === 'ß'
+          : e.key === 's' && e.altKey
+      ) {
         e.preventDefault();
         setSetting(setting => {
           if (setting?.mode !== 'page') {
@@ -51,8 +64,9 @@ export const EditorModeSwitch = ({
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [setSetting, t]);
+
   return (
-    <Tooltip content={'Switch ⌘ + S'}>
+    <Tooltip content={<TooltipContent />}>
       <StyledEditorModeSwitch
         style={style}
         switchLeft={currentMode === 'page'}

@@ -405,5 +405,6 @@
   "Workspace Settings with name": "{{name}}'s Settings",
   "You can customize your workspace here.": "You can customise your workspace here.",
   "Font Style": "Font Style",
-  "Choose your font style": "Choose your font style"
+  "Choose your font style": "Choose your font style",
+  "Switch": "Switch"
 }
