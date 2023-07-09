@@ -17,8 +17,7 @@ export const AppContainer: FC<WorkspaceRootProps> = ({
   useBlurBackground,
   children,
 }) => {
-  const noisyBackground =
-    useNoisyBackground && environment.isDesktop && environment.isMacOs;
+  const noisyBackground = useNoisyBackground && environment.isDesktop;
   return (
     <div
       className={clsx(appStyle, {
