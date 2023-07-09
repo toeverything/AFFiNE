@@ -30,7 +30,7 @@ export const WorkspaceDeleteModal = ({
   onDeleteWorkspace,
 }: WorkspaceDeleteProps) => {
   const [workspaceName] = useBlockSuiteWorkspaceName(
-    workspace.blockSuiteWorkspace ?? null
+    workspace.blockSuiteWorkspace
   );
   const [deleteStr, setDeleteStr] = useState<string>('');
   const allowDelete = deleteStr === workspaceName;

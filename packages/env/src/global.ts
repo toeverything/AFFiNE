@@ -64,6 +64,7 @@ export const buildFlagsSchema = z.object({
   enableSQLiteProvider: z.boolean(),
   enableNotificationCenter: z.boolean(),
   enableCloud: z.boolean(),
+  enableMoveDatabase: z.boolean(),
 });
 
 export const blockSuiteFeatureFlags = z.object({

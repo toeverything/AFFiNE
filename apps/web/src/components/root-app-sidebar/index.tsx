@@ -37,7 +37,7 @@ export type RootAppSidebarProps = {
   onOpenQuickSearchModal: () => void;
   onOpenSettingModal: () => void;
   onOpenWorkspaceListModal: () => void;
-  currentWorkspace: AllWorkspace | null;
+  currentWorkspace: AllWorkspace;
   openPage: (pageId: string) => void;
   createPage: () => Page;
   currentPath: string;

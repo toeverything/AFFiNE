@@ -115,19 +115,43 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   }
 
   setupListener(docId?: string) {
+    logger.debug(
+      'SecondaryWorkspaceSQLiteDB:setupListener',
+      this.workspaceId,
+      docId
+    );
     const doc = this.getDoc(docId);
-    if (!doc) {
+    const upstreamDoc = this.upstream.getDoc(docId);
+    if (!doc || !upstreamDoc) {
+      logger.warn(
+        '[SecondaryWorkspaceSQLiteDB] setupListener: doc not found',
+        docId
+      );
       return;
     }
 
     const onUpstreamUpdate = (update: Uint8Array, origin: YOrigin) => {
-      if (origin === 'renderer') {
+      logger.debug(
+        'SecondaryWorkspaceSQLiteDB:onUpstreamUpdate',
+        origin,
+        this.workspaceId,
+        docId,
+        update.length
+      );
+      if (origin === 'renderer' || origin === 'self') {
         // update to upstream yDoc should be replicated to self yDoc
         this.applyUpdate(update, 'upstream', docId);
       }
     };
 
     const onSelfUpdate = async (update: Uint8Array, origin: YOrigin) => {
+      logger.debug(
+        'SecondaryWorkspaceSQLiteDB:onSelfUpdate',
+        origin,
+        this.workspaceId,
+        docId,
+        update.length
+      );
       // for self update from upstream, we need to push it to external DB
       if (origin === 'upstream') {
         await this.addUpdateToUpdateQueue({
@@ -147,15 +171,19 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       });
     };
 
+    doc.subdocs.forEach(subdoc => {
+      this.setupListener(subdoc.guid);
+    });
+
     // listen to upstream update
     this.upstream.yDoc.on('update', onUpstreamUpdate);
-    this.yDoc.on('update', onSelfUpdate);
-    this.yDoc.on('subdocs', onSubdocs);
+    doc.on('update', onSelfUpdate);
+    doc.on('subdocs', onSubdocs);
 
     this.unsubscribers.add(() => {
       this.upstream.yDoc.off('update', onUpstreamUpdate);
-      this.yDoc.off('update', onSelfUpdate);
-      this.yDoc.off('subdocs', onSubdocs);
+      doc.off('update', onSelfUpdate);
+      doc.off('subdocs', onSubdocs);
     });
   }
 
@@ -188,7 +216,10 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     if (doc) {
       Y.applyUpdate(this.yDoc, data, origin);
     } else {
-      logger.warn('applyUpdate: doc not found', docId);
+      logger.warn(
+        '[SecondaryWorkspaceSQLiteDB] applyUpdate: doc not found',
+        docId
+      );
     }
   };
 
