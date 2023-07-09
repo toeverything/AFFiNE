@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
 import { ensureSQLiteDB } from '../db/ensure-db';
-import { migrateToSubdocAndReplaceDatabase } from '../db/migration';
+import { copyToTemp, migrateToSubdocAndReplaceDatabase } from '../db/migration';
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
@@ -217,14 +217,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
 
     if (validationResult === ValidationResult.MissingDocIdColumn) {
       try {
-        // copy original filePath to a temp file
-        const tmpDirPath = path.resolve(
-          await mainRPC.getPath('sessionData'),
-          '.tmp'
-        );
-        const tmpDBPath = path.resolve(tmpDirPath, nanoid(10) + '.db');
-        await fs.ensureDir(tmpDirPath);
-        await fs.copyFile(originalPath, tmpDBPath);
+        const tmpDBPath = await copyToTemp(originalPath);
         await migrateToSubdocAndReplaceDatabase(tmpDBPath);
         originalPath = tmpDBPath;
       } catch (error) {
@@ -235,7 +228,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
 
     if (
       validationResult !== ValidationResult.MissingDocIdColumn &&
-      validationResult !== ValidationResult.VALID
+      validationResult !== ValidationResult.Valid
     ) {
       return { error: 'DB_FILE_INVALID' }; // invalid db file
     }

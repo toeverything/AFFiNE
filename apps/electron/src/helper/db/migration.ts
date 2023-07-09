@@ -1,6 +1,12 @@
+import { resolve } from 'node:path';
+
 import { migrateToSubdoc } from '@affine/env/blocksuite';
 import { SqliteConnection } from '@affine/native';
+import fs from 'fs-extra';
+import { nanoid } from 'nanoid';
 import * as Y from 'yjs';
+
+import { mainRPC } from '../main-rpc';
 
 export const migrateToSubdocAndReplaceDatabase = async (path: string) => {
   const db = new SqliteConnection(path);
@@ -14,8 +20,6 @@ export const migrateToSubdocAndReplaceDatabase = async (path: string) => {
     Y.applyUpdate(originalDoc, row.data);
   });
 
-  console.log(originalDoc.toJSON());
-
   // 2. migrate using migrateToSubdoc
   const migratedDoc = migrateToSubdoc(originalDoc);
 
@@ -26,16 +30,23 @@ export const migrateToSubdocAndReplaceDatabase = async (path: string) => {
   await db.close();
 };
 
+export const copyToTemp = async (path: string) => {
+  const tmpDirPath = resolve(await mainRPC.getPath('sessionData'), 'tmp');
+  const tmpFilePath = resolve(tmpDirPath, nanoid());
+  await fs.ensureDir(tmpDirPath);
+  await fs.copyFile(path, tmpFilePath);
+  return tmpFilePath;
+};
+
 async function replaceRows(
   db: SqliteConnection,
   doc: Y.Doc,
   isRoot: boolean
 ): Promise<void> {
   const migratedUpdates = Y.encodeStateAsUpdate(doc);
-  const rows = [
-    { data: migratedUpdates, docId: isRoot ? undefined : doc.guid },
-  ];
-  await db.replaceUpdates(doc.guid, rows);
+  const docId = isRoot ? undefined : doc.guid;
+  const rows = [{ data: migratedUpdates, docId: docId }];
+  await db.replaceUpdates(docId, rows);
   await Promise.all(
     [...doc.subdocs].map(async subdoc => {
       await replaceRows(db, subdoc, false);

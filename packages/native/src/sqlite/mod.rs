@@ -39,7 +39,7 @@ pub enum ValidationResult {
   MissingTables,
   MissingDocIdColumn,
   GeneralError,
-  VALID,
+  Valid,
 }
 
 #[napi]
@@ -278,7 +278,7 @@ impl SqliteConnection {
     } else if !doc_id_exist {
       ValidationResult::MissingDocIdColumn
     } else {
-      ValidationResult::VALID
+      ValidationResult::Valid
     }
   }
 

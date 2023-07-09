@@ -42,7 +42,7 @@ export const enum ValidationResult {
   MissingTables = 0,
   MissingDocIdColumn = 1,
   GeneralError = 2,
-  VALID = 3,
+  Valid = 3,
 }
 export class Subscription {
   toString(): string;
