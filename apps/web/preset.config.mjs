@@ -28,6 +28,7 @@ const buildPreset = {
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: true,
+    enableMoveDatabase: false,
     enableNotificationCenter: false,
     enableCloud: false,
   },
@@ -44,6 +45,7 @@ const buildPreset = {
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: true,
+    enableMoveDatabase: false,
     enableNotificationCenter: true,
     enableCloud: false,
   },
@@ -90,6 +92,9 @@ const environmentPreset = {
   enableCloud: process.env.ENABLE_CLOUD
     ? process.env.ENABLE_CLOUD === 'true'
     : currentBuildPreset.enableCloud,
+  enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
+    ? process.env.ENABLE_MOVE_DATABASE === 'true'
+    : currentBuildPreset.enableMoveDatabase,
 };
 
 /**
