@@ -8,16 +8,12 @@ import {
   workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { openSettingModalAtom } from '../../atoms';
-import { useRouterHelper } from '../use-router-helper';
 
 export function useOnTransformWorkspace() {
-  const router = useRouter();
   const setSettingModal = useSetAtom(openSettingModalAtom);
-  const helper = useRouterHelper(router);
   const WorkspaceAdapters = useAtomValue(workspaceAdaptersAtom);
   const setMetadata = useSetAtom(rootWorkspacesMetadataAtom);
   return useCallback(
@@ -56,7 +52,7 @@ export function useOnTransformWorkspace() {
         })
       );
     },
-    [WorkspaceAdapters, helper, setMetadata, setSettingModal]
+    [WorkspaceAdapters, setMetadata, setSettingModal]
   );
 }
 
