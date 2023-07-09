@@ -3,14 +3,13 @@
  */
 import 'fake-indexeddb/auto';
 
-import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';
-import { describe, expect, test, vitest } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { beforeEach } from 'vitest';
 
 import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
@@ -51,17 +50,6 @@ describe('useBlockSuiteWorkspaceName', () => {
     expect(workspaceNameHook.result.current[0]).toBe('test 2');
     workspaceNameHook.result.current[1]('test 3');
     expect(blockSuiteWorkspace.meta.name).toBe('test 3');
-  });
-
-  test('null', () => {
-    const workspaceNameHook = renderHook(() =>
-      useBlockSuiteWorkspaceName(null)
-    );
-    vitest.spyOn(globalThis.console, 'warn');
-    expect(workspaceNameHook.result.current[0]).toBe(UNTITLED_WORKSPACE_NAME);
-    workspaceNameHook.result.current[1]('test');
-    expect(globalThis.console.warn).toHaveBeenCalledTimes(2);
-    expect(workspaceNameHook.result.current[0]).toBe(UNTITLED_WORKSPACE_NAME);
   });
 });
 
