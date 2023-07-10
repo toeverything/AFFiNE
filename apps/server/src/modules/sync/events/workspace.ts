@@ -48,12 +48,12 @@ export class WorkspaceService {
     if (!updates) return null;
 
     const doc = new Y.Doc({ guid });
-    try {
-      updates.forEach(update => {
+    for (const update of updates) {
+      try {
         Y.applyUpdate(doc, update);
-      });
-    } catch (e) {
-      console.error(e);
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     return doc;
