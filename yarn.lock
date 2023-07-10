@@ -437,6 +437,7 @@ __metadata:
     prisma: ^4.16.2
     reflect-metadata: ^0.1.13
     rxjs: ^7.8.1
+    semver: ^7.5.4
     supertest: ^6.3.3
     ts-node: ^10.9.1
     typescript: ^5.1.6
