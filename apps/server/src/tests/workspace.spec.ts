@@ -11,6 +11,7 @@ import { AppModule } from '../app';
 import {
   acceptInvite,
   createWorkspace,
+  getWorkspace,
   inviteUser,
   leaveWorkspace,
   listBlobs,
@@ -111,6 +112,12 @@ describe('Workspace Module', () => {
 
     const accept = await acceptInvite(app, u2.token.token, workspace.id);
     ok(accept === true, 'failed to accept invite');
+
+    const currWorkspace = await getWorkspace(app, u1.token.token, workspace.id);
+    const currMember = currWorkspace.members.find(u => u.email === u2.email);
+    ok(currMember !== undefined, 'failed to invite user');
+    ok(currMember.id === u2.id, 'failed to invite user');
+    ok(!currMember.accepted, 'failed to invite user');
   });
 
   it('should leave a workspace', async () => {
@@ -131,6 +138,9 @@ describe('Workspace Module', () => {
 
     const workspace = await createWorkspace(app, u1.token.token);
     await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
+
+    const currWorkspace = await getWorkspace(app, u1.token.token, workspace.id);
+    ok(currWorkspace.members.length === 2, 'failed to invite user');
 
     const revoke = await revokeUser(app, u1.token.token, workspace.id, u2.id);
     ok(revoke === true, 'failed to revoke user');

@@ -53,6 +53,27 @@ async function createWorkspace(
   return res.body.data.createWorkspace;
 }
 
+async function getWorkspace(
+  app: INestApplication,
+  token: string,
+  workspaceId: string
+): Promise<WorkspaceType> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `
+          query {
+            workspace(id: "${workspaceId}") {
+              id, members { id, name, email, permission }
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.workspace;
+}
+
 async function updateWorkspace(
   app: INestApplication,
   token: string,
@@ -241,6 +262,7 @@ async function setBlob(
 export {
   acceptInvite,
   createWorkspace,
+  getWorkspace,
   inviteUser,
   leaveWorkspace,
   listBlobs,

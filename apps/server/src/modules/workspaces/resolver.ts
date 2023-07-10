@@ -8,6 +8,7 @@ import {
   Int,
   Mutation,
   ObjectType,
+  OmitType,
   Parent,
   PartialType,
   PickType,
@@ -34,6 +35,22 @@ registerEnumType(Permission, {
 });
 
 @ObjectType()
+export class InviteUserType extends OmitType(
+  PartialType(UserType),
+  ['id'],
+  ObjectType
+) {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => Permission, { description: 'User permission in workspace' })
+  permission!: Permission;
+
+  @Field({ description: 'User accepted' })
+  accepted!: boolean;
+}
+
+@ObjectType()
 export class WorkspaceType implements Partial<Workspace> {
   @Field(() => ID)
   id!: string;
@@ -43,6 +60,11 @@ export class WorkspaceType implements Partial<Workspace> {
 
   @Field({ description: 'Workspace created date' })
   createdAt!: Date;
+
+  @Field(() => [InviteUserType], {
+    description: 'Members of workspace',
+  })
+  members!: InviteUserType[];
 }
 
 @InputType()
@@ -125,7 +147,7 @@ export class WorkspaceResolver {
     return data.user;
   }
 
-  @ResolveField(() => [UserType], {
+  @ResolveField(() => [InviteUserType], {
     description: 'Members of workspace',
     complexity: 2,
   })
@@ -138,7 +160,11 @@ export class WorkspaceResolver {
         user: true,
       },
     });
-    return data.map(({ user }) => user);
+    return data.map(({ accepted, type, user }) => ({
+      ...user,
+      permission: type,
+      accepted,
+    }));
   }
 
   @Query(() => [WorkspaceType], {
