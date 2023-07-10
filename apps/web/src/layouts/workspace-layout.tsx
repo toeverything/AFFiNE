@@ -87,7 +87,7 @@ export const QuickSearch: FC = () => {
   }
   return (
     <QuickSearchModal
-      blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
+      workspace={currentWorkspace}
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
       router={router}

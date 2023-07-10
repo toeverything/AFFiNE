@@ -24,6 +24,7 @@
   "main": "./dist/main.js",
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
+    "@affine/env": "workspace:*",
     "@affine/native": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230705162600-2cb608e4-nightly",
     "@blocksuite/editor": "0.0.0-20230705162600-2cb608e4-nightly",

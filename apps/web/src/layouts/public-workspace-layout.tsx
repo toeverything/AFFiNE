@@ -30,7 +30,7 @@ export const PublicQuickSearch: React.FC<PublicQuickSearchProps> = ({
   return (
     <Suspense>
       <QuickSearchModal
-        blockSuiteWorkspace={workspace.blockSuiteWorkspace}
+        workspace={workspace}
         open={openQuickSearchModal}
         setOpen={setOpenQuickSearchModalAtom}
         router={router}
