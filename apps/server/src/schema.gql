@@ -5,24 +5,16 @@
 type UserType {
   id: ID!
 
-  """
-  User name
-  """
+  """User name"""
   name: String!
 
-  """
-  User email
-  """
+  """User email"""
   email: String!
 
-  """
-  User avatar url
-  """
+  """User avatar url"""
   avatarUrl: String
 
-  """
-  User created date
-  """
+  """User created date"""
   createdAt: DateTime
   token: TokenType!
 }
@@ -38,41 +30,27 @@ type TokenType {
 }
 
 type InviteUserType {
-  """
-  User name
-  """
+  """User name"""
   name: String
 
-  """
-  User email
-  """
+  """User email"""
   email: String
 
-  """
-  User avatar url
-  """
+  """User avatar url"""
   avatarUrl: String
 
-  """
-  User created date
-  """
+  """User created date"""
   createdAt: DateTime
   id: ID!
 
-  """
-  User permission in workspace
-  """
+  """User permission in workspace"""
   permission: Permission!
 
-  """
-  User accepted
-  """
+  """User accepted"""
   accepted: Boolean!
 }
 
-"""
-User permission in workspace
-"""
+"""User permission in workspace"""
 enum Permission {
   Read
   Write
@@ -83,85 +61,53 @@ enum Permission {
 type WorkspaceType {
   id: ID!
 
-  """
-  is Public workspace
-  """
+  """is Public workspace"""
   public: Boolean!
 
-  """
-  Workspace created date
-  """
+  """Workspace created date"""
   createdAt: DateTime!
 
-  """
-  Members of workspace
-  """
+  """Members of workspace"""
   members: [InviteUserType!]!
 
-  """
-  Permission of current signed in user in workspace
-  """
+  """Permission of current signed in user in workspace"""
   permission: Permission!
 
-  """
-  member count of workspace
-  """
+  """member count of workspace"""
   memberCount: Int!
 
-  """
-  Shared pages of workspace
-  """
+  """Shared pages of workspace"""
   sharedPages: [String!]!
 
-  """
-  Owner of workspace
-  """
+  """Owner of workspace"""
   owner: UserType!
 }
 
 type Query {
-  """
-  Get all accessible workspaces for current user
-  """
+  """Get all accessible workspaces for current user"""
   workspaces: [WorkspaceType!]!
 
-  """
-  Get public workspace by id
-  """
+  """Get public workspace by id"""
   publicWorkspace(id: String!): WorkspaceType!
 
-  """
-  Get workspace by id
-  """
+  """Get workspace by id"""
   workspace(id: String!): WorkspaceType!
 
-  """
-  List blobs of workspace
-  """
+  """List blobs of workspace"""
   listBlobs(workspaceId: String!): [String!]!
 
-  """
-  Get user by email
-  """
+  """Get user by email"""
   user(email: String!): UserType!
 }
 
 type Mutation {
-  """
-  Create a new workspace
-  """
+  """Create a new workspace"""
   createWorkspace(init: Upload!): WorkspaceType!
 
-  """
-  Update workspace
-  """
+  """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
   deleteWorkspace(id: String!): Boolean!
-  invite(
-    workspaceId: String!
-    email: String!
-    permission: Permission!
-  ): Boolean!
+  invite(workspaceId: String!, email: String!, permission: Permission!): Boolean!
   revoke(workspaceId: String!, userId: String!): Boolean!
   acceptInvite(workspaceId: String!): Boolean!
   leaveWorkspace(workspaceId: String!): Boolean!
@@ -170,23 +116,17 @@ type Mutation {
   setBlob(workspaceId: String!, blob: Upload!): String!
   deleteBlob(workspaceId: String!, hash: String!): Boolean!
 
-  """
-  Upload user avatar
-  """
+  """Upload user avatar"""
   uploadAvatar(id: String!, avatar: Upload!): UserType!
   signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
 }
 
-"""
-The `Upload` scalar type represents a file upload.
-"""
+"""The `Upload` scalar type represents a file upload."""
 scalar Upload
 
 input UpdateWorkspaceInput {
-  """
-  is Public workspace
-  """
+  """is Public workspace"""
   public: Boolean
   id: ID!
 }
