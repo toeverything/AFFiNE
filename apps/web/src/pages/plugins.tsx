@@ -1,3 +1,6 @@
+/**
+ * @deprecated move the plugin panel into setting modal
+ */
 import { MainContainer } from '@affine/component/workspace';
 import { NoSsr } from '@mui/material';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
