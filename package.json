@@ -13,6 +13,9 @@
     "tests/kit",
     "tests/affine-legacy/*"
   ],
+  "engines": {
+    "node": ">=18.16.1 <19.0.0"
+  },
   "scripts": {
     "dev": "dev-web",
     "dev:electron": "yarn workspace @affine/electron dev:app",
@@ -37,7 +40,6 @@
     "test": "ENABLE_PRELOADING=false vitest --run",
     "test:ui": "ENABLE_PRELOADING=false vitest --ui",
     "test:coverage": "ENABLE_PRELOADING=false vitest run --coverage",
-    "postinstall": "i18n-codegen gen && husky install",
     "notify": "node scripts/notify.mjs",
     "circular": "madge --circular --ts-config ./tsconfig.json ./apps/web/src/pages/**/*.tsx",
     "typecheck": "tsc -b tsconfig.json --diagnostics"
@@ -97,6 +99,7 @@
     "nx-cloud": "latest",
     "nyc": "^15.1.0",
     "prettier": "^3.0.0",
+    "semver": "^7.5.4",
     "serve": "^14.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6",
