@@ -107,7 +107,7 @@ impl Storage {
         return Err(Error::new(
           Status::GenericFailure,
           format!("failed to connect to database: {}", e),
-        ))
+        ));
       }
       Err(e) => return Err(Error::new(Status::GenericFailure, e.to_string())),
     };
@@ -161,13 +161,23 @@ impl Storage {
     map_err!(self.docs().update_doc_with_guid(workspace_id, update).await)
   }
 
-  /// Load doc as update buffer.
+  /// Load doc as update buffer, underlying will first merge all update records with yrs.
   #[napi]
   pub async fn load(&self, guid: String) -> Result<Option<Buffer>> {
     self.ensure_exists(&guid).await?;
 
     if let Some(doc) = map_err!(self.docs().get_doc(guid).await)? {
       Ok(Some(to_update_v1(&doc)?))
+    } else {
+      Ok(None)
+    }
+  }
+
+  /// Load doc as raw array update buffer.
+  #[napi]
+  pub async fn load_buffer(&self, guid: String) -> Result<Option<Vec<Buffer>>> {
+    if let Some(doc) = map_err!(self.docs().get_doc_updates(guid).await)? {
+      Ok(Some(doc.iter().map(|item| item.clone().into()).collect()))
     } else {
       Ok(None)
     }

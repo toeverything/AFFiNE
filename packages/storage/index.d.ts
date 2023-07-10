@@ -21,8 +21,10 @@ export class Storage {
   sync(workspaceId: string, guid: string, update: Buffer): Promise<void>;
   /** Sync doc update with doc guid encoded. */
   syncWithGuid(workspaceId: string, update: Buffer): Promise<void>;
-  /** Load doc as update buffer. */
+  /** Load doc as update buffer, underlying will first merge all update records with yrs. */
   load(guid: string): Promise<Buffer | null>;
+  /** Load doc as raw array update buffer. */
+  loadBuffer(guid: string): Promise<Array<Buffer> | null>;
   /** List all blobs in a workspace. */
   listBlobs(workspaceId?: string | undefined | null): Promise<Array<string>>;
   /** Fetch a workspace blob. */
