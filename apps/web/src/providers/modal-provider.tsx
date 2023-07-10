@@ -14,7 +14,6 @@ import type { SettingAtom } from '../atoms';
 import {
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
-  openOnboardingModalAtom,
   openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
@@ -90,13 +89,6 @@ export function CurrentWorkspaceModals() {
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
-  const [openOnboardingModal, setOpenOnboardingModal] = useAtom(
-    openOnboardingModalAtom
-  );
-
-  const onCloseOnboardingModal = useCallback(() => {
-    setOpenOnboardingModal(false);
-  }, [setOpenOnboardingModal]);
   return (
     <>
       <Suspense>
@@ -109,10 +101,7 @@ export function CurrentWorkspaceModals() {
       </Suspense>
       {environment.isDesktop && (
         <Suspense>
-          <OnboardingModal
-            open={openOnboardingModal}
-            onClose={onCloseOnboardingModal}
-          />
+          <OnboardingModal />
         </Suspense>
       )}
       {currentWorkspace && <Setting />}
