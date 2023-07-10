@@ -130,3 +130,5 @@ export class Unreachable extends Error {
     super(message);
   }
 }
+
+export const IMAGE_PROXY_URL = 'https://proxyimage.toeverything.workers.dev';
