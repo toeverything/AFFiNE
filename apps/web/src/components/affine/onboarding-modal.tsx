@@ -12,7 +12,7 @@ export const OnboardingModal: FC = () => {
   const onCloseTourModal = useCallback(() => {
     setShowOnboarding(false);
     setOpen(false);
-  }, [setShowOnboarding]);
+  }, [setOpen, setShowOnboarding]);
 
   return (
     <TourModal open={!open ? guideOpen : open} onClose={onCloseTourModal} />

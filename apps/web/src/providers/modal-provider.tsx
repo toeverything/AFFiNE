@@ -47,7 +47,7 @@ const TmpDisableAffineCloudModal = lazy(() =>
 );
 
 const OnboardingModal = lazy(() =>
-  import('../components/pure/onboarding-modal').then(module => ({
+  import('../components/affine/onboarding-modal').then(module => ({
     default: module.OnboardingModal,
   }))
 );
