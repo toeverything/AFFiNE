@@ -58,14 +58,7 @@ const FontFamilySettings = () => {
       defaultValue={appSettings.fontStyle}
       onValueChange={useCallback(
         (key: AppSetting['fontStyle']) => {
-          const value = fontStyleOptions.find(option => option.key === key)
-            ?.value;
-
           setAppSettings({ fontStyle: key });
-
-          document
-            .querySelector('html')
-            ?.style.setProperty('--affine-font-family', value || null);
         },
         [setAppSettings]
       )}
