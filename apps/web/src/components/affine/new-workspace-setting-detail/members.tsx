@@ -5,6 +5,7 @@ import { Permission } from '@affine/graphql';
 import type { MouseEvent, ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 
+import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { useMembers } from '../../../hooks/affine/use-members';
@@ -24,6 +25,7 @@ export const CloudWorkspaceMembersPanel = (
   const members = useMembers(workspaceId);
 
   const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
+  const currentUser = useCurrentUser();
   const isOwner = useIsWorkspaceOwner(workspaceId);
   const [inviteEmail, setInviteEmail] = useState('');
   const [permission, setPermission] = useState(Permission.Write);
@@ -60,7 +62,7 @@ export const CloudWorkspaceMembersPanel = (
       members.map(member => (
         <div key={member.id}>
           <span>{member.name}</span>
-          {isOwner && (
+          {isOwner && currentUser.email !== member.email && (
             <Button data-member-id={member.id} onClick={onClickRevoke}>
               Revoke
             </Button>
