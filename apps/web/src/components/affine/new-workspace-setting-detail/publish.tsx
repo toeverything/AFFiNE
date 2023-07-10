@@ -1,4 +1,4 @@
-import { Button, FlexWrapper, Switch } from '@affine/component';
+import { Button, FlexWrapper, Switch, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Unreachable } from '@affine/env/constant';
 import type {
@@ -52,6 +52,9 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
     await navigator.clipboard.writeText(shareLink);
     toast(t['Copied link to clipboard']());
   }, [shareLink, t]);
+  const handleClick = useCallback(() => {
+    window.open(shareLink, '_blank');
+  }, [shareLink]);
   return (
     <>
       <SettingRow
@@ -63,42 +66,43 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
           onChange={checked => toggleWorkspacePublic(checked)}
         />
       </SettingRow>
-      <FlexWrapper justifyContent="space-between">
-        <Button
-          className={style.urlButton}
-          size="middle"
-          onClick={useCallback(() => {
-            window.open(shareLink, '_blank');
-          }, [shareLink])}
-          title={shareLink}
+      {isPublic ? (
+        <FlexWrapper
+          justifyContent="space-between"
+          style={{ marginBottom: '24px' }}
         >
-          {shareLink}
-        </Button>
-        <Button size="middle" onClick={copyUrl}>
-          {t['Copy']()}
-        </Button>
-      </FlexWrapper>
+          <Button
+            className={style.urlButton}
+            size="middle"
+            onClick={handleClick}
+            title={shareLink}
+          >
+            {shareLink}
+          </Button>
+          <Button size="middle" onClick={copyUrl}>
+            {t['Copy']()}
+          </Button>
+        </FlexWrapper>
+      ) : null}
     </>
   );
 };
 
 const FakePublishPanelAffine: FC<{
   workspace: AffineOfficialWorkspace;
-}> = ({ workspace }) => {
+}> = () => {
   const t = useAFFiNEI18N();
-  const shareLink = useShareLink(workspace.id);
   return (
-    <div className={style.fakeWrapper}>
-      <SettingRow name={t['Publish']()} desc={t['Unpublished hint']()}>
-        <Switch checked={false} />
-      </SettingRow>
-      <FlexWrapper justifyContent="space-between">
-        <Button className={style.urlButton} size="middle" title={shareLink}>
-          {shareLink}
-        </Button>
-        <Button size="middle">{t['Copy']()}</Button>
-      </FlexWrapper>
-    </div>
+    <Tooltip
+      content={t['com.affine.settings.workspace.publish.local-tooltip']()}
+      placement="top"
+    >
+      <div className={style.fakeWrapper}>
+        <SettingRow name={t['Publish']()} desc={t['Unpublished hint']()}>
+          <Switch checked={false} />
+        </SettingRow>
+      </div>
+    </Tooltip>
   );
 };
 const PublishPanelLocal: FC<PublishPanelLocalProps> = ({

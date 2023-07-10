@@ -11,8 +11,7 @@ export const trigger = style({
 export const content = style({
   zIndex: 'calc(var(--affine-z-index-modal) + 1)',
   overflow: 'hidden',
-  background: 'white',
+  background: 'var(--affine-white)',
+  border: '1px solid var(--affine-border-color)',
   borderRadius: '6px',
-  boxShadow:
-    '0px 10px 38px -10px rgba(22, 23, 24, 0.35), 0px 10px 20px -15px rgba(22, 23, 24, 0.2)',
 });
