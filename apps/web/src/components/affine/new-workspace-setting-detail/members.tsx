@@ -1,13 +1,13 @@
 import { Button, Input } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { inviteByEmailMutation, Permission } from '@affine/graphql';
+import { Permission } from '@affine/graphql';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 
+import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useMembers } from '../../../hooks/affine/use-members';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { useMutation } from '../../../shared/gql';
 import { toast } from '../../../utils';
 import { PermissionSelect } from './permission-select';
 
@@ -23,9 +23,7 @@ export const CloudWorkspaceMembersPanel = (
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [permission, setPermission] = useState(Permission.Write);
-  const { trigger } = useMutation({
-    mutation: inviteByEmailMutation,
-  });
+  const invite = useInviteMember(workspaceId);
 
   const memberCount = members.length;
   const memberPanel =
@@ -49,17 +47,12 @@ export const CloudWorkspaceMembersPanel = (
           onClick={useCallback(async () => {
             const emailRegex = new RegExp(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
             if (!emailRegex.test(inviteEmail)) {
-              // fixme: hidden behind the setting modal
               toast('Invalid email');
               return;
             }
 
-            await trigger({
-              workspaceId,
-              email: inviteEmail,
-              permission,
-            });
-          }, [inviteEmail, trigger, workspaceId, permission])}
+            await invite(inviteEmail, permission);
+          }, [inviteEmail, invite, workspaceId, permission])}
         >
           Invite
         </Button>
