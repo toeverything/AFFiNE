@@ -76,7 +76,10 @@ export const pageSettingFamily = atomFamily((pageId: string) =>
         // pick 3 recent page ids
         return [...new Set([pageId, ...ids]).values()].slice(0, 3);
       });
-      const prevSetting = get(pageSettingsBaseAtom)[pageId];
+      const prevSetting = {
+        ...defaultPageSetting,
+        ...get(pageSettingsBaseAtom)[pageId],
+      };
       set(pageSettingsBaseAtom, settings => ({
         ...settings,
         [pageId]: {
