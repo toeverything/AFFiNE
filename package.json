@@ -1,6 +1,6 @@
 {
   "name": "@affine/monorepo",
-  "version": "0.7.0-canary.38",
+  "version": "0.7.0-canary.39",
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
@@ -44,7 +44,7 @@
     "notify": "node scripts/notify.mjs",
     "circular": "madge --circular --ts-config ./tsconfig.json ./apps/web/src/pages/**/*.tsx",
     "typecheck": "tsc -b tsconfig.json --diagnostics",
-    "postinstall": "yarn i18n-codegen gen && yarn husky install"
+    "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown --cache",

@@ -214,20 +214,28 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   //#endregion
 
   //#region check if page is valid
-  if (
-    typeof router.query.pageId === 'string' &&
-    router.pathname === '/workspace/[workspaceId]/[pageId]' &&
-    currentPageId
-  ) {
-    if (currentPageId !== router.query.pageId) {
-      setCurrentPageId(router.query.pageId);
-    } else {
-      const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-      if (!page) {
-        router.push('/404').catch(console.error);
+  useEffect(() => {
+    if (
+      typeof router.query.pageId === 'string' &&
+      router.pathname === '/workspace/[workspaceId]/[pageId]' &&
+      currentPageId
+    ) {
+      if (currentPageId !== router.query.pageId) {
+        setCurrentPageId(router.query.pageId);
+      } else {
+        const page =
+          currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+        if (!page) {
+          router.push('/404').catch(console.error);
+        }
       }
     }
-  }
+  }, [
+    currentPageId,
+    currentWorkspace.blockSuiteWorkspace,
+    router,
+    setCurrentPageId,
+  ]);
   //#endregion
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);

@@ -55,7 +55,7 @@ export const WorkspaceFallback = (): ReactElement => {
   return (
     <AppContainer>
       <AppSidebarFallback />
-      <MainContainer></MainContainer>
+      <MainContainer />
     </AppContainer>
   );
 };
