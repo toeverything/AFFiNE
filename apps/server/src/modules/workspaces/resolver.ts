@@ -24,7 +24,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import type { FileUpload } from '../../types';
-import { Auth, CurrentUser } from '../auth';
+import { Auth, CurrentUser, Public } from '../auth';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
 import { Permission } from './types';
@@ -188,6 +188,22 @@ export class WorkspaceResolver {
         permission: type,
       };
     });
+  }
+
+  @Query(() => WorkspaceType, {
+    description: 'Get public workspace by id',
+  })
+  @Public()
+  async publicWorkspace(@Args('id') id: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id },
+    });
+
+    if (workspace?.public) {
+      return workspace;
+    }
+
+    throw new NotFoundException("Workspace doesn't exist");
   }
 
   @Query(() => WorkspaceType, {
