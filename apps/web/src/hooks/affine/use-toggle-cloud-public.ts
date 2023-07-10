@@ -1,5 +1,4 @@
 import {
-  getWorkspacePublicByIdQuery,
   setWorkspacePublicByIdMutation,
 } from '@affine/graphql';
 import { useCallback } from 'react';
@@ -20,7 +19,7 @@ export function useToggleCloudPublic(workspaceId: string) {
       });
       await mutate(key => {
         if (Array.isArray(key)) {
-          return key[0] === getWorkspacePublicByIdQuery;
+          return key[0] === 'cloud';
         }
         return false;
       });
