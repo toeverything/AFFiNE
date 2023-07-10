@@ -42,7 +42,8 @@
     "test:coverage": "ENABLE_PRELOADING=false vitest run --coverage",
     "notify": "node scripts/notify.mjs",
     "circular": "madge --circular --ts-config ./tsconfig.json ./apps/web/src/pages/**/*.tsx",
-    "typecheck": "tsc -b tsconfig.json --diagnostics"
+    "typecheck": "tsc -b tsconfig.json --diagnostics",
+    "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown --cache",
