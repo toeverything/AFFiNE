@@ -52,7 +52,7 @@ export const CloudWorkspaceMembersPanel = (
             }
 
             await invite(inviteEmail, permission);
-          }, [inviteEmail, invite, workspaceId, permission])}
+          }, [inviteEmail, invite, permission])}
         >
           Invite
         </Button>
