@@ -69,6 +69,8 @@
       "@affine/graphql": ["./packages/graphql/src"],
       "@affine/copilot": ["./plugins/copilot/src"],
       "@affine/copilot/*": ["./plugins/copilot/src/*"],
+      "@affine/outline": ["./plugins/outline/src"],
+      "@affine/outline/*": ["./plugins/outline/src/*"],
       "@affine/electron/scripts/*": ["./apps/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
@@ -119,6 +121,9 @@
     },
     {
       "path": "./plugins/copilot"
+    },
+    {
+      "path": "./plugins/outline"
     },
 
     // Tests

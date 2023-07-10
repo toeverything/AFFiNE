@@ -53,7 +53,8 @@ const buildPreset = {
 buildPreset.beta = buildPreset.stable;
 buildPreset.internal = buildPreset.stable;
 
-const currentBuild = process.env.BUILD_TYPE || 'stable';
+console.log(process.env.BUILD_TYPE, 'current build type');
+const currentBuild = process.env.BUILD_TYPE || 'canary';
 
 if (process.env.CI && !process.env.BUILD_TYPE) {
   throw new Error('BUILD_ENV is required in CI');
@@ -101,6 +102,7 @@ const buildFlags = {
   // this environment variable is for debug proposes only
   // do not put them into CI
   ...(process.env.CI ? {} : environmentPreset),
+  ...currentBuildPreset,
 };
 
 export { buildFlags };

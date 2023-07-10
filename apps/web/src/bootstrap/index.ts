@@ -39,6 +39,10 @@ if (!environment.isServer) {
   import('@affine/bookmark-block');
 }
 
+if (!environment.isServer) {
+  import('@affine/outline');
+}
+
 // platform check
 {
   if (globalThis.platform) {

@@ -94,6 +94,7 @@ const nextConfig = {
     '@affine/workspace',
     '@affine/jotai',
     '@affine/copilot',
+    '@affine/outline',
     '@toeverything/hooks',
     '@toeverything/y-indexeddb',
     '@toeverything/infra',
