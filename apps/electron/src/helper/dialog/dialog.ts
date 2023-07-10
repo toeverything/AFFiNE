@@ -1,9 +1,11 @@
 import path from 'node:path';
 
+import { ValidationResult } from '@affine/native';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
 import { ensureSQLiteDB } from '../db/ensure-db';
+import { copyToTemp, migrateToSubdocAndReplaceDatabase } from '../db/migration';
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
@@ -55,6 +57,7 @@ const ErrorMessages = [
   'DB_FILE_ALREADY_LOADED',
   'DB_FILE_PATH_INVALID',
   'DB_FILE_INVALID',
+  'DB_FILE_MIGRATION_FAILED',
   'FILE_ALREADY_EXISTS',
   'UNKNOWN_ERROR',
 ] as const;
@@ -191,27 +194,42 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
         ],
         message: 'Load Workspace from a AFFiNE file',
       }));
-    const filePath = ret.filePaths?.[0];
-    if (ret.canceled || !filePath) {
+    let originalPath = ret.filePaths?.[0];
+    if (ret.canceled || !originalPath) {
       logger.info('loadDBFile canceled');
       return { canceled: true };
     }
 
     // the imported file should not be in app data dir
-    if (filePath.startsWith(await getWorkspacesBasePath())) {
+    if (originalPath.startsWith(await getWorkspacesBasePath())) {
       logger.warn('loadDBFile: db file in app data dir');
       return { error: 'DB_FILE_PATH_INVALID' };
     }
 
-    if (await dbFileAlreadyLoaded(filePath)) {
+    if (await dbFileAlreadyLoaded(originalPath)) {
       logger.warn('loadDBFile: db file already loaded');
       return { error: 'DB_FILE_ALREADY_LOADED' };
     }
 
     const { SqliteConnection } = await import('@affine/native');
 
-    if (!(await SqliteConnection.validate(filePath))) {
-      // TODO: report invalid db file error?
+    const validationResult = await SqliteConnection.validate(originalPath);
+
+    if (validationResult === ValidationResult.MissingDocIdColumn) {
+      try {
+        const tmpDBPath = await copyToTemp(originalPath);
+        await migrateToSubdocAndReplaceDatabase(tmpDBPath);
+        originalPath = tmpDBPath;
+      } catch (error) {
+        logger.warn(`loadDBFile, migration failed: ${originalPath}`, error);
+        return { error: 'DB_FILE_MIGRATION_FAILED' };
+      }
+    }
+
+    if (
+      validationResult !== ValidationResult.MissingDocIdColumn &&
+      validationResult !== ValidationResult.Valid
+    ) {
       return { error: 'DB_FILE_INVALID' }; // invalid db file
     }
 
@@ -220,9 +238,8 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
     const internalFilePath = await getWorkspaceDBPath(workspaceId);
 
     await fs.ensureDir(await getWorkspacesBasePath());
-
-    await fs.copy(filePath, internalFilePath);
-    logger.info(`loadDBFile, copy: ${filePath} -> ${internalFilePath}`);
+    await fs.copy(originalPath, internalFilePath);
+    logger.info(`loadDBFile, copy: ${originalPath} -> ${internalFilePath}`);
 
     await storeWorkspaceMeta(workspaceId, {
       id: workspaceId,
