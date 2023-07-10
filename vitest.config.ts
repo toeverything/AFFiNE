@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import path, { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
@@ -15,6 +15,8 @@ export default defineConfig({
     alias: {
       'next/router': 'next-router-mock',
       'next/config': resolve(rootDir, './scripts/vitest/next-config-mock.ts'),
+      // prevent tests using two different sources of yjs
+      yjs: path.resolve(__dirname, 'node_modules/yjs'),
     },
   },
   define: {

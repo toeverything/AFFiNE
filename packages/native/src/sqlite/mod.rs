@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use napi::bindgen_prelude::{Buffer, Uint8Array};
+use napi::bindgen_prelude::{Buffer, FromNapiValue, ToNapiValue, Uint8Array};
 use napi_derive::napi;
 use sqlx::{
   migrate::MigrateDatabase,
@@ -32,6 +32,14 @@ pub struct InsertRow {
 pub struct SqliteConnection {
   pool: Pool<Sqlite>,
   path: String,
+}
+
+#[napi]
+pub enum ValidationResult {
+  MissingTables,
+  MissingDocIdColumn,
+  GeneralError,
+  Valid,
 }
 
 #[napi]
@@ -231,14 +239,14 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn validate(path: String) -> bool {
+  pub async fn validate(path: String) -> ValidationResult {
     let pool = match SqlitePoolOptions::new()
       .max_connections(1)
       .connect(&path)
       .await
     {
       Ok(pool) => pool,
-      Err(_) => return false,
+      Err(_) => return ValidationResult::GeneralError,
     };
 
     let tables_res = sqlx::query("SELECT name FROM sqlite_master WHERE type='table'")
@@ -250,26 +258,32 @@ impl SqliteConnection {
         let names: Vec<String> = res.iter().map(|row| row.get(0)).collect();
         names.contains(&"updates".to_string()) && names.contains(&"blobs".to_string())
       }
-      Err(_) => return false,
+      Err(_) => return ValidationResult::GeneralError,
     };
 
     let columns_res = sqlx::query("PRAGMA table_info(updates)")
       .fetch_all(&pool)
       .await;
 
-    let columns_exist = match columns_res {
+    let doc_id_exist = match columns_res {
       Ok(res) => {
         let names: Vec<String> = res.iter().map(|row| row.get(1)).collect();
-        names.contains(&"data".to_string()) && names.contains(&"doc_id".to_string())
+        names.contains(&"doc_id".to_string())
       }
-      Err(_) => return false,
+      Err(_) => return ValidationResult::GeneralError,
     };
 
-    tables_exist && columns_exist
+    if !tables_exist {
+      ValidationResult::MissingTables
+    } else if !doc_id_exist {
+      ValidationResult::MissingDocIdColumn
+    } else {
+      ValidationResult::Valid
+    }
   }
 
-  // todo: have a better way to handle migration
-  async fn migrate_add_doc_id(&self) -> Result<(), anyhow::Error> {
+  #[napi]
+  pub async fn migrate_add_doc_id(&self) -> napi::Result<()> {
     // ignore errors
     match sqlx::query("ALTER TABLE updates ADD COLUMN doc_id TEXT")
       .execute(&self.pool)
@@ -280,7 +294,7 @@ impl SqliteConnection {
         if err.to_string().contains("duplicate column name") {
           Ok(()) // Ignore error if it's due to duplicate column
         } else {
-          Err(anyhow::Error::from(err)) // Propagate other errors
+          Err(anyhow::Error::from(err).into()) // Propagate other errors
         }
       }
     }
