@@ -1,6 +1,4 @@
-import {
-  setWorkspacePublicByIdMutation,
-} from '@affine/graphql';
+import { setWorkspacePublicByIdMutation } from '@affine/graphql';
 import { useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 
