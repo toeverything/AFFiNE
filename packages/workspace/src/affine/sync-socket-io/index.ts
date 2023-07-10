@@ -35,6 +35,8 @@ export class SocketIOProvider extends Observable<string> {
   connectResolve: () => void = () => {};
   syncPromise: Promise<void>;
   syncResolve: () => void = () => {};
+  disconnectPromise: Promise<void>;
+  disconnectResolve: () => void = () => {};
   subDocsHasHandshake = false;
 
   constructor(
@@ -48,30 +50,20 @@ export class SocketIOProvider extends Observable<string> {
       console.warn('important!! please use doc.guid as roomName');
     }
     this.rootDoc = doc;
-    const socket = (this.socket = io(serverUrl, {
+    this.socket = io(serverUrl, {
       autoConnect: false,
-    }));
+    });
     this.awareness = awareness;
     this._connected = false;
     this.synced = false;
-    this.registerDoc(doc);
-    // Register the handlers all at once.
-    // We don't need to ensure sequence order of server-handshake and server-update, as CRDT is order independent.
-    socket.on('server-handshake', this.serverHandshakeHandler);
-    socket.on('server-update', this.handlerServerUpdate);
-    // help to send awareness update to other clients
-    socket.on('new-client-awareness-init', this.newClientAwarenessInitHandler);
-    // receive awareness update from other clients
-    socket.on(
-      'server-awareness-broadcast',
-      this.serverAwarenessBroadcastHandler
-    );
-    awareness.on('update', this.awarenessUpdateHandler);
     this.connectPromise = new Promise(resolve => {
       this.connectResolve = resolve;
     });
     this.syncPromise = new Promise(resolve => {
       this.syncResolve = resolve;
+    });
+    this.disconnectPromise = new Promise(resolve => {
+      this.disconnectResolve = resolve;
     });
   }
 
@@ -181,13 +173,25 @@ export class SocketIOProvider extends Observable<string> {
       ...res,
       ...cur,
     ]);
+    const isCurrentClientOffLine = changes.removed.find(
+      (client: number) => client === this.rootDoc.clientID
+    );
     const update = encodeAwarenessUpdate(this.awareness, changedClients);
     uint8ArrayToBase64(update)
       .then(encodedUpdate => {
-        this.socket.emit('awareness-update', {
-          workspaceId: this.rootDoc.guid,
-          awarenessUpdate: encodedUpdate,
-        });
+        this.socket.emit(
+          'awareness-update',
+          {
+            workspaceId: this.rootDoc.guid,
+            awarenessUpdate: encodedUpdate,
+          },
+          (_: string) => {
+            // _ is ack
+            if (isCurrentClientOffLine) {
+              this.disconnectResolve();
+            }
+          }
+        );
       })
       .catch(err => console.error(err));
   };
@@ -316,9 +320,27 @@ export class SocketIOProvider extends Observable<string> {
       // ask for other clients' awareness
       socket.emit('init-awareness', rootDoc.guid);
     });
+    this.disconnectPromise = new Promise(resolve => {
+      this.disconnectResolve = resolve;
+    });
+
+    this.registerDoc(this.rootDoc);
+    // Register the handlers all at once.
+    // We don't need to ensure sequence order of server-handshake and server-update, as CRDT is order independent.
+    socket.on('server-handshake', this.serverHandshakeHandler);
+    socket.on('server-update', this.handlerServerUpdate);
+    // help to send awareness update to other clients
+    socket.on('new-client-awareness-init', this.newClientAwarenessInitHandler);
+    // receive awareness update from other clients
+    socket.on(
+      'server-awareness-broadcast',
+      this.serverAwarenessBroadcastHandler
+    );
+    this.awareness.on('update', this.awarenessUpdateHandler);
   };
 
   disconnect = () => {
+    this.awareness.destroy(); // will set local awareness to null, then emit awareness update
     this.startedConnecting = false;
     this.connectPromise = new Promise(resolve => {
       this.connectResolve = resolve;
@@ -327,14 +349,14 @@ export class SocketIOProvider extends Observable<string> {
       this.syncResolve = resolve;
     });
     const socket = this.socket;
-    socket.disconnect();
+    this.disconnectPromise
+      .then(() => {
+        socket.disconnect();
+      })
+      .catch(console.error);
     this._connected = false;
     this.synced = false;
-  };
 
-  override destroy = () => {
-    const socket = this.socket;
-    const awareness = this.awareness;
     this.unregisterDoc(this.rootDoc);
     socket.off('server-handshake', this.serverHandshakeHandler);
     socket.off('server-update', this.handlerServerUpdate);
@@ -343,6 +365,10 @@ export class SocketIOProvider extends Observable<string> {
       'server-awareness-broadcast',
       this.serverAwarenessBroadcastHandler
     );
-    awareness.off('update', this.awarenessUpdateHandler);
+    this.awareness.off('update', this.awarenessUpdateHandler);
+  };
+
+  override destroy = () => {
+    this.disconnect();
   };
 }
