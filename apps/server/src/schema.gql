@@ -37,6 +37,49 @@ type TokenType {
   refresh: String!
 }
 
+type InviteUserType {
+  """
+  User name
+  """
+  name: String
+
+  """
+  User email
+  """
+  email: String
+
+  """
+  User avatar url
+  """
+  avatarUrl: String
+
+  """
+  User created date
+  """
+  createdAt: DateTime
+  id: ID!
+
+  """
+  User permission in workspace
+  """
+  permission: Permission!
+
+  """
+  User accepted
+  """
+  accepted: Boolean!
+}
+
+"""
+User permission in workspace
+"""
+enum Permission {
+  Read
+  Write
+  Admin
+  Owner
+}
+
 type WorkspaceType {
   id: ID!
 
@@ -49,6 +92,11 @@ type WorkspaceType {
   Workspace created date
   """
   createdAt: DateTime!
+
+  """
+  Members of workspace
+  """
+  members: [InviteUserType!]!
 
   """
   Permission of current signed in user in workspace
@@ -69,21 +117,6 @@ type WorkspaceType {
   Owner of workspace
   """
   owner: UserType!
-
-  """
-  Members of workspace
-  """
-  members: [UserType!]!
-}
-
-"""
-User permission in workspace
-"""
-enum Permission {
-  Read
-  Write
-  Admin
-  Owner
 }
 
 type Query {
