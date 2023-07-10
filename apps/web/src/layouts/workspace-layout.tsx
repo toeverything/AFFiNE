@@ -20,7 +20,6 @@ import {
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { assertEquals, assertExists } from '@blocksuite/global/utils';
-import type { PassiveDocProvider } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -32,6 +31,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
@@ -58,7 +58,6 @@ import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-he
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { useWorkspaces } from '../hooks/use-workspaces';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
@@ -94,33 +93,6 @@ export const QuickSearch: FC = () => {
       router={router}
     />
   );
-};
-
-export const AllWorkspaceContext = ({
-  children,
-}: PropsWithChildren): ReactElement => {
-  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
-  const workspaces = useWorkspaces();
-  useEffect(() => {
-    const providers = workspaces
-      // ignore current workspace
-      .filter(workspace => workspace.id !== currentWorkspaceId)
-      .flatMap(workspace =>
-        workspace.blockSuiteWorkspace.providers.filter(
-          (provider): provider is PassiveDocProvider =>
-            'passive' in provider && provider.passive
-        )
-      );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspaceId, workspaces]);
-  return <>{children}</>;
 };
 
 declare global {
@@ -186,13 +158,11 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       <>
         {/* load all workspaces is costly, do not block the whole UI */}
         <Suspense fallback={null}>
-          <AllWorkspaceContext>
-            <AllWorkspaceModals />
-            <CurrentWorkspaceContext>
-              {/* fixme(himself65): don't re-render whole modals */}
-              <CurrentWorkspaceModals key={currentWorkspaceId} />
-            </CurrentWorkspaceContext>
-          </AllWorkspaceContext>
+          <AllWorkspaceModals />
+          <CurrentWorkspaceContext>
+            {/* fixme(himself65): don't re-render whole modals */}
+            <CurrentWorkspaceModals key={currentWorkspaceId} />
+          </CurrentWorkspaceContext>
         </Suspense>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
@@ -243,36 +213,24 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   }
   //#endregion
 
-  if (currentPageId) {
-    const pageExist =
-      currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-    if (router.pathname === '/[workspaceId]/[pageId]' && !pageExist) {
-      router.push('/404').catch(console.error);
-    }
-  } else if (
-    router.pathname === '/[workspaceId]/[pageId]' &&
+  //#region check if page is valid
+  if (
     typeof router.query.pageId === 'string' &&
-    router.query.pageId !== currentPageId
+    router.pathname === '/workspace/[workspaceId]/[pageId]' &&
+    currentPageId
   ) {
-    setCurrentPageId(router.query.pageId);
-    jumpToPage(currentWorkspace.id, router.query.pageId).catch(console.error);
+    if (currentPageId !== router.query.pageId) {
+      setCurrentPageId(router.query.pageId);
+    } else {
+      const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+      if (!page) {
+        router.push('/404').catch(console.error);
+      }
+    }
   }
+  //#endregion
 
-  useEffect(() => {
-    const backgroundProviders =
-      currentWorkspace.blockSuiteWorkspace.providers.filter(
-        (provider): provider is PassiveDocProvider =>
-          'passive' in provider && provider.passive
-      );
-    backgroundProviders.forEach(provider => {
-      provider.connect();
-    });
-    return () => {
-      backgroundProviders.forEach(provider => {
-        provider.disconnect();
-      });
-    };
-  }, [currentWorkspace]);
+  usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
   useEffect(() => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(
@@ -323,7 +281,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const handleOpenSettingModal = useCallback(() => {
     setOpenSettingModalAtom({
       activeTab: 'appearance',
-      workspace: null,
+      workspaceId: null,
       open: true,
     });
   }, [setOpenSettingModalAtom]);

@@ -1,4 +1,4 @@
-import { Skeleton } from '@mui/material';
+import { NoSsr, Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
@@ -107,7 +107,9 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         data-enable-animation={enableAnimation && !isResizing}
       >
         <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
-          <SidebarHeader router={props.router} />
+          <NoSsr>
+            <SidebarHeader router={props.router} />
+          </NoSsr>
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {props.children}
           </div>

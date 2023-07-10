@@ -37,7 +37,7 @@ export type RootAppSidebarProps = {
   onOpenQuickSearchModal: () => void;
   onOpenSettingModal: () => void;
   onOpenWorkspaceListModal: () => void;
-  currentWorkspace: AllWorkspace | null;
+  currentWorkspace: AllWorkspace;
   openPage: (pageId: string) => void;
   createPage: () => Page;
   currentPath: string;
@@ -172,15 +172,6 @@ export const RootAppSidebar = ({
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
           </RouteMenuLinkItem>
-          {!runtimeConfig.enableNewSettingModal && (
-            <RouteMenuLinkItem
-              data-testid="slider-bar-workspace-setting-button"
-              icon={<SettingsIcon />}
-              currentPath={currentPath}
-            >
-              <span data-testid="settings">{t['Settings']()}</span>
-            </RouteMenuLinkItem>
-          )}
           {runtimeConfig.enableNewSettingModal ? (
             <MenuItem
               data-testid="slider-bar-workspace-setting-button"

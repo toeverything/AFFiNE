@@ -35,7 +35,7 @@ export const Results: FC<ResultsProps> = ({
   useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   assertExists(blockSuiteWorkspace.id);
-  const List = useSwitchToConfig(workspace);
+  const List = useSwitchToConfig(workspace.id);
 
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();

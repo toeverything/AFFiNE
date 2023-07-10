@@ -227,7 +227,6 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
     await storeWorkspaceMeta(workspaceId, {
       id: workspaceId,
       mainDBPath: internalFilePath,
-      secondaryDBPath: filePath,
     });
 
     return { workspaceId };

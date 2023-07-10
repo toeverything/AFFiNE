@@ -9,10 +9,10 @@ import type { FC, SVGProps } from 'react';
 import { useMemo } from 'react';
 
 import { openSettingModalAtom } from '../../../atoms';
-import { type AllWorkspace, pathGenerator } from '../../../shared';
+import { pathGenerator } from '../../../shared';
 
 export const useSwitchToConfig = (
-  workspace: AllWorkspace
+  workspaceId: string
 ): {
   title: string;
   href?: string;
@@ -25,7 +25,7 @@ export const useSwitchToConfig = (
     () => [
       {
         title: t['All pages'](),
-        href: pathGenerator.all(workspace.id),
+        href: pathGenerator.all(workspaceId),
         icon: FolderIcon,
       },
       {
@@ -34,17 +34,17 @@ export const useSwitchToConfig = (
           setOpenSettingModalAtom({
             open: true,
             activeTab: 'workspace',
-            workspace: workspace,
+            workspaceId,
           });
         },
         icon: SettingsIcon,
       },
       {
         title: t['Trash'](),
-        href: pathGenerator.trash(workspace.id),
+        href: pathGenerator.trash(workspaceId),
         icon: DeleteTemporarilyIcon,
       },
     ],
-    [t, workspace, setOpenSettingModalAtom]
+    [t, workspaceId, setOpenSettingModalAtom]
   );
 };

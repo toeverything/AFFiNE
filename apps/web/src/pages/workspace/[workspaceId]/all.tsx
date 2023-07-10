@@ -8,7 +8,6 @@ import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
-import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
@@ -31,9 +30,6 @@ const AllPage: NextPageWithLayout = () => {
     },
     [currentWorkspace, jumpToPage]
   );
-  if (!router.isReady) {
-    return <PageLoading />;
-  }
   if (typeof router.query.workspaceId !== 'string') {
     throw new QueryParamError('workspaceId', router.query.workspaceId);
   }
@@ -45,7 +41,7 @@ const AllPage: NextPageWithLayout = () => {
         <title>{t['All pages']()} - AFFiNE</title>
       </Head>
       <Header
-        currentWorkspace={currentWorkspace}
+        currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           subPath: WorkspaceSubPath.ALL,
         }}

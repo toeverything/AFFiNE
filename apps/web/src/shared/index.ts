@@ -47,9 +47,9 @@ export const pathGenerator = {
 };
 
 export const publicPathGenerator = {
-  all: workspaceId => `/public-workspace/${workspaceId}/all`,
-  trash: workspaceId => `/public-workspace/${workspaceId}/trash`,
-  shared: workspaceId => `/public-workspace/${workspaceId}/shared`,
+  all: workspaceId => `/share/${workspaceId}/all`,
+  trash: workspaceId => `/share/${workspaceId}/trash`,
+  shared: workspaceId => `/share/${workspaceId}/shared`,
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
 };

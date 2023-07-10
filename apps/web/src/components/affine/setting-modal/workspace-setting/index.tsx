@@ -1,16 +1,16 @@
+import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { Suspense, useCallback } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
+import { useWorkspace } from '../../../../hooks/use-workspace';
 import { useAppHelper } from '../../../../hooks/use-workspaces';
-import type { AllWorkspace } from '../../../../shared';
 
-export const WorkSpaceSetting = ({
-  workspace,
-}: {
-  workspace: AllWorkspace;
-}) => {
+export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
+  const workspace = useWorkspace(workspaceId);
+  usePassiveWorkspaceEffect(workspace.blockSuiteWorkspace);
   const helper = useAppHelper();
+
   const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
 
   const onDeleteWorkspace = useCallback(
@@ -26,7 +26,7 @@ export const WorkSpaceSetting = ({
       <NewSettingsDetail
         onTransformWorkspace={onTransformWorkspace}
         onDeleteWorkspace={onDeleteWorkspace}
-        currentWorkspace={workspace}
+        currentWorkspaceId={workspaceId}
       />
     </Suspense>
   );

@@ -19,6 +19,7 @@ import {
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
 
 import {
   BlockSuitePageList,
@@ -75,13 +76,11 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
     Provider: ({ children }) => {
       return <>{children}</>;
     },
-    PageDetail: ({ currentWorkspace, currentPageId, onLoadEditor }) => {
-      const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+    PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
+      const workspace = useStaticBlockSuiteWorkspace(currentWorkspaceId);
+      const page = workspace.getPage(currentPageId);
       if (!page) {
-        throw new PageNotFoundError(
-          currentWorkspace.blockSuiteWorkspace,
-          currentPageId
-        );
+        throw new PageNotFoundError(workspace, currentPageId);
       }
       return (
         <>
@@ -89,7 +88,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
             pageId={currentPageId}
             onInit={initEmptyPage}
             onLoad={onLoadEditor}
-            workspace={currentWorkspace}
+            workspace={workspace}
           />
         </>
       );
@@ -105,14 +104,14 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       );
     },
     NewSettingsDetail: ({
-      currentWorkspace,
+      currentWorkspaceId,
       onDeleteWorkspace,
       onTransformWorkspace,
     }) => {
       return (
         <NewWorkspaceSettingDetail
           onDeleteWorkspace={onDeleteWorkspace}
-          workspace={currentWorkspace}
+          workspaceId={currentWorkspaceId}
           onTransferWorkspace={onTransformWorkspace}
         />
       );
