@@ -1,9 +1,27 @@
-import type { INestApplication } from '@nestjs/common';
+import type { INestApplication, LoggerService } from '@nestjs/common';
 import request from 'supertest';
 
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
 import type { WorkspaceType } from '../modules/workspaces';
+
+export class NestDebugLogger implements LoggerService {
+  log(message: string): any {
+    console.log(message);
+  }
+  error(message: string, trace: string): any {
+    console.error(message, trace);
+  }
+  warn(message: string): any {
+    console.warn(message);
+  }
+  debug(message: string): any {
+    console.debug(message);
+  }
+  verbose(message: string): any {
+    console.log(message);
+  }
+}
 
 const gql = '/graphql';
 
@@ -72,6 +90,25 @@ async function getWorkspace(
     })
     .expect(200);
   return res.body.data.workspace;
+}
+
+async function getPublicWorkspace(
+  app: INestApplication,
+  workspaceId: string
+): Promise<WorkspaceType> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .send({
+      query: `
+          query {
+            publicWorkspace(id: "${workspaceId}") {
+              id
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.publicWorkspace;
 }
 
 async function updateWorkspace(
@@ -262,6 +299,7 @@ async function setBlob(
 export {
   acceptInvite,
   createWorkspace,
+  getPublicWorkspace,
   getWorkspace,
   inviteUser,
   leaveWorkspace,

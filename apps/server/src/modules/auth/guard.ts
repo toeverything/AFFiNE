@@ -3,8 +3,10 @@ import {
   createParamDecorator,
   Inject,
   Injectable,
+  SetMetadata,
   UseGuards,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import type { NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
@@ -53,13 +55,22 @@ class AuthGuard implements CanActivate {
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions,
     private auth: AuthService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private readonly reflector: Reflector
   ) {}
 
   async canActivate(context: ExecutionContext) {
     const { req, res } = getRequestResponseFromContext(context);
     const token = req.headers.authorization;
-    if (!token) {
+
+    const isPublic = this.reflector.get<boolean>(
+      'isPublic',
+      context.getHandler()
+    );
+
+    if (isPublic) {
+      return true;
+    } else if (!token) {
       const session = await AuthHandler({
         req: {
           cookies: req.cookies,
@@ -118,3 +129,5 @@ class AuthGuard implements CanActivate {
 export const Auth = () => {
   return UseGuards(AuthGuard);
 };
+
+export const Public = () => SetMetadata('isPublic', true);
