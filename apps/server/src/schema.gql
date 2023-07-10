@@ -21,6 +21,11 @@ type UserType {
   avatarUrl: String
 
   """
+  User email verified
+  """
+  emailVerified: DateTime
+
+  """
   User created date
   """
   createdAt: DateTime
@@ -52,6 +57,11 @@ type InviteUserType {
   User avatar url
   """
   avatarUrl: String
+
+  """
+  User email verified
+  """
+  emailVerified: DateTime
 
   """
   User created date
@@ -139,6 +149,11 @@ type Query {
   List blobs of workspace
   """
   listBlobs(workspaceId: String!): [String!]!
+
+  """
+  Get all users
+  """
+  currentUser: UserType!
 
   """
   Get user by email

@@ -92,6 +92,21 @@ export type DeleteWorkspaceMutation = {
   deleteWorkspace: boolean;
 };
 
+export type GetCurrentUserQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetCurrentUserQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: string | null;
+    avatarUrl: string | null;
+    createdAt: string | null;
+  };
+};
+
 export type GetMembersByWorkspaceIdQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -255,6 +270,11 @@ export type Queries =
       name: 'listBlobsQuery';
       variables: ListBlobsQueryVariables;
       response: ListBlobsQuery;
+    }
+  | {
+      name: 'getCurrentUserQuery';
+      variables: GetCurrentUserQueryVariables;
+      response: GetCurrentUserQuery;
     }
   | {
       name: 'getMembersByWorkspaceIdQuery';
