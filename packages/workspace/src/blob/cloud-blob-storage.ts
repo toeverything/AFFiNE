@@ -10,8 +10,10 @@ import { fetcher } from '../affine/gql';
 export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
   return {
     crud: {
-      get: async () => {
-        throw new Error('Not implemented');
+      get: async key => {
+        return fetch(`/api/workspaces/${workspaceId}/blobs/${key}`).then(res =>
+          res.blob()
+        );
       },
       set: async (key, value) => {
         const result = await fetcher({
