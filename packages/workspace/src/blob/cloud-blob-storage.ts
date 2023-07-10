@@ -1,6 +1,7 @@
-import { fetcher } from '@affine/workspace/affine/gql';
 import { assertExists } from '@blocksuite/global/utils';
 import type { BlobStorage } from '@blocksuite/store';
+
+import { fetcher } from '../affine/gql';
 
 export const createCloudBlobStorage = (): BlobStorage => {
   assertExists(fetcher);
