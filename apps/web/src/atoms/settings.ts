@@ -1,6 +1,5 @@
-import { useAtom } from 'jotai';
+import { atom, useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import { useCallback } from 'react';
 
 export type DateFormats =
   | 'MM/dd/YYYY'
@@ -15,7 +14,7 @@ export type AppSetting = {
   clientBorder: boolean;
   fullWidthLayout: boolean;
   windowFrameStyle: 'frameless' | 'NativeTitleBar';
-  fontStyle: 'Sans' | 'Serif' | 'Mono';
+  fontStyle: FontFamily;
   dateFormat: DateFormats;
   startWeekOnMonday: boolean;
   enableBlurBackground: boolean;
@@ -38,16 +37,18 @@ export const dateFormatOptions: DateFormats[] = [
   'dd MMMM YYYY',
 ];
 
-export const fontStyleOptions: {
-  key: AppSetting['fontStyle'];
-  value: string;
-}[] = [
+export type FontFamily = 'Sans' | 'Serif' | 'Mono';
+
+export const fontStyleOptions = [
   { key: 'Sans', value: 'var(--affine-font-sans-family)' },
   { key: 'Serif', value: 'var(--affine-font-serif-family)' },
   { key: 'Mono', value: 'var(--affine-font-mono-family)' },
-];
+] satisfies {
+  key: FontFamily;
+  value: string;
+}[];
 
-export const AppSettingAtom = atomWithStorage<AppSetting>('AFFiNE settings', {
+const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
   clientBorder: false,
   fullWidthLayout: false,
   windowFrameStyle: 'frameless',
@@ -60,19 +61,21 @@ export const AppSettingAtom = atomWithStorage<AppSetting>('AFFiNE settings', {
   autoDownloadUpdate: true,
 });
 
-export const useAppSetting = () => {
-  const [settings, setSettings] = useAtom(AppSettingAtom);
+type SetStateAction<Value> = Value | ((prev: Value) => Value);
 
-  return [
-    settings,
-    useCallback(
-      (patch: Partial<AppSetting>) => {
-        setSettings((prev: AppSetting) => ({
-          ...prev,
-          ...patch,
-        }));
-      },
-      [setSettings]
-    ),
-  ] as const;
+const appSettingAtom = atom<
+  AppSetting,
+  [SetStateAction<Partial<AppSetting>>],
+  void
+>(
+  get => get(appSettingBaseAtom),
+  (get, set, apply) => {
+    const prev = get(appSettingBaseAtom);
+    const next = typeof apply === 'function' ? apply(prev) : apply;
+    set(appSettingBaseAtom, { ...prev, ...next });
+  }
+);
+
+export const useAppSetting = () => {
+  return useAtom(appSettingAtom);
 };
