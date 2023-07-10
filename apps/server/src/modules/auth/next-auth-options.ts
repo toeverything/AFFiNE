@@ -96,8 +96,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
               return null;
             }
             const { password } = credentials;
-
-            if (!body.password) {
+            if (!body.password || !password) {
               return null;
             }
             if (!verify(body.password, password)) {
