@@ -72,12 +72,21 @@ export const fakeWrapper = style({
   },
 });
 
+export const membersList = style({
+  marginTop: '24px',
+  padding: '12px 6px',
+  borderRadius: '12px',
+  background: 'var(--affine-background-primary-color)',
+  gap: '2px',
+});
+
 export const listItem = style({
   padding: '0 16px',
   height: '40px',
   display: 'flex',
   width: '100%',
-  marginTop: '12px',
+  alignItems: 'center',
+  gap: '12px',
   ':hover': {
     background: 'var(--affine-hover-color)',
     borderRadius: '8px',
@@ -90,7 +99,7 @@ export const memberContainer = style({
 });
 export const permissionContainer = style({
   width: '100%',
-  alignItems: 'end',
+  textAlign: 'center',
 });
 export const memberName = style({
   width: '100%',

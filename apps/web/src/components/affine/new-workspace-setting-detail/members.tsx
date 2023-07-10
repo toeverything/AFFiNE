@@ -1,8 +1,15 @@
-import { Button, FlexWrapper, Input, Tooltip } from '@affine/component';
+import {
+  Button,
+  FlexWrapper,
+  IconButton,
+  Input,
+  Tooltip,
+} from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { inviteByEmailMutation, Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { MoreVerticalIcon } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 
@@ -10,6 +17,7 @@ import { useMembers } from '../../../hooks/affine/use-members';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { useMutation } from '../../../shared/gql';
 import { toast } from '../../../utils';
+import { WorkspaceAvatar } from '../../pure/footer';
 import { PermissionSelect } from './permission-select';
 import * as style from './style.css';
 export type MembersPanelProps = {
@@ -48,11 +56,21 @@ export const CloudWorkspaceMembersPanel = (
     memberCount > 0 ? (
       members.map(member => (
         <div key={member.id} className={style.listItem}>
+          <div>
+            <WorkspaceAvatar
+              size={24}
+              name={undefined}
+              avatar={member.avatarUrl as string}
+            />
+          </div>
           <div className={style.memberContainer}>
             <div className={style.memberName}>{member.name}</div>
             <div className={style.memberEmail}>{member.email}</div>
           </div>
           <div className={style.permissionContainer}>{member.permission}</div>
+          <IconButton size="middle">
+            <MoreVerticalIcon />
+          </IconButton>
         </div>
       ))
     ) : (
@@ -94,7 +112,9 @@ export const CloudWorkspaceMembersPanel = (
         />
         <PermissionSelect value={permission} onChange={setPermission} />
       </FlexWrapper>
-      <FlexWrapper flexDirection="column">{memberPanel}</FlexWrapper>
+      <FlexWrapper flexDirection="column" className={style.membersList}>
+        {memberPanel}
+      </FlexWrapper>
     </>
   );
 };
