@@ -614,6 +614,7 @@ __metadata:
     "@affine-test/fixtures": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
+    "@affine/graphql": "workspace:*"
     "@toeverything/hooks": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
     "@toeverything/y-indexeddb": "workspace:*"
