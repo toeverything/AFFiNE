@@ -103,6 +103,7 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   await page.reload();
   await openWorkspaceListModal(page);
 
+  await page.waitForTimeout(1000);
   // check workspace list length
   {
     const workspaceCards1 = await page.$$('data-testid=workspace-card');

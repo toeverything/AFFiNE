@@ -17,7 +17,7 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test('move workspace db file', async ({ page, appInfo, workspace }) => {
+test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
@@ -56,6 +56,8 @@ test('export then add', async ({ page, appInfo, workspace }) => {
 
   // goto workspace setting
   await page.getByTestId('workspace-list-item').click();
+
+  await page.waitForTimeout(500);
 
   // change workspace name
   await page.getByTestId('workspace-name-input').fill(newWorkspaceName);

@@ -7,7 +7,7 @@ import {
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Page } from '@blocksuite/store';
+import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
@@ -21,21 +21,20 @@ import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
-import type { FC, ReactElement } from 'react';
-import React, { memo, Suspense, useCallback, useMemo } from 'react';
+import type { CSSProperties, FC, ReactElement } from 'react';
+import { memo, Suspense, useCallback, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
-import { useAppSetting } from '../atoms/settings';
-import type { AffineOfficialWorkspace } from '../shared';
+import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import { editor } from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
-  workspace: AffineOfficialWorkspace;
+  workspace: Workspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
@@ -53,12 +52,11 @@ const EditorWrapper = memo(function EditorWrapper({
     () => Object.values(affinePluginsMap),
     [affinePluginsMap]
   );
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const page = useBlockSuiteWorkspacePage(blockSuiteWorkspace, pageId);
+  const page = useBlockSuiteWorkspacePage(workspace, pageId);
   if (!page) {
-    throw new PageNotFoundError(blockSuiteWorkspace, pageId);
+    throw new PageNotFoundError(workspace, pageId);
   }
-  const meta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
+  const meta = useBlockSuitePageMeta(workspace).find(
     meta => meta.id === pageId
   );
   const pageSettingAtom = pageSettingFamily(pageId);
@@ -71,13 +69,25 @@ const EditorWrapper = memo(function EditorWrapper({
   const [appSettings] = useAppSetting();
 
   assertExists(meta);
+  const value = useMemo(() => {
+    const fontStyle = fontStyleOptions.find(
+      option => option.key === appSettings.fontStyle
+    );
+    assertExists(fontStyle);
+    return fontStyle.value;
+  }, [appSettings.fontStyle]);
 
   return (
     <Editor
       className={clsx(editor, {
-        'full-screen': appSettings?.fullWidthLayout,
+        'full-screen': appSettings.fullWidthLayout,
       })}
-      key={`${workspace.flavour}-${workspace.id}-${pageId}`}
+      style={
+        {
+          '--affine-font-family': value,
+        } as CSSProperties
+      }
+      key={`${workspace.id}-${pageId}`}
       mode={isPublic ? 'page' : currentMode}
       page={page}
       onInit={useCallback(
@@ -182,12 +192,11 @@ const LayoutPanel = memo(function LayoutPanel(
 
 export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
   const { workspace, pageId } = props;
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const page = useBlockSuiteWorkspacePage(blockSuiteWorkspace, pageId);
+  const page = useBlockSuiteWorkspacePage(workspace, pageId);
   if (!page) {
-    throw new PageNotFoundError(blockSuiteWorkspace, pageId);
+    throw new PageNotFoundError(workspace, pageId);
   }
-  const title = useBlockSuiteWorkspacePageTitle(blockSuiteWorkspace, pageId);
+  const title = useBlockSuiteWorkspacePageTitle(workspace, pageId);
 
   const layout = useAtomValue(contentLayoutAtom);
   const affinePluginsMap = useAtomValue(affinePluginsAtom);

@@ -119,6 +119,8 @@ export abstract class BaseSQLiteAdapter {
         `[SQLiteAdapter][${this.role}] addUpdateToSQLite`,
         'length:',
         updates.length,
+        'docids',
+        updates.map(u => u.docId),
         performance.now() - start,
         'ms'
       );

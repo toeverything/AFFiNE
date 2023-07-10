@@ -1,8 +1,3 @@
-import type {
-  AffineCloudWorkspace,
-  AffinePublicWorkspace,
-  LocalWorkspace,
-} from '@affine/env/workspace';
 import type { Workspace } from '@blocksuite/store';
 import * as RadixAvatar from '@radix-ui/react-avatar';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
@@ -15,11 +10,7 @@ import { avatarImageStyle, avatarStyle } from './index.css';
 
 export type WorkspaceAvatarProps = {
   size?: number;
-  workspace:
-    | AffineCloudWorkspace
-    | LocalWorkspace
-    | AffinePublicWorkspace
-    | null;
+  workspace: Workspace | null;
   className?: string;
 };
 
@@ -60,13 +51,9 @@ export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = ({
   workspace,
   ...props
 }) => {
-  if (workspace && 'blockSuiteWorkspace' in workspace) {
+  if (workspace) {
     return (
-      <BlockSuiteWorkspaceAvatar
-        {...props}
-        size={size}
-        workspace={workspace.blockSuiteWorkspace}
-      />
+      <BlockSuiteWorkspaceAvatar {...props} size={size} workspace={workspace} />
     );
   }
   return (

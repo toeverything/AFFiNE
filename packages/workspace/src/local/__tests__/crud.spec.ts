@@ -3,9 +3,10 @@
  */
 import 'fake-indexeddb/auto';
 
-import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
+import type { WorkspaceCRUD } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { afterEach, assertType, describe, expect, test } from 'vitest';
 
@@ -29,11 +30,7 @@ describe('crud', () => {
 
   test('delete not exist', async () => {
     await expect(async () =>
-      CRUD.delete({
-        id: 'not_exist',
-        flavour: WorkspaceFlavour.LOCAL,
-        blockSuiteWorkspace: new Workspace({ id: 'test' }),
-      })
+      CRUD.delete(new Workspace({ id: 'test' }))
     ).rejects.toThrowError();
   });
 
@@ -54,7 +51,8 @@ describe('crud', () => {
     const list = await CRUD.list();
     expect(list.length).toBe(1);
     expect(list[0].id).toBe(id);
-    const localWorkspace = list.at(0) as LocalWorkspace;
+    const localWorkspace = list.at(0);
+    assertExists(localWorkspace);
     expect(localWorkspace.id).toBe(id);
     expect(localWorkspace.flavour).toBe(WorkspaceFlavour.LOCAL);
     expect(localWorkspace.blockSuiteWorkspace.doc.toJSON()).toEqual({
@@ -64,7 +62,7 @@ describe('crud', () => {
       }),
     });
 
-    await CRUD.delete(localWorkspace);
+    await CRUD.delete(localWorkspace.blockSuiteWorkspace);
     expect(await CRUD.get(id)).toBeNull();
     expect(await CRUD.list()).toEqual([]);
   });

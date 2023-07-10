@@ -4,18 +4,23 @@ import {
   FolderIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
+import { useAtom } from 'jotai';
 import type { FC, SVGProps } from 'react';
 import { useMemo } from 'react';
 
+import { openSettingModalAtom } from '../../../atoms';
 import { pathGenerator } from '../../../shared';
+
 export const useSwitchToConfig = (
   workspaceId: string
 ): {
   title: string;
-  href: string;
+  href?: string;
+  onClick?: () => void;
   icon: FC<SVGProps<SVGSVGElement>>;
 }[] => {
   const t = useAFFiNEI18N();
+  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
   return useMemo(
     () => [
       {
@@ -25,7 +30,13 @@ export const useSwitchToConfig = (
       },
       {
         title: t['Workspace Settings'](),
-        href: pathGenerator.setting(workspaceId),
+        onClick: () => {
+          setOpenSettingModalAtom({
+            open: true,
+            activeTab: 'workspace',
+            workspaceId,
+          });
+        },
         icon: SettingsIcon,
       },
       {
@@ -34,6 +45,6 @@ export const useSwitchToConfig = (
         icon: DeleteTemporarilyIcon,
       },
     ],
-    [workspaceId, t]
+    [t, workspaceId, setOpenSettingModalAtom]
   );
 };

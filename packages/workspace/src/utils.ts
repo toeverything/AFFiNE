@@ -12,19 +12,10 @@ import type {
   StoreOptions,
 } from '@blocksuite/store';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
-import { rootStore } from '@toeverything/plugin-infra/manager';
+import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/hooks/use-block-suite-workspace';
 
-import { rootWorkspacesMetadataAtom } from './atom';
 import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
-
-export function cleanupWorkspace(flavour: WorkspaceFlavour) {
-  rootStore
-    .set(rootWorkspacesMetadataAtom, metas =>
-      metas.filter(meta => meta.flavour !== flavour)
-    )
-    .catch(console.error);
-}
 
 function setEditorFlags(workspace: Workspace) {
   Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
@@ -38,13 +29,6 @@ function setEditorFlags(workspace: Workspace) {
     environment.isDesktop
   );
 }
-
-const hashMap = new Map<string, Workspace>();
-
-/**
- * @internal test only
- */
-export const _cleanupBlockSuiteWorkspaceCache = () => hashMap.clear();
 
 export function createEmptyBlockSuiteWorkspace(
   id: string,
@@ -73,8 +57,8 @@ export function createEmptyBlockSuiteWorkspace(
   const providerCreators: DocProviderCreator[] = [];
   const prefix: string = config?.cachePrefix ?? '';
   const cacheKey = `${prefix}${id}`;
-  if (hashMap.has(cacheKey)) {
-    return hashMap.get(cacheKey) as Workspace;
+  if (INTERNAL_BLOCKSUITE_HASH_MAP.has(cacheKey)) {
+    return INTERNAL_BLOCKSUITE_HASH_MAP.get(cacheKey) as Workspace;
   }
   const idGenerator = config?.idGenerator;
 
@@ -87,7 +71,7 @@ export function createEmptyBlockSuiteWorkspace(
         blobStorages.push(createSQLiteStorage);
       }
 
-      // todo: add support for cloud storage
+      // todo(JimmFly): add support for cloud storage
     }
     providerCreators.push(...createAffineProviders());
   } else {
@@ -111,36 +95,6 @@ export function createEmptyBlockSuiteWorkspace(
     .register(AffineSchemas)
     .register(__unstableSchemas);
   setEditorFlags(workspace);
-  hashMap.set(cacheKey, workspace);
+  INTERNAL_BLOCKSUITE_HASH_MAP.set(cacheKey, workspace);
   return workspace;
-}
-
-export class CallbackSet extends Set<() => void> {
-  #ready = false;
-
-  get ready(): boolean {
-    return this.#ready;
-  }
-
-  set ready(v: boolean) {
-    this.#ready = v;
-  }
-
-  override add(cb: () => void) {
-    if (this.ready) {
-      cb();
-      return this;
-    }
-    if (this.has(cb)) {
-      return this;
-    }
-    return super.add(cb);
-  }
-
-  override delete(cb: () => void) {
-    if (this.has(cb)) {
-      return super.delete(cb);
-    }
-    return false;
-  }
 }

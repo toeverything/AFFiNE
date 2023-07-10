@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 
 import {
   type AppSetting,
+  fontStyleOptions,
   useAppSetting,
   windowFrameStyleOptions,
 } from '../../../../../atoms/settings';
@@ -48,6 +49,39 @@ export const ThemeSettings = () => {
   );
 };
 
+const FontFamilySettings = () => {
+  const [appSettings, setAppSettings] = useAppSetting();
+  return (
+    <RadioButtonGroup
+      width={250}
+      className={settingWrapper}
+      defaultValue={appSettings.fontStyle}
+      onValueChange={useCallback(
+        (key: AppSetting['fontStyle']) => {
+          setAppSettings({ fontStyle: key });
+        },
+        [setAppSettings]
+      )}
+    >
+      {fontStyleOptions.map(({ key, value }) => {
+        return (
+          <RadioButton
+            key={key}
+            bold={true}
+            value={key}
+            data-testid="system-font-style-trigger"
+            style={{
+              fontFamily: value,
+            }}
+          >
+            {key}
+          </RadioButton>
+        );
+      })}
+    </RadioButtonGroup>
+  );
+};
+
 export const AppearanceSettings = () => {
   const t = useAFFiNEI18N();
 
@@ -71,6 +105,12 @@ export const AppearanceSettings = () => {
           desc={t['Choose your color scheme']()}
         >
           <ThemeSettings />
+        </SettingRow>
+        <SettingRow
+          name={t['Font Style']()}
+          desc={t['Choose your font style']()}
+        >
+          <FontFamilySettings />
         </SettingRow>
         <SettingRow
           name={t['Display Language']()}
