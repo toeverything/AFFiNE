@@ -70,8 +70,11 @@ const EditorWrapper = memo(function EditorWrapper({
 
   assertExists(meta);
   const value = useMemo(() => {
-    return fontStyleOptions.find(option => option.key === appSettings.fontStyle)
-      ?.value;
+    const fontStyle = fontStyleOptions.find(
+      option => option.key === appSettings.fontStyle
+    );
+    assertExists(fontStyle);
+    return fontStyle.value;
   }, [appSettings.fontStyle]);
 
   return (
