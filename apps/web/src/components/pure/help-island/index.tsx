@@ -1,7 +1,7 @@
 import { MuiFade, Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
-import { useAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { openOnboardingModalAtom, openSettingModalAtom } from '../../../atoms';
@@ -28,8 +28,8 @@ export const HelpIsland = ({
   showList?: IslandItemNames[];
 }) => {
   const mode = useCurrentMode();
-  const [, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
-  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+  const setOpenOnboarding = useSetAtom(openOnboardingModalAtom);
+  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
   const t = useAFFiNEI18N();
 
