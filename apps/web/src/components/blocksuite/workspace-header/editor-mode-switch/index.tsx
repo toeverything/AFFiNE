@@ -19,9 +19,10 @@ export type EditorModeSwitchProps = {
   style?: CSSProperties;
 };
 const TooltipContent = () => {
+  const t = useAFFiNEI18N();
   return (
     <div>
-      Switch
+      {t['Switch']()}
       <StyledKeyboardItem>
         {!environment.isServer && environment.isMacOs ? '⌥ + S' : 'Alt + S'}
       </StyledKeyboardItem>
