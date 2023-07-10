@@ -32,12 +32,16 @@ export type PermissionSelectProps = {
 export const PermissionSelect = (
   props: PermissionSelectProps
 ): ReactElement => {
+  const { onChange } = props;
   return (
     <Select.Root
       value={props.value}
-      onValueChange={useCallback((value: Permission) => {
-        props.onChange(value);
-      }, [])}
+      onValueChange={useCallback(
+        (value: Permission) => {
+          onChange(value);
+        },
+        [onChange]
+      )}
     >
       <Select.Trigger className={style.trigger}>
         <Select.Value placeholder="Permission" />
