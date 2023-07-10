@@ -55,11 +55,15 @@ export const recentPageSettingsAtom = atom<PartialPageLocalSettingWithPageId[]>(
   }
 );
 
+const defaultPageSetting = {
+  mode: 'page',
+} satisfies PageLocalSetting;
+
 export const pageSettingFamily = atomFamily((pageId: string) =>
   atom(
     get =>
       get(pageSettingsBaseAtom)[pageId] ?? {
-        mode: 'page',
+        ...defaultPageSetting,
       },
     (
       get,
@@ -75,6 +79,7 @@ export const pageSettingFamily = atomFamily((pageId: string) =>
       set(pageSettingsBaseAtom, settings => ({
         ...settings,
         [pageId]: {
+          ...defaultPageSetting,
           ...settings[pageId],
           ...(typeof patch === 'function' ? patch(settings[pageId]) : patch),
         },
