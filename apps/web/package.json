@@ -33,6 +33,7 @@
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@mui/material": "^5.13.6",
+    "@radix-ui/react-select": "^1.2.2",
     "@react-hookz/web": "^23.1.0",
     "@sentry/nextjs": "^7.57.0",
     "@toeverything/hooks": "workspace:*",

@@ -9,6 +9,7 @@ import { useMembers } from '../../../hooks/affine/use-members';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { useMutation } from '../../../shared/gql';
 import { toast } from '../../../utils';
+import { PermissionSelect } from './permission-select';
 
 export type MembersPanelProps = {
   workspace: AffineOfficialWorkspace;
@@ -21,6 +22,7 @@ export const CloudWorkspaceMembersPanel = (
   const members = useMembers(workspaceId);
 
   const [inviteEmail, setInviteEmail] = useState('');
+  const [permission, setPermission] = useState(Permission.Write);
   const { trigger } = useMutation({
     mutation: inviteByEmailMutation,
   });
@@ -37,7 +39,12 @@ export const CloudWorkspaceMembersPanel = (
     <>
       <SettingRow name="Members" desc="" />
       <div>
-        <Input placeholder="Invite by email" onChange={setInviteEmail} />
+        <Input
+          data-testid="invite-by-email-input"
+          placeholder="Invite by email"
+          onChange={setInviteEmail}
+        />
+        <PermissionSelect value={permission} onChange={setPermission} />
         <Button
           onClick={useCallback(async () => {
             const emailRegex = new RegExp(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -50,10 +57,9 @@ export const CloudWorkspaceMembersPanel = (
             await trigger({
               workspaceId,
               email: inviteEmail,
-              // fixme: we now only support admin permission
-              permission: Permission.Admin,
+              permission,
             });
-          }, [inviteEmail, trigger, workspaceId])}
+          }, [inviteEmail, trigger, workspaceId, permission])}
         >
           Invite
         </Button>
