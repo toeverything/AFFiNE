@@ -11,6 +11,9 @@
     { "path": "../env" },
     { "path": "../debug" },
     { "path": "../hooks" },
-    { "path": "../plugin-infra" }
+    { "path": "../plugin-infra" },
+    {
+      "path": "../graphql"
+    }
   ]
 }

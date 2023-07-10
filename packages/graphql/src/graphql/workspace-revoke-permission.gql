@@ -1,0 +1,3 @@
+mutation WorkspaceRevokePermission($workspaceId: String!) {
+  p
+}

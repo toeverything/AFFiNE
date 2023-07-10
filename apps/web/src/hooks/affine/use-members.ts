@@ -1,6 +1,5 @@
 import { getMembersByWorkspaceIdQuery } from '@affine/graphql';
-
-import { useQuery } from '../../shared/gql';
+import { useQuery } from '@affine/workspace/affine/gql';
 
 export function useMembers(workspaceId: string) {
   const { data } = useQuery({

@@ -2,12 +2,12 @@ import { Button, Input } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { inviteByEmailMutation, Permission } from '@affine/graphql';
+import { useMutation } from '@affine/workspace/affine/gql';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 
 import { useMembers } from '../../../hooks/affine/use-members';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { useMutation } from '../../../shared/gql';
 import { toast } from '../../../utils';
 import { PermissionSelect } from './permission-select';
 

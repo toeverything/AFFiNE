@@ -2,10 +2,9 @@ import {
   getWorkspacePublicByIdQuery,
   setWorkspacePublicByIdMutation,
 } from '@affine/graphql';
+import { useMutation } from '@affine/workspace/affine/gql';
 import { useCallback } from 'react';
 import { useSWRConfig } from 'swr';
-
-import { useMutation } from '../../shared/gql';
 
 export function useToggleCloudPublic(workspaceId: string) {
   const { mutate } = useSWRConfig();
