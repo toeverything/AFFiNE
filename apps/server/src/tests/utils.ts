@@ -58,9 +58,8 @@ async function currentUser(app: INestApplication, token: string) {
             }
           }
         `,
-    });
-  console.log(JSON.stringify(res.body));
-  // .expect(200);
+    })
+    .expect(200);
   return res.body.data.currentUser;
 }
 
