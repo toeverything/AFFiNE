@@ -75,5 +75,7 @@ export class EventsGateway {
       .emit('server-awareness-broadcast', {
         ...message,
       });
+
+    return 'ack';
   }
 }
