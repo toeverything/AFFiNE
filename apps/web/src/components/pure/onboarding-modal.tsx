@@ -1,6 +1,6 @@
 import { TourModal } from '@affine/component/tour-modal';
-import { useAtom } from 'jotai';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useAtom, useSetAtom } from 'jotai';
+import { useCallback, useMemo } from 'react';
 
 import { openOnboardingModalAtom } from '../../atoms';
 import { guideOnboardingAtom } from '../../atoms/guide';
@@ -22,8 +22,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   open,
   onClose,
 }) => {
-  const [, setShowOnboarding] = useAtom(guideOnboardingAtom);
-  const [, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
+  const setShowOnboarding = useSetAtom(guideOnboardingAtom);
+  const [openOnboarding, setOpenOnboarding] = useAtom(openOnboardingModalAtom);
   const onCloseTourModal = useCallback(() => {
     setShowOnboarding(false);
     onClose();
@@ -34,11 +34,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
     return helperGuide?.onBoarding ?? true;
   }, []);
 
-  useEffect(() => {
-    if (shouldShow) {
-      setOpenOnboarding(true);
-    }
-  }, [shouldShow, setOpenOnboarding]);
+  if (shouldShow && shouldShow !== openOnboarding) {
+    setOpenOnboarding(true);
+  }
   return <TourModal open={open} onClose={onCloseTourModal} />;
 };
 
