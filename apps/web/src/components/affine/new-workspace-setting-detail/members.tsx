@@ -3,6 +3,8 @@ import {
   FlexWrapper,
   IconButton,
   Input,
+  Menu,
+  MenuItem,
   Tooltip,
 } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
@@ -52,6 +54,7 @@ export const CloudWorkspaceMembersPanel = (
   });
 
   const memberCount = members.length;
+  const content = <MenuItem>Remove from Workspace</MenuItem>;
   const memberPanel =
     memberCount > 0 ? (
       members.map(member => (
@@ -68,9 +71,16 @@ export const CloudWorkspaceMembersPanel = (
             <div className={style.memberEmail}>{member.email}</div>
           </div>
           <div className={style.permissionContainer}>{member.permission}</div>
-          <IconButton size="middle">
-            <MoreVerticalIcon />
-          </IconButton>
+          <Menu
+            content={content}
+            placement="bottom"
+            disablePortal={true}
+            trigger="click"
+          >
+            <IconButton iconSize={[24, 24]}>
+              <MoreVerticalIcon />
+            </IconButton>
+          </Menu>
         </div>
       ))
     ) : (
