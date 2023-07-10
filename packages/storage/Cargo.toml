@@ -10,8 +10,8 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-jwst = { git = "https://github.com/toeverything/OctoBase.git", rev = "da3824e419dbf2cf514ddf68402e8f211f2564f8" }
-jwst-storage = { git = "https://github.com/toeverything/OctoBase.git", rev = "da3824e419dbf2cf514ddf68402e8f211f2564f8" }
+jwst = { git = "https://github.com/toeverything/OctoBase.git", rev = "da3824e" }
+jwst-storage = { git = "https://github.com/toeverything/OctoBase.git", rev = "da3824e" }
 napi = { version = "2", default-features = false, features = [
   "napi5",
   "async",
