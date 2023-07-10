@@ -7,7 +7,7 @@ export interface WatchOptions {
   recursive?: boolean;
 }
 /** Watcher kind enumeration */
-export const enum WatcherKind {
+export enum WatcherKind {
   /** inotify backend (linux) */
   Inotify = 'Inotify',
   /** FS-Event backend (mac) */
@@ -38,7 +38,7 @@ export interface InsertRow {
   docId?: string;
   data: Uint8Array;
 }
-export const enum ValidationResult {
+export enum ValidationResult {
   MissingTables = 0,
   MissingDocIdColumn = 1,
   GeneralError = 2,

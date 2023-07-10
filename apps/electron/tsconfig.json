@@ -11,8 +11,7 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "noImplicitOverride": true,
-    "verbatimModuleSyntax": false
+    "noImplicitOverride": true
   },
   "include": ["./src"],
   "exclude": ["node_modules", "out", "dist", "**/__tests__/**/*"],
