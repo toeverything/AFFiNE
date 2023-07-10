@@ -11,6 +11,9 @@
         "aarch64-unknown-linux-gnu",
         "aarch64-pc-windows-msvc"
       ]
+    },
+    "ts": {
+      "constEnum": false
     }
   },
   "license": "MPL-2.0",
@@ -29,8 +32,8 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "napi build --platform --release",
-    "build:debug": "napi build --platform",
+    "build": "napi build --platform --release --no-const-enum",
+    "build:debug": "napi build --platform --no-const-enum",
     "universal": "napi universal",
     "test": "cross-env TS_NODE_TRANSPILE_ONLY=1 TS_NODE_PROJECT=./tsconfig.json node --test --loader ts-node/esm --experimental-specifier-resolution=node ./__tests__/**/*.mts",
     "version": "napi version"
