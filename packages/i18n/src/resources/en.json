@@ -26,6 +26,8 @@
   "com.affine.settings.storage.description": "Check or change storage location",
   "com.affine.settings.storage.description-alt": "Check or change storage location. Click path to edit location.",
   "com.affine.settings.storage.db-location.change-hint": "Click to move storage location.",
+  "com.affine.settings.sign": "Sign in / Sign up",
+  "com.affine.setting.sign.message": "Sync with AFFiNE Cloud",
   "com.affine.pageMode": "Page Mode",
   "com.affine.edgelessMode": "Edgeless Mode",
   "com.affine.onboarding.title1": "Hyper merged whiteboard and docs",
