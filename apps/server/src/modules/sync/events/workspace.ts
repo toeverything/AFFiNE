@@ -44,14 +44,18 @@ export class WorkspaceService {
   }
 
   async getDocFromGuid(guid: string): Promise<Doc | null> {
+    const updates = await this.storage.loadBuffer(guid);
+    if (!updates) return null;
+
     const doc = new Y.Doc({ guid });
-    try {
-      // TODO load method return null if doc doesn't exist, error throwing is not needed.
-      const update = await this.storage.load(guid);
-      update && Y.applyUpdate(doc, update);
-      return doc;
-    } catch (e) {
-      return null;
+    for (const update of updates) {
+      try {
+        Y.applyUpdate(doc, update);
+      } catch (e) {
+        console.error(e);
+      }
     }
+
+    return doc;
   }
 }
