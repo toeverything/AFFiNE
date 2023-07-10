@@ -6,6 +6,7 @@ import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
+import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { useMembers } from '../../../hooks/affine/use-members';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
@@ -21,9 +22,19 @@ export const CloudWorkspaceMembersPanel = (
   const workspaceId = props.workspace.id;
   const members = useMembers(workspaceId);
 
+  const isOwner = useIsWorkspaceOwner(workspaceId);
   const [inviteEmail, setInviteEmail] = useState('');
   const [permission, setPermission] = useState(Permission.Write);
   const invite = useInviteMember(workspaceId);
+  const onClickInvite = useCallback(async () => {
+    const emailRegex = new RegExp(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+    if (!emailRegex.test(inviteEmail)) {
+      toast('Invalid email');
+      return;
+    }
+
+    await invite(inviteEmail, permission);
+  }, [inviteEmail, invite, permission]);
 
   const memberCount = members.length;
   const memberPanel =
@@ -36,27 +47,17 @@ export const CloudWorkspaceMembersPanel = (
   return (
     <>
       <SettingRow name="Members" desc="" />
-      <div>
-        <Input
-          data-testid="invite-by-email-input"
-          placeholder="Invite by email"
-          onChange={setInviteEmail}
-        />
-        <PermissionSelect value={permission} onChange={setPermission} />
-        <Button
-          onClick={useCallback(async () => {
-            const emailRegex = new RegExp(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-            if (!emailRegex.test(inviteEmail)) {
-              toast('Invalid email');
-              return;
-            }
-
-            await invite(inviteEmail, permission);
-          }, [inviteEmail, invite, permission])}
-        >
-          Invite
-        </Button>
-      </div>
+      {isOwner && (
+        <div>
+          <Input
+            data-testid="invite-by-email-input"
+            placeholder="Invite by email"
+            onChange={setInviteEmail}
+          />
+          <PermissionSelect value={permission} onChange={setPermission} />
+          <Button onClick={onClickInvite}>Invite</Button>
+        </div>
+      )}
       {memberPanel}
     </>
   );
