@@ -74,6 +74,25 @@ async function getWorkspace(
   return res.body.data.workspace;
 }
 
+async function getPublicWorkspace(
+  app: INestApplication,
+  workspaceId: string
+): Promise<WorkspaceType> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .send({
+      query: `
+          query {
+            publicWorkspace(id: "${workspaceId}") {
+              id
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.publicWorkspace;
+}
+
 async function updateWorkspace(
   app: INestApplication,
   token: string,
@@ -262,6 +281,7 @@ async function setBlob(
 export {
   acceptInvite,
   createWorkspace,
+  getPublicWorkspace,
   getWorkspace,
   inviteUser,
   leaveWorkspace,

@@ -126,6 +126,11 @@ type Query {
   workspaces: [WorkspaceType!]!
 
   """
+  Get public workspace by id
+  """
+  publicWorkspace(id: String!): WorkspaceType!
+
+  """
   Get workspace by id
   """
   workspace(id: String!): WorkspaceType!

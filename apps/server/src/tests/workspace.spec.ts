@@ -1,4 +1,4 @@
-import { ok } from 'node:assert';
+import { ok, rejects } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import type { INestApplication } from '@nestjs/common';
@@ -11,6 +11,7 @@ import { AppModule } from '../app';
 import {
   acceptInvite,
   createWorkspace,
+  getPublicWorkspace,
   getWorkspace,
   inviteUser,
   leaveWorkspace,
@@ -85,6 +86,25 @@ describe('Workspace Module', () => {
       false
     );
     ok(isPrivate === false, 'failed to unpublish workspace');
+  });
+
+  it('should can read published workspace', async () => {
+    const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const workspace = await createWorkspace(app, user.token.token);
+
+    rejects(
+      getPublicWorkspace(app, 'not_exists_ws'),
+      'must not get not exists workspace'
+    );
+    rejects(
+      getPublicWorkspace(app, workspace.id),
+      'must not get private workspace'
+    );
+
+    await updateWorkspace(app, user.token.token, workspace.id, true);
+
+    const publicWorkspace = await getPublicWorkspace(app, workspace.id);
+    ok(publicWorkspace.id === workspace.id, 'failed to get public workspace');
   });
 
   it('should invite a user', async () => {
