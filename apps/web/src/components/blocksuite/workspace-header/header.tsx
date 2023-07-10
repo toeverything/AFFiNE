@@ -76,7 +76,9 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.ShareMenu]: {
     Component: HeaderShareMenu,
     availableWhen: (workspace, currentPage) => {
-      return workspace.flavour !== WorkspaceFlavour.PUBLIC && !!currentPage;
+      return (
+        workspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC && !!currentPage
+      );
     },
   },
   [HeaderRightItemName.EditPage]: {
