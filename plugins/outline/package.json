@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
-    "@toeverything/plugin-infra": "workspace:*"
+    "@toeverything/plugin-infra": "workspace:*",
+    "smooth-scroll-into-view-if-needed": "^2.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.14",

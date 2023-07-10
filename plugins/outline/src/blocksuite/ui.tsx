@@ -2,12 +2,13 @@ import type { PageBlockModel } from '@blocksuite/blocks';
 import type { Page } from '@blocksuite/store';
 import type { FC } from 'react';
 import { useCallback } from 'react';
-import scrollIntoView from 'smooth-scroll-into-view-if-needed';
+import scrollIntoView from 'scroll-into-view-if-needed';
 
 import {
   outlineContainerStyle,
   outlineContentStyle,
   outlineHeaderStyle,
+  outlineItemContentStyle,
   outlineMenuItemStyle,
 } from './index.css';
 
@@ -41,7 +42,6 @@ const getOutlineStructure = (root: PageBlockModel) => {
 };
 
 export const OutlineUI: FC<OutlineProps> = ({ page }) => {
-  const title = (page.root as PageBlockModel).title.toString();
   const root = page.root as PageBlockModel;
   const tree = getOutlineStructure(root);
   const handleNav = useCallback((id: string) => {
@@ -57,17 +57,21 @@ export const OutlineUI: FC<OutlineProps> = ({ page }) => {
   return (
     <div className={outlineContainerStyle}>
       <div className={outlineHeaderStyle}>Outline</div>
-      <div>{title}</div>
       <div className={outlineContentStyle}>
         {tree.map((item, index) => {
+          if (!item.title) return null;
           return (
             <div
               onClick={() => handleNav(item.id)}
               key={index}
               className={outlineMenuItemStyle}
-              style={{ marginLeft: (item.level - 1) * 10 }}
             >
-              {item.title}
+              <span
+                className={outlineItemContentStyle}
+                style={{ marginLeft: (item.level - 1) * 10 }}
+              >
+                {item.title}
+              </span>
             </div>
           );
         })}

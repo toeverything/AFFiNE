@@ -53,7 +53,6 @@
     "react-is": "^18.2.0",
     "react-resizable-panels": "^0.0.53",
     "rxjs": "^7.8.1",
-    "smooth-scroll-into-view-if-needed": "^2.0.0",
     "swr": "^2.1.5",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.6",
