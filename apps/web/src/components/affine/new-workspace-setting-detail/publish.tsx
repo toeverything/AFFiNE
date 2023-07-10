@@ -8,6 +8,7 @@ import type {
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { useClipboard } from 'foxact/use-clipboard';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -48,10 +49,17 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
 
   const shareLink = useShareLink(workspace.id);
 
+  const { copy } = useClipboard({
+    onCopyError: useCallback(() => {
+      toast('Failed to copy link to clipboard');
+    }, []),
+  });
+
   const copyUrl = useCallback(async () => {
-    await navigator.clipboard.writeText(shareLink);
+    await copy(shareLink);
     toast(t['Copied link to clipboard']());
-  }, [shareLink, t]);
+ }, [shareLink, t, copy]);
+  
   const handleClick = useCallback(() => {
     window.open(shareLink, '_blank');
   }, [shareLink]);

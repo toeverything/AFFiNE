@@ -45,7 +45,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
   const generalSettingList = useGeneralSettingList();
   const workspaceList = useMemo(() => {
     return workspaces.filter(
-      ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
+      ({ flavour }) => flavour !== WorkspaceFlavour.AFFINE_PUBLIC
     );
   }, [workspaces]);
 

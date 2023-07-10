@@ -66,7 +66,7 @@ export function useQuery<Query extends GraphQLQuery>(
   config?: any
 ) {
   return useSWR(
-    () => [options.query.id, options.variables],
+    () => ['cloud', options.query.id, options.variables],
     () => fetcher(options),
     config
   );
@@ -113,8 +113,8 @@ export function useMutation(
   config?: any
 ) {
   return useSWRMutation(
-    options.mutation.id,
-    (_: string, { arg }: { arg: any }) =>
+    () => ['cloud', options.mutation.id],
+    (_: unknown[], { arg }: { arg: any }) =>
       fetcher({ ...options, query: options.mutation, variables: arg }),
     config
   );

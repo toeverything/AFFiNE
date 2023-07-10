@@ -13,6 +13,7 @@ import {
 import { CRUD as CloudCRUD } from './cloud/crud';
 import { UI as CloudUI } from './cloud/ui';
 import { LocalAdapter } from './local';
+import { UI as PublicCloudUI } from './public-cloud/ui';
 
 const unimplemented = () => {
   throw new Error('Not implemented');
@@ -32,9 +33,9 @@ export const WorkspaceAdapters = {
     CRUD: CloudCRUD,
     UI: CloudUI,
   },
-  [WorkspaceFlavour.PUBLIC]: {
+  [WorkspaceFlavour.AFFINE_PUBLIC]: {
     releaseType: ReleaseType.UNRELEASED,
-    flavour: WorkspaceFlavour.PUBLIC,
+    flavour: WorkspaceFlavour.AFFINE_PUBLIC,
     loadPriority: LoadPriority.LOW,
     Events: {} as Partial<AppEvents>,
     // todo: implement this
@@ -46,11 +47,11 @@ export const WorkspaceAdapters = {
     },
     // todo: implement this
     UI: {
-      Provider: unimplemented,
       Header: unimplemented,
       PageDetail: unimplemented,
       PageList: unimplemented,
       NewSettingsDetail: unimplemented,
+      ...PublicCloudUI,
     },
   },
 } satisfies {
