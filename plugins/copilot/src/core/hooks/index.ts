@@ -22,6 +22,8 @@ export const openAIApiKeyAtom = atomWithStorage<string | null>(
   null
 );
 
+export const isAskingAtom = atom<boolean | null>(false);
+
 export const chatAtom = atom(async get => {
   const openAIApiKey = get(openAIApiKeyAtom);
   if (!openAIApiKey) {
