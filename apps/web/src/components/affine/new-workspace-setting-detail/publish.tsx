@@ -58,8 +58,8 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
   const copyUrl = useCallback(async () => {
     await copy(shareLink);
     toast(t['Copied link to clipboard']());
- }, [shareLink, t, copy]);
-  
+  }, [shareLink, t, copy]);
+
   const handleClick = useCallback(() => {
     window.open(shareLink, '_blank');
   }, [shareLink]);
