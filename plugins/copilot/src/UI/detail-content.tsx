@@ -1,15 +1,16 @@
-import { IconButton } from '@affine/component';
+import { Button, IconButton } from '@affine/component';
 import { SendIcon } from '@blocksuite/icons';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
-import { Provider, useAtomValue, useSetAtom } from 'jotai';
+import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { StrictMode, Suspense, useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { ConversationList } from '../core/components/conversation-list';
 import { FollowingUp } from '../core/components/following-up';
-import { openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
+import { SlashMenuActions } from '../core/components/slash-menu';
+import { isAskingAtom, openAIApiKeyAtom, useChatAtoms } from '../core/hooks';
 import {
   detailContentActionsStyle,
   detailContentStyle,
@@ -17,13 +18,13 @@ import {
   textareaStyle,
 } from './index.css';
 
-if (typeof window === 'undefined') {
+if (typeof window !== 'undefined') {
   import('@blocksuite/blocks')
     .then(({ FormatQuickBar }) => {
+      FormatQuickBar.customElements = [];
       FormatQuickBar.customElements.push((_page, getSelection) => {
         const div = document.createElement('div');
         const root = createRoot(div);
-
         const AskAI = (): ReactElement => {
           const { conversationAtom } = useChatAtoms();
           const call = useSetAtom(conversationAtom);
@@ -45,7 +46,11 @@ if (typeof window === 'undefined') {
             }
           }, [call]);
 
-          return <div onClick={onClickAskAI}>Ask AI</div>;
+          return (
+            <div onClick={onClickAskAI} style={{ cursor: 'pointer' }}>
+              Ask AI
+            </div>
+          );
         };
         root.render(
           <StrictMode>
@@ -60,6 +65,15 @@ if (typeof window === 'undefined') {
     .catch(error => {
       console.error(error);
     });
+
+  // TODO: await blocksuite get fixed
+  // import('@blocksuite/blocks')
+  //   .then(({ SlashMenu }) => {
+  //     // console.log(getPageBlock(SlashMenu))
+  //   })
+  //   .catch(error => {
+  //     console.error(error);
+  //   });
 }
 
 const Actions = () => {
@@ -68,14 +82,27 @@ const Actions = () => {
   const questions = useAtomValue(followingUpAtoms.questionsAtom);
   const generateFollowingUp = useSetAtom(followingUpAtoms.generateChatAtom);
   const [input, setInput] = useState('');
+  const [isAsking, setIsasking] = useAtom(isAskingAtom);
+  const abortClickHandler = () => {
+    const controller = new AbortController();
+    controller.abort();
+  };
   return (
     <>
-      <FollowingUp questions={questions} />
+      {isAsking ? (
+        <Button style={{ marginBottom: '12px' }} onClick={abortClickHandler}>
+          Stop generating
+        </Button>
+      ) : (
+        <Suspense fallback="generating follow-up question">
+          <FollowingUp questions={questions} />
+        </Suspense>
+      )}
       <div className={detailContentActionsStyle}>
         <textarea
           className={textareaStyle}
           value={input}
-          placeholder="Type here ask Copilot some thing..."
+          placeholder="Type here ask Copilot something..."
           onChange={e => {
             setInput(e.target.value);
           }}
@@ -83,9 +110,11 @@ const Actions = () => {
         <IconButton
           className={sendButtonStyle}
           onClick={useCallback(async () => {
+            setIsasking(true);
             await call(input);
             await generateFollowingUp();
-          }, [call, generateFollowingUp, input])}
+            setIsasking(false);
+          }, [call, generateFollowingUp, input, setIsasking])}
         >
           <SendIcon />
         </IconButton>
@@ -103,6 +132,7 @@ const DetailContentImpl = () => {
       <ConversationList conversations={conversations} />
       <Suspense fallback="generating follow-up question">
         <Actions />
+        <SlashMenuActions />
       </Suspense>
     </div>
   );
