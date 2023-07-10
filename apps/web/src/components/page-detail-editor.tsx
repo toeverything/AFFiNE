@@ -73,11 +73,11 @@ const EditorWrapper = memo(function EditorWrapper({
     return fontStyleOptions.find(option => option.key === appSettings.fontStyle)
       ?.value;
   }, [appSettings.fontStyle]);
+
   return (
     <Editor
       className={clsx(editor, {
-        'full-screen': appSettings?.fullWidthLayout,
-        // [appSettings?.fontStyle]: appSettings?.fontStyle,
+        'full-screen': appSettings.fullWidthLayout,
       })}
       style={
         {
