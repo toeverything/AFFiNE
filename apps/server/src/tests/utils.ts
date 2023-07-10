@@ -46,6 +46,24 @@ async function signUp(
   return res.body.data.signUp;
 }
 
+async function currentUser(app: INestApplication, token: string) {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `
+          query {
+            currentUser {
+              id, name, email, emailVerified, avatarUrl, createdAt
+            }
+          }
+        `,
+    });
+  console.log(JSON.stringify(res.body));
+  // .expect(200);
+  return res.body.data.currentUser;
+}
+
 async function createWorkspace(
   app: INestApplication,
   token: string
@@ -299,6 +317,7 @@ async function setBlob(
 export {
   acceptInvite,
   createWorkspace,
+  currentUser,
   getPublicWorkspace,
   getWorkspace,
   inviteUser,

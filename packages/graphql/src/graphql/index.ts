@@ -66,6 +66,24 @@ mutation deleteWorkspace($id: String!) {
 }`,
 };
 
+export const getCurrentUserQuery = {
+  id: 'getCurrentUserQuery' as const,
+  operationName: 'getCurrentUser',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCurrentUser {
+  currentUser {
+    id
+    name
+    email
+    emailVerified
+    avatarUrl
+    createdAt
+  }
+}`,
+};
+
 export const getMembersByWorkspaceIdQuery = {
   id: 'getMembersByWorkspaceIdQuery' as const,
   operationName: 'getMembersByWorkspaceId',
