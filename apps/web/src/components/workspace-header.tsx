@@ -116,7 +116,8 @@ export function WorkspaceHeader({
     }
   } else if ('pageId' in currentEntry) {
     const pageId = currentEntry.pageId;
-    const isPublic = currentWorkspace.flavour === WorkspaceFlavour.PUBLIC;
+    const isPublic =
+      currentWorkspace.flavour === WorkspaceFlavour.AFFINE_PUBLIC;
     return (
       <BlockSuiteEditorHeader
         isPublic={isPublic}

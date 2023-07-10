@@ -73,7 +73,7 @@ export interface LocalWorkspace extends BaseWorkspace {
 }
 
 export interface AffinePublicWorkspace extends BaseWorkspace {
-  flavour: WorkspaceFlavour.PUBLIC;
+  flavour: WorkspaceFlavour.AFFINE_PUBLIC;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
 }
@@ -96,7 +96,7 @@ export enum WorkspaceFlavour {
    */
   AFFINE_CLOUD = 'affine-cloud',
   LOCAL = 'local',
-  PUBLIC = 'affine-public',
+  AFFINE_PUBLIC = 'affine-public',
 }
 
 export const settingPanel = {
@@ -112,7 +112,7 @@ export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 // built-in workspaces
 export interface WorkspaceRegistry {
   [WorkspaceFlavour.LOCAL]: LocalWorkspace;
-  [WorkspaceFlavour.PUBLIC]: AffinePublicWorkspace;
+  [WorkspaceFlavour.AFFINE_PUBLIC]: AffinePublicWorkspace;
   [WorkspaceFlavour.AFFINE_CLOUD]: AffineCloudWorkspace;
 }
 
