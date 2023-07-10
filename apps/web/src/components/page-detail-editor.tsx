@@ -11,7 +11,10 @@ import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
-import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
+import {
+  affinePluginsAtom,
+  currentPageAtom,
+} from '@toeverything/plugin-infra/manager';
 import type {
   AffinePlugin,
   LayoutNode,
@@ -19,7 +22,7 @@ import type {
 } from '@toeverything/plugin-infra/type';
 import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import type { FC, ReactElement } from 'react';
 import React, { memo, Suspense, useCallback, useMemo } from 'react';
@@ -69,7 +72,10 @@ const EditorWrapper = memo(function EditorWrapper({
   const [appSettings] = useAppSetting();
 
   assertExists(meta);
-
+  const [currentPage, setCurrentPage] = useAtom(currentPageAtom);
+  if (currentPage === null) {
+    setCurrentPage(page);
+  }
   return (
     <Editor
       className={clsx(editor, {

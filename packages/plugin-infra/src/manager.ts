@@ -1,3 +1,4 @@
+import type { Page } from '@blocksuite/store';
 import { atom, createStore } from 'jotai/vanilla';
 
 import type { AffinePlugin, Definition, ServerAdapter } from './type';
@@ -12,6 +13,8 @@ export const rootStore = createStore();
 
 // todo: for now every plugin is enabled by default
 export const affinePluginsAtom = atom<Record<string, AffinePlugin<string>>>({});
+
+export const currentPageAtom = atom<Page | null>(null);
 
 export function definePlugin<ID extends string>(
   definition: Definition<ID>,
