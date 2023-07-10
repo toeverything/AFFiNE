@@ -79,6 +79,7 @@ query getMembersByWorkspaceId($workspaceId: String!) {
       name
       email
       avatarUrl
+      permission
     }
   }
 }`,
@@ -131,6 +132,17 @@ export const inviteByEmailMutation = {
   query: `
 mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!) {
   invite(workspaceId: $workspaceId, email: $email, permission: $permission)
+}`,
+};
+
+export const revokeMemberPermissionMutation = {
+  id: 'revokeMemberPermissionMutation' as const,
+  operationName: 'revokeMemberPermission',
+  definitionName: 'revoke',
+  containsFile: false,
+  query: `
+mutation revokeMemberPermission($workspaceId: String!, $userId: String!) {
+  revoke(workspaceId: $workspaceId, userId: $userId)
 }`,
 };
 

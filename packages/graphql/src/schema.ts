@@ -101,11 +101,12 @@ export type GetMembersByWorkspaceIdQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     members: Array<{
-      __typename?: 'UserType';
+      __typename?: 'InviteUserType';
       id: string;
-      name: string;
-      email: string;
+      name: string | null;
+      email: string | null;
       avatarUrl: string | null;
+      permission: Permission;
     }>;
   };
 };
@@ -144,6 +145,16 @@ export type InviteByEmailMutationVariables = Exact<{
 export type InviteByEmailMutation = {
   __typename?: 'Mutation';
   invite: boolean;
+};
+
+export type RevokeMemberPermissionMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+}>;
+
+export type RevokeMemberPermissionMutation = {
+  __typename?: 'Mutation';
+  revoke: boolean;
 };
 
 export type SetRevokePageMutationVariables = Exact<{
@@ -291,6 +302,11 @@ export type Mutations =
       name: 'inviteByEmailMutation';
       variables: InviteByEmailMutationVariables;
       response: InviteByEmailMutation;
+    }
+  | {
+      name: 'revokeMemberPermissionMutation';
+      variables: RevokeMemberPermissionMutationVariables;
+      response: RevokeMemberPermissionMutation;
     }
   | {
       name: 'setRevokePageMutation';
