@@ -57,7 +57,10 @@ export const recentPageSettingsAtom = atom<PartialPageLocalSettingWithPageId[]>(
 
 export const pageSettingFamily = atomFamily((pageId: string) =>
   atom(
-    get => get(pageSettingsBaseAtom)[pageId],
+    get =>
+      get(pageSettingsBaseAtom)[pageId] ?? {
+        mode: 'page',
+      },
     (
       get,
       set,
