@@ -16,5 +16,5 @@ export function useRevokeMemberPermission(workspaceId: string) {
       userId,
     });
     await mutate();
-  }, []);
+  }, [mutate, trigger, workspaceId]);
 }
