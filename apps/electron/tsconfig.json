@@ -25,6 +25,9 @@
     {
       "path": "../../packages/infra"
     },
+    {
+      "path": "../../packages/env"
+    },
 
     // Tests
     {

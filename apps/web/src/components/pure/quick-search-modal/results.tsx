@@ -13,12 +13,12 @@ import { useEffect } from 'react';
 
 import { recentPageSettingsAtom } from '../../../atoms';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
-import type { BlockSuiteWorkspace } from '../../../shared';
+import type { AllWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
 import { StyledListItem, StyledNotFound } from './style';
 
 export type ResultsProps = {
-  blockSuiteWorkspace: BlockSuiteWorkspace;
+  workspace: AllWorkspace;
   query: string;
   onClose: () => void;
   setShowCreatePage: Dispatch<SetStateAction<boolean>>;
@@ -26,15 +26,16 @@ export type ResultsProps = {
 };
 export const Results: FC<ResultsProps> = ({
   query,
-  blockSuiteWorkspace,
+  workspace,
   setShowCreatePage,
   router,
   onClose,
 }) => {
+  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   assertExists(blockSuiteWorkspace.id);
-  const List = useSwitchToConfig(blockSuiteWorkspace.id);
+  const List = useSwitchToConfig(workspace.id);
 
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
@@ -100,7 +101,8 @@ export const Results: FC<ResultsProps> = ({
                 value={link.title}
                 onSelect={() => {
                   onClose();
-                  router.push(link.href).catch(console.error);
+                  link.href && router.push(link.href).catch(console.error);
+                  link.onClick?.();
                 }}
               >
                 <StyledListItem>

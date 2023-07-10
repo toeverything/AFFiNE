@@ -38,7 +38,12 @@ export const config = () => {
       bundle: true,
       target: `node${NODE_MAJOR_VERSION}`,
       platform: 'node',
-      external: ['electron', 'electron-updater', '@toeverything/plugin-infra'],
+      external: [
+        'electron',
+        'electron-updater',
+        '@toeverything/plugin-infra',
+        'yjs',
+      ],
       define: define,
       format: 'cjs',
       loader: {
