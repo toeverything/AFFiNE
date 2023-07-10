@@ -1,10 +1,4 @@
-import {
-  Button,
-  FlexWrapper,
-  Input,
-  MenuItem,
-  Tooltip,
-} from '@affine/component';
+import { Button, FlexWrapper, Input, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { inviteByEmailMutation, Permission } from '@affine/graphql';
@@ -53,10 +47,13 @@ export const CloudWorkspaceMembersPanel = (
   const memberPanel =
     memberCount > 0 ? (
       members.map(member => (
-        <MenuItem key={member.id}>
-          {member.name}
-          {member.email}
-        </MenuItem>
+        <div key={member.id} className={style.listItem}>
+          <div className={style.memberContainer}>
+            <div className={style.memberName}>{member.name}</div>
+            <div className={style.memberEmail}>{member.email}</div>
+          </div>
+          <div className={style.permissionContainer}>{member.permission}</div>
+        </div>
       ))
     ) : (
       <div>No Members</div>
@@ -68,15 +65,6 @@ export const CloudWorkspaceMembersPanel = (
         name={`${t['Members']()} (${memberCount})`}
         desc={t['Members hint']()}
       >
-        <PermissionSelect value={permission} onChange={setPermission} />
-      </SettingRow>
-      <FlexWrapper justifyContent="space-between" alignItems="center">
-        <Input
-          className={style.urlButton}
-          data-testid="invite-by-email-input"
-          placeholder="Invite by email"
-          onChange={setInviteEmail}
-        />
         <Button
           size="middle"
           onClick={useCallback(async () => {
@@ -94,8 +82,17 @@ export const CloudWorkspaceMembersPanel = (
             });
           }, [inviteEmail, trigger, workspaceId, permission])}
         >
-          Invite
+          {t['Invite Members']()}
         </Button>
+      </SettingRow>
+      <FlexWrapper justifyContent="space-between" alignItems="center">
+        <Input
+          className={style.urlButton}
+          data-testid="invite-by-email-input"
+          placeholder="Invite by email"
+          onChange={setInviteEmail}
+        />
+        <PermissionSelect value={permission} onChange={setPermission} />
       </FlexWrapper>
       <FlexWrapper flexDirection="column">{memberPanel}</FlexWrapper>
     </>

@@ -79,6 +79,7 @@ query getMembersByWorkspaceId($workspaceId: String!) {
       name
       email
       avatarUrl
+      permission
     }
   }
 }`,

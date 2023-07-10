@@ -101,11 +101,12 @@ export type GetMembersByWorkspaceIdQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     members: Array<{
-      __typename?: 'UserType';
+      __typename?: 'InviteUserType';
       id: string;
-      name: string;
-      email: string;
+      name: string | null;
+      email: string | null;
       avatarUrl: string | null;
+      permission: Permission;
     }>;
   };
 };
