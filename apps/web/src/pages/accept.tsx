@@ -11,7 +11,7 @@ function AcceptPageImpl() {
   const { trigger } = useMutation({
     mutation: acceptInviteByWorkspaceIdMutation,
   });
-  const workspaceId = router.query.workspaceId;
+  const workspaceId = router.query.id;
   const onClickAccept = useCallback(async () => {
     if (typeof workspaceId !== 'string') {
       throw new Error('workspaceId is not a string');
