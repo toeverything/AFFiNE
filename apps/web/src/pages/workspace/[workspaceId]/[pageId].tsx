@@ -8,13 +8,12 @@ import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
-import { pageSettingFamily } from '../../../atoms';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { WorkspaceLayout } from '../../../layouts/workspace-layout';
@@ -28,13 +27,7 @@ const WorkspaceDetail: React.FC = () => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const [setting, setSetting] = useAtom(pageSettingFamily(currentPageId));
   const collectionManager = useCollectionManager();
-  if (!setting) {
-    setSetting({
-      mode: 'page',
-    });
-  }
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {

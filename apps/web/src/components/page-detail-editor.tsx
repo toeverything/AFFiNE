@@ -21,13 +21,13 @@ import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
-import type { FC, ReactElement } from 'react';
-import React, { memo, Suspense, useCallback, useMemo } from 'react';
+import type { CSSProperties, FC, ReactElement } from 'react';
+import { memo, Suspense, useCallback, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
-import { useAppSetting } from '../atoms/settings';
+import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import { editor } from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
@@ -69,12 +69,24 @@ const EditorWrapper = memo(function EditorWrapper({
   const [appSettings] = useAppSetting();
 
   assertExists(meta);
+  const value = useMemo(() => {
+    const fontStyle = fontStyleOptions.find(
+      option => option.key === appSettings.fontStyle
+    );
+    assertExists(fontStyle);
+    return fontStyle.value;
+  }, [appSettings.fontStyle]);
 
   return (
     <Editor
       className={clsx(editor, {
-        'full-screen': appSettings?.fullWidthLayout,
+        'full-screen': appSettings.fullWidthLayout,
       })}
+      style={
+        {
+          '--affine-font-family': value,
+        } as CSSProperties
+      }
       key={`${workspace.id}-${pageId}`}
       mode={isPublic ? 'page' : currentMode}
       page={page}
