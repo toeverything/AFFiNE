@@ -26,10 +26,13 @@ export const quitAndInstall = async () => {
 
 let lastCheckTime = 0;
 export const checkForUpdatesAndNotify = async (force = true) => {
+  logger.info('checkForUpdatesAndNotify', autoUpdater);
   // check every 30 minutes (1800 seconds) at most
   if (force || lastCheckTime + 1000 * 1800 < Date.now()) {
     lastCheckTime = Date.now();
-    return await autoUpdater.checkForUpdatesAndNotify();
+    const info = await autoUpdater.checkForUpdates();
+    logger.info('checkForUpdatesAndNotify', info);
+    return info;
   }
   return void 0;
 };
@@ -98,6 +101,8 @@ export const registerUpdater = async () => {
     logger.error('Error while updating client', e);
   });
   autoUpdater.forceDevUpdateConfig = isDev;
+
+  await checkForUpdatesAndNotify();
 
   app.on('activate', async () => {
     await checkForUpdatesAndNotify(false);

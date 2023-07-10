@@ -19,7 +19,5 @@ export const workspaceEvents = {
 export const workspaceHandlers = {
   list: async () => listWorkspaces(),
   delete: async (id: string) => deleteWorkspace(id),
-  getMeta: async (id: string) => {
-    return getWorkspaceMeta(id);
-  },
+  getMeta: async (id: string) => getWorkspaceMeta(id),
 };

@@ -12,6 +12,9 @@ export const NODE_MAJOR_VERSION = 18;
 // fixme(xp): report error if app is not running on DEV_SERVER_URL
 const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
 
+// Cloud url for APIs
+const CLOUD_URL = process.env.CLOUD_URL || 'http://localhost:3000';
+
 /** @type 'production' | 'development'' */
 const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
 
@@ -24,6 +27,10 @@ export const config = () => {
 
   if (DEV_SERVER_URL) {
     define['process.env.DEV_SERVER_URL'] = `"${DEV_SERVER_URL}"`;
+  }
+
+  if (CLOUD_URL) {
+    define['process.env.CLOUD_URL'] = `"${CLOUD_URL}"`;
   }
 
   return {
