@@ -87,10 +87,24 @@ const checkIsNextMonth = (date: Date): boolean => {
 
 export const selectDateFromDatePicker = async (page: Page, date: Date) => {
   const datePickerPopup = page.locator('.react-datepicker-popper');
-  const day = date.getDate().toString();
+  const day = date.getDate();
   const month = date.toLocaleString('en-US', { month: 'long' });
   const weekday = date.toLocaleString('en-US', { weekday: 'long' });
   const year = date.getFullYear().toString();
+  const nth = function (d: number) {
+    if (d > 3 && d < 21) return 'th';
+    switch (d % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
+  };
+  const daySuffix = nth(day);
   // Open the date picker popup
   await clickDatePicker(page);
   const selectDate = async (): Promise<void> => {
@@ -105,12 +119,9 @@ export const selectDateFromDatePicker = async (page: Page, date: Date) => {
       );
       await nextMonthButton.click();
     }
-    const map = ['th', 'st', 'nd', 'rd'];
     // Click on the day cell
     const dateCell = page.locator(
-      `[aria-disabled="false"][aria-label="Choose ${weekday}, ${month} ${day}${
-        map[Number.parseInt(day) % 10] ?? 'th'
-      }, ${year}"]`
+      `[aria-disabled="false"][aria-label="Choose ${weekday}, ${month} ${day}${daySuffix}, ${year}"]`
     );
     await dateCell.click();
   };
