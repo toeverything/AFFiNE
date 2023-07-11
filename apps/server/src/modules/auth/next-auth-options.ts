@@ -195,7 +195,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           if (user) {
             // @ts-expect-error Third part library type mismatch
             session.user.id = user.id;
-            session.user.image = user.image;
+            // @ts-expect-error Third part library type mismatch
+            session.user.image = user.image ?? user.avatarUrl;
           } else {
             // technically the sub should be the same as id
             // @ts-expect-error Third part library type mismatch

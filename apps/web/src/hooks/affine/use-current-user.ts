@@ -6,6 +6,7 @@ export type CheckedUser = {
   name: string;
   email: string;
   image: string;
+  update: ReturnType<typeof useSession>['update'];
 };
 
 /**
@@ -27,5 +28,6 @@ export function useCurrentUser(): CheckedUser {
     name: user.name ?? 'REPLACE_ME_DEFAULT_NAME',
     email: user.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
     image: user.image ?? 'REPLACE_ME_DEFAULT_URL',
+    update: session.update,
   };
 }
