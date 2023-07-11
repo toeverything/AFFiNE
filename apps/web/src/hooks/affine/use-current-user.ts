@@ -36,6 +36,7 @@ export function useCurrentUser(): CheckedUser {
   //   'session.status should be authenticated'
   // );
   const user = session.data?.user;
+
   assertExists(user, 'user should exist');
   return {
     id: user.id ?? 'REPLACE_ME_DEFAULT_ID',
@@ -43,20 +44,5 @@ export function useCurrentUser(): CheckedUser {
     email: user.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
     image: user.image ?? 'REPLACE_ME_DEFAULT_URL',
     update: session.update,
-  };
-}
-
-export function useUpdateUser() {
-  const { update } = useSession();
-  return {
-    updateUserName: (userName: string) => {
-      update({ name: userName }).catch(console.error);
-    },
-    updateUserAvatar: (avatarUrl: string) => {
-      update({ avatarUrl }).catch(console.error);
-    },
-    removeUserEmail: (email: string) => {
-      update({ email }).catch(console.error);
-    },
   };
 }

@@ -10,10 +10,7 @@ import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { signOut } from 'next-auth/react';
 import { useCallback, useState } from 'react';
 
-import {
-  useCurrentUser,
-  useUpdateUser,
-} from '../../../../hooks/affine/use-current-user';
+import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useMutation } from '../../../../shared/gql';
 import { toast } from '../../../../utils';
 import { Upload } from '../../../pure/file-upload';
@@ -22,7 +19,6 @@ import * as style from './style.css';
 export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
-  const { updateUserName, updateUserAvatar } = useUpdateUser();
   const [input, setInput] = useState<string>(user.name);
 
   const { trigger: avatarTrigger } = useMutation({
@@ -31,24 +27,19 @@ export const AvatarAndName = () => {
 
   const handleUpdateUserName = useCallback(
     (newName: string) => {
-      updateUserName(newName);
+      user.update({ name: newName }).catch(console.error);
     },
-    [updateUserName]
+    [user]
   );
 
   const handleUpdateUserAvatar = useCallback(
     async (file: File) => {
-      const newUserInfo = await avatarTrigger({
+      await avatarTrigger({
         id: user.id,
         avatar: file,
       });
-      if (!newUserInfo?.uploadAvatar?.avatarUrl) {
-        return;
-      }
-
-      updateUserAvatar(newUserInfo.uploadAvatar.avatarUrl);
     },
-    [avatarTrigger, updateUserAvatar, user.id]
+    [avatarTrigger, user.id]
   );
   return (
     <>
@@ -90,7 +81,6 @@ export const AvatarAndName = () => {
                 width={280}
                 height={28}
                 onChange={setInput}
-                disabled={true}
               />
               {input && input === user.name ? null : (
                 <IconButton
