@@ -5,15 +5,21 @@ import { useCallback } from 'react';
 export enum RouteLogic {
   REPLACE = 'replace',
   PUSH = 'push',
+  NEW_TAB = 'newTab',
 }
 
 export function useRouterHelper(router: NextRouter) {
   const jumpToPage = useCallback(
-    (
+    async (
       workspaceId: string,
       pageId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
+      if (logic === RouteLogic.NEW_TAB) {
+        return window
+          .open(`/workspace/${workspaceId}/${pageId}`, '_blank')
+          ?.focus();
+      }
       return router[logic]({
         pathname: `/workspace/[workspaceId]/[pageId]`,
         query: {
@@ -25,13 +31,18 @@ export function useRouterHelper(router: NextRouter) {
     [router]
   );
   const jumpToPublicWorkspacePage = useCallback(
-    (
+    async (
       workspaceId: string,
       pageId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
+      if (logic === RouteLogic.NEW_TAB) {
+        return window
+          .open(`/share/${workspaceId}/${pageId}`, '_blank')
+          ?.focus();
+      }
       return router[logic]({
-        pathname: `/public-workspace/[workspaceId]/[pageId]`,
+        pathname: `/share/[workspaceId]/[pageId]`,
         query: {
           workspaceId,
           pageId,
@@ -41,11 +52,16 @@ export function useRouterHelper(router: NextRouter) {
     [router]
   );
   const jumpToSubPath = useCallback(
-    (
+    async (
       workspaceId: string,
       subPath: WorkspaceSubPath,
       logic: RouteLogic = RouteLogic.PUSH
-    ): Promise<boolean> => {
+    ) => {
+      if (logic === RouteLogic.NEW_TAB) {
+        return window
+          .open(`/workspace/${workspaceId}/${subPath}`, '_blank')
+          ?.focus();
+      }
       return router[logic]({
         pathname: `/workspace/[workspaceId]/${subPath}`,
         query: {
@@ -56,9 +72,8 @@ export function useRouterHelper(router: NextRouter) {
     [router]
   );
   const openPage = useCallback(
-    (workspaceId: string, pageId: string) => {
-      const isPublicWorkspace =
-        router.pathname.split('/')[1] === 'public-workspace';
+    async (workspaceId: string, pageId: string) => {
+      const isPublicWorkspace = router.pathname.split('/')[1] === 'share';
       if (isPublicWorkspace) {
         return jumpToPublicWorkspacePage(workspaceId, pageId);
       } else {

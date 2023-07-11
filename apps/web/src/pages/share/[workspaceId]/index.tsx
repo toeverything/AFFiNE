@@ -2,9 +2,11 @@ import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useAtomValue } from 'jotai';
 import Head from 'next/head';
-import React, { useCallback } from 'react';
+import { useRouter } from 'next/router';
+import React, { useCallback, useMemo } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
+import { RouteLogic, useRouterHelper } from '../../../hooks/use-router-helper';
 import {
   publicWorkspaceAtom,
   PublicWorkspaceLayout,
@@ -15,6 +17,7 @@ const ShareWorkspacePage: NextPageWithLayout = () => {
   const workspace = useAtomValue(publicWorkspaceAtom);
   const t = useAFFiNEI18N();
   const { PageList, Header } = getUIAdapter(WorkspaceFlavour.AFFINE_PUBLIC);
+  const { jumpToPublicWorkspacePage } = useRouterHelper(useRouter());
   return (
     <>
       <Head>
@@ -27,12 +30,24 @@ const ShareWorkspacePage: NextPageWithLayout = () => {
         }}
       />
       <PageList
-        collection={{
-          id: 'NIL',
-          name: 'NONE',
-          filterList: [],
-        }}
-        onOpenPage={useCallback(() => {}, [])}
+        collection={useMemo(
+          () => ({
+            id: 'NIL',
+            name: 'NONE',
+            filterList: [],
+          }),
+          []
+        )}
+        onOpenPage={useCallback(
+          async (pageId, newTab) => {
+            return jumpToPublicWorkspacePage(
+              workspace.id,
+              pageId,
+              newTab ? RouteLogic.NEW_TAB : RouteLogic.PUSH
+            );
+          },
+          [workspace.id, jumpToPublicWorkspacePage]
+        )}
         blockSuiteWorkspace={workspace}
       />
     </>

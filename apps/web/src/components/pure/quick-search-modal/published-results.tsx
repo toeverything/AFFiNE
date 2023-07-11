@@ -65,9 +65,7 @@ export const PublishedResults: FC<PublishedResultsProps> = ({
                   key={result.id}
                   onSelect={() => {
                     router
-                      .push(
-                        `/public-workspace/${router.query.workspaceId}/${result.id}`
-                      )
+                      .push(`/share/${router.query.workspaceId}/${result.id}`)
                       .catch(err => console.error(err));
                     onClose();
                   }}

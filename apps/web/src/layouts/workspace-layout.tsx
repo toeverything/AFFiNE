@@ -269,8 +269,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const helper = useBlockSuiteWorkspaceHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const isPublicWorkspace =
-    router.pathname.split('/')[1] === 'public-workspace';
+  const isPublicWorkspace = router.pathname.split('/')[1] === 'share';
   const title = useRouterTitle(router);
   const handleCreatePage = useCallback(() => {
     return helper.createPage(nanoid());
