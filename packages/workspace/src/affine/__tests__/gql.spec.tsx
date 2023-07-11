@@ -2,10 +2,11 @@
  * @vitest-environment happy-dom
  */
 import { uploadAvatarMutation } from '@affine/graphql';
-import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { render } from '@testing-library/react';
 import type { Mock } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { useMutation, useQuery } from '../gql';
 
 let fetch: Mock;
 describe('GraphQL wrapper for SWR', () => {
@@ -61,7 +62,7 @@ describe('GraphQL wrapper for SWR', () => {
       const el = await renderer.findByText('number: 1');
       expect(el).toMatchInlineSnapshot(`
         <div>
-          number:
+          number:${' '}
           1
         </div>
       `);
