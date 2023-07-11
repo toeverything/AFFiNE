@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
     "dev:prod": "yarn node scripts/dev.mjs",
-    "build": "zx scripts/build-layers.mjs",
+    "build": "NODE_ENV=production zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -59,7 +59,7 @@
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "electron-updater": "^5.0.0",
+    "electron-updater": "^6.0.0",
     "link-preview-js": "^3.0.4",
     "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
