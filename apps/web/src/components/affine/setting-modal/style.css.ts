@@ -15,6 +15,10 @@ globalStyle(`${settingContent} .wrapper`, {
   margin: '0 auto',
   overflowY: 'auto',
 });
+
+globalStyle(`${settingContent} .wrapper::-webkit-scrollbar`, {
+  display: 'none',
+});
 globalStyle(`${settingContent} .content`, {
   minHeight: '100%',
   paddingBottom: '80px',
