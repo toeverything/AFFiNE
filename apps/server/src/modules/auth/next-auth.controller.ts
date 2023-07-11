@@ -78,7 +78,11 @@ export class NextAuthController {
       }
     }
     if (redirect) {
-      res.redirect(redirect);
+      if (action === 'signout') {
+        res.send(JSON.stringify({ url: redirect }));
+      } else {
+        res.redirect(redirect);
+      }
     } else if (typeof body === 'string') {
       res.send(body);
     } else if (body && typeof body === 'object') {
