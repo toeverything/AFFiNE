@@ -174,10 +174,13 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     const metadataMap = new Map(metadata.map(x => [x.id, x]));
     // init workspace data
     metadataMap.forEach((meta, id) => {
-      if (meta.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-        createEmptyBlockSuiteWorkspace(id, meta.flavour, {});
-      } else if (meta.flavour === WorkspaceFlavour.LOCAL) {
+      if (
+        meta.flavour === WorkspaceFlavour.AFFINE_CLOUD ||
+        meta.flavour === WorkspaceFlavour.LOCAL
+      ) {
         createEmptyBlockSuiteWorkspace(id, meta.flavour);
+      } else {
+        throw new Error(`unknown flavour ${meta.flavour}`);
       }
     });
     return Array.from(metadataMap.values());
