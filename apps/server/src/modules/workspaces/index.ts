@@ -5,7 +5,8 @@ import { PermissionService } from './permission';
 import { WorkspaceResolver } from './resolver';
 
 @Module({
-  providers: [WorkspaceResolver, PermissionService, WorkspacesController],
+  controllers: [WorkspacesController],
+  providers: [WorkspaceResolver, PermissionService],
   exports: [PermissionService],
 })
 export class WorkspaceModule {}
