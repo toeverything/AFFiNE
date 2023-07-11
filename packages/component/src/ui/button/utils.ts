@@ -8,9 +8,9 @@ export const SIZE_CONFIG = {
   [SIZE_SMALL]: {
     iconSize: 16,
     fontSize: 'var(--affine-font-xs)',
-    borderRadius: 4,
+    borderRadius: 8,
     height: 28,
-    padding: 6,
+    padding: 12,
   },
   [SIZE_MIDDLE]: {
     iconSize: 20,

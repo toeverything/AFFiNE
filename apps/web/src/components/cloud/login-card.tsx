@@ -45,7 +45,7 @@ const UserCard = () => {
       <UserAvatar
         size={28}
         name={user.name}
-        url={user.image}
+        url={user.avatarUrl}
         className="avatar"
       />
       <div style={{ marginLeft: '15px' }}>

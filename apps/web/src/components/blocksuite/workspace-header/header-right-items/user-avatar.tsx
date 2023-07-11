@@ -21,7 +21,7 @@ export const UserAvatar = () => {
       disablePortal={true}
       trigger="click"
     >
-      <WorkspaceAvatar name={user.name} avatar={user.image} size={24} />
+      <WorkspaceAvatar name={user.name} avatar={user.avatarUrl} size={24} />
     </Menu>
   );
 };

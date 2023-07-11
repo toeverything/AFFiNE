@@ -39,6 +39,8 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   alignItems: 'center',
   backgroundColor: 'rgba(60, 61, 63, 0.5)',
   zIndex: '1',
+  color: 'var(--affine-white)',
+  fontSize: 'var(--affine-font-h-4)',
 });
 
 export const urlButton = style({

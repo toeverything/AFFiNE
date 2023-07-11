@@ -11,6 +11,7 @@ export const SettingRow: FC<
     onClick?: () => void;
     spreadCol?: boolean;
     testId?: string;
+    disabled?: boolean;
   }>
 > = ({
   name,
@@ -20,11 +21,13 @@ export const SettingRow: FC<
   style,
   spreadCol = true,
   testId = '',
+  disabled = false,
 }) => {
   return (
     <div
       className={clsx(settingRow, {
         'two-col': spreadCol,
+        disabled,
       })}
       style={style}
       onClick={onClick}

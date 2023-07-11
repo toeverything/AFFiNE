@@ -38,7 +38,7 @@ export const UserInfo = ({
       <UserAvatar
         size={28}
         name={user.name}
-        url={user.image}
+        url={user.avatarUrl}
         className="avatar"
       />
 
