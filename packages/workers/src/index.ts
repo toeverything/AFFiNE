@@ -1,3 +1,5 @@
+const ALLOW_ORIGIN = ['https://affine.pro', 'https://affine.fail'];
+
 function isString(s: any): boolean {
   return typeof s === 'string' || s instanceof String;
 }
@@ -45,12 +47,7 @@ async function proxyImage(request: Request): Promise<Response> {
 
 const handler = {
   async fetch(request: Request) {
-    if (
-      isOriginAllowed(request.headers.get('Origin') || '', [
-        'https://affine.pro',
-        'https://affine.fail',
-      ])
-    ) {
+    if (isOriginAllowed(request.headers.get('Origin') || '', ALLOW_ORIGIN)) {
       return new Response('unauthorized', { status: 401 });
     }
 
