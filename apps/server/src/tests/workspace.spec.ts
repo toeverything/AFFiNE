@@ -1,4 +1,4 @@
-import { ok, rejects } from 'node:assert';
+import { deepEqual, ok, rejects } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import type { INestApplication } from '@nestjs/common';
@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import request from 'supertest';
 
 import { AppModule } from '../app';
 import {
@@ -134,5 +135,26 @@ describe('Workspace Module', () => {
 
     const msg3 = await revokePage(app, u1.token.token, workspace.id, 'page3');
     ok(msg3 === false, 'can revoke non-exists page');
+  });
+
+  it('should be able to get public workspace doc', async () => {
+    const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const workspace = await createWorkspace(app, user.token.token);
+
+    const isPublic = await updateWorkspace(
+      app,
+      user.token.token,
+      workspace.id,
+      true
+    );
+
+    ok(isPublic === true, 'failed to publish workspace');
+
+    const res = await request(app.getHttpServer())
+      .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+      .expect(200)
+      .type('application/octet-stream');
+
+    deepEqual(res.body, Buffer.from([0, 0]), 'failed to get public doc');
   });
 });

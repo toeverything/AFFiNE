@@ -10,11 +10,14 @@ export function useRevokeMemberPermission(workspaceId: string) {
     mutation: revokeMemberPermissionMutation,
   });
 
-  return useCallback(async (userId: string) => {
-    await trigger({
-      workspaceId,
-      userId,
-    });
-    await mutate();
-  }, [mutate, trigger, workspaceId]);
+  return useCallback(
+    async (userId: string) => {
+      await trigger({
+        workspaceId,
+        userId,
+      });
+      await mutate();
+    },
+    [mutate, trigger, workspaceId]
+  );
 }
