@@ -66,6 +66,24 @@ mutation deleteWorkspace($id: String!) {
 }`,
 };
 
+export const getCurrentUserQuery = {
+  id: 'getCurrentUserQuery' as const,
+  operationName: 'getCurrentUser',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCurrentUser {
+  currentUser {
+    id
+    name
+    email
+    emailVerified
+    avatarUrl
+    createdAt
+  }
+}`,
+};
+
 export const getMembersByWorkspaceIdQuery = {
   id: 'getMembersByWorkspaceIdQuery' as const,
   operationName: 'getMembersByWorkspaceId',
@@ -132,6 +150,17 @@ export const inviteByEmailMutation = {
   query: `
 mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!) {
   invite(workspaceId: $workspaceId, email: $email, permission: $permission)
+}`,
+};
+
+export const revokeMemberPermissionMutation = {
+  id: 'revokeMemberPermissionMutation' as const,
+  operationName: 'revokeMemberPermission',
+  definitionName: 'revoke',
+  containsFile: false,
+  query: `
+mutation revokeMemberPermission($workspaceId: String!, $userId: String!) {
+  revoke(workspaceId: $workspaceId, userId: $userId)
 }`,
 };
 

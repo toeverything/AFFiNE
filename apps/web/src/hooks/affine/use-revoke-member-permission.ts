@@ -1,19 +1,20 @@
-import { setWorkspacePublicByIdMutation } from '@affine/graphql';
+import { revokeMemberPermissionMutation } from '@affine/graphql';
 import { useCallback } from 'react';
 
 import { useMutation } from '../../shared/gql';
 import { useMutateCloud } from './use-mutate-cloud';
 
-export function useToggleCloudPublic(workspaceId: string) {
+export function useRevokeMemberPermission(workspaceId: string) {
   const mutate = useMutateCloud();
   const { trigger } = useMutation({
-    mutation: setWorkspacePublicByIdMutation,
+    mutation: revokeMemberPermissionMutation,
   });
+
   return useCallback(
-    async (isPublic: boolean) => {
+    async (userId: string) => {
       await trigger({
-        id: workspaceId,
-        public: isPublic,
+        workspaceId,
+        userId,
       });
       await mutate();
     },
