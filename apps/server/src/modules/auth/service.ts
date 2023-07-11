@@ -144,4 +144,31 @@ export class AuthService {
       },
     });
   }
+
+  async createAnonymousUser(email: string): Promise<User> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+
+    if (user) {
+      throw new BadRequestException('Email already exists');
+    }
+
+    return this.prisma.user.create({
+      data: {
+        name: 'Unnamed',
+        email,
+      },
+    });
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+  }
 }

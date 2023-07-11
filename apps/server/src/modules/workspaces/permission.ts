@@ -70,7 +70,7 @@ export class PermissionService {
     ws: string,
     user: string,
     permission: Permission = Permission.Read
-  ) {
+  ): Promise<string> {
     const data = await this.prisma.userWorkspacePermission.findFirst({
       where: {
         workspaceId: ws,
@@ -110,17 +110,33 @@ export class PermissionService {
         ].filter(Boolean) as Prisma.PrismaPromise<any>[]
       );
 
-      return p;
+      return p.id;
     }
 
-    return this.prisma.userWorkspacePermission.create({
-      data: {
+    return this.prisma.userWorkspacePermission
+      .create({
+        data: {
+          workspaceId: ws,
+          subPageId: null,
+          userId: user,
+          type: permission,
+        },
+      })
+      .then(p => p.id);
+  }
+
+  async acceptById(ws: string, id: string) {
+    const result = await this.prisma.userWorkspacePermission.updateMany({
+      where: {
+        id,
         workspaceId: ws,
-        subPageId: null,
-        userId: user,
-        type: permission,
+      },
+      data: {
+        accepted: true,
       },
     });
+
+    return result.count > 0;
   }
 
   async accept(ws: string, user: string) {
