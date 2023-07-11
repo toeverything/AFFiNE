@@ -1,14 +1,17 @@
-name: Deploy
+name: Deploy Cloudflare Worker
 
 on:
   push:
     branches:
       - main
+    paths:
+      - packages/workers/**
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
+    environment: production
     steps:
       - uses: actions/checkout@v2
       - name: Publish
