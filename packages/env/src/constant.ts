@@ -132,6 +132,6 @@ export class Unreachable extends Error {
 }
 
 export const IMAGE_PROXY_URL =
-  process.env.NODE_ENV === 'development'
+  (process.env.NODE_ENV === 'development'
     ? 'https://workers.toeverything.workers.dev'
-    : '/api/workers' + '/proxy/image';
+    : '/api/workers') + '/proxy/image';
