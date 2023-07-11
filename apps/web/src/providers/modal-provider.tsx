@@ -1,5 +1,6 @@
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
+  rootCurrentPageIdAtom,
   rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
@@ -124,6 +125,7 @@ export const AllWorkspaceModals = (): ReactElement => {
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
     rootCurrentWorkspaceIdAtom
   );
+  const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
   const [transitioning, transition] = useTransition();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
@@ -169,11 +171,17 @@ export const AllWorkspaceModals = (): ReactElement => {
             workspaceId => {
               setOpenWorkspacesModal(false);
               setCurrentWorkspaceId(workspaceId);
+              setCurrentPageId(null);
               jumpToSubPath(workspaceId, WorkspaceSubPath.ALL).catch(error => {
                 console.error(error);
               });
             },
-            [jumpToSubPath, setCurrentWorkspaceId, setOpenWorkspacesModal]
+            [
+              jumpToSubPath,
+              setCurrentPageId,
+              setCurrentWorkspaceId,
+              setOpenWorkspacesModal,
+            ]
           )}
           onClickWorkspaceSetting={handleOpenSettingModal}
           onNewWorkspace={useCallback(() => {

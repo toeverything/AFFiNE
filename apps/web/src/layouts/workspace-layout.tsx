@@ -284,7 +284,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
-  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(() => {
     setOpenSettingModalAtom({

@@ -84,7 +84,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
         onAccountSettingClick={onAccountSettingClick}
       />
 
-      <div className={settingContent}>
+      <div data-testid="setting-modal-content" className={settingContent}>
         <div className="wrapper">
           <div className="content">
             {activeTab === 'workspace' && workspaceId ? (
