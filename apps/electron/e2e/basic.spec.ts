@@ -180,5 +180,4 @@ test('delete workspace', async ({ page }) => {
   expect(await page.getByTestId('workspace-name').textContent()).toBe(
     'Demo Workspace'
   );
-  await page.pause();
 });
