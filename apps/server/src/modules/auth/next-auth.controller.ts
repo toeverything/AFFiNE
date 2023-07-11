@@ -1,11 +1,24 @@
-import { All, Controller, Inject, Next, Query, Req, Res } from '@nestjs/common';
+import {
+  All,
+  BadRequestException,
+  Controller,
+  Inject,
+  Next,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
+import { hash, verify } from '@node-rs/argon2';
+import type { User } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
+import { pick } from 'lodash-es';
 import type { AuthAction, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma/service';
 import { NextAuthOptionsProvide } from './next-auth-options';
+import { AuthService } from './service';
 
 const BASE_URL = '/api/auth/';
 
@@ -14,6 +27,7 @@ export class NextAuthController {
   constructor(
     readonly config: Config,
     readonly prisma: PrismaService,
+    private readonly authService: AuthService,
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions
   ) {}
@@ -51,6 +65,24 @@ export class NextAuthController {
         }
       }
     }
+    const options = this.nextAuthOptions;
+    if (req.method === 'POST' && action === 'session') {
+      if (typeof req.body !== 'object' || typeof req.body.data !== 'object') {
+        throw new BadRequestException(`Invalid new session data`);
+      }
+      const user = await this.updateSession(req, req.body.data);
+      // callbacks.session existed
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.callbacks!.session = ({ session }) => {
+        return {
+          user: {
+            ...pick(user, 'id', 'name', 'email'),
+            image: user.avatarUrl,
+          },
+          expires: session.expires,
+        };
+      };
+    }
     const { status, headers, body, redirect, cookies } = await AuthHandler({
       req: {
         body: req.body,
@@ -61,7 +93,7 @@ export class NextAuthController {
         error: query.error ?? providerId,
         cookies: req.cookies,
       },
-      options: this.nextAuthOptions,
+      options,
     });
 
     if (status) {
@@ -90,5 +122,93 @@ export class NextAuthController {
     } else {
       next();
     }
+  }
+
+  private async updateSession(
+    req: Request,
+    newSession: Partial<Omit<User, 'id'>> & { oldPassword?: string }
+  ): Promise<User> {
+    const { name, email, password, oldPassword } = newSession;
+    if (!name && !email && !password) {
+      throw new BadRequestException(`Invalid new session data`);
+    }
+    if (password) {
+      const user = await this.getUserFromRequest(req);
+      const { password: userPassword } = user;
+      if (!oldPassword) {
+        if (userPassword) {
+          throw new BadRequestException(
+            `Old password is required to update password`
+          );
+        }
+      } else {
+        if (!userPassword) {
+          throw new BadRequestException(`No existed password`);
+        }
+        if (await verify(userPassword, oldPassword)) {
+          await this.prisma.user.update({
+            where: {
+              id: user.id,
+            },
+            data: {
+              ...pick(newSession, 'email', 'name'),
+              password: await hash(password),
+            },
+          });
+        }
+      }
+      return user;
+    } else {
+      const user = await this.getUserFromRequest(req);
+      await this.prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: pick(newSession, 'name', 'email'),
+      });
+      return user;
+    }
+  }
+
+  private async getUserFromRequest(req: Request): Promise<User> {
+    const token = req.headers.authorization;
+    if (!token) {
+      const session = await AuthHandler({
+        req: {
+          cookies: req.cookies,
+          action: 'session',
+          method: 'GET',
+          headers: req.headers,
+        },
+        options: this.nextAuthOptions,
+      });
+
+      const { body } = session;
+      // @ts-expect-error check if body.user exists
+      if (body && body.user && body.user.id) {
+        const user = await this.prisma.user.findUnique({
+          where: {
+            // @ts-expect-error body.user.id exists
+            id: body.user.id,
+          },
+        });
+        if (user) {
+          return user;
+        }
+      }
+    } else {
+      const [type, jwt] = token.split(' ') ?? [];
+
+      if (type === 'Bearer') {
+        const claims = await this.authService.verify(jwt);
+        const user = await this.prisma.user.findUnique({
+          where: { id: claims.id },
+        });
+        if (user) {
+          return user;
+        }
+      }
+    }
+    throw new BadRequestException(`User not found`);
   }
 }
