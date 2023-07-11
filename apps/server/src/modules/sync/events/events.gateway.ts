@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
+import { Metrics } from '../../../metrics/metrics';
 import { StorageProvide } from '../../../storage';
 import { uint8ArrayToBase64 } from '../utils';
 import { WorkspaceService } from './workspace';
@@ -19,7 +20,8 @@ import { WorkspaceService } from './workspace';
 export class EventsGateway {
   constructor(
     private readonly storageService: WorkspaceService,
-    @Inject(StorageProvide) private readonly storage: Storage
+    @Inject(StorageProvide) private readonly storage: Storage,
+    private readonly metric: Metrics
   ) {}
 
   @WebSocketServer()
@@ -30,6 +32,8 @@ export class EventsGateway {
     @MessageBody() workspace_id: string,
     @ConnectedSocket() client: Socket
   ) {
+    this.metric.socketIOCounter(1, { event: 'client-handshake' });
+    const endTimer = this.metric.socketIOTimer({ event: 'client-handshake' });
     const docs = await this.storageService.getDocsFromWorkspaceId(workspace_id);
     await client.join(workspace_id);
 
@@ -39,6 +43,7 @@ export class EventsGateway {
         update: uint8ArrayToBase64(update),
       });
     }
+    endTimer();
   }
 
   @SubscribeMessage('client-update')
@@ -50,10 +55,13 @@ export class EventsGateway {
       update: string;
     }
   ) {
+    this.metric.socketIOCounter(1, { event: 'client-update' });
+    const endTimer = this.metric.socketIOTimer({ event: 'client-update' });
     const update = Buffer.from(message.update, 'base64');
     this.server.to(message.workspaceId).emit('server-update', message);
 
     await this.storage.sync(message.workspaceId, message.guid, update);
+    endTimer();
   }
 
   @SubscribeMessage('init-awareness')
@@ -61,21 +69,27 @@ export class EventsGateway {
     @MessageBody('workspace_id') workspace_id: string,
     @ConnectedSocket() client: Socket
   ) {
+    this.metric.socketIOCounter(1, { event: 'init-awareness' });
+    const endTimer = this.metric.socketIOTimer({ event: 'init-awareness' });
     const roomId = `awareness-${workspace_id}`;
     await client.join(roomId);
     this.server.to(roomId).emit('new-client-awareness-init');
+    endTimer();
   }
 
   @SubscribeMessage('awareness-update')
   async handleHelpGatheringAwareness(
     @MessageBody() message: { workspaceId: string; awarenessUpdate: string }
   ) {
+    this.metric.socketIOCounter(1, { event: 'awareness-update' });
+    const endTimer = this.metric.socketIOTimer({ event: 'awareness-update' });
     this.server
       .to(`awareness-${message.workspaceId}`)
       .emit('server-awareness-broadcast', {
         ...message,
       });
 
+    endTimer();
     return 'ack';
   }
 }

@@ -43,6 +43,7 @@
     "nodemailer": "^6.9.3",
     "parse-duration": "^1.1.0",
     "prisma": "^4.16.2",
+    "prom-client": "^14.2.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "socket.io": "^4.7.0",
