@@ -7,12 +7,12 @@ import {
   createLocalProviders,
 } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import type {
-  DocProviderCreator,
+import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
+import {
+  createIndexeddbStorage,
   Generator,
-  StoreOptions,
+  Workspace,
 } from '@blocksuite/store';
-import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/hooks/use-block-suite-workspace';
 
 import { createStaticStorage } from './blob/local-static-storage';
@@ -33,43 +33,21 @@ function setEditorFlags(workspace: Workspace) {
 
 export function createEmptyBlockSuiteWorkspace(
   id: string,
-  flavour: WorkspaceFlavour.AFFINE_CLOUD,
-  config: {
-    cachePrefix?: string;
-    idGenerator?: Generator;
-  }
+  flavour: WorkspaceFlavour.AFFINE_CLOUD | WorkspaceFlavour.LOCAL
 ): Workspace;
 export function createEmptyBlockSuiteWorkspace(
   id: string,
-  flavour: WorkspaceFlavour.LOCAL,
-  config?: {
-    cachePrefix?: string;
-    idGenerator?: Generator;
-  }
+  flavour: WorkspaceFlavour.AFFINE_PUBLIC
 ): Workspace;
 export function createEmptyBlockSuiteWorkspace(
   id: string,
-  flavour: WorkspaceFlavour.AFFINE_PUBLIC,
-  config?: {
-    cachePrefix?: string;
-    idGenerator?: Generator;
-  }
-): Workspace;
-export function createEmptyBlockSuiteWorkspace(
-  id: string,
-  flavour: WorkspaceFlavour,
-  config?: {
-    cachePrefix?: string;
-    idGenerator?: Generator;
-  }
+  flavour: WorkspaceFlavour
 ): Workspace {
   const providerCreators: DocProviderCreator[] = [];
-  const prefix: string = config?.cachePrefix ?? '';
-  const cacheKey = `${prefix}${id}`;
-  if (INTERNAL_BLOCKSUITE_HASH_MAP.has(cacheKey)) {
-    return INTERNAL_BLOCKSUITE_HASH_MAP.get(cacheKey) as Workspace;
+  if (INTERNAL_BLOCKSUITE_HASH_MAP.has(id)) {
+    return INTERNAL_BLOCKSUITE_HASH_MAP.get(id) as Workspace;
   }
-  const idGenerator = config?.idGenerator;
+  const idGenerator = Generator.NanoID;
 
   const blobStorages: StoreOptions['blobStorages'] = [];
   if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
@@ -113,6 +91,6 @@ export function createEmptyBlockSuiteWorkspace(
     .register(AffineSchemas)
     .register(__unstableSchemas);
   setEditorFlags(workspace);
-  INTERNAL_BLOCKSUITE_HASH_MAP.set(cacheKey, workspace);
+  INTERNAL_BLOCKSUITE_HASH_MAP.set(id, workspace);
   return workspace;
 }
