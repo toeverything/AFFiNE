@@ -1,7 +1,9 @@
 import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
+import { useSetAtom } from 'jotai';
 import { Suspense, useCallback } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';
+import { openSettingModalAtom } from '../../../../atoms';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import { useWorkspace } from '../../../../hooks/use-workspace';
 import { useAppHelper } from '../../../../hooks/use-workspaces';
@@ -9,15 +11,17 @@ import { useAppHelper } from '../../../../hooks/use-workspaces';
 export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   const workspace = useWorkspace(workspaceId);
   usePassiveWorkspaceEffect(workspace.blockSuiteWorkspace);
+  const setSettingModal = useSetAtom(openSettingModalAtom);
   const helper = useAppHelper();
 
   const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
 
   const onDeleteWorkspace = useCallback(
     async (id: string) => {
-      return helper.deleteWorkspace(id);
+      await helper.deleteWorkspace(id);
+      setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
     },
-    [helper]
+    [setSettingModal, helper]
   );
   const onTransformWorkspace = useOnTransformWorkspace();
 
