@@ -83,9 +83,6 @@ export const CloudWorkspaceMembersPanel = (
   }, [inviteEmail, invite, permission]);
 
   const memberCount = members.length;
-  const content = (
-    <MenuItem onClick={onClickRevoke}>Remove from Workspace</MenuItem>
-  );
   const memberPanel =
     memberCount > 0 ? (
       members.map(member => (
@@ -104,7 +101,13 @@ export const CloudWorkspaceMembersPanel = (
           <div className={style.permissionContainer}>{member.permission}</div>
           {isOwner && (
             <Menu
-              content={content}
+              content={
+                <MenuItem>
+                  <button data-member-id={member.id} onClick={onClickRevoke}>
+                    Remove from Workspace
+                  </button>
+                </MenuItem>
+              }
               placement="bottom"
               disablePortal={true}
               trigger="click"
