@@ -39,7 +39,7 @@ export function useCurrentUser(): CheckedUser {
 
   assertExists(user, 'user should exist');
   return {
-    id: user.id ?? 'REPLACE_ME_DEFAULT_ID',
+    id: user?.id ?? 'REPLACE_ME_DEFAULT_ID',
     name: user.name ?? 'REPLACE_ME_DEFAULT_NAME',
     email: user.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
     image: user.image ?? 'REPLACE_ME_DEFAULT_URL',

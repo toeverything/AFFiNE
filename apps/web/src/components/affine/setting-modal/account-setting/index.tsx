@@ -38,8 +38,10 @@ export const AvatarAndName = () => {
         id: user.id,
         avatar: file,
       });
+      // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
+      user.update({ name: user.name }).catch(console.error);
     },
-    [avatarTrigger, user.id]
+    [avatarTrigger, user]
   );
   return (
     <>
