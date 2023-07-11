@@ -4,6 +4,7 @@ import {
   Controller,
   Inject,
   Next,
+  NotFoundException,
   Query,
   Req,
   Res,
@@ -54,6 +55,8 @@ export class NextAuthController {
         if (!user) {
           req.statusCode = 401;
           req.statusMessage = 'User not found';
+          req.body = null;
+          throw new NotFoundException(`User not found`);
         } else {
           req.body = {
             ...req.body,
