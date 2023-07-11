@@ -23,7 +23,7 @@ export class PermissionService {
 
   async check(
     ws: string,
-    user: string,
+    user?: string,
     permission: Permission = Permission.Read
   ) {
     if (!(await this.tryCheck(ws, user, permission))) {
@@ -33,9 +33,24 @@ export class PermissionService {
 
   async tryCheck(
     ws: string,
-    user: string,
+    user?: string,
     permission: Permission = Permission.Read
   ) {
+    // If the permission is read, we should check if the workspace is public
+    if (permission === Permission.Read) {
+      const data = await this.prisma.workspace.count({
+        where: { id: ws, public: true },
+      });
+
+      if (data > 0) {
+        return true;
+      }
+    }
+
+    if (!user) {
+      return false;
+    }
+
     const data = await this.prisma.userWorkspacePermission.count({
       where: {
         workspaceId: ws,
@@ -48,20 +63,7 @@ export class PermissionService {
       },
     });
 
-    if (data > 0) {
-      return true;
-    }
-
-    // If the permission is read, we should check if the workspace is public
-    if (permission === Permission.Read) {
-      const data = await this.prisma.workspace.count({
-        where: { id: ws, public: true },
-      });
-
-      return data > 0;
-    }
-
-    return false;
+    return data > 0;
   }
 
   async grant(

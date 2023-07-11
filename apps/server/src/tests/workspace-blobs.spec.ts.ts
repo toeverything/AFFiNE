@@ -1,4 +1,4 @@
-import { ok } from 'node:assert';
+import { deepEqual, ok } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import type { INestApplication } from '@nestjs/common';
@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import request from 'supertest';
 
 import { AppModule } from '../app';
 import { createWorkspace, listBlobs, setBlob, signUp } from './utils';
@@ -55,5 +56,14 @@ describe('Workspace Module - Blobs', () => {
     const ret = await listBlobs(app, u1.token.token, workspace.id);
     ok(ret.length === 1, 'failed to list blobs');
     ok(ret[0] === hash, 'failed to list blobs');
+    const server = app.getHttpServer();
+
+    const token = u1.token.token;
+    const response = await request(server)
+      .get(`/api/workspaces/${workspace.id}/blobs/${hash}`)
+      .auth(token, { type: 'bearer' })
+      .buffer();
+
+    deepEqual(response.body, buffer, 'failed to get blob');
   });
 });
