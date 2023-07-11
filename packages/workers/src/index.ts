@@ -45,7 +45,12 @@ async function proxyImage(request: Request): Promise<Response> {
 
 const handler = {
   async fetch(request: Request) {
-    if (isOriginAllowed(request.headers.get('Origin') || '', '*')) {
+    if (
+      isOriginAllowed(request.headers.get('Origin') || '', [
+        'https://affine.pro',
+        'https://affine.fail',
+      ])
+    ) {
       return new Response('unauthorized', { status: 401 });
     }
 
