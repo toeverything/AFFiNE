@@ -1,10 +1,9 @@
 import { Button } from '@affine/component';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { acceptInviteByWorkspaceIdMutation } from '@affine/graphql';
+import { useMutation } from '@affine/workspace/affine/gql';
 import { useRouter } from 'next/router';
 import { Suspense, useCallback } from 'react';
-
-import { useMutation } from '../shared/gql';
 
 function AcceptPageImpl() {
   const router = useRouter();
