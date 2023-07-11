@@ -1,6 +1,7 @@
 import type { Collection } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   EdgelessIcon,
   PageIcon,
@@ -35,14 +36,17 @@ export const EditCollectionModel = ({
   onClose,
   getPageInfo,
   propertiesMeta,
+  title,
 }: {
   init?: Collection;
   onConfirm: (view: Collection) => void;
   open: boolean;
   onClose: () => void;
+  title?: string;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
 }) => {
+  const t = useAFFiNEI18N();
   return (
     <Modal open={open} onClose={onClose}>
       <ModalWrapper
@@ -61,8 +65,8 @@ export const EditCollectionModel = ({
         {init ? (
           <EditCollection
             propertiesMeta={propertiesMeta}
-            title="Update Collection"
-            onConfirmText="Save"
+            title={title}
+            onConfirmText={t['Save']()}
             init={init}
             getPageInfo={getPageInfo}
             onCancel={onClose}
@@ -129,6 +133,7 @@ export const EditCollection = ({
 }: CreateCollectionProps & {
   onCancel: () => void;
 }) => {
+  const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
   const removeFromExcludeList = useCallback(
     (id: string) => {
@@ -157,7 +162,7 @@ export const EditCollection = ({
       }}
     >
       <div className={styles.saveTitle}>
-        {title ?? 'Save As New Collection'}
+        {title ?? t['Update Collection']()}
       </div>
       <ScrollableContainer
         className={styles.scrollContainer}
@@ -244,7 +249,7 @@ export const EditCollection = ({
         }}
       >
         <Button className={styles.cancelButton} onClick={onCancel}>
-          Cancel
+          {t['Cancel']()}
         </Button>
         <Button
           style={{
@@ -259,7 +264,7 @@ export const EditCollection = ({
             }
           }}
         >
-          {onConfirmText ?? 'Create'}
+          {onConfirmText ?? t['Create']()}
         </Button>
       </div>
     </div>
@@ -272,6 +277,7 @@ export const SaveCollectionButton = ({
   propertiesMeta,
 }: CreateCollectionProps) => {
   const [show, changeShow] = useState(false);
+  const t = useAFFiNEI18N();
   return (
     <>
       <Button
@@ -288,6 +294,7 @@ export const SaveCollectionButton = ({
         </div>
       </Button>
       <EditCollectionModel
+        title={t['Save As New Collection']()}
         propertiesMeta={propertiesMeta}
         init={init}
         onConfirm={onConfirm}

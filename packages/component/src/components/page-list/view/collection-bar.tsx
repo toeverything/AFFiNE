@@ -1,6 +1,7 @@
 import { EditCollectionModel } from '@affine/component/page-list';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   FilterIcon,
@@ -80,6 +81,7 @@ export const CollectionBar = ({
     [setting, collection]
   );
   const onClose = useCallback(() => setOpen(false), []);
+  const t = useAFFiNEI18N();
   return !setting.isDefault ? (
     <tr style={{ userSelect: 'none' }}>
       <td>
@@ -124,8 +126,11 @@ export const CollectionBar = ({
           justifyContent: 'end',
         }}
       >
-        <Button style={{ border: 'none' }} onClick={() => setting.backToAll()}>
-          Back to all
+        <Button
+          style={{ border: 'none', position: 'static' }}
+          onClick={() => setting.backToAll()}
+        >
+          {t['Back to all']()}
         </Button>
       </td>
     </tr>

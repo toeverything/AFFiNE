@@ -1,4 +1,5 @@
 import { MenuLinkItem } from '@affine/component/app-sidebar';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
@@ -40,6 +41,7 @@ export const ReferencePage = ({
   const collapsible = referencesToShow.length > 0;
   const nestedItem = parentIds.size > 0;
   const untitled = !metaMapping[pageId]?.title;
+  const t = useAFFiNEI18N();
   return (
     <Collapsible.Root
       className={styles.favItemWrapper}
@@ -56,7 +58,7 @@ export const ReferencePage = ({
         onCollapsedChange={setCollapsed}
       >
         <span className={styles.label} data-untitled={untitled}>
-          {metaMapping[pageId]?.title || 'Untitled'}
+          {metaMapping[pageId]?.title || t['Untitled']()}
         </span>
       </MenuLinkItem>
       {collapsible && (
