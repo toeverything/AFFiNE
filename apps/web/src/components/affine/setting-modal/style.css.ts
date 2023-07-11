@@ -4,7 +4,7 @@ export const settingContent = style({
   flexGrow: '1',
   height: '100%',
   padding: '40px 15px 20px',
-  overflowX: 'auto',
+  overflow: 'auto',
 });
 
 globalStyle(`${settingContent} .wrapper`, {
@@ -13,7 +13,6 @@ globalStyle(`${settingContent} .wrapper`, {
   height: '100%',
   maxWidth: '560px',
   margin: '0 auto',
-  overflowY: 'auto',
 });
 globalStyle(`${settingContent} .content`, {
   minHeight: '100%',
