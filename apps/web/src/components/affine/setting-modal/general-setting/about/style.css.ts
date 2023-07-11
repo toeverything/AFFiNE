@@ -23,9 +23,8 @@ globalStyle(`${link} .icon`, {
 
 export const communityWrapper = style({
   display: 'grid',
-  justifyContent: 'space-between',
-  gridTemplateColumns: 'repeat(auto-fill, 70px)',
-  gridGap: '6px',
+  gridTemplateColumns: '15% 15% 15% 15% 15% 15%',
+  gap: '2%',
 });
 export const communityItem = style({
   borderRadius: '8px',

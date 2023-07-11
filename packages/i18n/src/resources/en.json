@@ -407,5 +407,7 @@
   "You can customize your workspace here.": "You can customise your workspace here.",
   "Font Style": "Font Style",
   "Choose your font style": "Choose your font style",
-  "Switch": "Switch"
+  "Switch": "Switch",
+  "com.affine.settings.workspace.publish.local-tooltip": "Enable AFFiNE Cloud to publish this Workspace",
+  "com.affine.settings.workspace.member.local-tooltip": "Enable AFFiNE Cloud to collaborate with others"
 }
