@@ -47,7 +47,7 @@ async function proxyImage(request: Request): Promise<Response> {
 
 const handler = {
   async fetch(request: Request) {
-    if (isOriginAllowed(request.headers.get('Origin') || '', ALLOW_ORIGIN)) {
+    if (!isOriginAllowed(request.headers.get('Origin') || '', ALLOW_ORIGIN)) {
       return new Response('unauthorized', { status: 401 });
     }
 
