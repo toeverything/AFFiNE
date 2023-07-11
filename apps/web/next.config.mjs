@@ -13,7 +13,7 @@ import { blockSuiteFeatureFlags, buildFlags } from './preset.config.mjs';
 import { getCommitHash, getGitVersion } from './scripts/git-info.mjs';
 
 const require = createRequire(import.meta.url);
-const packageJson = require('package.json');
+const packageJson = require('./package.json');
 const appVersion = packageJson.version;
 const editorVersion = packageJson.dependencies['@blocksuite/editor'];
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin');
