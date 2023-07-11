@@ -1,18 +1,42 @@
-import { assertExists } from '@blocksuite/global/utils';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useAtomValue } from 'jotai';
+import Head from 'next/head';
+import React, { useCallback } from 'react';
 
-import { useIsPublicCloudWorkspace } from '../../../hooks/affine/use-is-public-cloud-workspace';
+import { getUIAdapter } from '../../../adapters/workspace';
 import {
-  publicWorkspaceIdAtom,
+  publicWorkspaceAtom,
   PublicWorkspaceLayout,
 } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
 
 const ShareWorkspacePage: NextPageWithLayout = () => {
-  const workspaceId = useAtomValue(publicWorkspaceIdAtom);
-  assertExists(workspaceId);
-  const isPublic = useIsPublicCloudWorkspace(workspaceId);
-  return <div>{isPublic ? 'Public Workspace' : 'Not Public Workspace'}</div>;
+  const workspace = useAtomValue(publicWorkspaceAtom);
+  const t = useAFFiNEI18N();
+  const { PageList, Header } = getUIAdapter(WorkspaceFlavour.AFFINE_PUBLIC);
+  return (
+    <>
+      <Head>
+        <title>{t['All pages']()} - AFFiNE</title>
+      </Head>
+      <Header
+        currentWorkspaceId={workspace.id}
+        currentEntry={{
+          subPath: WorkspaceSubPath.ALL,
+        }}
+      />
+      <PageList
+        collection={{
+          id: 'NIL',
+          name: 'NONE',
+          filterList: [],
+        }}
+        onOpenPage={useCallback(() => {}, [])}
+        blockSuiteWorkspace={workspace}
+      />
+    </>
+  );
 };
 
 export default ShareWorkspacePage;
