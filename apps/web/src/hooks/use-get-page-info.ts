@@ -1,14 +1,15 @@
 import type { GetPageInfoById } from '@affine/env/page-info';
+import type { Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
 import { pageSettingsAtom } from '../atoms';
-import { useCurrentWorkspace } from './current/use-current-workspace';
 
-export const useGetPageInfoById = (): GetPageInfoById => {
-  const [currentWorkspace] = useCurrentWorkspace();
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+export const useGetPageInfoById = (workspace: Workspace): GetPageInfoById => {
+  usePassiveWorkspaceEffect(workspace);
+  const pageMetas = useBlockSuitePageMeta(workspace);
   const pageMap = useMemo(
     () => Object.fromEntries(pageMetas.map(page => [page.id, page])),
     [pageMetas]

@@ -71,7 +71,7 @@ export const AvatarAndName = () => {
                 <UserAvatar
                   size={56}
                   name={user.name}
-                  url={user.avatarUrl}
+                  url={user.image}
                   className="avatar"
                 />
               </>

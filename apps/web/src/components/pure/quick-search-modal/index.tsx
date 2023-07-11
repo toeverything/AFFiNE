@@ -49,7 +49,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     });
   }, []);
   const isPublicWorkspace = useMemo(
-    () => router.pathname.startsWith('/public-workspace'),
+    () => router.pathname.startsWith('/share'),
     [router]
   );
   const [publishWorkspaceName, setPublishWorkspaceName] = useState('');

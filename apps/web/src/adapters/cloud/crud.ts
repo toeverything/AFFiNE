@@ -49,8 +49,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     createdWorkspaces.push(blockSuiteWorkspace.id);
     const newBLockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
       createWorkspace.id,
-      WorkspaceFlavour.AFFINE_CLOUD,
-      {}
+      WorkspaceFlavour.AFFINE_CLOUD
     );
     Y.applyUpdate(
       newBLockSuiteWorkspace.doc,
@@ -109,8 +108,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
         flavour: WorkspaceFlavour.AFFINE_CLOUD,
         blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
           id,
-          WorkspaceFlavour.AFFINE_CLOUD,
-          {}
+          WorkspaceFlavour.AFFINE_CLOUD
         ),
       } satisfies AffineCloudWorkspace;
     } catch (e) {
@@ -143,8 +141,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
             flavour: WorkspaceFlavour.AFFINE_CLOUD,
             blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
               id,
-              WorkspaceFlavour.AFFINE_CLOUD,
-              {}
+              WorkspaceFlavour.AFFINE_CLOUD
             ),
           }) satisfies AffineCloudWorkspace
       );
