@@ -1,9 +1,9 @@
-import type { FC, PropsWithChildren } from 'react';
+import type { FC, PropsWithChildren, ReactNode } from 'react';
 
 import { wrapper } from './share.css';
 export const SettingWrapper: FC<
   PropsWithChildren<{
-    title?: string;
+    title?: ReactNode;
   }>
 > = ({ title, children }) => {
   return (

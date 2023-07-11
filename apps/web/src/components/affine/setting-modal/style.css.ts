@@ -14,6 +14,10 @@ globalStyle(`${settingContent} .wrapper`, {
   maxWidth: '560px',
   margin: '0 auto',
 });
+
+globalStyle(`${settingContent} .wrapper::-webkit-scrollbar`, {
+  display: 'none',
+});
 globalStyle(`${settingContent} .content`, {
   minHeight: '100%',
   paddingBottom: '80px',
