@@ -27,22 +27,22 @@ declare module 'next-auth' {
  * If not, it will throw an error.
  */
 export function useCurrentUser(): CheckedUser {
-  const session = useSession();
+  const { data: session, status, update } = useSession();
   // If you are seeing this error, it means that you are not logged in.
   //  This should be prohibited in the development environment, please re-write your component logic.
-  // assertEquals(
-  //   session.status,
-  //   'authenticated',
-  //   'session.status should be authenticated'
-  // );
-  const user = session.data?.user;
+  if (status === 'unauthenticated') {
+    throw new Error('session.status should be authenticated');
+  }
+
+  const user = session?.user;
 
   assertExists(user, 'user should exist');
+
   return {
-    id: user?.id ?? 'REPLACE_ME_DEFAULT_ID',
+    id: user.id ?? 'REPLACE_ME_DEFAULT_ID',
     name: user.name ?? 'REPLACE_ME_DEFAULT_NAME',
     email: user.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
     image: user.image ?? 'REPLACE_ME_DEFAULT_URL',
-    update: session.update,
+    update,
   };
 }
