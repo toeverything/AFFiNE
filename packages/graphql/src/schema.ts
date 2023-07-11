@@ -151,17 +151,6 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
-export type InviteByEmailMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  email: Scalars['String']['input'];
-  permission: Permission;
-}>;
-
-export type InviteByEmailMutation = {
-  __typename?: 'Mutation';
-  invite: boolean;
-};
-
 export type RevokeMemberPermissionMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -245,6 +234,24 @@ export type UploadAvatarMutation = {
   };
 };
 
+export type InviteByEmailMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+  permission: Permission;
+}>;
+
+export type InviteByEmailMutation = { __typename?: 'Mutation'; invite: string };
+
+export type AcceptInviteByInviteIdMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  inviteId: Scalars['String']['input'];
+}>;
+
+export type AcceptInviteByInviteIdMutation = {
+  __typename?: 'Mutation';
+  acceptInviteById: boolean;
+};
+
 export type AcceptInviteByWorkspaceIdMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -252,17 +259,6 @@ export type AcceptInviteByWorkspaceIdMutationVariables = Exact<{
 export type AcceptInviteByWorkspaceIdMutation = {
   __typename?: 'Mutation';
   acceptInvite: boolean;
-};
-
-export type InviteByWorkspaceIdMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  email: Scalars['String']['input'];
-  permission: Permission;
-}>;
-
-export type InviteByWorkspaceIdMutation = {
-  __typename?: 'Mutation';
-  invite: boolean;
 };
 
 export type Queries =
@@ -319,11 +315,6 @@ export type Mutations =
       response: DeleteWorkspaceMutation;
     }
   | {
-      name: 'inviteByEmailMutation';
-      variables: InviteByEmailMutationVariables;
-      response: InviteByEmailMutation;
-    }
-  | {
       name: 'revokeMemberPermissionMutation';
       variables: RevokeMemberPermissionMutationVariables;
       response: RevokeMemberPermissionMutation;
@@ -359,12 +350,17 @@ export type Mutations =
       response: UploadAvatarMutation;
     }
   | {
+      name: 'inviteByEmailMutation';
+      variables: InviteByEmailMutationVariables;
+      response: InviteByEmailMutation;
+    }
+  | {
+      name: 'acceptInviteByInviteIdMutation';
+      variables: AcceptInviteByInviteIdMutationVariables;
+      response: AcceptInviteByInviteIdMutation;
+    }
+  | {
       name: 'acceptInviteByWorkspaceIdMutation';
       variables: AcceptInviteByWorkspaceIdMutationVariables;
       response: AcceptInviteByWorkspaceIdMutation;
-    }
-  | {
-      name: 'inviteByWorkspaceIdMutation';
-      variables: InviteByWorkspaceIdMutationVariables;
-      response: InviteByWorkspaceIdMutation;
     };
