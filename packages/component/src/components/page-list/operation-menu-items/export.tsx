@@ -1,4 +1,5 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
+import { IMAGE_PROXY_URL } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
@@ -55,7 +56,11 @@ export const ExportToPdfMenuItem = ({
     } else {
       const contentParser =
         contentParserRef.current ??
-        (contentParserRef.current = new ContentParser(currentEditor.page));
+        (contentParserRef.current = new ContentParser(currentEditor.page, {
+          imageProxyEndpoint: !environment.isDesktop
+            ? IMAGE_PROXY_URL
+            : undefined,
+        }));
 
       contentParser
         .exportPdf()
@@ -103,7 +108,11 @@ export const ExportToHtmlMenuItem = ({
       return;
     }
     if (!contentParserRef.current) {
-      contentParserRef.current = new ContentParser(currentEditor.page);
+      contentParserRef.current = new ContentParser(currentEditor.page, {
+        imageProxyEndpoint: !environment.isDesktop
+          ? IMAGE_PROXY_URL
+          : undefined,
+      });
     }
     contentParserRef.current
       .exportHtml()
@@ -148,7 +157,11 @@ export const ExportToPngMenuItem = ({
     }
     const contentParser =
       contentParserRef.current ??
-      (contentParserRef.current = new ContentParser(currentEditor.page));
+      (contentParserRef.current = new ContentParser(currentEditor.page, {
+        imageProxyEndpoint: !environment.isDesktop
+          ? IMAGE_PROXY_URL
+          : undefined,
+      }));
 
     contentParser
       .exportPng()
@@ -197,7 +210,11 @@ export const ExportToMarkdownMenuItem = ({
       return;
     }
     if (!contentParserRef.current) {
-      contentParserRef.current = new ContentParser(currentEditor.page);
+      contentParserRef.current = new ContentParser(currentEditor.page, {
+        imageProxyEndpoint: !environment.isDesktop
+          ? IMAGE_PROXY_URL
+          : undefined,
+      });
     }
     contentParserRef.current
       .exportMarkdown()
