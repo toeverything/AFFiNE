@@ -254,7 +254,7 @@ const CollectionRenderer = ({
 export const CollectionsList = ({ currentWorkspace }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const { savedCollections } = useSavedCollections();
-  const getPageInfo = useGetPageInfoById();
+  const getPageInfo = useGetPageInfoById(currentWorkspace.blockSuiteWorkspace);
   return (
     <div data-testid="collections" className={styles.wrapper}>
       {savedCollections
