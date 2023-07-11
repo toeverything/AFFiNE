@@ -102,14 +102,19 @@ export const CloudWorkspaceMembersPanel = (
             <div className={style.memberEmail}>{member.email}</div>
           </div>
           <div className={style.permissionContainer}>{member.permission}</div>
-          {isOwner && currentUser.email !== member.email && (
+          {isOwner && (
             <Menu
               content={content}
               placement="bottom"
               disablePortal={true}
               trigger="click"
             >
-              <IconButton iconSize={[24, 24]}>
+              <IconButton
+                iconSize={[24, 24]}
+                className={`${style.displayNone} ${
+                  currentUser.email !== member.email ? style.iconButton : ''
+                }`}
+              >
                 <MoreVerticalIcon />
               </IconButton>
             </Menu>

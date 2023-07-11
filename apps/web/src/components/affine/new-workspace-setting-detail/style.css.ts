@@ -111,3 +111,15 @@ export const memberEmail = style({
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
 });
+export const iconButton = style({
+  opacity: 0,
+  pointerEvents: 'none',
+});
+export const displayNone = style({
+  opacity: 0,
+  pointerEvents: 'none',
+});
+globalStyle(`${listItem}:hover ${iconButton}`, {
+  opacity: 1,
+  pointerEvents: 'all',
+});
