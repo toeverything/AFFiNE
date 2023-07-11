@@ -92,6 +92,21 @@ export type DeleteWorkspaceMutation = {
   deleteWorkspace: boolean;
 };
 
+export type GetCurrentUserQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetCurrentUserQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: string | null;
+    avatarUrl: string | null;
+    createdAt: string | null;
+  };
+};
+
 export type GetMembersByWorkspaceIdQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -101,11 +116,12 @@ export type GetMembersByWorkspaceIdQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     members: Array<{
-      __typename?: 'UserType';
+      __typename?: 'InviteUserType';
       id: string;
-      name: string;
-      email: string;
+      name: string | null;
+      email: string | null;
       avatarUrl: string | null;
+      permission: Permission;
     }>;
   };
 };
@@ -144,6 +160,16 @@ export type InviteByEmailMutationVariables = Exact<{
 export type InviteByEmailMutation = {
   __typename?: 'Mutation';
   invite: boolean;
+};
+
+export type RevokeMemberPermissionMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+}>;
+
+export type RevokeMemberPermissionMutation = {
+  __typename?: 'Mutation';
+  revoke: boolean;
 };
 
 export type SetRevokePageMutationVariables = Exact<{
@@ -246,6 +272,11 @@ export type Queries =
       response: ListBlobsQuery;
     }
   | {
+      name: 'getCurrentUserQuery';
+      variables: GetCurrentUserQueryVariables;
+      response: GetCurrentUserQuery;
+    }
+  | {
       name: 'getMembersByWorkspaceIdQuery';
       variables: GetMembersByWorkspaceIdQueryVariables;
       response: GetMembersByWorkspaceIdQuery;
@@ -291,6 +322,11 @@ export type Mutations =
       name: 'inviteByEmailMutation';
       variables: InviteByEmailMutationVariables;
       response: InviteByEmailMutation;
+    }
+  | {
+      name: 'revokeMemberPermissionMutation';
+      variables: RevokeMemberPermissionMutationVariables;
+      response: RevokeMemberPermissionMutation;
     }
   | {
       name: 'setRevokePageMutation';

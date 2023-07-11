@@ -8,6 +8,7 @@ import {
   Int,
   Mutation,
   ObjectType,
+  OmitType,
   Parent,
   PartialType,
   PickType,
@@ -23,7 +24,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import type { FileUpload } from '../../types';
-import { Auth, CurrentUser } from '../auth';
+import { Auth, CurrentUser, Public } from '../auth';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
 import { Permission } from './types';
@@ -32,6 +33,22 @@ registerEnumType(Permission, {
   name: 'Permission',
   description: 'User permission in workspace',
 });
+
+@ObjectType()
+export class InviteUserType extends OmitType(
+  PartialType(UserType),
+  ['id'],
+  ObjectType
+) {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => Permission, { description: 'User permission in workspace' })
+  permission!: Permission;
+
+  @Field({ description: 'User accepted' })
+  accepted!: boolean;
+}
 
 @ObjectType()
 export class WorkspaceType implements Partial<Workspace> {
@@ -43,6 +60,11 @@ export class WorkspaceType implements Partial<Workspace> {
 
   @Field({ description: 'Workspace created date' })
   createdAt!: Date;
+
+  @Field(() => [InviteUserType], {
+    description: 'Members of workspace',
+  })
+  members!: InviteUserType[];
 }
 
 @InputType()
@@ -125,7 +147,7 @@ export class WorkspaceResolver {
     return data.user;
   }
 
-  @ResolveField(() => [UserType], {
+  @ResolveField(() => [InviteUserType], {
     description: 'Members of workspace',
     complexity: 2,
   })
@@ -138,7 +160,11 @@ export class WorkspaceResolver {
         user: true,
       },
     });
-    return data.map(({ user }) => user);
+    return data.map(({ accepted, type, user }) => ({
+      ...user,
+      permission: type,
+      accepted,
+    }));
   }
 
   @Query(() => [WorkspaceType], {
@@ -162,6 +188,22 @@ export class WorkspaceResolver {
         permission: type,
       };
     });
+  }
+
+  @Query(() => WorkspaceType, {
+    description: 'Get public workspace by id',
+  })
+  @Public()
+  async publicWorkspace(@Args('id') id: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id },
+    });
+
+    if (workspace?.public) {
+      return workspace;
+    }
+
+    throw new NotFoundException("Workspace doesn't exist");
   }
 
   @Query(() => WorkspaceType, {

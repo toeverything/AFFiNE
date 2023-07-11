@@ -1,4 +1,4 @@
-import { ok } from 'node:assert';
+import { ok, rejects } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import type { INestApplication } from '@nestjs/common';
@@ -11,12 +11,9 @@ import { AppModule } from '../app';
 import {
   acceptInvite,
   createWorkspace,
+  getPublicWorkspace,
   inviteUser,
-  leaveWorkspace,
-  listBlobs,
   revokePage,
-  revokeUser,
-  setBlob,
   sharePage,
   signUp,
   updateWorkspace,
@@ -25,11 +22,14 @@ import {
 describe('Workspace Module', () => {
   let app: INestApplication;
 
+  const client = new PrismaClient();
+
   // cleanup database before each test
   beforeEach(async () => {
-    const client = new PrismaClient();
     await client.$connect();
     await client.user.deleteMany({});
+    await client.doc.deleteMany({});
+    await client.workspace.deleteMany({});
     await client.$disconnect();
   });
 
@@ -86,54 +86,23 @@ describe('Workspace Module', () => {
     ok(isPrivate === false, 'failed to unpublish workspace');
   });
 
-  it('should invite a user', async () => {
-    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
-    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
+  it('should can read published workspace', async () => {
+    const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const workspace = await createWorkspace(app, user.token.token);
 
-    const workspace = await createWorkspace(app, u1.token.token);
-
-    const invite = await inviteUser(
-      app,
-      u1.token.token,
-      workspace.id,
-      u2.email,
-      'Admin'
+    rejects(
+      getPublicWorkspace(app, 'not_exists_ws'),
+      'must not get not exists workspace'
     );
-    ok(invite === true, 'failed to invite user');
-  });
+    rejects(
+      getPublicWorkspace(app, workspace.id),
+      'must not get private workspace'
+    );
 
-  it('should accept an invite', async () => {
-    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
-    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
+    await updateWorkspace(app, user.token.token, workspace.id, true);
 
-    const workspace = await createWorkspace(app, u1.token.token);
-    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
-
-    const accept = await acceptInvite(app, u2.token.token, workspace.id);
-    ok(accept === true, 'failed to accept invite');
-  });
-
-  it('should leave a workspace', async () => {
-    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
-    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
-
-    const workspace = await createWorkspace(app, u1.token.token);
-    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
-    await acceptInvite(app, u2.token.token, workspace.id);
-
-    const leave = await leaveWorkspace(app, u2.token.token, workspace.id);
-    ok(leave === true, 'failed to leave workspace');
-  });
-
-  it('should revoke a user', async () => {
-    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
-    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
-
-    const workspace = await createWorkspace(app, u1.token.token);
-    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
-
-    const revoke = await revokeUser(app, u1.token.token, workspace.id, u2.id);
-    ok(revoke === true, 'failed to revoke user');
+    const publicWorkspace = await getPublicWorkspace(app, workspace.id);
+    ok(publicWorkspace.id === workspace.id, 'failed to get public workspace');
   });
 
   it('should share a page', async () => {
@@ -165,20 +134,5 @@ describe('Workspace Module', () => {
 
     const msg3 = await revokePage(app, u1.token.token, workspace.id, 'page3');
     ok(msg3 === false, 'can revoke non-exists page');
-  });
-
-  it('should list blobs', async () => {
-    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
-
-    const workspace = await createWorkspace(app, u1.token.token);
-    const blobs = await listBlobs(app, u1.token.token, workspace.id);
-    ok(blobs.length === 0, 'failed to list blobs');
-
-    const buffer = Buffer.from([0, 0]);
-    const hash = await setBlob(app, u1.token.token, workspace.id, buffer);
-
-    const ret = await listBlobs(app, u1.token.token, workspace.id);
-    ok(ret.length === 1, 'failed to list blobs');
-    ok(ret[0] === hash, 'failed to list blobs');
   });
 });

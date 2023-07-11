@@ -1,9 +1,27 @@
-import type { INestApplication } from '@nestjs/common';
+import type { INestApplication, LoggerService } from '@nestjs/common';
 import request from 'supertest';
 
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
 import type { WorkspaceType } from '../modules/workspaces';
+
+export class NestDebugLogger implements LoggerService {
+  log(message: string): any {
+    console.log(message);
+  }
+  error(message: string, trace: string): any {
+    console.error(message, trace);
+  }
+  warn(message: string): any {
+    console.warn(message);
+  }
+  debug(message: string): any {
+    console.debug(message);
+  }
+  verbose(message: string): any {
+    console.log(message);
+  }
+}
 
 const gql = '/graphql';
 
@@ -26,6 +44,23 @@ async function signUp(
     })
     .expect(200);
   return res.body.data.signUp;
+}
+
+async function currentUser(app: INestApplication, token: string) {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `
+          query {
+            currentUser {
+              id, name, email, emailVerified, avatarUrl, createdAt
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.currentUser;
 }
 
 async function createWorkspace(
@@ -51,6 +86,46 @@ async function createWorkspace(
     .attach('0', Buffer.from([0, 0]), 'init.data')
     .expect(200);
   return res.body.data.createWorkspace;
+}
+
+async function getWorkspace(
+  app: INestApplication,
+  token: string,
+  workspaceId: string
+): Promise<WorkspaceType> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `
+          query {
+            workspace(id: "${workspaceId}") {
+              id, members { id, name, email, permission }
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.workspace;
+}
+
+async function getPublicWorkspace(
+  app: INestApplication,
+  workspaceId: string
+): Promise<WorkspaceType> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .send({
+      query: `
+          query {
+            publicWorkspace(id: "${workspaceId}") {
+              id
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.publicWorkspace;
 }
 
 async function updateWorkspace(
@@ -241,6 +316,9 @@ async function setBlob(
 export {
   acceptInvite,
   createWorkspace,
+  currentUser,
+  getPublicWorkspace,
+  getWorkspace,
   inviteUser,
   leaveWorkspace,
   listBlobs,

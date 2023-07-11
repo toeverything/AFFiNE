@@ -53,6 +53,7 @@ export class WorkspaceService {
         Y.applyUpdate(doc, update);
       } catch (e) {
         console.error(e);
+        return null;
       }
     }
 

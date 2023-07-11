@@ -700,7 +700,7 @@ test('caption should be visible and different styles were applied if image zoome
   await page.keyboard.press('Enter');
   await importImage(page, 'http://localhost:8081/large-image.png');
   await page.locator('img').first().hover();
-  await page.locator('format-bar-button').first().click();
+  await page.locator('icon-button').first().click();
   await page.getByPlaceholder('Write a caption').fill(sampleCaption);
   await page.locator('img').first().dblclick();
   const locator = page.getByTestId('image-preview-modal');
