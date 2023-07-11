@@ -1,3 +1,4 @@
+import { MenuItem } from '@affine/component';
 import { Permission } from '@affine/graphql';
 import * as Select from '@radix-ui/react-select';
 import {
@@ -52,10 +53,18 @@ export const PermissionSelect = (
         <Select.Content className={style.content}>
           <Select.Viewport>
             <Select.Group>
-              <SelectItem value={Permission.Admin}>Admin</SelectItem>
-              <SelectItem value={Permission.Read}>Read</SelectItem>
-              <SelectItem value={Permission.Owner}>Owner</SelectItem>
-              <SelectItem value={Permission.Write}>Write</SelectItem>
+              <SelectItem value={Permission.Admin}>
+                <MenuItem>Admin</MenuItem>
+              </SelectItem>
+              <SelectItem value={Permission.Read}>
+                <MenuItem>Read</MenuItem>
+              </SelectItem>
+              <SelectItem value={Permission.Owner}>
+                <MenuItem>Owner</MenuItem>
+              </SelectItem>
+              <SelectItem value={Permission.Write}>
+                <MenuItem>Write</MenuItem>
+              </SelectItem>
             </Select.Group>
           </Select.Viewport>
         </Select.Content>
