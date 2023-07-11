@@ -9,10 +9,10 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import format from 'pretty-time';
-import * as Y from 'yjs';
 
 import { StorageProvide } from '../../storage';
 import { Auth, CurrentUser, Publicable } from '../auth';
+import { UpdateManager } from '../update-manager';
 import { UserType } from '../users';
 import { PermissionService } from './permission';
 
@@ -20,7 +20,8 @@ import { PermissionService } from './permission';
 export class WorkspacesController {
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
-    private readonly permission: PermissionService
+    private readonly permission: PermissionService,
+    private readonly updateManager: UpdateManager
   ) {}
 
   // get workspace blob
@@ -58,23 +59,14 @@ export class WorkspacesController {
     const start = process.hrtime();
     await this.permission.check(ws, user?.id);
 
-    const updates = await this.storage.loadBuffer(guid);
+    const update = await this.updateManager.getLatest(ws, guid);
 
-    if (!updates) {
+    if (!update) {
       throw new NotFoundException('Doc not found');
     }
 
-    const doc = new Y.Doc({ guid });
-    for (const update of updates) {
-      try {
-        Y.applyUpdate(doc, update);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    const content = Buffer.from(Y.encodeStateAsUpdate(doc));
     res.setHeader('content-type', 'application/octet-stream');
-    res.send(content);
+    res.send(update);
     console.info('workspaces doc api: ', format(process.hrtime(start)));
   }
 }

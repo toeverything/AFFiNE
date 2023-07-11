@@ -1,21 +1,26 @@
-import type { Type } from '@nestjs/common';
-
 import { GqlModule } from '../graphql.module';
 import { AuthModule } from './auth';
 import { SyncModule } from './sync';
+import { UpdateManagerModule } from './update-manager';
 import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
 
 const { SERVER_FLAVOR } = process.env;
 
-const BusinessModules: Type<any>[] = [];
+const BusinessModules: any[] = [];
 
 switch (SERVER_FLAVOR) {
   case 'sync':
-    BusinessModules.push(SyncModule);
+    BusinessModules.push(SyncModule, UpdateManagerModule.forSync());
     break;
   case 'graphql':
-    BusinessModules.push(GqlModule, WorkspaceModule, UsersModule, AuthModule);
+    BusinessModules.push(
+      GqlModule,
+      WorkspaceModule,
+      UsersModule,
+      AuthModule,
+      UpdateManagerModule.forRoot()
+    );
     break;
   case 'allinone':
   default:
@@ -24,7 +29,8 @@ switch (SERVER_FLAVOR) {
       WorkspaceModule,
       UsersModule,
       AuthModule,
-      SyncModule
+      SyncModule,
+      UpdateManagerModule.forRoot()
     );
     break;
 }

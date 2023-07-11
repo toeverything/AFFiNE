@@ -115,74 +115,6 @@ impl Storage {
     Ok(inner.into())
   }
 
-  /// Get a workspace by id
-  #[napi]
-  pub async fn get_workspace(&self, workspace_id: String) -> Result<Option<Workspace>> {
-    match self.0.get_workspace(workspace_id).await {
-      Ok(w) => Ok(Some(w.into())),
-      Err(JwstStorageError::WorkspaceNotFound(_)) => Ok(None),
-      Err(e) => Err(Error::new(Status::GenericFailure, e.to_string())),
-    }
-  }
-
-  /// Create a new workspace.
-  #[napi]
-  pub async fn create_workspace(&self, workspace_id: String) -> Result<Workspace> {
-    if map_err!(self.0.docs().detect_workspace(&workspace_id).await)? {
-      return Err(Error::new(
-        Status::GenericFailure,
-        format!("Workspace {} already exists", workspace_id),
-      ));
-    }
-
-    let workspace = map_err!(self.0.create_workspace(workspace_id).await)?;
-
-    Ok(workspace.into())
-  }
-
-  /// Delete a workspace.
-  #[napi]
-  pub async fn delete_workspace(&self, workspace_id: String) -> Result<()> {
-    map_err!(self.docs().delete_workspace(&workspace_id).await)?;
-    map_err!(self.blobs().delete_workspace(workspace_id).await)
-  }
-
-  /// Sync doc updates.
-  #[napi]
-  pub async fn sync(&self, workspace_id: String, guid: String, update: Buffer) -> Result<()> {
-    let update = update.as_ref();
-    map_err!(self.docs().update_doc(workspace_id, guid, update).await)
-  }
-
-  /// Sync doc update with doc guid encoded.
-  #[napi]
-  pub async fn sync_with_guid(&self, workspace_id: String, update: Buffer) -> Result<()> {
-    let update = update.as_ref();
-    map_err!(self.docs().update_doc_with_guid(workspace_id, update).await)
-  }
-
-  /// Load doc as update buffer, underlying will first merge all update records with yrs.
-  #[napi]
-  pub async fn load(&self, guid: String) -> Result<Option<Buffer>> {
-    self.ensure_exists(&guid).await?;
-
-    if let Some(doc) = map_err!(self.docs().get_doc(guid).await)? {
-      Ok(Some(to_update_v1(&doc)?))
-    } else {
-      Ok(None)
-    }
-  }
-
-  /// Load doc as raw array update buffer.
-  #[napi]
-  pub async fn load_buffer(&self, guid: String) -> Result<Option<Vec<Buffer>>> {
-    if let Some(doc) = map_err!(self.docs().get_doc_updates(guid).await)? {
-      Ok(Some(doc.iter().map(|item| item.clone().into()).collect()))
-    } else {
-      Ok(None)
-    }
-  }
-
   /// List all blobs in a workspace.
   #[napi]
   pub async fn list_blobs(&self, workspace_id: Option<String>) -> Result<Vec<String>> {
@@ -239,17 +171,6 @@ impl Storage {
   #[napi]
   pub async fn blobs_size(&self, workspace_id: String) -> Result<i64> {
     map_err!(self.blobs().get_blobs_size(workspace_id).await)
-  }
-
-  async fn ensure_exists(&self, guid: &str) -> Result<()> {
-    if map_err!(self.docs().detect_doc(guid).await)? {
-      Ok(())
-    } else {
-      Err(Error::new(
-        Status::GenericFailure,
-        format!("Doc {} not exists", guid),
-      ))
-    }
   }
 }
 

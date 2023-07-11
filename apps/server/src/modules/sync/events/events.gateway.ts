@@ -10,7 +10,7 @@ import {
 import { Socket } from 'socket.io';
 
 import { StorageProvide } from '../../../storage';
-import { uint8ArrayToBase64 } from '../utils';
+import { UpdateManager } from '../../update-manager';
 import { WorkspaceService } from './workspace';
 
 @WebSocketGateway({
@@ -19,6 +19,7 @@ import { WorkspaceService } from './workspace';
 export class EventsGateway {
   constructor(
     private readonly storageService: WorkspaceService,
+    private readonly updateManager: UpdateManager,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
@@ -36,7 +37,7 @@ export class EventsGateway {
     for (const { guid, update } of docs) {
       client.emit('server-handshake', {
         guid,
-        update: uint8ArrayToBase64(update),
+        update: update.toString('base64'),
       });
     }
   }
@@ -54,7 +55,7 @@ export class EventsGateway {
     const update = Buffer.from(message.update, 'base64');
     client.to(message.workspaceId).emit('server-update', message);
 
-    await this.storage.sync(message.workspaceId, message.guid, update);
+    await this.updateManager.push(message.workspaceId, message.guid, update);
   }
 
   @SubscribeMessage('init-awareness')

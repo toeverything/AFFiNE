@@ -1,62 +1,52 @@
-import type { Storage } from '@affine/storage';
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Doc } from 'yjs';
 import * as Y from 'yjs';
 
-import { StorageProvide } from '../../../storage';
+import { UpdateManager } from '../../update-manager';
 import { assertExists } from '../utils';
 
 @Injectable()
 export class WorkspaceService {
-  constructor(@Inject(StorageProvide) private readonly storage: Storage) {}
+  constructor(private readonly updateManager: UpdateManager) {}
 
   async getDocsFromWorkspaceId(workspaceId: string): Promise<
     Array<{
       guid: string;
-      update: Uint8Array;
+      update: Buffer;
     }>
   > {
     const docs: Array<{
       guid: string;
-      update: Uint8Array;
+      update: Buffer;
     }> = [];
-    const queue: Array<Doc> = [];
+    const queue: Array<[string, Buffer]> = [];
     // Workspace Doc's guid is the same as workspaceId. This is achieved by when creating a new workspace, the doc guid
     // is manually set to workspaceId.
-    const doc = await this.getDocFromGuid(workspaceId);
-    doc && queue.push(doc);
+    const update = await this.updateManager.getLatest(workspaceId, workspaceId);
+    if (update) {
+      queue.push([workspaceId, update]);
+    }
 
     while (queue.length > 0) {
-      const doc = queue.pop();
-      assertExists(doc);
+      const update = queue.pop();
+      assertExists(update);
+      const [guid, buf] = update;
       docs.push({
-        guid: doc.guid,
-        update: Y.encodeStateAsUpdate(doc),
+        guid: guid,
+        update: buf,
       });
 
+      const doc = new Doc({ guid });
+      Y.applyUpdate(doc, buf);
+
       for (const { guid } of doc.subdocs) {
-        const subDoc = await this.getDocFromGuid(guid);
-        subDoc && queue.push(subDoc);
+        const subDoc = await this.updateManager.getLatest(workspaceId, guid);
+        if (subDoc) {
+          queue.push([guid, subDoc]);
+        }
       }
     }
 
     return docs;
-  }
-
-  async getDocFromGuid(guid: string): Promise<Doc | null> {
-    const updates = await this.storage.loadBuffer(guid);
-    if (!updates) return null;
-
-    const doc = new Y.Doc({ guid });
-    for (const update of updates) {
-      try {
-        Y.applyUpdate(doc, update);
-      } catch (e) {
-        console.error(e);
-        return null;
-      }
-    }
-
-    return doc;
   }
 }

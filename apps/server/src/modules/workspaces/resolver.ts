@@ -264,8 +264,13 @@ export class WorkspaceResolver {
       },
     });
 
-    const storageWorkspace = await this.storage.createWorkspace(workspace.id);
-    await this.storage.sync(workspace.id, storageWorkspace.doc.guid, buffer);
+    await this.prisma.snapshot.create({
+      data: {
+        id: workspace.id,
+        workspaceId: workspace.id,
+        blob: buffer,
+      },
+    });
 
     return workspace;
   }
@@ -298,15 +303,8 @@ export class WorkspaceResolver {
       },
     });
 
-    await this.prisma.userWorkspacePermission.deleteMany({
-      where: {
-        workspaceId: id,
-      },
-    });
-
     // TODO:
-    // delete all related data, like websocket connections, blobs, etc.
-    await this.storage.deleteWorkspace(id);
+    // delete all related data, like websocket connections, etc.
 
     return true;
   }
