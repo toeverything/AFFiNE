@@ -1,34 +1,15 @@
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
-import { assertExists } from '@blocksuite/global/utils';
-import type { ActiveDocProvider, Workspace } from '@blocksuite/store';
-import { atom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import Head from 'next/head';
 import React, { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import {
-  publicWorkspaceIdAtom,
+  publicWorkspaceAtom,
   PublicWorkspaceLayout,
 } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
-
-const publicWorkspaceAtom = atom<Promise<Workspace>>(async get => {
-  const workspaceId = get(publicWorkspaceIdAtom);
-  assertExists(workspaceId);
-  const workspace = createEmptyBlockSuiteWorkspace(
-    workspaceId,
-    WorkspaceFlavour.AFFINE_PUBLIC
-  );
-  const activeProviders = workspace.providers.filter(
-    (provider): provider is ActiveDocProvider => 'active' in provider
-  );
-  for (const provider of activeProviders) {
-    await provider.sync();
-  }
-  return workspace;
-});
 
 const ShareWorkspacePage: NextPageWithLayout = () => {
   const workspace = useAtomValue(publicWorkspaceAtom);
