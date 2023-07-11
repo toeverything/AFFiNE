@@ -14,7 +14,7 @@ export default {
       });
 
       const response = await fetch(imageRequest);
-      const modifiedResponse = new Response(response.body, response);
+      const modifiedResponse = new Response(response.body);
       modifiedResponse.headers.set('Access-Control-Allow-Origin', '*');
       modifiedResponse.headers.set('Access-Control-Allow-Methods', 'GET');
 
