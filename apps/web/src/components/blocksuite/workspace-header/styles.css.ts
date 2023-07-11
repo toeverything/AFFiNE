@@ -210,6 +210,7 @@ export const windowAppControlsWrapper = style({
   display: 'flex',
   gap: '2px',
   transform: 'translateX(8px)',
+  height: '100%',
 });
 
 export const windowAppControl = style({
@@ -217,11 +218,17 @@ export const windowAppControl = style({
   cursor: 'pointer',
   display: 'inline-flex',
   width: '42px',
-  height: '32px',
+  height: 'calc(100% - 10px)',
+  paddingTop: '10px',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: '4px',
+  borderRadius: '0',
   selectors: {
+    '&[data-type="close"]': {
+      width: '56px',
+      paddingRight: '14px',
+      marginRight: '-14px',
+    },
     '&[data-type="close"]:hover': {
       background: 'var(--affine-error-color)',
       color: '#FFFFFF',
