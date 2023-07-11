@@ -148,6 +148,10 @@ const nextConfig = {
 if (process.env.NODE_ENV === 'development') {
   nextConfig.rewrites = async () => [
     {
+      source: '/api/workspaces/:path*',
+      destination: 'http://localhost:3010/api/workspaces/:path*',
+    },
+    {
       source: '/api/auth/:path*/:path2*',
       destination: 'http://localhost:3010/api/auth/:path*/:path2*',
     },

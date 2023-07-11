@@ -45,14 +45,7 @@ export const WorkspaceAdapters = {
       delete: unimplemented,
       create: unimplemented,
     },
-    // todo: implement this
-    UI: {
-      Header: unimplemented,
-      PageDetail: unimplemented,
-      PageList: unimplemented,
-      NewSettingsDetail: unimplemented,
-      ...PublicCloudUI,
-    },
+    UI: PublicCloudUI,
   },
 } satisfies {
   [Key in WorkspaceFlavour]: WorkspaceAdapter<Key>;
