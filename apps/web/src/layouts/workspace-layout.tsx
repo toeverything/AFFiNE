@@ -87,7 +87,7 @@ export const QuickSearch: FC = () => {
   }
   return (
     <QuickSearchModal
-      blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
+      workspace={currentWorkspace}
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
       router={router}
@@ -214,20 +214,28 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   //#endregion
 
   //#region check if page is valid
-  if (
-    typeof router.query.pageId === 'string' &&
-    router.pathname === '/workspace/[workspaceId]/[pageId]' &&
-    currentPageId
-  ) {
-    if (currentPageId !== router.query.pageId) {
-      setCurrentPageId(router.query.pageId);
-    } else {
-      const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-      if (!page) {
-        router.push('/404').catch(console.error);
+  useEffect(() => {
+    if (
+      typeof router.query.pageId === 'string' &&
+      router.pathname === '/workspace/[workspaceId]/[pageId]' &&
+      currentPageId
+    ) {
+      if (currentPageId !== router.query.pageId) {
+        setCurrentPageId(router.query.pageId);
+      } else {
+        const page =
+          currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+        if (!page) {
+          router.push('/404').catch(console.error);
+        }
       }
     }
-  }
+  }, [
+    currentPageId,
+    currentWorkspace.blockSuiteWorkspace,
+    router,
+    setCurrentPageId,
+  ]);
   //#endregion
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
@@ -276,7 +284,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
-  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(() => {
     setOpenSettingModalAtom({

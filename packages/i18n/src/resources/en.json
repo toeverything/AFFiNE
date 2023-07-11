@@ -313,6 +313,7 @@
   "Move folder hint": "Select a new storage location.",
   "Storage Folder": "Storage Folder",
   "DB_FILE_INVALID": "Invalid Database file",
+  "DB_FILE_MIGRATION_FAILED": "Database file migration failed",
   "Name Your Workspace": "Name Your Workspace",
   "Change avatar hint": "New avatar will be shown for everyone.",
   "Change workspace name hint": "New name will be shown for everyone.",
@@ -405,5 +406,6 @@
   "Workspace Settings with name": "{{name}}'s Settings",
   "You can customize your workspace here.": "You can customise your workspace here.",
   "Font Style": "Font Style",
-  "Choose your font style": "Choose your font style"
+  "Choose your font style": "Choose your font style",
+  "Switch": "Switch"
 }
