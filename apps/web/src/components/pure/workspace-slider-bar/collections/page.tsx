@@ -87,9 +87,10 @@ export const PageOperations = ({
     ],
     [
       inAllowList,
+      t,
       inExcludeList,
-      page.id,
       removeFromAllowList,
+      page.id,
       addToExcludeList,
       removeToTrash,
     ]

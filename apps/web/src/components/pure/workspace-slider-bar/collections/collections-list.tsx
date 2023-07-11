@@ -95,7 +95,7 @@ const CollectionOperations = ({
         className: styles.deleteFolder,
       },
     ],
-    [setting, showUpdateCollection, view]
+    [setting, showUpdateCollection, t, view]
   );
   return (
     <div style={{ minWidth: 150 }}>
