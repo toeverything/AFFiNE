@@ -39,6 +39,7 @@ export const PageOperations = ({
   addToExcludeList: (id: string) => void;
 }) => {
   const { removeToTrash } = useBlockSuiteMetaHelper(workspace);
+  const t = useAFFiNEI18N();
   const actions = useMemo<
     Array<
       | {
@@ -58,7 +59,7 @@ export const PageOperations = ({
         ? [
             {
               icon: <FilterMinusIcon />,
-              name: 'Remove special filter',
+              name: t['Remove special filter'](),
               click: () => removeFromAllowList(page.id),
             },
           ]
@@ -67,7 +68,7 @@ export const PageOperations = ({
         ? [
             {
               icon: <FilterUndoIcon />,
-              name: 'Exclude from filter',
+              name: t['Exclude from filter'](),
               click: () => addToExcludeList(page.id),
             },
           ]
@@ -77,7 +78,7 @@ export const PageOperations = ({
       },
       {
         icon: <DeleteIcon style={{ color: 'var(--affine-warning-color)' }} />,
-        name: 'Delete',
+        name: t['Delete'](),
         click: () => {
           removeToTrash(page.id);
         },
@@ -86,9 +87,10 @@ export const PageOperations = ({
     ],
     [
       inAllowList,
+      t,
       inExcludeList,
-      page.id,
       removeFromAllowList,
+      page.id,
       addToExcludeList,
       removeToTrash,
     ]

@@ -11,6 +11,8 @@ export const FilterTag = ({ name }: FilterTagProps) => {
       return t['Created']();
     case 'Updated':
       return t['Updated']();
+    case 'Tags':
+      return t['Tags']();
     case 'Is Favourited':
       return t['com.affine.filter.is-favourited']();
     case 'after':
@@ -19,6 +21,18 @@ export const FilterTag = ({ name }: FilterTagProps) => {
       return t['com.affine.filter.before']();
     case 'is':
       return t['com.affine.filter.is']();
+    case 'is not empty':
+      return t['com.affine.filter.is not empty']();
+    case 'is empty':
+      return t['com.affine.filter.is empty']();
+    case 'contains all':
+      return t['com.affine.filter.contains all']();
+    case 'contains one of':
+      return t['com.affine.filter.contains one of']();
+    case 'does not contains all':
+      return t['com.affine.filter.does not contains all']();
+    case 'does not contains one of':
+      return t['com.affine.filter.does not contains one of']();
     case 'true':
       return t['com.affine.filter.true']();
     case 'false':
