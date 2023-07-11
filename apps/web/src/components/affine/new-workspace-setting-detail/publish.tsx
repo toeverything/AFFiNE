@@ -1,4 +1,4 @@
-import { Button, FlexWrapper, Switch } from '@affine/component';
+import { Button, FlexWrapper, Switch, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Unreachable } from '@affine/env/constant';
 import type {
@@ -92,30 +92,19 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
 
 const FakePublishPanelAffine: FC<{
   workspace: AffineOfficialWorkspace;
-}> = ({ workspace }) => {
+}> = () => {
   const t = useAFFiNEI18N();
-  const [origin, setOrigin] = useState('');
-  const shareUrl = origin + '/public-workspace/' + workspace.id;
-
-  useEffect(() => {
-    setOrigin(
-      typeof window !== 'undefined' && window.location.origin
-        ? window.location.origin
-        : ''
-    );
-  }, []);
   return (
-    <div className={style.fakeWrapper}>
-      <SettingRow name={t['Publish']()} desc={t['Unpublished hint']()}>
-        <Switch checked={false} />
-      </SettingRow>
-      <FlexWrapper justifyContent="space-between">
-        <Button className={style.urlButton} size="middle" title={shareUrl}>
-          {shareUrl}
-        </Button>
-        <Button size="middle">{t['Copy']()}</Button>
-      </FlexWrapper>
-    </div>
+    <Tooltip
+      content={t['com.affine.settings.workspace.publish.local-tooltip']()}
+      placement="top"
+    >
+      <div className={style.fakeWrapper}>
+        <SettingRow name={t['Publish']()} desc={t['Unpublished hint']()}>
+          <Switch checked={false} />
+        </SettingRow>
+      </div>
+    </Tooltip>
   );
 };
 const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
