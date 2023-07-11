@@ -55,6 +55,19 @@ mutation createWorkspace($init: Upload!) {
 }`,
 };
 
+export const deleteAccountMutation = {
+  id: 'deleteAccountMutation' as const,
+  operationName: 'deleteAccount',
+  definitionName: 'deleteAccount',
+  containsFile: false,
+  query: `
+mutation deleteAccount {
+  deleteAccount {
+    success
+  }
+}`,
+};
+
 export const deleteWorkspaceMutation = {
   id: 'deleteWorkspaceMutation' as const,
   operationName: 'deleteWorkspace',
