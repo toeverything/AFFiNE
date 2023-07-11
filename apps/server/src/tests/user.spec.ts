@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import { register } from 'prom-client';
 
 import { AppModule } from '../app';
 import { currentUser, signUp } from './utils';
@@ -22,6 +23,7 @@ describe('User Module', () => {
   });
 
   beforeEach(async () => {
+    register.clear();
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

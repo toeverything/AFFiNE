@@ -4,6 +4,7 @@ import { beforeEach, test } from 'node:test';
 
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
+import { register } from 'prom-client';
 
 import { ConfigModule } from '../config';
 import { GqlModule } from '../graphql.module';
@@ -21,6 +22,7 @@ beforeEach(async () => {
 });
 
 beforeEach(async () => {
+  register.clear();
   const module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
