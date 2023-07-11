@@ -2,16 +2,11 @@ import {
   SettingModal as SettingModalBase,
   type SettingModalProps,
 } from '@affine/component/setting-components';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import { useAtomValue } from 'jotai';
 import type React from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import type { AllWorkspace } from '../../../shared';
 import { AccountSetting } from './account-setting';
 import {
   GeneralSetting,
@@ -40,14 +35,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
 }) => {
   const t = useAFFiNEI18N();
 
-  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
-  const [currentWorkspace] = useCurrentWorkspace();
   const generalSettingList = useGeneralSettingList();
-  const workspaceList = useMemo(() => {
-    return workspaces.filter(
-      ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
-    );
-  }, [workspaces]);
 
   const onGeneralSettingClick = useCallback(
     (key: GeneralSettingKeys) => {
@@ -76,8 +64,6 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
       <SettingSidebar
         generalSettingList={generalSettingList}
         onGeneralSettingClick={onGeneralSettingClick}
-        currentWorkspace={currentWorkspace as AllWorkspace}
-        workspaceList={workspaceList}
         onWorkspaceSettingClick={onWorkspaceSettingClick}
         selectedGeneralKey={activeTab}
         selectedWorkspaceId={workspaceId}
