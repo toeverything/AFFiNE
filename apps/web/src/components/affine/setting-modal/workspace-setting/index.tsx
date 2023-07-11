@@ -1,6 +1,7 @@
 import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { useSetAtom } from 'jotai';
+import { useRouter } from 'next/router';
 import { Suspense, useCallback } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';
@@ -14,6 +15,7 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   usePassiveWorkspaceEffect(workspace.blockSuiteWorkspace);
   const setSettingModal = useSetAtom(openSettingModalAtom);
   const helper = useAppHelper();
+  const router = useRouter();
 
   const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
 
@@ -21,8 +23,9 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
     async (id: string) => {
       await helper.deleteWorkspace(id);
       setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
+      router.push('/').catch(console.error);
     },
-    [setSettingModal, helper]
+    [helper, setSettingModal, router]
   );
   const onTransformWorkspace = useOnTransformWorkspace();
 
