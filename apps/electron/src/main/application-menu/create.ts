@@ -1,7 +1,7 @@
 import { app, Menu } from 'electron';
 
 import { revealLogFile } from '../logger';
-import { checkForUpdatesAndNotify } from '../updater';
+import { checkForUpdates } from '../updater';
 import { isMacOS } from '../utils';
 import { applicationMenuSubjects } from './subject';
 
@@ -125,7 +125,7 @@ export function createApplicationMenu() {
         {
           label: 'Check for Updates',
           click: async () => {
-            await checkForUpdatesAndNotify(true);
+            await checkForUpdates(true);
           },
         },
       ],

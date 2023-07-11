@@ -1,7 +1,7 @@
 import { app } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
-import { checkForUpdatesAndNotify, quitAndInstall } from './electron-updater';
+import { checkForUpdates, quitAndInstall } from './electron-updater';
 
 export const updaterHandlers = {
   currentVersion: async () => {
@@ -11,7 +11,7 @@ export const updaterHandlers = {
     return quitAndInstall();
   },
   checkForUpdatesAndNotify: async () => {
-    const res = await checkForUpdatesAndNotify(true);
+    const res = await checkForUpdates(true);
     if (res) {
       const { updateInfo } = res;
       return {
