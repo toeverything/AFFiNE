@@ -103,6 +103,19 @@ query getMembersByWorkspaceId($workspaceId: String!) {
 }`,
 };
 
+export const getPublicWorkspaceQuery = {
+  id: 'getPublicWorkspaceQuery' as const,
+  operationName: 'getPublicWorkspace',
+  definitionName: 'publicWorkspace',
+  containsFile: false,
+  query: `
+query getPublicWorkspace($id: String!) {
+  publicWorkspace(id: $id) {
+    id
+  }
+}`,
+};
+
 export const getWorkspacePublicByIdQuery = {
   id: 'getWorkspacePublicByIdQuery' as const,
   operationName: 'getWorkspacePublicById',
