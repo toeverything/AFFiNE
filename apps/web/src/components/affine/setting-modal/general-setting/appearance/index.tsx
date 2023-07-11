@@ -120,7 +120,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu triggerProps={{ size: 'small' }} />
           </div>
         </SettingRow>
-        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
+        {environment.isDesktop ? (
           <SettingRow
             name={t['Client Border Style']()}
             desc={t['Customize the appearance of the client.']()}

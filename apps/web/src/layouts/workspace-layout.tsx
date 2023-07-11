@@ -46,6 +46,7 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
+import { useAppSetting } from '../atoms/settings';
 import { AppContainer } from '../components/affine/app-container';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
@@ -335,6 +336,8 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     [moveToTrash, t]
   );
 
+  const [appSetting] = useAppSetting();
+
   return (
     <>
       <Head>
@@ -364,7 +367,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
             currentPath={router.asPath.split('?')[0]}
             paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
           />
-          <MainContainer>
+          <MainContainer padding={appSetting.clientBorder}>
             {children}
             <ToolContainer>
               <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
