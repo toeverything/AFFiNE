@@ -155,17 +155,6 @@ query getWorkspaces {
 }`,
 };
 
-export const inviteByEmailMutation = {
-  id: 'inviteByEmailMutation' as const,
-  operationName: 'inviteByEmail',
-  definitionName: 'invite',
-  containsFile: false,
-  query: `
-mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!) {
-  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
-}`,
-};
-
 export const revokeMemberPermissionMutation = {
   id: 'revokeMemberPermissionMutation' as const,
   operationName: 'revokeMemberPermission',
@@ -258,6 +247,28 @@ mutation uploadAvatar($id: String!, $avatar: Upload!) {
 }`,
 };
 
+export const inviteByEmailMutation = {
+  id: 'inviteByEmailMutation' as const,
+  operationName: 'inviteByEmail',
+  definitionName: 'invite',
+  containsFile: false,
+  query: `
+mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!) {
+  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
+}`,
+};
+
+export const acceptInviteByInviteIdMutation = {
+  id: 'acceptInviteByInviteIdMutation' as const,
+  operationName: 'acceptInviteByInviteId',
+  definitionName: 'acceptInviteById',
+  containsFile: false,
+  query: `
+mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!) {
+  acceptInviteById(workspaceId: $workspaceId, inviteId: $inviteId)
+}`,
+};
+
 export const acceptInviteByWorkspaceIdMutation = {
   id: 'acceptInviteByWorkspaceIdMutation' as const,
   operationName: 'acceptInviteByWorkspaceId',
@@ -266,16 +277,5 @@ export const acceptInviteByWorkspaceIdMutation = {
   query: `
 mutation acceptInviteByWorkspaceId($workspaceId: String!) {
   acceptInvite(workspaceId: $workspaceId)
-}`,
-};
-
-export const inviteByWorkspaceIdMutation = {
-  id: 'inviteByWorkspaceIdMutation' as const,
-  operationName: 'inviteByWorkspaceId',
-  definitionName: 'invite',
-  containsFile: false,
-  query: `
-mutation inviteByWorkspaceId($workspaceId: String!, $email: String!, $permission: Permission!) {
-  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
 }`,
 };
