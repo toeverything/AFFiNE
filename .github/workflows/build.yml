@@ -536,7 +536,7 @@ jobs:
           fail_ci_if_error: false
 
   build-docker:
-    if: github.base_ref == 'himself65/0629-login'
+    if: github.base_ref == 'master'
     name: Build Docker
     needs:
       - lint
