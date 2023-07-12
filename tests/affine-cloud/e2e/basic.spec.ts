@@ -4,9 +4,9 @@ import { hash } from '@node-rs/argon2';
 import { expect } from '@playwright/test';
 
 async function flushDB() {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const {
     PrismaClient,
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
   } = require('../../../apps/server/node_modules/@prisma/client');
   const client = new PrismaClient();
   await client.$connect();
