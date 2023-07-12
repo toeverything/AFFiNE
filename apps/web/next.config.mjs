@@ -105,6 +105,7 @@ const nextConfig = {
     editorVersion,
     gitVersion: getGitVersion(),
     hash: getCommitHash(),
+    serverUrlPrefix,
     editorFlags: blockSuiteFeatureFlags,
     ...buildFlags,
   },

@@ -30,9 +30,14 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   doc,
   { awareness }
 ): AffineSocketIOProvider => {
-  const provider = new SocketIOProvider('/', id, doc, {
-    awareness,
-  });
+  const provider = new SocketIOProvider(
+    environment.isDesktop ? runtimeConfig.serverUrlPrefix + '/' : '/',
+    id,
+    doc,
+    {
+      awareness,
+    }
+  );
   return {
     flavour: 'affine-socket-io',
     passive: true,

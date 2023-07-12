@@ -59,7 +59,9 @@ const App = function App({
   const getLayout = Component.getLayout || EmptyLayout;
 
   return (
-    <SessionProvider>
+    <SessionProvider
+      basePath={environment.isDesktop ? runtimeConfig.serverUrlPrefix : ''}
+    >
       <CacheProvider value={emotionCache}>
         <I18nextProvider i18n={i18n}>
           <AffineErrorBoundary router={useRouter()}>
