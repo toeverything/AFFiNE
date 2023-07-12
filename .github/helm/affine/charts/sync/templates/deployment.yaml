@@ -71,13 +71,11 @@ spec:
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
           resources:
