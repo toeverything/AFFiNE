@@ -100,7 +100,7 @@ async function getWorkspace(
       query: `
           query {
             workspace(id: "${workspaceId}") {
-              id, members { id, name, email, permission }
+              id, members { id, name, email, permission, inviteId }
             }
           }
         `,

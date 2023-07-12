@@ -150,8 +150,19 @@ describe('Workspace Module - invite', () => {
     const accept = await acceptInviteById(app, workspace.id, invite);
     ok(accept === true, 'failed to accept invite');
 
+    const invite1 = await inviteUser(
+      app,
+      u1.token.token,
+      workspace.id,
+      u2.email,
+      'Admin'
+    );
+
+    ok(invite === invite1, 'repeat the invitation must return same id');
+
     const currWorkspace = await getWorkspace(app, u1.token.token, workspace.id);
     const currMember = currWorkspace.members.find(u => u.email === u2.email);
     ok(currMember !== undefined, 'failed to invite user');
+    ok(currMember.inviteId === invite, 'failed to check invite id');
   });
 });
