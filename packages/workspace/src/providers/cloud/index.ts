@@ -1,8 +1,11 @@
+import { DebugLogger } from '@affine/debug';
 import type { ActiveDocProvider, DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import type { Doc } from 'yjs';
 
 const Y = Workspace.Y;
+
+const logger = new DebugLogger('affine:cloud');
 
 export const createCloudDownloadProvider: DocProviderCreator = (
   id,
@@ -27,7 +30,12 @@ export const createCloudDownloadProvider: DocProviderCreator = (
     flavour: 'affine-cloud-download',
     active: true,
     sync() {
-      downloadBinaryRecursively(doc).then(_resolve).catch(_reject);
+      downloadBinaryRecursively(doc)
+        .then(() => {
+          logger.info(`Downloaded ${id}`);
+          _resolve();
+        })
+        .catch(_reject);
     },
     get whenReady() {
       return promise;
