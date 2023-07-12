@@ -80,6 +80,10 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
 
   //#region check if page is valid
   useEffect(() => {
+    // if the workspace changed, ignore the page check
+    if (currentWorkspace.id !== router.query.workspaceId) {
+      return;
+    }
     if (
       typeof router.query.pageId === 'string' &&
       router.pathname === '/workspace/[workspaceId]/[pageId]' &&
