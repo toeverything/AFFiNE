@@ -12,7 +12,10 @@ import { useStaticBlockSuiteWorkspace } from '@toeverything/hooks/use-block-suit
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
+import Image from 'next/legacy/image';
+import { signIn } from 'next-auth/react';
 import type { FC, ReactElement } from 'react';
+import { useCallback } from 'react';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
 
@@ -23,6 +26,7 @@ import type {
   GeneralSettingKeys,
   GeneralSettingList,
 } from '../general-setting';
+import avatar from './default-avatar.png';
 import {
   accountButton,
   settingSlideBar,
@@ -55,6 +59,35 @@ export const UserInfo = ({
         </div>
         <div className="email" title="xxx">
           {user.email}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const SignInButton = () => {
+  const t = useAFFiNEI18N();
+  return (
+    <div
+      className={accountButton}
+      onClick={useCallback(() => {
+        signIn().catch(console.error);
+      }, [])}
+    >
+      <Image
+        src={avatar}
+        height={28}
+        width={28}
+        alt="AFFiNE"
+        className="avatar"
+      />
+
+      <div className="content">
+        <div className="name" title={t['com.affine.settings.sign']()}>
+          {t['com.affine.settings.sign']()}
+        </div>
+        <div className="email" title={t['com.affine.setting.sign.message']()}>
+          {t['com.affine.setting.sign.message']()}
         </div>
       </div>
     </div>
@@ -115,9 +148,13 @@ export const SettingSidebar: FC<{
         </Suspense>
       </div>
 
-      {runtimeConfig.enableCloud && loginStatus === 'authenticated' && (
+      {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
+        <SignInButton />
+      ) : null}
+
+      {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
         <UserInfo onAccountSettingClick={onAccountSettingClick} />
-      )}
+      ) : null}
     </div>
   );
 };
