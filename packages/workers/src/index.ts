@@ -42,8 +42,9 @@ async function proxyImage(request: Request): Promise<Response> {
 
   modifiedResponse.headers.set(
     'Access-Control-Allow-Origin',
-    request.headers.get('Origin') ?? 'false'
+    request.headers.get('Origin') ?? 'null'
   );
+  modifiedResponse.headers.set('Vary', 'Origin');
   modifiedResponse.headers.set('Access-Control-Allow-Methods', 'GET');
 
   return modifiedResponse;
