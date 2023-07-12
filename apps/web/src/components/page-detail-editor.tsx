@@ -76,6 +76,7 @@ const EditorWrapper = memo(function EditorWrapper({
     assertExists(fontStyle);
     return fontStyle.value;
   }, [appSettings.fontStyle]);
+  console.log('appSettings.fullWidthLayout', appSettings.fullWidthLayout);
 
   return (
     <Editor
