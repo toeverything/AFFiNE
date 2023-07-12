@@ -34,9 +34,10 @@ export function useCurrentUser(): CheckedUser {
   const user = session?.user;
   assertExists(session, 'user should exist');
   assertExists(user, 'user should exist');
+  assertExists(user.id, 'user id should exist');
 
   return {
-    id: user.id ?? 'REPLACE_ME_DEFAULT_ID',
+    id: user.id,
     name: user.name ?? 'REPLACE_ME_DEFAULT_NAME',
     email: user.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
     image: user.image ?? 'REPLACE_ME_DEFAULT_URL',
