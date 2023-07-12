@@ -147,6 +147,8 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
           onClick={() => {
             setOpen(true);
           }}
+          hoverBackground="var(--affine-background-error-color)"
+          hoverColor="var(--affine-error-color)"
         >
           <DeletePermanentlyIcon />
         </IconButton>

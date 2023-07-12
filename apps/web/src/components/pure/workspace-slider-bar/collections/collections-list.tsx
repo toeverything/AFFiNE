@@ -87,7 +87,7 @@ const CollectionOperations = ({
         element: <div key="divider" className={styles.menuDividerStyle}></div>,
       },
       {
-        icon: <DeleteIcon style={{ color: 'var(--affine-warning-color)' }} />,
+        icon: <DeleteIcon />,
         name: t['Delete'](),
         click: () => {
           return setting.deleteCollection(view.id);
