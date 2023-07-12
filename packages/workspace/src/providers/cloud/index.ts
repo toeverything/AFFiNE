@@ -4,7 +4,7 @@ import type { Doc } from 'yjs';
 
 const Y = Workspace.Y;
 
-export const createPublicCloudProvider: DocProviderCreator = (
+export const createCloudDownloadProvider: DocProviderCreator = (
   id,
   doc
 ): ActiveDocProvider => {
