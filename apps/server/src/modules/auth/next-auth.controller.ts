@@ -163,13 +163,12 @@ export class NextAuthController {
       return user;
     } else {
       const user = await this.getUserFromRequest(req);
-      await this.prisma.user.update({
+      return this.prisma.user.update({
         where: {
           id: user.id,
         },
         data: pick(newSession, 'name', 'email'),
       });
-      return user;
     }
   }
 
