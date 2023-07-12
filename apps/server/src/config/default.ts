@@ -161,7 +161,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     },
     doc: {
       manager: {
-        updatePollInterval: 1000,
+        updatePollInterval: 3000,
       },
     },
   } satisfies AFFiNEConfig;

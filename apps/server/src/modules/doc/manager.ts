@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { mergeUpdates } from 'yjs';
 
+import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 
 /**
@@ -23,11 +24,13 @@ import { PrismaService } from '../../prisma';
 export class DocManager implements OnModuleInit, OnModuleDestroy {
   protected logger = new Logger(DocManager.name);
   private job: NodeJS.Timeout | null = null;
+  private busy = false;
 
   constructor(
     protected readonly db: PrismaService,
     @Inject('DOC_MANAGER_AUTOMATION')
-    protected readonly automation: boolean
+    protected readonly automation: boolean,
+    protected readonly config: Config
   ) {}
 
   onModuleInit() {
@@ -52,10 +55,18 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
    */
   setup() {
     this.job = setInterval(() => {
-      this.apply().catch(() => {
-        /* we handle all errors in work itself */
-      });
-    }, 1000 /* make it configurable */);
+      if (!this.busy) {
+        this.busy = true;
+        this.apply()
+          .catch(() => {
+            /* we handle all errors in work itself */
+          })
+          .finally(() => {
+            this.busy = false;
+          });
+      }
+    }, this.config.doc.manager.updatePollInterval);
+
     this.logger.log('Automation started');
   }
 
@@ -230,6 +241,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     } catch (e) {
       // failed to merge updates, put them back
       this.logger.error('Failed to merge updates', e);
+
       await this.db.update
         .createMany({
           data: updates.map(u => ({

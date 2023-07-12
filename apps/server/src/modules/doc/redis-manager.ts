@@ -25,10 +25,10 @@ export class RedisDocManager extends DocManager {
     protected override readonly db: PrismaService,
     @Inject('DOC_MANAGER_AUTOMATION')
     protected override readonly automation: boolean,
-    private readonly config: Config
+    protected override readonly config: Config
   ) {
-    super(db, automation);
-    this.redis = new Redis(this.config.redis);
+    super(db, automation, config);
+    this.redis = new Redis(config.redis);
   }
 
   override onModuleInit(): void {
