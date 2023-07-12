@@ -11,6 +11,8 @@ import type { Response } from 'express';
 import * as Y from 'yjs';
 
 import { StorageProvide } from '../../storage';
+import { Auth, CurrentUser, Publicable } from '../auth';
+import { UserType } from '../users';
 import { PermissionService } from './permission';
 
 @Controller('/api/workspaces')
@@ -43,15 +45,16 @@ export class WorkspacesController {
   }
 
   // get doc binary
-  //
-  // NOTE: only for public workspace, normal workspace update should be load from websocket sync logic
   @Get('/:id/docs/:guid')
+  @Auth()
+  @Publicable()
   async doc(
+    @CurrentUser() user: UserType | undefined,
     @Param('id') ws: string,
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
-    await this.permission.check(ws);
+    await this.permission.check(ws, user?.id);
 
     const updates = await this.storage.loadBuffer(guid);
 
