@@ -202,6 +202,7 @@ export const deleteIcon = style({
   padding: 4,
   cursor: 'pointer',
   ':hover': {
-    backgroundColor: 'var(--affine-hover-color)',
+    color: 'var(--affine-error-color)',
+    backgroundColor: 'var(--affine-background-error-color)',
   },
 });

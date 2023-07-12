@@ -69,7 +69,7 @@ export const CollectionBar = ({
         },
       },
       {
-        icon: <DeleteIcon style={{ color: 'red' }} />,
+        icon: <DeleteIcon style={{ color: 'var(--affine-error-color)' }} />,
         name: 'delete',
         click: () => {
           setting.deleteCollection(collection.id).catch(err => {
