@@ -13,6 +13,9 @@ import { blockSuiteFeatureFlags, buildFlags } from './preset.config.mjs';
 import { getCommitHash, getGitVersion } from './scripts/git-info.mjs';
 
 const require = createRequire(import.meta.url);
+const packageJson = require('./package.json');
+const appVersion = packageJson.version;
+const editorVersion = packageJson.dependencies['@blocksuite/editor'];
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin');
 const withVanillaExtract = createVanillaExtractPlugin();
 
@@ -102,6 +105,8 @@ const nextConfig = {
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
     BUILD_DATE: new Date().toISOString(),
+    appVersion,
+    editorVersion,
     gitVersion: getGitVersion(),
     hash: getCommitHash(),
     serverAPI: profileTarget.local,

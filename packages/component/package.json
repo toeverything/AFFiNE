@@ -36,7 +36,7 @@
     "@radix-ui/react-toast": "^1.1.4",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
-    "@toeverything/theme": "^0.7.4",
+    "@toeverything/theme": "^0.7.6",
     "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^1.2.1",
     "dayjs": "^1.11.9",
@@ -51,12 +51,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/editor": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/global": "0.0.0-20230711013419-0b07ee2d-nightly",
+    "@blocksuite/blocks": "0.0.0-20230712133952-834fa060-nightly",
+    "@blocksuite/editor": "0.0.0-20230712133952-834fa060-nightly",
+    "@blocksuite/global": "0.0.0-20230712133952-834fa060-nightly",
     "@blocksuite/icons": "^2.1.24",
-    "@blocksuite/lit": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/store": "0.0.0-20230711013419-0b07ee2d-nightly",
+    "@blocksuite/lit": "0.0.0-20230712133952-834fa060-nightly",
+    "@blocksuite/store": "0.0.0-20230712133952-834fa060-nightly",
     "@types/react": "^18.2.14",
     "@types/react-datepicker": "^4.11.2",
     "@types/react-dnd": "^3.0.2",
@@ -66,5 +66,5 @@
     "vite": "^4.3.9",
     "yjs": "^13.6.6"
   },
-  "version": "0.7.0-canary.40"
+  "version": "0.7.0-canary.43"
 }

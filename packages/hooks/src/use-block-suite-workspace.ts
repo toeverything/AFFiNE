@@ -1,4 +1,3 @@
-// guid -> Workspace
 import type { ActiveDocProvider, Workspace } from '@blocksuite/store';
 import type { PassiveDocProvider } from '@blocksuite/store';
 import { useAtomValue } from 'jotai/react';
@@ -8,6 +7,7 @@ import { useEffect } from 'react';
 
 /**
  * DO NOT ACCESS THIS MAP IN PRODUCTION, OR YOU WILL BE FIRED
+ * Map: guid -> Workspace
  */
 export const INTERNAL_BLOCKSUITE_HASH_MAP = new Map<string, Workspace>([]);
 

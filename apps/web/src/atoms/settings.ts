@@ -1,3 +1,4 @@
+import { isDesktop } from '@affine/env/constant';
 import { atom, useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
@@ -49,7 +50,7 @@ export const fontStyleOptions = [
 }[];
 
 const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
-  clientBorder: false,
+  clientBorder: isDesktop,
   fullWidthLayout: false,
   windowFrameStyle: 'frameless',
   fontStyle: 'Sans',

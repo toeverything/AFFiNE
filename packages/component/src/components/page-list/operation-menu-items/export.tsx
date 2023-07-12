@@ -1,7 +1,6 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
-import { ContentParser } from '@blocksuite/blocks/content-parser';
 import {
   ArrowRightSmallIcon,
   ExportIcon,
@@ -11,16 +10,16 @@ import {
   ExportToPngIcon,
 } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 
 import { Menu, MenuItem } from '../../..';
+import { getContentParser } from './get-content-parser';
 import type { CommonMenuItemProps } from './types';
 
 export const ExportToPdfMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'pdf' }>) => {
   const t = useAFFiNEI18N();
-  const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
 
@@ -53,9 +52,7 @@ export const ExportToPdfMenuItem = ({
           });
         });
     } else {
-      const contentParser =
-        contentParserRef.current ??
-        (contentParserRef.current = new ContentParser(currentEditor.page));
+      const contentParser = getContentParser(currentEditor.page);
 
       contentParser
         .exportPdf()
@@ -95,17 +92,14 @@ export const ExportToHtmlMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'html' }>) => {
   const t = useAFFiNEI18N();
-  const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
   const onClickExportHtml = useCallback(() => {
     if (!currentEditor) {
       return;
     }
-    if (!contentParserRef.current) {
-      contentParserRef.current = new ContentParser(currentEditor.page);
-    }
-    contentParserRef.current
+    const contentParser = getContentParser(currentEditor.page);
+    contentParser
       .exportHtml()
       .then(() => {
         onSelect?.({ type: 'html' });
@@ -138,7 +132,6 @@ export const ExportToPngMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'png' }>) => {
   const t = useAFFiNEI18N();
-  const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
 
@@ -146,9 +139,7 @@ export const ExportToPngMenuItem = ({
     if (!currentEditor) {
       return;
     }
-    const contentParser =
-      contentParserRef.current ??
-      (contentParserRef.current = new ContentParser(currentEditor.page));
+    const contentParser = getContentParser(currentEditor.page);
 
     contentParser
       .exportPng()
@@ -189,17 +180,14 @@ export const ExportToMarkdownMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'markdown' }>) => {
   const t = useAFFiNEI18N();
-  const contentParserRef = useRef<ContentParser>();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
   const onClickExportMarkdown = useCallback(() => {
     if (!currentEditor) {
       return;
     }
-    if (!contentParserRef.current) {
-      contentParserRef.current = new ContentParser(currentEditor.page);
-    }
-    contentParserRef.current
+    const contentParser = getContentParser(currentEditor.page);
+    contentParser
       .exportMarkdown()
       .then(() => {
         onSelect?.({ type: 'markdown' });

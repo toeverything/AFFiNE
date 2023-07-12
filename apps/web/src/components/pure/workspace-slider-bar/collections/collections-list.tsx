@@ -7,6 +7,7 @@ import {
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   FilterIcon,
@@ -51,6 +52,7 @@ const CollectionOperations = ({
   showUpdateCollection: () => void;
   setting: ReturnType<typeof useCollectionManager>;
 }) => {
+  const t = useAFFiNEI18N();
   const actions = useMemo<
     Array<
       | {
@@ -68,12 +70,12 @@ const CollectionOperations = ({
     () => [
       {
         icon: <FilterIcon />,
-        name: 'Edit Filter',
+        name: t['Edit Filter'](),
         click: showUpdateCollection,
       },
       {
         icon: <UnpinIcon />,
-        name: 'Unpin',
+        name: t['Unpin'](),
         click: () => {
           return setting.updateCollection({
             ...view,
@@ -85,15 +87,15 @@ const CollectionOperations = ({
         element: <div key="divider" className={styles.menuDividerStyle}></div>,
       },
       {
-        icon: <DeleteIcon style={{ color: 'var(--affine-warning-color)' }} />,
-        name: 'Delete',
+        icon: <DeleteIcon />,
+        name: t['Delete'](),
         click: () => {
           return setting.deleteCollection(view.id);
         },
         className: styles.deleteFolder,
       },
     ],
-    [setting, showUpdateCollection, view]
+    [setting, showUpdateCollection, t, view]
   );
   return (
     <div style={{ minWidth: 150 }}>
