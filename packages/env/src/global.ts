@@ -58,6 +58,8 @@ export const buildFlagsSchema = z.object({
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   changelogUrl: z.string(),
+  // see: packages/workers
+  imageProxyUrl: z.string(),
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
   enableNewSettingUnstableApi: z.boolean(),
@@ -86,6 +88,8 @@ export const publicRuntimeConfigSchema = buildFlagsSchema.extend({
   PROJECT_NAME: z.string(),
   BUILD_DATE: z.string(),
   gitVersion: z.string(),
+  appVersion: z.string(),
+  editorVersion: z.string(),
   hash: z.string(),
   editorFlags: blockSuiteFeatureFlags,
 });
