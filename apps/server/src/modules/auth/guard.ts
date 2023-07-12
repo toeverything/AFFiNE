@@ -63,8 +63,14 @@ class AuthGuard implements CanActivate {
     const { req, res } = getRequestResponseFromContext(context);
     const token = req.headers.authorization;
 
+    // api is public
     const isPublic = this.reflector.get<boolean>(
       'isPublic',
+      context.getHandler()
+    );
+    // api can be public, but if user is logged in, we can get user info
+    const isPublicable = this.reflector.get<boolean>(
+      'isPublicable',
       context.getHandler()
     );
 
@@ -82,9 +88,10 @@ class AuthGuard implements CanActivate {
       });
 
       const { body, cookies, status = 200 } = session;
-      if (!body) {
+      if (!body && !isPublicable) {
         return false;
       }
+
       // @ts-expect-error body is user here
       req.user = body.user;
       if (cookies && res) {
@@ -92,8 +99,12 @@ class AuthGuard implements CanActivate {
           res.cookie(cookie.name, cookie.value, cookie.options);
         }
       }
+
       return Boolean(
-        status === 200 && typeof body !== 'string' && Object.keys(body).length
+        status === 200 &&
+          typeof body !== 'string' &&
+          // ignore body if api is publicable
+          (Object.keys(body || {}).length || isPublicable)
       );
     } else {
       const [type, jwt] = token.split(' ') ?? [];
@@ -130,4 +141,7 @@ export const Auth = () => {
   return UseGuards(AuthGuard);
 };
 
+// api is public accessible
 export const Public = () => SetMetadata('isPublic', true);
+// api is public accessible, but if user is logged in, we can get user info
+export const Publicable = () => SetMetadata('isPublicable', true);

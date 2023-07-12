@@ -137,6 +137,51 @@ describe('Workspace Module', () => {
     ok(msg3 === false, 'can revoke non-exists page');
   });
 
+  it('should can get workspace doc', async () => {
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '2');
+    const workspace = await createWorkspace(app, u1.token.token);
+
+    const res1 = await request(app.getHttpServer())
+      .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+      .auth(u1.token.token, { type: 'bearer' })
+      .expect(200)
+      .type('application/octet-stream');
+
+    deepEqual(
+      res1.body,
+      Buffer.from([0, 0]),
+      'failed to get doc with u1 token'
+    );
+
+    await request(app.getHttpServer())
+      .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+      .expect(403);
+    await request(app.getHttpServer())
+      .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+      .auth(u2.token.token, { type: 'bearer' })
+      .expect(403);
+
+    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
+    await request(app.getHttpServer())
+      .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+      .auth(u2.token.token, { type: 'bearer' })
+      .expect(403);
+
+    await acceptInvite(app, u2.token.token, workspace.id);
+    const res2 = await request(app.getHttpServer())
+      .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+      .auth(u2.token.token, { type: 'bearer' })
+      .expect(200)
+      .type('application/octet-stream');
+
+    deepEqual(
+      res2.body,
+      Buffer.from([0, 0]),
+      'failed to get doc with u2 token'
+    );
+  });
+
   it('should be able to get public workspace doc', async () => {
     const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
     const workspace = await createWorkspace(app, user.token.token);
