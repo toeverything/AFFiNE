@@ -34,7 +34,6 @@ describe('Workspace Module - invite', () => {
   });
 
   beforeEach(async () => {
-    register.clear();
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -49,6 +48,7 @@ describe('Workspace Module - invite', () => {
   });
 
   afterEach(async () => {
+    register.clear();
     await app.close();
   });
 

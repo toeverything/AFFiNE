@@ -36,7 +36,6 @@ describe('Workspace Module', () => {
   });
 
   beforeEach(async () => {
-    register.clear();
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -51,6 +50,7 @@ describe('Workspace Module', () => {
   });
 
   afterEach(async () => {
+    register.clear();
     await app.close();
   });
 

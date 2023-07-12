@@ -6,9 +6,7 @@ import { metricsCreator } from './utils';
 export class Metrics {
   constructor() {}
 
-  socketIOCounter = metricsCreator.counter('socket_io_event_counter', [
-    'event',
-  ]);
+  socketIOCounter = metricsCreator.counter('socket_io_counter', ['event']);
   socketIOTimer = metricsCreator.timer('socket_io_timer', ['event']);
 
   gqlRequest = metricsCreator.counter('gql_request', ['operation']);

@@ -1,6 +1,6 @@
 /// <reference types="../global.d.ts" />
 import { ok } from 'node:assert';
-import { beforeEach, test } from 'node:test';
+import { afterEach, beforeEach, test } from 'node:test';
 
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -22,7 +22,6 @@ beforeEach(async () => {
 });
 
 beforeEach(async () => {
-  register.clear();
   const module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -38,6 +37,10 @@ beforeEach(async () => {
     ],
   }).compile();
   auth = module.get(AuthService);
+});
+
+afterEach(async () => {
+  register.clear();
 });
 
 test('should be able to register and signIn', async () => {

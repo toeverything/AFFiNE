@@ -27,7 +27,6 @@ describe('Workspace Module - Blobs', () => {
   });
 
   beforeEach(async () => {
-    register.clear();
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -42,6 +41,7 @@ describe('Workspace Module - Blobs', () => {
   });
 
   afterEach(async () => {
+    register.clear();
     await app.close();
   });
 

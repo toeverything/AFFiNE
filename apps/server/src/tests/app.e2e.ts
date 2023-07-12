@@ -21,7 +21,6 @@ describe('AppModule', () => {
 
   // cleanup database before each test
   beforeEach(async () => {
-    register.clear();
     const client = new PrismaClient();
     await client.$connect();
     await client.user.deleteMany({});
@@ -52,6 +51,7 @@ describe('AppModule', () => {
   });
 
   afterEach(async () => {
+    register.clear();
     await app.close();
   });
 

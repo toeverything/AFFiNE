@@ -23,7 +23,6 @@ describe('User Module', () => {
   });
 
   beforeEach(async () => {
-    register.clear();
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -38,6 +37,7 @@ describe('User Module', () => {
   });
 
   afterEach(async () => {
+    register.clear();
     await app.close();
   });
 
