@@ -138,7 +138,7 @@ export const buttonStyle = style({
   margin: '10px 6px',
   padding: '0 0',
   ':hover': {
-    backgroundColor: 'var(--affine-hover-color)',
+    backgroundColor: 'var(--affine-background-error-color)',
     backgroundSize: '24px 24px',
   },
 });
