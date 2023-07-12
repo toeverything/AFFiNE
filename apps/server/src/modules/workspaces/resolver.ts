@@ -21,6 +21,7 @@ import type { User, Workspace } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
+import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import type { FileUpload } from '../../types';
@@ -83,7 +84,8 @@ export class WorkspaceResolver {
   constructor(
     private readonly prisma: PrismaService,
     private readonly permissionProvider: PermissionService,
-    @Inject(StorageProvide) private readonly storage: Storage
+    @Inject(StorageProvide) private readonly storage: Storage,
+    private readonly metric: Metrics
   ) {}
 
   @ResolveField(() => Permission, {
@@ -94,6 +96,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Parent() workspace: WorkspaceType
   ) {
+    this.metric.gqlRequest(1, { operation: 'permission' });
     // may applied in workspaces query
     if ('permission' in workspace) {
       return workspace.permission;
@@ -102,6 +105,9 @@ export class WorkspaceResolver {
     const permission = this.permissionProvider.get(workspace.id, user.id);
 
     if (!permission) {
+      this.metric.gqlError(1, {
+        operation: 'permissionOfSignedUserInWorkspace',
+      });
       throw new ForbiddenException();
     }
 
@@ -113,6 +119,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   memberCount(@Parent() workspace: WorkspaceType) {
+    this.metric.gqlRequest(1, { operation: 'memberCountOfWorkspace' });
     return this.prisma.userWorkspacePermission.count({
       where: {
         workspaceId: workspace.id,
@@ -126,6 +133,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   sharedPages(@Parent() workspace: WorkspaceType) {
+    this.metric.gqlRequest(1, { operation: 'sharedPagesOfWorkspace' });
     return this.permissionProvider.getPages(workspace.id);
   }
 
@@ -134,6 +142,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async owner(@Parent() workspace: WorkspaceType) {
+    this.metric.gqlRequest(1, { operation: 'ownerOfWorkspace' });
     const data = await this.prisma.userWorkspacePermission.findFirstOrThrow({
       where: {
         workspaceId: workspace.id,
@@ -152,6 +161,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async members(@Parent() workspace: WorkspaceType) {
+    this.metric.gqlRequest(1, { operation: 'membersOfWorkspace' });
     const data = await this.prisma.userWorkspacePermission.findMany({
       where: {
         workspaceId: workspace.id,
@@ -172,6 +182,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async workspaces(@CurrentUser() user: User) {
+    this.metric.gqlRequest(1, { operation: 'workspacesOfCurrentUser' });
     const data = await this.prisma.userWorkspacePermission.findMany({
       where: {
         userId: user.id,
@@ -195,6 +206,7 @@ export class WorkspaceResolver {
   })
   @Public()
   async publicWorkspace(@Args('id') id: string) {
+    this.metric.gqlRequest(1, { operation: 'getPublicWorkspace' });
     const workspace = await this.prisma.workspace.findUnique({
       where: { id },
     });
@@ -203,6 +215,7 @@ export class WorkspaceResolver {
       return workspace;
     }
 
+    this.metric.gqlError(1, { operation: 'getPublicWorkspace' });
     throw new NotFoundException("Workspace doesn't exist");
   }
 
@@ -210,10 +223,12 @@ export class WorkspaceResolver {
     description: 'Get workspace by id',
   })
   async workspace(@CurrentUser() user: UserType, @Args('id') id: string) {
+    this.metric.gqlRequest(1, { operation: 'getWorkspaceById' });
     await this.permissionProvider.check(id, user.id);
     const workspace = await this.prisma.workspace.findUnique({ where: { id } });
 
     if (!workspace) {
+      this.metric.gqlError(1, { operation: 'getWorkspaceById' });
       throw new NotFoundException("Workspace doesn't exist");
     }
 
@@ -228,6 +243,7 @@ export class WorkspaceResolver {
     @Args({ name: 'init', type: () => GraphQLUpload })
     update: FileUpload
   ) {
+    this.metric.gqlRequest(1, { operation: 'createWorkspace' });
     // convert stream to buffer
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const stream = update.createReadStream();
@@ -272,6 +288,7 @@ export class WorkspaceResolver {
     @Args({ name: 'input', type: () => UpdateWorkspaceInput })
     { id, ...updates }: UpdateWorkspaceInput
   ) {
+    this.metric.gqlRequest(1, { operation: 'updateWorkspace' });
     await this.permissionProvider.check(id, user.id, Permission.Admin);
 
     return this.prisma.workspace.update({
@@ -284,6 +301,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async deleteWorkspace(@CurrentUser() user: UserType, @Args('id') id: string) {
+    this.metric.gqlRequest(1, { operation: 'deleteWorkspace' });
     await this.permissionProvider.check(id, user.id, Permission.Owner);
 
     await this.prisma.workspace.delete({
@@ -312,6 +330,7 @@ export class WorkspaceResolver {
     @Args('email') email: string,
     @Args('permission', { type: () => Permission }) permission: Permission
   ) {
+    this.metric.gqlRequest(1, { operation: 'inviteToWorkspace' });
     await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
 
     if (permission === Permission.Owner) {
@@ -325,6 +344,7 @@ export class WorkspaceResolver {
     });
 
     if (!target) {
+      this.metric.gqlError(1, { operation: 'inviteToWorkspace' });
       throw new NotFoundException("User doesn't exist");
     }
 
@@ -339,6 +359,7 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
+    this.metric.gqlRequest(1, { operation: 'revokeWorkspace' });
     await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
 
     return this.permissionProvider.revoke(workspaceId, userId);
@@ -349,6 +370,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
+    this.metric.gqlRequest(1, { operation: 'acceptInvite' });
     return this.permissionProvider.accept(workspaceId, user.id);
   }
 
@@ -357,6 +379,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
+    this.metric.gqlRequest(1, { operation: 'leaveWorkspace' });
     await this.permissionProvider.check(workspaceId, user.id);
 
     return this.permissionProvider.revoke(workspaceId, user.id);
@@ -368,6 +391,7 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
+    this.metric.gqlRequest(1, { operation: 'sharePage' });
     await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
 
     return this.permissionProvider.grantPage(workspaceId, pageId);
@@ -379,6 +403,7 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
+    this.metric.gqlRequest(1, { operation: 'revokePage' });
     await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
 
     return this.permissionProvider.revokePage(workspaceId, pageId);
@@ -391,6 +416,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
+    this.metric.gqlRequest(1, { operation: 'listBlobs' });
     await this.permissionProvider.check(workspaceId, user.id);
 
     return this.storage.listBlobs(workspaceId);
@@ -403,6 +429,7 @@ export class WorkspaceResolver {
     @Args({ name: 'blob', type: () => GraphQLUpload })
     blob: FileUpload
   ) {
+    this.metric.gqlRequest(1, { operation: 'setBlob' });
     await this.permissionProvider.check(workspaceId, user.id, Permission.Write);
 
     const buffer = await new Promise<Buffer>((resolve, reject) => {
@@ -426,6 +453,7 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('hash') hash: string
   ) {
+    this.metric.gqlRequest(1, { operation: 'deleteBlob' });
     await this.permissionProvider.check(workspaceId, user.id);
 
     return this.storage.deleteBlob(workspaceId, hash);

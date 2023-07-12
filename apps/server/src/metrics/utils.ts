@@ -12,12 +12,11 @@ type TimerMetricsCreator<T extends string> = (
 export const metricsCreatorGenerator = () => {
   const counterCreator = <T extends string>(
     name: string,
-    help?: string,
     labelNames?: T[]
   ): MetricsCreator<T> => {
     const counter = new Counter({
       name,
-      help: help ?? name,
+      help: name,
       ...(labelNames ? { labelNames } : {}),
     });
 
@@ -28,12 +27,11 @@ export const metricsCreatorGenerator = () => {
 
   const gaugeCreator = <T extends string>(
     name: string,
-    help?: string,
     labelNames?: T[]
   ): MetricsCreator<T> => {
     const gauge = new Gauge({
       name,
-      help: help ?? name,
+      help: name,
       ...(labelNames ? { labelNames } : {}),
     });
 
@@ -44,12 +42,11 @@ export const metricsCreatorGenerator = () => {
 
   const timerCreator = <T extends string>(
     name: string,
-    help: string,
     labelNames?: T[]
   ): TimerMetricsCreator<T> => {
     const summary = new Summary({
       name,
-      help: help ?? name,
+      help: name,
       ...(labelNames ? { labelNames } : {}),
     });
 

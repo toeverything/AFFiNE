@@ -3,12 +3,16 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Doc } from 'yjs';
 import * as Y from 'yjs';
 
+import { Metrics } from '../../../metrics/metrics';
 import { StorageProvide } from '../../../storage';
 import { assertExists } from '../utils';
 
 @Injectable()
 export class WorkspaceService {
-  constructor(@Inject(StorageProvide) private readonly storage: Storage) {}
+  constructor(
+    @Inject(StorageProvide) private readonly storage: Storage,
+    private readonly metric: Metrics
+  ) {}
 
   async getDocsFromWorkspaceId(workspaceId: string): Promise<
     Array<{
@@ -52,6 +56,7 @@ export class WorkspaceService {
       try {
         Y.applyUpdate(doc, update);
       } catch (e) {
+        this.metric.docApplyUpdateErr(1, {});
         console.error(e);
         return null;
       }

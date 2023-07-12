@@ -12,6 +12,7 @@ import type { User } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
+import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser } from '../auth/guard';
@@ -43,7 +44,8 @@ export class UserType implements Partial<User> {
 export class UserResolver {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly storage: StorageService
+    private readonly storage: StorageService,
+    private readonly metric: Metrics
   ) {}
 
   @Query(() => UserType, {
@@ -51,6 +53,7 @@ export class UserResolver {
     description: 'Get all users',
   })
   async currentUser(@CurrentUser() user: UserType) {
+    this.metric.gqlRequest(1, { operation: 'getAllUsers' });
     return {
       id: user.id,
       name: user.name,
@@ -66,6 +69,7 @@ export class UserResolver {
     description: 'Get user by email',
   })
   async user(@Args('email') email: string) {
+    this.metric.gqlRequest(1, { operation: 'getUserByEmail' });
     // TODO: need to limit a user can only get another user witch is in the same workspace
     return this.prisma.user.findUnique({
       where: { email },
@@ -81,8 +85,10 @@ export class UserResolver {
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
+    this.metric.gqlRequest(1, { operation: 'uploadUserAvatar' });
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
+      this.metric.gqlError(1, { operation: 'uploadUserAvatar' });
       throw new BadRequestException(`User ${id} not found`);
     }
     const url = await this.storage.uploadFile(`${id}-avatar`, avatar);

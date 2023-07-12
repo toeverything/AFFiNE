@@ -10,6 +10,7 @@ import {
 import type { Response } from 'express';
 import * as Y from 'yjs';
 
+import { Metrics } from '../../metrics/metrics';
 import { StorageProvide } from '../../storage';
 import { PermissionService } from './permission';
 
@@ -17,7 +18,8 @@ import { PermissionService } from './permission';
 export class WorkspacesController {
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
-    private readonly permission: PermissionService
+    private readonly permission: PermissionService,
+    private readonly metric: Metrics
   ) {}
 
   // get workspace blob
@@ -29,6 +31,11 @@ export class WorkspacesController {
     @Param('name') name: string,
     @Res() res: Response
   ) {
+    this.metric.restRequest(1, {
+      method: 'GET',
+      path: '/api/workspace/:id/blobs/:name',
+      job: 'get workspace blob',
+    });
     const blob = await this.storage.getBlob(workspaceId, name);
 
     if (!blob) {
@@ -51,11 +58,18 @@ export class WorkspacesController {
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
+    const metricsLabel = {
+      method: 'GET',
+      path: '/api/workspace/:id/docs/:guid',
+      job: 'get doc binary',
+    };
+    this.metric.restRequest(1, metricsLabel);
     await this.permission.check(ws);
 
     const updates = await this.storage.loadBuffer(guid);
 
     if (!updates) {
+      this.metric.restError(1, metricsLabel);
       throw new NotFoundException('Doc not found');
     }
 
@@ -64,6 +78,7 @@ export class WorkspacesController {
       try {
         Y.applyUpdate(doc, update);
       } catch (e) {
+        this.metric.docApplyUpdateErr(1, {});
         console.error(e);
       }
     }
