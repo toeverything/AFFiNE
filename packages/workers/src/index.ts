@@ -39,7 +39,11 @@ async function proxyImage(request: Request): Promise<Response> {
 
   const response = await fetch(imageRequest);
   const modifiedResponse = new Response(response.body);
-  modifiedResponse.headers.set('Access-Control-Allow-Origin', '*');
+
+  modifiedResponse.headers.set(
+    'Access-Control-Allow-Origin',
+    request.headers.get('Origin') ?? 'false'
+  );
   modifiedResponse.headers.set('Access-Control-Allow-Methods', 'GET');
 
   return modifiedResponse;
@@ -47,7 +51,7 @@ async function proxyImage(request: Request): Promise<Response> {
 
 const handler = {
   async fetch(request: Request) {
-    if (!isOriginAllowed(request.headers.get('Origin') || '', ALLOW_ORIGIN)) {
+    if (!isOriginAllowed(request.headers.get('Origin') ?? '', ALLOW_ORIGIN)) {
       return new Response('unauthorized', { status: 401 });
     }
 
