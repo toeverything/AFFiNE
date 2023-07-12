@@ -93,6 +93,8 @@ export const publicRuntimeConfigSchema = buildFlagsSchema.extend({
   PROJECT_NAME: z.string(),
   BUILD_DATE: z.string(),
   gitVersion: z.string(),
+  appVersion: z.string(),
+  editorVersion: z.string(),
   hash: z.string(),
   serverAPI: z.string(),
   editorFlags: blockSuiteFeatureFlags,

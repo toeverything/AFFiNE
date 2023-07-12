@@ -26,45 +26,49 @@ export const AboutAffine = () => {
         subtitle={t['com.affine.settings.about.message']()}
         data-testid="about-title"
       />
-      {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
-        <SettingWrapper title={t['Version']()}>
-          <SettingRow
-            name={t['Check for updates']()}
-            desc={t['New version is ready']()}
-          ></SettingRow>
-          <SettingRow
-            name={t['Check for updates automatically']()}
-            desc={t['com.affine.settings.about.update.check.message']()}
-          >
-            <Switch
-              checked={appSettings.autoCheckUpdate}
-              onChange={checked => changeSwitch('autoCheckUpdate', checked)}
-            />
-          </SettingRow>
-          <SettingRow
-            name={t['Download updates automatically']()}
-            desc={t['com.affine.settings.about.update.download.message']()}
-          >
-            <Switch
-              checked={appSettings.autoCheckUpdate}
-              onChange={checked => changeSwitch('autoCheckUpdate', checked)}
-            />
-          </SettingRow>
-          <SettingRow
-            name={t[`Discover what's new`]()}
-            desc={t['View the AFFiNE Changelog.']()}
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              window.open(
-                'https://affine.pro/blog/whats-new-affine-0630',
-                '_blank'
-              );
-            }}
-          >
-            <ArrowRightSmallIcon />
-          </SettingRow>
-        </SettingWrapper>
-      ) : null}
+      <SettingWrapper title={t['Version']()}>
+        <SettingRow name="App Version" desc={runtimeConfig.appVersion} />
+        <SettingRow name="Editor Version" desc={runtimeConfig.editorVersion} />
+        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
+          <>
+            <SettingRow
+              name={t['Check for updates']()}
+              desc={t['New version is ready']()}
+            ></SettingRow>
+            <SettingRow
+              name={t['Check for updates automatically']()}
+              desc={t['com.affine.settings.about.update.check.message']()}
+            >
+              <Switch
+                checked={appSettings.autoCheckUpdate}
+                onChange={checked => changeSwitch('autoCheckUpdate', checked)}
+              />
+            </SettingRow>
+            <SettingRow
+              name={t['Download updates automatically']()}
+              desc={t['com.affine.settings.about.update.download.message']()}
+            >
+              <Switch
+                checked={appSettings.autoCheckUpdate}
+                onChange={checked => changeSwitch('autoCheckUpdate', checked)}
+              />
+            </SettingRow>
+            <SettingRow
+              name={t[`Discover what's new`]()}
+              desc={t['View the AFFiNE Changelog.']()}
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                window.open(
+                  'https://affine.pro/blog/whats-new-affine-0630',
+                  '_blank'
+                );
+              }}
+            >
+              <ArrowRightSmallIcon />
+            </SettingRow>
+          </>
+        ) : null}
+      </SettingWrapper>
       <SettingWrapper title={t['Contact with us']()}>
         <a className={link} href="https://affine.pro" target="_blank">
           {t['Official Website']()}
