@@ -1,10 +1,10 @@
-import type { BaseChatMessage } from 'langchain/schema';
+import type { BaseMessage } from 'langchain/schema';
 
 import { Conversation } from '../conversation';
 import { conversationListStyle } from './index.css';
 
 export type ConversationListProps = {
-  conversations: BaseChatMessage[];
+  conversations: BaseMessage[];
 };
 
 export const ConversationList = (props: ConversationListProps) => {
@@ -13,7 +13,7 @@ export const ConversationList = (props: ConversationListProps) => {
       {props.conversations.map((conversation, idx) => (
         <Conversation
           type={conversation._getType()}
-          text={conversation.text}
+          text={conversation.content}
           key={idx}
         />
       ))}

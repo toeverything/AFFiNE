@@ -9,7 +9,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
-    "langchain": "^0.0.102",
+    "langchain": "^0.0.107",
     "marked": "^5.1.0",
     "marked-gfm-heading-id": "^3.0.4",
     "marked-mangle": "^1.1.0"
