@@ -102,6 +102,7 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
   }, [
     currentPageId,
     currentWorkspace.blockSuiteWorkspace,
+    currentWorkspace.id,
     router,
     setCurrentPageId,
   ]);
