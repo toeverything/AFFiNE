@@ -157,7 +157,7 @@ __metadata:
     "@types/react-dom": ^18.2.6
     idb: ^7.1.1
     jotai: ^2.2.2
-    langchain: ^0.0.102
+    langchain: ^0.0.107
     marked: ^5.1.0
     marked-gfm-heading-id: ^3.0.4
     marked-mangle: ^1.1.0
@@ -631,13 +631,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@anthropic-ai/sdk@npm:^0.4.3":
-  version: 0.4.4
-  resolution: "@anthropic-ai/sdk@npm:0.4.4"
+"@anthropic-ai/sdk@npm:^0.5.3":
+  version: 0.5.4
+  resolution: "@anthropic-ai/sdk@npm:0.5.4"
   dependencies:
-    "@fortaine/fetch-event-source": ^3.0.6
-    cross-fetch: ^3.1.5
-  checksum: aaa375dbada0120f7d9b684575b263a5462e8beba82cf0c3b2f6de46e7b35ef6e7251c72aefd4a33b2a96ea21c21541fba4e94171807808993bc09beed496455
+    "@types/node": ^18.11.18
+    "@types/node-fetch": ^2.6.4
+    "@types/qs": ^6.9.7
+    abort-controller: ^3.0.0
+    agentkeepalive: ^4.2.1
+    digest-fetch: ^1.3.0
+    form-data-encoder: 1.7.2
+    formdata-node: ^4.3.2
+    node-fetch: ^2.6.7
+    qs: ^6.10.3
+  checksum: 2baee795eebd852d13368c67f857d039901f362ac740cd97dc748c8170e0aa19ccccefd57356c2c7b134ace2fb22ff7d95a2d43b6957524056f0803a6610fac8
   languageName: node
   linkType: hard
 
@@ -5033,13 +5041,6 @@ __metadata:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
   checksum: 00fd827c2dcf879fec221d89ef5b90836bbecacc236ce2acc787db32ae7311d490cd136b13a8d0b6ab12842554a2ee1110605aa832af71a45c0a7297e342072c
-  languageName: node
-  linkType: hard
-
-"@fortaine/fetch-event-source@npm:^3.0.6":
-  version: 3.0.6
-  resolution: "@fortaine/fetch-event-source@npm:3.0.6"
-  checksum: 6366ad31762170896417684c48536fcf0c27c5f64e090a2de932df55d67c86bdc3c9744e460b19ef1741eab4e4c69797cad1b72f7cf7a981cd17a66c7b0c4418
   languageName: node
   linkType: hard
 
@@ -11922,7 +11923,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/qs@npm:*, @types/qs@npm:^6.9.5":
+"@types/qs@npm:*, @types/qs@npm:^6.9.5, @types/qs@npm:^6.9.7":
   version: 6.9.7
   resolution: "@types/qs@npm:6.9.7"
   checksum: 7fd6f9c25053e9b5bb6bc9f9f76c1d89e6c04f7707a7ba0e44cc01f17ef5284adb82f230f542c2d5557d69407c9a40f0f3515e8319afd14e1e16b5543ac6cdba
@@ -14028,6 +14029,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"base-64@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "base-64@npm:0.1.0"
+  checksum: 5a42938f82372ab5392cbacc85a5a78115cbbd9dbef9f7540fa47d78763a3a8bd7d598475f0d92341f66285afd377509851a9bb5c67bbecb89686e9255d5b3eb
+  languageName: node
+  linkType: hard
+
 "base16@npm:^1.0.0":
   version: 1.0.0
   resolution: "base16@npm:1.0.0"
@@ -14772,6 +14780,13 @@ __metadata:
   version: 0.7.0
   resolution: "chardet@npm:0.7.0"
   checksum: 6fd5da1f5d18ff5712c1e0aed41da200d7c51c28f11b36ee3c7b483f3696dabc08927fc6b227735eb8f0e1215c9a8abd8154637f3eff8cada5959df7f58b024d
+  languageName: node
+  linkType: hard
+
+"charenc@npm:0.0.2":
+  version: 0.0.2
+  resolution: "charenc@npm:0.0.2"
+  checksum: 81dcadbe57e861d527faf6dd3855dc857395a1c4d6781f4847288ab23cffb7b3ee80d57c15bba7252ffe3e5e8019db767757ee7975663ad2ca0939bb8fcaf2e5
   languageName: node
   linkType: hard
 
@@ -15696,6 +15711,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"crypt@npm:0.0.2":
+  version: 0.0.2
+  resolution: "crypt@npm:0.0.2"
+  checksum: baf4c7bbe05df656ec230018af8cf7dbe8c14b36b98726939cef008d473f6fe7a4fad906cfea4062c93af516f1550a3f43ceb4d6615329612c6511378ed9fe34
+  languageName: node
+  linkType: hard
+
 "crypto-random-string@npm:^2.0.0":
   version: 2.0.0
   resolution: "crypto-random-string@npm:2.0.0"
@@ -16439,6 +16461,16 @@ __metadata:
   dependencies:
     htmlparser2: ^3.9.2
   checksum: f7d76bbe2cdbeebb928d3d625ffd84e2cfcda8ecb7adc5c513faabbc7fa5b69044bdb3ddbc0bded0685e8e52a00272cb0a378f9bb20f36fc85b437ce810f25a8
+  languageName: node
+  linkType: hard
+
+"digest-fetch@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "digest-fetch@npm:1.3.0"
+  dependencies:
+    base-64: ^0.1.0
+    md5: ^2.3.0
+  checksum: 8ebdb4b9ef02b1ac0da532d25c7d08388f2552813dfadabfe7c4630e944bb4a48093b997fc926440a10e1ccf4912f2ce9adcf2d6687b0518dab8480e08f22f9d
   languageName: node
   linkType: hard
 
@@ -18686,6 +18718,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"form-data-encoder@npm:1.7.2":
+  version: 1.7.2
+  resolution: "form-data-encoder@npm:1.7.2"
+  checksum: aeebd87a1cb009e13cbb5e4e4008e6202ed5f6551eb6d9582ba8a062005178907b90f4887899d3c993de879159b6c0c940af8196725b428b4248cec5af3acf5f
+  languageName: node
+  linkType: hard
+
 "form-data@npm:^3.0.0":
   version: 3.0.1
   resolution: "form-data@npm:3.0.1"
@@ -18712,6 +18751,16 @@ __metadata:
   version: 0.2.2
   resolution: "format@npm:0.2.2"
   checksum: 646a60e1336250d802509cf24fb801e43bd4a70a07510c816fa133aa42cdbc9c21e66e9cc0801bb183c5b031c9d68be62e7fbb6877756e52357850f92aa28799
+  languageName: node
+  linkType: hard
+
+"formdata-node@npm:^4.3.2":
+  version: 4.4.1
+  resolution: "formdata-node@npm:4.4.1"
+  dependencies:
+    node-domexception: 1.0.0
+    web-streams-polyfill: 4.0.0-beta.3
+  checksum: d91d4f667cfed74827fc281594102c0dabddd03c9f8b426fc97123eedbf73f5060ee43205d89284d6854e2fc5827e030cd352ef68b93beda8decc2d72128c576
   languageName: node
   linkType: hard
 
@@ -20523,6 +20572,13 @@ __metadata:
     call-bind: ^1.0.2
     has-tostringtag: ^1.0.0
   checksum: c03b23dbaacadc18940defb12c1c0e3aaece7553ef58b162a0f6bba0c2a7e1551b59f365b91e00d2dbac0522392d576ef322628cb1d036a0fe51eb466db67222
+  languageName: node
+  linkType: hard
+
+"is-buffer@npm:~1.1.6":
+  version: 1.1.6
+  resolution: "is-buffer@npm:1.1.6"
+  checksum: 4a186d995d8bbf9153b4bd9ff9fd04ae75068fe695d29025d25e592d9488911eeece84eefbd8fa41b8ddcc0711058a71d4c466dcf6f1f6e1d83830052d8ca707
   languageName: node
   linkType: hard
 
@@ -22346,11 +22402,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"langchain@npm:^0.0.102":
-  version: 0.0.102
-  resolution: "langchain@npm:0.0.102"
+"langchain@npm:^0.0.107":
+  version: 0.0.107
+  resolution: "langchain@npm:0.0.107"
   dependencies:
-    "@anthropic-ai/sdk": ^0.4.3
+    "@anthropic-ai/sdk": ^0.5.3
     ansi-styles: ^5.0.0
     binary-extensions: ^2.2.0
     camelcase: 6
@@ -22360,7 +22416,7 @@ __metadata:
     js-tiktoken: ^1.0.7
     js-yaml: ^4.1.0
     jsonpointer: ^5.0.1
-    langchainplus-sdk: ^0.0.15
+    langchainplus-sdk: ^0.0.19
     ml-distance: ^4.0.0
     object-hash: ^3.0.0
     openai: ^3.3.0
@@ -22399,7 +22455,7 @@ __metadata:
     apify-client: ^2.7.1
     axios: "*"
     cheerio: ^1.0.0-rc.12
-    chromadb: ^1.5.2
+    chromadb: ^1.5.3
     cohere-ai: ^5.0.2
     d3-dsv: ^2.0.0
     epub2: ^3.0.1
@@ -22420,6 +22476,7 @@ __metadata:
     puppeteer: ^19.7.2
     redis: ^4.6.4
     replicate: ^0.9.0
+    sonix-speech-recognition: ^2.1.1
     srt-parser-2: ^1.2.2
     typeorm: ^0.3.12
     typesense: ^1.5.3
@@ -22522,6 +22579,8 @@ __metadata:
       optional: true
     replicate:
       optional: true
+    sonix-speech-recognition:
+      optional: true
     srt-parser-2:
       optional: true
     typeorm:
@@ -22532,13 +22591,13 @@ __metadata:
       optional: true
     weaviate-ts-client:
       optional: true
-  checksum: f863ff4e8e1e5e0b7fb46772b1a093b96f40b749a4c20382cb5993e240ce376850c04e7d0ef495a17a8e06de7d0bcac8a76bb93546505dbb20902f3da3c95093
+  checksum: d1f01321db83aebae5b619ade2060b2416459e1b55723793c0e3244a9ec8fe57775f8c159f406b85eb58b66761a59705e17e9a2efb522876e81e881056711227
   languageName: node
   linkType: hard
 
-"langchainplus-sdk@npm:^0.0.15":
-  version: 0.0.15
-  resolution: "langchainplus-sdk@npm:0.0.15"
+"langchainplus-sdk@npm:^0.0.19":
+  version: 0.0.19
+  resolution: "langchainplus-sdk@npm:0.0.19"
   dependencies:
     "@types/uuid": ^9.0.1
     commander: ^10.0.1
@@ -22547,7 +22606,7 @@ __metadata:
     uuid: ^9.0.0
   bin:
     langchain: dist/cli/main.cjs
-  checksum: 7467364922753a44e2e15f6c54fe20c191105e10b42774cb7ebc4bfbeb2c2fa4ee159eaea52637083673f821beb0bfd155918abf8c2f14cf8151dd74b4bac32f
+  checksum: f0174c1e248e4bc5034a7dd182f703b895a485b6408aa518c91ff12b3f015febd5546eeb7f821c82b63a9d2b67a7ea903a1a57ad196049743f0934ff1c524ae8
   languageName: node
   linkType: hard
 
@@ -23403,6 +23462,17 @@ __metadata:
   dependencies:
     blueimp-md5: ^2.10.0
   checksum: 6799a19e8bdd3e0c2861b94c1d4d858a89220488d7885c1fa236797e367d0c2e5f2b789e05309307083503f85be3603a9686a5915568a473137d6b4117419cc2
+  languageName: node
+  linkType: hard
+
+"md5@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "md5@npm:2.3.0"
+  dependencies:
+    charenc: 0.0.2
+    crypt: 0.0.2
+    is-buffer: ~1.1.6
+  checksum: a63cacf4018dc9dee08c36e6f924a64ced735b37826116c905717c41cebeb41a522f7a526ba6ad578f9c80f02cb365033ccd67fe186ffbcc1a1faeb75daa9b6e
   languageName: node
   linkType: hard
 
@@ -24263,7 +24333,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-domexception@npm:^1.0.0":
+"node-domexception@npm:1.0.0, node-domexception@npm:^1.0.0":
   version: 1.0.0
   resolution: "node-domexception@npm:1.0.0"
   checksum: ee1d37dd2a4eb26a8a92cd6b64dfc29caec72bff5e1ed9aba80c294f57a31ba4895a60fd48347cf17dd6e766da0ae87d75657dfd1f384ebfa60462c2283f5c7f
@@ -26229,7 +26299,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:^6.10.0, qs@npm:^6.11.0":
+"qs@npm:^6.10.0, qs@npm:^6.10.3, qs@npm:^6.11.0":
   version: 6.11.2
   resolution: "qs@npm:6.11.2"
   dependencies:
@@ -30733,6 +30803,13 @@ __metadata:
     "@zxing/text-encoding":
       optional: true
   checksum: 2234a2b122f41006ce07859b3c0bf2e18f46144fda2907d5db0b571b76aa5c26977c646100ad9c00d2f8a4f6f2b848bc02147845d8c447ab365ec4eff376338d
+  languageName: node
+  linkType: hard
+
+"web-streams-polyfill@npm:4.0.0-beta.3":
+  version: 4.0.0-beta.3
+  resolution: "web-streams-polyfill@npm:4.0.0-beta.3"
+  checksum: dfec1fbf52b9140e4183a941e380487b6c3d5d3838dd1259be81506c1c9f2abfcf5aeb670aeeecfd9dff4271a6d8fef931b193c7bedfb42542a3b05ff36c0d16
   languageName: node
   linkType: hard
 
