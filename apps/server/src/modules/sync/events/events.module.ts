@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 
-import { UpdateManagerModule } from '../../update-manager';
+import { DocModule } from '../../doc';
 import { EventsGateway } from './events.gateway';
 import { WorkspaceService } from './workspace';
 
 @Module({
-  imports: [UpdateManagerModule.forFeature()],
+  imports: [DocModule.forFeature()],
   providers: [EventsGateway, WorkspaceService],
 })
 export class EventsModule {}

@@ -12,7 +12,7 @@ import format from 'pretty-time';
 
 import { StorageProvide } from '../../storage';
 import { Auth, CurrentUser, Publicable } from '../auth';
-import { UpdateManager } from '../update-manager';
+import { DocManager } from '../doc';
 import { UserType } from '../users';
 import { PermissionService } from './permission';
 
@@ -21,7 +21,7 @@ export class WorkspacesController {
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
     private readonly permission: PermissionService,
-    private readonly updateManager: UpdateManager
+    private readonly docManager: DocManager
   ) {}
 
   // get workspace blob
@@ -59,7 +59,7 @@ export class WorkspacesController {
     const start = process.hrtime();
     await this.permission.check(ws, user?.id);
 
-    const update = await this.updateManager.getLatest(ws, guid);
+    const update = await this.docManager.getLatest(ws, guid);
 
     if (!update) {
       throw new NotFoundException('Doc not found');

@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { Doc } from 'yjs';
 import * as Y from 'yjs';
 
-import { UpdateManager } from '../../update-manager';
+import { DocManager } from '../../doc';
 import { assertExists } from '../utils';
 
 @Injectable()
 export class WorkspaceService {
-  constructor(private readonly updateManager: UpdateManager) {}
+  constructor(private readonly docManager: DocManager) {}
 
   async getDocsFromWorkspaceId(workspaceId: string): Promise<
     Array<{
@@ -22,7 +22,7 @@ export class WorkspaceService {
     const queue: Array<[string, Buffer]> = [];
     // Workspace Doc's guid is the same as workspaceId. This is achieved by when creating a new workspace, the doc guid
     // is manually set to workspaceId.
-    const update = await this.updateManager.getLatest(workspaceId, workspaceId);
+    const update = await this.docManager.getLatest(workspaceId, workspaceId);
     if (update) {
       queue.push([workspaceId, update]);
     }
@@ -40,7 +40,7 @@ export class WorkspaceService {
       Y.applyUpdate(doc, buf);
 
       for (const { guid } of doc.subdocs) {
-        const subDoc = await this.updateManager.getLatest(workspaceId, guid);
+        const subDoc = await this.docManager.getLatest(workspaceId, guid);
         if (subDoc) {
           queue.push([guid, subDoc]);
         }

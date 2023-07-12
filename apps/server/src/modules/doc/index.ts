@@ -1,28 +1,28 @@
 import { DynamicModule } from '@nestjs/common';
 
-import { UpdateManager } from './manager';
-import { RedisUpdateManager } from './redis-manager';
+import { DocManager } from './manager';
+import { RedisDocManager } from './redis-manager';
 
-export class UpdateManagerModule {
+export class DocModule {
   /**
    * @param automation whether enable update merging automation logic
    */
   private static defModule(automation = true): DynamicModule {
     return {
-      module: UpdateManagerModule,
+      module: DocModule,
       providers: [
         {
-          provide: 'UPDATE_MANAGER_AUTOMATION',
+          provide: 'DOC_MANAGER_AUTOMATION',
           useValue: automation,
         },
         {
-          provide: UpdateManager,
+          provide: DocManager,
           useClass: globalThis.AFFiNE.redis.enabled
-            ? RedisUpdateManager
-            : UpdateManager,
+            ? RedisDocManager
+            : DocManager,
         },
       ],
-      exports: [UpdateManager],
+      exports: [DocManager],
     };
   }
 
@@ -39,4 +39,4 @@ export class UpdateManagerModule {
   }
 }
 
-export { UpdateManager };
+export { DocManager };

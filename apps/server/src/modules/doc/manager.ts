@@ -20,18 +20,19 @@ import { PrismaService } from '../../prisma';
  * @see [RedisUpdateManager](./redis-manager.ts) - redis backed manager
  */
 @Injectable()
-export class UpdateManager implements OnModuleInit, OnModuleDestroy {
-  protected logger = new Logger(UpdateManager.name);
+export class DocManager implements OnModuleInit, OnModuleDestroy {
+  protected logger = new Logger(DocManager.name);
   private job: NodeJS.Timeout | null = null;
 
   constructor(
     protected readonly db: PrismaService,
-    @Inject('UPDATE_MANAGER_AUTOMATION')
+    @Inject('DOC_MANAGER_AUTOMATION')
     protected readonly automation: boolean
   ) {}
 
   onModuleInit() {
     if (this.automation) {
+      this.logger.log('Use Database');
       this.setup();
     }
   }
@@ -55,7 +56,7 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
         /* we handle all errors in work itself */
       });
     }, 1000 /* make it configurable */);
-    this.logger.log('update manager automation started');
+    this.logger.log('Automation started');
   }
 
   /**
@@ -65,19 +66,15 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
     if (this.job) {
       clearInterval(this.job);
       this.job = null;
-      this.logger.log('update manager automation stopped');
+      this.logger.log('Automation stopped');
     }
   }
 
   /**
    * add update to manager for later processing like fast merging.
    */
-  async push(
-    workspaceId: string,
-    guid: string,
-    update: Buffer
-  ): Promise<boolean> {
-    const row = await this.db.update.create({
+  async push(workspaceId: string, guid: string, update: Buffer) {
+    await this.db.update.create({
       data: {
         workspaceId,
         id: guid,
@@ -85,7 +82,9 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    return !!row;
+    this.logger.verbose(
+      `pushed update for workspace: ${workspaceId}, guid: ${guid}`
+    );
   }
 
   /**
@@ -136,8 +135,8 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
     }
 
     return snapshot
-      ? UpdateManager.mergeUpdates([snapshot, ...updates])
-      : UpdateManager.mergeUpdates(updates);
+      ? DocManager.mergeUpdates([snapshot, ...updates])
+      : DocManager.mergeUpdates(updates);
   }
 
   /**
@@ -183,7 +182,9 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
       })
       .catch(
         // transaction failed, it's safe to ignore
-        () => undefined
+        e => {
+          this.logger.error('Failed to fetch updates', e);
+        }
       );
 
     // we put update merging logic outside transaction will make the processing more complex,
@@ -193,9 +194,11 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.logger.log(`applying ${updates.length} updates`);
-
     const { id, workspaceId } = updates[0];
+
+    this.logger.verbose(
+      `applying ${updates.length} updates for workspace: ${workspaceId}, guid: ${id}`
+    );
 
     try {
       const snapshot = await this.db.snapshot.findFirst({
@@ -207,11 +210,8 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
 
       // merge updates
       const merged = snapshot
-        ? UpdateManager.mergeUpdates([
-            snapshot.blob,
-            ...updates.map(u => u.blob),
-          ])
-        : UpdateManager.mergeUpdates(updates.map(u => u.blob));
+        ? DocManager.mergeUpdates([snapshot.blob, ...updates.map(u => u.blob)])
+        : DocManager.mergeUpdates(updates.map(u => u.blob));
 
       // save snapshot
       await this.db.snapshot.upsert({
@@ -229,6 +229,7 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
       });
     } catch (e) {
       // failed to merge updates, put them back
+      this.logger.error('Failed to merge updates', e);
       await this.db.update
         .createMany({
           data: updates.map(u => ({
@@ -237,8 +238,9 @@ export class UpdateManager implements OnModuleInit, OnModuleDestroy {
             blob: u.blob,
           })),
         })
-        .catch(() => {
+        .catch(e => {
           // failed to recover, fallback TBD
+          this.logger.error('Fetal: failed to put updates back to db', e);
         });
     }
   }

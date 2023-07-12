@@ -7,10 +7,10 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 import { StorageProvide } from '../../../storage';
-import { UpdateManager } from '../../update-manager';
+import { DocManager } from '../../doc';
 import { WorkspaceService } from './workspace';
 
 @WebSocketGateway({
@@ -19,12 +19,12 @@ import { WorkspaceService } from './workspace';
 export class EventsGateway {
   constructor(
     private readonly storageService: WorkspaceService,
-    private readonly updateManager: UpdateManager,
+    private readonly docManager: DocManager,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
   @WebSocketServer()
-  server: any;
+  server!: Server;
 
   @SubscribeMessage('client-handshake')
   async handleClientHandShake(
@@ -55,7 +55,7 @@ export class EventsGateway {
     const update = Buffer.from(message.update, 'base64');
     client.to(message.workspaceId).emit('server-update', message);
 
-    await this.updateManager.push(message.workspaceId, message.guid, update);
+    await this.docManager.push(message.workspaceId, message.guid, update);
   }
 
   @SubscribeMessage('init-awareness')
