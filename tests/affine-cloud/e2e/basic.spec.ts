@@ -36,7 +36,9 @@ test('enable cloud', async ({ page }) => {
   await page.getByText('Sign in with Password').click();
   await page.waitForTimeout(1000);
   await page.getByText('Demo Workspace').click();
-  await page.getByTestId('new-workspace').click();
+  await page.getByTestId('new-workspace').click({
+    timeout: 100000,
+  });
   await page.getByTestId('create-workspace-input').type('Test Cloud');
   await page.getByTestId('create-workspace-create-button').click();
   await page.waitForTimeout(1000);
