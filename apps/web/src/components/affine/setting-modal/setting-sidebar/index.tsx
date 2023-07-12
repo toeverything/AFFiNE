@@ -12,6 +12,7 @@ import { useStaticBlockSuiteWorkspace } from '@toeverything/hooks/use-block-suit
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
+import Image from 'next/legacy/image';
 import { signIn } from 'next-auth/react';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
@@ -25,6 +26,7 @@ import type {
   GeneralSettingKeys,
   GeneralSettingList,
 } from '../general-setting';
+import avatar from './default-avatar.png';
 import {
   accountButton,
   settingSlideBar,
@@ -72,7 +74,13 @@ export const SignInButton = () => {
         signIn().catch(console.error);
       }, [])}
     >
-      <UserAvatar size={28} name="AFFiNE" className="avatar" />
+      <Image
+        src={avatar}
+        height={28}
+        width={28}
+        alt="AFFiNE"
+        className="avatar"
+      />
 
       <div className="content">
         <div className="name" title={t['com.affine.settings.sign']()}>

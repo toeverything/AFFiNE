@@ -32,9 +32,7 @@ export function useCurrentUser(): CheckedUser {
   }
 
   const user = session?.user;
-  assertExists(session, 'user should exist');
   assertExists(user, 'user should exist');
-  assertExists(user.id, 'user id should exist');
 
   return {
     id: user.id,
