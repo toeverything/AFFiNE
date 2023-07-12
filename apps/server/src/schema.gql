@@ -79,6 +79,11 @@ type InviteUserType {
   permission: Permission!
 
   """
+  Invite id
+  """
+  inviteId: String!
+
+  """
   User accepted
   """
   accepted: Boolean!

@@ -47,6 +47,9 @@ export class InviteUserType extends OmitType(
   @Field(() => Permission, { description: 'User permission in workspace' })
   permission!: Permission;
 
+  @Field({ description: 'Invite id' })
+  inviteId!: string;
+
   @Field({ description: 'User accepted' })
   accepted!: boolean;
 }
@@ -162,9 +165,10 @@ export class WorkspaceResolver {
         user: true,
       },
     });
-    return data.map(({ accepted, type, user }) => ({
+    return data.map(({ id, accepted, type, user }) => ({
       ...user,
       permission: type,
+      inviteId: id,
       accepted,
     }));
   }
@@ -327,6 +331,17 @@ export class WorkspaceResolver {
     });
 
     if (target) {
+      const originRecord = await this.prisma.userWorkspacePermission.findFirst({
+        where: {
+          workspaceId,
+          userId: target.id,
+        },
+      });
+
+      if (originRecord) {
+        return originRecord.id;
+      }
+
       return await this.permissionProvider.grant(
         workspaceId,
         target.id,

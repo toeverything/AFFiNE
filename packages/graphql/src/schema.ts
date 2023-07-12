@@ -129,6 +129,7 @@ export type GetMembersByWorkspaceIdQuery = {
       email: string | null;
       avatarUrl: string | null;
       permission: Permission;
+      inviteId: string;
     }>;
   };
 };
