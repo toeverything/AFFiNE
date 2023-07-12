@@ -54,6 +54,7 @@ export class WorkspacesController {
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
+    console.time('workspaces doc api');
     await this.permission.check(ws, user?.id);
 
     const updates = await this.storage.loadBuffer(guid);
@@ -70,8 +71,9 @@ export class WorkspacesController {
         console.error(e);
       }
     }
-
+    const content = Buffer.from(Y.encodeStateAsUpdate(doc));
     res.setHeader('content-type', 'application/octet-stream');
-    res.send(Buffer.from(Y.encodeStateAsUpdate(doc)));
+    res.send(content);
+    console.timeEnd('workspaces doc api');
   }
 }
