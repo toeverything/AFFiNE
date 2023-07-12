@@ -83,6 +83,13 @@ export type CreateWorkspaceMutation = {
   };
 };
 
+export type DeleteAccountMutationVariables = Exact<{ [key: string]: never }>;
+
+export type DeleteAccountMutation = {
+  __typename?: 'Mutation';
+  deleteAccount: { __typename?: 'DeleteAccount'; success: boolean };
+};
+
 export type DeleteWorkspaceMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -322,6 +329,11 @@ export type Mutations =
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;
       response: CreateWorkspaceMutation;
+    }
+  | {
+      name: 'deleteAccountMutation';
+      variables: DeleteAccountMutationVariables;
+      response: DeleteAccountMutation;
     }
   | {
       name: 'deleteWorkspaceMutation';

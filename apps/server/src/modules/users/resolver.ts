@@ -38,6 +38,12 @@ export class UserType implements Partial<User> {
   createdAt!: Date;
 }
 
+@ObjectType()
+export class DeleteAccount {
+  @Field()
+  success!: boolean;
+}
+
 @Auth()
 @Resolver(() => UserType)
 export class UserResolver {
@@ -48,7 +54,7 @@ export class UserResolver {
 
   @Query(() => UserType, {
     name: 'currentUser',
-    description: 'Get all users',
+    description: 'Get current user',
   })
   async currentUser(@CurrentUser() user: UserType) {
     return {
@@ -90,5 +96,22 @@ export class UserResolver {
       where: { id },
       data: { avatarUrl: url },
     });
+  }
+
+  @Mutation(() => DeleteAccount)
+  async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
+    await this.prisma.user.delete({
+      where: {
+        id: user.id,
+      },
+    });
+    await this.prisma.session.deleteMany({
+      where: {
+        userId: user.id,
+      },
+    });
+    return {
+      success: true,
+    };
   }
 }
