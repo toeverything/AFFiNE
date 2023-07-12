@@ -1,3 +1,4 @@
+import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
@@ -29,7 +30,7 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   const onTransformWorkspace = useOnTransformWorkspace();
 
   return (
-    <Suspense fallback={<div>loading</div>}>
+    <Suspense fallback={<WorkspaceDetailSkeleton />}>
       <NewSettingsDetail
         onTransformWorkspace={onTransformWorkspace}
         onDeleteWorkspace={onDeleteWorkspace}

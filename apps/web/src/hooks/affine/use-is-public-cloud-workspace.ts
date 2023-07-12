@@ -1,6 +1,5 @@
 import { getWorkspacePublicByIdQuery } from '@affine/graphql';
-
-import { useQuery } from '../../shared/gql';
+import { useQuery } from '@affine/workspace/affine/gql';
 
 export function useIsPublicCloudWorkspace(workspaceId: string) {
   const { data } = useQuery({

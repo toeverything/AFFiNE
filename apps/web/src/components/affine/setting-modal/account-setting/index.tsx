@@ -6,12 +6,12 @@ import {
 import { UserAvatar } from '@affine/component/user-avatar';
 import { uploadAvatarMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { signOut } from 'next-auth/react';
 import { useCallback, useState } from 'react';
 
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { useMutation } from '../../../../shared/gql';
 import { toast } from '../../../../utils';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';

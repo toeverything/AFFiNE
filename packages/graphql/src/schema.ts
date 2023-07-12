@@ -126,6 +126,15 @@ export type GetMembersByWorkspaceIdQuery = {
   };
 };
 
+export type GetPublicWorkspaceQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type GetPublicWorkspaceQuery = {
+  __typename?: 'Query';
+  publicWorkspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
 export type GetWorkspacePublicByIdQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -280,6 +289,11 @@ export type Queries =
       name: 'getMembersByWorkspaceIdQuery';
       variables: GetMembersByWorkspaceIdQueryVariables;
       response: GetMembersByWorkspaceIdQuery;
+    }
+  | {
+      name: 'getPublicWorkspaceQuery';
+      variables: GetPublicWorkspaceQueryVariables;
+      response: GetPublicWorkspaceQuery;
     }
   | {
       name: 'getWorkspacePublicByIdQuery';

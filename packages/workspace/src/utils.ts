@@ -15,6 +15,7 @@ import {
 } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/hooks/use-block-suite-workspace';
 
+import { createCloudBlobStorage } from './blob/cloud-blob-storage';
 import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
 
@@ -53,6 +54,7 @@ export function createEmptyBlockSuiteWorkspace(
   if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
+      blobStorages.push(createCloudBlobStorage);
       if (isDesktop && runtimeConfig.enableSQLiteProvider) {
         blobStorages.push(createSQLiteStorage);
       }
@@ -75,6 +77,7 @@ export function createEmptyBlockSuiteWorkspace(
         blobStorages.push(createSQLiteStorage);
       }
     }
+    blobStorages.push(createCloudBlobStorage);
     providerCreators.push(...createAffinePublicProviders());
   } else {
     throw new Error('unsupported flavour');
