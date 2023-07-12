@@ -8,6 +8,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import format from 'pretty-time';
 import * as Y from 'yjs';
 
 import { StorageProvide } from '../../storage';
@@ -54,6 +55,7 @@ export class WorkspacesController {
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
+    const start = process.hrtime();
     await this.permission.check(ws, user?.id);
 
     const updates = await this.storage.loadBuffer(guid);
@@ -70,8 +72,9 @@ export class WorkspacesController {
         console.error(e);
       }
     }
-
+    const content = Buffer.from(Y.encodeStateAsUpdate(doc));
     res.setHeader('content-type', 'application/octet-stream');
-    res.send(Buffer.from(Y.encodeStateAsUpdate(doc)));
+    res.send(content);
+    console.info('workspaces doc api: ', format(process.hrtime(start)));
   }
 }

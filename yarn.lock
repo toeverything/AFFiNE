@@ -437,6 +437,7 @@ __metadata:
     "@types/lodash-es": ^4.17.7
     "@types/node": ^18.16.19
     "@types/nodemailer": ^6.4.8
+    "@types/pretty-time": ^1.1.2
     "@types/supertest": ^2.0.12
     "@types/ws": ^8.5.5
     c8: ^8.0.0
@@ -452,6 +453,7 @@ __metadata:
     nodemailer: ^6.9.3
     nodemon: ^3.0.1
     parse-duration: ^1.1.0
+    pretty-time: ^1.1.0
     prisma: ^5.0.0
     reflect-metadata: ^0.1.13
     rxjs: ^7.8.1
@@ -12327,6 +12329,13 @@ __metadata:
   version: 1.0.1
   resolution: "@types/pretty-hrtime@npm:1.0.1"
   checksum: a6cdee417eea6f7af914e4fcd13e05822864ce10b5d7646525632e86d69b79123eec55a5d3fff0155ba46b61902775e1644bcb80e1e4dffdac28e7febb089083
+  languageName: node
+  linkType: hard
+
+"@types/pretty-time@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@types/pretty-time@npm:1.1.2"
+  checksum: e161c981f88f831b0966c7709f722a20d606d34c4f0ce566efa8b5b780a2738af41a03fcc1e78e6f1665edf7ebf261bb9b5ca11088c2c91fa1235429d73305ab
   languageName: node
   linkType: hard
 
@@ -26505,6 +26514,13 @@ __metadata:
   dependencies:
     parse-ms: ^2.1.0
   checksum: d76c4920283b48be91f1d3797a2ce4bd51187d58d2a609ae993c028f73c92d16439449d857af57ccad91ae3a38b30c87307f5589749a056102ebb494c686957e
+  languageName: node
+  linkType: hard
+
+"pretty-time@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "pretty-time@npm:1.1.0"
+  checksum: a319e7009aadbc6cfedbd8b66861327d3a0c68bd3e8794bf5b86f62b40b01b9479c5a70c76bb368ad454acce52a1216daee460cc825766e2442c04f3a84a02c9
   languageName: node
   linkType: hard
 
