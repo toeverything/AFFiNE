@@ -42,6 +42,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Echo env
+        run: |
+          echo "github.event.pull_request.base.ref: ${{ github.event.pull_request.base.ref }}"
+          echo "github.base_ref: ${{ github.base_ref }}"
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -536,7 +540,7 @@ jobs:
           fail_ci_if_error: false
 
   build-docker:
-    # if: github.ref == 'refs/heads/master'
+    # if: github.base_ref == 'refs/heads/master'
     name: Build Docker
     needs:
       - lint
