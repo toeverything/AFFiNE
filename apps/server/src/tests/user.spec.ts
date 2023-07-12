@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import request from 'supertest';
 
 import { AppModule } from '../app';
 import { currentUser, signUp } from './utils';
@@ -52,5 +53,24 @@ describe('User Module', () => {
     ok(currUser.id === user.id, 'user.id is not valid');
     ok(currUser.name === user.name, 'user.name is not valid');
     ok(currUser.email === user.email, 'user.email is not valid');
+  });
+
+  it('should be able to delete user', async () => {
+    const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
+    await request(app.getHttpServer())
+      .post('/graphql')
+      .auth(user.token.token, { type: 'bearer' })
+      .send({
+        query: `
+          mutation {
+            deleteAccount {
+              success
+            }
+          }
+        `,
+      })
+      .expect(200);
+    const current = await currentUser(app, user.token.token);
+    ok(current == null);
   });
 });

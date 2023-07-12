@@ -60,7 +60,7 @@ async function currentUser(app: INestApplication, token: string) {
         `,
     })
     .expect(200);
-  return res.body.data.currentUser;
+  return res.body?.data?.currentUser;
 }
 
 async function createWorkspace(
@@ -156,7 +156,7 @@ async function inviteUser(
   workspaceId: string,
   email: string,
   permission: string
-): Promise<boolean> {
+): Promise<string> {
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
@@ -169,6 +169,24 @@ async function inviteUser(
     })
     .expect(200);
   return res.body.data.invite;
+}
+
+async function acceptInviteById(
+  app: INestApplication,
+  workspaceId: string,
+  inviteId: string
+): Promise<boolean> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .send({
+      query: `
+          mutation {
+            acceptInviteById(workspaceId: "${workspaceId}", inviteId: "${inviteId}")
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.acceptInviteById;
 }
 
 async function acceptInvite(
@@ -315,6 +333,7 @@ async function setBlob(
 
 export {
   acceptInvite,
+  acceptInviteById,
   createWorkspace,
   currentUser,
   getPublicWorkspace,
