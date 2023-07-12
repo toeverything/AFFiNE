@@ -15,9 +15,6 @@ declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
-      // name: string;
-      // avatarUrl: string;
-      // email: string;
     } & DefaultSession['user'];
   }
 }
@@ -35,7 +32,7 @@ export function useCurrentUser(): CheckedUser {
   }
 
   const user = session?.user;
-
+  assertExists(session, 'user should exist');
   assertExists(user, 'user should exist');
 
   return {
