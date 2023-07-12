@@ -7,6 +7,12 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
-    "@playwright/test": "^1.35.1"
+    "@node-rs/argon2": "^1.5.0",
+    "@playwright/test": "^1.35.1",
+    "@prisma/client": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@node-rs/argon2": "*",
+    "@prisma/client": "*"
   }
 }
