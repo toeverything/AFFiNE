@@ -42,6 +42,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Echo env
+        run: |
+          echo "github.base_ref: ${{ github.base_ref }}"
+          echo "github.event.base_ref: ${{ github.event.base_ref }}"
+          echo "github.event.pull_request.base.ref: ${{ github.event.pull_request.base.ref }}"
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
