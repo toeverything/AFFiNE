@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
 import type { DefaultSession } from 'next-auth';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
@@ -32,13 +31,12 @@ export function useCurrentUser(): CheckedUser {
   }
 
   const user = session?.user;
-  assertExists(user, 'user should exist');
 
   return {
-    id: user.id,
-    name: user.name ?? 'REPLACE_ME_DEFAULT_NAME',
-    email: user.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
-    image: user.image ?? 'REPLACE_ME_DEFAULT_URL',
+    id: user?.id ?? 'REPLACE_ME_DEFAULT_ID',
+    name: user?.name ?? 'REPLACE_ME_DEFAULT_NAME',
+    email: user?.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
+    image: user?.image ?? 'REPLACE_ME_DEFAULT_URL',
     update,
   };
 }
