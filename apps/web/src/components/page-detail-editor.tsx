@@ -53,6 +53,7 @@ const EditorWrapper = memo(function EditorWrapper({
   if (!page) {
     throw new PageNotFoundError(workspace, pageId);
   }
+
   const meta = useBlockSuitePageMeta(workspace).find(
     meta => meta.id === pageId
   );
@@ -64,6 +65,7 @@ const EditorWrapper = memo(function EditorWrapper({
   const [appSettings] = useAppSetting();
 
   assertExists(meta);
+
   const value = useMemo(() => {
     const fontStyle = fontStyleOptions.find(
       option => option.key === appSettings.fontStyle

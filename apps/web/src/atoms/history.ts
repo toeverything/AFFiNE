@@ -16,7 +16,6 @@ export const historyBaseAtom = atom<History>({
   skip: false,
 });
 
-// fixme(himself65): don't use hooks, use atom lifecycle instead
 export function useTrackRouterHistoryEffect() {
   const setBase = useSetAtom(historyBaseAtom);
   const router = useRouter();
