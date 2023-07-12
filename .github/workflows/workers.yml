@@ -1,0 +1,21 @@
+name: Deploy Cloudflare Worker
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - packages/workers/**
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    environment: production
+    steps:
+      - uses: actions/checkout@v2
+      - name: Publish
+        uses: cloudflare/wrangler-action@2.0.0
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          workingDirectory: 'packages/workers'
