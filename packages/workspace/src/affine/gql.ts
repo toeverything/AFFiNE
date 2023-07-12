@@ -19,9 +19,7 @@ import useSWRMutation from 'swr/mutation';
 setupGlobal();
 
 export const fetcher = gqlFetcherFactory(
-  environment.isDesktop
-    ? runtimeConfig.serverUrlPrefix + '/graphql'
-    : '/graphql'
+  runtimeConfig.serverUrlPrefix + '/graphql'
 );
 
 /**

@@ -17,7 +17,9 @@ export const createPublicCloudProvider: DocProviderCreator = (
 
   async function downloadBinaryRecursively(doc: Doc) {
     const guid = doc.guid;
-    const response = await fetch(`/api/workspaces/${id}/docs/${guid}`);
+    const response = await fetch(
+      runtimeConfig.serverUrlPrefix + `/api/workspaces/${id}/docs/${guid}`
+    );
     const buffer = await response.arrayBuffer();
     Y.applyUpdate(doc, new Uint8Array(buffer));
     await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));

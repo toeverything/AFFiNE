@@ -31,7 +31,7 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   { awareness }
 ): AffineSocketIOProvider => {
   const provider = new SocketIOProvider(
-    environment.isDesktop ? runtimeConfig.serverUrlPrefix + '/' : '/',
+    runtimeConfig.serverUrlPrefix + '/',
     id,
     doc,
     {
