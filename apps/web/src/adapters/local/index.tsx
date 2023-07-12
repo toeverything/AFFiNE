@@ -1,7 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import {
-  DEFAULT_HELLO_WORLD_PAGE_ID,
+  DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
   DEFAULT_WORKSPACE_NAME,
   PageNotFoundError,
 } from '@affine/env/constant';
@@ -42,7 +42,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       const page = blockSuiteWorkspace.createPage({
-        id: DEFAULT_HELLO_WORLD_PAGE_ID,
+        id: `${blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`,
       });
       if (runtimeConfig.enablePreloading) {
         initPageWithPreloading(page).catch(err => {

@@ -11,7 +11,10 @@ import {
   WorkspaceFallback,
 } from '@affine/component/workspace';
 import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
+import {
+  DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
+  isDesktop,
+} from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   rootBlockHubAtom,
@@ -188,7 +191,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   // @ts-expect-error
   if (currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty !== true) {
     // this is a new workspace, so we should redirect to the new page
-    const pageId = DEFAULT_HELLO_WORLD_PAGE_ID;
+    const pageId = `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`;
     if (currentWorkspace.blockSuiteWorkspace.getPage(pageId) === null) {
       const page = currentWorkspace.blockSuiteWorkspace.createPage({
         id: pageId,
@@ -218,11 +221,11 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
 
   useEffect(() => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(
-      DEFAULT_HELLO_WORLD_PAGE_ID
+      `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`
     );
     if (page && page.meta.jumpOnce) {
       currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
-        DEFAULT_HELLO_WORLD_PAGE_ID,
+        `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`,
         {
           jumpOnce: false,
         }

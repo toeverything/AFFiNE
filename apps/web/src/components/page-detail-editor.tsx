@@ -1,9 +1,6 @@
 import './page-detail-editor.css';
 
-import {
-  DEFAULT_HELLO_WORLD_PAGE_ID,
-  PageNotFoundError,
-} from '@affine/env/constant';
+import { PageNotFoundError } from '@affine/env/constant';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
@@ -61,9 +58,7 @@ const EditorWrapper = memo(function EditorWrapper({
   );
   const pageSettingAtom = pageSettingFamily(pageId);
   const pageSetting = useAtomValue(pageSettingAtom);
-  const currentMode =
-    pageSetting?.mode ??
-    (DEFAULT_HELLO_WORLD_PAGE_ID === pageId ? 'edgeless' : 'page');
+  const currentMode = pageSetting?.mode ?? 'page';
 
   const setBlockHub = useSetAtom(rootBlockHubAtom);
   const [appSettings] = useAppSetting();
