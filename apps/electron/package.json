@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.7.0-canary.40",
+  "version": "0.7.0-canary.42",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -26,10 +26,10 @@
     "@affine-test/kit": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/native": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230712111942-2ffb8985-nightly",
-    "@blocksuite/editor": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/lit": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/store": "0.0.0-20230711013419-0b07ee2d-nightly",
+    "@blocksuite/blocks": "0.0.0-20230711103520-ce18dd84-nightly",
+    "@blocksuite/editor": "0.0.0-20230711103520-ce18dd84-nightly",
+    "@blocksuite/lit": "0.0.0-20230711103520-ce18dd84-nightly",
+    "@blocksuite/store": "0.0.0-20230711103520-ce18dd84-nightly",
     "@electron-forge/cli": "^6.2.1",
     "@electron-forge/core": "^6.2.1",
     "@electron-forge/core-utils": "^6.2.1",
