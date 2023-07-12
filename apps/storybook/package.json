@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@blocksuite/block-std": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/blocks": "0.0.0-20230712103008-d60b6475-nightly",
+    "@blocksuite/blocks": "0.0.0-20230712111942-2ffb8985-nightly",
     "@blocksuite/editor": "0.0.0-20230711013419-0b07ee2d-nightly",
     "@blocksuite/global": "0.0.0-20230711013419-0b07ee2d-nightly",
     "@blocksuite/icons": "^2.1.24",
