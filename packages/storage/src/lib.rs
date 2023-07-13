@@ -6,9 +6,8 @@ use std::{
   path::PathBuf,
 };
 
-use jwst::{BlobStorage, SearchResult as JwstSearchResult, Workspace as JwstWorkspace, DocStorage};
-use jwst_storage::{JwstStorage, JwstStorageError, BlobStorageType};
-use yrs::{Doc as YDoc, ReadTxn, StateVector, Transact};
+use jwst::BlobStorage;
+use jwst_storage::{BlobStorageType, JwstStorage, JwstStorageError};
 
 use napi::{bindgen_prelude::*, Error, Result, Status};
 
@@ -57,17 +56,7 @@ macro_rules! napi_wrap {
     };
 }
 
-napi_wrap!(
-  (Storage, JwstStorage),
-  (Workspace, JwstWorkspace),
-  (Doc, YDoc)
-);
-
-fn to_update_v1(doc: &YDoc) -> Result<Buffer> {
-  let trx = doc.transact();
-
-  map_err!(trx.encode_state_as_update_v1(&StateVector::default())).map(|update| update.into())
-}
+napi_wrap!((Storage, JwstStorage));
 
 #[napi(object)]
 pub struct Blob {
@@ -75,21 +64,6 @@ pub struct Blob {
   pub last_modified: String,
   pub size: i64,
   pub data: Buffer,
-}
-
-#[napi(object)]
-pub struct SearchResult {
-  pub block_id: String,
-  pub score: f64,
-}
-
-impl From<JwstSearchResult> for SearchResult {
-  fn from(r: JwstSearchResult) -> Self {
-    Self {
-      block_id: r.block_id,
-      score: r.score as f64,
-    }
-  }
 }
 
 #[napi]
@@ -171,53 +145,5 @@ impl Storage {
   #[napi]
   pub async fn blobs_size(&self, workspace_id: String) -> Result<i64> {
     map_err!(self.blobs().get_blobs_size(workspace_id).await)
-  }
-}
-
-#[napi]
-impl Workspace {
-  #[napi(getter)]
-  pub fn doc(&self) -> Doc {
-    self.0.doc().into()
-  }
-
-  #[napi]
-  #[inline]
-  pub fn is_empty(&self) -> bool {
-    self.0.is_empty()
-  }
-
-  #[napi(getter)]
-  #[inline]
-  pub fn id(&self) -> String {
-    self.0.id()
-  }
-
-  #[napi(getter)]
-  #[inline]
-  pub fn client_id(&self) -> String {
-    self.0.client_id().to_string()
-  }
-
-  #[napi]
-  pub fn search(&self, query: String) -> Result<Vec<SearchResult>> {
-    // TODO: search in all subdocs
-    let result = map_err!(self.0.search(&query))?;
-
-    Ok(
-      result
-        .into_inner()
-        .into_iter()
-        .map(Into::into)
-        .collect::<Vec<_>>(),
-    )
-  }
-}
-
-#[napi]
-impl Doc {
-  #[napi(getter)]
-  pub fn guid(&self) -> String {
-    self.0.guid().to_string()
   }
 }
