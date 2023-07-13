@@ -13,7 +13,12 @@ import {
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
-import { rootStore } from '@toeverything/plugin-infra/manager';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+  rootStore,
+} from '@toeverything/plugin-infra/manager';
+import Router from 'next/router';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -29,6 +34,49 @@ rootStore.set(
 
 if (process.env.NODE_ENV === 'development') {
   console.log('Runtime Preset', runtimeConfig);
+}
+
+if (!environment.isServer) {
+  currentWorkspaceIdAtom.onMount = set => {
+    if (environment.isBrowser) {
+      const callback = (url: string) => {
+        const value = url.split('/')[2];
+        if (value === 'all' || value === 'trash' || value === 'shared') {
+          set(null);
+        } else if (value) {
+          set(value);
+          localStorage.setItem('last_workspace_id', value);
+        } else {
+          set(null);
+        }
+      };
+      callback(window.location.pathname);
+      Router.events.on('routeChangeStart', callback);
+      return () => {
+        Router.events.off('routeChangeStart', callback);
+      };
+    }
+    return;
+  };
+
+  currentPageIdAtom.onMount = set => {
+    if (environment.isBrowser) {
+      const callback = (url: string) => {
+        const value = url.split('/')[3];
+        if (value) {
+          set(value);
+        } else {
+          set(null);
+        }
+      };
+      callback(window.location.pathname);
+      Router.events.on('routeChangeStart', callback);
+      return () => {
+        Router.events.off('routeChangeStart', callback);
+      };
+    }
+    return;
+  };
 }
 
 if (runtimeConfig.enablePlugin && !environment.isServer) {
