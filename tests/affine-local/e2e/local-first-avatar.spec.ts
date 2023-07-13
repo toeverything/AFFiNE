@@ -1,4 +1,6 @@
-import { test } from '@affine-test/kit/playwright';
+import { resolve } from 'node:path';
+
+import { rootDir, test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
@@ -20,7 +22,7 @@ test('should create a page with a local first avatar', async ({ page }) => {
   await page.getByText('current').click();
   await page
     .getByTestId('upload-avatar')
-    .setInputFiles('./tests/fixtures/smile.png');
+    .setInputFiles(resolve(rootDir, 'tests', 'fixtures', 'smile.png'));
   await page.mouse.click(0, 0);
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('workspace-card').nth(0).click();
