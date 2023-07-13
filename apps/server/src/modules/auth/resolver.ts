@@ -11,7 +11,6 @@ import {
 } from '@nestjs/graphql';
 import type { Request } from 'express';
 
-import { Metrics } from '../../metrics/metrics';
 import { UserType } from '../users/resolver';
 import { CurrentUser } from './guard';
 import { AuthService } from './service';
@@ -27,16 +26,11 @@ export class TokenType {
 
 @Resolver(() => UserType)
 export class AuthResolver {
-  constructor(
-    private auth: AuthService,
-    private readonly metric: Metrics
-  ) {}
+  constructor(private auth: AuthService) {}
 
   @ResolveField(() => TokenType)
   token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
-    this.metric.gqlRequest(1, { operation: 'token' });
     if (user !== currentUser) {
-      this.metric.gqlError(1, { operation: 'token' });
       throw new ForbiddenException();
     }
 
@@ -53,7 +47,6 @@ export class AuthResolver {
     @Args('email') email: string,
     @Args('password') password: string
   ) {
-    this.metric.gqlRequest(1, { operation: 'signUp' });
     const user = await this.auth.signUp(name, email, password);
     ctx.req.user = user;
     return user;
@@ -65,7 +58,6 @@ export class AuthResolver {
     @Args('email') email: string,
     @Args('password') password: string
   ) {
-    this.metric.gqlRequest(1, { operation: 'signIn' });
     const user = await this.auth.signIn(email, password);
     ctx.req.user = user;
     return user;
