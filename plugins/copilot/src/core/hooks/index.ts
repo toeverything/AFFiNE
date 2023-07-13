@@ -6,11 +6,9 @@ import type { WritableAtom } from 'jotai/vanilla';
 import type { LLMChain } from 'langchain/chains';
 import { type ConversationChain } from 'langchain/chains';
 import { type BufferMemory } from 'langchain/memory';
-import {
-  AIChatMessage,
-  type BaseChatMessage,
-  HumanChatMessage,
-} from 'langchain/schema';
+import type { BaseMessage } from 'langchain/schema';
+import { AIMessage } from 'langchain/schema';
+import { HumanMessage } from 'langchain/schema';
 import { z } from 'zod';
 
 import { createChatAI } from '../chat';
@@ -32,18 +30,18 @@ export const chatAtom = atom(async get => {
 
 const conversationWeakMap = new WeakMap<
   ConversationChain,
-  WritableAtom<BaseChatMessage[], [string], Promise<void>>
+  WritableAtom<BaseMessage[], [string], Promise<void>>
 >();
 
 const getConversationAtom = (chat: ConversationChain) => {
   if (conversationWeakMap.has(chat)) {
     return conversationWeakMap.get(chat) as WritableAtom<
-      BaseChatMessage[],
+      BaseMessage[],
       [string],
       Promise<void>
     >;
   }
-  const conversationBaseAtom = atom<BaseChatMessage[]>([]);
+  const conversationBaseAtom = atom<BaseMessage[]>([]);
   conversationBaseAtom.onMount = setAtom => {
     if (!chat) {
       throw new Error();
@@ -58,12 +56,12 @@ const getConversationAtom = (chat: ConversationChain) => {
         console.error(err);
       });
     const llmStart = (): void => {
-      setAtom(conversations => [...conversations, new AIChatMessage('')]);
+      setAtom(conversations => [...conversations, new AIMessage('')]);
     };
     const llmNewToken = (event: CustomEvent<{ token: string }>): void => {
       setAtom(conversations => {
-        const last = conversations[conversations.length - 1] as AIChatMessage;
-        last.text += event.detail.token;
+        const last = conversations[conversations.length - 1] as AIMessage;
+        last.content += event.detail.token;
         return [...conversations];
       });
     };
@@ -75,7 +73,7 @@ const getConversationAtom = (chat: ConversationChain) => {
     };
   };
 
-  const conversationAtom = atom<BaseChatMessage[], [string], Promise<void>>(
+  const conversationAtom = atom<BaseMessage[], [string], Promise<void>>(
     get => get(conversationBaseAtom),
     async (get, set, input) => {
       if (!chat) {
@@ -84,7 +82,7 @@ const getConversationAtom = (chat: ConversationChain) => {
       // set dirty value
       set(conversationBaseAtom, [
         ...get(conversationBaseAtom),
-        new HumanChatMessage(input),
+        new HumanMessage(input),
       ]);
       await chat.call({
         input,

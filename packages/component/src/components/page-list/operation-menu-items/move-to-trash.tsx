@@ -3,8 +3,8 @@ import { DeleteTemporarilyIcon } from '@blocksuite/icons';
 
 import type { ConfirmProps } from '../../..';
 import { Confirm, MenuItem } from '../../..';
+import { moveToTrashStyle } from './index.css';
 import type { CommonMenuItemProps } from './types';
-
 export const MoveToTrash = ({
   onSelect,
   onItemClick,
@@ -21,6 +21,7 @@ export const MoveToTrash = ({
           onSelect?.();
         }}
         icon={<DeleteTemporarilyIcon />}
+        className={moveToTrashStyle}
       >
         {t['Move to Trash']()}
       </MenuItem>

@@ -26,6 +26,8 @@ const arch =
     ? process.argv[process.argv.indexOf('--arch') + 1]
     : process.arch;
 
+const windowsIconUrl = `https://cdn.affine.pro/app-icons/icon_${buildType}.ico`;
+
 /**
  * @type {import('@electron-forge/shared-types').ForgeConfig}
  */
@@ -95,6 +97,7 @@ module.exports = {
       config: {
         name: 'AFFiNE',
         setupIcon: icoPath,
+        iconUrl: windowsIconUrl,
         loadingGif: './resources/icons/affine_installing.gif',
       },
     },

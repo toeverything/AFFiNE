@@ -160,7 +160,8 @@ async function inviteUser(
   token: string,
   workspaceId: string,
   email: string,
-  permission: string
+  permission: string,
+  sendInviteMail = false
 ): Promise<string> {
   const res = await request(app.getHttpServer())
     .post(gql)
@@ -168,7 +169,7 @@ async function inviteUser(
     .send({
       query: `
           mutation {
-            invite(workspaceId: "${workspaceId}", email: "${email}", permission: ${permission})
+            invite(workspaceId: "${workspaceId}", email: "${email}", permission: ${permission}, sendInviteMail: ${sendInviteMail})
           }
         `,
     })

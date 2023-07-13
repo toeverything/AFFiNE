@@ -12,3 +12,4 @@ tests/affine-legacy/0.7.0-canary.18/static
 .github/helm
 _next
 storybook-static
+apps/server/src/schema.gql
