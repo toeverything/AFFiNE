@@ -170,9 +170,7 @@ export const RootAppSidebar = ({
             icon={<FolderIcon />}
             currentPath={currentPath}
             path={currentWorkspaceId && paths.all(currentWorkspaceId)}
-            onClick={() => {
-              backToAll();
-            }}
+            onClick={backToAll}
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
           </RouteMenuLinkItem>
