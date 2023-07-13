@@ -60,9 +60,10 @@ out/
 storybook-static
 i18n-generated.ts
 
-/test-results/
-/playwright-report/
-/playwright/.cache/
+test-results
+playwright-report
+playwright/.cache
+download
 
 # Cache
 .eslintcache

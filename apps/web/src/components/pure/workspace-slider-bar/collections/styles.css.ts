@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const wrapper = style({
   userSelect: 'none',
@@ -36,10 +36,13 @@ export const more = style({
   },
 });
 export const deleteFolder = style({
-  color: 'var(--affine-warning-color)',
   ':hover': {
-    backgroundColor: 'var(--affine-background-warning-color)',
+    color: 'var(--affine-error-color)',
+    backgroundColor: 'var(--affine-background-error-color)',
   },
+});
+globalStyle(`${deleteFolder}:hover svg`, {
+  color: 'var(--affine-error-color)',
 });
 export const menuDividerStyle = style({
   marginTop: '2px',

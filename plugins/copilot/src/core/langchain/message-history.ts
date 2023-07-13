@@ -1,13 +1,13 @@
 import type { DBSchema, IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
 import { ChatMessageHistory } from 'langchain/memory';
+import type { BaseMessage } from 'langchain/schema';
 import {
-  AIChatMessage,
-  type BaseChatMessage,
+  AIMessage,
   ChatMessage,
-  HumanChatMessage,
+  HumanMessage,
   type StoredMessage,
-  SystemChatMessage,
+  SystemMessage,
 } from 'langchain/schema';
 
 interface ChatMessageDBV1 extends DBSchema {
@@ -40,7 +40,7 @@ export const conversationHistoryDBName = 'affine-copilot-chat';
 
 export class IndexedDBChatMessageHistory extends ChatMessageHistory {
   public id: string;
-  private chatMessages: BaseChatMessage[] = [];
+  private chatMessages: BaseMessage[] = [];
 
   private readonly dbPromise: Promise<IDBPDatabase<ChatMessageDBV2>>;
   private readonly initPromise: Promise<void>;
@@ -74,11 +74,11 @@ export class IndexedDBChatMessageHistory extends ChatMessageHistory {
         this.chatMessages = chat.messages.map(message => {
           switch (message.type) {
             case 'ai':
-              return new AIChatMessage(message.data.content);
+              return new AIMessage(message.data.content);
             case 'human':
-              return new HumanChatMessage(message.data.content);
+              return new HumanMessage(message.data.content);
             case 'system':
-              return new SystemChatMessage(message.data.content);
+              return new SystemMessage(message.data.content);
             default:
               return new ChatMessage(
                 message.data.content,
@@ -115,29 +115,29 @@ export class IndexedDBChatMessageHistory extends ChatMessageHistory {
     return [];
   }
 
-  override async addMessage(message: BaseChatMessage): Promise<void> {
+  override async addMessage(message: BaseMessage): Promise<void> {
     await this.initPromise;
     this.chatMessages.push(message);
     const db = await this.dbPromise;
     const objectStore = db.transaction('chat', 'readwrite').objectStore('chat');
     const chat = await objectStore.get(this.id);
     if (chat != null) {
-      chat.messages.push(message.toJSON());
+      chat.messages.push(message.toDict());
       await objectStore.put(chat);
     } else {
       await objectStore.add({
         id: this.id,
-        messages: [message.toJSON()],
+        messages: [message.toDict()],
       });
     }
   }
 
   override async addAIChatMessage(message: string): Promise<void> {
-    await this.addMessage(new AIChatMessage(message));
+    await this.addMessage(new AIMessage(message));
   }
 
   override async addUserMessage(message: string): Promise<void> {
-    await this.addMessage(new HumanChatMessage(message));
+    await this.addMessage(new HumanMessage(message));
   }
 
   override async clear(): Promise<void> {
@@ -148,7 +148,7 @@ export class IndexedDBChatMessageHistory extends ChatMessageHistory {
     await objectStore.delete(this.id);
   }
 
-  override async getMessages(): Promise<BaseChatMessage[]> {
+  override async getMessages(): Promise<BaseMessage[]> {
     return this.initPromise.then(() => this.chatMessages);
   }
 }

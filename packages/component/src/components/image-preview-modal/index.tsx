@@ -478,7 +478,7 @@ const ImagePreviewModalImpl = (
               noBorder={true}
               className={buttonStyle}
               onClick={() => blockId && deleteHandler(blockId)}
-              hoverColor={'-moz-initial'}
+              hoverColor="var(--affine-error-color)"
             />
           </Tooltip>
         </div>

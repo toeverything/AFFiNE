@@ -36,6 +36,7 @@ const AllPagesHead = ({
   importFile,
   getPageInfo,
   propertiesMeta,
+  workspaceId,
 }: {
   isPublicWorkspace: boolean;
   sorter: ReturnType<typeof useSorter<ListData>>;
@@ -44,6 +45,7 @@ const AllPagesHead = ({
   importFile: () => void;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
+  workspaceId: string;
 }) => {
   const t = useAFFiNEI18N();
   const titleList = useMemo(
@@ -143,6 +145,7 @@ const AllPagesHead = ({
     <TableHead>
       <TableHeadRow>{tableItem}</TableHeadRow>
       <CollectionBar
+        workspaceId={workspaceId}
         columnsCount={titleList.length}
         getPageInfo={getPageInfo}
         propertiesMeta={propertiesMeta}
@@ -153,6 +156,7 @@ const AllPagesHead = ({
 
 export const PageList = ({
   isPublicWorkspace = false,
+  workspaceId,
   list,
   onCreateNewPage,
   onCreateNewEdgeless,
@@ -197,6 +201,7 @@ export const PageList = ({
       <StyledTableContainer ref={ref}>
         <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
           <AllPagesHead
+            workspaceId={workspaceId}
             propertiesMeta={propertiesMeta}
             isPublicWorkspace={isPublicWorkspace}
             sorter={sorter}
