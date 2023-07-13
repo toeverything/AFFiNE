@@ -1,3 +1,32 @@
+/*
+ * Inter (Variable)
+ */
+@font-face {
+  font-family: 'Inter';
+  font-display: swap;
+  src: url(/fonts/inter/Inter-VariableFont_slnt,wght.ttf);
+}
+
+/*
+ * Source Code Pro (Variable)
+ */
+@font-face {
+  font-family: 'Source Code Pro';
+  font-style: normal;
+  font-display: swap;
+  src: url(/fonts/source-code-pro/SourceCodePro-VariableFont_wght.ttf);
+}
+
+@font-face {
+  font-family: 'Source Code Pro';
+  font-style: italic;
+  font-display: swap;
+  src: url(/fonts/source-code-pro/SourceCodePro-Italic-VariableFont_wght.ttf);
+}
+
+/*
+ * Kalam
+ */
 @font-face {
   font-family: 'Kalam';
   font-style: normal;
@@ -20,4 +49,106 @@
   font-weight: 700;
   font-display: swap;
   src: url(/fonts/kalam/Kalam-Bold.ttf);
+}
+
+/*
+ * Source Serif 4
+ */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/source-serif-4/SourceSerif4-Regular.ttf);
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/source-serif-4/SourceSerif4-Italic.ttf);
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/source-serif-4/SourceSerif4-Medium.ttf);
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/source-serif-4/SourceSerif4-MediumItalic.ttf);
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/source-serif-4/SourceSerif4-SemiBold.ttf);
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/source-serif-4/SourceSerif4-SemiBoldItalic.ttf);
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/source-serif-4/SourceSerif4-Bold.ttf);
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/source-serif-4/SourceSerif4-BoldItalic.ttf);
+}
+
+/*
+  * Space Mono
+  */
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/space-mono/SpaceMono-Regular.ttf);
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/space-mono/SpaceMono-Italic.ttf);
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/space-mono/SpaceMono-Bold.ttf);
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/space-mono/SpaceMono-BoldItalic.ttf);
 }
