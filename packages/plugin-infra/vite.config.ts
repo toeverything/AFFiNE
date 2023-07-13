@@ -20,15 +20,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: [
-        'jotai',
-        'jotai/vanilla',
-        '@blocksuite/blocks',
-        '@blocksuite/store',
-        '@blocksuite/global',
-        '@blocksuite/editor',
-        '@blocksuite/lit',
-      ],
+      external: ['react', /^jotai/, /^@blocksuite/],
     },
   },
   plugins: [
