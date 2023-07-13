@@ -30,18 +30,6 @@ const DevTools = lazy(() =>
   import('jotai-devtools').then(m => ({ default: m.DevTools }))
 );
 
-if (process.env.NODE_ENV !== 'production' && !environment.isServer) {
-  import('@blocksuite/store')
-    .then(({ Workspace }) => {
-      Object.defineProperty(globalThis, 'Y', {
-        get() {
-          return Workspace.Y;
-        },
-      });
-    })
-    .catch(console.error);
-}
-
 const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
   return (
     <>
