@@ -87,7 +87,7 @@ class AuthGuard implements CanActivate {
         options: this.nextAuthOptions,
       });
 
-      const { body, cookies, status = 200 } = session;
+      const { body = {}, cookies, status = 200 } = session;
       if (!body && !isPublicable) {
         return false;
       }
@@ -104,7 +104,7 @@ class AuthGuard implements CanActivate {
         status === 200 &&
           typeof body !== 'string' &&
           // ignore body if api is publicable
-          (Object.keys(body || {}).length || isPublicable)
+          (Object.keys(body).length || isPublicable)
       );
     } else {
       const [type, jwt] = token.split(' ') ?? [];
