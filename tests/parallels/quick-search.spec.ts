@@ -1,9 +1,8 @@
 import { test } from '@affine-test/kit/playwright';
+import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
-
-import { withCtrlOrMeta } from '../libs/keyboard';
-import { openHomePage } from '../libs/load-page';
-import { newPage, waitEditorLoad } from '../libs/page-logic';
 
 const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));

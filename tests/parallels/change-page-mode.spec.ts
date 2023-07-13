@@ -1,8 +1,10 @@
 import { test } from '@affine-test/kit/playwright';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import {
+  clickPageMoreActions,
+  waitEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
-
-import { openHomePage } from '../libs/load-page';
-import { clickPageMoreActions, waitEditorLoad } from '../libs/page-logic';
 
 test('Switch to edgeless by switch edgeless item', async ({ page }) => {
   async function getCount(): Promise<number> {

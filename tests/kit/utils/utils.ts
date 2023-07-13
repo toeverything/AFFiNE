@@ -3,9 +3,9 @@ import { faker } from '@faker-js/faker';
 import type { Page } from '@playwright/test';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const user1 = require('@affine-test/fixtures/built-in-user1.json');
+const user1 = require('../../fixtures/built-in-user1.json');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const user2 = require('@affine-test/fixtures/built-in-user2.json');
+const user2 = require('../../fixtures/built-in-user2.json');
 
 export async function getBuiltInUser() {
   return Promise.all([

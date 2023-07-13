@@ -1,13 +1,12 @@
 import { test } from '@affine-test/kit/playwright';
-import { expect } from '@playwright/test';
-
-import { openHomePage } from '../libs/load-page';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
-} from '../libs/page-logic';
-import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
+} from '@affine-test/kit/utils/page-logic';
+import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
+import { expect } from '@playwright/test';
 
 test('click btn bew page and open in tab', async ({ page }) => {
   await openHomePage(page);

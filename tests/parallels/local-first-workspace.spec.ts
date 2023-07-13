@@ -1,9 +1,8 @@
 import { test } from '@affine-test/kit/playwright';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
-
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
-import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('preset workspace name', async ({ page }) => {
   await openHomePage(page);

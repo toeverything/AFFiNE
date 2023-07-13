@@ -1,8 +1,7 @@
 import { test } from '@affine-test/kit/playwright';
-
-import { checkBlockHub } from '../../libs/editor';
-import { openHomePage } from '../../libs/load-page';
-import { newPage, waitEditorLoad } from '../../libs/page-logic';
+import { checkBlockHub } from '@affine-test/kit/utils/editor';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 
 test('block-hub should work', async ({ page }) => {
   await openHomePage(page);

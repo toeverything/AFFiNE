@@ -1,15 +1,14 @@
 import { test } from '@affine-test/kit/playwright';
-import { expect } from '@playwright/test';
-
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import {
   openAboutPanel,
   openAppearancePanel,
   openSettingModal,
   openShortcutsPanel,
-} from '../libs/setting';
-import { createWorkspace } from '../libs/workspace';
+} from '@affine-test/kit/utils/setting';
+import { createWorkspace } from '@affine-test/kit/utils/workspace';
+import { expect } from '@playwright/test';
 
 test('Open settings modal', async ({ page }) => {
   await openHomePage(page);

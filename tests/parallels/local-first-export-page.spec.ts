@@ -1,14 +1,13 @@
 import { test } from '@affine-test/kit/playwright';
-import { expect } from '@playwright/test';
-
-import { openHomePage } from '../libs/load-page';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
-} from '../libs/page-logic';
-import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
+} from '@affine-test/kit/utils/page-logic';
+import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
+import { expect } from '@playwright/test';
 
 test.skip('New a page ,then open it and export html', async ({ page }) => {
   await openHomePage(page);

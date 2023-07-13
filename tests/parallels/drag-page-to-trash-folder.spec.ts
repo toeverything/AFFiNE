@@ -1,8 +1,7 @@
 import { test } from '@affine-test/kit/playwright';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
-
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
 
 test('drag a page from "All pages" list onto the "Trash" folder in the sidebar to move it to trash list', async ({
   page,

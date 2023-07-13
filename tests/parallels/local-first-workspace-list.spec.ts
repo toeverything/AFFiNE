@@ -1,10 +1,12 @@
 import { test } from '@affine-test/kit/playwright';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
+import {
+  createWorkspace,
+  openWorkspaceListModal,
+} from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
-
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
-import { clickSideBarAllPageButton } from '../libs/sidebar';
-import { createWorkspace, openWorkspaceListModal } from '../libs/workspace';
 
 test('just one item in the workspace list at first', async ({ page }) => {
   await openHomePage(page);

@@ -1,12 +1,11 @@
 import { test } from '@affine-test/kit/playwright';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { openWorkspaceSettingPanel } from '@affine-test/kit/utils/setting';
+import { openSettingModal } from '@affine-test/kit/utils/setting';
+import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
+import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
-
-import { openHomePage } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
-import { openWorkspaceSettingPanel } from '../libs/setting';
-import { openSettingModal } from '../libs/setting';
-import { clickSideBarCurrentWorkspaceBanner } from '../libs/sidebar';
-import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test('Create new workspace, then delete it', async ({ page }) => {
   await openHomePage(page);

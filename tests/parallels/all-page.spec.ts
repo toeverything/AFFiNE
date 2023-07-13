@@ -1,7 +1,4 @@
 import { test } from '@affine-test/kit/playwright';
-import type { Page } from '@playwright/test';
-import { expect } from '@playwright/test';
-
 import {
   changeFilter,
   checkDatePicker,
@@ -15,14 +12,16 @@ import {
   selectDateFromDatePicker,
   selectMonthFromMonthPicker,
   selectTag,
-} from '../libs/filter';
-import { openHomePage } from '../libs/load-page';
+} from '@affine-test/kit/utils/filter';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   closeDownloadTip,
   getBlockSuiteEditorTitle,
   waitEditorLoad,
-} from '../libs/page-logic';
-import { clickSideBarAllPageButton } from '../libs/sidebar';
+} from '@affine-test/kit/utils/page-logic';
+import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 function getAllPage(page: Page) {
   const newPageButton = page

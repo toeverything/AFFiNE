@@ -1,8 +1,7 @@
 import { test } from '@affine-test/kit/playwright';
+import { openHomePage, webUrl } from '@affine-test/kit/utils/load-page';
+import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
-
-import { openHomePage, webUrl } from '../libs/load-page';
-import { waitEditorLoad } from '../libs/page-logic';
 
 test('goto not found page', async ({ page }) => {
   await openHomePage(page);

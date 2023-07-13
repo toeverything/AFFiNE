@@ -1,15 +1,17 @@
 import { test } from '@affine-test/kit/playwright';
-import type { Page } from '@playwright/test';
-import { expect } from '@playwright/test';
-
-import { checkDatePicker, selectDateFromDatePicker } from '../libs/filter';
-import { openHomePage } from '../libs/load-page';
+import {
+  checkDatePicker,
+  selectDateFromDatePicker,
+} from '@affine-test/kit/utils/filter';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   closeDownloadTip,
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
-} from '../libs/page-logic';
+} from '@affine-test/kit/utils/page-logic';
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const createAndPinCollection = async (
   page: Page,

@@ -1,9 +1,8 @@
 import { test } from '@affine-test/kit/playwright';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-
-import { openHomePage } from '../../libs/load-page';
-import { newPage, waitEditorLoad } from '../../libs/page-logic';
 const addDatabase = async (page: Page) => {
   await page.keyboard.press('/', { delay: 50 });
   await page.keyboard.press('d');
