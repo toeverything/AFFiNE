@@ -10,6 +10,7 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
+import { useCollectionManager } from '@affine/component/page-list';
 import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -95,7 +96,7 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace?.id || null;
   const [appSettings] = useAppSetting();
-
+  const { backToAll } = useCollectionManager(currentWorkspace.id);
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
@@ -169,6 +170,9 @@ export const RootAppSidebar = ({
             icon={<FolderIcon />}
             currentPath={currentPath}
             path={currentWorkspaceId && paths.all(currentWorkspaceId)}
+            onClick={() => {
+              backToAll();
+            }}
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
           </RouteMenuLinkItem>
