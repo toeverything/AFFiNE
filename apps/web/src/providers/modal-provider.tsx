@@ -1,11 +1,11 @@
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import {
-  rootCurrentPageIdAtom,
-  rootCurrentWorkspaceIdAtom,
-  rootWorkspacesMetadataAtom,
-} from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import { arrayMove } from '@dnd-kit/sortable';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import type { FC, ReactElement } from 'react';
@@ -123,9 +123,9 @@ export const AllWorkspaceModals = (): ReactElement => {
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
-    rootCurrentWorkspaceIdAtom
+    currentWorkspaceIdAtom
   );
-  const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
+  const setCurrentPageId = useSetAtom(currentPageIdAtom);
   const [transitioning, transition] = useTransition();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 

@@ -18,8 +18,6 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   rootBlockHubAtom,
-  rootCurrentPageIdAtom,
-  rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { assertEquals, assertExists } from '@blocksuite/global/utils';
@@ -36,6 +34,10 @@ import {
 } from '@dnd-kit/core';
 import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -111,7 +113,7 @@ if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
 export const CurrentWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  const workspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+  const workspaceId = useAtomValue(currentWorkspaceIdAtom);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
   const router = useRouter();
@@ -149,7 +151,7 @@ export const CurrentWorkspaceContext = ({
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     useTrackRouterHistoryEffect();
-    const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const meta = useMemo(
       () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
@@ -181,8 +183,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
-  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
 
