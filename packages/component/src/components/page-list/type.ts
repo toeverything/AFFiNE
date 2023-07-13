@@ -45,6 +45,7 @@ export type TrashListData = {
 
 export type PageListProps = {
   isPublicWorkspace?: boolean;
+  workspaceId: string;
   list: ListData[];
   fallback?: React.ReactNode;
   onCreateNewPage: () => void;

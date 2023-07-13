@@ -35,6 +35,7 @@ const defaultCollection = {
   id: NIL,
   name: 'All',
   filterList: [],
+  workspaceId: 'temporary',
 };
 const collectionAtom = atomWithReset<{
   currentId: string;
@@ -44,14 +45,15 @@ const collectionAtom = atomWithReset<{
   defaultCollection: defaultCollection,
 });
 
-export const useSavedCollections = () => {
+export const useSavedCollections = (workspaceId: string) => {
   const { data: savedCollections, mutate } = useSWRImmutable<Collection[]>(
-    ['affine', 'page-collection'],
+    ['affine', 'page-collection', workspaceId],
     {
       fetcher: async () => {
         const db = await pageCollectionDBPromise;
         const t = db.transaction('view').objectStore('view');
-        return await t.getAll();
+        const all = await t.getAll();
+        return all.filter(v => v.workspaceId === workspaceId);
       },
       suspense: true,
       fallbackData: [],
@@ -103,9 +105,9 @@ export const useSavedCollections = () => {
   };
 };
 
-export const useCollectionManager = () => {
+export const useCollectionManager = (workspaceId: string) => {
   const { savedCollections, saveCollection, deleteCollection, addPage } =
-    useSavedCollections();
+    useSavedCollections(workspaceId);
   const [collectionData, setCollectionData] = useAtom(collectionAtom);
 
   const updateCollection = useCallback(

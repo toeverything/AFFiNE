@@ -22,12 +22,14 @@ export const CollectionBar = ({
   getPageInfo,
   propertiesMeta,
   columnsCount,
+  workspaceId,
 }: {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   columnsCount: number;
+  workspaceId: string;
 }) => {
-  const setting = useCollectionManager();
+  const setting = useCollectionManager(workspaceId);
   const collection = setting.currentCollection;
   const [open, setOpen] = useState(false);
   const actions: {
