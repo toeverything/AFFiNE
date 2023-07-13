@@ -14,7 +14,6 @@ import { useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
@@ -99,7 +98,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   collection,
 }) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
-  const [currentWorkspace] = useCurrentWorkspace();
   const {
     toggleFavorite,
     removeToTrash,
@@ -231,7 +229,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   });
   return (
     <PageList
-      workspaceId={currentWorkspace.id}
+      workspaceId={blockSuiteWorkspace.id}
       propertiesMeta={blockSuiteWorkspace.meta.properties}
       getPageInfo={getPageInfo}
       onCreateNewPage={createPage}
