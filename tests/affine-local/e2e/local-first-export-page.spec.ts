@@ -6,10 +6,12 @@ import {
   newPage,
   waitEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test.skip('New a page ,then open it and export html', async ({ page }) => {
+test.skip('New a page ,then open it and export html', async ({
+  page,
+  workspace,
+}) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -37,9 +39,15 @@ test.skip('New a page ,then open it and export html', async ({ page }) => {
   expect(download.suggestedFilename()).toBe(
     'this is a new page to export html content.html'
   );
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
-test.skip('New a page ,then open it and export markdown', async ({ page }) => {
+test.skip('New a page ,then open it and export markdown', async ({
+  page,
+  workspace,
+}) => {
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await page
@@ -64,5 +72,7 @@ test.skip('New a page ,then open it and export markdown', async ({ page }) => {
   expect(download.suggestedFilename()).toBe(
     'this is a new page to export markdown content.md'
   );
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
