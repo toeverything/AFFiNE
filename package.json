@@ -11,7 +11,8 @@
     "packages/*",
     "tests/fixtures",
     "tests/kit",
-    "tests/affine-legacy/*"
+    "tests/affine-legacy/*",
+    "tests/affine-local"
   ],
   "engines": {
     "node": ">=18.16.1 <19.0.0"
@@ -35,8 +36,6 @@
     "lint:prettier:fix": "prettier --ignore-unknown --cache --write .",
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "lint:fix": "yarn lint:eslint:fix && yarn lint:prettier:fix",
-    "e2e": "playwright test",
-    "e2e:coverage": "COVERAGE=true yarn e2e --forbid-only",
     "test": "ENABLE_PRELOADING=false vitest --run",
     "test:ui": "ENABLE_PRELOADING=false vitest --ui",
     "test:coverage": "ENABLE_PRELOADING=false vitest run --coverage",

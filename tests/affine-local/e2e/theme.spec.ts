@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 
-import { test, testResultDir } from '@affine-test/kit/playwright';
+import { test, testResultDir } from '@affine-test/kit/lib/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';

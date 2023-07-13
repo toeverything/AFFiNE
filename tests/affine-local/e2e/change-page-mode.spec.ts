@@ -9,6 +9,7 @@ import { expect } from '@playwright/test';
 test('Switch to edgeless by switch edgeless item', async ({ page }) => {
   async function getCount(): Promise<number> {
     return page.evaluate(() => {
+      // @ts-expect-error
       return globalThis.__toastCount;
     });
   }
@@ -16,8 +17,10 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
   await waitEditorLoad(page);
   const btn = await page.getByTestId('switch-edgeless-mode-button');
   await page.evaluate(() => {
+    // @ts-expect-error
     globalThis.__toastCount = 0;
     window.addEventListener('affine-toast:emit', () => {
+      // @ts-expect-error
       globalThis.__toastCount++;
     });
   });
