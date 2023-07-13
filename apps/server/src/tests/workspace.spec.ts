@@ -29,7 +29,8 @@ describe('Workspace Module', () => {
   beforeEach(async () => {
     await client.$connect();
     await client.user.deleteMany({});
-    await client.doc.deleteMany({});
+    await client.update.deleteMany({});
+    await client.snapshot.deleteMany({});
     await client.workspace.deleteMany({});
     await client.$disconnect();
   });
