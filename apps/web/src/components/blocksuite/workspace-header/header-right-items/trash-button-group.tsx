@@ -2,17 +2,18 @@ import { Button, Confirm } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
+import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
-import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 
 export const TrashButtonGroup = () => {
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
-  const [pageId] = useCurrentPageId();
+  const pageId = useAtomValue(currentPageIdAtom);
   assertExists(workspace);
   assertExists(pageId);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;

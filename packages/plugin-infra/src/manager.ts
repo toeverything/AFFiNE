@@ -12,6 +12,8 @@ export const rootStore = createStore();
 
 // todo: for now every plugin is enabled by default
 export const affinePluginsAtom = atom<Record<string, AffinePlugin<string>>>({});
+export const currentPageIdAtom = atom<string | null>(null);
+export const currentWorkspaceIdAtom = atom<string | null>(null);
 
 export function definePlugin<ID extends string>(
   definition: Definition<ID>,

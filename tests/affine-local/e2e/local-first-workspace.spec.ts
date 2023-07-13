@@ -1,25 +1,20 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test('preset workspace name', async ({ page }) => {
+test('preset workspace name', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const workspaceName = page.getByTestId('workspace-name');
   await page.waitForTimeout(1000);
   expect(await workspaceName.textContent()).toBe('Demo Workspace');
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
-// test('default workspace avatar', async ({ page }) => {
-//   const workspaceAvatar = page.getByTestId('workspace-avatar');
-//   expect(
-//     await workspaceAvatar.locator('img').getAttribute('src')
-//   ).not.toBeNull();
-// });
-test('Open language switch menu', async ({ page }) => {
+test('Open language switch menu', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const editorOptionMenuButton = page.getByTestId('editor-option-menu');
@@ -29,5 +24,7 @@ test('Open language switch menu', async ({ page }) => {
   await expect(languageMenuButton).toBeVisible();
   const actual = await languageMenuButton.innerText();
   expect(actual).toEqual('English');
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });

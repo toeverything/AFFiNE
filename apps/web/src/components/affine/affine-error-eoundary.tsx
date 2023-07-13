@@ -4,12 +4,12 @@ import type {
   WorkspaceNotFoundError,
 } from '@affine/env/constant';
 import { PageNotFoundError } from '@affine/env/constant';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
-  rootCurrentPageIdAtom,
-  rootCurrentWorkspaceIdAtom,
-  rootWorkspacesMetadataAtom,
-} from '@affine/workspace/atom';
-import { rootStore } from '@toeverything/plugin-infra/manager';
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+  rootStore,
+} from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai/react';
 import { Provider } from 'jotai/react';
 import type { NextRouter } from 'next/router';
@@ -35,8 +35,8 @@ interface AffineErrorBoundaryState {
 export const DumpInfo = (props: Pick<AffineErrorBoundaryProps, 'router'>) => {
   const router = props.router;
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
-  const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
-  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
+  const currentPageId = useAtomValue(currentPageIdAtom);
   const path = router.asPath;
   const query = router.query;
   return (
