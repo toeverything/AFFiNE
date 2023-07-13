@@ -18,6 +18,7 @@ test('useAllPageSetting', async () => {
   await settingHook.result.current.updateCollection({
     ...settingHook.result.current.currentCollection,
     filterList: [createDefaultFilter(vars[0], defaultMeta)],
+    workspaceId: 'test',
   });
   settingHook.rerender();
   const nextCollection = settingHook.result.current.currentCollection;
