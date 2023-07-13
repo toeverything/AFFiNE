@@ -68,7 +68,6 @@ export const useSavedCollections = (workspaceId: string) => {
       const db = await pageCollectionDBPromise;
       const t = db.transaction('view', 'readwrite').objectStore('view');
       await t.put(collection);
-      console.log(collection);
       await mutate();
     },
     [mutate]
@@ -130,7 +129,6 @@ export const useCollectionManager = (workspaceId: string) => {
         ...collectionData,
         currentId: id,
       });
-      console.log(collectionData, id);
     },
     [collectionData, setCollectionData]
   );
