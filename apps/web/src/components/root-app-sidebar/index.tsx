@@ -94,10 +94,10 @@ export const RootAppSidebar = ({
   onOpenWorkspaceListModal,
   onOpenSettingModal,
 }: RootAppSidebarProps): ReactElement => {
-  const currentWorkspaceId = currentWorkspace?.id || null;
+  const currentWorkspaceId = currentWorkspace.id;
   const [appSettings] = useAppSetting();
   const { backToAll } = useCollectionManager(currentWorkspace.id);
-  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
