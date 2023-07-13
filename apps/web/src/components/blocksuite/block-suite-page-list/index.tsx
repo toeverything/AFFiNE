@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
@@ -98,6 +99,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   collection,
 }) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
+  const [currentWorkspace] = useCurrentWorkspace();
   const {
     toggleFavorite,
     removeToTrash,
@@ -187,7 +189,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   const pageList: ListData[] = list.map(pageMeta => {
     const page = blockSuiteWorkspace.getPage(pageMeta.id);
     const preview = page ? getPagePreviewText(page) : undefined;
-
     return {
       icon: isPreferredEdgeless(pageMeta.id) ? <EdgelessIcon /> : <PageIcon />,
       pageId: pageMeta.id,
@@ -230,6 +231,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   });
   return (
     <PageList
+      workspaceId={currentWorkspace.id}
       propertiesMeta={blockSuiteWorkspace.meta.properties}
       getPageInfo={getPageInfo}
       onCreateNewPage={createPage}

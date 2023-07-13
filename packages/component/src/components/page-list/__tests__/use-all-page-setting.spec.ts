@@ -12,7 +12,7 @@ import { useCollectionManager } from '../use-collection-manager';
 const defaultMeta = { tags: { options: [] } };
 
 test('useAllPageSetting', async () => {
-  const settingHook = renderHook(() => useCollectionManager());
+  const settingHook = renderHook(() => useCollectionManager('test'));
   const prevCollection = settingHook.result.current.currentCollection;
   expect(settingHook.result.current.savedCollections).toEqual([]);
   await settingHook.result.current.updateCollection({

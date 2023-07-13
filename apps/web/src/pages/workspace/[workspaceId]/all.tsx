@@ -15,9 +15,9 @@ import type { NextPageWithLayout } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
-  const setting = useCollectionManager();
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
+  const setting = useCollectionManager(currentWorkspace.id);
   const t = useAFFiNEI18N();
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
