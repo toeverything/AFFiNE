@@ -1,19 +1,32 @@
+import {
+  WorkspaceListItemSkeleton,
+  WorkspaceListSkeleton,
+} from '@affine/component/setting-components';
 import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
-import type { ReactElement } from 'react';
+import { useAtomValue } from 'jotai';
+import Image from 'next/legacy/image';
+import { signIn } from 'next-auth/react';
+import type { FC, ReactElement } from 'react';
+import { useCallback } from 'react';
+import { Suspense } from 'react';
+import { useMemo } from 'react';
 
 import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import type { AllWorkspace } from '../../../../shared';
+import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type {
   GeneralSettingKeys,
   GeneralSettingList,
 } from '../general-setting';
+import avatar from './default-avatar.png';
 import {
   accountButton,
   settingSlideBar,
@@ -52,25 +65,49 @@ export const UserInfo = ({
   );
 };
 
-export const SettingSidebar = ({
+export const SignInButton = () => {
+  const t = useAFFiNEI18N();
+  return (
+    <div
+      className={accountButton}
+      onClick={useCallback(() => {
+        signIn().catch(console.error);
+      }, [])}
+    >
+      <Image
+        src={avatar}
+        height={28}
+        width={28}
+        alt="AFFiNE"
+        className="avatar"
+      />
+
+      <div className="content">
+        <div className="name" title={t['com.affine.settings.sign']()}>
+          {t['com.affine.settings.sign']()}
+        </div>
+        <div className="email" title={t['com.affine.setting.sign.message']()}>
+          {t['com.affine.setting.sign.message']()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const SettingSidebar: FC<{
+  generalSettingList: GeneralSettingList;
+  onGeneralSettingClick: (key: GeneralSettingKeys) => void;
+  onWorkspaceSettingClick: (workspaceId: string) => void;
+  selectedWorkspaceId: string | null;
+  selectedGeneralKey: string | null;
+  onAccountSettingClick: () => void;
+}> = ({
   generalSettingList,
   onGeneralSettingClick,
-  currentWorkspace,
-  workspaceList,
   onWorkspaceSettingClick,
   selectedWorkspaceId,
   selectedGeneralKey,
   onAccountSettingClick,
-}: {
-  generalSettingList: GeneralSettingList;
-  onGeneralSettingClick: (key: GeneralSettingKeys) => void;
-  currentWorkspace: AllWorkspace;
-  workspaceList: RootWorkspaceMetadata[];
-  onWorkspaceSettingClick: (workspaceId: string) => void;
-
-  selectedWorkspaceId: string | null;
-  selectedGeneralKey: string | null;
-  onAccountSettingClick: () => void;
 }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrenLoginStatus();
@@ -103,10 +140,42 @@ export const SettingSidebar = ({
         {t['com.affine.settings.workspace']()}
       </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
-        {workspaceList.map(workspace => {
-          return (
+        <Suspense fallback={<WorkspaceListSkeleton />}>
+          <WorkspaceList
+            onWorkspaceSettingClick={onWorkspaceSettingClick}
+            selectedWorkspaceId={selectedWorkspaceId}
+          />
+        </Suspense>
+      </div>
+
+      {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
+        <SignInButton />
+      ) : null}
+
+      {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
+        <UserInfo onAccountSettingClick={onAccountSettingClick} />
+      ) : null}
+    </div>
+  );
+};
+
+export const WorkspaceList: FC<{
+  onWorkspaceSettingClick: (workspaceId: string) => void;
+  selectedWorkspaceId: string | null;
+}> = ({ onWorkspaceSettingClick, selectedWorkspaceId }) => {
+  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
+  const [currentWorkspace] = useCurrentWorkspace();
+  const workspaceList = useMemo(() => {
+    return workspaces.filter(
+      ({ flavour }) => flavour !== WorkspaceFlavour.AFFINE_PUBLIC
+    );
+  }, [workspaces]);
+  return (
+    <>
+      {workspaceList.map(workspace => {
+        return (
+          <Suspense key={workspace.id} fallback={<WorkspaceListItemSkeleton />}>
             <WorkspaceListItem
-              key={workspace.id}
               meta={workspace}
               onClick={() => {
                 onWorkspaceSettingClick(workspace.id);
@@ -114,14 +183,10 @@ export const SettingSidebar = ({
               isCurrent={workspace.id === currentWorkspace.id}
               isActive={workspace.id === selectedWorkspaceId}
             />
-          );
-        })}
-      </div>
-
-      {runtimeConfig.enableCloud && loginStatus === 'authenticated' && (
-        <UserInfo onAccountSettingClick={onAccountSettingClick} />
-      )}
-    </div>
+          </Suspense>
+        );
+      })}
+    </>
   );
 };
 

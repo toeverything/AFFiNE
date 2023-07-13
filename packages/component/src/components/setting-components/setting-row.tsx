@@ -1,16 +1,17 @@
 import clsx from 'clsx';
-import type { CSSProperties, FC, PropsWithChildren, ReactElement } from 'react';
+import type { CSSProperties, FC, PropsWithChildren, ReactNode } from 'react';
 
 import { settingRow } from './share.css';
 
 export const SettingRow: FC<
   PropsWithChildren<{
-    name: string | ReactElement;
-    desc: string | ReactElement;
+    name: ReactNode;
+    desc: ReactNode;
     style?: CSSProperties;
     onClick?: () => void;
     spreadCol?: boolean;
     testId?: string;
+    disabled?: boolean;
   }>
 > = ({
   name,
@@ -20,11 +21,13 @@ export const SettingRow: FC<
   style,
   spreadCol = true,
   testId = '',
+  disabled = false,
 }) => {
   return (
     <div
       className={clsx(settingRow, {
         'two-col': spreadCol,
+        disabled,
       })}
       style={style}
       onClick={onClick}

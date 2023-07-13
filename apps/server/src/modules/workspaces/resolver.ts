@@ -25,6 +25,7 @@ import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth';
+import { AuthService } from '../auth/service';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
 import { Permission } from './types';
@@ -45,6 +46,9 @@ export class InviteUserType extends OmitType(
 
   @Field(() => Permission, { description: 'User permission in workspace' })
   permission!: Permission;
+
+  @Field({ description: 'Invite id' })
+  inviteId!: string;
 
   @Field({ description: 'User accepted' })
   accepted!: boolean;
@@ -81,6 +85,7 @@ export class UpdateWorkspaceInput extends PickType(
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
   constructor(
+    private readonly auth: AuthService,
     private readonly prisma: PrismaService,
     private readonly permissionProvider: PermissionService,
     @Inject(StorageProvide) private readonly storage: Storage
@@ -160,9 +165,10 @@ export class WorkspaceResolver {
         user: true,
       },
     });
-    return data.map(({ accepted, type, user }) => ({
+    return data.map(({ id, accepted, type, user }) => ({
       ...user,
       permission: type,
+      inviteId: id,
       accepted,
     }));
   }
@@ -305,7 +311,7 @@ export class WorkspaceResolver {
     return true;
   }
 
-  @Mutation(() => Boolean)
+  @Mutation(() => String)
   async invite(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
@@ -324,13 +330,27 @@ export class WorkspaceResolver {
       },
     });
 
-    if (!target) {
-      throw new NotFoundException("User doesn't exist");
+    if (target) {
+      const originRecord = await this.prisma.userWorkspacePermission.findFirst({
+        where: {
+          workspaceId,
+          userId: target.id,
+        },
+      });
+
+      if (originRecord) {
+        return originRecord.id;
+      }
+
+      return await this.permissionProvider.grant(
+        workspaceId,
+        target.id,
+        permission
+      );
+    } else {
+      const user = await this.auth.createAnonymousUser(email);
+      return this.permissionProvider.grant(workspaceId, user.id, permission);
     }
-
-    await this.permissionProvider.grant(workspaceId, target.id, permission);
-
-    return true;
   }
 
   @Mutation(() => Boolean)
@@ -342,6 +362,15 @@ export class WorkspaceResolver {
     await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
 
     return this.permissionProvider.revoke(workspaceId, userId);
+  }
+
+  @Mutation(() => Boolean)
+  @Public()
+  async acceptInviteById(
+    @Args('workspaceId') workspaceId: string,
+    @Args('inviteId') inviteId: string
+  ) {
+    return this.permissionProvider.acceptById(workspaceId, inviteId);
   }
 
   @Mutation(() => Boolean)

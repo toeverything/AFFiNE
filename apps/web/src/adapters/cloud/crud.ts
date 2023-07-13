@@ -9,6 +9,7 @@ import {
   getWorkspaceQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
+import { fetcher } from '@affine/workspace/affine/gql';
 import {
   deleteLocalBlobStorage,
   moveLocalBlobStorage,
@@ -21,8 +22,6 @@ import {
 } from '@toeverything/y-indexeddb';
 import { getSession } from 'next-auth/react';
 import { proxy } from 'valtio/vanilla';
-
-import { fetcher } from '../../shared/gql';
 
 const Y = Workspace.Y;
 

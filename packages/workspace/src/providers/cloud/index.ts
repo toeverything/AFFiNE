@@ -1,10 +1,13 @@
+import { DebugLogger } from '@affine/debug';
 import type { ActiveDocProvider, DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import type { Doc } from 'yjs';
 
 const Y = Workspace.Y;
 
-export const createPublicCloudProvider: DocProviderCreator = (
+const logger = new DebugLogger('affine:cloud');
+
+export const createCloudDownloadProvider: DocProviderCreator = (
   id,
   doc
 ): ActiveDocProvider => {
@@ -17,7 +20,9 @@ export const createPublicCloudProvider: DocProviderCreator = (
 
   async function downloadBinaryRecursively(doc: Doc) {
     const guid = doc.guid;
-    const response = await fetch(`/api/workspaces/${id}/docs/${guid}`);
+    const response = await fetch(
+      runtimeConfig.serverUrlPrefix + `/api/workspaces/${id}/docs/${guid}`
+    );
     const buffer = await response.arrayBuffer();
     Y.applyUpdate(doc, new Uint8Array(buffer));
     await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
@@ -27,7 +32,12 @@ export const createPublicCloudProvider: DocProviderCreator = (
     flavour: 'affine-cloud-download',
     active: true,
     sync() {
-      downloadBinaryRecursively(doc).then(_resolve).catch(_reject);
+      downloadBinaryRecursively(doc)
+        .then(() => {
+          logger.info(`Downloaded ${id}`);
+          _resolve();
+        })
+        .catch(_reject);
     },
     get whenReady() {
       return promise;

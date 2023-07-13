@@ -21,17 +21,17 @@
     }
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/editor": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/global": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/lit": "0.0.0-20230711013419-0b07ee2d-nightly",
-    "@blocksuite/store": "0.0.0-20230711013419-0b07ee2d-nightly",
+    "@blocksuite/blocks": "0.0.0-20230711103520-ce18dd84-nightly",
+    "@blocksuite/editor": "0.0.0-20230711103520-ce18dd84-nightly",
+    "@blocksuite/global": "0.0.0-20230711103520-ce18dd84-nightly",
+    "@blocksuite/lit": "0.0.0-20230711103520-ce18dd84-nightly",
+    "@blocksuite/store": "0.0.0-20230711103520-ce18dd84-nightly",
     "jotai": "^2.2.2"
   },
   "devDependencies": {
     "jotai": "^2.2.2",
-    "vite": "^4.3.9",
-    "vite-plugin-dts": "3.0.2"
+    "vite": "^4.4.3",
+    "vite-plugin-dts": "3.2.0"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",

@@ -16,7 +16,7 @@ import {
 import type { Doc } from 'yjs';
 
 import { SocketIOProvider } from '../affine/sync-socket-io';
-import { createPublicCloudProvider } from './cloud';
+import { createCloudDownloadProvider } from './cloud';
 import {
   createSQLiteDBDownloadProvider,
   createSQLiteProvider,
@@ -30,9 +30,14 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   doc,
   { awareness }
 ): AffineSocketIOProvider => {
-  const provider = new SocketIOProvider('/', id, doc, {
-    awareness,
-  });
+  const provider = new SocketIOProvider(
+    runtimeConfig.serverUrlPrefix + '/',
+    id,
+    doc,
+    {
+      awareness,
+    }
+  );
   return {
     flavour: 'affine-socket-io',
     passive: true,
@@ -172,5 +177,5 @@ export const createAffineProviders = (): DocProviderCreator[] => {
 };
 
 export const createAffinePublicProviders = (): DocProviderCreator[] => {
-  return [createPublicCloudProvider];
+  return [createCloudDownloadProvider];
 };

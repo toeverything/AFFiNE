@@ -64,7 +64,7 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
           {name}
         </StyledWorkspaceName>
         {workspace && (
-          <StyledWorkspaceStatus>
+          <StyledWorkspaceStatus data-testid="workspace-flavour">
             {workspace.flavour === 'local' ? (
               <LocalWorkspaceIcon />
             ) : (

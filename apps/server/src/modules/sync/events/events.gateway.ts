@@ -38,7 +38,7 @@ export class EventsGateway {
     await client.join(workspace_id);
 
     for (const { guid, update } of docs) {
-      this.server.to(workspace_id).emit('server-handshake', {
+      client.emit('server-handshake', {
         guid,
         update: uint8ArrayToBase64(update),
       });
@@ -53,12 +53,13 @@ export class EventsGateway {
       workspaceId: string;
       guid: string;
       update: string;
-    }
+    },
+    @ConnectedSocket() client: Socket
   ) {
     this.metric.socketIOCounter(1, { event: 'client-update' });
     const endTimer = this.metric.socketIOTimer({ event: 'client-update' });
     const update = Buffer.from(message.update, 'base64');
-    this.server.to(message.workspaceId).emit('server-update', message);
+    client.to(message.workspaceId).emit('server-update', message);
 
     await this.storage.sync(message.workspaceId, message.guid, update);
     endTimer();
@@ -73,17 +74,18 @@ export class EventsGateway {
     const endTimer = this.metric.socketIOTimer({ event: 'init-awareness' });
     const roomId = `awareness-${workspace_id}`;
     await client.join(roomId);
-    this.server.to(roomId).emit('new-client-awareness-init');
+    client.to(roomId).emit('new-client-awareness-init');
     endTimer();
   }
 
   @SubscribeMessage('awareness-update')
   async handleHelpGatheringAwareness(
-    @MessageBody() message: { workspaceId: string; awarenessUpdate: string }
+    @MessageBody() message: { workspaceId: string; awarenessUpdate: string },
+    @ConnectedSocket() client: Socket
   ) {
     this.metric.socketIOCounter(1, { event: 'awareness-update' });
     const endTimer = this.metric.socketIOTimer({ event: 'awareness-update' });
-    this.server
+    client
       .to(`awareness-${message.workspaceId}`)
       .emit('server-awareness-broadcast', {
         ...message,

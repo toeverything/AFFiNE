@@ -58,12 +58,16 @@ export const buildFlagsSchema = z.object({
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   changelogUrl: z.string(),
+  // see: packages/workers
+  imageProxyUrl: z.string(),
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
   enableNewSettingUnstableApi: z.boolean(),
   enableSQLiteProvider: z.boolean(),
   enableNotificationCenter: z.boolean(),
   enableCloud: z.boolean(),
+  // this is for the electron app
+  serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
 });
 
@@ -86,6 +90,8 @@ export const publicRuntimeConfigSchema = buildFlagsSchema.extend({
   PROJECT_NAME: z.string(),
   BUILD_DATE: z.string(),
   gitVersion: z.string(),
+  appVersion: z.string(),
+  editorVersion: z.string(),
   hash: z.string(),
   editorFlags: blockSuiteFeatureFlags,
 });

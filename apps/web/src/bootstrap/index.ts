@@ -27,6 +27,11 @@ rootStore.set(
   >
 );
 
+if (!environment.isDesktop) {
+  // just use current host for non-desktop
+  runtimeConfig.serverUrlPrefix = '';
+}
+
 if (process.env.NODE_ENV === 'development') {
   console.log('Runtime Preset', runtimeConfig);
 }

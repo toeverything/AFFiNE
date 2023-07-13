@@ -9,8 +9,10 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import { register } from 'prom-client';
 
 import { AppModule } from '../app';
+import { AuthService } from '../modules/auth/service';
 import {
   acceptInvite,
+  acceptInviteById,
   createWorkspace,
   getWorkspace,
   inviteUser,
@@ -23,6 +25,8 @@ describe('Workspace Module - invite', () => {
   let app: INestApplication;
 
   const client = new PrismaClient();
+
+  let auth: AuthService;
 
   // cleanup database before each test
   beforeEach(async () => {
@@ -45,6 +49,8 @@ describe('Workspace Module - invite', () => {
       })
     );
     await app.init();
+
+    auth = module.get(AuthService);
   });
 
   afterEach(async () => {
@@ -65,7 +71,7 @@ describe('Workspace Module - invite', () => {
       u2.email,
       'Admin'
     );
-    ok(invite === true, 'failed to invite user');
+    ok(!!invite, 'failed to invite user');
   });
 
   it('should accept an invite', async () => {
@@ -109,5 +115,56 @@ describe('Workspace Module - invite', () => {
 
     const revoke = await revokeUser(app, u1.token.token, workspace.id, u2.id);
     ok(revoke === true, 'failed to revoke user');
+  });
+
+  it('should create user if not exist', async () => {
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+
+    const workspace = await createWorkspace(app, u1.token.token);
+
+    await inviteUser(
+      app,
+      u1.token.token,
+      workspace.id,
+      'u2@affine.pro',
+      'Admin'
+    );
+
+    const user = await auth.getUserByEmail('u2@affine.pro');
+    ok(user !== undefined, 'failed to create user');
+    ok(user?.name === 'Unnamed', 'failed to create user');
+  });
+
+  it('should invite a user by link', async () => {
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+    const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
+
+    const workspace = await createWorkspace(app, u1.token.token);
+
+    const invite = await inviteUser(
+      app,
+      u1.token.token,
+      workspace.id,
+      u2.email,
+      'Admin'
+    );
+
+    const accept = await acceptInviteById(app, workspace.id, invite);
+    ok(accept === true, 'failed to accept invite');
+
+    const invite1 = await inviteUser(
+      app,
+      u1.token.token,
+      workspace.id,
+      u2.email,
+      'Admin'
+    );
+
+    ok(invite === invite1, 'repeat the invitation must return same id');
+
+    const currWorkspace = await getWorkspace(app, u1.token.token, workspace.id);
+    const currMember = currWorkspace.members.find(u => u.email === u2.email);
+    ok(currMember !== undefined, 'failed to invite user');
+    ok(currMember.inviteId === invite, 'failed to check invite id');
   });
 });

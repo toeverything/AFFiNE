@@ -24,6 +24,7 @@ const buildPreset = {
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
+    imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
     enablePreloading: true,
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
@@ -31,6 +32,7 @@ const buildPreset = {
     enableMoveDatabase: false,
     enableNotificationCenter: false,
     enableCloud: true,
+    serverUrlPrefix: 'https://affine.fail',
   },
   beta: {},
   internal: {},
@@ -41,6 +43,7 @@ const buildPreset = {
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
     changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
+    imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
     enablePreloading: true,
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
@@ -48,6 +51,7 @@ const buildPreset = {
     enableMoveDatabase: false,
     enableNotificationCenter: true,
     enableCloud: true,
+    serverUrlPrefix: 'https://affine.fail',
   },
 };
 
@@ -62,6 +66,10 @@ if (process.env.CI && !process.env.BUILD_TYPE) {
 }
 
 const currentBuildPreset = buildPreset[currentBuild];
+
+if (process.env.NODE_ENV === 'development') {
+  currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
+}
 
 const environmentPreset = {
   enablePlugin: process.env.ENABLE_PLUGIN
