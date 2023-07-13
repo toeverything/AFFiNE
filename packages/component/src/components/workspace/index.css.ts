@@ -52,7 +52,8 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
 
 export const mainContainerStyle = style({
   position: 'relative',
-  flexGrow: 1,
+  width: 0,
+  flex: 1,
   maxWidth: '100%',
   zIndex: 2,
   backgroundColor: 'var(--affine-background-primary-color)',
