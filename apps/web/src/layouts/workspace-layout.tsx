@@ -32,8 +32,8 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/workspace';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,

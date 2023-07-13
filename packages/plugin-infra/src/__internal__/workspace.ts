@@ -17,10 +17,25 @@ const workspacePassiveAtomWeakMap = new WeakMap<
 >();
 
 // Whether the workspace is active to use
-const workspaceActiveWeakMap = new WeakMap<Workspace, boolean>();
+export const workspaceActiveWeakMap = new WeakMap<Workspace, boolean>();
 
 // Whether the workspace has been enabled the passive effect (background)
-const workspacePassiveEffectWeakMap = new WeakMap<Workspace, boolean>();
+export const workspacePassiveEffectWeakMap = new WeakMap<Workspace, boolean>();
+
+export async function waitForWorkspace(workspace: Workspace) {
+  if (workspaceActiveWeakMap.get(workspace) !== true) {
+    const providers = workspace.providers.filter(
+      (provider): provider is ActiveDocProvider =>
+        'active' in provider && provider.active === true
+    );
+    for (const provider of providers) {
+      provider.sync();
+      // we will wait for the necessary providers to be ready
+      await provider.whenReady;
+    }
+    workspaceActiveWeakMap.set(workspace, true);
+  }
+}
 
 export function getWorkspace(id: string) {
   if (!INTERNAL_BLOCKSUITE_HASH_MAP.has(id)) {
@@ -38,18 +53,7 @@ export function getActiveBlockSuiteWorkspaceAtom(
   const workspace = INTERNAL_BLOCKSUITE_HASH_MAP.get(id) as Workspace;
   if (!workspacePassiveAtomWeakMap.has(workspace)) {
     const baseAtom = atom(async () => {
-      if (workspaceActiveWeakMap.get(workspace) !== true) {
-        const providers = workspace.providers.filter(
-          (provider): provider is ActiveDocProvider =>
-            'active' in provider && provider.active === true
-        );
-        for (const provider of providers) {
-          provider.sync();
-          // we will wait for the necessary providers to be ready
-          await provider.whenReady;
-        }
-        workspaceActiveWeakMap.set(workspace, true);
-      }
+      await waitForWorkspace(workspace);
       return workspace;
     });
     workspacePassiveAtomWeakMap.set(workspace, baseAtom);
