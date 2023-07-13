@@ -88,17 +88,6 @@
         }
       ]
     },
-    "e2e:coverage": {
-      "outputs": ["{workspaceRoot}/.nyc_output", "{projectRoot}/test-results"],
-      "inputs": [
-        {
-          "runtime": "node -v"
-        },
-        {
-          "runtime": "yarn playwright --version"
-        }
-      ]
-    },
     "test": {
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [

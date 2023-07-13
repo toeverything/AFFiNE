@@ -2,10 +2,14 @@ import { expect, test } from 'vitest';
 
 test('compare config', async () => {
   const { default: nextConfigMock } = await import(
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     '../../scripts/vitest/next-config-mock'
   );
   const mockConfig = nextConfigMock().publicRuntimeConfig;
   const { default: nextConfig } = await import(
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     '../../apps/web/next.config.mjs'
   );
   const config = nextConfig.publicRuntimeConfig;

@@ -120,12 +120,7 @@
     {
       "path": "./plugins/copilot"
     },
-
-    // Tests
-    {
-      "path": "./tests"
-    },
-
+    // Packages
     {
       "path": "./packages/component"
     },
@@ -144,15 +139,18 @@
     {
       "path": "./packages/y-indexeddb"
     },
-
+    // Tests
     {
-      "path": "./tests/fixtures"
+      "path": "./tests/unit"
     },
     {
       "path": "./tests/kit"
     },
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tests/affine-local"
     },
     {
       "path": "./tests/affine-legacy/0.7.0-canary.18"

@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.7.0-canary.44",
   "exports": {
-    "./playwright": "./playwright.ts"
+    "./playwright": "./playwright.ts",
+    "./utils/*": "./utils/*.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.35.1"
