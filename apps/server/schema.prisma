@@ -13,6 +13,8 @@ model Workspace {
   public    Boolean
   createdAt DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   users     UserWorkspacePermission[]
+  updates   Update[]
+  snapshots Snapshot[]
 
   @@map("workspaces")
 }
@@ -115,14 +117,29 @@ model OptimizedBlob {
   @@map("optimized_blobs")
 }
 
-model Doc {
-  id           Int      @id @default(autoincrement()) @db.Integer
-  workspaceId  String   @map("workspace_id") @db.VarChar
-  guid         String   @db.VarChar
-  is_workspace Boolean  @default(true) @db.Boolean
-  blob         Bytes    @db.ByteA
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+// the latest snapshot of each doc that we've seen
+// Snapshot + Updates are the latest state of the doc
+model Snapshot {
+  id          String    @id @default(uuid()) @map("guid") @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  blob        Bytes     @db.ByteA
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([workspaceId, guid])
-  @@map("docs")
+  @@index([workspaceId])
+  @@map("snapshots")
+}
+
+// backup during other update operation queue downtime
+model Update {
+  objectId    String    @id @default(uuid()) @map("object_id") @db.VarChar
+  id          String    @map("guid") @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  blob        Bytes     @db.ByteA
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([id, workspaceId])
+  @@map("updates")
 }

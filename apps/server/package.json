@@ -61,10 +61,12 @@
     "@types/node": "^18.16.19",
     "@types/nodemailer": "^6.4.8",
     "@types/pretty-time": "^1.1.2",
+    "@types/sinon": "^10.0.15",
     "@types/supertest": "^2.0.12",
     "@types/ws": "^8.5.5",
     "c8": "^8.0.0",
     "nodemon": "^3.0.1",
+    "sinon": "^15.2.0",
     "supertest": "^6.3.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"

@@ -9,11 +9,11 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import format from 'pretty-time';
-import * as Y from 'yjs';
 
 import { Metrics } from '../../metrics/metrics';
 import { StorageProvide } from '../../storage';
 import { Auth, CurrentUser, Publicable } from '../auth';
+import { DocManager } from '../doc';
 import { UserType } from '../users';
 import { PermissionService } from './permission';
 
@@ -22,6 +22,7 @@ export class WorkspacesController {
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
     private readonly permission: PermissionService,
+    private readonly docManager: DocManager,
     private readonly metric: Metrics
   ) {}
 
@@ -70,27 +71,16 @@ export class WorkspacesController {
     this.metric.restRequest(1, metricsLabel);
     const start = process.hrtime();
     await this.permission.check(ws, user?.id);
-    await this.permission.check(ws);
 
-    const updates = await this.storage.loadBuffer(guid);
+    const update = await this.docManager.getLatest(ws, guid);
 
-    if (!updates) {
+    if (!update) {
       this.metric.restError(1, metricsLabel);
       throw new NotFoundException('Doc not found');
     }
 
-    const doc = new Y.Doc({ guid });
-    for (const update of updates) {
-      try {
-        Y.applyUpdate(doc, update);
-      } catch (e) {
-        this.metric.docApplyUpdateErr(1, {});
-        console.error(e);
-      }
-    }
-    const content = Buffer.from(Y.encodeStateAsUpdate(doc));
     res.setHeader('content-type', 'application/octet-stream');
-    res.send(content);
+    res.send(update);
     console.info('workspaces doc api: ', format(process.hrtime(start)));
   }
 }
