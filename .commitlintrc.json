@@ -22,7 +22,9 @@
         "templates",
         "y-indexeddb",
         "debug",
-        "storage"
+        "storage",
+        "infra",
+        "plugin-infra"
       ]
     ]
   }
