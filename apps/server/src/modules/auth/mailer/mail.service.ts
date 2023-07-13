@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { Config } from '../../../config';
-import { WorkspaceType } from '../../workspaces';
 import {
   MAILER_SERVICE,
   type MailerService,
@@ -28,12 +27,8 @@ export class MailService {
     );
   }
 
-  async sendInviteEmail(
-    to: string,
-    workspace: WorkspaceType,
-    inviteId: string
-  ) {
-    const url = `${this.config.baseUrl}/invite?id=${workspace.id}&invite=${inviteId}`;
+  async sendInviteEmail(to: string, workspaceId: string, inviteId: string) {
+    const url = `${this.config.baseUrl}/invite?id=${workspaceId}&invite=${inviteId}`;
     const html = `
       <h1>Invitation to workspace</h1>
       <p>You have been invited to workspace. Click the link below to accept the invitation.</p>

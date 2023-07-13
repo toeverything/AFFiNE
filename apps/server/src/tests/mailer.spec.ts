@@ -64,7 +64,7 @@ describe('Mail Module', () => {
 
       const resp = await mail.sendInviteEmail(
         'production@toeverything.info',
-        workspace,
+        workspace.id,
         inviteId
       );
 
