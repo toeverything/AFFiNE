@@ -14,7 +14,7 @@ import type {
  * See https://playwright.dev/docs/test-configuration.
  */
 const config: PlaywrightTestConfig = {
-  testDir: './tests/parallels',
+  testDir: './e2e',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {

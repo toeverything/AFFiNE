@@ -1,4 +1,4 @@
-import { test } from '@affine-test/kit/lib/playwright';
+import { test } from '@affine-test/kit/playwright';
 import {
   changeFilter,
   checkDatePicker,
