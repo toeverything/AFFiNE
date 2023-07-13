@@ -8,7 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../app';
-import { MailService } from '../modules/mail/mail.service';
+import { MailService } from '../modules/auth/mailer';
 import { createWorkspace, inviteUser, signUp } from './utils';
 
 describe('Mail Module', () => {

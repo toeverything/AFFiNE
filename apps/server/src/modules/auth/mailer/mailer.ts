@@ -2,7 +2,7 @@ import { FactoryProvider } from '@nestjs/common';
 import { createTransport, Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
-import { Config } from '../../config';
+import { Config } from '../../../config';
 
 export const MAILER_SERVICE = Symbol('MAILER_SERVICE');
 

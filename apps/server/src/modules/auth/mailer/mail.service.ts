@@ -1,8 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { Config } from '../../config';
-import { WorkspaceType } from '../workspaces';
-import { MAILER_SERVICE, MailerService, Options, Response } from './mailer';
+import { Config } from '../../../config';
+import { WorkspaceType } from '../../workspaces';
+import {
+  MAILER_SERVICE,
+  type MailerService,
+  type Options,
+  type Response,
+} from './mailer';
 
 @Injectable()
 export class MailService {
@@ -11,16 +16,8 @@ export class MailService {
     private readonly config: Config
   ) {}
 
-  private async sendMail(options: Options): Promise<Response> {
-    return new Promise((resolve, reject) => {
-      this.mailer.sendMail(options, function (error, info) {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(info);
-        }
-      });
-    });
+  async sendMail(options: Options): Promise<Response> {
+    return this.mailer.sendMail(options);
   }
 
   hasConfigured() {
