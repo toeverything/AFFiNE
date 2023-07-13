@@ -18,17 +18,19 @@
       "type": "./dist/type.d.ts",
       "import": "./dist/type.js",
       "require": "./dist/type.cjs"
+    },
+    "./__internal__/workspace": {
+      "type": "./dist/__internal__/workspace.d.ts",
+      "import": "./dist/__internal__/workspace.js",
+      "require": "./dist/__internal__/workspace.cjs"
     }
   },
-  "dependencies": {
+  "devDependencies": {
     "@blocksuite/blocks": "0.0.0-20230713062147-9eb7708c-nightly",
     "@blocksuite/editor": "0.0.0-20230713062147-9eb7708c-nightly",
     "@blocksuite/global": "0.0.0-20230713062147-9eb7708c-nightly",
     "@blocksuite/lit": "0.0.0-20230713062147-9eb7708c-nightly",
     "@blocksuite/store": "0.0.0-20230713062147-9eb7708c-nightly",
-    "jotai": "^2.2.2"
-  },
-  "devDependencies": {
     "jotai": "^2.2.2",
     "vite": "^4.3.9",
     "vite-plugin-dts": "3.0.2"

@@ -3,14 +3,15 @@
  */
 import { Workspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
+import { getDefaultStore } from 'jotai/vanilla';
+import { expect, test, vi } from 'vitest';
+
 import {
   getActiveBlockSuiteWorkspaceAtom,
   INTERNAL_BLOCKSUITE_HASH_MAP,
   usePassiveWorkspaceEffect,
   useStaticBlockSuiteWorkspace,
-} from '@toeverything/hooks/use-block-suite-workspace';
-import { getDefaultStore } from 'jotai/vanilla';
-import { expect, test, vi } from 'vitest';
+} from '../__internal__/workspace';
 
 test('useStaticBlockSuiteWorkspace', async () => {
   const sync = vi.fn();

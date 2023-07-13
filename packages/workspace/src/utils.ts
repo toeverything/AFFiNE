@@ -12,7 +12,7 @@ import {
   Generator,
   Workspace,
 } from '@blocksuite/store';
-import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/hooks/use-block-suite-workspace';
+import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/plugin-infra/__internal__/workspace';
 
 import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
