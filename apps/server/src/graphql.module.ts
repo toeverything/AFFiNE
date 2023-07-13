@@ -29,7 +29,7 @@ import { Metrics } from './metrics/metrics';
           plugins: [new MetricsPlugin(metrics)],
         };
       },
-      inject: [Config],
+      inject: [Config, Metrics],
     }),
   ],
 })
