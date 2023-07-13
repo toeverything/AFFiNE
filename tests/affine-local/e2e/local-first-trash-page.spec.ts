@@ -5,11 +5,11 @@ import {
   newPage,
   waitEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 test('New a page , then delete it in all pages, finally find it in trash', async ({
   page,
+  workspace,
 }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -39,5 +39,7 @@ test('New a page , then delete it in all pages, finally find it in trash', async
   expect(
     page.getByRole('cell', { name: 'this is a new page to delete' })
   ).not.toBeUndefined();
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });

@@ -8,7 +8,10 @@ import {
 } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test('just one item in the workspace list at first', async ({ page }) => {
+test('just one item in the workspace list at first', async ({
+  page,
+  workspace,
+}) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const workspaceName = page.getByTestId('workspace-name');
@@ -19,9 +22,15 @@ test('just one item in the workspace list at first', async ({ page }) => {
       .filter({ hasText: 'AFFiNE TestLocal WorkspaceAvailable Offline' })
       .nth(3)
   ).not.toBeNull();
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
-test('create one workspace in the workspace list', async ({ page }) => {
+test('create one workspace in the workspace list', async ({
+  page,
+  workspace,
+}) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const newWorkspaceNameStr = 'New Workspace';
@@ -48,9 +57,15 @@ test('create one workspace in the workspace list', async ({ page }) => {
   const pageList1 = page.locator('[data-testid=page-list-item]');
   const result1 = await pageList1.count();
   expect(result1).toBe(0);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
-test('create multi workspace in the workspace list', async ({ page }) => {
+test('create multi workspace in the workspace list', async ({
+  page,
+  workspace,
+}) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await createWorkspace({ name: 'New Workspace 2' }, page);
@@ -71,8 +86,9 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   await page.getByTestId('draggable-item').nth(1).click();
   await page.waitForTimeout(500);
 
-  // @ts-expect-error
-  const currentId: string = await page.evaluate(() => currentWorkspace.id);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 
   await openWorkspaceListModal(page);
   const sourceElement = page.getByTestId('draggable-item').nth(2);
@@ -122,7 +138,7 @@ test('create multi workspace in the workspace list', async ({ page }) => {
   await page.getByTestId('draggable-item').nth(2).click();
   await workspaceChangePromise;
 
-  // @ts-expect-error
-  const nextId: string = await page.evaluate(() => currentWorkspace.id);
-  expect(currentId).toBe(nextId);
+  const nextWorkspace = await workspace.current();
+
+  expect(currentWorkspace.id).toBe(nextWorkspace.id);
 });

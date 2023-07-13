@@ -7,10 +7,12 @@ import {
   waitEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { waitForLogMessage } from '@affine-test/kit/utils/utils';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test('New a page and open it ,then favorite it', async ({ page }) => {
+test('New a page and open it ,then favorite it', async ({
+  page,
+  workspace,
+}) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -26,7 +28,9 @@ test('New a page and open it ,then favorite it', async ({ page }) => {
   await clickPageMoreActions(page);
   const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
   await favoriteBtn.click();
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
 test('Export to html, markdown and png', async ({ page }) => {
@@ -74,7 +78,7 @@ test.skip('Export to pdf', async ({ page }) => {
   }
 });
 
-test('Cancel favorite', async ({ page }) => {
+test('Cancel favorite', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -115,5 +119,7 @@ test('Cancel favorite', async ({ page }) => {
       'Tips: Click Add to Favorites/Trash and the page will appear here.'
     )
   ).not.toBeUndefined();
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });

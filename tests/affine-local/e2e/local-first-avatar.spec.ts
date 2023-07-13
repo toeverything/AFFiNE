@@ -3,10 +3,12 @@ import { resolve } from 'node:path';
 import { rootDir, test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test('should create a page with a local first avatar', async ({ page }) => {
+test('should create a page with a local first avatar', async ({
+  page,
+  workspace,
+}) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -35,5 +37,7 @@ test('should create a page with a local first avatar', async ({ page }) => {
     .getAttribute('src');
   // out user uploaded avatar
   expect(blobUrl).toContain('blob:');
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });

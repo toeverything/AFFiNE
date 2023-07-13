@@ -111,6 +111,7 @@ test('edit collection', async ({ page }) => {
   await page.waitForTimeout(100);
   expect(await first.textContent()).toBe('123');
 });
+
 test('edit collection and change filter date', async ({ page }) => {
   await createAndPinCollection(page);
   const collections = page.getByTestId('collections');

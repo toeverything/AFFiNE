@@ -4,10 +4,9 @@ import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { openWorkspaceSettingPanel } from '@affine-test/kit/utils/setting';
 import { openSettingModal } from '@affine-test/kit/utils/setting';
 import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test('Create new workspace, then delete it', async ({ page }) => {
+test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await clickSideBarCurrentWorkspaceBanner(page);
@@ -43,7 +42,9 @@ test('Create new workspace, then delete it', async ({ page }) => {
   expect(await page.getByTestId('workspace-name').textContent()).toBe(
     'Demo Workspace'
   );
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
 test('Delete last workspace', async ({ page }) => {
