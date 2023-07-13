@@ -16,7 +16,6 @@ import React, { lazy, Suspense, useEffect } from 'react';
 
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
-import { useRouterEffect } from '../hooks/use-router-effect';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
 
@@ -44,7 +43,6 @@ const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
 const i18n = createI18n();
 
 function InternalContext(props: PropsWithChildren) {
-  useRouterEffect();
   useTrackRouterHistoryEffect();
   return <>{props.children}</>;
 }

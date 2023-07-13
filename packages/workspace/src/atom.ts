@@ -4,6 +4,7 @@ import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { atom } from 'jotai';
+import Router from 'next/router';
 import { z } from 'zod';
 
 const rootWorkspaceMetadataV1Schema = z.object({
@@ -234,7 +235,46 @@ export const rootWorkspacesMetadataAtom = atom<
 // two more atoms to store the current workspace and page
 export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
 
+rootCurrentWorkspaceIdAtom.onMount = set => {
+  if (environment.isBrowser) {
+    const callback = (url: string) => {
+      const value = url.split('/')[2];
+      if (value) {
+        set(value);
+        localStorage.setItem('last_workspace_id', value);
+      } else {
+        set(null);
+      }
+    };
+    callback(window.location.pathname);
+    Router.events.on('routeChangeStart', callback);
+    return () => {
+      Router.events.off('routeChangeStart', callback);
+    };
+  }
+  return;
+};
+
 export const rootCurrentPageIdAtom = atom<string | null>(null);
+
+rootCurrentPageIdAtom.onMount = set => {
+  if (environment.isBrowser) {
+    const callback = (url: string) => {
+      const value = url.split('/')[3];
+      if (value) {
+        set(value);
+      } else {
+        set(null);
+      }
+    };
+    callback(window.location.pathname);
+    Router.events.on('routeChangeStart', callback);
+    return () => {
+      Router.events.off('routeChangeStart', callback);
+    };
+  }
+  return;
+};
 
 // blocksuite atoms,
 // each app should have only one block-hub in the same time
