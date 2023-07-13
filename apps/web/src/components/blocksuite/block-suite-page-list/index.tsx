@@ -11,7 +11,7 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { getPagePreviewText } from '@toeverything/hooks/use-block-suite-page-preview';
 import { useAtom } from 'jotai';
 import type React from 'react';
-import { useCallback, useMemo } from 'react';
+import { use, useCallback, useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
@@ -113,6 +113,9 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     (pageId: string): string | undefined => {
       const page = blockSuiteWorkspace.getPage(pageId);
       assertExists(page);
+      if (!page.loaded) {
+        use(page.waitForLoaded());
+      }
       return getPagePreviewText(page);
     },
     [blockSuiteWorkspace]
