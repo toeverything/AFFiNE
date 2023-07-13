@@ -239,7 +239,9 @@ rootCurrentWorkspaceIdAtom.onMount = set => {
   if (environment.isBrowser) {
     const callback = (url: string) => {
       const value = url.split('/')[2];
-      if (value) {
+      if (value === 'all' || value === 'trash' || value === 'shared') {
+        set(null);
+      } else if (value) {
         set(value);
         localStorage.setItem('last_workspace_id', value);
       } else {
