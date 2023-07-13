@@ -11,11 +11,12 @@ export function useInviteMember(workspaceId: string) {
   });
   const mutate = useMutateCloud();
   return useCallback(
-    async (email: string, permission: Permission) => {
+    async (email: string, permission: Permission, sendInviteMail = false) => {
       await trigger({
         workspaceId,
         email,
         permission,
+        sendInviteMail,
       });
       await mutate();
     },

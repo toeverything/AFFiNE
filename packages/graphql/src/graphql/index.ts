@@ -267,8 +267,13 @@ export const inviteByEmailMutation = {
   definitionName: 'invite',
   containsFile: false,
   query: `
-mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!) {
-  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
+mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!, $sendInviteMail: Boolean) {
+  invite(
+    workspaceId: $workspaceId
+    email: $email
+    permission: $permission
+    sendInviteMail: $sendInviteMail
+  )
 }`,
 };
 
