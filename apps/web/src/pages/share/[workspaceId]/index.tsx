@@ -37,7 +37,7 @@ const ShareWorkspacePage: NextPageWithLayout = () => {
             name: 'NONE',
             filterList: [],
           }),
-          []
+          [workspace.id]
         )}
         onOpenPage={useCallback(
           async (pageId, newTab) => {
