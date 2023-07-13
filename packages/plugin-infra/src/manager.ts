@@ -1,5 +1,8 @@
+import { assertExists } from '@blocksuite/global/utils';
+import type { Page, Workspace } from '@blocksuite/store';
 import { atom, createStore } from 'jotai/vanilla';
 
+import { getWorkspace, waitForWorkspace } from './__internal__/workspace';
 import type { AffinePlugin, Definition, ServerAdapter } from './type';
 import type { Loader, PluginUIAdapter } from './type';
 import type { PluginBlockSuiteAdapter } from './type';
@@ -12,8 +15,29 @@ export const rootStore = createStore();
 
 // todo: for now every plugin is enabled by default
 export const affinePluginsAtom = atom<Record<string, AffinePlugin<string>>>({});
-export const currentPageIdAtom = atom<string | null>(null);
 export const currentWorkspaceIdAtom = atom<string | null>(null);
+export const currentPageIdAtom = atom<string | null>(null);
+export const currentWorkspaceAtom = atom<Promise<Workspace>>(async get => {
+  const currentWorkspaceId = get(currentWorkspaceIdAtom);
+  assertExists(currentWorkspaceId, 'current workspace id');
+  const workspace = getWorkspace(currentWorkspaceId);
+  await waitForWorkspace(workspace);
+  return workspace;
+});
+export const currentPageAtom = atom<Promise<Page>>(async get => {
+  const currentWorkspaceId = get(currentWorkspaceIdAtom);
+  assertExists(currentWorkspaceId, 'current workspace id');
+  const currentPageId = get(currentPageIdAtom);
+  assertExists(currentPageId, 'current page id');
+  const workspace = getWorkspace(currentWorkspaceId);
+  await waitForWorkspace(workspace);
+  const page = workspace.getPage(currentPageId);
+  assertExists(page);
+  if (!page.loaded) {
+    await page.waitForLoaded();
+  }
+  return page;
+});
 
 export function definePlugin<ID extends string>(
   definition: Definition<ID>,

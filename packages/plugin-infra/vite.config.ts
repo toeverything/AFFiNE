@@ -13,6 +13,10 @@ export default defineConfig({
       entry: {
         type: resolve(root, 'src/type.ts'),
         manager: resolve(root, 'src/manager.ts'),
+        '__internal__/workspace': resolve(
+          root,
+          'src/__internal__/workspace.ts'
+        ),
       },
     },
     rollupOptions: {

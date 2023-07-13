@@ -18,6 +18,11 @@
       "type": "./dist/type.d.ts",
       "import": "./dist/type.js",
       "require": "./dist/type.cjs"
+    },
+    "./__internal__/workspace": {
+      "type": "./dist/__internal__/workspace.d.ts",
+      "import": "./dist/__internal__/workspace.js",
+      "require": "./dist/__internal__/workspace.cjs"
     }
   },
   "dependencies": {
