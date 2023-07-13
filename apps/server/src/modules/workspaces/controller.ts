@@ -8,16 +8,20 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import * as Y from 'yjs';
+import format from 'pretty-time';
 
 import { StorageProvide } from '../../storage';
+import { Auth, CurrentUser, Publicable } from '../auth';
+import { DocManager } from '../doc';
+import { UserType } from '../users';
 import { PermissionService } from './permission';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
-    private readonly permission: PermissionService
+    private readonly permission: PermissionService,
+    private readonly docManager: DocManager
   ) {}
 
   // get workspace blob
@@ -43,32 +47,26 @@ export class WorkspacesController {
   }
 
   // get doc binary
-  //
-  // NOTE: only for public workspace, normal workspace update should be load from websocket sync logic
   @Get('/:id/docs/:guid')
+  @Auth()
+  @Publicable()
   async doc(
+    @CurrentUser() user: UserType | undefined,
     @Param('id') ws: string,
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
-    await this.permission.check(ws);
+    const start = process.hrtime();
+    await this.permission.check(ws, user?.id);
 
-    const updates = await this.storage.loadBuffer(guid);
+    const update = await this.docManager.getLatest(ws, guid);
 
-    if (!updates) {
+    if (!update) {
       throw new NotFoundException('Doc not found');
     }
 
-    const doc = new Y.Doc({ guid });
-    for (const update of updates) {
-      try {
-        Y.applyUpdate(doc, update);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
     res.setHeader('content-type', 'application/octet-stream');
-    res.send(Buffer.from(Y.encodeStateAsUpdate(doc)));
+    res.send(update);
+    console.info('workspaces doc api: ', format(process.hrtime(start)));
   }
 }

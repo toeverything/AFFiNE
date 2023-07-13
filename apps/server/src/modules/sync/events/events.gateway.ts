@@ -7,10 +7,10 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 import { StorageProvide } from '../../../storage';
-import { uint8ArrayToBase64 } from '../utils';
+import { DocManager } from '../../doc';
 import { WorkspaceService } from './workspace';
 
 @WebSocketGateway({
@@ -19,11 +19,12 @@ import { WorkspaceService } from './workspace';
 export class EventsGateway {
   constructor(
     private readonly storageService: WorkspaceService,
+    private readonly docManager: DocManager,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
   @WebSocketServer()
-  server: any;
+  server!: Server;
 
   @SubscribeMessage('client-handshake')
   async handleClientHandShake(
@@ -34,9 +35,9 @@ export class EventsGateway {
     await client.join(workspace_id);
 
     for (const { guid, update } of docs) {
-      this.server.to(workspace_id).emit('server-handshake', {
+      client.emit('server-handshake', {
         guid,
-        update: uint8ArrayToBase64(update),
+        update: update.toString('base64'),
       });
     }
   }
@@ -48,12 +49,13 @@ export class EventsGateway {
       workspaceId: string;
       guid: string;
       update: string;
-    }
+    },
+    @ConnectedSocket() client: Socket
   ) {
     const update = Buffer.from(message.update, 'base64');
-    this.server.to(message.workspaceId).emit('server-update', message);
+    client.to(message.workspaceId).emit('server-update', message);
 
-    await this.storage.sync(message.workspaceId, message.guid, update);
+    await this.docManager.push(message.workspaceId, message.guid, update);
   }
 
   @SubscribeMessage('init-awareness')
@@ -63,14 +65,15 @@ export class EventsGateway {
   ) {
     const roomId = `awareness-${workspace_id}`;
     await client.join(roomId);
-    this.server.to(roomId).emit('new-client-awareness-init');
+    client.to(roomId).emit('new-client-awareness-init');
   }
 
   @SubscribeMessage('awareness-update')
   async handleHelpGatheringAwareness(
-    @MessageBody() message: { workspaceId: string; awarenessUpdate: string }
+    @MessageBody() message: { workspaceId: string; awarenessUpdate: string },
+    @ConnectedSocket() client: Socket
   ) {
-    this.server
+    client
       .to(`awareness-${message.workspaceId}`)
       .emit('server-awareness-broadcast', {
         ...message,

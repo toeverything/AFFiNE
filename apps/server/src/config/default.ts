@@ -78,6 +78,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       REDIS_SERVER_USER: 'redis.username',
       REDIS_SERVER_PASSWORD: 'redis.password',
       REDIS_SERVER_DATABASE: ['redis.database', 'int'],
+      DOC_MERGE_INTERVAL: ['doc.manager.updatePollInterval', 'int'],
     } satisfies AFFiNEConfig['ENV_MAP'],
     env: process.env.NODE_ENV ?? 'development',
     get prod() {
@@ -157,6 +158,11 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       username: '',
       password: '',
       database: 0,
+    },
+    doc: {
+      manager: {
+        updatePollInterval: 3000,
+      },
     },
   } satisfies AFFiNEConfig;
 

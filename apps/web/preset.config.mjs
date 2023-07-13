@@ -32,6 +32,7 @@ const buildPreset = {
     enableMoveDatabase: false,
     enableNotificationCenter: false,
     enableCloud: true,
+    serverUrlPrefix: 'https://affine.fail',
   },
   beta: {},
   internal: {},
@@ -50,6 +51,7 @@ const buildPreset = {
     enableMoveDatabase: false,
     enableNotificationCenter: true,
     enableCloud: true,
+    serverUrlPrefix: 'https://affine.fail',
   },
 };
 
@@ -64,6 +66,10 @@ if (process.env.CI && !process.env.BUILD_TYPE) {
 }
 
 const currentBuildPreset = buildPreset[currentBuild];
+
+if (process.env.NODE_ENV === 'development') {
+  currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
+}
 
 const environmentPreset = {
   enablePlugin: process.env.ENABLE_PLUGIN

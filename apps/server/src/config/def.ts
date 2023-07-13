@@ -263,4 +263,18 @@ export interface AFFiNEConfig {
       password: string;
     };
   };
+
+  doc: {
+    manager: {
+      /**
+       * How often the [DocManager] will start a new turn of merging pending updates into doc snapshot.
+       *
+       * This is not the latency a new joint client will take to see the latest doc,
+       * but the buffer time we introduced to reduce the load of our service.
+       *
+       * in {ms}
+       */
+      updatePollInterval: number;
+    };
+  };
 }

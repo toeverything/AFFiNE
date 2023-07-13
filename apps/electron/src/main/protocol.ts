@@ -44,6 +44,8 @@ export function registerProtocol() {
     return true;
   });
 
+  // hack for CORS
+  // todo: should use a whitelist
   session.defaultSession.webRequest.onHeadersReceived(
     (responseDetails, callback) => {
       const { responseHeaders } = responseDetails;

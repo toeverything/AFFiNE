@@ -30,6 +30,7 @@ describe('AppModule', () => {
         password: await hash('123456'),
       },
     });
+    await client.$disconnect();
   });
 
   beforeEach(async () => {
