@@ -4,13 +4,14 @@ import { PageList, PageListTrashView } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getPagePreviewText } from '@toeverything/hooks/use-block-suite-page-preview';
 import { useAtom } from 'jotai';
 import type React from 'react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
@@ -108,6 +109,14 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   const [filterMode] = useAtom(allPageModeSelectAtom);
   const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
+  const usePreview = useCallback(
+    (pageId: string): string | undefined => {
+      const page = blockSuiteWorkspace.getPage(pageId);
+      assertExists(page);
+      return getPagePreviewText(page);
+    },
+    [blockSuiteWorkspace]
+  );
   const t = useAFFiNEI18N();
   const getPageInfo = useGetPageInfoById();
   const tagOptionMap = useMemo(
@@ -179,6 +188,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
     return (
       <PageListTrashView
         list={pageList}
+        usePreview={usePreview}
         fallback={<PageListEmpty listType={listType} />}
       />
     );
@@ -237,6 +247,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       onImportFile={importFile}
       isPublicWorkspace={isPublic}
       list={pageList}
+      usePreview={usePreview}
       fallback={<PageListEmpty createPage={createPage} listType={listType} />}
     />
   );

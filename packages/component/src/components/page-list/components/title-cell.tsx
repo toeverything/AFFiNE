@@ -7,8 +7,10 @@ import {
   StyledTitleLink,
   StyledTitlePreview,
 } from '../styles';
+import type { PageListProps } from '../type';
 
 type TitleCellProps = {
+  pageId: string;
   icon: JSX.Element;
   text: string;
   desc?: string;
@@ -19,10 +21,24 @@ type TitleCellProps = {
    * @returns
    */
   children?: (element: React.ReactElement) => React.ReactNode;
+  usePreview: PageListProps['usePreview'];
 } & Omit<TableCellProps, 'children'>;
 
 export const TitleCell = React.forwardRef<HTMLTableCellElement, TitleCellProps>(
-  ({ icon, text, desc, suffix, children: render, ...props }, ref) => {
+  (
+    {
+      pageId,
+      icon,
+      text,
+      desc,
+      suffix,
+      children: render,
+      usePreview,
+      ...props
+    },
+    ref
+  ) => {
+    const preview = usePreview(pageId);
     const renderChildren = useCallback(() => {
       const childElement = (
         <>
@@ -39,12 +55,12 @@ export const TitleCell = React.forwardRef<HTMLTableCellElement, TitleCellProps>(
               >
                 {text}
               </Content>
-              {desc && (
+              {preview && (
                 <StyledTitlePreview
                   ellipsis={true}
                   color="var(--affine-text-secondary-color)"
                 >
-                  {desc}
+                  {preview}
                 </StyledTitlePreview>
               )}
             </StyledTitleContentWrapper>

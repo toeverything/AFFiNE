@@ -1,6 +1,7 @@
 import type { Tag } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * Get the keys of an object type whose values are of a given type
@@ -15,7 +16,6 @@ export type ListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
-  preview?: string;
   tags: Tag[];
   favorite: boolean;
   createDate: Date;
@@ -34,7 +34,6 @@ export type TrashListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
-  preview?: string;
   createDate: Date;
   // TODO remove optional after assert that trashDate is always set
   trashDate?: Date;
@@ -46,7 +45,8 @@ export type TrashListData = {
 export type PageListProps = {
   isPublicWorkspace?: boolean;
   list: ListData[];
-  fallback?: React.ReactNode;
+  usePreview: (pageId: string) => string | undefined;
+  fallback?: ReactNode;
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;
@@ -58,5 +58,5 @@ export type DraggableTitleCellData = {
   pageId: string;
   pageTitle: string;
   pagePreview?: string;
-  icon: React.ReactElement;
+  icon: ReactElement;
 };

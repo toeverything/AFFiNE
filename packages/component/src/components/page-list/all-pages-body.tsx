@@ -1,7 +1,7 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
-import type { ReactNode } from 'react';
-import { Fragment } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
+import { Fragment, Suspense } from 'react';
 
 import { styled } from '../../styles';
 import { TableBody, TableCell } from '../../ui/table';
@@ -11,6 +11,7 @@ import { TitleCell } from './components/title-cell';
 import { OperationCell } from './operation-cell';
 import { StyledTableBodyRow } from './styles';
 import type { DateKey, DraggableTitleCellData, ListData } from './type';
+import type { PageListProps } from './type';
 import { useDateGroup } from './use-date-group';
 import { formatDate, useIsSmallDevices } from './utils';
 
@@ -35,10 +36,12 @@ export const AllPagesBody = ({
   isPublicWorkspace,
   data,
   groupKey,
+  usePreview,
 }: {
   isPublicWorkspace: boolean;
   data: ListData[];
   groupKey?: DateKey;
+  usePreview: PageListProps['usePreview'];
 }) => {
   const t = useAFFiNEI18N();
   const isSmallDevices = useIsSmallDevices();
@@ -51,7 +54,6 @@ export const AllPagesBody = ({
             groupName,
             pageId,
             title,
-            preview,
             tags,
             icon,
             isPublicPage,
@@ -75,19 +77,21 @@ export const AllPagesBody = ({
                   <GroupRow>{groupName}</GroupRow>
                 )}
               <StyledTableBodyRow data-testid={`page-list-item-${pageId}`}>
-                <DraggableTitleCell
-                  pageId={pageId}
-                  draggableData={{
-                    pageId,
-                    pageTitle: displayTitle,
-                    icon,
-                  }}
-                  icon={icon}
-                  text={displayTitle}
-                  desc={preview}
-                  data-testid="title"
-                  onClick={onClickPage}
-                />
+                <Suspense>
+                  <DraggableTitleCell
+                    pageId={pageId}
+                    draggableData={{
+                      pageId,
+                      pageTitle: displayTitle,
+                      icon,
+                    }}
+                    icon={icon}
+                    text={displayTitle}
+                    usePreview={usePreview}
+                    data-testid="title"
+                    onClick={onClickPage}
+                  />
+                </Suspense>
                 <TableCell
                   data-testid="tags"
                   hidden={isSmallDevices}
@@ -159,7 +163,8 @@ const FullSizeButton = styled('button')(() => ({
 type DraggableTitleCellProps = {
   pageId: string;
   draggableData?: DraggableTitleCellData;
-} & React.ComponentProps<typeof TitleCell>;
+  usePreview: PageListProps['usePreview'];
+} & ComponentProps<typeof TitleCell>;
 
 function DraggableTitleCell({
   pageId,
@@ -173,6 +178,7 @@ function DraggableTitleCell({
 
   return (
     <TitleCell
+      pageId={pageId}
       ref={setNodeRef}
       style={{ opacity: isDragging ? 0.5 : 1 }}
       {...props}

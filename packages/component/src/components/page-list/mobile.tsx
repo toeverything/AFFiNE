@@ -15,7 +15,7 @@ import {
   StyledTableContainer,
   StyledTitleLink,
 } from './styles';
-import type { ListData } from './type';
+import type { ListData, PageListProps } from './type';
 
 const MobileHead = ({
   isPublicWorkspace,
@@ -61,12 +61,14 @@ export const AllPageListMobileView = ({
   createNewPage,
   createNewEdgeless,
   importFile,
+  usePreview,
 }: {
   isPublicWorkspace: boolean;
   list: ListData[];
   createNewPage: () => void;
   createNewEdgeless: () => void;
   importFile: () => void;
+  usePreview: PageListProps['usePreview'];
 }) => {
   return (
     <StyledTableContainer>
@@ -79,6 +81,7 @@ export const AllPageListMobileView = ({
         />
         <AllPagesBody
           isPublicWorkspace={isPublicWorkspace}
+          usePreview={usePreview}
           data={list}
           // update groupKey after support sort by create date
           groupKey="updatedDate"

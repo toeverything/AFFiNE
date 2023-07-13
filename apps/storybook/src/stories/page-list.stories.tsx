@@ -63,6 +63,13 @@ AffineAllPageList.args = {
   onCreateNewPage: () => toast('Create new page'),
   onCreateNewEdgeless: () => toast('Create new edgeless'),
   onImportFile: () => toast('Import file'),
+  usePreview: pageId => {
+    if (pageId === '1') {
+      return 'this is page preview';
+    } else {
+      return 'this is page preview and it is very long and will be truncated because it is too long and it is very long and will be truncated because it is too long';
+    }
+  },
   list: [
     {
       pageId: '1',
@@ -71,7 +78,6 @@ AffineAllPageList.args = {
       isPublicPage: true,
       title: 'Today Page',
       tags: [],
-      preview: 'this is page preview',
       createDate: new Date(),
       updatedDate: new Date(),
       bookmarkPage: () => toast('Bookmark page'),
@@ -88,8 +94,6 @@ AffineAllPageList.args = {
       title:
         '1 Example Public Page with long title that will be truncated because it is too too long',
       tags: [],
-      preview:
-        'this is page preview and it is very long and will be truncated because it is too long and it is very long and will be truncated because it is too long',
       createDate: new Date('2021-01-01'),
       updatedDate: new Date('2021-01-02'),
       bookmarkPage: () => toast('Bookmark page'),
@@ -184,12 +188,17 @@ export const AffineTrashPageList: StoryFn<typeof PageListTrashView> = ({
 }) => <PageListTrashView {...props} />;
 
 AffineTrashPageList.args = {
+  usePreview: pageId => {
+    if (pageId === '1') {
+      return 'this is page preview';
+    }
+    return undefined;
+  },
   list: [
     {
       pageId: '1',
       icon: <PageIcon />,
       title: 'Example Page',
-      preview: 'this is trash page preview',
       createDate: new Date('2021-01-01'),
       trashDate: new Date('2021-01-01'),
       onClickPage: () => toast('Click page'),

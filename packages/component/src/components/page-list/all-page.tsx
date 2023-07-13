@@ -6,7 +6,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
 import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
-import { type CSSProperties, useMemo } from 'react';
+import { type CSSProperties, Suspense, useMemo } from 'react';
 
 import {
   ScrollableContainer,
@@ -154,6 +154,7 @@ const AllPagesHead = ({
 export const PageList = ({
   isPublicWorkspace = false,
   list,
+  usePreview,
   onCreateNewPage,
   onCreateNewEdgeless,
   onImportFile,
@@ -174,6 +175,7 @@ export const PageList = ({
         <AllPageListMobileView
           isPublicWorkspace={isPublicWorkspace}
           createNewPage={onCreateNewPage}
+          usePreview={usePreview}
           createNewEdgeless={onCreateNewEdgeless}
           importFile={onImportFile}
           list={sorter.data}
@@ -209,6 +211,7 @@ export const PageList = ({
             isPublicWorkspace={isPublicWorkspace}
             groupKey={groupKey}
             data={sorter.data}
+            usePreview={usePreview}
           />
         </Table>
       </StyledTableContainer>
@@ -233,7 +236,8 @@ const TrashListHead = () => {
 export const PageListTrashView: React.FC<{
   list: TrashListData[];
   fallback?: React.ReactNode;
-}> = ({ list, fallback }) => {
+  usePreview: PageListProps['usePreview'];
+}> = ({ list, fallback, usePreview }) => {
   const t = useAFFiNEI18N();
 
   const theme = useTheme();
@@ -253,7 +257,6 @@ export const PageListTrashView: React.FC<{
       {
         pageId,
         title,
-        preview,
         icon,
         createDate,
         trashDate,
@@ -268,12 +271,15 @@ export const PageListTrashView: React.FC<{
           data-testid={`page-list-item-${pageId}`}
           key={`${pageId}-${index}`}
         >
-          <TitleCell
-            icon={icon}
-            text={title || t['Untitled']()}
-            desc={preview}
-            onClick={onClickPage}
-          />
+          <Suspense>
+            <TitleCell
+              icon={icon}
+              pageId={pageId}
+              text={title || t['Untitled']()}
+              usePreview={usePreview}
+              onClick={onClickPage}
+            />
+          </Suspense>
           <TableCell onClick={onClickPage}>{formatDate(createDate)}</TableCell>
           <TableCell onClick={onClickPage}>
             {trashDate ? formatDate(trashDate) : '--'}
