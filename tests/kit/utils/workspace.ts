@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test';
 
-
 interface CreateWorkspaceParams {
   name: string;
 }
