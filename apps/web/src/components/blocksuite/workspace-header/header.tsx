@@ -23,7 +23,7 @@ import {
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { contentLayoutAtom } from '../../../atoms/layout';
-import { useCurrentMode } from '../../../hooks/current/use-current-mode';
+import { currentModeAtom } from '../../../atoms/mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { DownloadClientTip } from './download-tips';
 import EditPage from './header-right-items/edit-page';
@@ -205,7 +205,7 @@ export const Header = forwardRef<
   const open = useAtomValue(appSidebarOpenAtom);
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
-  const mode = useCurrentMode();
+  const mode = useAtomValue(currentModeAtom);
 
   return (
     <div
