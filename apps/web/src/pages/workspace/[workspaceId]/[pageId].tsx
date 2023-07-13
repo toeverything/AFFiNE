@@ -27,7 +27,7 @@ const WorkspaceDetail: React.FC = () => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const collectionManager = useCollectionManager();
+  const collectionManager = useCollectionManager(currentWorkspace.id);
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {

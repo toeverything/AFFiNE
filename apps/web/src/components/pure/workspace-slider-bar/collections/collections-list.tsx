@@ -130,7 +130,7 @@ const CollectionRenderer = ({
   getPageInfo: GetPageInfoById;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
-  const setting = useCollectionManager();
+  const setting = useCollectionManager(workspace.id);
   const router = useRouter();
   const clickCollection = useCallback(() => {
     router
@@ -255,7 +255,7 @@ const CollectionRenderer = ({
 };
 export const CollectionsList = ({ currentWorkspace }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
-  const { savedCollections } = useSavedCollections();
+  const { savedCollections } = useSavedCollections(currentWorkspace.id);
   const getPageInfo = useGetPageInfoById();
   return (
     <div data-testid="collections" className={styles.wrapper}>

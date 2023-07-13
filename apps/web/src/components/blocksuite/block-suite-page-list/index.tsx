@@ -187,7 +187,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   const pageList: ListData[] = list.map(pageMeta => {
     const page = blockSuiteWorkspace.getPage(pageMeta.id);
     const preview = page ? getPagePreviewText(page) : undefined;
-
     return {
       icon: isPreferredEdgeless(pageMeta.id) ? <EdgelessIcon /> : <PageIcon />,
       pageId: pageMeta.id,
@@ -230,6 +229,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   });
   return (
     <PageList
+      workspaceId={blockSuiteWorkspace.id}
       propertiesMeta={blockSuiteWorkspace.meta.properties}
       getPageInfo={getPageInfo}
       onCreateNewPage={createPage}
