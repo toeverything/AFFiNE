@@ -7,5 +7,5 @@ import { pageSettingFamily } from './index';
 export const currentModeAtom = atom<'page' | 'edgeless'>(get => {
   const pageId = get(currentPageIdAtom);
   assertExists(pageId);
-  return get(pageSettingFamily(pageId))?.mode ?? 'page';
+  return get(pageSettingFamily(pageId)).mode;
 });
