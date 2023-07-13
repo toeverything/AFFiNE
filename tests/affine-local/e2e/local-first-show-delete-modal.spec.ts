@@ -6,10 +6,12 @@ import {
   newPage,
   waitEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test('New a page ,then open it and show delete modal', async ({ page }) => {
+test('New a page ,then open it and show delete modal', async ({
+  page,
+  workspace,
+}) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -27,11 +29,14 @@ test('New a page ,then open it and show delete modal', async ({ page }) => {
   await deleteBtn.click();
   const confirmTip = page.getByText('Delete page?');
   expect(confirmTip).not.toBeUndefined();
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
 test('New a page ,then go to all pages and show delete modal', async ({
   page,
+  workspace,
 }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -54,5 +59,7 @@ test('New a page ,then go to all pages and show delete modal', async ({
   await deleteBtn.click();
   const confirmTip = page.getByText('Delete page?');
   expect(confirmTip).not.toBeUndefined();
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });

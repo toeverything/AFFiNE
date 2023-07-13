@@ -5,20 +5,24 @@ import {
   newPage,
   waitEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test('click btn new page', async ({ page }) => {
+test('click btn new page', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const originPageId = page.url().split('/').reverse()[0];
   await newPage(page);
   const newPageId = page.url().split('/').reverse()[0];
   expect(newPageId).not.toBe(originPageId);
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
-test('click btn bew page and find it in all pages', async ({ page }) => {
+test('click btn bew page and find it in all pages', async ({
+  page,
+  workspace,
+}) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -27,5 +31,7 @@ test('click btn bew page and find it in all pages', async ({ page }) => {
   await page.getByTestId('all-pages').click();
   const cell = page.getByRole('cell', { name: 'this is a new page' });
   expect(cell).not.toBeUndefined();
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
