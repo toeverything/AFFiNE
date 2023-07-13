@@ -255,6 +255,7 @@ export type InviteByEmailMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   email: Scalars['String']['input'];
   permission: Permission;
+  sendInviteMail: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type InviteByEmailMutation = { __typename?: 'Mutation'; invite: string };
