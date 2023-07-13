@@ -1,8 +1,7 @@
 import { equal, ok } from 'node:assert';
-import { afterEach, beforeEach, test } from 'node:test';
+import { beforeEach, test } from 'node:test';
 
 import { Test } from '@nestjs/testing';
-import { register } from 'prom-client';
 
 import { Config, ConfigModule } from '../config';
 
@@ -12,10 +11,6 @@ beforeEach(async () => {
     imports: [ConfigModule.forRoot()],
   }).compile();
   config = module.get(Config);
-});
-
-afterEach(async () => {
-  register.clear();
 });
 
 test('should be able to get config', () => {

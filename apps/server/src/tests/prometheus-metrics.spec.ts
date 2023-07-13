@@ -1,5 +1,5 @@
 import { ok } from 'node:assert';
-import { afterEach, beforeEach, test } from 'node:test';
+import { beforeEach, test } from 'node:test';
 
 import { Test } from '@nestjs/testing';
 import { register } from 'prom-client';
@@ -15,10 +15,6 @@ beforeEach(async () => {
   }).compile();
 
   metrics = module.get(Metrics);
-});
-
-afterEach(async () => {
-  register.clear();
 });
 
 test('should be able to increment counter', async () => {

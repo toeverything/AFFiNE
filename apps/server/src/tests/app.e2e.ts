@@ -9,7 +9,6 @@ import { PrismaClient } from '@prisma/client';
 import { Express } from 'express';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
-import { register } from 'prom-client';
 import request from 'supertest';
 
 import { AppModule } from '../app';
@@ -51,7 +50,6 @@ describe('AppModule', () => {
   });
 
   afterEach(async () => {
-    register.clear();
     await app.close();
   });
 

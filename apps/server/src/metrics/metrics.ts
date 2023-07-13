@@ -1,10 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { register } from 'prom-client';
 
 import { metricsCreator } from './utils';
 
 @Injectable()
-export class Metrics {
+export class Metrics implements OnModuleDestroy {
   constructor() {}
+
+  onModuleDestroy(): void {
+    register.clear();
+  }
 
   socketIOCounter = metricsCreator.counter('socket_io_counter', ['event']);
   socketIOTimer = metricsCreator.timer('socket_io_timer', ['event']);

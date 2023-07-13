@@ -1,10 +1,9 @@
 /// <reference types="../global.d.ts" />
 import { ok } from 'node:assert';
-import { afterEach, beforeEach, test } from 'node:test';
+import { beforeEach, test } from 'node:test';
 
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
-import { register } from 'prom-client';
 
 import { ConfigModule } from '../config';
 import { GqlModule } from '../graphql.module';
@@ -37,10 +36,6 @@ beforeEach(async () => {
     ],
   }).compile();
   auth = module.get(AuthService);
-});
-
-afterEach(async () => {
-  register.clear();
 });
 
 test('should be able to register and signIn', async () => {
