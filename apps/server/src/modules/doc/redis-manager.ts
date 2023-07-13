@@ -17,6 +17,11 @@ const pending = 'um_pending:';
 const updates = makeKey('um_u:');
 const lock = makeKey('um_l:');
 
+const pushUpdateLua = `
+    redis.call('sadd', KEYS[1], ARGV[1])
+    redis.call('rpush', KEYS[2], ARGV[2])
+`;
+
 @Injectable()
 export class RedisDocManager extends DocManager {
   private readonly redis: Redis;
@@ -29,6 +34,10 @@ export class RedisDocManager extends DocManager {
   ) {
     super(db, automation, config);
     this.redis = new Redis(config.redis);
+    this.redis.defineCommand('pushDocUpdate', {
+      numberOfKeys: 2,
+      lua: pushUpdateLua,
+    });
   }
 
   override onModuleInit(): void {
@@ -41,8 +50,9 @@ export class RedisDocManager extends DocManager {
   override async push(workspaceId: string, guid: string, update: Buffer) {
     try {
       const key = `${workspaceId}:${guid}`;
-      await this.redis.rpush(pending, key);
-      await this.redis.rpush(updates`${key}`, update);
+
+      // @ts-expect-error custom command
+      this.redis.pushDocUpdate(pending, updates`${key}`, key, update);
 
       this.logger.verbose(
         `pushed update for workspace: ${workspaceId}, guid: ${guid}`
@@ -67,7 +77,7 @@ export class RedisDocManager extends DocManager {
     // incase some update fallback to db
     await super.apply();
 
-    const pendingDoc = await this.redis.lpop(pending).catch(() => null); // safe
+    const pendingDoc = await this.redis.spop(pending).catch(() => null); // safe
 
     if (!pendingDoc) {
       return;
