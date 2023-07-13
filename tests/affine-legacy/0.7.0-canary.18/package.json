@@ -11,7 +11,7 @@
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
     "@affine/env": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230712133952-834fa060-nightly",
+    "@blocksuite/block-std": "0.0.0-20230713062147-9eb7708c-nightly",
     "@blocksuite/blocks": "0.0.0-20230713062147-9eb7708c-nightly",
     "@blocksuite/global": "0.0.0-20230713062147-9eb7708c-nightly",
     "@blocksuite/store": "0.0.0-20230713062147-9eb7708c-nightly",
