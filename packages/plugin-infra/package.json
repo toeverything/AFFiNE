@@ -25,10 +25,12 @@
       "require": "./dist/__internal__/workspace.cjs"
     }
   },
+  "dependencies": {
+    "@blocksuite/global": "0.0.0-20230713131127-200a0dc1-nightly"
+  },
   "devDependencies": {
     "@blocksuite/blocks": "0.0.0-20230713131127-200a0dc1-nightly",
     "@blocksuite/editor": "0.0.0-20230713131127-200a0dc1-nightly",
-    "@blocksuite/global": "0.0.0-20230713131127-200a0dc1-nightly",
     "@blocksuite/lit": "0.0.0-20230713131127-200a0dc1-nightly",
     "@blocksuite/store": "0.0.0-20230713131127-200a0dc1-nightly",
     "jotai": "^2.2.2",
@@ -38,7 +40,6 @@
   "peerDependencies": {
     "@blocksuite/blocks": "*",
     "@blocksuite/editor": "*",
-    "@blocksuite/global": "*",
     "@blocksuite/lit": "*",
     "@blocksuite/store": "*",
     "jotai": "*",

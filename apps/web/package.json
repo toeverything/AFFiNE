@@ -9,7 +9,6 @@
     "static-server": "ts-node-esm server.mts"
   },
   "dependencies": {
-    "@affine-test/fixtures": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/copilot": "workspace:*",
     "@affine/debug": "workspace:*",
@@ -58,6 +57,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@affine-test/fixtures": "workspace:*",
     "@perfsee/webpack": "^1.8.2",
     "@redux-devtools/extension": "^3.2.5",
     "@rich-data/viewer": "^2.15.6",
