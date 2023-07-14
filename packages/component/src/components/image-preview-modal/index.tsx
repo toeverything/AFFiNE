@@ -1,4 +1,3 @@
-/// <reference types="react/experimental" />
 import '@blocksuite/blocks';
 
 import { Button, Tooltip } from '@affine/component';
