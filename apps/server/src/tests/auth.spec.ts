@@ -1,17 +1,19 @@
 /// <reference types="../global.d.ts" />
 import { ok } from 'node:assert';
-import { beforeEach, test } from 'node:test';
+import { afterEach, beforeEach, test } from 'node:test';
 
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 
 import { ConfigModule } from '../config';
 import { GqlModule } from '../graphql.module';
+import { MetricsModule } from '../metrics';
 import { AuthModule } from '../modules/auth';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
 
 let auth: AuthService;
+let module: TestingModule;
 
 // cleanup database before each test
 beforeEach(async () => {
@@ -21,7 +23,7 @@ beforeEach(async () => {
 });
 
 beforeEach(async () => {
-  const module = await Test.createTestingModule({
+  module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
         auth: {
@@ -33,9 +35,14 @@ beforeEach(async () => {
       PrismaModule,
       GqlModule,
       AuthModule,
+      MetricsModule,
     ],
   }).compile();
   auth = module.get(AuthService);
+});
+
+afterEach(async () => {
+  await module.close();
 });
 
 test('should be able to register and signIn', async () => {
