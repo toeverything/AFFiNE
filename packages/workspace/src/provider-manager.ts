@@ -2,6 +2,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { BaseDocProvider } from '@blocksuite/store';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Doc } from 'yjs';
+import { encodeStateAsUpdate, mergeUpdates } from 'yjs';
 
 type SubDocsEvent = {
   added: Set<Doc>;
@@ -9,7 +10,114 @@ type SubDocsEvent = {
   loaded: Set<Doc>;
 };
 
+type LinkedListNode<T, M extends Record<string, unknown>> = {
+  value: T;
+  metadata: M;
+  next: LinkedListNode<T, M> | null;
+  prev: LinkedListNode<T, M> | null;
+};
+
+type Metadata = {
+  origin: unknown;
+  timestamp: number;
+};
+
+const snapshotWeakMap = new WeakMap<
+  Doc,
+  LinkedListNode<Uint8Array, Metadata> | null
+>();
+
+const docUpdateWeakMap = new WeakMap<Doc, Uint8Array>();
+const docUpdateCallbackWeakMap = new WeakMap<
+  Doc,
+  (update: Uint8Array) => void
+>();
+const docDestroyCallbackWeakMap = new WeakMap<Doc, () => void>();
+
+function initializeDocUpdateWeakMap(doc: Doc) {
+  docUpdateWeakMap.set(doc, encodeStateAsUpdate(doc));
+  const onUpdate = (update: Uint8Array) => {
+    const oldUpdate = docUpdateWeakMap.get(doc) as Uint8Array;
+    assertExists(oldUpdate);
+    docUpdateWeakMap.set(doc, mergeUpdates([oldUpdate, update]));
+  };
+  doc.on('update', onUpdate);
+  const onSubdocs = (event: SubDocsEvent) => {
+    event.added.forEach(doc => {
+      initializeDocUpdateWeakMap(doc);
+    });
+    event.removed.forEach(doc => {
+      _destroyDocUpdateWeakMap(doc);
+    });
+  };
+  doc.on('subdocs', onSubdocs);
+  docUpdateCallbackWeakMap.set(doc, onUpdate);
+  const onDestroy = () => {
+    doc.off('update', onUpdate);
+    doc.off('subdocs', onSubdocs);
+  };
+  doc.once('destroy', onDestroy);
+  docDestroyCallbackWeakMap.set(doc, onDestroy);
+  doc.subdocs.forEach(doc => {
+    initializeDocUpdateWeakMap(doc);
+  });
+}
+
+export const captureSnapshot = (rootDoc: Doc, origin: unknown) => {
+  const snapshot = docUpdateWeakMap.get(rootDoc) as Uint8Array;
+  const node: LinkedListNode<Uint8Array, Metadata> = {
+    value: snapshot,
+    metadata: {
+      origin,
+      timestamp: Date.now(),
+    },
+    next: null,
+    prev: null,
+  };
+  const head = snapshotWeakMap.get(rootDoc);
+  if (head) {
+    head.prev = node;
+    node.next = head;
+  }
+  snapshotWeakMap.set(rootDoc, node);
+  rootDoc.subdocs.forEach(doc => {
+    captureSnapshot(doc, origin);
+  });
+};
+
+export const getSnapshotList = (rootDoc: Doc) => {
+  const head = snapshotWeakMap.get(rootDoc);
+  if (!head) {
+    return [];
+  }
+  const snapshots: LinkedListNode<Uint8Array, Metadata>[] = [];
+  let node = head;
+  while (node) {
+    snapshots.push(node);
+    node = node.next as LinkedListNode<Uint8Array, Metadata>;
+  }
+  return snapshots;
+};
+
+function _destroyDocUpdateWeakMap(doc: Doc) {
+  const onDestroy = docDestroyCallbackWeakMap.get(doc);
+  if (onDestroy) {
+    onDestroy();
+    docDestroyCallbackWeakMap.delete(doc);
+  }
+  const onUpdate = docUpdateCallbackWeakMap.get(doc);
+  if (onUpdate) {
+    doc.off('update', onUpdate);
+    docUpdateCallbackWeakMap.delete(doc);
+  }
+  docUpdateWeakMap.delete(doc);
+  doc.subdocs.forEach(doc => {
+    _destroyDocUpdateWeakMap(doc);
+  });
+}
+
 export const createProviderManager = (doc: Doc) => {
+  initializeDocUpdateWeakMap(doc);
   const originMap = new Map<BaseDocProvider, unknown>();
   const lastUpdateWeakMap = new WeakMap<BaseDocProvider, Date>();
   const lastUpdateCallbackWeakMap = new WeakMap<
@@ -53,6 +161,9 @@ export const createProviderManager = (doc: Doc) => {
       const callback = (_: Uint8Array, origin: T) => {
         if (origin === originMap.get(provider)) {
           lastUpdateWeakMap.set(provider, new Date());
+          lastUpdateCallbackWeakMap.get(provider)?.forEach(callback => {
+            callback();
+          });
         }
       };
       const subdocsCallback = (event: SubDocsEvent) => {
