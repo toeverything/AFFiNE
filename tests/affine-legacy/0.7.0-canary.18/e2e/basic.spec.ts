@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
@@ -59,6 +59,9 @@ test('init page', async ({ page, context }) => {
   await page.waitForSelector('v-line', {
     timeout: 10000,
   });
+  await page.getByTestId('new-page-button').click();
+  const locator = page.locator('v-line').nth(0);
+  await locator.fill('hello');
 
   const currentWorkspaceId: string = await page.evaluate(
     () => (globalThis as any).currentWorkspace.id
@@ -81,7 +84,10 @@ test('init page', async ({ page, context }) => {
   await switchToNext();
   await page.waitForTimeout(1000);
   await page.goto('http://localhost:8081/');
+  await page.waitForTimeout(1000);
+  await page.goto('http://localhost:8081/');
   await page.waitForSelector('v-line', {
     timeout: 10000,
   });
+  expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
 });
