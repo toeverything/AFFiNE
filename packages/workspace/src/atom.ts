@@ -187,7 +187,6 @@ export const rootWorkspacesMetadataAtom = atom<
 
     const metadataMap = new Map(metadata.map(x => [x.id, x]));
     metadata = Array.from(metadataMap.values());
-
     // write back to localStorage
     rootWorkspaceMetadataArraySchema.parse(metadata);
     localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
