@@ -15,7 +15,7 @@ import {
   UnpinIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { PageMeta, Workspace } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
@@ -25,7 +25,6 @@ import type { ReactElement } from 'react';
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
-import type { AllWorkspace } from '../../../../shared';
 import { filterPage } from '../../../../utils/filter';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
@@ -126,7 +125,7 @@ const CollectionRenderer = ({
 }: {
   collection: Collection;
   pages: PageMeta[];
-  workspace: AllWorkspace;
+  workspace: Workspace;
   getPageInfo: GetPageInfoById;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
@@ -189,7 +188,7 @@ const CollectionRenderer = ({
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModel
-        propertiesMeta={workspace.blockSuiteWorkspace.meta.properties}
+        propertiesMeta={workspace.meta.properties}
         getPageInfo={getPageInfo}
         init={collection}
         onConfirm={setting.saveCollection}
@@ -253,9 +252,9 @@ const CollectionRenderer = ({
     </Collapsible.Root>
   );
 };
-export const CollectionsList = ({ currentWorkspace }: CollectionsListProps) => {
-  const metas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
-  const { savedCollections } = useSavedCollections(currentWorkspace.id);
+export const CollectionsList = ({ workspace }: CollectionsListProps) => {
+  const metas = useBlockSuitePageMeta(workspace);
+  const { savedCollections } = useSavedCollections(workspace.id);
   const getPageInfo = useGetPageInfoById();
   return (
     <div data-testid="collections" className={styles.wrapper}>
@@ -268,7 +267,7 @@ export const CollectionsList = ({ currentWorkspace }: CollectionsListProps) => {
               key={view.id}
               collection={view}
               pages={metas}
-              workspace={currentWorkspace}
+              workspace={workspace}
             />
           );
         })}
