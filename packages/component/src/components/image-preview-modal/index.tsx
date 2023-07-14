@@ -1,4 +1,3 @@
-/// <reference types="react/experimental" />
 import '@blocksuite/blocks';
 
 import { Button, Tooltip } from '@affine/component';
@@ -478,7 +477,7 @@ const ImagePreviewModalImpl = (
               noBorder={true}
               className={buttonStyle}
               onClick={() => blockId && deleteHandler(blockId)}
-              hoverColor={'-moz-initial'}
+              hoverColor="var(--affine-error-color)"
             />
           </Tooltip>
         </div>

@@ -79,7 +79,12 @@ export const CloudWorkspaceMembersPanel = (
       return;
     }
 
-    await invite(inviteEmail, permission);
+    await invite(
+      inviteEmail,
+      permission,
+      // send invite email
+      true
+    );
   }, [inviteEmail, invite, permission]);
 
   const memberCount = members.length;

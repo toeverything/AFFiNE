@@ -4,14 +4,14 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { useAtomValue } from 'jotai';
+import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
+import { useAtom, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { getUIAdapter } from '../../../adapters/workspace';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
@@ -22,12 +22,12 @@ import type { NextPageWithLayout } from '../../../shared';
 const WorkspaceDetail: React.FC = () => {
   const router = useRouter();
   const { openPage, jumpToSubPath } = useRouterHelper(router);
-  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const currentPageId = useAtomValue(currentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const collectionManager = useCollectionManager();
+  const collectionManager = useCollectionManager(currentWorkspace.id);
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
@@ -73,10 +73,41 @@ const WorkspaceDetail: React.FC = () => {
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
-  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
   const page = currentPageId
     ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
     : null;
+
+  //#region check if page is valid
+  useEffect(() => {
+    // if the workspace changed, ignore the page check
+    if (currentWorkspace.id !== router.query.workspaceId) {
+      return;
+    }
+    if (
+      typeof router.query.pageId === 'string' &&
+      router.pathname === '/workspace/[workspaceId]/[pageId]' &&
+      currentPageId
+    ) {
+      if (currentPageId !== router.query.pageId) {
+        setCurrentPageId(router.query.pageId);
+      } else {
+        const page =
+          currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+        if (!page) {
+          router.push('/404').catch(console.error);
+        }
+      }
+    }
+  }, [
+    currentPageId,
+    currentWorkspace.blockSuiteWorkspace,
+    currentWorkspace.id,
+    router,
+    setCurrentPageId,
+  ]);
+  //#endregion
+
   if (!router.isReady) {
     return <PageDetailSkeleton key="router-not-ready" />;
   } else if (!currentPageId || !page) {

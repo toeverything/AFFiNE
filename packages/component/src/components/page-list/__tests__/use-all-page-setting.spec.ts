@@ -12,12 +12,13 @@ import { useCollectionManager } from '../use-collection-manager';
 const defaultMeta = { tags: { options: [] } };
 
 test('useAllPageSetting', async () => {
-  const settingHook = renderHook(() => useCollectionManager());
+  const settingHook = renderHook(() => useCollectionManager('test'));
   const prevCollection = settingHook.result.current.currentCollection;
   expect(settingHook.result.current.savedCollections).toEqual([]);
   await settingHook.result.current.updateCollection({
     ...settingHook.result.current.currentCollection,
     filterList: [createDefaultFilter(vars[0], defaultMeta)],
+    workspaceId: 'test',
   });
   settingHook.rerender();
   const nextCollection = settingHook.result.current.currentCollection;

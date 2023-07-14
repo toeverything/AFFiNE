@@ -1,8 +1,8 @@
-import {
-  rootCurrentPageIdAtom,
-  rootCurrentWorkspaceIdAtom,
-} from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/plugin-infra/manager';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
@@ -24,7 +24,7 @@ export function useCurrentWorkspace(): [
   AllWorkspace,
   (id: string | null) => void,
 ] {
-  const [id, setId] = useAtom(rootCurrentWorkspaceIdAtom);
+  const [id, setId] = useAtom(currentWorkspaceIdAtom);
   assertExists(id);
   const currentWorkspace = useWorkspace(id);
   useEffect(() => {
@@ -35,7 +35,7 @@ export function useCurrentWorkspace(): [
       })
     );
   }, [currentWorkspace]);
-  const setPageId = useSetAtom(rootCurrentPageIdAtom);
+  const setPageId = useSetAtom(currentPageIdAtom);
   return [
     currentWorkspace,
     useCallback(

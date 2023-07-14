@@ -33,10 +33,11 @@ const ShareWorkspacePage: NextPageWithLayout = () => {
         collection={useMemo(
           () => ({
             id: 'NIL',
+            workspaceId: workspace.id,
             name: 'NONE',
             filterList: [],
           }),
-          []
+          [workspace.id]
         )}
         onOpenPage={useCallback(
           async (pageId, newTab) => {

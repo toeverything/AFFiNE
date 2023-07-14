@@ -13,18 +13,14 @@ export default defineConfig({
       entry: {
         type: resolve(root, 'src/type.ts'),
         manager: resolve(root, 'src/manager.ts'),
+        '__internal__/workspace': resolve(
+          root,
+          'src/__internal__/workspace.ts'
+        ),
       },
     },
     rollupOptions: {
-      external: [
-        'jotai',
-        'jotai/vanilla',
-        '@blocksuite/blocks',
-        '@blocksuite/store',
-        '@blocksuite/global',
-        '@blocksuite/editor',
-        '@blocksuite/lit',
-      ],
+      external: ['react', /^jotai/, /^@blocksuite/],
     },
   },
   plugins: [

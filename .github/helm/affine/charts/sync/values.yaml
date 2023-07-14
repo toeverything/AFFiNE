@@ -9,18 +9,6 @@ nameOverride: ''
 fullnameOverride: ''
 # map to NODE_ENV environment variable
 env: 'production'
-database:
-  user: 'postgres'
-  url: 'pg-postgresql'
-  port: '5432'
-  name: 'affine'
-redis:
-  enabled: true
-  host: 'redis-master'
-  port: '6379'
-  username: ''
-  password: ''
-  database: 0
 app:
   # AFFINE_SERVER_HOST
   host: '0.0.0.0'

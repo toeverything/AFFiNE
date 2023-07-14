@@ -1,7 +1,5 @@
-import type {
-  WorkspaceFlavour,
-  WorkspaceRegistry,
-} from '@affine/env/workspace';
+import type { WorkspaceRegistry } from '@affine/env/workspace';
+import type { WorkspaceFlavour } from '@affine/env/workspace';
 import { WorkspaceVersion } from '@affine/env/workspace';
 import {
   rootWorkspacesMetadataAtom,

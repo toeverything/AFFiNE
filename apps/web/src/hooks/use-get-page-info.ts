@@ -1,7 +1,7 @@
 import type { GetPageInfoById } from '@affine/env/page-info';
 import type { Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
+import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/workspace';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 

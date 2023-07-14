@@ -8,8 +8,8 @@ import {
   LocalDataIcon as DefaultLocalDataIcon,
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
 } from '@blocksuite/icons';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
 import type { FC } from 'react';
 import { useCallback } from 'react';
 

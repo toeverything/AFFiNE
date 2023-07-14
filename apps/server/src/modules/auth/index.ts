@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 
+import { MAILER, MailService } from './mailer';
 import { NextAuthController } from './next-auth.controller';
 import { NextAuthOptionsProvider } from './next-auth-options';
 import { AuthResolver } from './resolver';
@@ -7,8 +8,14 @@ import { AuthService } from './service';
 
 @Global()
 @Module({
-  providers: [AuthService, AuthResolver, NextAuthOptionsProvider],
-  exports: [AuthService, NextAuthOptionsProvider],
+  providers: [
+    AuthService,
+    AuthResolver,
+    NextAuthOptionsProvider,
+    MAILER,
+    MailService,
+  ],
+  exports: [AuthService, NextAuthOptionsProvider, MailService],
   controllers: [NextAuthController],
 })
 export class AuthModule {}

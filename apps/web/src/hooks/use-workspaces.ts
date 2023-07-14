@@ -4,7 +4,7 @@ import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
-import { getWorkspace } from '@toeverything/hooks/use-block-suite-workspace';
+import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
