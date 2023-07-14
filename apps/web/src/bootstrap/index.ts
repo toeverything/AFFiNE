@@ -4,7 +4,7 @@ import type {
   LocalIndexedDBDownloadProvider,
   WorkspaceAdapter,
 } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { workspaceAdaptersAtom } from '@affine/workspace/atom';
 import {
@@ -123,6 +123,7 @@ if (environment.isBrowser) {
     try {
       const metadata = JSON.parse(value) as RootWorkspaceMetadata[];
       const promises: Promise<void>[] = [];
+      const newMetadata = [...metadata];
       metadata.forEach(oldMeta => {
         if (!('version' in oldMeta)) {
           const adapter = WorkspaceAdapters[oldMeta.flavour];
@@ -160,6 +161,13 @@ if (environment.isBrowser) {
             );
 
             await adapter.CRUD.delete(workspace as any);
+            console.log('migrated', oldMeta.id, newId);
+            const index = newMetadata.findIndex(meta => meta.id === oldMeta.id);
+            newMetadata[index] = {
+              ...oldMeta,
+              id: newId,
+              version: WorkspaceVersion.SubDoc,
+            };
             await migrateLocalBlobStorage(workspace.id, newId);
           };
 
@@ -176,6 +184,7 @@ if (environment.isBrowser) {
           console.error('migration failed');
         })
         .finally(() => {
+          localStorage.setItem('jotai-workspaces', JSON.stringify(newMetadata));
           window.dispatchEvent(new CustomEvent('migration-done'));
           window.$migrationDone = true;
         });
