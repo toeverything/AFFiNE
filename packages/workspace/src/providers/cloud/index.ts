@@ -61,7 +61,7 @@ export const createMergeCloudSnapshotProvider: DocProviderCreator = (
   });
 
   return {
-    flavour: 'affine-cloud-download',
+    flavour: 'affine-cloud-merge-snapshot',
     active: true,
     sync() {
       downloadBinaryRecursively(id, doc)
