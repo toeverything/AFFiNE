@@ -1,11 +1,8 @@
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { WorkspaceSubPath, WorkspaceVersion } from '@affine/env/workspace';
-import type {
-  RootWorkspaceMetadataV2} from '@affine/workspace/atom';
-import {
-  rootWorkspacesMetadataAtom,
-} from '@affine/workspace/atom';
+import type { RootWorkspaceMetadataV2 } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
 import { useAtom } from 'jotai';
 import type { NextPage } from 'next';
