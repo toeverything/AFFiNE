@@ -9,6 +9,7 @@ import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,
   navBodyStyle,
+  navHeaderStyle,
   navStyle,
   navWidthVar,
   navWrapperStyle,
@@ -28,7 +29,6 @@ import { SidebarHeader } from './sidebar-header';
 export type AppSidebarProps = PropsWithChildren<
   SidebarHeaderProps & {
     hasBackground?: boolean;
-    isFallback?: boolean;
   }
 >;
 
@@ -53,7 +53,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   const [appSidebarFloating, setAppSidebarFloating] = useAtom(
     appSidebarFloatingAtom
   );
-  const initialRender = open === undefined && !props.isFallback;
+  const initialRender = open === undefined;
 
   const isResizing = useAtomValue(appSidebarResizingAtom);
   const navRef = useRef<HTMLDivElement>(null);
@@ -128,15 +128,29 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
 }
 
 export const AppSidebarFallback = (): ReactElement | null => {
+  const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
   return (
-    <AppSidebar isFallback>
-      <div className={fallbackStyle}>
-        <div className={fallbackHeaderStyle}>
-          <Skeleton variant="circular" width={40} height={40} />
-          <Skeleton variant="rectangular" width={150} height={40} />
+    <div
+      style={assignInlineVars({
+        [navWidthVar]: `${appSidebarWidth}px`,
+      })}
+      className={clsx(navWrapperStyle, {
+        'has-border': true,
+      })}
+      data-open="true"
+    >
+      <nav className={navStyle}>
+        <div className={navHeaderStyle} data-open="true" />
+        <div className={navBodyStyle}>
+          <div className={fallbackStyle}>
+            <div className={fallbackHeaderStyle}>
+              <Skeleton variant="circular" width={40} height={40} />
+              <Skeleton variant="rectangular" width={150} height={40} />
+            </div>
+          </div>
         </div>
-      </div>
-    </AppSidebar>
+      </nav>
+    </div>
   );
 };
 

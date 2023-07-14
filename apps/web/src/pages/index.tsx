@@ -1,13 +1,15 @@
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath, WorkspaceVersion } from '@affine/env/workspace';
+import type { RootWorkspaceMetadataV2 } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
-import { useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect } from 'react';
 
+import { WorkspaceAdapters } from '../adapters/workspace';
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspace } from '../hooks/use-workspace';
 import { useAppHelper } from '../hooks/use-workspaces';
@@ -27,8 +29,45 @@ const WorkspaceLoader = (props: AllWorkspaceLoaderProps): null => {
 const IndexPageInner = () => {
   const router = useRouter();
   const { jumpToPage, jumpToSubPath } = useRouterHelper(router);
-  const meta = useAtomValue(rootWorkspacesMetadataAtom);
+  const [meta, setMeta] = useAtom(rootWorkspacesMetadataAtom);
   const helper = useAppHelper();
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+    const createFirst = (): RootWorkspaceMetadataV2[] => {
+      if (signal.aborted) {
+        return [];
+      }
+
+      const Plugins = Object.values(WorkspaceAdapters).sort(
+        (a, b) => a.loadPriority - b.loadPriority
+      );
+
+      return Plugins.flatMap(Plugin => {
+        return Plugin.Events['app:init']?.().map(
+          id =>
+            ({
+              id,
+              flavour: Plugin.flavour,
+              // new workspace should all support sub-doc feature
+              version: WorkspaceVersion.SubDoc,
+            }) satisfies RootWorkspaceMetadataV2
+        );
+      }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
+    };
+
+    if (meta.length === 0 && localStorage.getItem('is-first-open') === null) {
+      meta.push(...createFirst());
+      console.info('create first workspace', meta);
+      localStorage.setItem('is-first-open', 'false');
+      setMeta(meta).catch(console.error);
+    }
+
+    return () => {
+      abortController.abort();
+    };
+  }, [meta, setMeta]);
 
   useEffect(() => {
     if (!router.isReady) {

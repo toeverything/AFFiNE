@@ -15,8 +15,7 @@
     "jsx": "preserve",
     "jsxImportSource": "@emotion/react",
     "incremental": true,
-    "experimentalDecorators": true,
-    "types": ["react/experimental"]
+    "experimentalDecorators": true
   },
   "include": [
     "next-env.d.ts",

@@ -72,8 +72,8 @@ __metadata:
     "@toeverything/plugin-infra": "workspace:*"
     foxact: ^0.2.11
     link-preview-js: ^3.0.4
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.2.0
+    react-dom: 18.2.0
   peerDependencies:
     react: "*"
     react-dom: "*"
@@ -137,9 +137,9 @@ __metadata:
     jotai: ^2.2.2
     lit: ^2.7.5
     lottie-web: ^5.12.2
-    react: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.2.0
     react-datepicker: ^4.15.0
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react-dom: 18.2.0
     react-error-boundary: ^4.0.10
     react-is: ^18.2.0
     rxjs: ^7.8.1
@@ -171,8 +171,8 @@ __metadata:
     marked: ^5.1.0
     marked-gfm-heading-id: ^3.0.4
     marked-mangle: ^1.1.0
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.2.0
+    react-dom: 18.2.0
     zod: ^3.21.4
   peerDependencies:
     react: "*"
@@ -272,8 +272,8 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230713131127-200a0dc1-nightly
     lit: ^2.7.5
     next: =13.4.2
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.2.0
+    react-dom: 18.2.0
     zod: ^3.21.4
   peerDependencies:
     "@affine/templates": "workspace:*"
@@ -305,7 +305,7 @@ __metadata:
     "@types/prettier": ^2.7.3
     i18next: ^23.2.6
     prettier: ^3.0.0
-    react-i18next: ^13.0.1
+    react-i18next: ^13.0.2
     ts-node: ^10.9.1
     typescript: ^5.1.6
   languageName: unknown
@@ -494,8 +494,8 @@ __metadata:
     "@vitejs/plugin-react": ^4.0.1
     concurrently: ^8.2.0
     jest-mock: ^29.5.0
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.2.0
+    react-dom: 18.2.0
     serve: ^14.2.0
     storybook: ^7.0.24
     storybook-dark-mode: ^3.0.0
@@ -578,8 +578,8 @@ __metadata:
     next-router-mock: ^0.9.7
     next-themes: ^0.2.1
     raw-loader: ^4.0.2
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.2.0
+    react-dom: 18.2.0
     react-is: ^18.2.0
     react-resizable-panels: ^0.0.53
     redux: ^4.2.1
@@ -612,8 +612,8 @@ __metadata:
     ky: ^0.33.3
     lib0: ^0.2.78
     next: =13.4.2
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.2.0
+    react-dom: 18.2.0
     ws: ^8.13.0
     y-protocols: ^1.0.5
     yjs: ^13.6.6
@@ -13042,12 +13042,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn@npm:^8.4.1, acorn@npm:^8.5.0, acorn@npm:^8.7.1, acorn@npm:^8.8.0, acorn@npm:^8.8.2, acorn@npm:^8.9.0":
+"acorn@npm:^8.4.1, acorn@npm:^8.7.1, acorn@npm:^8.8.0, acorn@npm:^8.8.2, acorn@npm:^8.9.0":
   version: 8.9.0
   resolution: "acorn@npm:8.9.0"
   bin:
     acorn: bin/acorn
   checksum: 25dfb94952386ecfb847e61934de04a4e7c2dc21c2e700fc4e2ef27ce78cb717700c4c4f279cd630bb4774948633c3859fc16063ec8573bda4568e0a312e6744
+  languageName: node
+  linkType: hard
+
+"acorn@npm:^8.5.0":
+  version: 8.10.0
+  resolution: "acorn@npm:8.10.0"
+  bin:
+    acorn: bin/acorn
+  checksum: 538ba38af0cc9e5ef983aee196c4b8b4d87c0c94532334fa7e065b2c8a1f85863467bb774231aae91613fcda5e68740c15d97b1967ae3394d20faddddd8af61d
   languageName: node
   linkType: hard
 
@@ -26568,6 +26577,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-dom@npm:18.2.0":
+  version: 18.2.0
+  resolution: "react-dom@npm:18.2.0"
+  dependencies:
+    loose-envify: ^1.1.0
+    scheduler: ^0.23.0
+  peerDependencies:
+    react: ^18.2.0
+  checksum: 7d323310bea3a91be2965f9468d552f201b1c27891e45ddc2d6b8f717680c95a75ae0bc1e3f5cf41472446a2589a75aed4483aee8169287909fcd59ad149e8cc
+  languageName: node
+  linkType: hard
+
 "react-dom@npm:18.3.0-canary-1fdacbefd-20230630":
   version: 18.3.0-canary-1fdacbefd-20230630
   resolution: "react-dom@npm:18.3.0-canary-1fdacbefd-20230630"
@@ -26623,9 +26644,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-i18next@npm:^13.0.1":
-  version: 13.0.1
-  resolution: "react-i18next@npm:13.0.1"
+"react-i18next@npm:^13.0.2":
+  version: 13.0.2
+  resolution: "react-i18next@npm:13.0.2"
   dependencies:
     "@babel/runtime": ^7.22.5
     html-parse-stringify: ^3.0.1
@@ -26637,7 +26658,7 @@ __metadata:
       optional: true
     react-native:
       optional: true
-  checksum: eac59c4517c07e4e4b182570140ad9b2f7a7920dac5dadd694107ea6359743fe855390192072464fac579d3de1370bf4656b987a8c9c77babeb5b60ff8f17d3c
+  checksum: ab8226939f3681efb5a8628f938d90b3311336e69ca9aaf1ea54aad6fac3395516736971a3484234455f3831ecae8555f68c32fa1cd4d38b94ff69769da2b677
   languageName: node
   linkType: hard
 
@@ -26869,6 +26890,15 @@ __metadata:
     react: ">=16.6.0"
     react-dom: ">=16.6.0"
   checksum: 75602840106aa9c6545149d6d7ae1502fb7b7abadcce70a6954c4b64a438ff1cd16fc77a0a1e5197cdd72da398f39eb929ea06f9005c45b132ed34e056ebdeb1
+  languageName: node
+  linkType: hard
+
+"react@npm:18.2.0":
+  version: 18.2.0
+  resolution: "react@npm:18.2.0"
+  dependencies:
+    loose-envify: ^1.1.0
+  checksum: 88e38092da8839b830cda6feef2e8505dec8ace60579e46aa5490fc3dc9bba0bd50336507dc166f43e3afc1c42939c09fe33b25fae889d6f402721dcd78fca1b
   languageName: node
   linkType: hard
 
@@ -27718,6 +27748,15 @@ __metadata:
   dependencies:
     loose-envify: ^1.1.0
   checksum: c6db74a5fb436862c58c8efee72190b947de6acfa9ba1eb1884f41b96d40b8cdeb8e9eb86f5b6ac161b04d56a36a1e3a64fb62d9342cbd21bd9fed4707800b94
+  languageName: node
+  linkType: hard
+
+"scheduler@npm:^0.23.0":
+  version: 0.23.0
+  resolution: "scheduler@npm:0.23.0"
+  dependencies:
+    loose-envify: ^1.1.0
+  checksum: d79192eeaa12abef860c195ea45d37cbf2bbf5f66e3c4dcd16f54a7da53b17788a70d109ee3d3dde1a0fd50e6a8fc171f4300356c5aee4fc0171de526bf35f8a
   languageName: node
   linkType: hard
 

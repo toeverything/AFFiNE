@@ -71,27 +71,6 @@ const rootWorkspacesMetadataPromiseAtom = atom<
   if (maybeMetadata !== null) {
     return maybeMetadata;
   }
-  const createFirst = (): RootWorkspaceMetadataV2[] => {
-    if (signal.aborted) {
-      return [];
-    }
-
-    const Plugins = Object.values(WorkspaceAdapters).sort(
-      (a, b) => a.loadPriority - b.loadPriority
-    );
-
-    return Plugins.flatMap(Plugin => {
-      return Plugin.Events['app:init']?.().map(
-        id =>
-          ({
-            id,
-            flavour: Plugin.flavour,
-            // new workspace should all support sub-doc feature
-            version: WorkspaceVersion.SubDoc,
-          }) satisfies RootWorkspaceMetadataV2
-      );
-    }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
-  };
 
   if (environment.isServer) {
     // return a promise in SSR to avoid the hydration mismatch
@@ -159,17 +138,6 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         }
       }
     }
-    // step 3: create initial workspaces
-    {
-      if (
-        metadata.length === 0 &&
-        localStorage.getItem('is-first-open') === null
-      ) {
-        metadata.push(...createFirst());
-        console.info('create first workspace', metadata);
-        localStorage.setItem('is-first-open', 'false');
-      }
-    }
     const metadataMap = new Map(metadata.map(x => [x.id, x]));
     // init workspace data
     metadataMap.forEach((meta, id) => {
@@ -194,9 +162,6 @@ export const rootWorkspacesMetadataAtom = atom<
   Promise<RootWorkspaceMetadata[]>
 >(
   async get => {
-    if (environment.isServer) {
-      return Promise.resolve([]);
-    }
     const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
     if (maybeMetadata !== null) {
       return maybeMetadata;
