@@ -49,7 +49,7 @@ export const createCloudDownloadProvider: DocProviderCreator = (
   };
 };
 
-export const createCloudForceSyncProvider: DocProviderCreator = (
+export const createMergeCloudSnapshotProvider: DocProviderCreator = (
   id,
   doc
 ): ActiveDocProvider => {
