@@ -6,8 +6,7 @@
     "baseUrl": "../..",
     "composite": true,
     "noEmit": false,
-    "outDir": "lib",
-    "types": ["react/experimental"]
+    "outDir": "lib"
   },
   "references": [
     {
