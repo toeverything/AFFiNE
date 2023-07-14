@@ -78,6 +78,7 @@
     "@vitejs/plugin-react": "^4.0.1",
     "@vitest/coverage-istanbul": "^0.32.2",
     "@vitest/ui": "^0.32.2",
+    "@vitest/web-worker": "^0.33.0",
     "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-i": "^2.27.5-3",

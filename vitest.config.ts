@@ -24,6 +24,7 @@ export default defineConfig({
   },
   test: {
     setupFiles: [
+      '@vitest/web-worker',
       resolve(rootDir, './scripts/setup/lit.ts'),
       resolve(rootDir, './scripts/setup/i18n.ts'),
       resolve(rootDir, './scripts/setup/search.ts'),

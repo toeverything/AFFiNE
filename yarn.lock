@@ -358,6 +358,7 @@ __metadata:
     "@vitejs/plugin-react": ^4.0.1
     "@vitest/coverage-istanbul": ^0.32.2
     "@vitest/ui": ^0.32.2
+    "@vitest/web-worker": ^0.33.0
     eslint: ^8.44.0
     eslint-config-prettier: ^8.8.0
     eslint-plugin-i: ^2.27.5-3
@@ -12567,6 +12568,17 @@ __metadata:
     loupe: ^2.3.6
     pretty-format: ^27.5.1
   checksum: d4bc065875edf235b0c6b1f8648c10e9655ac45f5c7e89dc892b02e7f96f9bd58a97a4c3fcb3bc7026d6b350e752fb02cb7dcf5690c40792ff361fb6ac433e66
+  languageName: node
+  linkType: hard
+
+"@vitest/web-worker@npm:^0.33.0":
+  version: 0.33.0
+  resolution: "@vitest/web-worker@npm:0.33.0"
+  dependencies:
+    debug: ^4.3.4
+  peerDependencies:
+    vitest: "*"
+  checksum: c1b6b60efc40760fc25d8e8380bec4f198f9cbe76807af2d1e7634acc30ab22cac8df78cf0c64a89de522f8501c90413d231390b638bc3ba9d75960844454965
   languageName: node
   linkType: hard
 
