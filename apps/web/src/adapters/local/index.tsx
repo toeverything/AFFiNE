@@ -16,9 +16,7 @@ import {
   CRUD,
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
-import {
-  createIndexedDBDownloadProvider,
-} from '@affine/workspace/providers';
+import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
