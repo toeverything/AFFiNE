@@ -1,9 +1,9 @@
-import type { AllWorkspace } from '../../../shared';
+import type { Workspace } from '@blocksuite/store';
 
 export type FavoriteListProps = {
-  currentWorkspace: AllWorkspace;
+  workspace: Workspace;
 };
 
 export type CollectionsListProps = {
-  currentWorkspace: AllWorkspace;
+  workspace: Workspace;
 };
