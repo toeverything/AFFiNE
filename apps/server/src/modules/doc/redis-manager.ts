@@ -126,19 +126,8 @@ export class RedisDocManager extends DocManager {
         : DocManager.mergeUpdates(updates);
 
       // update snapshot
-      await this.db.snapshot.upsert({
-        where: {
-          id,
-        },
-        create: {
-          id,
-          workspaceId,
-          blob,
-        },
-        update: {
-          blob,
-        },
-      });
+
+      await this.upsert(workspaceId, id, blob);
 
       // delete merged updates
       await this.redis

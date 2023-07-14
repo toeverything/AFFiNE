@@ -120,14 +120,14 @@ model OptimizedBlob {
 // the latest snapshot of each doc that we've seen
 // Snapshot + Updates are the latest state of the doc
 model Snapshot {
-  id          String    @id @default(uuid()) @map("guid") @db.VarChar
+  id          String    @default(uuid()) @map("guid") @db.VarChar
   workspaceId String    @map("workspace_id") @db.VarChar
   blob        Bytes     @db.ByteA
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([workspaceId])
+  @@id([id, workspaceId])
   @@map("snapshots")
 }
 
