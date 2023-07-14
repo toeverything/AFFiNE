@@ -4,10 +4,10 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import { rootCurrentPageIdAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
+import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -22,7 +22,7 @@ import type { NextPageWithLayout } from '../../../shared';
 const WorkspaceDetail: React.FC = () => {
   const router = useRouter();
   const { openPage, jumpToSubPath } = useRouterHelper(router);
-  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const currentPageId = useAtomValue(currentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   assertExists(currentWorkspace);
   assertExists(currentPageId);
@@ -73,7 +73,7 @@ const WorkspaceDetail: React.FC = () => {
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
-  const [currentPageId, setCurrentPageId] = useAtom(rootCurrentPageIdAtom);
+  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
   const page = currentPageId
     ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
     : null;

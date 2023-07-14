@@ -1,11 +1,12 @@
 import { MuiFade, Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
-import { useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai/react';
+import { useAtomValue } from 'jotai/react';
 import { useCallback, useState } from 'react';
 
 import { openOnboardingModalAtom, openSettingModalAtom } from '../../../atoms';
-import { useCurrentMode } from '../../../hooks/current/use-current-mode';
+import { currentModeAtom } from '../../../atoms/mode';
 import { ShortcutsModal } from '../shortcuts-modal';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import {
@@ -27,7 +28,7 @@ export const HelpIsland = ({
 }: {
   showList?: IslandItemNames[];
 }) => {
-  const mode = useCurrentMode();
+  const mode = useAtomValue(currentModeAtom);
   const setOpenOnboarding = useSetAtom(openOnboardingModalAtom);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);

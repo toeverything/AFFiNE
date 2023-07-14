@@ -4,8 +4,11 @@ import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { assertEquals } from '@blocksuite/global/utils';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/plugin-infra/manager';
 import { atom } from 'jotai';
-import Router from 'next/router';
 import { z } from 'zod';
 
 const rootWorkspaceMetadataV1Schema = z.object({
@@ -220,8 +223,8 @@ export const rootWorkspacesMetadataAtom = atom<
       metadata = await get(rootWorkspacesMetadataPromiseAtom);
     }
 
-    const oldWorkspaceId = get(rootCurrentWorkspaceIdAtom);
-    const oldPageId = get(rootCurrentPageIdAtom);
+    const oldWorkspaceId = get(currentWorkspaceIdAtom);
+    const oldPageId = get(currentPageIdAtom);
 
     // update metadata
     if (typeof action === 'function') {
@@ -236,70 +239,24 @@ export const rootWorkspacesMetadataAtom = atom<
     // write back to localStorage
     rootWorkspaceMetadataArraySchema.parse(metadata);
     localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
-    set(rootCurrentPageIdAtom, null);
-    set(rootCurrentWorkspaceIdAtom, null);
+    set(currentPageIdAtom, null);
+    set(currentWorkspaceIdAtom, null);
     set(rootWorkspacesMetadataPrimitiveAtom, metadata);
 
     // if the current workspace is deleted, reset the current workspace
     if (oldWorkspaceId && metadata.some(x => x.id === oldWorkspaceId)) {
-      set(rootCurrentWorkspaceIdAtom, oldWorkspaceId);
-      set(rootCurrentPageIdAtom, oldPageId);
+      set(currentWorkspaceIdAtom, oldWorkspaceId);
+      set(currentPageIdAtom, oldPageId);
     }
 
     if (newWorkspaceId) {
-      set(rootCurrentPageIdAtom, null);
-      set(rootCurrentWorkspaceIdAtom, newWorkspaceId);
+      set(currentPageIdAtom, null);
+      set(currentWorkspaceIdAtom, newWorkspaceId);
     }
 
     return metadata;
   }
 );
-
-// two more atoms to store the current workspace and page
-export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
-
-rootCurrentWorkspaceIdAtom.onMount = set => {
-  if (environment.isBrowser) {
-    const callback = (url: string) => {
-      const value = url.split('/')[2];
-      if (value === 'all' || value === 'trash' || value === 'shared') {
-        set(null);
-      } else if (value) {
-        set(value);
-        localStorage.setItem('last_workspace_id', value);
-      } else {
-        set(null);
-      }
-    };
-    callback(window.location.pathname);
-    Router.events.on('routeChangeStart', callback);
-    return () => {
-      Router.events.off('routeChangeStart', callback);
-    };
-  }
-  return;
-};
-
-export const rootCurrentPageIdAtom = atom<string | null>(null);
-
-rootCurrentPageIdAtom.onMount = set => {
-  if (environment.isBrowser) {
-    const callback = (url: string) => {
-      const value = url.split('/')[3];
-      if (value) {
-        set(value);
-      } else {
-        set(null);
-      }
-    };
-    callback(window.location.pathname);
-    Router.events.on('routeChangeStart', callback);
-    return () => {
-      Router.events.off('routeChangeStart', callback);
-    };
-  }
-  return;
-};
 
 // blocksuite atoms,
 // each app should have only one block-hub in the same time

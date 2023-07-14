@@ -12,7 +12,6 @@ export const BlockHubWrapper = (props: BlockHubProps): ReactElement => {
   const blockHub = useAtomValue(props.blockHubAtom);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    console.log('ref.current', blockHub, ref);
     if (ref.current) {
       const div = ref.current;
       if (blockHub) {

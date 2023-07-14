@@ -14,13 +14,13 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useAtom } from 'jotai';
+import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
+import { useAtom, useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 import { pageSettingFamily } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
-import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
 import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
@@ -56,7 +56,7 @@ const PageMenu = () => {
   const t = useAFFiNEI18N();
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
-  const [pageId] = useCurrentPageId();
+  const pageId = useAtomValue(currentPageIdAtom);
   assertExists(workspace);
   assertExists(pageId);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;

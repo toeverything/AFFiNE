@@ -5,10 +5,9 @@ import {
   newPage,
   waitEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { assertCurrentWorkspaceFlavour } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
-test('click btn bew page and open in tab', async ({ page }) => {
+test('click btn bew page and open in tab', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -30,5 +29,7 @@ test('click btn bew page and open in tab', async ({ page }) => {
   ]);
 
   expect(newTabPage.url()).toBe(newPageUrl);
-  await assertCurrentWorkspaceFlavour('local', page);
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });

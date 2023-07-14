@@ -9,7 +9,7 @@ import {
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
-test('Show favorite items in sidebar', async ({ page }) => {
+test('Show favorite items in sidebar', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -32,9 +32,12 @@ test('Show favorite items in sidebar', async ({ page }) => {
   expect(await favoriteListItemInSidebar.textContent()).toBe(
     'this is a new page to favorite'
   );
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
-test('Show favorite reference in sidebar', async ({ page }) => {
+test('Show favorite reference in sidebar', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -69,10 +72,14 @@ test('Show favorite reference in sidebar', async ({ page }) => {
   await expect(
     page.locator('[data-type="favorite-list-item"] >> text=Another page')
   ).toBeVisible();
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
 
 test("Deleted page's reference will not be shown in sidebar", async ({
   page,
+  workspace,
 }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -116,4 +123,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
   );
 
   await expect(collapseButton).not.toBeVisible();
+  const currentWorkspace = await workspace.current();
+
+  expect(currentWorkspace.flavour).toContain('local');
 });
