@@ -4,17 +4,10 @@ import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import { Skeleton } from '@mui/material';
+import { use } from 'foxact/use';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import {
-  lazy,
-  memo,
-  Suspense,
-  use,
-  useCallback,
-  useEffect,
-  useRef,
-} from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
