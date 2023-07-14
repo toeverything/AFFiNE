@@ -225,19 +225,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
         : DocManager.mergeUpdates(updates.map(u => u.blob));
 
       // save snapshot
-      await this.db.snapshot.upsert({
-        where: {
-          id,
-        },
-        create: {
-          id,
-          workspaceId,
-          blob: merged,
-        },
-        update: {
-          blob: merged,
-        },
-      });
+      await this.upsert(workspaceId, id, merged);
     } catch (e) {
       // failed to merge updates, put them back
       this.logger.error('Failed to merge updates', e);
@@ -255,5 +243,24 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
           this.logger.error('Fetal: failed to put updates back to db', e);
         });
     }
+  }
+
+  protected async upsert(workspaceId: string, guid: string, blob: Buffer) {
+    return this.db.snapshot.upsert({
+      where: {
+        id_workspaceId: {
+          id: guid,
+          workspaceId,
+        },
+      },
+      create: {
+        id: guid,
+        workspaceId,
+        blob,
+      },
+      update: {
+        blob,
+      },
+    });
   }
 }
