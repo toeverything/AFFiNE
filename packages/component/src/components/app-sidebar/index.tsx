@@ -91,7 +91,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   }
 
   return (
-    <>
+    <NoSsr>
       <div
         style={assignInlineVars({
           [navWidthVar]: `${appSidebarWidth}px`,
@@ -123,7 +123,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         className={sidebarFloatMaskStyle}
         onClick={() => setOpen(false)}
       />
-    </>
+    </NoSsr>
   );
 }
 
