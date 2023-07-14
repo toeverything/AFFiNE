@@ -1,3 +1,4 @@
+{{- if .Values.gke.enabled -}}
 apiVersion: v1
 kind: PodMonitoring
 metadata:
@@ -9,3 +10,4 @@ spec:
   endpoints:
     - port: metrics
       interval: 30s
+{{- end }}
