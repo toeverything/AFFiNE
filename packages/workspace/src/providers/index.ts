@@ -22,9 +22,9 @@ import {
 const Y = Workspace.Y;
 const logger = new DebugLogger('indexeddb-provider');
 
-const createIndexedDBBackgroundProvider: DocProviderCreator = (
-  id,
-  blockSuiteWorkspace
+const createIndexedDBBackgroundProvider = (
+  id: string,
+  blockSuiteWorkspace: Doc
 ): LocalIndexedDBBackgroundProvider => {
   const indexeddbProvider = create(blockSuiteWorkspace);
   let connected = false;

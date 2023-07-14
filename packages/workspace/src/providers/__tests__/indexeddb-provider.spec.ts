@@ -32,10 +32,7 @@ describe('download provider', () => {
       workspace.register(AffineSchemas).register(__unstableSchemas);
       const provider = createIndexedDBBackgroundProvider(
         workspace.id,
-        workspace.doc,
-        {
-          awareness: workspace.awarenessStore.awareness,
-        }
+        workspace.doc
       ) as LocalIndexedDBBackgroundProvider;
       provider.connect();
       const page = workspace.createPage({
