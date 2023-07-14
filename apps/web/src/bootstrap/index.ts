@@ -6,7 +6,11 @@ import type {
 } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { workspaceAdaptersAtom } from '@affine/workspace/atom';
+import {
+  type RootWorkspaceMetadataV2,
+  rootWorkspacesMetadataAtom,
+  workspaceAdaptersAtom,
+} from '@affine/workspace/atom';
 import {
   migrateLocalBlobStorage,
   upgradeV1ToV2,
@@ -77,6 +81,36 @@ if (!environment.isServer) {
     }
     return;
   };
+
+  const createFirst = (): RootWorkspaceMetadataV2[] => {
+    const Plugins = Object.values(WorkspaceAdapters).sort(
+      (a, b) => a.loadPriority - b.loadPriority
+    );
+
+    return Plugins.flatMap(Plugin => {
+      return Plugin.Events['app:init']?.().map(
+        id =>
+          ({
+            id,
+            flavour: Plugin.flavour,
+            // new workspace should all support sub-doc feature
+            version: WorkspaceVersion.SubDoc,
+          }) satisfies RootWorkspaceMetadataV2
+      );
+    }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
+  };
+
+  rootStore
+    .get(rootWorkspacesMetadataAtom)
+    .then(meta => {
+      if (meta.length === 0 && localStorage.getItem('is-first-open') === null) {
+        const result = createFirst();
+        console.info('create first workspace', result);
+        localStorage.setItem('is-first-open', 'false');
+        rootStore.set(rootWorkspacesMetadataAtom, result).catch(console.error);
+      }
+    })
+    .catch(console.error);
 }
 
 if (runtimeConfig.enablePlugin && !environment.isServer) {
