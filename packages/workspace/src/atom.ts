@@ -81,6 +81,19 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     // fixme(himself65): we might not need step 1
     // step 1: try load metadata from localStorage
     {
+      // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
+      if (
+        metadata.some(meta => !('version' in meta)) &&
+        !globalThis.$migrationDone
+      ) {
+        await new Promise<void>((resolve, reject) => {
+          signal.addEventListener('abort', () => reject(), { once: true });
+          window.addEventListener('migration-done', () => resolve(), {
+            once: true,
+          });
+        });
+      }
+
       // don't change this key,
       // otherwise it will cause the data loss in the production
       const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
@@ -94,19 +107,6 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         } catch (e) {
           console.error('cannot parse worksapce', e);
         }
-      }
-
-      // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
-      if (
-        metadata.some(meta => !('version' in meta)) &&
-        !globalThis.$migrationDone
-      ) {
-        await new Promise<void>((resolve, reject) => {
-          signal.addEventListener('abort', () => reject(), { once: true });
-          window.addEventListener('migration-done', () => resolve(), {
-            once: true,
-          });
-        });
       }
     }
     // step 2: fetch from adapters
