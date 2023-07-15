@@ -138,7 +138,7 @@ export class RedisDocManager extends DocManager {
         });
     } catch (e) {
       this.logger.error('Failed to merge updates with snapshot', e);
-      await this.redis.rpush(pending, `${workspaceId}:${id}`).catch(() => null); // safe
+      await this.redis.sadd(pending, `${workspaceId}:${id}`).catch(() => null); // safe
     } finally {
       await this.redis.del(lockKey);
     }
