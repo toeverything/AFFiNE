@@ -26,13 +26,13 @@
     }
   },
   "dependencies": {
-    "@blocksuite/global": "0.0.0-20230713131127-200a0dc1-nightly"
+    "@blocksuite/global": "0.0.0-20230716144121-5b169b38-nightly"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230713131127-200a0dc1-nightly",
-    "@blocksuite/editor": "0.0.0-20230713131127-200a0dc1-nightly",
-    "@blocksuite/lit": "0.0.0-20230713131127-200a0dc1-nightly",
-    "@blocksuite/store": "0.0.0-20230713131127-200a0dc1-nightly",
+    "@blocksuite/blocks": "0.0.0-20230716144121-5b169b38-nightly",
+    "@blocksuite/editor": "0.0.0-20230716144121-5b169b38-nightly",
+    "@blocksuite/lit": "0.0.0-20230716144121-5b169b38-nightly",
+    "@blocksuite/store": "0.0.0-20230716144121-5b169b38-nightly",
     "jotai": "^2.2.2",
     "vite": "^4.3.9",
     "vite-plugin-dts": "3.0.2"
