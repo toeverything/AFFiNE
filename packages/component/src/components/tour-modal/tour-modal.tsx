@@ -61,8 +61,8 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
             {step !== -1 && (
               <div
                 className={clsx(titleStyle, {
-                  [slideToLeftStyle]: step === 0,
-                  [formSlideToRightStyle]: step === 1,
+                  [slideToRightStyle]: step === 0,
+                  [formSlideToLeftStyle]: step === 1,
                 })}
               >
                 {t['com.affine.onboarding.title2']()}
@@ -70,8 +70,8 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
             )}
             <div
               className={clsx(titleStyle, {
-                [slideToRightStyle]: step === 1,
-                [formSlideToLeftStyle]: step === 0,
+                [slideToLeftStyle]: step === 1,
+                [formSlideToRightStyle]: step === 0,
               })}
             >
               {t['com.affine.onboarding.title1']()}
@@ -94,8 +94,8 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
                     muted
                     loop
                     className={clsx(videoStyle, {
-                      [slideToLeftStyle]: step === 0,
-                      [formSlideToRightStyle]: step === 1,
+                      [slideToRightStyle]: step === 0,
+                      [formSlideToLeftStyle]: step === 1,
                     })}
                     data-testid="onboarding-modal-editing-video"
                   >
@@ -108,8 +108,8 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
                   muted
                   loop
                   className={clsx(videoStyle, {
-                    [slideToRightStyle]: step === 1,
-                    [formSlideToLeftStyle]: step === 0,
+                    [slideToLeftStyle]: step === 1,
+                    [formSlideToRightStyle]: step === 0,
                   })}
                   data-testid="onboarding-modal-switch-video"
                 >
@@ -142,8 +142,8 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
             {step !== -1 && (
               <div
                 className={clsx(descriptionStyle, {
-                  [slideToLeftStyle]: step === 0,
-                  [formSlideToRightStyle]: step === 1,
+                  [slideToRightStyle]: step === 0,
+                  [formSlideToLeftStyle]: step === 1,
                 })}
               >
                 {t['com.affine.onboarding.videoDescription2']()}
@@ -151,8 +151,8 @@ export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
             )}
             <div
               className={clsx(descriptionStyle, {
-                [slideToRightStyle]: step === 1,
-                [formSlideToLeftStyle]: step === 0,
+                [slideToLeftStyle]: step === 1,
+                [formSlideToRightStyle]: step === 0,
               })}
             >
               {t['com.affine.onboarding.videoDescription1']()}

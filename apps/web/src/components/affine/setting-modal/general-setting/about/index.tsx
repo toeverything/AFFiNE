@@ -59,7 +59,7 @@ export const AboutAffine = () => {
               style={{ cursor: 'pointer' }}
               onClick={() => {
                 window.open(
-                  'https://affine.pro/blog/whats-new-affine-0630',
+                  'https://affine.pro/blog/what-is-new-affine-0717',
                   '_blank'
                 );
               }}
