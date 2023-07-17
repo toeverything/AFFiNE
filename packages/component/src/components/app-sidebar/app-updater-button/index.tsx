@@ -1,3 +1,4 @@
+import { Tooltip } from '@affine/component';
 import { isBrowser, Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
@@ -105,7 +106,22 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   const whatsNew =
     !updateAvailable && currentChangelogUnread ? renderWhatsNew() : null;
 
-  return (
+  const wrapWithTooltip = (
+    node: React.ReactElement,
+    tooltip?: React.ReactElement | string
+  ) => {
+    if (!tooltip) {
+      return node;
+    }
+
+    return (
+      <Tooltip content={tooltip} placement="top-start">
+        {node}
+      </Tooltip>
+    );
+  };
+
+  return wrapWithTooltip(
     <button
       style={style}
       className={clsx([styles.root, className])}
@@ -119,7 +135,8 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
       {whatsNew}
       <div className={styles.particles} aria-hidden="true"></div>
       <span className={styles.halo} aria-hidden="true"></span>
-    </button>
+    </button>,
+    updateAvailable?.version
   );
 
   function renderUpdateAvailableAllowAutoUpdate() {
