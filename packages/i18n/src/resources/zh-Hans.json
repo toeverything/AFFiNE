@@ -317,6 +317,8 @@
   "Terms of Use": "使用条款",
   "Unpublished hint": "发布到网络后，访问者可以通过提供的链接查看内容。",
   "Version": "版本",
+  "App Version": "应用版本",
+  "Editor Version": "编辑器版本",
   "Window frame style": "视窗样式",
   "Workspace Profile": "工作区配置文件",
   "Workspace saved locally": "{{name}} 已保存在本地",
