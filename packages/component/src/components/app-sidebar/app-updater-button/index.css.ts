@@ -125,6 +125,9 @@ export const versionLabel = style({
   fontSize: '10px',
   lineHeight: '18px',
   borderRadius: '4px',
+  maxWidth: '100px',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 });
 
 export const whatsNewLabel = style({
