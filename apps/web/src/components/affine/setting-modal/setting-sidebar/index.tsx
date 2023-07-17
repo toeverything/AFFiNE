@@ -47,6 +47,9 @@ export const SettingSidebar: FC<{
       <div className={sidebarSubtitle}>{t['General']()}</div>
       <div className={sidebarItemsWrapper}>
         {generalSettingList.map(({ title, icon, key, testId }) => {
+          if (!runtimeConfig.enablePlugin && key === 'plugins') {
+            return null;
+          }
           return (
             <div
               className={clsx(sidebarSelectItem, {
