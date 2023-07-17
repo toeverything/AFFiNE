@@ -115,6 +115,16 @@ if (!environment.isServer) {
 
 if (runtimeConfig.enablePlugin && !environment.isServer) {
   import('@affine/copilot');
+  const base = new URL(location.origin);
+
+  const url = new URL('plugins/hello-world/package.json', base);
+  fetch(url)
+    .then(res => res.json())
+    .then(module => {
+      const entry = new URL(module.entry.core, url);
+      import(/* webpackIgnore: true */ entry.toString());
+    })
+    .catch(console.error);
 }
 
 if (!environment.isServer) {
