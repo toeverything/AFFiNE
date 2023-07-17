@@ -1,11 +1,12 @@
 import type { Workspace } from '@blocksuite/store';
 import { type PassiveDocProvider } from '@blocksuite/store';
+import { useAtomValue } from 'jotai/react';
+import { useEffect } from 'react';
+
 import {
   getActiveBlockSuiteWorkspaceAtom,
   workspacePassiveEffectWeakMap,
-} from '@toeverything/plugin-infra/__internal__/workspace';
-import { useAtomValue } from 'jotai/react';
-import { useEffect } from 'react';
+} from './workspace';
 
 export function useStaticBlockSuiteWorkspace(id: string): Workspace {
   return useAtomValue(getActiveBlockSuiteWorkspaceAtom(id));
