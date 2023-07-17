@@ -17,6 +17,7 @@ export default defineConfig({
           root,
           'src/__internal__/workspace.ts'
         ),
+        '__internal__/react': resolve(root, 'src/__internal__/react.ts'),
       },
     },
     rollupOptions: {

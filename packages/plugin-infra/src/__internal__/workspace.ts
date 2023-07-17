@@ -1,9 +1,6 @@
 import type { ActiveDocProvider, Workspace } from '@blocksuite/store';
-import type { PassiveDocProvider } from '@blocksuite/store';
-import { useAtomValue } from 'jotai/react';
 import type { Atom } from 'jotai/vanilla';
 import { atom } from 'jotai/vanilla';
-import { useEffect } from 'react';
 
 /**
  * DO NOT ACCESS THIS MAP IN PRODUCTION, OR YOU WILL BE FIRED
@@ -59,30 +56,4 @@ export function getActiveBlockSuiteWorkspaceAtom(
     workspacePassiveAtomWeakMap.set(workspace, baseAtom);
   }
   return workspacePassiveAtomWeakMap.get(workspace) as Atom<Promise<Workspace>>;
-}
-
-export function useStaticBlockSuiteWorkspace(id: string): Workspace {
-  return useAtomValue(getActiveBlockSuiteWorkspaceAtom(id));
-}
-
-export function usePassiveWorkspaceEffect(workspace: Workspace) {
-  useEffect(() => {
-    if (workspacePassiveEffectWeakMap.get(workspace) === true) {
-      return;
-    }
-    const providers = workspace.providers.filter(
-      (provider): provider is PassiveDocProvider =>
-        'passive' in provider && provider.passive === true
-    );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    workspacePassiveEffectWeakMap.set(workspace, true);
-    return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-      workspacePassiveEffectWeakMap.delete(workspace);
-    };
-  }, [workspace]);
 }
