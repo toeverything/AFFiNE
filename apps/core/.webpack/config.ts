@@ -118,6 +118,9 @@ export const createConfiguration: (
         '.js': ['.js', '.tsx', '.ts'],
         '.mjs': ['.mjs', '.mts'],
       },
+      alias: {
+        'next/config': resolve(rootPath, 'src/next-config.ts'),
+      },
       extensions: ['.js', '.ts', '.tsx'],
     },
 

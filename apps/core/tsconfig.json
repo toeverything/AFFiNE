@@ -21,6 +21,30 @@
   "exclude": ["node_modules"],
   "references": [
     {
+      "path": "../../packages/component"
+    },
+    {
+      "path": "../../packages/debug"
+    },
+    {
+      "path": "../../packages/env"
+    },
+    {
+      "path": "../../packages/graphql"
+    },
+    {
+      "path": "../../packages/hooks"
+    },
+    {
+      "path": "../../packages/i18n"
+    },
+    {
+      "path": "../../packages/jotai"
+    },
+    {
+      "path": "../../packages/workspace"
+    },
+    {
       "path": "./tsconfig.node.json"
     }
   ]

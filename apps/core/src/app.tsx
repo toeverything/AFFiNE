@@ -1,22 +1,23 @@
 import { memo } from 'react';
-import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { Provider } from  'jotai/react'
+import { rootStore } from '@toeverything/plugin-infra/manager'
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: (
-      <div>
-        <h1>Hello World</h1>
-        <Link to="about">About Us</Link>
-      </div>
-    ),
+    lazy: () => import('./pages/index'),
   },
   {
-    path: 'about',
-    element: <div>About</div>,
+    path: '/workspace/:workspaceId/:pageId',
+    lazy: () => import('./pages/workspace/detail-page'),
   },
 ]);
 
 export const App = memo(function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <Provider store={rootStore}>
+      <RouterProvider router={router} />
+    </Provider>
+  );
 });

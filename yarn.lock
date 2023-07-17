@@ -185,6 +185,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/core@workspace:apps/core"
   dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine/component": "workspace:*"
+    "@affine/debug": "workspace:*"
+    "@affine/env": "workspace:*"
+    "@affine/graphql": "workspace:*"
+    "@affine/i18n": "workspace:*"
+    "@affine/jotai": "workspace:*"
+    "@affine/templates": "workspace:*"
+    "@affine/workspace": "workspace:*"
     "@blocksuite/block-std": 0.0.0-20230716144121-5b169b38-nightly
     "@blocksuite/blocks": 0.0.0-20230716144121-5b169b38-nightly
     "@blocksuite/editor": 0.0.0-20230716144121-5b169b38-nightly
