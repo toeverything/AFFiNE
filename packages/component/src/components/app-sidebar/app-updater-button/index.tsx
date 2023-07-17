@@ -3,7 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
-import { startTransition, useCallback } from 'react';
+import { startTransition, useCallback, useState } from 'react';
 
 import * as styles from './index.css';
 import {
@@ -48,6 +48,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   const currentVersion = useAtomValue(currentVersionAtom);
   const downloadProgress = useAtomValue(downloadProgressAtom);
   const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
+  const [appQuitting, setAppQuitting] = useState(false);
 
   const onDismissCurrentChangelog = useCallback(() => {
     if (!currentVersion) {
@@ -64,6 +65,7 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
   }, [currentVersion, setChangelogCheckAtom]);
   const onClickUpdate = useCallback(() => {
     if (updateReady) {
+      setAppQuitting(true);
       window.apis?.updater.quitAndInstall().catch(err => {
         // TODO: add error toast here
         console.error(err);
@@ -108,7 +110,9 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
       style={style}
       className={clsx([styles.root, className])}
       data-has-update={updateAvailable ? 'true' : 'false'}
-      data-disabled={updateAvailable?.allowAutoUpdate && !updateReady}
+      data-disabled={
+        (updateAvailable?.allowAutoUpdate && !updateReady) || appQuitting
+      }
       onClick={onClickUpdate}
     >
       {updateAvailableNode}
