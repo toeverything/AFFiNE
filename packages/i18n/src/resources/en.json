@@ -42,6 +42,12 @@
   "com.affine.settings.profile.message": "Your account profile will be displayed to everyone.",
   "com.affine.settings.profile.name": "Display Name",
   "com.affine.settings.profile.placeholder": "Input account name",
+  "com.affine.auth.sign.in": "Sign in",
+  "com.affine.auth.sign.email.placeholder": "Enter your email address",
+  "com.affine.auth.sign.email.continue": "Continue with Email",
+  "com.affine.auth.sign.condition": "Terms of Conditions",
+  "com.affine.auth.sign.policy": "Privacy Policy",
+  "com.affine.auth.sign.message": "By clicking “Continue with Google/Email” above, you acknowledge that you agree to AFFiNE's <1>Terms of Conditions</1> and <3>Privacy Policy</3>.",
 
   "com.affine.pageMode": "Page Mode",
   "com.affine.edgelessMode": "Edgeless Mode",

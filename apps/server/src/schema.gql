@@ -113,7 +113,7 @@ type Query {
   currentUser: UserType!
 
   """Get user by email"""
-  user(email: String!): UserType!
+  user(email: String!): UserType
 }
 
 type Mutation {

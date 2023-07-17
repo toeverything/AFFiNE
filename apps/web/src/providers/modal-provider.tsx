@@ -13,6 +13,7 @@ import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {
+  openAuthModalAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
@@ -24,6 +25,11 @@ import { useRouterHelper } from '../hooks/use-router-helper';
 const SettingModal = lazy(() =>
   import('../components/affine/setting-modal').then(module => ({
     default: module.SettingModal,
+  }))
+);
+const Auth = lazy(() =>
+  import('../components/affine/auth').then(module => ({
+    default: module.AuthModal,
   }))
 );
 
@@ -80,6 +86,21 @@ export const Setting: FC = () => {
           setOpenSettingModalAtom(prev => ({ ...prev, open }));
         },
         [setOpenSettingModalAtom]
+      )}
+    />
+  );
+};
+
+export const AuthModal: FC = () => {
+  const [{ open }, setOpenAuthModalAtom] = useAtom(openAuthModalAtom);
+  return (
+    <Auth
+      open={open}
+      setOpen={useCallback(
+        open => {
+          setOpenAuthModalAtom(prev => ({ ...prev, open }));
+        },
+        [setOpenAuthModalAtom]
       )}
     />
   );
@@ -213,6 +234,9 @@ export const AllWorkspaceModals = (): ReactElement => {
             ]
           )}
         />
+      </Suspense>
+      <Suspense>
+        <AuthModal />
       </Suspense>
     </>
   );

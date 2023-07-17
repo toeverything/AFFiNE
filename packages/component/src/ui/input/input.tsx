@@ -12,7 +12,7 @@ import { forwardRef, useCallback } from 'react';
 
 import { heightVar, inputStyle, widthVar } from './index.css';
 
-type InputProps = {
+export type InputProps = {
   // We don't have `value` props here,
   //  see https://foxact.skk.moe/use-composition-input
   defaultValue?: string | undefined;

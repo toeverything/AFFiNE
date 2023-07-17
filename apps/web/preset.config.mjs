@@ -33,6 +33,7 @@ const buildPreset = {
     enableNotificationCenter: false,
     enableCloud: true,
     serverUrlPrefix: 'https://affine.fail',
+    enableNewAuth: false,
   },
   beta: {},
   internal: {},
@@ -52,6 +53,7 @@ const buildPreset = {
     enableNotificationCenter: true,
     enableCloud: true,
     serverUrlPrefix: 'https://affine.fail',
+    enableNewAuth: false,
   },
 };
 
@@ -103,6 +105,9 @@ const environmentPreset = {
   enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
     ? process.env.ENABLE_MOVE_DATABASE === 'true'
     : currentBuildPreset.enableMoveDatabase,
+  enableNewAuth: process.env.ENABLE_NEW_AUTH
+    ? process.env.ENABLE_NEW_AUTH === 'true'
+    : currentBuildPreset.enableNewAuth,
 };
 
 /**

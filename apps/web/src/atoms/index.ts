@@ -20,6 +20,14 @@ export const openSettingModalAtom = atom<SettingAtom>({
   open: false,
 });
 
+export type AuthAtom = {
+  open: boolean;
+};
+
+export const openAuthModalAtom = atom<AuthAtom>({
+  open: false,
+});
+
 export const openDisableCloudAlertModalAtom = atom(false);
 
 type PageMode = 'page' | 'edgeless';

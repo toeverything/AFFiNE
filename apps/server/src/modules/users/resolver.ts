@@ -14,7 +14,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma/service';
 import type { FileUpload } from '../../types';
-import { Auth, CurrentUser } from '../auth/guard';
+import { Auth, CurrentUser, Public } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
 
 @ObjectType()
@@ -70,12 +70,18 @@ export class UserResolver {
   @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',
+    nullable: true,
   })
+  @Public()
   async user(@Args('email') email: string) {
     // TODO: need to limit a user can only get another user witch is in the same workspace
-    return this.prisma.user.findUnique({
-      where: { email },
-    });
+    return this.prisma.user
+      .findUnique({
+        where: { email },
+      })
+      .catch(() => {
+        return null;
+      });
   }
 
   @Mutation(() => UserType, {
