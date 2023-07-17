@@ -85,7 +85,9 @@ export class RedisDocManager extends DocManager {
 
     const updateKey = updates`${pendingDoc}`;
     const lockKey = lock`${pendingDoc}`;
-    const [workspaceId, id] = pendingDoc.split(':');
+    const splitAt = pendingDoc.indexOf(':');
+    const workspaceId = pendingDoc.substring(0, splitAt);
+    const id = pendingDoc.substring(splitAt + 1);
 
     // acquire the lock
     const lockResult = await this.redis
