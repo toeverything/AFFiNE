@@ -1,6 +1,7 @@
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import HTMLPlugin from 'html-webpack-plugin';
 
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
@@ -79,6 +80,7 @@ export const createConfiguration: () => webpack.Configuration = () => {
   publicPath = publicPath.endsWith('/') ? publicPath : `${publicPath}/`;
 
   return {
+    name: 'affine',
     context: rootPath,
     output: {
       path: join(rootPath, 'dist'),
@@ -92,10 +94,20 @@ export const createConfiguration: () => webpack.Configuration = () => {
       : 'eval-cheap-module-source-map',
 
     resolve: {
-      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.gql'],
+      extensionAlias: {
+        '.js': ['.js', '.tsx', '.ts'],
+        '.mjs': ['.mjs', '.mts'],
+      },
+      extensions: ['.js', '.ts', '.tsx'],
     },
 
     module: {
+      parser: {
+        javascript: {
+          // Treat as missing export as error
+          strictExportPresence: true,
+        },
+      },
       rules: [
         {
           test: /\.m?js?$/,
@@ -173,6 +185,14 @@ export const createConfiguration: () => webpack.Configuration = () => {
 
     plugins: [
       ...(IN_CI ? [] : [new webpack.ProgressPlugin({ percentBy: 'entries' })]),
+      new HTMLPlugin({
+        template: join(rootPath, '.webpack', 'template.html'),
+        inject: 'body',
+        scriptLoading: 'defer',
+        minify: false,
+        chunks: ['index'],
+        filename: 'index.html',
+      }),
     ],
     optimization: OptimizeOptionOptions(),
   };

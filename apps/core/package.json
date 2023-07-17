@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@svgr/webpack": "^8.0.1",
+    "html-webpack-plugin": "^5.5.3",
     "raw-loader": "^4.0.2",
     "serialize-javascript": "^6.0.1",
     "swc-loader": "^0.2.3",
