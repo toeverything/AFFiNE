@@ -1,14 +1,10 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-import type { BuildFlags } from '../config';
+import type { BuildFlags } from '../config/index.js';
+import { projectRoot } from '../config/index.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const root = path.resolve(__dirname, '..', '..', '..', '..');
-const cwd = path.resolve(root, 'apps', 'core');
+const cwd = path.resolve(projectRoot, 'apps', 'core');
 
 const flags: BuildFlags = {
   distribution: 'browser',

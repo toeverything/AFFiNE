@@ -2,16 +2,13 @@
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import * as p from '@clack/prompts';
 import { spawnSync } from 'child_process';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { projectRoot } from '../config/index.js';
 
-const root = path.resolve(__dirname, '..', '..', '..');
-const cwd = path.resolve(root, 'apps', 'web');
+const cwd = path.resolve(projectRoot, 'apps', 'web');
 
 const dev = await p.group(
   {
@@ -68,7 +65,7 @@ spawnSync('nx', ['run-many', '-t', 'build', '-p', ...packages], {
 });
 
 packages.forEach(pkg => {
-  const cwd = path.resolve(root, 'packages', pkg);
+  const cwd = path.resolve(projectRoot, 'packages', pkg);
   spawn('yarn', ['dev'], {
     env,
     cwd,

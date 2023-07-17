@@ -3,7 +3,7 @@
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Node16",
     "outDir": "lib"
   },
   "include": ["src/bin", "src"]
