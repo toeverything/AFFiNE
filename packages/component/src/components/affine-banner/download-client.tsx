@@ -1,3 +1,4 @@
+import { Trans } from '@affine/i18n';
 import { AffineLogoSimCBlue1_1Icon, CloseIcon } from '@blocksuite/icons';
 
 import {
@@ -18,16 +19,18 @@ export const DownloadTips = ({ onClose }: { onClose: () => void }) => {
       <div className={downloadTipStyle}>
         <AffineLogoSimCBlue1_1Icon className={downloadTipIconStyle} />
         <div className={downloadMessageStyle}>
-          Enjoying the demo? &nbsp;
-          <a
-            className={linkStyle}
-            href="https://affine.pro/download"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Download the AFFiNE Client
-          </a>
-          &nbsp;for the full experience.
+          <Trans i18nKey="com.affine.banner.content">
+            This demo is limited.
+            <a
+              className={linkStyle}
+              href="https://affine.pro/download"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Download the AFFiNE Client
+            </a>
+            for the latest features and Performance.
+          </Trans>
         </div>
       </div>
       <div
