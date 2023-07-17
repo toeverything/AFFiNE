@@ -23,6 +23,11 @@
       "type": "./dist/__internal__/workspace.d.ts",
       "import": "./dist/__internal__/workspace.js",
       "require": "./dist/__internal__/workspace.cjs"
+    },
+    "./__internal__/react": {
+      "type": "./dist/__internal__/react.d.ts",
+      "import": "./dist/__internal__/react.js",
+      "require": "./dist/__internal__/react.cjs"
     }
   },
   "dependencies": {
