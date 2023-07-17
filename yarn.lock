@@ -11764,6 +11764,7 @@ __metadata:
     idb: ^7.1.1
     vite: ^4.4.3
     vite-plugin-dts: 3.2.0
+    y-indexeddb: ^9.0.11
   peerDependencies:
     yjs: ^13.5.51
   languageName: unknown
@@ -32123,6 +32124,17 @@ __metadata:
   dependencies:
     object-keys: ~0.4.0
   checksum: a8b79f31502c163205984eaa2b196051cd2fab0882b49758e30f2f9018255bc6c462e32a090bf3385d1bda04755ad8cc0052a09e049b0038f49eb9b950d9c447
+  languageName: node
+  linkType: hard
+
+"y-indexeddb@npm:^9.0.11":
+  version: 9.0.11
+  resolution: "y-indexeddb@npm:9.0.11"
+  dependencies:
+    lib0: ^0.2.74
+  peerDependencies:
+    yjs: ^13.0.0
+  checksum: 890b745b420badeadcc0925b517628a50a4f74b88739647aaa3098b7e60a47db351ebbaef9f2bcdf74a50739a3a8e3fe4a3b47281f21f53b5e19cd1725d4dd8b
   languageName: node
   linkType: hard
 
