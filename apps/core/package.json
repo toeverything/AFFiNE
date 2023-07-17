@@ -38,6 +38,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.10",
     "@svgr/webpack": "^8.0.1",
     "html-webpack-plugin": "^5.5.3",
     "raw-loader": "^4.0.2",

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import HTMLPlugin from 'html-webpack-plugin';
 
+import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
 
@@ -203,6 +204,9 @@ export const createConfiguration: (
 
     plugins: [
       ...(IN_CI ? [] : [new webpack.ProgressPlugin({ percentBy: 'entries' })]),
+      ...(buildFlags.mode === 'development'
+        ? [new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })]
+        : []),
       new HTMLPlugin({
         template: join(rootPath, '.webpack', 'template.html'),
         inject: 'body',
