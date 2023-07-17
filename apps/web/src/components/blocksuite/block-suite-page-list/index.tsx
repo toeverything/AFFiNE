@@ -109,7 +109,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
-  const getPageInfo = useGetPageInfoById();
+  const getPageInfo = useGetPageInfoById(blockSuiteWorkspace);
   const tagOptionMap = useMemo(
     () =>
       Object.fromEntries(
