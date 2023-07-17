@@ -125,6 +125,9 @@
     },
     // Packages
     {
+      "path": "./packages/cli"
+    },
+    {
       "path": "./packages/component"
     },
     {

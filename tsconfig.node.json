@@ -7,7 +7,7 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "lib"
   },
-  "include": ["vitest.config.ts", "scripts", "packages/cli/src"],
+  "include": ["vitest.config.ts", "scripts"],
   "references": [
     {
       "path": "./packages/env"
