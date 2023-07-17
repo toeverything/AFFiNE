@@ -19,6 +19,9 @@ export async function openAppearancePanel(page: Page) {
 export async function openShortcutsPanel(page: Page) {
   await page.getByTestId('shortcuts-panel-trigger').click();
 }
+export async function openPluginsPanel(page: Page) {
+  await page.getByTestId('plugins-panel-trigger').click();
+}
 
 export async function openAboutPanel(page: Page) {
   await page.getByTestId('about-panel-trigger').click();
