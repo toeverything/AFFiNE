@@ -7,6 +7,7 @@ import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
 
 import { productionCacheGroups } from './cache-group.js';
+import type { BuildFlags } from '@affine/cli/config';
 
 const IN_CI = !!process.env.CI;
 
@@ -27,56 +28,59 @@ const packages = [
   '@toeverything/y-indexeddb',
 ];
 
-const isProduction = () => process.env.NODE_ENV === 'production';
-
-const OptimizeOptionOptions: () => webpack.Configuration['optimization'] =
-  () => ({
-    minimize: isProduction(),
-    minimizer: [
-      new TerserPlugin({
-        parallel: true,
-        extractComments: true,
-        terserOptions: {
-          parse: {
-            ecma: 2019,
-          },
-          compress: {
-            comparisons: false,
-          },
-          output: {
-            comments: false,
-            // https://github.com/facebookincubator/create-react-app/issues/2488
-            ascii_only: true,
-          },
+const OptimizeOptionOptions: (
+  buildFlags: BuildFlags
+) => webpack.Configuration['optimization'] = buildFlags => ({
+  minimize: buildFlags.mode === 'production',
+  minimizer: [
+    new TerserPlugin({
+      parallel: true,
+      extractComments: true,
+      terserOptions: {
+        parse: {
+          ecma: 2019,
         },
-      }),
-    ],
-    removeEmptyChunks: true,
-    providedExports: true,
-    usedExports: true,
-    sideEffects: true,
-    removeAvailableModules: true,
-    runtimeChunk: {
-      name: 'runtime',
-    },
-    splitChunks: {
-      chunks: 'all',
-      minSize: 1,
-      minChunks: 1,
-      maxInitialRequests: Number.MAX_SAFE_INTEGER,
-      maxAsyncRequests: Number.MAX_SAFE_INTEGER,
-      cacheGroups: isProduction()
+        compress: {
+          comparisons: false,
+        },
+        output: {
+          comments: false,
+          // https://github.com/facebookincubator/create-react-app/issues/2488
+          ascii_only: true,
+        },
+      },
+    }),
+  ],
+  removeEmptyChunks: true,
+  providedExports: true,
+  usedExports: true,
+  sideEffects: true,
+  removeAvailableModules: true,
+  runtimeChunk: {
+    name: 'runtime',
+  },
+  splitChunks: {
+    chunks: 'all',
+    minSize: 1,
+    minChunks: 1,
+    maxInitialRequests: Number.MAX_SAFE_INTEGER,
+    maxAsyncRequests: Number.MAX_SAFE_INTEGER,
+    cacheGroups:
+      buildFlags.mode === 'production'
         ? productionCacheGroups
         : {
             default: false,
             vendors: false,
           },
-    },
-  });
+  },
+});
 
-export const createConfiguration: () => webpack.Configuration = () => {
+export const createConfiguration: (
+  buildFlags: BuildFlags
+) => webpack.Configuration = buildFlags => {
   let publicPath =
-    process.env.PUBLIC_PATH ?? (isProduction() ? '' : 'http://localhost:8080');
+    process.env.PUBLIC_PATH ??
+    (buildFlags.mode === 'production' ? '' : 'http://localhost:8080');
   publicPath = publicPath.endsWith('/') ? publicPath : `${publicPath}/`;
 
   return {
@@ -87,11 +91,12 @@ export const createConfiguration: () => webpack.Configuration = () => {
       publicPath,
     },
 
-    mode: isProduction() ? 'production' : 'development',
+    mode: buildFlags.mode,
 
-    devtool: isProduction()
-      ? 'hidden-nosources-source-map'
-      : 'eval-cheap-module-source-map',
+    devtool:
+      buildFlags.mode === 'production'
+        ? 'hidden-nosources-source-map'
+        : 'eval-cheap-module-source-map',
 
     resolve: {
       extensionAlias: {
@@ -194,6 +199,6 @@ export const createConfiguration: () => webpack.Configuration = () => {
         filename: 'index.html',
       }),
     ],
-    optimization: OptimizeOptionOptions(),
+    optimization: OptimizeOptionOptions(buildFlags),
   };
 };

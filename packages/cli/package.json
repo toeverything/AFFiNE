@@ -6,6 +6,9 @@
     "dev-core": "src/bin/dev-core.mjs",
     "dev-web": "src/bin/dev.mjs"
   },
+  "exports": {
+    "./config": "./src/config/index.ts"
+  },
   "devDependencies": {
     "@clack/core": "^0.3.2",
     "@clack/prompts": "^0.6.3",

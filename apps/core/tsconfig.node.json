@@ -11,5 +11,10 @@
     "outDir": "dist/webpack",
     "rootDir": "."
   },
-  "include": [".webpack/*.ts"]
+  "include": [".webpack/*.ts"],
+  "references": [
+    {
+      "path": "../../packages/cli"
+    }
+  ]
 }
