@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "verbatimModuleSyntax": false,
+    "resolveJsonModule": true,
+    "moduleResolution": "Node16",
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist/webpack",
+    "rootDir": "."
+  },
+  "include": ["webpack"]
+}
