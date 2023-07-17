@@ -10,7 +10,6 @@ import {
 import type { Response } from 'express';
 import format from 'pretty-time';
 
-import { Metrics } from '../../metrics/metrics';
 import { StorageProvide } from '../../storage';
 import { Auth, CurrentUser, Publicable } from '../auth';
 import { DocManager } from '../doc';
@@ -22,8 +21,7 @@ export class WorkspacesController {
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
     private readonly permission: PermissionService,
-    private readonly docManager: DocManager,
-    private readonly metric: Metrics
+    private readonly docManager: DocManager
   ) {}
 
   // get workspace blob
@@ -35,11 +33,6 @@ export class WorkspacesController {
     @Param('name') name: string,
     @Res() res: Response
   ) {
-    this.metric.restRequest(1, {
-      method: 'GET',
-      path: '/api/workspace/:id/blobs/:name',
-      job: 'get workspace blob',
-    });
     const blob = await this.storage.getBlob(workspaceId, name);
 
     if (!blob) {
@@ -63,19 +56,12 @@ export class WorkspacesController {
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
-    const metricsLabel = {
-      method: 'GET',
-      path: '/api/workspace/:id/docs/:guid',
-      job: 'get doc binary',
-    };
-    this.metric.restRequest(1, metricsLabel);
     const start = process.hrtime();
     await this.permission.check(ws, user?.id);
 
     const update = await this.docManager.getLatest(ws, guid);
 
     if (!update) {
-      this.metric.restError(1, metricsLabel);
       throw new NotFoundException('Doc not found');
     }
 
