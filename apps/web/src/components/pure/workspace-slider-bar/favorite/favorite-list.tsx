@@ -6,8 +6,8 @@ import { ReferencePage } from '../components/reference-page';
 import type { FavoriteListProps } from '../index';
 import EmptyItem from './empty-item';
 
-export const FavoriteList = ({ currentWorkspace }: FavoriteListProps) => {
-  const metas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+export const FavoriteList = ({ workspace }: FavoriteListProps) => {
+  const metas = useBlockSuitePageMeta(workspace);
 
   const favoriteList = useMemo(
     () => metas.filter(p => p.favorite && !p.trash),
@@ -36,7 +36,7 @@ export const FavoriteList = ({ currentWorkspace }: FavoriteListProps) => {
             pageId={pageMeta.id}
             // memo?
             parentIds={new Set()}
-            workspace={currentWorkspace.blockSuiteWorkspace}
+            workspace={workspace}
           />
         );
       })}
