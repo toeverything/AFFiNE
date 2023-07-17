@@ -7,7 +7,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { FC } from 'react';
