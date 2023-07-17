@@ -13,8 +13,6 @@ model Workspace {
   public    Boolean
   createdAt DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   users     UserWorkspacePermission[]
-  updates   Update[]
-  snapshots Snapshot[]
 
   @@map("workspaces")
 }
@@ -120,12 +118,11 @@ model OptimizedBlob {
 // the latest snapshot of each doc that we've seen
 // Snapshot + Updates are the latest state of the doc
 model Snapshot {
-  id          String    @default(uuid()) @map("guid") @db.VarChar
-  workspaceId String    @map("workspace_id") @db.VarChar
-  blob        Bytes     @db.ByteA
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id          String   @default(uuid()) @map("guid") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  blob        Bytes    @db.ByteA
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@id([id, workspaceId])
   @@map("snapshots")
@@ -133,12 +130,11 @@ model Snapshot {
 
 // backup during other update operation queue downtime
 model Update {
-  objectId    String    @id @default(uuid()) @map("object_id") @db.VarChar
-  id          String    @map("guid") @db.VarChar
-  workspaceId String    @map("workspace_id") @db.VarChar
-  blob        Bytes     @db.ByteA
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  objectId    String   @id @default(uuid()) @map("object_id") @db.VarChar
+  id          String   @map("guid") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  blob        Bytes    @db.ByteA
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([id, workspaceId])
   @@map("updates")
