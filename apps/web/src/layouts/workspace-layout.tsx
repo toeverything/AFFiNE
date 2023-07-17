@@ -10,7 +10,6 @@ import {
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
-import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import {
   DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
   isDesktop,
@@ -18,11 +17,9 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   rootBlockHubAtom,
-  rootCurrentPageIdAtom,
-  rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import { assertEquals, assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -34,8 +31,12 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { usePassiveWorkspaceEffect } from '@toeverything/hooks/use-block-suite-workspace';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -107,7 +108,7 @@ if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
 export const CurrentWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  const workspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+  const workspaceId = useAtomValue(currentWorkspaceIdAtom);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
   const router = useRouter();
@@ -146,7 +147,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     useTrackRouterHistoryEffect();
     const router = useRouter();
-    const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const meta = useMemo(
       () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
@@ -181,41 +182,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
-  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
-
-  //#region init workspace
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  if (currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty !== true) {
-    // this is a new workspace, so we should redirect to the new page
-    const pageId = `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`;
-    if (currentWorkspace.blockSuiteWorkspace.getPage(pageId) === null) {
-      const page = currentWorkspace.blockSuiteWorkspace.createPage({
-        id: pageId,
-      });
-      assertEquals(page.id, pageId);
-      if (runtimeConfig.enablePreloading) {
-        initPageWithPreloading(page).catch(error => {
-          console.error('import error:', error);
-        });
-      } else {
-        initEmptyPage(page).catch(error => {
-          console.error('init empty page error', error);
-        });
-      }
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty = false;
-      if (!router.query.pageId) {
-        setCurrentPageId(pageId);
-        jumpToPage(currentWorkspace.id, pageId).catch(console.error);
-      }
-    }
-  }
-  //#endregion
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
@@ -224,12 +193,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`
     );
     if (page && page.meta.jumpOnce) {
-      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
-        `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`,
-        {
-          jumpOnce: false,
-        }
-      );
+      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(page.id, {
+        jumpOnce: false,
+      });
       setCurrentPageId(currentPageId);
       jumpToPage(currentWorkspace.id, page.id).catch(err => {
         console.error(err);

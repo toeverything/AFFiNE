@@ -4,16 +4,25 @@ import type {
   LocalIndexedDBDownloadProvider,
   WorkspaceAdapter,
 } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { workspaceAdaptersAtom } from '@affine/workspace/atom';
+import {
+  type RootWorkspaceMetadataV2,
+  rootWorkspacesMetadataAtom,
+  workspaceAdaptersAtom,
+} from '@affine/workspace/atom';
 import {
   moveLocalBlobStorage,
   upgradeV1ToV2,
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
-import { rootStore } from '@toeverything/plugin-infra/manager';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+  rootStore,
+} from '@toeverything/plugin-infra/manager';
+import Router from 'next/router';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -34,6 +43,79 @@ if (!environment.isDesktop) {
 
 if (process.env.NODE_ENV === 'development') {
   console.log('Runtime Preset', runtimeConfig);
+}
+
+if (!environment.isServer) {
+  currentWorkspaceIdAtom.onMount = set => {
+    if (environment.isBrowser) {
+      const callback = (url: string) => {
+        const value = url.split('/')[2];
+        if (value === 'all' || value === 'trash' || value === 'shared') {
+          set(null);
+        } else if (value) {
+          set(value);
+          localStorage.setItem('last_workspace_id', value);
+        } else {
+          set(null);
+        }
+      };
+      callback(window.location.pathname);
+      Router.events.on('routeChangeStart', callback);
+      return () => {
+        Router.events.off('routeChangeStart', callback);
+      };
+    }
+    return;
+  };
+
+  currentPageIdAtom.onMount = set => {
+    if (environment.isBrowser) {
+      const callback = (url: string) => {
+        const value = url.split('/')[3];
+        if (value) {
+          set(value);
+        } else {
+          set(null);
+        }
+      };
+      callback(window.location.pathname);
+      Router.events.on('routeChangeStart', callback);
+      return () => {
+        Router.events.off('routeChangeStart', callback);
+      };
+    }
+    return;
+  };
+
+  const createFirst = (): RootWorkspaceMetadataV2[] => {
+    const Plugins = Object.values(WorkspaceAdapters).sort(
+      (a, b) => a.loadPriority - b.loadPriority
+    );
+
+    return Plugins.flatMap(Plugin => {
+      return Plugin.Events['app:init']?.().map(
+        id =>
+          ({
+            id,
+            flavour: Plugin.flavour,
+            // new workspace should all support sub-doc feature
+            version: WorkspaceVersion.SubDoc,
+          }) satisfies RootWorkspaceMetadataV2
+      );
+    }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
+  };
+
+  rootStore
+    .get(rootWorkspacesMetadataAtom)
+    .then(meta => {
+      if (meta.length === 0 && localStorage.getItem('is-first-open') === null) {
+        const result = createFirst();
+        console.info('create first workspace', result);
+        localStorage.setItem('is-first-open', 'false');
+        rootStore.set(rootWorkspacesMetadataAtom, result).catch(console.error);
+      }
+    })
+    .catch(console.error);
 }
 
 if (runtimeConfig.enablePlugin && !environment.isServer) {
@@ -80,6 +162,7 @@ if (environment.isBrowser) {
     try {
       const metadata = JSON.parse(value) as RootWorkspaceMetadata[];
       const promises: Promise<void>[] = [];
+      const newMetadata = [...metadata];
       metadata.forEach(oldMeta => {
         if (!('version' in oldMeta)) {
           const adapter = WorkspaceAdapters[oldMeta.flavour];
@@ -117,6 +200,13 @@ if (environment.isBrowser) {
             );
 
             await adapter.CRUD.delete(workspace as any);
+            console.log('migrated', oldMeta.id, newId);
+            const index = newMetadata.findIndex(meta => meta.id === oldMeta.id);
+            newMetadata[index] = {
+              ...oldMeta,
+              id: newId,
+              version: WorkspaceVersion.SubDoc,
+            };
             await moveLocalBlobStorage(workspace.id, newId);
           };
 
@@ -133,6 +223,7 @@ if (environment.isBrowser) {
           console.error('migration failed');
         })
         .finally(() => {
+          localStorage.setItem('jotai-workspaces', JSON.stringify(newMetadata));
           window.dispatchEvent(new CustomEvent('migration-done'));
           window.$migrationDone = true;
         });

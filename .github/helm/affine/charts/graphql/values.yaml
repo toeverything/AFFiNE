@@ -9,11 +9,6 @@ nameOverride: ''
 fullnameOverride: ''
 # map to NODE_ENV environment variable
 env: 'production'
-database:
-  user: 'postgres'
-  url: 'pg-postgresql'
-  port: '5432'
-  name: 'affine'
 app:
   # AFFINE_SERVER_SUB_PATH
   path: ''

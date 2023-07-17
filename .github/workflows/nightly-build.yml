@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     outputs:
-      version: 0.0.0-${{ steps.version.outputs.version }}
+      version: 0.0.0-internal.${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v3
       - uses: toeverything/set-build-version@latest

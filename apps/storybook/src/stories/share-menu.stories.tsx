@@ -13,7 +13,8 @@ import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';
-import { use, useState } from 'react';
+import { use } from 'foxact/use';
+import { useState } from 'react';
 
 export default {
   title: 'AFFiNE/ShareMenu',

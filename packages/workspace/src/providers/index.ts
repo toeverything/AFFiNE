@@ -16,7 +16,10 @@ import {
 import type { Doc } from 'yjs';
 
 import { SocketIOProvider } from '../affine/sync-socket-io';
-import { createCloudDownloadProvider } from './cloud';
+import {
+  createCloudDownloadProvider,
+  createMergeCloudSnapshotProvider,
+} from './cloud';
 import {
   createSQLiteDBDownloadProvider,
   createSQLiteProvider,
@@ -171,6 +174,7 @@ export const createAffineProviders = (): DocProviderCreator[] => {
       runtimeConfig.enableBroadcastChannelProvider &&
         createBroadcastChannelProvider,
       runtimeConfig.enableCloud && createAffineSocketIOProvider,
+      runtimeConfig.enableCloud && createMergeCloudSnapshotProvider,
       createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));

@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "i18next": "^23.2.6",
-    "react-i18next": "^13.0.1"
+    "react-i18next": "^13.0.2"
   },
   "devDependencies": {
     "@types/node": "^18.16.19",
@@ -37,5 +37,5 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },
-  "version": "0.7.0-canary.44"
+  "version": "0.7.0-canary.47"
 }

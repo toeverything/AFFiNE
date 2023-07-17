@@ -6,6 +6,18 @@ global:
       kubernetes.io/ingress.class: nginx
     host: affine.pro
     tls: []
+  database:
+    user: 'postgres'
+    url: 'pg-postgresql'
+    port: '5432'
+    name: 'affine'
+  redis:
+    enabled: true
+    host: 'redis-master'
+    port: '6379'
+    username: ''
+    password: ''
+    database: 0
 
 gke:
   enabled: true
