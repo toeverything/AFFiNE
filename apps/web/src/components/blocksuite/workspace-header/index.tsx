@@ -39,8 +39,8 @@ export const BlockSuiteEditorHeader: FC<
     if (isEditable) {
       setIsEditable(!isEditable);
       const value = inputRef.current?.value;
-      if (value && value !== pageMeta?.title && currentPage) {
-        pageTitleMeta.setPageTitle(currentPage?.id, value);
+      if (value !== pageMeta?.title && currentPage) {
+        pageTitleMeta.setPageTitle(currentPage?.id, value || '');
       }
     } else {
       setIsEditable(!isEditable);
@@ -72,12 +72,14 @@ export const BlockSuiteEditorHeader: FC<
                     autoFocus={true}
                     className={styles.title}
                     type="text"
+                    data-testid="title-content"
                     defaultValue={pageMeta.title}
                     onBlur={handleClick}
                     ref={inputRef}
                   />
                   <Button
                     onClick={handleClick}
+                    data-testid="save-edit-button"
                     style={{
                       marginLeft: '12px',
                     }}
@@ -86,7 +88,11 @@ export const BlockSuiteEditorHeader: FC<
                   </Button>
                 </div>
               ) : (
-                <span onClick={handleClick} style={{ cursor: 'pointer' }}>
+                <span
+                  data-testid="title-edit-button"
+                  onClick={handleClick}
+                  style={{ cursor: 'pointer' }}
+                >
                   {title || 'Untitled'}
                 </span>
               )}
