@@ -8,6 +8,7 @@ import webpack from 'webpack';
 
 import { productionCacheGroups } from './cache-group.js';
 import type { BuildFlags } from '@affine/cli/config';
+import { projectRoot } from '@affine/cli/config';
 
 const IN_CI = !!process.env.CI;
 
@@ -78,18 +79,30 @@ const OptimizeOptionOptions: (
 export const createConfiguration: (
   buildFlags: BuildFlags
 ) => webpack.Configuration = buildFlags => {
-  let publicPath =
-    process.env.PUBLIC_PATH ??
-    (buildFlags.mode === 'production' ? '' : 'http://localhost:8080');
-  publicPath = publicPath.endsWith('/') ? publicPath : `${publicPath}/`;
+  let publicPath = process.env.PUBLIC_PATH ?? '/';
 
   return {
     name: 'affine',
-    context: rootPath,
+    // to set a correct base path for source map
+    context: projectRoot,
     output: {
+      environment: {
+        module: true,
+        dynamicImport: true,
+      },
+      filename: 'js/[name].js',
+      // In some cases webpack will emit files starts with "_" which is reserved in web extension.
+      chunkFilename: 'js/chunk.[name].js',
+      assetModuleFilename: 'assets/[hash][ext][query]',
+      devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
+      hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
+      hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
       path: join(rootPath, 'dist'),
+      clean: buildFlags.mode === 'production',
+      globalObject: 'globalThis',
       publicPath,
     },
+    target: ['web', 'es2022'],
 
     mode: buildFlags.mode,
 
