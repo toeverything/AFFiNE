@@ -29,6 +29,7 @@ export type Filter = {
 
 export type Collection = {
   id: string;
+  workspaceId: string;
   name: string;
   pinned?: boolean;
   filterList: Filter[];

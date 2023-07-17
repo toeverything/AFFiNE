@@ -26,10 +26,6 @@ export const test = base.extend<{
     appData: string;
     sessionData: string;
   };
-  workspace: {
-    // get current workspace
-    current: () => Promise<any>; // todo: type
-  };
   router: {
     goto: (path: RoutePath) => Promise<void>;
   };
@@ -120,15 +116,5 @@ export const test = base.extend<{
       };
     });
     await use(appInfo);
-  },
-  workspace: async ({ page }, use) => {
-    await use({
-      current: async () => {
-        return await page.evaluate(async () => {
-          // @ts-expect-error
-          return globalThis.currentWorkspace;
-        });
-      },
-    });
   },
 });

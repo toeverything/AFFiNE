@@ -149,3 +149,35 @@ test('windows only check', async ({ page }) => {
     await expect(windowOnlyUI).not.toBeVisible();
   }
 });
+
+test('delete workspace', async ({ page }) => {
+  await page.getByTestId('current-workspace').click();
+  await page.getByTestId('add-or-new-workspace').click();
+  await page.getByTestId('new-workspace').click();
+  await page.getByTestId('create-workspace-default-location-button').click();
+  await page.getByTestId('create-workspace-input').type('Delete Me');
+  await page.getByTestId('create-workspace-create-button').click();
+  await page.getByTestId('create-workspace-continue-button').click();
+  await page.getByTestId('slider-bar-workspace-setting-button').click();
+  await page.getByTestId('current-workspace-label').click();
+  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+    'Delete Me'
+  );
+  const contentElement = await page.getByTestId('setting-modal-content');
+  const boundingBox = await contentElement.boundingBox();
+  if (!boundingBox) {
+    throw new Error('boundingBox is null');
+  }
+  await page.mouse.move(
+    boundingBox.x + boundingBox.width / 2,
+    boundingBox.y + boundingBox.height / 2
+  );
+  await page.mouse.wheel(0, 500);
+  await page.getByTestId('delete-workspace-button').click();
+  await page.getByTestId('delete-workspace-input').type('Delete Me');
+  await page.getByTestId('delete-workspace-confirm-button').click();
+  await page.waitForTimeout(1000);
+  expect(await page.getByTestId('workspace-name').textContent()).toBe(
+    'Demo Workspace'
+  );
+});

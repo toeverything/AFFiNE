@@ -23,7 +23,7 @@ export function WorkspaceHeader({
   currentWorkspaceId,
   currentEntry,
 }: WorkspaceHeaderProps<WorkspaceFlavour>): ReactElement {
-  const setting = useCollectionManager();
+  const setting = useCollectionManager(currentWorkspaceId);
   const t = useAFFiNEI18N();
   const saveToCollection = useCallback(
     async (collection: Collection) => {
@@ -35,7 +35,9 @@ export function WorkspaceHeader({
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
 
-  const getPageInfoById = useGetPageInfoById();
+  const getPageInfoById = useGetPageInfoById(
+    currentWorkspace.blockSuiteWorkspace
+  );
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {
       const leftSlot = (
@@ -73,6 +75,7 @@ export function WorkspaceHeader({
                     id: uuidv4(),
                     name: '',
                     filterList: setting.currentCollection.filterList,
+                    workspaceId: currentWorkspaceId,
                   }}
                   onConfirm={saveToCollection}
                 ></SaveCollectionButton>

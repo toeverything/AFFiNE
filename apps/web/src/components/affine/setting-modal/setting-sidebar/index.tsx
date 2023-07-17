@@ -1,18 +1,24 @@
-import { UserAvatar } from '@affine/component/user-avatar';
+import {
+  WorkspaceListItemSkeleton,
+  WorkspaceListSkeleton,
+} from '@affine/component/setting-components';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 import clsx from 'clsx';
+import { useAtomValue } from 'jotai';
+import type { FC } from 'react';
+import { Suspense } from 'react';
 
-import type { AllWorkspace } from '../../../../shared';
+import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type {
   GeneralSettingKeys,
   GeneralSettingList,
 } from '../general-setting';
 import {
-  accountButton,
   settingSlideBar,
   sidebarItemsWrapper,
   sidebarSelectItem,
@@ -20,25 +26,19 @@ import {
   sidebarTitle,
 } from './style.css';
 
-export const SettingSidebar = ({
-  generalSettingList,
-  onGeneralSettingClick,
-  currentWorkspace,
-  workspaceList,
-  onWorkspaceSettingClick,
-  selectedWorkspaceId,
-  selectedGeneralKey,
-  onAccountSettingClick,
-}: {
+export const SettingSidebar: FC<{
   generalSettingList: GeneralSettingList;
   onGeneralSettingClick: (key: GeneralSettingKeys) => void;
-  currentWorkspace: AllWorkspace;
-  workspaceList: RootWorkspaceMetadata[];
   onWorkspaceSettingClick: (workspaceId: string) => void;
-
   selectedWorkspaceId: string | null;
   selectedGeneralKey: string | null;
   onAccountSettingClick: () => void;
+}> = ({
+  generalSettingList,
+  onGeneralSettingClick,
+  onWorkspaceSettingClick,
+  selectedWorkspaceId,
+  selectedGeneralKey,
 }) => {
   const t = useAFFiNEI18N();
   return (
@@ -47,6 +47,9 @@ export const SettingSidebar = ({
       <div className={sidebarSubtitle}>{t['General']()}</div>
       <div className={sidebarItemsWrapper}>
         {generalSettingList.map(({ title, icon, key, testId }) => {
+          if (!runtimeConfig.enablePlugin && key === 'plugins') {
+            return null;
+          }
           return (
             <div
               className={clsx(sidebarSelectItem, {
@@ -70,10 +73,29 @@ export const SettingSidebar = ({
         {t['com.affine.settings.workspace']()}
       </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
-        {workspaceList.map(workspace => {
-          return (
+        <Suspense fallback={<WorkspaceListSkeleton />}>
+          <WorkspaceList
+            onWorkspaceSettingClick={onWorkspaceSettingClick}
+            selectedWorkspaceId={selectedWorkspaceId}
+          />
+        </Suspense>
+      </div>
+    </div>
+  );
+};
+
+export const WorkspaceList: FC<{
+  onWorkspaceSettingClick: (workspaceId: string) => void;
+  selectedWorkspaceId: string | null;
+}> = ({ onWorkspaceSettingClick, selectedWorkspaceId }) => {
+  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
+  const [currentWorkspace] = useCurrentWorkspace();
+  return (
+    <>
+      {workspaces.map(workspace => {
+        return (
+          <Suspense key={workspace.id} fallback={<WorkspaceListItemSkeleton />}>
             <WorkspaceListItem
-              key={workspace.id}
               meta={workspace}
               onClick={() => {
                 onWorkspaceSettingClick(workspace.id);
@@ -81,30 +103,10 @@ export const SettingSidebar = ({
               isCurrent={workspace.id === currentWorkspace.id}
               isActive={workspace.id === selectedWorkspaceId}
             />
-          );
-        })}
-      </div>
-
-      {runtimeConfig.enableCloud && (
-        <div className={accountButton} onClick={onAccountSettingClick}>
-          <UserAvatar
-            size={28}
-            name="Account NameAccount Name"
-            url={''}
-            className="avatar"
-          />
-
-          <div className="content">
-            <div className="name" title="xxx">
-              Account NameAccount Name
-            </div>
-            <div className="email" title="xxx">
-              xxxxxxxx@gmail.comxxxxxxxx@gmail.com
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </Suspense>
+        );
+      })}
+    </>
   );
 };
 

@@ -1,9 +1,9 @@
-import type { FC, HTMLAttributes } from 'react';
+import type { FC, HTMLAttributes, ReactNode } from 'react';
 
 import { settingHeader } from './share.css';
 
 export const SettingHeader: FC<
-  { title: string; subtitle?: string } & Omit<
+  { title: ReactNode; subtitle?: ReactNode } & Omit<
     HTMLAttributes<HTMLDivElement>,
     'title'
   >

@@ -19,7 +19,6 @@ import React, { useCallback, useMemo } from 'react';
 
 import { pageSettingFamily } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
-import type { AllWorkspace } from '../../../../shared';
 import { ReferencePage } from '../components/reference-page';
 import * as styles from './styles.css';
 
@@ -39,6 +38,7 @@ export const PageOperations = ({
   addToExcludeList: (id: string) => void;
 }) => {
   const { removeToTrash } = useBlockSuiteMetaHelper(workspace);
+  const t = useAFFiNEI18N();
   const actions = useMemo<
     Array<
       | {
@@ -58,7 +58,7 @@ export const PageOperations = ({
         ? [
             {
               icon: <FilterMinusIcon />,
-              name: 'Remove special filter',
+              name: t['Remove special filter'](),
               click: () => removeFromAllowList(page.id),
             },
           ]
@@ -67,7 +67,7 @@ export const PageOperations = ({
         ? [
             {
               icon: <FilterUndoIcon />,
-              name: 'Exclude from filter',
+              name: t['Exclude from filter'](),
               click: () => addToExcludeList(page.id),
             },
           ]
@@ -76,8 +76,8 @@ export const PageOperations = ({
         element: <div key="divider" className={styles.menuDividerStyle}></div>,
       },
       {
-        icon: <DeleteIcon style={{ color: 'var(--affine-warning-color)' }} />,
-        name: 'Delete',
+        icon: <DeleteIcon />,
+        name: t['Delete'](),
         click: () => {
           removeToTrash(page.id);
         },
@@ -86,9 +86,10 @@ export const PageOperations = ({
     ],
     [
       inAllowList,
+      t,
       inExcludeList,
-      page.id,
       removeFromAllowList,
+      page.id,
       addToExcludeList,
       removeToTrash,
     ]
@@ -128,7 +129,7 @@ export const Page = ({
   removeFromAllowList: (id: string) => void;
   inExcludeList: boolean;
   addToExcludeList: (id: string) => void;
-  workspace: AllWorkspace;
+  workspace: Workspace;
   allPageMeta: Record<string, PageMeta>;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
@@ -138,10 +139,7 @@ export const Page = ({
   const active = router.query.pageId === pageId;
   const setting = useAtomValue(pageSettingFamily(pageId));
   const icon = setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
-  const references = useBlockSuitePageReferences(
-    workspace.blockSuiteWorkspace,
-    pageId
-  );
+  const references = useBlockSuitePageReferences(workspace, pageId);
   const clickPage = useCallback(() => {
     return router.push(`/workspace/${workspace.id}/${page.id}`);
   }, [page.id, router, workspace.id]);
@@ -168,7 +166,7 @@ export const Page = ({
                   inExcludeList={inExcludeList}
                   addToExcludeList={addToExcludeList}
                   page={page}
-                  workspace={workspace.blockSuiteWorkspace}
+                  workspace={workspace}
                 />
               </div>
             }
@@ -187,7 +185,7 @@ export const Page = ({
             return (
               <ReferencePage
                 key={id}
-                workspace={workspace.blockSuiteWorkspace}
+                workspace={workspace}
                 pageId={id}
                 metaMapping={allPageMeta}
                 parentIds={new Set([pageId])}

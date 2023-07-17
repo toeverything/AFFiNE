@@ -11,6 +11,8 @@ export default function getConfig() {
       BUILD_DATE: '2021-09-01T00:00:00.000Z',
       gitVersion: 'UNKNOWN',
       hash: 'UNKNOWN',
+      appVersion: '0.0.0',
+      editorVersion: '0.0.0',
       serverAPI: 'http://127.0.0.1:3000/',
       editorFlags: blockSuiteFeatureFlags,
       ...buildFlags,

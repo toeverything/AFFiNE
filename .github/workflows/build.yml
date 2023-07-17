@@ -232,6 +232,7 @@ jobs:
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        working-directory: tests/affine-local
         env:
           COVERAGE: true
 

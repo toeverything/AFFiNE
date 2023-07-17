@@ -58,6 +58,7 @@ globalStyle(`${urlButton} span`, {
 export const fakeWrapper = style({
   position: 'relative',
   opacity: 0.4,
+  marginTop: '24px',
   selectors: {
     '&::after': {
       content: '""',

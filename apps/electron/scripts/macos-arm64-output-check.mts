@@ -26,6 +26,8 @@ const outputList = [
     'node_modules/@toeverything/plugin-infra/dist',
     ['manager.js', 'manager.cjs'],
   ],
+  ['node_modules/@blocksuite/global/dist', ['utils.js']],
+  ['node_modules/jotai', ['vanilla.js']],
 ] as [entry: string, expected: string[]][];
 
 await Promise.all(

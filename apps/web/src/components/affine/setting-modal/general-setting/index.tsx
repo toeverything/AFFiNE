@@ -1,5 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
+  AiIcon,
   AppearanceIcon,
   InformationIcon,
   KeyboardIcon,
@@ -8,9 +9,14 @@ import type { FC, SVGProps } from 'react';
 
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
+import { Plugins } from './plugins';
 import { Shortcuts } from './shortcuts';
 
-export type GeneralSettingKeys = 'shortcuts' | 'appearance' | 'about';
+export type GeneralSettingKeys =
+  | 'shortcuts'
+  | 'appearance'
+  | 'plugins'
+  | 'about';
 
 export type GeneralSettingList = {
   key: GeneralSettingKeys;
@@ -35,6 +41,12 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       testId: 'shortcuts-panel-trigger',
     },
     {
+      key: 'plugins',
+      title: 'Plugins',
+      icon: AiIcon,
+      testId: 'plugins-panel-trigger',
+    },
+    {
       key: 'about',
       title: t['About AFFiNE'](),
       icon: InformationIcon,
@@ -53,6 +65,8 @@ export const GeneralSetting = ({
       return <Shortcuts />;
     case 'appearance':
       return <AppearanceSettings />;
+    case 'plugins':
+      return <Plugins />;
     case 'about':
       return <AboutAffine />;
     default:

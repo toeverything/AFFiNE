@@ -1,7 +1,6 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { useStaticBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { SettingsIcon } from '@blocksuite/icons';
 import {
   CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
@@ -10,6 +9,7 @@ import {
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
 } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 import type { FC } from 'react';
 import { useCallback } from 'react';
 

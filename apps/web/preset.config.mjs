@@ -23,11 +23,13 @@ const buildPreset = {
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
-    changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
+    changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0717',
+    imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
     enablePreloading: true,
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: true,
+    enableMoveDatabase: false,
     enableNotificationCenter: false,
     enableCloud: false,
   },
@@ -39,11 +41,13 @@ const buildPreset = {
     enableTestProperties: true,
     enableBroadcastChannelProvider: true,
     enableDebugPage: true,
-    changelogUrl: 'https://affine.pro/blog/whats-new-affine-0630',
+    changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0717',
+    imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
     enablePreloading: true,
     enableNewSettingModal: true,
     enableNewSettingUnstableApi: false,
     enableSQLiteProvider: true,
+    enableMoveDatabase: false,
     enableNotificationCenter: true,
     enableCloud: false,
   },
@@ -90,6 +94,9 @@ const environmentPreset = {
   enableCloud: process.env.ENABLE_CLOUD
     ? process.env.ENABLE_CLOUD === 'true'
     : currentBuildPreset.enableCloud,
+  enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
+    ? process.env.ENABLE_MOVE_DATABASE === 'true'
+    : currentBuildPreset.enableMoveDatabase,
 };
 
 /**

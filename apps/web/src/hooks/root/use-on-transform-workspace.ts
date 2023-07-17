@@ -1,6 +1,6 @@
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import { rootCurrentWorkspaceIdAtom } from '@affine/workspace/atom';
+import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -8,7 +8,7 @@ import { useTransformWorkspace } from '../use-transform-workspace';
 
 export function useOnTransformWorkspace() {
   const transformWorkspace = useTransformWorkspace();
-  const setWorkspaceId = useSetAtom(rootCurrentWorkspaceIdAtom);
+  const setWorkspaceId = useSetAtom(currentPageIdAtom);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,

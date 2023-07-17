@@ -10,16 +10,16 @@ import {
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
-import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { DEFAULT_HELLO_WORLD_PAGE_ID, isDesktop } from '@affine/env/constant';
+import {
+  DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
+  isDesktop,
+} from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   rootBlockHubAtom,
-  rootCurrentPageIdAtom,
-  rootCurrentWorkspaceIdAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import { assertEquals, assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -32,6 +32,11 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -45,6 +50,7 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useTrackRouterHistoryEffect } from '../atoms/history';
+import { useAppSetting } from '../atoms/settings';
 import { AppContainer } from '../components/affine/app-container';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
@@ -54,10 +60,7 @@ import {
   RootAppSidebar,
 } from '../components/root-app-sidebar';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
-import {
-  useCurrentWorkspace,
-  usePassiveWorkspaceEffect,
-} from '../hooks/current/use-current-workspace';
+import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import {
@@ -89,7 +92,7 @@ export const QuickSearch: FC = () => {
   }
   return (
     <QuickSearchModal
-      blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
+      workspace={currentWorkspace}
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
       router={router}
@@ -109,7 +112,7 @@ if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
 export const CurrentWorkspaceContext = ({
   children,
 }: PropsWithChildren): ReactElement => {
-  const workspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+  const workspaceId = useAtomValue(currentWorkspaceIdAtom);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
   const router = useRouter();
@@ -147,7 +150,7 @@ export const CurrentWorkspaceContext = ({
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     useTrackRouterHistoryEffect();
-    const currentWorkspaceId = useAtomValue(rootCurrentWorkspaceIdAtom);
+    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const meta = useMemo(
       () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
@@ -179,72 +182,20 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const setCurrentPageId = useSetAtom(rootCurrentPageIdAtom);
-  const currentPageId = useAtomValue(rootCurrentPageIdAtom);
+  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
-
-  //#region init workspace
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  if (currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty !== true) {
-    // this is a new workspace, so we should redirect to the new page
-    const pageId = DEFAULT_HELLO_WORLD_PAGE_ID;
-    if (currentWorkspace.blockSuiteWorkspace.getPage(pageId) === null) {
-      const page = currentWorkspace.blockSuiteWorkspace.createPage({
-        id: pageId,
-      });
-      assertEquals(page.id, pageId);
-      if (runtimeConfig.enablePreloading) {
-        initPageWithPreloading(page).catch(error => {
-          console.error('import error:', error);
-        });
-      } else {
-        initEmptyPage(page).catch(error => {
-          console.error('init empty page error', error);
-        });
-      }
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty = false;
-      if (!router.query.pageId) {
-        setCurrentPageId(pageId);
-        jumpToPage(currentWorkspace.id, pageId).catch(console.error);
-      }
-    }
-  }
-  //#endregion
-
-  //#region check if page is valid
-  if (
-    typeof router.query.pageId === 'string' &&
-    router.pathname === '/workspace/[workspaceId]/[pageId]' &&
-    currentPageId
-  ) {
-    if (currentPageId !== router.query.pageId) {
-      setCurrentPageId(router.query.pageId);
-    } else {
-      const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-      if (!page) {
-        router.push('/404').catch(console.error);
-      }
-    }
-  }
-  //#endregion
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
   useEffect(() => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(
-      DEFAULT_HELLO_WORLD_PAGE_ID
+      `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`
     );
     if (page && page.meta.jumpOnce) {
-      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
-        DEFAULT_HELLO_WORLD_PAGE_ID,
-        {
-          jumpOnce: false,
-        }
-      );
+      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(page.id, {
+        jumpOnce: false,
+      });
       setCurrentPageId(currentPageId);
       jumpToPage(currentWorkspace.id, page.id).catch(err => {
         console.error(err);
@@ -278,7 +229,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
-  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(() => {
     setOpenSettingModalAtom({
@@ -329,6 +280,8 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     [moveToTrash, t]
   );
 
+  const [appSetting] = useAppSetting();
+
   return (
     <>
       <Head>
@@ -358,7 +311,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
             currentPath={router.asPath.split('?')[0]}
             paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
           />
-          <MainContainer>
+          <MainContainer padding={appSetting.clientBorder}>
             {children}
             <ToolContainer>
               <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />

@@ -15,7 +15,7 @@ import {
 } from './styles';
 
 export type WorkspaceSelectorProps = {
-  currentWorkspace: AllWorkspace | null;
+  currentWorkspace: AllWorkspace;
   onClick: () => void;
 };
 
@@ -28,7 +28,7 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
   onClick,
 }) => {
   const [name] = useBlockSuiteWorkspaceName(
-    currentWorkspace?.blockSuiteWorkspace ?? null
+    currentWorkspace?.blockSuiteWorkspace
   );
   const [workspace] = useCurrentWorkspace();
 

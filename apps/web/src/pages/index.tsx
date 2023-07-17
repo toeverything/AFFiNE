@@ -2,7 +2,8 @@ import { WorkspaceFallback } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { getWorkspace } from '@affine/workspace/utils';
+import { NoSsr } from '@mui/material';
+import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
 import { useAtomValue } from 'jotai';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
@@ -97,9 +98,11 @@ const IndexPageInner = () => {
 
 const IndexPage: NextPage = () => {
   return (
-    <Suspense fallback={<WorkspaceFallback />}>
-      <IndexPageInner />
-    </Suspense>
+    <NoSsr>
+      <Suspense fallback={<WorkspaceFallback />}>
+        <IndexPageInner />
+      </Suspense>
+    </NoSsr>
   );
 };
 

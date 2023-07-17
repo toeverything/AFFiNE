@@ -1,9 +1,10 @@
 {
   "name": "@affine-test/kit",
   "private": true,
-  "version": "0.7.0-canary.36",
+  "version": "0.7.0-canary.47",
   "exports": {
-    "./playwright": "./playwright.ts"
+    "./playwright": "./playwright.ts",
+    "./utils/*": "./utils/*.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.35.1"

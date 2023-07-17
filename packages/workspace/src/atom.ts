@@ -1,9 +1,9 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { atom } from 'jotai';
-import Router from 'next/router';
 import { z } from 'zod';
 
 const rootWorkspaceMetadataV1Schema = z.object({
@@ -71,27 +71,6 @@ const rootWorkspacesMetadataPromiseAtom = atom<
   if (maybeMetadata !== null) {
     return maybeMetadata;
   }
-  const createFirst = (): RootWorkspaceMetadataV2[] => {
-    if (signal.aborted) {
-      return [];
-    }
-
-    const Plugins = Object.values(WorkspaceAdapters).sort(
-      (a, b) => a.loadPriority - b.loadPriority
-    );
-
-    return Plugins.flatMap(Plugin => {
-      return Plugin.Events['app:init']?.().map(
-        id =>
-          ({
-            id,
-            flavour: Plugin.flavour,
-            // new workspace should all support sub-doc feature
-            version: WorkspaceVersion.SubDoc,
-          }) satisfies RootWorkspaceMetadataV2
-      );
-    }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
-  };
 
   if (environment.isServer) {
     // return a promise in SSR to avoid the hydration mismatch
@@ -102,6 +81,19 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     // fixme(himself65): we might not need step 1
     // step 1: try load metadata from localStorage
     {
+      // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
+      if (
+        metadata.some(meta => !('version' in meta)) &&
+        !globalThis.$migrationDone
+      ) {
+        await new Promise<void>((resolve, reject) => {
+          signal.addEventListener('abort', () => reject(), { once: true });
+          window.addEventListener('migration-done', () => resolve(), {
+            once: true,
+          });
+        });
+      }
+
       // don't change this key,
       // otherwise it will cause the data loss in the production
       const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
@@ -115,19 +107,6 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         } catch (e) {
           console.error('cannot parse worksapce', e);
         }
-      }
-
-      // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
-      if (
-        metadata.some(meta => !('version' in meta)) &&
-        !globalThis.$migrationDone
-      ) {
-        await new Promise<void>((resolve, reject) => {
-          signal.addEventListener('abort', () => reject(), { once: true });
-          window.addEventListener('migration-done', () => resolve(), {
-            once: true,
-          });
-        });
       }
     }
     // step 2: fetch from adapters
@@ -159,18 +138,18 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         }
       }
     }
-    // step 3: create initial workspaces
-    {
-      if (
-        metadata.length === 0 &&
-        localStorage.getItem('is-first-open') === null
-      ) {
-        metadata.push(...createFirst());
-        console.info('create first workspace', metadata);
-        localStorage.setItem('is-first-open', 'false');
-      }
-    }
     const metadataMap = new Map(metadata.map(x => [x.id, x]));
+    // init workspace data
+    metadataMap.forEach((meta, id) => {
+      if (
+        meta.flavour === WorkspaceFlavour.AFFINE_CLOUD ||
+        meta.flavour === WorkspaceFlavour.LOCAL
+      ) {
+        createEmptyBlockSuiteWorkspace(id, meta.flavour);
+      } else {
+        throw new Error(`unknown flavour ${meta.flavour}`);
+      }
+    });
     return Array.from(metadataMap.values());
   }
 });
@@ -183,9 +162,6 @@ export const rootWorkspacesMetadataAtom = atom<
   Promise<RootWorkspaceMetadata[]>
 >(
   async get => {
-    if (environment.isServer) {
-      return Promise.resolve([]);
-    }
     const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
     if (maybeMetadata !== null) {
       return maybeMetadata;
@@ -211,7 +187,6 @@ export const rootWorkspacesMetadataAtom = atom<
 
     const metadataMap = new Map(metadata.map(x => [x.id, x]));
     metadata = Array.from(metadataMap.values());
-
     // write back to localStorage
     rootWorkspaceMetadataArraySchema.parse(metadata);
     localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
@@ -219,50 +194,6 @@ export const rootWorkspacesMetadataAtom = atom<
     return metadata;
   }
 );
-
-// two more atoms to store the current workspace and page
-export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
-
-rootCurrentWorkspaceIdAtom.onMount = set => {
-  if (environment.isBrowser) {
-    const callback = (url: string) => {
-      const value = url.split('/')[2];
-      if (value) {
-        set(value);
-        localStorage.setItem('last_workspace_id', value);
-      } else {
-        set(null);
-      }
-    };
-    callback(window.location.pathname);
-    Router.events.on('routeChangeStart', callback);
-    return () => {
-      Router.events.off('routeChangeStart', callback);
-    };
-  }
-  return;
-};
-
-export const rootCurrentPageIdAtom = atom<string | null>(null);
-
-rootCurrentPageIdAtom.onMount = set => {
-  if (environment.isBrowser) {
-    const callback = (url: string) => {
-      const value = url.split('/')[3];
-      if (value) {
-        set(value);
-      } else {
-        set(null);
-      }
-    };
-    callback(window.location.pathname);
-    Router.events.on('routeChangeStart', callback);
-    return () => {
-      Router.events.off('routeChangeStart', callback);
-    };
-  }
-  return;
-};
 
 // blocksuite atoms,
 // each app should have only one block-hub in the same time

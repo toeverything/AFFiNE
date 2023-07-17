@@ -12,7 +12,7 @@ import {
   useTransition,
 } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../../shared';
+import type { AllWorkspace } from '../../../shared';
 import { Footer } from './footer';
 import { PublishedResults } from './published-results';
 import { Results } from './results';
@@ -26,7 +26,7 @@ import {
 } from './style';
 
 export type QuickSearchModalProps = {
-  blockSuiteWorkspace: BlockSuiteWorkspace;
+  workspace: AllWorkspace;
   open: boolean;
   setOpen: (value: boolean) => void;
   router: NextRouter;
@@ -36,8 +36,9 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   open,
   setOpen,
   router,
-  blockSuiteWorkspace,
+  workspace,
 }) => {
+  const blockSuiteWorkspace = workspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, startTransition] = useTransition();
@@ -171,7 +172,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                   query={query}
                   onClose={handleClose}
                   router={router}
-                  blockSuiteWorkspace={blockSuiteWorkspace}
+                  workspace={workspace}
                   setShowCreatePage={setShowCreatePage}
                 />
               )}

@@ -1,9 +1,8 @@
-import {
-  rootCurrentPageIdAtom,
-  rootCurrentWorkspaceIdAtom,
-} from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
-import type { PassiveDocProvider, Workspace } from '@blocksuite/store';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/plugin-infra/manager';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
@@ -25,7 +24,7 @@ export function useCurrentWorkspace(): [
   AllWorkspace,
   (id: string | null) => void,
 ] {
-  const [id, setId] = useAtom(rootCurrentWorkspaceIdAtom);
+  const [id, setId] = useAtom(currentWorkspaceIdAtom);
   assertExists(id);
   const currentWorkspace = useWorkspace(id);
   useEffect(() => {
@@ -36,7 +35,7 @@ export function useCurrentWorkspace(): [
       })
     );
   }, [currentWorkspace]);
-  const setPageId = useSetAtom(rootCurrentPageIdAtom);
+  const setPageId = useSetAtom(currentPageIdAtom);
   return [
     currentWorkspace,
     useCallback(
@@ -50,28 +49,4 @@ export function useCurrentWorkspace(): [
       [setId, setPageId]
     ),
   ];
-}
-
-const activeWorkspaceWeakMap = new WeakMap<Workspace, boolean>();
-
-export function usePassiveWorkspaceEffect(workspace: Workspace) {
-  useEffect(() => {
-    if (activeWorkspaceWeakMap.get(workspace) === true) {
-      return;
-    }
-    const providers = workspace.providers.filter(
-      (provider): provider is PassiveDocProvider =>
-        'passive' in provider && provider.passive === true
-    );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    activeWorkspaceWeakMap.set(workspace, true);
-    return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-      activeWorkspaceWeakMap.delete(workspace);
-    };
-  }, [workspace]);
 }

@@ -52,14 +52,15 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
 
 export const mainContainerStyle = style({
   position: 'relative',
-  flexGrow: 1,
+  width: 0,
+  flex: 1,
   maxWidth: '100%',
   zIndex: 2,
   backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
-    '&[data-is-desktop="true"]': {
-      margin: '8px 8px 8px 8px',
-      borderRadius: '8px',
+    '&[data-show-padding="true"]': {
+      margin: '8px',
+      borderRadius: '5px',
       overflow: 'hidden',
       boxShadow: 'var(--affine-shadow-1)',
       '@media': {
@@ -70,7 +71,10 @@ export const mainContainerStyle = style({
         },
       },
     },
-    '&[data-is-desktop="true"]:before': {
+    '&[data-show-padding="true"][data-is-macos="true"]': {
+      borderRadius: '6px',
+    },
+    '&[data-show-padding="true"]:before': {
       content: '""',
       position: 'absolute',
       height: '8px',

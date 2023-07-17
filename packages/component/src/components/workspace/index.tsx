@@ -1,6 +1,10 @@
-import { isDesktop } from '@affine/env/constant';
 import { clsx } from 'clsx';
-import type { FC, PropsWithChildren, ReactElement } from 'react';
+import type {
+  FC,
+  HTMLAttributes,
+  PropsWithChildren,
+  ReactElement,
+} from 'react';
 
 import { AppSidebarFallback } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
@@ -17,13 +21,12 @@ export const AppContainer: FC<WorkspaceRootProps> = ({
   useBlurBackground,
   children,
 }) => {
-  const noisyBackground =
-    useNoisyBackground && environment.isDesktop && environment.isMacOs;
+  const noisyBackground = useNoisyBackground && environment.isDesktop;
   return (
     <div
       className={clsx(appStyle, {
         'noisy-background': noisyBackground,
-        'blur-background': isDesktop && useBlurBackground,
+        'blur-background': environment.isDesktop && useBlurBackground,
       })}
       data-noise-background={noisyBackground}
       data-is-resizing={resizing}
@@ -35,15 +38,24 @@ export const AppContainer: FC<WorkspaceRootProps> = ({
 
 export type MainContainerProps = PropsWithChildren<{
   className?: string;
-}>;
+  padding?: boolean;
+}> &
+  HTMLAttributes<HTMLDivElement>;
 
-export const MainContainer = (props: MainContainerProps): ReactElement => {
+export const MainContainer = ({
+  className,
+  padding,
+  children,
+  ...props
+}: MainContainerProps): ReactElement => {
   return (
     <div
-      className={clsx(mainContainerStyle, 'main-container', props.className)}
-      data-is-desktop={isDesktop}
+      {...props}
+      className={clsx(mainContainerStyle, 'main-container', className)}
+      data-is-macos={environment.isDesktop && environment.isMacOs}
+      data-show-padding={padding}
     >
-      {props.children}
+      {children}
     </div>
   );
 };
@@ -56,7 +68,7 @@ export const WorkspaceFallback = (): ReactElement => {
   return (
     <AppContainer>
       <AppSidebarFallback />
-      <MainContainer></MainContainer>
+      <MainContainer />
     </AppContainer>
   );
 };
