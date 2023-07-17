@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "bin": {
+    "dev-core": "./src/dev-core.mjs",
     "dev-web": "./src/dev.mjs"
   },
   "scripts": {

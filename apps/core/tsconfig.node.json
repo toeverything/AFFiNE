@@ -11,5 +11,5 @@
     "outDir": "dist/webpack",
     "rootDir": "."
   },
-  "include": ["webpack"]
+  "include": [".webpack/*.ts"]
 }

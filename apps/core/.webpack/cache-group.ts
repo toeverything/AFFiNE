@@ -1,7 +1,8 @@
-import { hash } from './utils'
+import { hash } from './utils.js';
 
 function testPackageName(regexp: RegExp): (module: any) => boolean {
-  return (module: any) => module.nameForCondition && regexp.test(module.nameForCondition())
+  return (module: any) =>
+    module.nameForCondition && regexp.test(module.nameForCondition());
 }
 
 export const productionCacheGroups = {
@@ -9,8 +10,10 @@ export const productionCacheGroups = {
     test: /[\\/]node_modules[\\/]/,
     name(module: any) {
       // https://hackernoon.com/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
-      const name = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1]
-      return `npm-async-${hash(name)}`
+      const name = module.context.match(
+        /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+      )[1];
+      return `npm-async-${hash(name)}`;
     },
     priority: Number.MAX_SAFE_INTEGER,
     chunks: 'async' as const,
@@ -23,7 +26,9 @@ export const productionCacheGroups = {
   },
   react: {
     name: `npm-${hash('react')}`,
-    test: testPackageName(/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/),
+    test: testPackageName(
+      /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/
+    ),
     priority: 200,
     enforce: true,
   },
@@ -60,7 +65,9 @@ export const productionCacheGroups = {
   styles: {
     name: 'styles',
     test: (module: any) =>
-      module.nameForCondition && /\.css$/.test(module.nameForCondition()) && !/^javascript/.test(module.type),
+      module.nameForCondition &&
+      /\.css$/.test(module.nameForCondition()) &&
+      !/^javascript/.test(module.type),
     chunks: 'all' as const,
     minSize: 1,
     minChunks: 1,
@@ -68,4 +75,4 @@ export const productionCacheGroups = {
     priority: 1000,
     enforce: true,
   },
-}
+};

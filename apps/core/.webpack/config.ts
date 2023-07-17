@@ -1,14 +1,17 @@
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
 
-import { productionCacheGroups } from './cache-group';
+import { productionCacheGroups } from './cache-group.js';
 
-const IN_CI = !!process.env.CI
+const IN_CI = !!process.env.CI;
 
 const rootPath = fileURLToPath(new URL('..', import.meta.url));
+
+const require = createRequire(rootPath);
 
 const packages = [
   '@affine/component',
@@ -20,8 +23,8 @@ const packages = [
   '@affine/jotai',
   '@affine/copilot',
   '@toeverything/hooks',
-  '@toeverything/y-indexeddb'
-]
+  '@toeverything/y-indexeddb',
+];
 
 const isProduction = () => process.env.NODE_ENV === 'production';
 
@@ -70,7 +73,7 @@ const OptimizeOptionOptions: () => webpack.Configuration['optimization'] =
     },
   });
 
-const config: () => webpack.Configuration = () => {
+export const createConfiguration: () => webpack.Configuration = () => {
   let publicPath =
     process.env.PUBLIC_PATH ?? (isProduction() ? '' : 'http://localhost:8080');
   publicPath = publicPath.endsWith('/') ? publicPath : `${publicPath}/`;
@@ -89,7 +92,7 @@ const config: () => webpack.Configuration = () => {
       : 'eval-cheap-module-source-map',
 
     resolve: {
-      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.gql']
+      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.gql'],
     },
 
     module: {
@@ -108,28 +111,35 @@ const config: () => webpack.Configuration = () => {
           oneOf: [
             {
               test: /\.tsx?$/,
-              use: [
-                'thread-loader',
-                {
-                  loader: 'ts-loader',
-                  options: {
-                    transpileOnly: true,
-                    happyPackMode: true,
-                    configFile: join(process.cwd(), 'tsconfig.json'),
-                    experimentalWatchApi: true,
-                    getCustomTransformers: join(
-                      process.cwd(),
-                      'tools',
-                      'webpack',
-                      'ts-transformers'
-                    ),
-                    compilerOptions: {
-                      jsx: isProduction() ? 'react-jsx' : 'react-jsxdev',
+              // Compile all ts files in the workspace
+              include: resolve(rootPath, '..', '..'),
+              loader: require.resolve('swc-loader'),
+              options: {
+                // https://swc.rs/docs/configuring-swc/
+                jsc: {
+                  preserveAllComments: true,
+                  parser: {
+                    syntax: 'typescript',
+                    dynamicImport: true,
+                    tsx: true,
+                  },
+                  target: 'es2022',
+                  externalHelpers: true,
+                  transform: {
+                    react: {
+                      runtime: 'automatic',
+                      refresh: {
+                        refreshReg: '$RefreshReg$',
+                        refreshSig: '$RefreshSig$',
+                        emitFullSignatures: true,
+                      },
                     },
                   },
+                  experimental: {
+                    keepImportAssertions: true,
+                  },
                 },
-              ],
-              exclude: /node_modules/,
+              },
             },
             {
               test: /\.svg$/,
@@ -138,7 +148,7 @@ const config: () => webpack.Configuration = () => {
                 {
                   loader: '@svgr/webpack',
                   options: {
-                    icon: true
+                    icon: true,
                   },
                 },
               ],
