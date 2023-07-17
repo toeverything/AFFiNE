@@ -11286,8 +11286,6 @@ __metadata:
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
     "@blocksuite/lit": "*"
-    "@blocksuite/store": "*"
-    jotai: "*"
     react: "*"
     react-dom: "*"
   languageName: unknown

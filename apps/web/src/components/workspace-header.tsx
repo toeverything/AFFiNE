@@ -35,7 +35,9 @@ export function WorkspaceHeader({
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
 
-  const getPageInfoById = useGetPageInfoById();
+  const getPageInfoById = useGetPageInfoById(
+    currentWorkspace.blockSuiteWorkspace
+  );
   if ('subPath' in currentEntry) {
     if (currentEntry.subPath === WorkspaceSubPath.ALL) {
       const leftSlot = (
