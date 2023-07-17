@@ -1,0 +1,33 @@
+prometheus:
+  alertmanager:
+    persistentVolume:
+      storageClass: "standard-rwo"
+  server:
+    extraFlags:
+      - web.enable-remote-write-receiver
+    persistentVolume:
+      storageClass: "standard-rwo"
+
+grafana:
+  persistence:
+    storageClassName: "standard-rwo"
+    enabled: true
+  adminPassword: "affine"
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    annotations: 
+      kubernetes.io/ingress.global-static-ip-name: affine-manual
+    path: /
+    hosts:
+      - grafana.affine.systems
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://monitoring-prometheus-server
+        access: proxy
+        isDefault: true
