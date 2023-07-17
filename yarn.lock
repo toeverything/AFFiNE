@@ -185,15 +185,48 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/core@workspace:apps/core"
   dependencies:
+    "@blocksuite/block-std": 0.0.0-20230716144121-5b169b38-nightly
+    "@blocksuite/blocks": 0.0.0-20230716144121-5b169b38-nightly
+    "@blocksuite/editor": 0.0.0-20230716144121-5b169b38-nightly
+    "@blocksuite/global": 0.0.0-20230716144121-5b169b38-nightly
+    "@blocksuite/icons": ^2.1.25
+    "@blocksuite/lit": 0.0.0-20230716144121-5b169b38-nightly
+    "@blocksuite/store": 0.0.0-20230716144121-5b169b38-nightly
+    "@dnd-kit/core": ^6.0.8
+    "@dnd-kit/sortable": ^7.0.2
+    "@emotion/cache": ^11.11.0
+    "@emotion/react": ^11.11.1
+    "@emotion/server": ^11.11.0
+    "@emotion/styled": ^11.11.0
+    "@mui/material": ^5.13.6
+    "@react-hookz/web": ^23.1.0
     "@svgr/webpack": ^8.0.1
+    async-call-rpc: ^6.3.1
+    cmdk: ^0.2.0
+    css-spring: ^4.1.0
+    graphql: ^16.7.1
+    jotai: ^2.2.2
+    jotai-devtools: ^0.6.0
+    lit: ^2.7.5
+    lottie-web: ^5.12.2
+    next-themes: ^0.2.1
     raw-loader: ^4.0.2
+    react: 18.2.0
+    react-dom: 18.2.0
+    react-is: 18.2.0
+    react-resizable-panels: ^0.0.53
+    rxjs: ^7.8.1
     serialize-javascript: ^6.0.1
     swc-loader: ^0.2.3
+    swr: ^2.1.5
     thread-loader: ^4.0.2
     webpack: ^5.88.1
     webpack-cli: ^5.1.4
     webpack-dev-server: ^4.15.1
     webpack-merge: ^5.9.0
+    y-protocols: ^1.0.5
+    yjs: ^13.6.6
+    zod: ^3.21.4
   languageName: unknown
   linkType: soft
 
@@ -27455,6 +27488,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-is@npm:18.2.0, react-is@npm:^18.0.0, react-is@npm:^18.2.0":
+  version: 18.2.0
+  resolution: "react-is@npm:18.2.0"
+  checksum: e72d0ba81b5922759e4aff17e0252bd29988f9642ed817f56b25a3e217e13eea8a7f2322af99a06edb779da12d5d636e9fda473d620df9a3da0df2a74141d53e
+  languageName: node
+  linkType: hard
+
 "react-is@npm:^16.13.1, react-is@npm:^16.7.0":
   version: 16.13.1
   resolution: "react-is@npm:16.13.1"
@@ -27466,13 +27506,6 @@ __metadata:
   version: 17.0.2
   resolution: "react-is@npm:17.0.2"
   checksum: 9d6d111d8990dc98bc5402c1266a808b0459b5d54830bbea24c12d908b536df7883f268a7868cfaedde3dd9d4e0d574db456f84d2e6df9c4526f99bb4b5344d8
-  languageName: node
-  linkType: hard
-
-"react-is@npm:^18.0.0, react-is@npm:^18.2.0":
-  version: 18.2.0
-  resolution: "react-is@npm:18.2.0"
-  checksum: e72d0ba81b5922759e4aff17e0252bd29988f9642ed817f56b25a3e217e13eea8a7f2322af99a06edb779da12d5d636e9fda473d620df9a3da0df2a74141d53e
   languageName: node
   linkType: hard
 

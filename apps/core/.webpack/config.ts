@@ -9,7 +9,7 @@ import { productionCacheGroups } from './cache-group.js';
 
 const IN_CI = !!process.env.CI;
 
-const rootPath = fileURLToPath(new URL('..', import.meta.url));
+export const rootPath = fileURLToPath(new URL('..', import.meta.url));
 
 const require = createRequire(rootPath);
 
