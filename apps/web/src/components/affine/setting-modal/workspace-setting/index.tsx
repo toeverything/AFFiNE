@@ -1,5 +1,5 @@
 import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
-import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/workspace';
+import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
 import { useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import { Suspense, useCallback } from 'react';

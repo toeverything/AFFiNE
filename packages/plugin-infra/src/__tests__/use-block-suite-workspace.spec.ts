@@ -7,10 +7,12 @@ import { getDefaultStore } from 'jotai/vanilla';
 import { expect, test, vi } from 'vitest';
 
 import {
-  getActiveBlockSuiteWorkspaceAtom,
-  INTERNAL_BLOCKSUITE_HASH_MAP,
   usePassiveWorkspaceEffect,
   useStaticBlockSuiteWorkspace,
+} from '../__internal__/react';
+import {
+  getActiveBlockSuiteWorkspaceAtom,
+  INTERNAL_BLOCKSUITE_HASH_MAP,
 } from '../__internal__/workspace';
 
 test('useStaticBlockSuiteWorkspace', async () => {

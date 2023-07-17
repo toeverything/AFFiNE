@@ -32,7 +32,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/workspace';
+import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
