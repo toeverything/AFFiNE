@@ -1,15 +1,27 @@
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url'
 
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
-import WebpackDevServer from 'webpack-dev-server';
-import { merge } from 'webpack-merge';
 
-import { watchGraphqlSchema,watchRoutes } from '../codegen';
-import { exists,IN_CI, packages, rootPath } from '../utils';
 import { productionCacheGroups } from './cache-group';
-import { IgnoreNotFoundExportPlugin } from './ignore-not-found-plugin';
-import svgoConfig from './svgo.config.json';
+
+const IN_CI = !!process.env.CI
+
+const rootPath = fileURLToPath(new URL('..', import.meta.url));
+
+const packages = [
+  '@affine/component',
+  '@affine/i18n',
+  '@affine/debug',
+  '@affine/env',
+  '@affine/templates',
+  '@affine/workspace',
+  '@affine/jotai',
+  '@affine/copilot',
+  '@toeverything/hooks',
+  '@toeverything/y-indexeddb'
+]
 
 const isProduction = () => process.env.NODE_ENV === 'production';
 
@@ -77,23 +89,7 @@ const config: () => webpack.Configuration = () => {
       : 'eval-cheap-module-source-map',
 
     resolve: {
-      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.gql'],
-      alias: packages.reduce(
-        (alias, pkg) => {
-          const index = pkg.relative('index.js');
-          alias[pkg.name] = exists(index) ? index : pkg.srcPath;
-          return alias;
-        },
-        {
-          '@fluentui/theme': join(
-            rootPath,
-            'node_modules',
-            '@fluentui',
-            'theme'
-          ),
-          tslib: join(rootPath, 'node_modules', 'tslib', 'tslib.es6.js'),
-        }
-      ),
+      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.gql']
     },
 
     module: {
@@ -136,27 +132,13 @@ const config: () => webpack.Configuration = () => {
               exclude: /node_modules/,
             },
             {
-              test: /\.mdx?$/,
-              use: [
-                {
-                  loader: '@mdx-js/loader',
-                  options: {
-                    providerImportSource: '@mdx-js/react',
-                    remarkPlugins: [images, emoji],
-                  },
-                },
-              ],
-              exclude: /node_modules/,
-            },
-            {
               test: /\.svg$/,
               use: [
                 'thread-loader',
                 {
                   loader: '@svgr/webpack',
                   options: {
-                    icon: true,
-                    svgoConfig,
+                    icon: true
                   },
                 },
               ],
@@ -181,7 +163,6 @@ const config: () => webpack.Configuration = () => {
 
     plugins: [
       ...(IN_CI ? [] : [new webpack.ProgressPlugin({ percentBy: 'entries' })]),
-      new IgnoreNotFoundExportPlugin(),
     ],
     optimization: OptimizeOptionOptions(),
   };
