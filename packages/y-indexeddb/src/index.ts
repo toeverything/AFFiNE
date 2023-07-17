@@ -5,6 +5,8 @@ import {
   Doc,
   encodeStateAsUpdate,
   encodeStateVector,
+  encodeStateVectorFromUpdate,
+  mergeUpdates,
   UndoManager,
 } from 'yjs';
 
@@ -306,15 +308,10 @@ export const createIndexedDBProvider = (
       );
     } else {
       const updates = data.updates.map(({ update }) => update);
-      const fakeDoc = new Doc();
-      fakeDoc.transact(() => {
-        updates.forEach(update => {
-          applyUpdate(fakeDoc, update);
-        });
-      }, indexeddbOrigin);
+      const merged = mergeUpdates(updates);
       const newUpdate = diffUpdate(
         encodeStateAsUpdate(doc),
-        encodeStateAsUpdate(fakeDoc)
+        encodeStateVectorFromUpdate(merged)
       );
       await writeOperation(
         store.put({

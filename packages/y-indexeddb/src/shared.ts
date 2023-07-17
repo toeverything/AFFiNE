@@ -16,6 +16,11 @@ export interface IndexedDBProvider {
   readonly connected: boolean;
 }
 
+export interface IndexedDBProvider2 {
+  connect: (guid: string) => void;
+  disconnect: (guid: string) => void;
+}
+
 export type UpdateMessage = {
   timestamp: number;
   update: Uint8Array;
