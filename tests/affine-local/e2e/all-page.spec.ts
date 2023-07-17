@@ -177,6 +177,7 @@ test('allow creation of filters by tags', async ({ page }) => {
   await createPageWithTag(page, { title: 'Page A', tags: ['A'] });
   await createPageWithTag(page, { title: 'Page B', tags: ['B'] });
   await clickSideBarAllPageButton(page);
+  await closeDownloadTip(page);
   await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
   await checkPagesCount(page, 2);

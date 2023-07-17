@@ -10,7 +10,7 @@ import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
@@ -21,7 +21,6 @@ import {
   useState,
 } from 'react';
 
-import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { contentLayoutAtom } from '../../../atoms/layout';
 import { currentModeAtom } from '../../../atoms/mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
@@ -194,14 +193,13 @@ export const Header = forwardRef<
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
   const [showGuideDownloadClientTip, setShowGuideDownloadClientTip] =
-    useState(false);
-  const [shouldShowGuideDownloadClientTip] = useAtom(
-    guideDownloadClientTipAtom
-  );
+    useState(true);
+  // const [shouldShowGuideDownloadClientTip] = useAtom(
+  //   guideDownloadClientTipAtom
+  // );
   useEffect(() => {
     setShowWarning(shouldShowWarning());
-    setShowGuideDownloadClientTip(shouldShowGuideDownloadClientTip);
-  }, [shouldShowGuideDownloadClientTip]);
+  }, []);
   const open = useAtomValue(appSidebarOpenAtom);
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
@@ -216,7 +214,12 @@ export const Header = forwardRef<
       data-sidebar-floating={appSidebarFloating}
     >
       {showGuideDownloadClientTip ? (
-        <DownloadClientTip />
+        <DownloadClientTip
+          show={showGuideDownloadClientTip}
+          onClose={() => {
+            setShowGuideDownloadClientTip(false);
+          }}
+        />
       ) : (
         <BrowserWarning
           show={showWarning}
