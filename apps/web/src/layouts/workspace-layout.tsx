@@ -188,9 +188,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const { jumpToPage } = useRouterHelper(router);
 
   //#region init workspace
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  if (currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty !== true) {
+  if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
     // this is a new workspace, so we should redirect to the new page
     const pageId = `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`;
     if (currentWorkspace.blockSuiteWorkspace.getPage(pageId) === null) {
@@ -207,9 +205,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
           console.error('init empty page error', error);
         });
       }
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      currentWorkspace.blockSuiteWorkspace.meta._proxy.isEmpty = false;
       if (!router.query.pageId) {
         setCurrentPageId(pageId);
         jumpToPage(currentWorkspace.id, pageId).catch(console.error);

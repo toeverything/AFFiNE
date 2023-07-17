@@ -189,13 +189,9 @@ export const RootAppSidebar = ({
 
         <SidebarScrollableContainer>
           <CategoryDivider label={t['Favorites']()} />
-          {blockSuiteWorkspace && (
-            <FavoriteList currentWorkspace={currentWorkspace} />
-          )}
+          <FavoriteList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['Collections']()} />
-          {blockSuiteWorkspace && (
-            <CollectionsList currentWorkspace={currentWorkspace} />
-          )}
+          <CollectionsList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}
