@@ -9,6 +9,11 @@
     "dist"
   ],
   "exports": {
+    "./core": {
+      "type": "./dist/core.d.ts",
+      "import": "./dist/core.js",
+      "require": "./dist/core.cjs"
+    },
     "./manager": {
       "type": "./dist/manager.d.ts",
       "import": "./dist/manager.js",
