@@ -20,7 +20,13 @@ export const productionCacheGroups = {
   },
   mui: {
     name: `npm-${hash('mui')}`,
-    test: testPackageName(/[\\/]node_modules[\\/](mui|@mui|rc-[^\\/]+)[\\/]/),
+    test: testPackageName(/[\\/]node_modules[\\/](mui|@mui)[\\/]/),
+    priority: 200,
+    enforce: true,
+  },
+  blocksuite: {
+    name: `npm-${hash('blocksuite')}`,
+    test: testPackageName(/[\\/]node_modules[\\/](@blocksuite)[\\/]/),
     priority: 200,
     enforce: true,
   },
