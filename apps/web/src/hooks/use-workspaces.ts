@@ -1,8 +1,11 @@
 import { DebugLogger } from '@affine/debug';
+import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
+import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { assertEquals } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -45,6 +48,30 @@ export function useAppHelper() {
         );
         blockSuiteWorkspace.meta.setName(name);
         const id = await LocalAdapter.CRUD.create(blockSuiteWorkspace);
+        {
+          // this is hack, because CRUD doesn't return the workspace
+          const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+            id,
+            WorkspaceFlavour.LOCAL
+          );
+          const pageId = `${blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`;
+          const page = blockSuiteWorkspace.createPage({
+            id: pageId,
+          });
+          assertEquals(page.id, pageId);
+          if (runtimeConfig.enablePreloading) {
+            await initPageWithPreloading(page).catch(error => {
+              console.error('import error:', error);
+            });
+          } else {
+            await initEmptyPage(page).catch(error => {
+              console.error('init empty page error', error);
+            });
+          }
+          blockSuiteWorkspace.setPageMeta(page.id, {
+            jumpOnce: true,
+          });
+        }
         await set(workspaces => [
           ...workspaces,
           {
