@@ -42,6 +42,7 @@
     "@svgr/webpack": "^8.0.1",
     "html-webpack-plugin": "^5.5.3",
     "raw-loader": "^4.0.2",
+    "react-router-dom": "^6.14.1",
     "serialize-javascript": "^6.0.1",
     "swc-loader": "^0.2.3",
     "thread-loader": "^4.0.2",

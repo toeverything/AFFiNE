@@ -2,6 +2,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import HTMLPlugin from 'html-webpack-plugin';
+import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
@@ -216,6 +217,14 @@ export const createConfiguration: (
         filename: 'index.html',
       }),
     ],
+
     optimization: OptimizeOptionOptions(buildFlags),
+
+    devServer: {
+      hot: 'only',
+      liveReload: false,
+      client: undefined,
+      historyApiFallback: true,
+    } as DevServerConfiguration,
   };
 };
