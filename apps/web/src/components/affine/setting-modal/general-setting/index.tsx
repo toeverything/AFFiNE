@@ -44,7 +44,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       key: 'plugins',
       title: 'Plugins',
       icon: AiIcon,
-      testId: 'shortcuts-panel-trigger',
+      testId: 'plugins-panel-trigger',
     },
     {
       key: 'about',
