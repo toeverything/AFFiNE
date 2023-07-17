@@ -10,7 +10,6 @@ import {
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
-import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import {
   DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
   isDesktop,
@@ -20,7 +19,7 @@ import {
   rootBlockHubAtom,
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
-import { assertEquals, assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -187,32 +186,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
 
-  //#region init workspace
-  if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
-    // this is a new workspace, so we should redirect to the new page
-    const pageId = `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`;
-    if (currentWorkspace.blockSuiteWorkspace.getPage(pageId) === null) {
-      const page = currentWorkspace.blockSuiteWorkspace.createPage({
-        id: pageId,
-      });
-      assertEquals(page.id, pageId);
-      if (runtimeConfig.enablePreloading) {
-        initPageWithPreloading(page).catch(error => {
-          console.error('import error:', error);
-        });
-      } else {
-        initEmptyPage(page).catch(error => {
-          console.error('init empty page error', error);
-        });
-      }
-      if (!router.query.pageId) {
-        setCurrentPageId(pageId);
-        jumpToPage(currentWorkspace.id, pageId).catch(console.error);
-      }
-    }
-  }
-  //#endregion
-
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
   useEffect(() => {
@@ -220,12 +193,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`
     );
     if (page && page.meta.jumpOnce) {
-      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(
-        `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`,
-        {
-          jumpOnce: false,
-        }
-      );
+      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(page.id, {
+        jumpOnce: false,
+      });
       setCurrentPageId(currentPageId);
       jumpToPage(currentWorkspace.id, page.id).catch(err => {
         console.error(err);
