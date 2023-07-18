@@ -7,11 +7,17 @@ import {
 import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
 import { rootStore } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef } from 'react';
+import { lazy, useEffect, useRef } from 'react';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useWorkspace } from '../hooks/use-workspace';
+
+const AllWorkspaceModals = lazy(() =>
+  import('../providers/modal-provider').then(({ AllWorkspaceModals }) => ({
+    default: AllWorkspaceModals,
+  }))
+);
 
 type WorkspaceLoaderProps = {
   id: string;
@@ -118,6 +124,7 @@ export const Component = () => {
       {meta.map(({ id }) => (
         <WorkspaceLoader id={id} key={id} />
       ))}
+      <AllWorkspaceModals />
     </>
   );
 };
