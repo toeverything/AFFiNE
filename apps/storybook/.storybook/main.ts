@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import { mergeConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-// @ts-ignore
 import { getRuntimeConfig } from '../../core/.webpack/runtime-config';
 
 runCli(
