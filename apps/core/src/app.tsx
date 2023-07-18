@@ -24,6 +24,10 @@ const router = createBrowserRouter([
     lazy: () => import('./pages/index'),
   },
   {
+    path: '/404',
+    lazy: () => import('./pages/404'),
+  },
+  {
     path: '/workspace/:workspaceId/all',
     lazy: () => import('./pages/workspace/all-page'),
   },
