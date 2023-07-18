@@ -7,18 +7,18 @@ import { type BuildFlags, projectRoot } from '../config/index.js';
 
 const cwd = path.resolve(projectRoot, 'apps', 'core');
 
-const flags = {
+const flags: BuildFlags = {
   distribution: 'browser',
   mode: 'development',
   channel: 'canary',
-  coverage: !!process.env.COVERAGE,
-} satisfies BuildFlags;
+  coverage: false,
+};
 
 const buildFlags = await p.group(
   {
     mode: () =>
       p.select({
-        message: 'mode',
+        message: 'Mode',
         options: [
           {
             value: 'development',
@@ -31,7 +31,7 @@ const buildFlags = await p.group(
       }),
     channel: () =>
       p.select({
-        message: 'channel',
+        message: 'Channel',
         options: [
           {
             value: 'canary',
@@ -45,6 +45,11 @@ const buildFlags = await p.group(
         ],
         initialValue: 'canary',
       }),
+    coverage: () =>
+      p.confirm({
+        message: 'Enable coverage',
+        initialValue: process.env.COVERAGE === 'true',
+      }),
   },
   {
     onCancel: () => {
@@ -56,6 +61,7 @@ const buildFlags = await p.group(
 
 flags.mode = buildFlags.mode as any;
 flags.channel = buildFlags.channel as any;
+flags.coverage = buildFlags.coverage;
 
 spawn(
   'node',

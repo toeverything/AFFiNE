@@ -14,8 +14,8 @@ import { productionCacheGroups } from './cache-group.js';
 import type { BuildFlags } from '@affine/cli/config';
 import { projectRoot } from '@affine/cli/config';
 import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
-import { getRuntimeConfig } from './runtime-config.js';
 import { computeCacheKey } from './utils.js';
+import type { RuntimeConfig } from '@affine/env/global';
 
 const IN_CI = !!process.env.CI;
 
@@ -66,8 +66,9 @@ const OptimizeOptionOptions: (
 });
 
 export const createConfiguration: (
-  buildFlags: BuildFlags
-) => webpack.Configuration = buildFlags => {
+  buildFlags: BuildFlags,
+  runtimeConfig: RuntimeConfig
+) => webpack.Configuration = (buildFlags, runtimeConfig) => {
   let publicPath = process.env.PUBLIC_PATH ?? '/';
 
   const cacheKey = computeCacheKey(buildFlags);
@@ -252,7 +253,7 @@ export const createConfiguration: (
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),
-        runtimeConfig: JSON.stringify(getRuntimeConfig(buildFlags)),
+        runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({
         patterns: [

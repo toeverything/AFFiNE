@@ -25,7 +25,7 @@ const flags = {
   distribution: 'browser',
   mode: 'production',
   channel: getChannel(),
-  coverage: !!process.env.COVERAGE,
+  coverage: process.env.COVERAGE === 'true',
 } satisfies BuildFlags;
 
 spawn(
