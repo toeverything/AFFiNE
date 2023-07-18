@@ -260,7 +260,7 @@ export const createConfiguration: (
       }),
       new CopyPlugin({
         patterns: [
-          { from: resolve(rootPath, 'public'), to: resolve(rootPath, 'out') },
+          { from: resolve(rootPath, 'public'), to: resolve(rootPath, 'dist') },
         ],
       }),
     ],
