@@ -14,7 +14,10 @@ export default async function (cli_env: any, _: any) {
   const config = createConfiguration(flags, runtimeConfig);
   return merge(config, {
     entry: {
-      index: resolve(rootPath, 'src/index.tsx'),
+      index: {
+        asyncChunks: true,
+        import: resolve(rootPath, 'src/index.tsx'),
+      },
     },
   });
 }
