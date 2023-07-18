@@ -4,7 +4,6 @@ import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
-import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';

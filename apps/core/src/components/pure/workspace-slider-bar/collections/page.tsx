@@ -13,7 +13,6 @@ import type { PageMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
 import { useAtomValue } from 'jotai/index';
-import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import React, { useCallback, useMemo } from 'react';
 

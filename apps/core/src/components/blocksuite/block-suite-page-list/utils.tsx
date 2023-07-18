@@ -1,10 +1,8 @@
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { pageSettingsAtom, setPageModeAtom } from '../../../atoms';
-import { useRouterHelper } from '../../../hooks/use-router-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 
 export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {

@@ -5,7 +5,6 @@ import type { PageMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
 import { useAtomValue } from 'jotai/index';
-import { useRouter } from 'next/router';
 import { useMemo, useState } from 'react';
 
 import { pageSettingFamily } from '../../../../atoms';

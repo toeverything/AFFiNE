@@ -7,12 +7,10 @@ import type {
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { assertEquals } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { useRouter } from 'next/router';
 import type React from 'react';
 import { useCallback, useState } from 'react';
 
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
-import { useRouterHelper } from '../../../../hooks/use-router-helper';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 import type { BaseHeaderProps } from '../header';
 

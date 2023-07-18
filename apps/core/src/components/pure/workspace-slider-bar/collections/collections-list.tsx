@@ -20,7 +20,6 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import React, { useCallback, useMemo, useState } from 'react';
 

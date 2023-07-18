@@ -1,6 +1,7 @@
 import { atom, useAtom, useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import { useCallback, useEffect } from 'react';
+import { useNavigateHelper } from '../hooks/use-navigate-helper'
+import { useNavigate } from 'react-router-dom'
 
 export type History = {
   stack: string[];
@@ -19,7 +20,6 @@ export const historyBaseAtom = atom<History>({
 // fixme(himself65): don't use hooks, use atom lifecycle instead
 export function useTrackRouterHistoryEffect() {
   const setBase = useSetAtom(historyBaseAtom);
-  const router = useRouter();
   useEffect(() => {
     const callback = (url: string) => {
       setBase(prev => {
@@ -57,15 +57,12 @@ export function useTrackRouterHistoryEffect() {
       });
     };
 
-    router.events.on('routeChangeComplete', callback);
-    return () => {
-      router.events.off('routeChangeComplete', callback);
-    };
-  }, [router.events, setBase]);
+    // fixme
+  }, [setBase]);
 }
 
 export function useHistoryAtom() {
-  const router = useRouter();
+  const navigate = useNavigate()
   const [base, setBase] = useAtom(historyBaseAtom);
   return [
     base,
@@ -75,9 +72,7 @@ export function useHistoryAtom() {
           if (forward) {
             const target = Math.min(prev.stack.length - 1, prev.current + 1);
             const url = prev.stack[target];
-            router.push(url).catch(err => {
-              console.error(err);
-            });
+            navigate(url)
             return {
               ...prev,
               current: target,
@@ -86,9 +81,7 @@ export function useHistoryAtom() {
           } else {
             const target = Math.max(0, prev.current - 1);
             const url = prev.stack[target];
-            router.push(url).catch(err => {
-              console.error(err);
-            });
+            navigate(url)
             return {
               ...prev,
               current: target,

@@ -6,13 +6,12 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
 import { useAtomValue } from 'jotai';
-import Image from 'next/legacy/image';
-import type { NextRouter } from 'next/router';
 import type { Dispatch, FC, SetStateAction } from 'react';
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'
 
 import { recentPageSettingsAtom } from '../../../atoms';
-import { useRouterHelper } from '../../../hooks/use-router-helper';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper'
 import type { AllWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
 import { StyledListItem, StyledNotFound } from './style';
@@ -22,13 +21,11 @@ export type ResultsProps = {
   query: string;
   onClose: () => void;
   setShowCreatePage: Dispatch<SetStateAction<boolean>>;
-  router: NextRouter;
 };
 export const Results: FC<ResultsProps> = ({
   query,
   workspace,
   setShowCreatePage,
-  router,
   onClose,
 }) => {
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
@@ -39,7 +36,8 @@ export const Results: FC<ResultsProps> = ({
 
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
-  const { jumpToPage } = useRouterHelper(router);
+  const navigate = useNavigate()
+  const { jumpToPage } = useNavigateHelper();
   const results = blockSuiteWorkspace.search({ query });
 
   // remove `space:` prefix
@@ -75,9 +73,7 @@ export const Results: FC<ResultsProps> = ({
                   value={page.id}
                   onSelect={() => {
                     onClose();
-                    jumpToPage(blockSuiteWorkspace.id, page.id).catch(
-                      console.error
-                    );
+                    jumpToPage(blockSuiteWorkspace.id, page.id)
                   }}
                 >
                   <StyledListItem>
@@ -101,7 +97,7 @@ export const Results: FC<ResultsProps> = ({
                 value={link.title}
                 onSelect={() => {
                   onClose();
-                  link.href && router.push(link.href).catch(console.error);
+                  link.href && navigate(link.href)
                   link.onClick?.();
                 }}
               >
@@ -120,9 +116,8 @@ export const Results: FC<ResultsProps> = ({
     return (
       <StyledNotFound>
         <span>{t['Find 0 result']()}</span>
-        <Image
-          src="/imgs/no-result.svg"
-          alt="no result"
+        <image
+          href="/imgs/no-result.svg"
           width={200}
           height={200}
         />
@@ -140,9 +135,7 @@ export const Results: FC<ResultsProps> = ({
             onSelect={() => {
               onClose();
               assertExists(blockSuiteWorkspace.id);
-              jumpToPage(blockSuiteWorkspace.id, result.id).catch(error =>
-                console.error(error)
-              );
+              jumpToPage(blockSuiteWorkspace.id, result.id)
             }}
             value={result.id}
           >

@@ -16,7 +16,6 @@ import {
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue } from 'jotai';
-import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 import { pageSettingFamily } from '../../../../atoms';

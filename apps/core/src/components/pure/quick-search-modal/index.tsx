@@ -1,7 +1,6 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
-import type { NextRouter } from 'next/router';
 import type React from 'react';
 import {
   useCallback,
@@ -24,18 +23,17 @@ import {
   StyledModalHeader,
   StyledShortcut,
 } from './style';
+import { useLocation } from 'react-router-dom'
 
 export type QuickSearchModalProps = {
   workspace: AllWorkspace;
   open: boolean;
   setOpen: (value: boolean) => void;
-  router: NextRouter;
 };
 
 export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   open,
   setOpen,
-  router,
   workspace,
 }) => {
   const blockSuiteWorkspace = workspace?.blockSuiteWorkspace;
@@ -48,9 +46,10 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       _setQuery(query);
     });
   }, []);
+  const location = useLocation()
   const isPublicWorkspace = useMemo(
-    () => router.pathname.startsWith('/public-workspace'),
-    [router]
+    () => location.pathname.startsWith('/public-workspace'),
+    [location]
   );
   const [publishWorkspaceName, setPublishWorkspaceName] = useState('');
   const [showCreatePage, setShowCreatePage] = useState(true);
@@ -78,7 +77,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     document.addEventListener('keydown', keydown, { capture: true });
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
-  }, [open, router, setOpen, setQuery]);
+  }, [open, setOpen, setQuery]);
   useEffect(() => {
     if (open) {
       // Waiting for DOM rendering
@@ -171,7 +170,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                 <Results
                   query={query}
                   onClose={handleClose}
-                  router={router}
                   workspace={workspace}
                   setShowCreatePage={setShowCreatePage}
                 />
@@ -185,7 +183,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                     query={query}
                     onClose={handleClose}
                     blockSuiteWorkspace={blockSuiteWorkspace}
-                    router={router}
                   />
                 </StyledModalFooter>
               </>

@@ -7,7 +7,6 @@ import {
   currentWorkspaceIdAtom,
 } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { useRouter } from 'next/router';
 import type { FC, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';
 
@@ -19,7 +18,7 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useRouterHelper } from '../hooks/use-router-helper';
+import { useNavigateHelper } from '../hooks/use-navigate-helper'
 
 const SettingModal = lazy(() =>
   import('../components/affine/setting-modal').then(module => ({
@@ -118,8 +117,7 @@ export const AllWorkspaceModals = (): ReactElement => {
     openCreateWorkspaceModalAtom
   );
 
-  const router = useRouter();
-  const { jumpToSubPath } = useRouterHelper(router);
+  const { jumpToSubPath } = useNavigateHelper();
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
@@ -172,9 +170,7 @@ export const AllWorkspaceModals = (): ReactElement => {
               setOpenWorkspacesModal(false);
               setCurrentWorkspaceId(workspaceId);
               setCurrentPageId(null);
-              jumpToSubPath(workspaceId, WorkspaceSubPath.ALL).catch(error => {
-                console.error(error);
-              });
+              jumpToSubPath(workspaceId, WorkspaceSubPath.ALL)
             },
             [
               jumpToSubPath,

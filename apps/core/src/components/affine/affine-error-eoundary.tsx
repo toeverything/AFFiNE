@@ -12,7 +12,6 @@ import {
 } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai/react';
 import { Provider } from 'jotai/react';
-import type { NextRouter } from 'next/router';
 import type { ErrorInfo, ReactElement, ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';

@@ -17,7 +17,6 @@ import type {
 import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
-import Head from 'next/head';
 import type { CSSProperties, FC, ReactElement } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';

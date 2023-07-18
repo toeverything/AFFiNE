@@ -6,30 +6,27 @@ import { PlusIcon } from '@blocksuite/icons';
 import { nanoid } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
-import type { NextRouter } from 'next/router';
 import type React from 'react';
 import { useCallback } from 'react';
 
-import { useRouterHelper } from '../../../hooks/use-router-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { StyledModalFooterContent } from './style';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper'
 
 export type FooterProps = {
   query: string;
   onClose: () => void;
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  router: NextRouter;
 };
 
 export const Footer: React.FC<FooterProps> = ({
   query,
   onClose,
   blockSuiteWorkspace,
-  router,
 }) => {
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
-  const { jumpToPage } = useRouterHelper(router);
+  const { jumpToPage } = useNavigateHelper()
   const MAX_QUERY_SHOW_LENGTH = 20;
   const normalizedQuery =
     query.length > MAX_QUERY_SHOW_LENGTH
@@ -55,9 +52,7 @@ export const Footer: React.FC<FooterProps> = ({
           title: query,
         });
         onClose();
-        jumpToPage(blockSuiteWorkspace.id, page.id).catch(err => {
-          console.error(err);
-        });
+        jumpToPage(blockSuiteWorkspace.id, page.id)
       }, [blockSuiteWorkspace, createPage, jumpToPage, onClose, query])}
     >
       <StyledModalFooterContent>

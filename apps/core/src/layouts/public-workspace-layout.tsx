@@ -1,14 +1,12 @@
 import { MainContainer } from '@affine/component/workspace';
 import type { AffinePublicWorkspace } from '@affine/env/workspace';
 import { useAtom } from 'jotai';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
 import type React from 'react';
 import { lazy, Suspense } from 'react';
 
 import { openQuickSearchModalAtom } from '../atoms';
 import { AppContainer } from '../components/affine/app-container';
-import { useRouterTitle } from '../hooks/use-router-title';
+import { useLocationTitle } from '../hooks/use-location-title';
 
 const QuickSearchModal = lazy(() =>
   import('../components/pure/quick-search-modal').then(module => ({
@@ -41,7 +39,7 @@ export const PublicQuickSearch: React.FC<PublicQuickSearchProps> = ({
 
 const PublicWorkspaceLayoutInner: React.FC<React.PropsWithChildren> = props => {
   const router = useRouter();
-  const title = useRouterTitle(router);
+  const title = useLocationTitle(router);
   return (
     <>
       <Head>

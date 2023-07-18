@@ -1,8 +1,6 @@
 import { displayFlex, styled, TextButton } from '@affine/component';
-import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
-import { useRouterHelper } from '../../../../hooks/use-router-helper';
 export const EditPage = () => {
   const router = useRouter();
   const pageId = router.query.pageId as string;

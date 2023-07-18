@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { WorkspaceLayout } from '../../layouts/workspace-layout'
 
 type DetailPageParam = {
   workspaceId: string;
@@ -6,11 +6,9 @@ type DetailPageParam = {
 };
 
 export const Component = () => {
-  const param = useParams<DetailPageParam>();
-  console.log('param', param);
-  // const navigate = useNavigate()
-  // useEffect(() => {
-  //   navigate('/')
-  // }, [navigate])
-  return <div>1</div>;
+  return (
+    <WorkspaceLayout>
+      123
+    </WorkspaceLayout>
+  )
 };

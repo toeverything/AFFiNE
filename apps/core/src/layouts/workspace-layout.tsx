@@ -12,7 +12,6 @@ import {
 } from '@affine/component/workspace';
 import {
   DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
-  isDesktop,
 } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -38,9 +37,9 @@ import {
   currentWorkspaceIdAtom,
 } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import Head from 'next/head';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import {
@@ -51,8 +50,6 @@ import {
 import { useTrackRouterHistoryEffect } from '../atoms/history';
 import { useAppSetting } from '../atoms/settings';
 import { AppContainer } from '../components/affine/app-container';
-import type { IslandItemNames } from '../components/pure/help-island';
-import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
 import {
   DROPPABLE_SIDEBAR_TRASH,
@@ -60,13 +57,12 @@ import {
 } from '../components/root-app-sidebar';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useRouterHelper } from '../hooks/use-router-helper';
-import { useRouterTitle } from '../hooks/use-router-title';
+import { useNavigateHelper } from '../hooks/use-navigate-helper'
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
 } from '../providers/modal-provider';
-import { pathGenerator, publicPathGenerator } from '../shared';
+import { pathGenerator } from '../shared';
 import { toast } from '../utils';
 
 const QuickSearchModal = lazy(() =>
@@ -81,7 +77,6 @@ function DefaultProvider({ children }: PropsWithChildren) {
 
 export const QuickSearch: FC = () => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const router = useRouter();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom
   );
@@ -94,7 +89,6 @@ export const QuickSearch: FC = () => {
       workspace={currentWorkspace}
       open={openQuickSearchModal}
       setOpen={setOpenQuickSearchModalAtom}
-      router={router}
     />
   );
 };
@@ -114,28 +108,22 @@ export const CurrentWorkspaceContext = ({
   const workspaceId = useAtomValue(currentWorkspaceIdAtom);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
-  const router = useRouter();
-  const push = router.push;
+  const navigate = useNavigate()
   // fixme(himself65): this is not a good way to handle this,
   //  need a better way to check whether this workspace really exist.
   useEffect(() => {
     const id = setTimeout(() => {
       if (!exist) {
-        push('/').catch(err => {
-          console.error(err);
-        });
+        navigate('/')
         globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
       }
     }, globalThis.HALTING_PROBLEM_TIMEOUT);
     return () => {
       clearTimeout(id);
     };
-  }, [push, exist, metadata.length]);
+  }, [exist, metadata.length, navigate]);
   if (metadata.length === 0) {
     return <WorkspaceFallback key="no-workspace" />;
-  }
-  if (!router.isReady) {
-    return <WorkspaceFallback key="router-is-loading" />;
   }
   if (!workspaceId) {
     return <WorkspaceFallback key="finding-workspace-id" />;
@@ -182,8 +170,7 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
-  const router = useRouter();
-  const { jumpToPage } = useRouterHelper(router);
+  const { jumpToPage, openPage } = useNavigateHelper();
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
@@ -196,26 +183,20 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         jumpOnce: false,
       });
       setCurrentPageId(currentPageId);
-      jumpToPage(currentWorkspace.id, page.id).catch(err => {
-        console.error(err);
-      });
+      jumpToPage(currentWorkspace.id, page.id)
     }
   }, [
     currentPageId,
     currentWorkspace,
     jumpToPage,
-    router.query.pageId,
     setCurrentPageId,
   ]);
 
-  const { openPage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const isPublicWorkspace =
-    router.pathname.split('/')[1] === 'public-workspace';
-  const title = useRouterTitle(router);
+
   const handleCreatePage = useCallback(() => {
     return helper.createPage(nanoid());
   }, [helper]);
@@ -254,11 +235,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const { removeToTrash: moveToTrash } = useBlockSuiteMetaHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const t = useAFFiNEI18N();
-
-  const showList: IslandItemNames[] = isDesktop
-    ? ['whatNew', 'contact', 'guide']
-    : ['whatNew', 'contact'];
+  const t = useAFFiNEI18N()
 
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {
@@ -280,12 +257,10 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   );
 
   const [appSetting] = useAppSetting();
+  const location = useLocation()
 
   return (
     <>
-      <Head>
-        <title>{title}</title>
-      </Head>
       {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
       <DndContext
         sensors={sensors}
@@ -294,7 +269,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
       >
         <AppContainer resizing={resizing}>
           <RootAppSidebar
-            isPublicWorkspace={isPublicWorkspace}
+            isPublicWorkspace={false}
             onOpenQuickSearchModal={handleOpenQuickSearchModal}
             onOpenSettingModal={handleOpenSettingModal}
             currentWorkspace={currentWorkspace}
@@ -307,18 +282,13 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
               [currentWorkspace, openPage]
             )}
             createPage={handleCreatePage}
-            currentPath={router.asPath.split('?')[0]}
-            paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
+            currentPath={location.pathname.split('?')[0]}
+            paths={pathGenerator}
           />
           <MainContainer padding={appSetting.clientBorder}>
             {children}
             <ToolContainer>
               <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
-              {!isPublicWorkspace && (
-                <HelpIsland
-                  showList={router.query.pageId ? undefined : showList}
-                />
-              )}
             </ToolContainer>
             <AffineWatermark />
           </MainContainer>

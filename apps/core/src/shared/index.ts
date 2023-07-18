@@ -5,7 +5,6 @@ import type {
 import type { AffinePublicWorkspace } from '@affine/env/workspace';
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
-import type { NextPage } from 'next';
 import type { ReactElement, ReactNode } from 'react';
 
 export { BlockSuiteWorkspace };

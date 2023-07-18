@@ -2,8 +2,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { Command } from 'cmdk';
-import Image from 'next/legacy/image';
-import { useRouter } from 'next/router';
 import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
