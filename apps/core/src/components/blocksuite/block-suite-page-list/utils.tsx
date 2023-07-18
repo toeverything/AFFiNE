@@ -4,10 +4,10 @@ import { useCallback } from 'react';
 
 import { pageSettingsAtom, setPageModeAtom } from '../../../atoms';
 import type { BlockSuiteWorkspace } from '../../../shared';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper'
 
 export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
-  const router = useRouter();
-  const { openPage } = useRouterHelper(router);
+  const { openPage } = useNavigateHelper();
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageSettings = useAtomValue(pageSettingsAtom);
   const isPreferredEdgeless = useCallback(

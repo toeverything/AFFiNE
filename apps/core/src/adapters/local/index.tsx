@@ -66,7 +66,9 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   CRUD,
   UI: {
     Header: noop,
-    Provider: noop,
+    Provider: ({ children }) => {
+      return <>{children}</>;
+    },
     PageDetail: noop,
     PageList: noop,
     NewSettingsDetail: noop,
