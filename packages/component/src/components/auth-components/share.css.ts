@@ -48,11 +48,11 @@ globalStyle(`${googleButton} .google-logo`, {
 });
 
 export const authInputWrapper = style({
-  marginBottom: '26px',
+  paddingBottom: '30px',
   position: 'relative',
   selectors: {
     '&.without-hint': {
-      marginBottom: '20px',
+      paddingBottom: '20px',
     },
   },
 });
@@ -65,12 +65,11 @@ globalStyle(`${authInputWrapper} label`, {
   fontWeight: 600,
 });
 export const formHint = style({
-  marginTop: '8px',
   fontSize: 'var(--affine-font-sm)',
   position: 'absolute',
-  bottom: 0,
+  bottom: '4px',
   left: 0,
-  height: '18px',
+  lineHeight: '22px',
   selectors: {
     '&.error': {
       color: 'var(--affine-error-color)',
@@ -118,6 +117,61 @@ export const loading = style({
       zIndex: '1',
       transformOrigin: 'left bottom',
       animation: `${rotate} 1.5s infinite linear`,
+    },
+  },
+});
+
+export const authContent = style({
+  fontSize: 'var(--affine-font-base)',
+  lineHeight: 'var(--affine-font-h-3)',
+  marginTop: '30px',
+});
+globalStyle(`${authContent} a`, {
+  color: 'var(--affine-link-color)',
+});
+
+export const authCodeContainer = style({
+  paddingBottom: '8px',
+});
+export const authCodeWrapper = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+});
+
+export const authCodeErrorMessage = style({
+  color: 'var(--affine-error-color)',
+  fontSize: 'var(--affine-font-sm)',
+  marginTop: '8px',
+  textAlign: 'center',
+  lineHeight: '1.5',
+});
+export const authInput = style({
+  lineHeight: '22px',
+  padding: '8px 12px',
+  color: 'var(--affine-text-primary-color)',
+  border: '1px solid',
+  backgroundColor: 'var(--affine-white)',
+  borderRadius: '10px',
+  textAlign: 'center',
+  width: '44px',
+  height: '40',
+  selectors: {
+    '&': {
+      borderColor: 'var(--affine-border-color)', // TODO: check out disableColor,
+    },
+    '&:focus': {
+      borderColor: 'var(--affine-primary-color)',
+      boxShadow:
+        '0px 0px 30px 0px rgba(75, 75, 75, 0.20), 0px 0px 4px 0px rgba(75, 75, 75, 0.30), 0px 0px 0px 1px #E3E2E4 inset',
+    },
+    '&.error': {
+      borderColor: 'var(--affine-error-color)',
+    },
+    '&.error:focus': {
+      borderColor: 'var(--affine-error-color)',
+      boxShadow:
+        '0px 0px 30px 0px rgba(75, 75, 75, 0.20), 0px 0px 4px 0px rgba(75, 75, 75, 0.30), 0px 0px 0px 1px #E3E2E4 inset',
     },
   },
 });

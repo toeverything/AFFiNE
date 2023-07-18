@@ -75,7 +75,7 @@ export const SignInButton = () => {
       className={accountButton}
       onClick={useCallback(() => {
         if (runtimeConfig.enableNewAuth) {
-          setAuthModal({ open: true });
+          setAuthModal({ open: true, state: 'signIn' });
         } else {
           signIn().catch(console.error);
         }

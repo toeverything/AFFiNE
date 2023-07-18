@@ -92,13 +92,20 @@ export const Setting: FC = () => {
 };
 
 export const AuthModal: FC = () => {
-  const [{ open }, setOpenAuthModalAtom] = useAtom(openAuthModalAtom);
+  const [{ open, state }, setOpenAuthModalAtom] = useAtom(openAuthModalAtom);
   return (
     <Auth
       open={open}
+      state={state}
       setOpen={useCallback(
         open => {
           setOpenAuthModalAtom(prev => ({ ...prev, open }));
+        },
+        [setOpenAuthModalAtom]
+      )}
+      setAuthState={useCallback(
+        state => {
+          setOpenAuthModalAtom(prev => ({ ...prev, state }));
         },
         [setOpenAuthModalAtom]
       )}

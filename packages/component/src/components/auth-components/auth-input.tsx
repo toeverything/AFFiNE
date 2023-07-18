@@ -8,12 +8,14 @@ export type AuthInputProps = InputProps & {
   error?: boolean;
   errorHint?: string;
   withoutHint?: boolean;
+  onEnter?: () => void;
 };
 export const AuthInput: FC<AuthInputProps> = ({
   label,
   error,
   errorHint,
   withoutHint = false,
+  onEnter,
   ...inputProps
 }) => {
   return (
@@ -23,7 +25,15 @@ export const AuthInput: FC<AuthInputProps> = ({
       })}
     >
       {label ? <label>{label}</label> : null}
-      <Input {...inputProps} />
+      <Input
+        {...inputProps}
+        status={error ? 'error' : 'default'}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            onEnter?.();
+          }
+        }}
+      />
       {error && errorHint && !withoutHint ? (
         <div
           className={clsx(formHint, {
