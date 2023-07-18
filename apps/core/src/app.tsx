@@ -25,15 +25,11 @@ const router = createBrowserRouter([
   },
   {
     path: '/workspace/:workspaceId/all',
-    element: <>all</>,
-  },
-  {
-    path: '/workspace/:workspaceId/setting',
-    element: <>all</>,
+    lazy: () => import('./pages/workspace/all-page'),
   },
   {
     path: '/workspace/:workspaceId/trash',
-    element: <>all</>,
+    lazy: () => import('./pages/workspace/trash-page'),
   },
   {
     path: '/workspace/:workspaceId/:pageId',
