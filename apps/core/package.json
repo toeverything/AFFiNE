@@ -5,7 +5,8 @@
   "version": "0.7.0-canary.47",
   "scripts": {
     "build": "yarn -T run build-core",
-    "dev": "yarn -T run dev-core"
+    "dev": "yarn -T run dev-core",
+    "static-server": "ts-node-esm ./server.mts"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
