@@ -37,7 +37,7 @@ import {
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import {
@@ -47,6 +47,8 @@ import {
 } from '../atoms';
 import { useAppSetting } from '../atoms/settings';
 import { AppContainer } from '../components/affine/app-container';
+import type { IslandItemNames } from '../components/pure/help-island';
+import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
 import {
   DROPPABLE_SIDEBAR_TRASH,
@@ -98,6 +100,10 @@ declare global {
 if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
   globalThis.HALTING_PROBLEM_TIMEOUT = 1000;
 }
+
+const showList: IslandItemNames[] = environment.isDesktop
+  ? ['whatNew', 'contact', 'guide']
+  : ['whatNew', 'contact'];
 
 export const CurrentWorkspaceContext = ({
   children,
@@ -249,6 +255,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
 
   const [appSetting] = useAppSetting();
   const location = useLocation();
+  const { pageId } = useParams();
 
   return (
     <>
@@ -280,6 +287,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
             {children}
             <ToolContainer>
               <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
+              <HelpIsland showList={pageId ? undefined : showList} />
             </ToolContainer>
             <AffineWatermark />
           </MainContainer>
