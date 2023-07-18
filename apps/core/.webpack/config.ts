@@ -276,6 +276,11 @@ export const createConfiguration: (
         directory: resolve(rootPath, 'public'),
         publicPath: '/',
       },
+      proxy: {
+        '/api': 'http://localhost:3010',
+        '/socket.io': 'http://localhost:3010',
+        '/graphql': 'http://localhost:3010',
+      },
     } as DevServerConfiguration,
   } satisfies webpack.Configuration;
 
