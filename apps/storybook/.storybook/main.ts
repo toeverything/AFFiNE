@@ -20,7 +20,7 @@ runCli(
 
 export default {
   stories: ['../src/**/*.stories.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
-  staticDirs: ['../../../apps/web/public'],
+  staticDirs: ['../../../apps/core/public'],
   addons: [
     '@storybook/addon-links',
     '@storybook/addon-essentials',
