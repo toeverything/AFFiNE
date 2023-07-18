@@ -74,21 +74,11 @@ export function usePassiveWorkspaceEffect(workspace: Workspace) {
       (provider): provider is PassiveDocProvider =>
         'passive' in provider && provider.passive === true
     );
-    workspace.providers.forEach((provider: any) => {
-      if (provider.lazy) {
-        provider.connect(workspace.doc.guid);
-      }
-    });
 
     workspacePassiveEffectWeakMap.set(workspace, true);
     return () => {
       providers.forEach(provider => {
         provider.disconnect();
-      });
-      workspace.providers.forEach((provider: any) => {
-        if (provider.lazy) {
-          provider.disconnect(workspace.doc.guid);
-        }
       });
       workspacePassiveEffectWeakMap.delete(workspace);
     };
