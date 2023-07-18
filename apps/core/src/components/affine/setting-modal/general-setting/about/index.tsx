@@ -73,11 +73,21 @@ export const AboutAffine = () => {
         ) : null}
       </SettingWrapper>
       <SettingWrapper title={t['Contact with us']()}>
-        <a className={link} href="https://affine.pro" target="_blank">
+        <a
+          className={link}
+          rel="noreferrer"
+          href="https://affine.pro"
+          target="_blank"
+        >
           {t['Official Website']()}
           <OpenInNewIcon className="icon" />
         </a>
-        <a className={link} href="https://community.affine.pro" target="_blank">
+        <a
+          className={link}
+          rel="noreferrer"
+          href="https://community.affine.pro"
+          target="_blank"
+        >
           {t['AFFiNE Community']()}
           <OpenInNewIcon className="icon" />
         </a>
@@ -101,11 +111,21 @@ export const AboutAffine = () => {
         </div>
       </SettingWrapper>
       <SettingWrapper title={t['Info of legal']()}>
-        <a className={link} href="https://affine.pro/privacy" target="_blank">
+        <a
+          className={link}
+          rel="noreferrer"
+          href="https://affine.pro/privacy"
+          target="_blank"
+        >
           {t['Privacy']()}
           <OpenInNewIcon className="icon" />
         </a>
-        <a className={link} href="https://affine.pro/terms" target="_blank">
+        <a
+          className={link}
+          rel="noreferrer"
+          href="https://affine.pro/terms"
+          target="_blank"
+        >
           {t['Terms of Use']()}
           <OpenInNewIcon className="icon" />
         </a>

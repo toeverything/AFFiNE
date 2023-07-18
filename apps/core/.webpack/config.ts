@@ -14,6 +14,7 @@ import { productionCacheGroups } from './cache-group.js';
 import type { BuildFlags } from '@affine/cli/config';
 import { projectRoot } from '@affine/cli/config';
 import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
+import { getRuntimeConfig } from './runtime-config.js';
 const IN_CI = !!process.env.CI;
 
 export const rootPath = fileURLToPath(new URL('..', import.meta.url));
@@ -257,6 +258,9 @@ export const createConfiguration: (
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),
+        'process.env.RUNTIME_CONFIG': JSON.stringify(
+          getRuntimeConfig(buildFlags)
+        ),
       }),
       new CopyPlugin({
         patterns: [

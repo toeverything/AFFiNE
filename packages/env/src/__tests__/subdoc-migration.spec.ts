@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, expect, test } from 'vitest';
 import * as Y from 'yjs';
 
-import { migrateToSubdoc } from '../blocksuite';
+import { migrateToSubdoc } from '../blocksuite/index.js';
 
 const fixturePath = resolve(
   dirname(fileURLToPath(import.meta.url)),

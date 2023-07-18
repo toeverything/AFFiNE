@@ -7,8 +7,8 @@ import type {
   UIHandlers,
   UpdaterHandlers,
   WorkspaceHandlers,
-} from './type';
-import { HandlerManager } from './type';
+} from './type.js';
+import { HandlerManager } from './type.js';
 
 export abstract class DBHandlerManager extends HandlerManager<
   'db',

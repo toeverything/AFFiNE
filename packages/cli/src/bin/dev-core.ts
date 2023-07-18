@@ -1,16 +1,60 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
-import type { BuildFlags } from '../config/index.js';
+import * as p from '@clack/prompts';
+
 import { projectRoot } from '../config/index.js';
 
 const cwd = path.resolve(projectRoot, 'apps', 'core');
 
-const flags: BuildFlags = {
+const flags = {
   distribution: 'browser',
   mode: 'development',
   channel: 'canary',
 };
+
+const buildFlags = await p.group(
+  {
+    mode: () =>
+      p.select({
+        message: 'mode',
+        options: [
+          {
+            value: 'development',
+          },
+          {
+            value: 'production',
+          },
+        ],
+        initialValue: 'development',
+      }),
+    channel: () =>
+      p.select({
+        message: 'channel',
+        options: [
+          {
+            value: 'canary',
+          },
+          {
+            value: 'beta',
+          },
+          {
+            value: 'stable',
+          },
+        ],
+        initialValue: 'canary',
+      }),
+  },
+  {
+    onCancel: () => {
+      p.cancel('Operation cancelled.');
+      process.exit(0);
+    },
+  }
+);
+
+flags.mode = buildFlags.mode;
+flags.channel = buildFlags.channel;
 
 spawn(
   'node',
