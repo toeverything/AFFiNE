@@ -162,8 +162,7 @@ export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-  globalThis.runtimeConfig = process.env.RUNTIME_CONFIG as any;
-  runtimeFlagsSchema.parse(globalThis.runtimeConfig);
+  runtimeFlagsSchema.parse(runtimeConfig);
 
   let environment: Environment;
   const isDebug = process.env.NODE_ENV === 'development';

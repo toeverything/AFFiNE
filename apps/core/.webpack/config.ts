@@ -252,9 +252,7 @@ export const createConfiguration: (
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),
-        'process.env.RUNTIME_CONFIG': JSON.stringify(
-          getRuntimeConfig(buildFlags)
-        ),
+        runtimeConfig: JSON.stringify(getRuntimeConfig(buildFlags)),
       }),
       new CopyPlugin({
         patterns: [
