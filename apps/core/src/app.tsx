@@ -10,6 +10,7 @@ import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
 } from '@toeverything/plugin-infra/manager';
+import { SessionProvider } from 'next-auth/react';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -146,13 +147,15 @@ export const App = memo(function App() {
   }, []);
   return (
     <CacheProvider value={cache}>
-      <AffineContext>
-        <DebugProvider>
-          <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
-            <RouterProvider router={router} />
-          </Suspense>
-        </DebugProvider>
-      </AffineContext>
+      <SessionProvider>
+        <AffineContext>
+          <DebugProvider>
+            <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
+              <RouterProvider router={router} />
+            </Suspense>
+          </DebugProvider>
+        </AffineContext>
+      </SessionProvider>
     </CacheProvider>
   );
 });
