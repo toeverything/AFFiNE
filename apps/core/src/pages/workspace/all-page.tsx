@@ -1,9 +1,7 @@
 import { useCollectionManager } from '@affine/component/page-list';
-import { QueryParamError } from '@affine/env/constant';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { useCallback } from 'react';
-import { useParams } from 'react-router-dom'
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
