@@ -1,4 +1,5 @@
-import { atom, useAtom } from 'jotai';
+import { useAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +11,7 @@ export type History = {
 
 export const MAX_HISTORY = 50;
 
-export const historyBaseAtom = atom<History>({
+export const historyBaseAtom = atomWithStorage<History>('router-history', {
   stack: [],
   current: 0,
   skip: false,

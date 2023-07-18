@@ -9,7 +9,6 @@ import type { RouterState } from '@remix-run/router';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-  rootStore,
 } from '@toeverything/plugin-infra/manager';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense, useEffect } from 'react';
@@ -78,46 +77,47 @@ currentPageIdAtom.onMount = set => {
   };
 };
 
-const unsubscribe = router.subscribe(state => {
-  if (unsubscribe) {
-    unsubscribe();
-  }
-  rootStore.set(historyBaseAtom, prev => {
-    const url = state.location.pathname;
-    console.log('push', url, prev.skip, prev.stack.length, prev.current);
-    if (prev.skip) {
-      return {
-        stack: [...prev.stack],
-        current: prev.current,
-        skip: false,
-      };
-    } else {
-      if (prev.current < prev.stack.length - 1) {
-        const newStack = prev.stack.slice(0, prev.current);
-        newStack.push(url);
-        if (newStack.length > MAX_HISTORY) {
-          newStack.shift();
-        }
+historyBaseAtom.onMount = set => {
+  const unsubscribe = router.subscribe(state => {
+    set(prev => {
+      const url = state.location.pathname;
+      console.log('push', url, prev.skip, prev.stack.length, prev.current);
+      if (prev.skip) {
         return {
-          stack: newStack,
-          current: newStack.length - 1,
+          stack: [...prev.stack],
+          current: prev.current,
           skip: false,
         };
       } else {
-        const newStack = [...prev.stack, url];
-        if (newStack.length > MAX_HISTORY) {
-          newStack.shift();
+        if (prev.current < prev.stack.length - 1) {
+          const newStack = prev.stack.slice(0, prev.current);
+          newStack.push(url);
+          if (newStack.length > MAX_HISTORY) {
+            newStack.shift();
+          }
+          return {
+            stack: newStack,
+            current: newStack.length - 1,
+            skip: false,
+          };
+        } else {
+          const newStack = [...prev.stack, url];
+          if (newStack.length > MAX_HISTORY) {
+            newStack.shift();
+          }
+          return {
+            stack: newStack,
+            current: newStack.length - 1,
+            skip: false,
+          };
         }
-        return {
-          stack: newStack,
-          current: newStack.length - 1,
-          skip: false,
-        };
       }
-    }
+    });
   });
-});
-
+  return () => {
+    unsubscribe();
+  };
+};
 //#endregion
 
 const i18n = createI18n();
