@@ -66,7 +66,10 @@ export const NewPageButton = ({
       onClickAway={() => {
         setOpen(false);
       }}
-      menuStyles={{ padding: '0px' }}
+      menuStyles={{
+        padding: '0px',
+        background: 'var(--affine-background-overlay-panel-color)',
+      }}
       content={
         <CreateNewPagePopup
           createNewPage={() => {
