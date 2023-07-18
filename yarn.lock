@@ -234,7 +234,6 @@ __metadata:
     react-resizable-panels: ^0.0.53
     react-router-dom: ^6.14.1
     rxjs: ^7.8.1
-    serialize-javascript: ^6.0.1
     swc-loader: ^0.2.3
     swr: ^2.1.5
     thread-loader: ^4.0.2

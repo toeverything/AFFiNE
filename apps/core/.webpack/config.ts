@@ -126,10 +126,6 @@ export const createConfiguration: (
           },
         },
         {
-          include: require.resolve('serialize-javascript'),
-          sideEffects: false,
-        },
-        {
           oneOf: [
             {
               test: /\.tsx?$/,
