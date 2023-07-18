@@ -11,7 +11,7 @@ import type {
   PropsWithChildren,
   ReactElement,
 } from 'react';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
 import { QuickSearchButton } from '../../pure/quick-search-button';
@@ -35,7 +35,7 @@ export const BlockSuiteEditorHeader: FC<
   const [isEditable, setIsEditable] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (isEditable) {
       setIsEditable(!isEditable);
       const value = inputRef.current?.value;
@@ -45,7 +45,7 @@ export const BlockSuiteEditorHeader: FC<
     } else {
       setIsEditable(!isEditable);
     }
-  };
+  }, [currentPage, isEditable, pageMeta?.title, pageTitleMeta]);
 
   const headerRef = useRef<HTMLDivElement>(null);
   assertExists(pageMeta);
