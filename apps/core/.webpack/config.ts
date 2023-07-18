@@ -121,56 +121,7 @@ export const createConfiguration: (
       },
       alias: {
         // fixme: remove this in the future
-        'next/config': resolve(rootPath, 'src/next-config.ts'),
-        '@blocksuite/block-std': resolve(
-          projectRoot,
-          'node_modules',
-          '@blocksuite',
-          'block-std'
-        ),
-        '@blocksuite/blocks': resolve(
-          projectRoot,
-          'node_modules',
-          '@blocksuite',
-          'blocks'
-        ),
-        '@blocksuite/editor': resolve(
-          projectRoot,
-          'node_modules',
-          '@blocksuite',
-          'editor'
-        ),
-        '@blocksuite/global': resolve(
-          projectRoot,
-          'node_modules',
-          '@blocksuite',
-          'global'
-        ),
-        '@blocksuite/lit': resolve(
-          projectRoot,
-          'node_modules',
-          '@blocksuite',
-          'lit'
-        ),
-        '@blocksuite/phasor': resolve(
-          projectRoot,
-          'node_modules',
-          '@blocksuite',
-          'phasor'
-        ),
-        '@blocksuite/store': resolve(
-          projectRoot,
-          'node_modules',
-          '@blocksuite',
-          'store'
-        ),
-        '@blocksuite/virgo': resolve(
-          projectRoot,
-          'node_modules',
-          '@blocksuite',
-          'virgo'
-        ),
-        yjs: resolve(projectRoot, 'node_modules', 'yjs'),
+        'next/config': resolve(rootPath, 'src/next-config.ts')
       },
       extensions: ['.js', '.ts', '.tsx'],
     },

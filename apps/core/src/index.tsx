@@ -3,7 +3,9 @@ import type { WorkspaceFlavour } from '@affine/env/workspace';
 import { type WorkspaceAdapter } from '@affine/env/workspace';
 import { workspaceAdaptersAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
-import { rootStore } from '@toeverything/plugin-infra/manager';
+import {
+  rootStore
+} from '@toeverything/plugin-infra/manager'
 import { createRoot } from 'react-dom/client';
 
 import { WorkspaceAdapters } from './adapters/workspace';

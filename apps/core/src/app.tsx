@@ -10,6 +10,11 @@ import { lazy, memo, Suspense, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import createEmotionCache from './utils/create-emotion-cache';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom
+} from '@toeverything/plugin-infra/manager'
+import type { RouterState } from '@remix-run/router'
 
 const router = createBrowserRouter([
   {
@@ -21,6 +26,41 @@ const router = createBrowserRouter([
     lazy: () => import('./pages/workspace/detail-page'),
   },
 ]);
+
+currentWorkspaceIdAtom.onMount = set => {
+  const callback = (state: RouterState) => {
+    const value = state.location.pathname.split('/')[2];
+    if (value) {
+      set(value);
+      localStorage.setItem('last_workspace_id', value);
+    } else {
+      set(null);
+    }
+  };
+  callback(router.state);
+
+  const unsubscribe = router.subscribe(callback);
+  return () => {
+    unsubscribe()
+  };
+};
+
+currentPageIdAtom.onMount = set => {
+  const callback = (state: RouterState) => {
+    const value = state.location.pathname.split('/')[2];
+    if (value) {
+      set(value);
+    } else {
+      set(null);
+    }
+  };
+  callback(router.state);
+
+  const unsubscribe = router.subscribe(callback);
+  return () => {
+    unsubscribe()
+  };
+};
 
 const i18n = createI18n();
 const cache = createEmotionCache();
