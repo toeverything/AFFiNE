@@ -5,7 +5,9 @@ import {
   createAffineProviders,
   createLocalProviders,
 } from '@affine/workspace/providers';
+import { bindWorkerSync, createWorkerSync } from '@affine/workspace/worker-sync'
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { assertExists } from '@blocksuite/global/utils'
 import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
 import {
   createIndexeddbStorage,
@@ -16,6 +18,11 @@ import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/plugin-infra/__inter
 
 import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
+
+let workerSync: ReturnType<typeof createWorkerSync> | undefined;
+if (typeof window !== 'undefined') {
+  workerSync = createWorkerSync()
+}
 
 function setEditorFlags(workspace: Workspace) {
   Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
@@ -77,6 +84,10 @@ export function createEmptyBlockSuiteWorkspace(
     .register(AffineSchemas)
     .register(__unstableSchemas);
   setEditorFlags(workspace);
+  if (typeof window !== 'undefined') {
+    assertExists(workerSync)
+    bindWorkerSync(workerSync, workspace.doc)
+  }
   INTERNAL_BLOCKSUITE_HASH_MAP.set(id, workspace);
   return workspace;
 }

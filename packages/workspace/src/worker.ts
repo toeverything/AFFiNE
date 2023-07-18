@@ -21,6 +21,7 @@ export type WorkerMethods = {
     update: Uint8Array,
     origin: string | number
   ) => Promise<void>;
+  deleteDoc: (guid: string) => Promise<void>;
   encodeStateAsUpdate: (guid: string) => Promise<Uint8Array>;
 };
 
@@ -38,6 +39,9 @@ const methods = {
       docMap.set(guid, doc);
     }
     applyUpdate(doc, update, origin);
+  },
+  deleteDoc: async (guid: string) => {
+    docMap.delete(guid);
   },
   encodeStateAsUpdate: async (guid: string) => {
     const doc = docMap.get(guid);
