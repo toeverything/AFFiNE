@@ -15,6 +15,7 @@ import type { BuildFlags } from '@affine/cli/config';
 import { projectRoot } from '@affine/cli/config';
 import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
 import { getRuntimeConfig } from './runtime-config.js';
+
 const IN_CI = !!process.env.CI;
 
 export const rootPath = fileURLToPath(new URL('..', import.meta.url));
@@ -100,7 +101,9 @@ export const createConfiguration: (
 
     devtool:
       buildFlags.mode === 'production'
-        ? 'hidden-nosources-source-map'
+        ? buildFlags.distribution === 'desktop'
+          ? 'inline-source-map'
+          : 'hidden-nosources-source-map'
         : 'eval-cheap-module-source-map',
 
     resolve: {
