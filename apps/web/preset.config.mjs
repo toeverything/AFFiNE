@@ -22,6 +22,7 @@ const buildPreset = {
     enablePlugin: false,
     enableTestProperties: false,
     enableBroadcastChannelProvider: true,
+    enableLazyProvider: false,
     enableDebugPage: true,
     changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0717',
     imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
@@ -40,6 +41,7 @@ const buildPreset = {
     enablePlugin: true,
     enableTestProperties: true,
     enableBroadcastChannelProvider: true,
+    enableLazyProvider: false,
     enableDebugPage: true,
     changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0717',
     imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
@@ -75,6 +77,9 @@ const environmentPreset = {
   enableBroadcastChannelProvider: process.env.ENABLE_BC_PROVIDER
     ? process.env.ENABLE_BC_PROVIDER !== 'false'
     : currentBuildPreset.enableBroadcastChannelProvider,
+  enableLazyProvider: process.env.ENABLE_LAZY_PROVIDER
+    ? process.env.ENABLE_LAZY_PROVIDER !== 'false'
+    : currentBuildPreset.enableLazyProvider,
   changelogUrl: process.env.CHANGELOG_URL ?? currentBuildPreset.changelogUrl,
   enablePreloading: process.env.ENABLE_PRELOADING
     ? process.env.ENABLE_PRELOADING === 'true'

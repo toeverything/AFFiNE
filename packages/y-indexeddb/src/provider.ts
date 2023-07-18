@@ -2,7 +2,6 @@ import { type IDBPDatabase, openDB } from 'idb';
 import type { Doc } from 'yjs';
 import {
   applyUpdate,
-  diffUpdate,
   encodeStateAsUpdate,
   encodeStateVectorFromUpdate,
   mergeUpdates,
@@ -58,6 +57,7 @@ export const createIndexedDBProvider2 = (
   let totalRc = 0; // refcount for all docs. If it is 0, we can close the db.
   const rcMap = new Map<string, number>();
   let dbPromise: Promise<IDBPDatabase<BlockSuiteBinaryDB>> | undefined;
+  const updatesMap: Map<string, Uint8Array[]> = new Map(); // guid -> [snapshot, ...updates]
 
   const getDb = async () => {
     if (!dbPromise) {
@@ -68,6 +68,20 @@ export const createIndexedDBProvider2 = (
     return dbPromise;
   };
 
+  const getUpdatesCache = (guid: string): Uint8Array[] => {
+    let updates = updatesMap.get(guid);
+    if (!updates) {
+      updates = [];
+      updatesMap.set(guid, updates);
+    }
+    return updates;
+  };
+
+  const setUpdatesCache = (guid: string, updates: Uint8Array[]) => {
+    updatesMap.set(guid, updates);
+    return updates;
+  };
+
   async function getDbTransaction<M extends IDBTransactionMode>(mode: M) {
     const db = await getDb();
     return db.transaction('workspace', mode).objectStore('workspace');
@@ -75,46 +89,44 @@ export const createIndexedDBProvider2 = (
 
   async function syncDoc(doc: Doc) {
     const guid = doc.guid;
-    console.debug('idb: downloadAndApply', guid);
+    const start = performance.now();
 
     const t = await getDbTransaction('readwrite');
     const persisted = await t.get(guid);
     const currentUpdate = encodeStateAsUpdate(doc);
+    const updates = setUpdatesCache(guid, [currentUpdate]);
 
     if (persisted) {
       const merged = mergeUpdates(
         persisted.updates.map(({ update }) => update)
       );
       applyUpdate(doc, merged, indexeddbOrigin);
-      const newUpdate = diffUpdate(
-        currentUpdate,
+      const newUpdate = encodeStateAsUpdate(
+        doc,
         encodeStateVectorFromUpdate(merged)
       );
-      await writeOperation(
-        t.add({
-          id: guid,
-          updates: [
-            {
-              timestamp: Date.now(),
-              update: newUpdate,
-            },
-          ],
-        })
-      );
-    } else {
-      // no doc updates found in IDB. Put the current update to IDB
-      await writeOperation(
-        t.put({
-          id: guid,
-          updates: [
-            {
-              timestamp: Date.now(),
-              update: currentUpdate,
-            },
-          ],
-        })
-      );
+      updates.push(newUpdate);
     }
+
+    await writeOperation(
+      t.put({
+        id: guid,
+        updates: updates.map(u => {
+          return {
+            timestamp: Date.now(),
+            update: u,
+          };
+        }),
+      })
+    );
+
+    console.log(
+      'idb: downloadAndApply',
+      guid,
+      (performance.now() - start).toFixed(2),
+      'ms',
+      doc.toJSON()
+    );
   }
 
   const updateHandlerMap = new Map<
@@ -130,6 +142,9 @@ export const createIndexedDBProvider2 = (
           return;
         }
         const t = await getDbTransaction('readwrite');
+        const updates = getUpdatesCache(doc.guid);
+        updates.push(update);
+
         // check rows length
         // todo: may not need to get it every time
         const rows = await t.count();
@@ -148,14 +163,14 @@ export const createIndexedDBProvider2 = (
           );
         } else {
           await writeOperation(
-            t.add({
+            t.put({
               id: doc.guid,
-              updates: [
-                {
+              updates: updates.map(u => {
+                return {
                   timestamp: Date.now(),
-                  update,
-                },
-              ],
+                  update: u,
+                };
+              }),
             })
           );
         }
@@ -178,11 +193,12 @@ export const createIndexedDBProvider2 = (
     refcount++;
     totalRc++;
     rcMap.set(guid, refcount);
+    // console.log('idb: connect', guid, refcount);
     if (refcount === 1) {
       const doc = getDoc(rootDoc, guid);
       if (doc) {
-        setupListeners(doc);
         await syncDoc(doc);
+        setupListeners(doc);
       } else {
         // doc is not found, we may need to store it temporarily
         console.warn('idb: doc not found', guid);
@@ -195,10 +211,14 @@ export const createIndexedDBProvider2 = (
     refcount--;
     totalRc--;
     rcMap.set(guid, refcount);
+    // console.log('idb: disconnect', guid, refcount);
     if (totalRc === 0) {
       const _dbPromise = dbPromise;
       dbPromise = undefined;
-      _dbPromise?.then(db => db.close()).catch(console.error);
+      // fixme: deal with the case that DB is still in use gracefully
+      setTimeout(() => {
+        _dbPromise?.then(db => db.close()).catch(console.error);
+      }, 500);
     }
     if (refcount === 0) {
       const doc = getDoc(rootDoc, guid);

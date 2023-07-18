@@ -1,14 +1,16 @@
 import { DebugLogger } from '@affine/debug';
 import type {
+  DocProviderCreator,
+  LazyDocProvider,
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
-import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
   createIndexedDBProvider as create,
+  createIndexedDBProvider2,
   downloadBinary,
   EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
@@ -24,9 +26,9 @@ const logger = new DebugLogger('indexeddb-provider');
 
 const createIndexedDBBackgroundProvider: DocProviderCreator = (
   id,
-  blockSuiteWorkspace
+  doc
 ): LocalIndexedDBBackgroundProvider => {
-  const indexeddbProvider = create(blockSuiteWorkspace);
+  const indexeddbProvider = create(doc);
   let connected = false;
   return {
     flavour: 'local-indexeddb-background',
@@ -94,19 +96,38 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
   };
 };
 
+const createIndexedDBLazyProvider: DocProviderCreator = (
+  id,
+  rootDoc
+): LazyDocProvider => {
+  const indexeddbProvider = createIndexedDBProvider2(rootDoc);
+  return {
+    flavour: 'local-indexeddb-lazy',
+    lazy: true,
+    connect: (guid: string) => {
+      logger.info('connect indexeddb lazy provider', id);
+      indexeddbProvider.connect(guid);
+    },
+    disconnect: (guid: string) => {
+      logger.info('disconnect indexeddb provider', id);
+      indexeddbProvider?.disconnect(guid);
+    },
+  };
+};
+
 export {
   createBroadcastChannelProvider,
   createIndexedDBBackgroundProvider,
   createIndexedDBDownloadProvider,
+  createIndexedDBLazyProvider,
   createSQLiteDBDownloadProvider,
   createSQLiteProvider,
 };
 
 export const createLocalProviders = (): DocProviderCreator[] => {
-  const providers = [
-    createIndexedDBBackgroundProvider,
-    createIndexedDBDownloadProvider,
-  ] as DocProviderCreator[];
+  const providers = !runtimeConfig.enableLazyProvider
+    ? [createIndexedDBBackgroundProvider, createIndexedDBDownloadProvider]
+    : [createIndexedDBLazyProvider, createIndexedDBDownloadProvider];
 
   if (runtimeConfig.enableBroadcastChannelProvider) {
     providers.push(createBroadcastChannelProvider);

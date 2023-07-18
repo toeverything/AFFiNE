@@ -61,6 +61,7 @@ export const buildFlagsSchema = z.object({
   enablePlugin: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
+  enableLazyProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   changelogUrl: z.string(),
   // see: packages/workers

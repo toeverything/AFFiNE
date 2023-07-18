@@ -392,5 +392,6 @@ export const createIndexedDBProvider = (
   return apis;
 };
 
+export * from './provider';
 export * from './shared';
 export * from './utils';

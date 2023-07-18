@@ -1,12 +1,15 @@
 import { isBrowser, isDesktop } from '@affine/env/constant';
 import type { BlockSuiteFeatureFlags } from '@affine/env/global';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import {
+  type DocProviderCreator,
+  WorkspaceFlavour,
+} from '@affine/env/workspace';
 import {
   createAffineProviders,
   createLocalProviders,
 } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
+import type { StoreOptions } from '@blocksuite/store';
 import {
   createIndexeddbStorage,
   Generator,
@@ -70,6 +73,7 @@ export function createEmptyBlockSuiteWorkspace(
   const workspace = new Workspace({
     id,
     isSSR: !isBrowser,
+    // @ts-expect-error fix type error after blocksuite update
     providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: blobStorages,
     idGenerator,

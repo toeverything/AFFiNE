@@ -2,12 +2,28 @@ import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type {
   ActiveDocProvider,
+  BaseDocProvider,
   PassiveDocProvider,
   Workspace as BlockSuiteWorkspace,
+  Y,
 } from '@blocksuite/store';
 import type { FC, PropsWithChildren } from 'react';
+import type { Awareness } from 'y-protocols/awareness';
 
 import type { Collection } from './filter';
+
+// todo: move following types to @blocksuite/store
+export interface LazyDocProvider extends BaseDocProvider {
+  lazy: true;
+  connect(guid: string): void;
+  disconnect(guid: string): void;
+}
+
+export type DocProviderCreator = (
+  id: string,
+  doc: Y.Doc,
+  options: { awareness: Awareness }
+) => ActiveDocProvider | PassiveDocProvider | LazyDocProvider;
 
 export enum WorkspaceVersion {
   SubDoc = 2,
@@ -40,6 +56,10 @@ export interface LocalIndexedDBBackgroundProvider extends PassiveDocProvider {
 
 export interface LocalIndexedDBDownloadProvider extends ActiveDocProvider {
   flavour: 'local-indexeddb';
+}
+
+export interface LocalIndexedDBLazyProvider extends LazyDocProvider {
+  flavour: 'lazy-indexeddb';
 }
 
 export interface SQLiteProvider extends PassiveDocProvider {

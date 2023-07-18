@@ -1,7 +1,10 @@
+import type { LazyDocProvider } from '@affine/env/workspace';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
+import { use } from 'foxact/use';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
+import { useLayoutEffect } from 'react';
 
 const weakMap = new WeakMap<Workspace, Map<string, Atom<Page | null>>>();
 
@@ -45,11 +48,43 @@ function getAtom(w: Workspace, pageId: string | null): Atom<Page | null> {
   }
 }
 
+const resolvedPromise = Promise.resolve();
+
 export function useBlockSuiteWorkspacePage(
   blockSuiteWorkspace: Workspace,
   pageId: string | null
 ): Page | null {
   const pageAtom = getAtom(blockSuiteWorkspace, pageId);
   assertExists(pageAtom);
-  return useAtomValue(pageAtom);
+  const page = useAtomValue(pageAtom);
+
+  useLayoutEffect(() => {
+    if (!pageId) {
+      return;
+    }
+    const guid = `space:${pageId}`;
+    // @ts-expect-error fix type later
+    const lazyProviders: LazyDocProvider[] =
+      blockSuiteWorkspace.providers.filter(
+        // @ts-expect-error fix type later
+        (provider): provider is LazyDocProvider => {
+          // @ts-expect-error fix type later
+          return provider.lazy;
+        }
+      );
+
+    lazyProviders.forEach(provider => {
+      provider.connect(guid);
+    });
+
+    return () => {
+      lazyProviders.forEach(provider => {
+        provider.disconnect(guid);
+      });
+    };
+  }, [blockSuiteWorkspace.providers, pageId]);
+
+  use(!page?.loaded ? page?.waitForLoaded() : resolvedPromise);
+
+  return page;
 }
