@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import HTMLPlugin from 'html-webpack-plugin';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 
+import CopyPlugin from 'copy-webpack-plugin';
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
@@ -165,7 +166,7 @@ export const createConfiguration: (
                   transform: {
                     react: {
                       runtime: 'automatic',
-                      refresh: {
+                      refresh: buildFlags.mode === 'development' && {
                         refreshReg: '$RefreshReg$',
                         refreshSig: '$RefreshSig$',
                         emitFullSignatures: true,
@@ -256,6 +257,11 @@ export const createConfiguration: (
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),
+      }),
+      new CopyPlugin({
+        patterns: [
+          { from: resolve(rootPath, 'public'), to: resolve(rootPath, 'out') },
+        ],
       }),
     ],
 

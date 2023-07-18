@@ -10,28 +10,28 @@ export const productionCacheGroups = {
     test: /[\\/]node_modules[\\/]/,
     name(module: any) {
       // https://hackernoon.com/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
-      const name = module.context.match(
-        /[\\/]node_modules[\\/](.*?)([\\/]|$)/
-      )[1];
+      const name =
+        module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)?.[1] ??
+        'unknown';
       return `npm-async-${hash(name)}`;
     },
     priority: Number.MAX_SAFE_INTEGER,
     chunks: 'async' as const,
   },
   mui: {
-    name: `npm-${hash('mui')}`,
+    name: `npm-mui`,
     test: testPackageName(/[\\/]node_modules[\\/](mui|@mui)[\\/]/),
     priority: 200,
     enforce: true,
   },
   blocksuite: {
-    name: `npm-${hash('blocksuite')}`,
+    name: `npm-blocksuite`,
     test: testPackageName(/[\\/]node_modules[\\/](@blocksuite)[\\/]/),
     priority: 200,
     enforce: true,
   },
   react: {
-    name: `npm-${hash('react')}`,
+    name: `npm-react`,
     test: testPackageName(
       /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/
     ),
@@ -39,25 +39,25 @@ export const productionCacheGroups = {
     enforce: true,
   },
   jotai: {
-    name: `npm-${hash('jotai')}`,
+    name: `npm-jotai`,
     test: testPackageName(/[\\/]node_modules[\\/](jotai)[\\/]/),
     priority: 200,
     enforce: true,
   },
   rxjs: {
-    name: `npm-${hash('rxjs')}`,
+    name: `npm-rxjs`,
     test: testPackageName(/[\\/]node_modules[\\/]rxjs[\\/]/),
     priority: 200,
     enforce: true,
   },
   lodash: {
-    name: `npm-${hash('lodash')}`,
+    name: `npm-lodash`,
     test: testPackageName(/[\\/]node_modules[\\/]lodash[\\/]/),
     priority: 200,
     enforce: true,
   },
   emotion: {
-    name: `npm-${hash('emotion')}`,
+    name: `npm-emotion`,
     test: testPackageName(/[\\/]node_modules[\\/](@emotion)[\\/]/),
     priority: 200,
     enforce: true,
