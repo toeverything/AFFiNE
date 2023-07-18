@@ -8,10 +8,10 @@ import { Command } from 'cmdk';
 import { useAtomValue } from 'jotai';
 import type { Dispatch, FC, SetStateAction } from 'react';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
 
 import { recentPageSettingsAtom } from '../../../atoms';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper'
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { AllWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
 import { StyledListItem, StyledNotFound } from './style';
@@ -36,7 +36,7 @@ export const Results: FC<ResultsProps> = ({
 
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const { jumpToPage } = useNavigateHelper();
   const results = blockSuiteWorkspace.search({ query });
 
@@ -73,7 +73,7 @@ export const Results: FC<ResultsProps> = ({
                   value={page.id}
                   onSelect={() => {
                     onClose();
-                    jumpToPage(blockSuiteWorkspace.id, page.id)
+                    jumpToPage(blockSuiteWorkspace.id, page.id);
                   }}
                 >
                   <StyledListItem>
@@ -97,7 +97,7 @@ export const Results: FC<ResultsProps> = ({
                 value={link.title}
                 onSelect={() => {
                   onClose();
-                  link.href && navigate(link.href)
+                  link.href && navigate(link.href);
                   link.onClick?.();
                 }}
               >
@@ -116,11 +116,7 @@ export const Results: FC<ResultsProps> = ({
     return (
       <StyledNotFound>
         <span>{t['Find 0 result']()}</span>
-        <image
-          href="/imgs/no-result.svg"
-          width={200}
-          height={200}
-        />
+        <image href="/imgs/no-result.svg" width={200} height={200} />
       </StyledNotFound>
     );
   }
@@ -135,7 +131,7 @@ export const Results: FC<ResultsProps> = ({
             onSelect={() => {
               onClose();
               assertExists(blockSuiteWorkspace.id);
-              jumpToPage(blockSuiteWorkspace.id, result.id)
+              jumpToPage(blockSuiteWorkspace.id, result.id);
             }}
             value={result.id}
           >

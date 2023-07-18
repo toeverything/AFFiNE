@@ -121,7 +121,7 @@ export const createConfiguration: (
       },
       alias: {
         // fixme: remove this in the future
-        'next/config': resolve(rootPath, 'src/next-config.ts')
+        'next/config': resolve(rootPath, 'src/next-config.ts'),
       },
       extensions: ['.js', '.ts', '.tsx'],
     },
@@ -251,6 +251,7 @@ export const createConfiguration: (
       }),
       new MiniCssExtractPlugin({
         filename: `[name].[chunkhash:8].css`,
+        ignoreOrder: true,
       }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({

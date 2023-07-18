@@ -5,22 +5,35 @@ import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
-import type { RouterState } from '@remix-run/router'
+import type { RouterState } from '@remix-run/router';
 import {
   currentPageIdAtom,
-  currentWorkspaceIdAtom, rootStore
-} from '@toeverything/plugin-infra/manager'
+  currentWorkspaceIdAtom,
+  rootStore,
+} from '@toeverything/plugin-infra/manager';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-import { historyBaseAtom, MAX_HISTORY } from './atoms/history'
+import { historyBaseAtom, MAX_HISTORY } from './atoms/history';
 import createEmotionCache from './utils/create-emotion-cache';
 
 const router = createBrowserRouter([
   {
     path: '/',
     lazy: () => import('./pages/index'),
+  },
+  {
+    path: '/workspace/:workspaceId/all',
+    element: <>all</>,
+  },
+  {
+    path: '/workspace/:workspaceId/setting',
+    element: <>all</>,
+  },
+  {
+    path: '/workspace/:workspaceId/trash',
+    element: <>all</>,
   },
   {
     path: '/workspace/:workspaceId/:pageId',
@@ -44,13 +57,13 @@ currentWorkspaceIdAtom.onMount = set => {
 
   const unsubscribe = router.subscribe(callback);
   return () => {
-    unsubscribe()
+    unsubscribe();
   };
 };
 
 currentPageIdAtom.onMount = set => {
   const callback = (state: RouterState) => {
-    const value = state.location.pathname.split('/')[2];
+    const value = state.location.pathname.split('/')[3];
     if (value) {
       set(value);
     } else {
@@ -61,16 +74,16 @@ currentPageIdAtom.onMount = set => {
 
   const unsubscribe = router.subscribe(callback);
   return () => {
-    unsubscribe()
+    unsubscribe();
   };
 };
 
 const unsubscribe = router.subscribe(state => {
   if (unsubscribe) {
-    unsubscribe()
+    unsubscribe();
   }
   rootStore.set(historyBaseAtom, prev => {
-    const url = state.location.pathname
+    const url = state.location.pathname;
     console.log('push', url, prev.skip, prev.stack.length, prev.current);
     if (prev.skip) {
       return {
@@ -102,8 +115,8 @@ const unsubscribe = router.subscribe(state => {
         };
       }
     }
-  })
-})
+  });
+});
 
 //#endregion
 

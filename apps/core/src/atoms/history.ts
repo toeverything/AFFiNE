@@ -1,6 +1,6 @@
 import { atom, useAtom } from 'jotai';
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
 
 export type History = {
   stack: string[];
@@ -17,7 +17,7 @@ export const historyBaseAtom = atom<History>({
 });
 
 export function useHistoryAtom() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [base, setBase] = useAtom(historyBaseAtom);
   return [
     base,
@@ -27,7 +27,7 @@ export function useHistoryAtom() {
           if (forward) {
             const target = Math.min(prev.stack.length - 1, prev.current + 1);
             const url = prev.stack[target];
-            navigate(url)
+            navigate(url);
             return {
               ...prev,
               current: target,
@@ -36,7 +36,7 @@ export function useHistoryAtom() {
           } else {
             const target = Math.max(0, prev.current - 1);
             const url = prev.stack[target];
-            navigate(url)
+            navigate(url);
             return {
               ...prev,
               current: target,

@@ -10,9 +10,7 @@ import {
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
-import {
-  DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
-} from '@affine/env/constant';
+import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   rootBlockHubAtom,
@@ -39,7 +37,7 @@ import {
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import {
@@ -56,7 +54,7 @@ import {
 } from '../components/root-app-sidebar';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useNavigateHelper } from '../hooks/use-navigate-helper'
+import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
@@ -107,13 +105,13 @@ export const CurrentWorkspaceContext = ({
   const workspaceId = useAtomValue(currentWorkspaceIdAtom);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   // fixme(himself65): this is not a good way to handle this,
   //  need a better way to check whether this workspace really exist.
   useEffect(() => {
     const id = setTimeout(() => {
       if (!exist) {
-        navigate('/')
+        navigate('/');
         globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
       }
     }, globalThis.HALTING_PROBLEM_TIMEOUT);
@@ -181,14 +179,9 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         jumpOnce: false,
       });
       setCurrentPageId(currentPageId);
-      jumpToPage(currentWorkspace.id, page.id)
+      jumpToPage(currentWorkspace.id, page.id);
     }
-  }, [
-    currentPageId,
-    currentWorkspace,
-    jumpToPage,
-    setCurrentPageId,
-  ]);
+  }, [currentPageId, currentWorkspace, jumpToPage, setCurrentPageId]);
 
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(
@@ -233,7 +226,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const { removeToTrash: moveToTrash } = useBlockSuiteMetaHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const t = useAFFiNEI18N()
+  const t = useAFFiNEI18N();
 
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {
@@ -255,7 +248,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   );
 
   const [appSetting] = useAppSetting();
-  const location = useLocation()
+  const location = useLocation();
 
   return (
     <>

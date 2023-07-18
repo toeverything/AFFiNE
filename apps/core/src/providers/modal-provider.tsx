@@ -18,7 +18,7 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useNavigateHelper } from '../hooks/use-navigate-helper'
+import { useNavigateHelper } from '../hooks/use-navigate-helper';
 
 const SettingModal = lazy(() =>
   import('../components/affine/setting-modal').then(module => ({
@@ -170,7 +170,7 @@ export const AllWorkspaceModals = (): ReactElement => {
               setOpenWorkspacesModal(false);
               setCurrentWorkspaceId(workspaceId);
               setCurrentPageId(null);
-              jumpToSubPath(workspaceId, WorkspaceSubPath.ALL)
+              jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
             },
             [
               jumpToSubPath,

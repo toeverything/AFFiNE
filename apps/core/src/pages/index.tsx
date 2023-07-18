@@ -7,7 +7,7 @@ import {
 } from '@affine/workspace/atom';
 import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
 import { rootStore } from '@toeverything/plugin-infra/manager';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLoaderData } from 'react-router-dom';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
@@ -61,7 +61,11 @@ const logger = new DebugLogger('index-page');
 export const Component = () => {
   const meta = useLoaderData() as RootWorkspaceMetadata[];
   const navigateHelper = useNavigateHelper();
+  const jumpOnceRef = useRef(false);
   useEffect(() => {
+    if (jumpOnceRef.current) {
+      return;
+    }
     const lastId = localStorage.getItem('last_workspace_id');
     const lastPageId = localStorage.getItem('last_page_id');
     const target =
@@ -81,6 +85,7 @@ export const Component = () => {
           pageId,
           RouteLogic.REPLACE
         );
+        jumpOnceRef.current = true;
       } else {
         const clearId = setTimeout(() => {
           dispose.dispose();
@@ -90,6 +95,7 @@ export const Component = () => {
             WorkspaceSubPath.ALL,
             RouteLogic.REPLACE
           );
+          jumpOnceRef.current = true;
         }, 1000);
         const dispose = targetWorkspace.slots.pageAdded.once(pageId => {
           clearTimeout(clearId);
@@ -98,16 +104,18 @@ export const Component = () => {
             pageId,
             RouteLogic.REPLACE
           );
+          jumpOnceRef.current = true;
         });
         return () => {
           clearTimeout(clearId);
           dispose.dispose();
+          jumpOnceRef.current = false;
         };
       }
     } else {
       console.warn('No workspace found');
     }
-    return () => {};
+    return;
   }, [meta, navigateHelper]);
   return (
     <>

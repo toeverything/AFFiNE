@@ -7,7 +7,6 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-block-suite-workspace-page-title';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
 import type {
   AffinePlugin,
@@ -189,7 +188,6 @@ export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
   if (!page) {
     throw new PageNotFoundError(workspace, pageId);
   }
-  const title = useBlockSuiteWorkspacePageTitle(workspace, pageId);
 
   const layout = useAtomValue(contentLayoutAtom);
   const affinePluginsMap = useAtomValue(affinePluginsAtom);
@@ -200,9 +198,6 @@ export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
 
   return (
     <>
-      <Head>
-        <title>{title}</title>
-      </Head>
       <Suspense>
         <LayoutPanel node={layout} editorProps={props} plugins={plugins} />
       </Suspense>

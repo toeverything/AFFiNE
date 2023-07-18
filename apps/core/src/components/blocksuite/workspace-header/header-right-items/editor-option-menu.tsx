@@ -17,6 +17,7 @@ import {
 import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue } from 'jotai';
 import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { pageSettingFamily } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
@@ -158,6 +159,6 @@ const PageMenu = () => {
   );
 };
 export const EditorOptionMenu = () => {
-  const router = useRouter();
-  return router.query.pageId ? <PageMenu /> : <CommonMenu />;
+  const { pageId } = useParams();
+  return pageId ? <PageMenu /> : <CommonMenu />;
 };

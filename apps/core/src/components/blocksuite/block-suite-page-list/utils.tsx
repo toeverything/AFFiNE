@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 
 import { pageSettingsAtom, setPageModeAtom } from '../../../atoms';
 import type { BlockSuiteWorkspace } from '../../../shared';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper'
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 
 export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const { openPage } = useNavigateHelper();

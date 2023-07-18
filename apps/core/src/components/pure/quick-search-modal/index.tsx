@@ -23,7 +23,7 @@ import {
   StyledModalHeader,
   StyledShortcut,
 } from './style';
-import { useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom';
 
 export type QuickSearchModalProps = {
   workspace: AllWorkspace;
@@ -46,7 +46,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       _setQuery(query);
     });
   }, []);
-  const location = useLocation()
+  const location = useLocation();
   const isPublicWorkspace = useMemo(
     () => location.pathname.startsWith('/public-workspace'),
     [location]

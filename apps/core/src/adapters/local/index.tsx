@@ -3,6 +3,7 @@ import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
 import {
   DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
   DEFAULT_WORKSPACE_NAME,
+  PageNotFoundError,
 } from '@affine/env/constant';
 import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import type { WorkspaceAdapter } from '@affine/env/workspace';
@@ -18,8 +19,14 @@ import {
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 
-const noop = () => <></>;
+import {
+  BlockSuitePageList,
+  NewWorkspaceSettingDetail,
+  PageDetailEditor,
+  WorkspaceHeader,
+} from '../shared';
 
 const logger = new DebugLogger('use-create-first-workspace');
 
@@ -65,12 +72,49 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   },
   CRUD,
   UI: {
-    Header: noop,
+    Header: WorkspaceHeader,
     Provider: ({ children }) => {
       return <>{children}</>;
     },
-    PageDetail: noop,
-    PageList: noop,
-    NewSettingsDetail: noop,
+    PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
+      const workspace = useStaticBlockSuiteWorkspace(currentWorkspaceId);
+      const page = workspace.getPage(currentPageId);
+      if (!page) {
+        throw new PageNotFoundError(workspace, currentPageId);
+      }
+      return (
+        <>
+          <PageDetailEditor
+            pageId={currentPageId}
+            onInit={initEmptyPage}
+            onLoad={onLoadEditor}
+            workspace={workspace}
+          />
+        </>
+      );
+    },
+    PageList: ({ blockSuiteWorkspace, onOpenPage, collection }) => {
+      return (
+        <BlockSuitePageList
+          listType="all"
+          collection={collection}
+          onOpenPage={onOpenPage}
+          blockSuiteWorkspace={blockSuiteWorkspace}
+        />
+      );
+    },
+    NewSettingsDetail: ({
+      currentWorkspaceId,
+      onDeleteWorkspace,
+      onTransformWorkspace,
+    }) => {
+      return (
+        <NewWorkspaceSettingDetail
+          onDeleteWorkspace={onDeleteWorkspace}
+          workspaceId={currentWorkspaceId}
+          onTransferWorkspace={onTransformWorkspace}
+        />
+      );
+    },
   },
 };
