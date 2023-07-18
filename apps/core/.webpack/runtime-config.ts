@@ -105,6 +105,10 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : currentBuildPreset.enableMoveDatabase,
   };
 
+  if (buildFlags.mode === 'development') {
+    currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
+  }
+
   return {
     ...currentBuildPreset,
     // environment preset will overwrite current build preset
