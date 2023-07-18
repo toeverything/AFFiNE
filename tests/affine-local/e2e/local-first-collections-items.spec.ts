@@ -5,7 +5,6 @@ import {
 } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
-  closeDownloadTip,
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
@@ -29,7 +28,6 @@ const createAndPinCollection = async (
     name: 'test page',
   });
   await expect(cell).toBeVisible();
-  await closeDownloadTip(page);
   await page.getByTestId('create-first-filter').click();
   await page
     .getByTestId('variable-select')
@@ -146,7 +144,6 @@ test('create temporary filter by click tag', async ({ page }) => {
   await page.keyboard.press('Enter');
   await page.keyboard.press('Escape');
   await page.locator('.tag', { hasText: 'TODO Tag' }).click();
-  await closeDownloadTip(page);
   const cell = page.getByRole('cell', {
     name: 'test page',
   });

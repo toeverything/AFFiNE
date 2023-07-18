@@ -101,7 +101,7 @@ async function createWindow() {
   /**
    * URL for main window.
    */
-  const pageUrl = process.env.DEV_SERVER_URL || 'file://./index.html'; // see protocol.ts
+  const pageUrl = process.env.DEV_SERVER_URL || 'file://.'; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 

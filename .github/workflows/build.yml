@@ -102,8 +102,8 @@ jobs:
           path: ./apps/storybook/storybook-static
           if-no-files-found: error
 
-  build-web:
-    name: Build @affine/web
+  build-core:
+    name: Build @affine/core
     runs-on: ubuntu-latest
     environment: development
 
@@ -111,13 +111,13 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Build Web
-        run: yarn nx build @affine/web
-      - name: Upload artifact
+      - name: Build Core
+        run: yarn nx build @affine/core
+      - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
-          name: next-js-static
-          path: ./apps/web/out
+          name: core
+          path: ./apps/core/dist
           if-no-files-found: error
       - name: Upload next routes conf
         uses: actions/upload-artifact@v3
@@ -318,7 +318,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     environment: development
-    needs: build-web
+    needs: build-core
 
     steps:
       - uses: actions/checkout@v3
@@ -327,11 +327,11 @@ jobs:
         with:
           playwright-install: true
           electron-install: false
-      - name: Download artifact
+      - name: Download core artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js-static
-          path: ./apps/web/out
+          name: core
+          path: ./apps/core/dist
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
@@ -363,7 +363,7 @@ jobs:
     name: E2E Migration Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [build-web]
+    needs: build-core
 
     steps:
       - uses: actions/checkout@v3
@@ -373,11 +373,11 @@ jobs:
           playwright-install: true
           electron-install: false
 
-      - name: Download next static
+      - name: Download core artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js-static
-          path: ./apps/web/out
+          name: core
+          path: ./apps/core/dist
 
       - name: Unzip
         run: yarn unzip
@@ -436,7 +436,7 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
-    needs: [build-web]
+    needs: build-core
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -456,10 +456,10 @@ jobs:
         env:
           NATIVE_TEST: 'true'
 
-      - name: Download static resource artifact
+      - name: Download core artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js-static
+          name: core
           path: apps/electron/resources/web-static
 
       - name: Build Plugins
@@ -546,16 +546,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Download next static
+      - name: Download core artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js-static
-          path: ./apps/web/out
-      - name: Download next routes conf
-        uses: actions/download-artifact@v3
-        with:
-          name: next-routes-conf
-          path: ./apps/web
+          name: core
+          path: ./apps/core/dist
       - name: Download server dist
         uses: actions/download-artifact@v3
         with:

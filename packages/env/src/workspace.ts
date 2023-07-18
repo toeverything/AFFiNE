@@ -7,7 +7,7 @@ import type {
 } from '@blocksuite/store';
 import type { FC, PropsWithChildren } from 'react';
 
-import type { Collection } from './filter';
+import type { Collection } from './filter.js';
 
 export enum WorkspaceVersion {
   SubDoc = 2,

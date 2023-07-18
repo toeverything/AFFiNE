@@ -1,3 +1,3 @@
 /* eslint-disable */
 // @ts-ignore
-export * from '../dist/preload/electron';
+export * from '../dist/src/preload/electron';
