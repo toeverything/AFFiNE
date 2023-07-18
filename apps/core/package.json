@@ -54,6 +54,7 @@
     "@svgr/webpack": "^8.0.1",
     "@types/webpack-env": "^1.18.1",
     "css-loader": "^6.8.1",
+    "express": "^4.18.2",
     "html-webpack-plugin": "^5.5.3",
     "raw-loader": "^4.0.2",
     "react-router-dom": "^6.14.1",

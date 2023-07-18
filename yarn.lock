@@ -217,6 +217,7 @@ __metadata:
     css-loader: ^6.8.1
     css-spring: ^4.1.0
     cssnano: ^6.0.1
+    express: ^4.18.2
     graphql: ^16.7.1
     html-webpack-plugin: ^5.5.3
     jotai: ^2.2.2
