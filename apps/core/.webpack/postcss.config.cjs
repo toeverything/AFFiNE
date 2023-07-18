@@ -1,4 +1,4 @@
-const cssnano = require('cssnano')
+const cssnano = require('cssnano');
 
 module.exports = function (context) {
   const plugins = [
@@ -10,11 +10,11 @@ module.exports = function (context) {
         },
       ],
     }),
-  ]
+  ];
 
   return {
     from: context.from,
     plugins,
     to: context.to,
-  }
-}
+  };
+};

@@ -19,7 +19,7 @@ import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 
-const noop = () => <></>
+const noop = () => <></>;
 
 const logger = new DebugLogger('use-create-first-workspace');
 
@@ -65,7 +65,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   },
   CRUD,
   UI: {
-    Header:  noop,
+    Header: noop,
     Provider: noop,
     PageDetail: noop,
     PageList: noop,

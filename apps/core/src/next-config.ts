@@ -31,6 +31,6 @@ export default function getConfig() {
       enableMoveDatabase: false,
       enableNotificationCenter: true,
       enableCloud: false,
-    }
-  }
+    },
+  };
 }

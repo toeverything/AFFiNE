@@ -1,28 +1,26 @@
 import type { WorkspaceSubPath } from '@affine/env/workspace';
-import type { NextRouter } from 'next/router';
 import { useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export enum RouteLogic {
   REPLACE = 'replace',
   PUSH = 'push',
 }
 
-export function useRouterHelper(router: NextRouter) {
+export function useNavigateHelper() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const jumpToPage = useCallback(
     (
       workspaceId: string,
       pageId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return router[logic]({
-        pathname: `/workspace/[workspaceId]/[pageId]`,
-        query: {
-          workspaceId,
-          pageId,
-        },
+      return navigate(`/workspace/${workspaceId}/${pageId}`, {
+        replace: logic === RouteLogic.REPLACE,
       });
     },
-    [router]
+    [navigate]
   );
   const jumpToPublicWorkspacePage = useCallback(
     (
@@ -30,42 +28,35 @@ export function useRouterHelper(router: NextRouter) {
       pageId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return router[logic]({
-        pathname: `/public-workspace/[workspaceId]/[pageId]`,
-        query: {
-          workspaceId,
-          pageId,
-        },
+      return navigate(`/public-workspace/${workspaceId}/${pageId}`, {
+        replace: logic === RouteLogic.REPLACE,
       });
     },
-    [router]
+    [navigate]
   );
   const jumpToSubPath = useCallback(
     (
       workspaceId: string,
       subPath: WorkspaceSubPath,
       logic: RouteLogic = RouteLogic.PUSH
-    ): Promise<boolean> => {
-      return router[logic]({
-        pathname: `/workspace/[workspaceId]/${subPath}`,
-        query: {
-          workspaceId,
-        },
+    ) => {
+      return navigate(`/workspace/${workspaceId}/${subPath}`, {
+        replace: logic === RouteLogic.REPLACE,
       });
     },
-    [router]
+    [navigate]
   );
   const openPage = useCallback(
     (workspaceId: string, pageId: string) => {
       const isPublicWorkspace =
-        router.pathname.split('/')[1] === 'public-workspace';
+        location.pathname.indexOf('/public-workspace') === 0;
       if (isPublicWorkspace) {
         return jumpToPublicWorkspacePage(workspaceId, pageId);
       } else {
         return jumpToPage(workspaceId, pageId);
       }
     },
-    [jumpToPage, jumpToPublicWorkspacePage, router.pathname]
+    [jumpToPage, jumpToPublicWorkspacePage, location.pathname]
   );
 
   return {

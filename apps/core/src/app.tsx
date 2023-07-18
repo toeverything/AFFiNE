@@ -1,21 +1,15 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 
+import { AffineContext } from '@affine/component/context';
+import { WorkspaceFallback } from '@affine/component/workspace';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
-import {
-  memo,
-  PropsWithChildren,
-  ReactElement,
-  Suspense,
-  useEffect,
-} from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
+import { lazy, memo, Suspense, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import createEmotionCache from './utils/create-emotion-cache';
-import { AffineContext } from '@affine/component/context';
-import { WorkspaceFallback } from '@affine/component/workspace';
-import { DevTools } from 'jotai-devtools';
 
 const router = createBrowserRouter([
   {
@@ -30,6 +24,10 @@ const router = createBrowserRouter([
 
 const i18n = createI18n();
 const cache = createEmotionCache();
+
+const DevTools = lazy(() =>
+  import('jotai-devtools').then(m => ({ default: m.DevTools }))
+);
 
 const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
   return (

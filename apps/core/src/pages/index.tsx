@@ -1,17 +1,119 @@
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom'
-import { rootStore } from '@toeverything/plugin-infra/manager'
-import { useAtomValue } from 'jotai/react'
-import { useParams } from 'react-router-dom'
+import { DebugLogger } from '@affine/debug';
+import { WorkspaceSubPath, WorkspaceVersion } from '@affine/env/workspace';
+import {
+  type RootWorkspaceMetadata,
+  type RootWorkspaceMetadataV2,
+  rootWorkspacesMetadataAtom,
+} from '@affine/workspace/atom';
+import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
+import { rootStore } from '@toeverything/plugin-infra/manager';
+import { useEffect } from 'react';
+import { useLoaderData } from 'react-router-dom';
+
+import { WorkspaceAdapters } from '../adapters/workspace';
+import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import { useWorkspace } from '../hooks/use-workspace';
 
 export async function loader() {
-  return rootStore.get(rootWorkspacesMetadataAtom)
+  const createFirst = (): RootWorkspaceMetadataV2[] => {
+    const Plugins = Object.values(WorkspaceAdapters).sort(
+      (a, b) => a.loadPriority - b.loadPriority
+    );
+
+    return Plugins.flatMap(Plugin => {
+      return Plugin.Events['app:init']?.().map(
+        id =>
+          ({
+            id,
+            flavour: Plugin.flavour,
+            // new workspace should all support sub-doc feature
+            version: WorkspaceVersion.SubDoc,
+          }) satisfies RootWorkspaceMetadataV2
+      );
+    }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
+  };
+
+  rootStore
+    .get(rootWorkspacesMetadataAtom)
+    .then(meta => {
+      if (meta.length === 0 && localStorage.getItem('is-first-open') === null) {
+        const result = createFirst();
+        console.info('create first workspace', result);
+        localStorage.setItem('is-first-open', 'false');
+        rootStore.set(rootWorkspacesMetadataAtom, result).catch(console.error);
+      }
+    })
+    .catch(console.error);
+  return rootStore.get(rootWorkspacesMetadataAtom);
 }
 
+type WorkspaceLoaderProps = {
+  id: string;
+};
+
+const WorkspaceLoader = (props: WorkspaceLoaderProps): null => {
+  useWorkspace(props.id);
+  return null;
+};
+
+const logger = new DebugLogger('index-page');
+
 export const Component = () => {
-  const metadata = useAtomValue(rootWorkspacesMetadataAtom)
+  const meta = useLoaderData() as RootWorkspaceMetadata[];
+  const navigateHelper = useNavigateHelper();
+  useEffect(() => {
+    const lastId = localStorage.getItem('last_workspace_id');
+    const lastPageId = localStorage.getItem('last_page_id');
+    const target =
+      (lastId && meta.find(({ id }) => id === lastId)) || meta.at(0);
+    if (target) {
+      const targetWorkspace = getWorkspace(target.id);
+      const nonTrashPages = targetWorkspace.meta.pageMetas.filter(
+        ({ trash }) => !trash
+      );
+      const pageId =
+        nonTrashPages.find(({ id }) => id === lastPageId)?.id ??
+        nonTrashPages.at(0)?.id;
+      if (pageId) {
+        logger.debug('Found target workspace. Jump to page', pageId);
+        navigateHelper.jumpToPage(
+          targetWorkspace.id,
+          pageId,
+          RouteLogic.REPLACE
+        );
+      } else {
+        const clearId = setTimeout(() => {
+          dispose.dispose();
+          logger.debug('Found target workspace. Jump to all pages');
+          navigateHelper.jumpToSubPath(
+            targetWorkspace.id,
+            WorkspaceSubPath.ALL,
+            RouteLogic.REPLACE
+          );
+        }, 1000);
+        const dispose = targetWorkspace.slots.pageAdded.once(pageId => {
+          clearTimeout(clearId);
+          navigateHelper.jumpToPage(
+            targetWorkspace.id,
+            pageId,
+            RouteLogic.REPLACE
+          );
+        });
+        return () => {
+          clearTimeout(clearId);
+          dispose.dispose();
+        };
+      }
+    } else {
+      console.warn('No workspace found');
+    }
+    return () => {};
+  }, [meta, navigateHelper]);
   return (
-    <div>
-      2
-    </div>
-  )
-}
+    <>
+      {meta.map(({ id }) => (
+        <WorkspaceLoader id={id} key={id} />
+      ))}
+    </>
+  );
+};

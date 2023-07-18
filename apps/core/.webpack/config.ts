@@ -7,7 +7,7 @@ import type { Configuration as DevServerConfiguration } from 'webpack-dev-server
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
-import MiniCssExtractPlugin from 'mini-css-extract-plugin'
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 import { productionCacheGroups } from './cache-group.js';
 import type { BuildFlags } from '@affine/cli/config';
@@ -122,15 +122,55 @@ export const createConfiguration: (
       alias: {
         // fixme: remove this in the future
         'next/config': resolve(rootPath, 'src/next-config.ts'),
-        '@blocksuite/block-std': resolve(rootPath, 'node_modules', '@blocksuite', 'block-std'),
-        '@blocksuite/blocks': resolve(rootPath, 'node_modules', '@blocksuite', 'blocks'),
-        '@blocksuite/editor': resolve(rootPath, 'node_modules', '@blocksuite', 'editor'),
-        '@blocksuite/global': resolve(rootPath, 'node_modules', '@blocksuite', 'global'),
-        '@blocksuite/lit': resolve(rootPath, 'node_modules', '@blocksuite', 'lit'),
-        '@blocksuite/phasor': resolve(rootPath, 'node_modules', '@blocksuite', 'phasor'),
-        '@blocksuite/store': resolve(rootPath, 'node_modules', '@blocksuite', 'store'),
-        '@blocksuite/virgo': resolve(rootPath, 'node_modules', '@blocksuite', 'virgo'),
-        'yjs': resolve(projectRoot, 'node_modules', 'yjs'),
+        '@blocksuite/block-std': resolve(
+          rootPath,
+          'node_modules',
+          '@blocksuite',
+          'block-std'
+        ),
+        '@blocksuite/blocks': resolve(
+          rootPath,
+          'node_modules',
+          '@blocksuite',
+          'blocks'
+        ),
+        '@blocksuite/editor': resolve(
+          rootPath,
+          'node_modules',
+          '@blocksuite',
+          'editor'
+        ),
+        '@blocksuite/global': resolve(
+          rootPath,
+          'node_modules',
+          '@blocksuite',
+          'global'
+        ),
+        '@blocksuite/lit': resolve(
+          rootPath,
+          'node_modules',
+          '@blocksuite',
+          'lit'
+        ),
+        '@blocksuite/phasor': resolve(
+          rootPath,
+          'node_modules',
+          '@blocksuite',
+          'phasor'
+        ),
+        '@blocksuite/store': resolve(
+          rootPath,
+          'node_modules',
+          '@blocksuite',
+          'store'
+        ),
+        '@blocksuite/virgo': resolve(
+          rootPath,
+          'node_modules',
+          '@blocksuite',
+          'virgo'
+        ),
+        yjs: resolve(projectRoot, 'node_modules', 'yjs'),
       },
       extensions: ['.js', '.ts', '.tsx'],
     },
@@ -230,7 +270,11 @@ export const createConfiguration: (
                   loader: 'postcss-loader',
                   options: {
                     postcssOptions: {
-                      config: resolve(rootPath, '.webpack', 'postcss.config.cjs')
+                      config: resolve(
+                        rootPath,
+                        '.webpack',
+                        'postcss.config.cjs'
+                      ),
                     },
                   },
                 },
@@ -272,8 +316,8 @@ export const createConfiguration: (
       historyApiFallback: true,
       static: {
         directory: resolve(rootPath, 'public'),
-        publicPath: '/'
-      }
+        publicPath: '/',
+      },
     } as DevServerConfiguration,
   };
 };
