@@ -7,8 +7,10 @@ export const importPageContainerStyle = style({
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
-  borderRadius: '16px',
-  boxShadow: 'var(--affine-shadow-1)',
+  borderRadius: '12px',
+  boxShadow: 'var(--affine-popover-shadow)',
+  background: 'var(--affine-background-overlay-panel-color)',
+  overflow: 'hidden',
 });
 
 export const importPageBodyStyle = style({
