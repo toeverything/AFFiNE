@@ -53,6 +53,7 @@
     "skipLibCheck": true, // skip all type checks for .d.ts files
 
     "paths": {
+      "@affine/cli/*": ["./packages/cli/src/*"],
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [
         "./packages/component/src/components/*/index",
@@ -143,9 +144,6 @@
       "path": "./packages/y-indexeddb"
     },
     // Tests
-    {
-      "path": "./tests/unit"
-    },
     {
       "path": "./tests/kit"
     },
