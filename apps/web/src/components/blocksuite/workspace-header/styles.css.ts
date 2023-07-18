@@ -83,13 +83,23 @@ export const titleWrapper = style({
   justifyContent: 'center',
   alignItems: 'center',
 });
-
+export const headerLeftSide = style({
+  display: 'flex',
+  alignItems: 'center',
+  width: '150px',
+  '@media': {
+    '(max-width: 900px)': {
+      width: 'auto',
+    },
+  },
+});
 export const headerRightSide = style({
   height: '100%',
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
   zIndex: 1,
+  justifyContent: 'flex-end',
 });
 
 export const browserWarning = style({
@@ -153,7 +163,6 @@ export const allPageListTitleWrapper = style({
   fontSize: 'var(--affine-font-base)',
   color: 'var(--affine-text-primary-color)',
   display: 'flex',
-  justifyContent: 'center',
   alignItems: 'center',
   '::after': {
     content: '""',

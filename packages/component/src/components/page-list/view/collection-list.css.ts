@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const menuTitleStyle = style({
   marginLeft: '12px',
@@ -20,6 +20,8 @@ export const viewButton = style({
   padding: '4px 8px',
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-white)',
+  maxWidth: '200px',
+  overflow: 'hidden',
   color: 'var(--affine-text-secondary-color)',
   border: '1px solid var(--affine-border-color)',
   transition: 'margin-left 0.2s ease-in-out',
@@ -28,6 +30,20 @@ export const viewButton = style({
     background: 'var(--affine-hover-color)',
   },
   marginRight: '20px',
+  '@media': {
+    '(max-width: 1200px)': {
+      maxWidth: '100px',
+    },
+    '(max-width: 900px)': {
+      maxWidth: '150px',
+      marginRight: '10px',
+    },
+  },
+});
+globalStyle(`${viewButton} > span`, {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 export const viewMenu = style({});
 export const viewOption = style({
