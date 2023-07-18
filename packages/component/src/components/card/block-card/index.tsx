@@ -9,10 +9,18 @@ export const BlockCard = forwardRef<
     title: string;
     desc?: string;
     right?: ReactNode;
+    disabled?: boolean;
   } & HTMLAttributes<HTMLDivElement>
->(({ left, title, desc, right, ...props }, ref) => {
+>(({ left, title, desc, right, disabled, onClick, ...props }, ref) => {
   return (
-    <div ref={ref} className={styles.blockCard} {...props}>
+    <div
+      ref={ref}
+      className={styles.blockCard}
+      role="button"
+      aria-disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      {...props}
+    >
       {left && <div className={styles.blockCardAround}>{left}</div>}
       <div className={styles.blockCardContent}>
         <div>{title}</div>

@@ -73,9 +73,7 @@ export class EventsGateway {
   ) {
     this.metric.socketIOCounter(1, { event: 'init-awareness' });
     const endTimer = this.metric.socketIOTimer({ event: 'init-awareness' });
-    const roomId = `awareness-${workspace_id}`;
-    await client.join(roomId);
-    client.to(roomId).emit('new-client-awareness-init');
+    client.to(workspace_id).emit('new-client-awareness-init');
     endTimer();
   }
 
@@ -86,11 +84,9 @@ export class EventsGateway {
   ) {
     this.metric.socketIOCounter(1, { event: 'awareness-update' });
     const endTimer = this.metric.socketIOTimer({ event: 'awareness-update' });
-    client
-      .to(`awareness-${message.workspaceId}`)
-      .emit('server-awareness-broadcast', {
-        ...message,
-      });
+    client.to(message.workspaceId).emit('server-awareness-broadcast', {
+      ...message,
+    });
 
     endTimer();
     return 'ack';
