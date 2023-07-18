@@ -19,6 +19,9 @@
         "{workspaceRoot}/packages/workspace/src/**/*",
         {
           "env": "BUILD_TYPE"
+        },
+        {
+          "env": "PERFSEE_TOKEN"
         }
       ],
       "options": {

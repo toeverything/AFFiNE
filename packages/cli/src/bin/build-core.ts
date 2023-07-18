@@ -43,5 +43,6 @@ spawn(
     cwd,
     stdio: 'inherit',
     shell: true,
+    env: process.env,
   }
 );

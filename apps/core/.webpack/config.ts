@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import HTMLPlugin from 'html-webpack-plugin';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
+import { PerfseePlugin } from '@perfsee/webpack';
 
 import CopyPlugin from 'copy-webpack-plugin';
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
@@ -73,7 +74,7 @@ export const createConfiguration: (
 
   const cacheKey = computeCacheKey(buildFlags);
 
-  return {
+  const config = {
     name: 'affine',
     // to set a correct base path for the source map
     context: projectRoot,
@@ -274,5 +275,16 @@ export const createConfiguration: (
         publicPath: '/',
       },
     } as DevServerConfiguration,
-  };
+  } satisfies webpack.Configuration;
+
+  if (buildFlags.mode === 'production' && process.env.PERFSEE_TOKEN) {
+    config.devtool = 'hidden-nosources-source-map';
+    config.plugins.push(
+      new PerfseePlugin({
+        project: 'affine-toeverything',
+      })
+    );
+  }
+
+  return config;
 };
