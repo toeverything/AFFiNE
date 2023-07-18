@@ -91,7 +91,8 @@ __metadata:
   peerDependencies:
     ts-node: "*"
   bin:
-    dev-core: src/bin/dev-core.mjs
+    build-core: ./src/bin/build-core.mjs
+    dev-core: ./src/bin/dev-core.mjs
   languageName: unknown
   linkType: soft
 

@@ -3,7 +3,8 @@
   "type": "module",
   "private": true,
   "bin": {
-    "dev-core": "src/bin/dev-core.mjs"
+    "build-core": "./src/bin/build-core.mjs",
+    "dev-core": "./src/bin/dev-core.mjs"
   },
   "exports": {
     "./config": "./src/config/index.ts"

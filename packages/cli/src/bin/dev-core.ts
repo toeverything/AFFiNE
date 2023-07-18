@@ -11,7 +11,7 @@ const flags = {
   distribution: 'browser',
   mode: 'development',
   channel: 'canary',
-  coverage: true,
+  coverage: !!process.env.COVERAGE,
 } satisfies BuildFlags;
 
 const buildFlags = await p.group(
