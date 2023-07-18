@@ -123,49 +123,49 @@ export const createConfiguration: (
         // fixme: remove this in the future
         'next/config': resolve(rootPath, 'src/next-config.ts'),
         '@blocksuite/block-std': resolve(
-          rootPath,
+          projectRoot,
           'node_modules',
           '@blocksuite',
           'block-std'
         ),
         '@blocksuite/blocks': resolve(
-          rootPath,
+          projectRoot,
           'node_modules',
           '@blocksuite',
           'blocks'
         ),
         '@blocksuite/editor': resolve(
-          rootPath,
+          projectRoot,
           'node_modules',
           '@blocksuite',
           'editor'
         ),
         '@blocksuite/global': resolve(
-          rootPath,
+          projectRoot,
           'node_modules',
           '@blocksuite',
           'global'
         ),
         '@blocksuite/lit': resolve(
-          rootPath,
+          projectRoot,
           'node_modules',
           '@blocksuite',
           'lit'
         ),
         '@blocksuite/phasor': resolve(
-          rootPath,
+          projectRoot,
           'node_modules',
           '@blocksuite',
           'phasor'
         ),
         '@blocksuite/store': resolve(
-          rootPath,
+          projectRoot,
           'node_modules',
           '@blocksuite',
           'store'
         ),
         '@blocksuite/virgo': resolve(
-          rootPath,
+          projectRoot,
           'node_modules',
           '@blocksuite',
           'virgo'
