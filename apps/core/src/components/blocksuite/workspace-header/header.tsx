@@ -23,7 +23,6 @@ import {
 import { contentLayoutAtom } from '../../../atoms/layout';
 import { currentModeAtom } from '../../../atoms/mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { DownloadClientTip } from './download-tips';
 import { EditorOptionMenu } from './header-right-items/editor-option-menu';
 import TrashButtonGroup from './header-right-items/trash-button-group';
 import * as styles from './styles.css';
@@ -166,8 +165,6 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
-  const [showGuideDownloadClientTip, setShowGuideDownloadClientTip] =
-    useState(true);
   // const [shouldShowGuideDownloadClientTip] = useAtom(
   //   guideDownloadClientTipAtom
   // );
@@ -187,22 +184,13 @@ export const Header = forwardRef<
       data-open={open}
       data-sidebar-floating={appSidebarFloating}
     >
-      {showGuideDownloadClientTip ? (
-        <DownloadClientTip
-          show={showGuideDownloadClientTip}
-          onClose={() => {
-            setShowGuideDownloadClientTip(false);
-          }}
-        />
-      ) : (
-        <BrowserWarning
-          show={showWarning}
-          message={<OSWarningMessage />}
-          onClose={() => {
-            setShowWarning(false);
-          }}
-        />
-      )}
+      <BrowserWarning
+        show={showWarning}
+        message={<OSWarningMessage />}
+        onClose={() => {
+          setShowWarning(false);
+        }}
+      />
 
       <div
         className={styles.header}

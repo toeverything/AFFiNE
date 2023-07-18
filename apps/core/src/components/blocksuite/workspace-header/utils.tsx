@@ -8,7 +8,8 @@ const minimumChromeVersion = 102;
 
 export const shouldShowWarning = () => {
   if (isDesktop) {
-    // even though desktop have compatibility issues, we don't want to show the warning
+    // even though desktop has compatibility issues,
+    //  we don't want to show the warning
     return false;
   }
   if (!environment.isBrowser) {
