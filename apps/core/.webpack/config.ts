@@ -151,6 +151,7 @@ export const createConfiguration: (
                   parser: {
                     syntax: 'typescript',
                     dynamicImport: true,
+                    topLevelAwait: false,
                     tsx: true,
                   },
                   target: 'es2022',
