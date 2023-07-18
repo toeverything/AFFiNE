@@ -111,7 +111,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Core
-        run: yarn build-core
+        run: yarn nx build @affine/core
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
