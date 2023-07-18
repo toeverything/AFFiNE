@@ -41,39 +41,6 @@
         },
         {
           "env": "BUILD_TYPE"
-        },
-        {
-          "env": "ENABLE_BOOKMARK_OPERATION"
-        },
-        {
-          "env": "ENABLE_PLUGIN"
-        },
-        {
-          "env": "ENABLE_ALL_PAGE_FILTER"
-        },
-        {
-          "env": "ENABLE_TEST_PROPERTIES"
-        },
-        {
-          "env": "ENABLE_LEGACY_PROVIDER"
-        },
-        {
-          "env": "ENABLE_BC_PROVIDER"
-        },
-        {
-          "env": "ENABLE_DEBUG_PAGE"
-        },
-        {
-          "env": "CHANGELOG_URL"
-        },
-        {
-          "env": "ENABLE_PRELOADING"
-        },
-        {
-          "env": "API_SERVER_PROFILE"
-        },
-        {
-          "env": "ENABLE_SQLITE_PROVIDER"
         }
       ]
     },

@@ -16,7 +16,10 @@
         "{workspaceRoot}/packages/hooks/src/**/*",
         "{workspaceRoot}/packages/jotai/src/**/*",
         "{workspaceRoot}/packages/templates/src/**/*",
-        "{workspaceRoot}/packages/workspace/src/**/*"
+        "{workspaceRoot}/packages/workspace/src/**/*",
+        {
+          "env": "BUILD_TYPE"
+        }
       ],
       "options": {
         "script": "build"
