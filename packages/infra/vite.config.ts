@@ -22,9 +22,5 @@ export default defineConfig({
       external: ['electron', 'async-call-rpc', 'rxjs'],
     },
   },
-  plugins: [
-    dts({
-      insertTypesEntry: true,
-    }),
-  ],
+  plugins: [dts()],
 });
