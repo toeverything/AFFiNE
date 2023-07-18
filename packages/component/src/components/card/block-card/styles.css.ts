@@ -14,6 +14,13 @@ export const blockCard = style({
     '&:hover': {
       boxShadow: 'var(--affine-shadow-1)',
     },
+    '&[aria-disabled]': {
+      color: 'var(--affine-text-disable-color)',
+    },
+    '&[aria-disabled]:hover': {
+      cursor: 'not-allowed',
+      boxShadow: 'none',
+    },
     // TODO active styles
   },
 });

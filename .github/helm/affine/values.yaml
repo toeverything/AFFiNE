@@ -31,6 +31,8 @@ sync:
   service:
     type: ClusterIP
     port: 3010
+    annotations:
+      cloud.google.com/backend-config: '{"default": "affine-backendconfig"}'
 
 web:
   service:

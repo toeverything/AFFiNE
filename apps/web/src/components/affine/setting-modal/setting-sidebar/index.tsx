@@ -10,7 +10,7 @@ import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { AffineLogoSBlue2_1Icon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import { useAtom } from 'jotai';
@@ -120,6 +120,9 @@ export const SettingSidebar: FC<{
       <div className={sidebarSubtitle}>{t['General']()}</div>
       <div className={sidebarItemsWrapper}>
         {generalSettingList.map(({ title, icon, key, testId }) => {
+          if (!runtimeConfig.enablePlugin && key === 'plugins') {
+            return null;
+          }
           return (
             <div
               className={clsx(sidebarSelectItem, {

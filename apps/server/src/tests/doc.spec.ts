@@ -101,22 +101,24 @@ test('Doc Module', async t => {
 
     const ws = await db.workspace.create({
       data: {
+        id: '1',
         public: false,
-        updates: {
-          createMany: {
-            data: [
-              {
-                id: '1',
-                blob: Buffer.from([0, 0]),
-              },
-              {
-                id: '1',
-                blob: Buffer.from(update),
-              },
-            ],
-          },
-        },
       },
+    });
+
+    await db.update.createMany({
+      data: [
+        {
+          id: '1',
+          workspaceId: '1',
+          blob: Buffer.from([0, 0]),
+        },
+        {
+          id: '1',
+          workspaceId: '1',
+          blob: Buffer.from(update),
+        },
+      ],
     });
 
     await manager.apply();

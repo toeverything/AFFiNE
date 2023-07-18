@@ -40,5 +40,5 @@ test('Download client tip', async ({ page }) => {
   const currentDownloadClientTipItem = page.locator(
     '[data-testid=download-client-tip]'
   );
-  await expect(currentDownloadClientTipItem).not.toBeVisible();
+  await expect(currentDownloadClientTipItem).toBeVisible();
 });

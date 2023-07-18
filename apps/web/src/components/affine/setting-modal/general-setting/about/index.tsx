@@ -27,8 +27,11 @@ export const AboutAffine = () => {
         data-testid="about-title"
       />
       <SettingWrapper title={t['Version']()}>
-        <SettingRow name="App Version" desc={runtimeConfig.appVersion} />
-        <SettingRow name="Editor Version" desc={runtimeConfig.editorVersion} />
+        <SettingRow name={t['App Version']()} desc={runtimeConfig.appVersion} />
+        <SettingRow
+          name={t['Editor Version']()}
+          desc={runtimeConfig.editorVersion}
+        />
         {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <>
             <SettingRow
@@ -59,7 +62,7 @@ export const AboutAffine = () => {
               style={{ cursor: 'pointer' }}
               onClick={() => {
                 window.open(
-                  'https://affine.pro/blog/whats-new-affine-0630',
+                  'https://affine.pro/blog/what-is-new-affine-0717',
                   '_blank'
                 );
               }}
