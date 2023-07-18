@@ -42,7 +42,7 @@ cd(repoRootDir);
 // step 1: build web (nextjs) dist
 if (!process.env.SKIP_WEB_BUILD) {
   process.env.ENABLE_LEGACY_PROVIDER = 'false';
-  await $`yarn nx build @affine/web`;
+  await $`yarn -T run build-core`;
 
   // step 1.5: amend sourceMappingURL to allow debugging in devtools
   await glob('**/*.{js,css}', { cwd: affineWebOutDir }).then(files => {

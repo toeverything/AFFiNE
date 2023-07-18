@@ -3,6 +3,10 @@
   "type": "module",
   "private": true,
   "version": "0.7.0-canary.47",
+  "scripts": {
+    "build": "yarn -T run build-core",
+    "dev": "yarn -T run dev-core"
+  },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/component": "workspace:*",
