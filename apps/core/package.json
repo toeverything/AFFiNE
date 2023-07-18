@@ -52,6 +52,7 @@
   "devDependencies": {
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.10",
     "@svgr/webpack": "^8.0.1",
+    "@types/webpack-env": "^1.18.1",
     "css-loader": "^6.8.1",
     "html-webpack-plugin": "^5.5.3",
     "raw-loader": "^4.0.2",

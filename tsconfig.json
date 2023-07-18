@@ -92,9 +92,6 @@
       "path": "./apps/electron"
     },
     {
-      "path": "./apps/web"
-    },
-    {
       "path": "./apps/server"
     },
     {
