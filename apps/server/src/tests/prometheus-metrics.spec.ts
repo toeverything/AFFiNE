@@ -6,13 +6,14 @@ import { register } from 'prom-client';
 
 import { MetricsModule } from '../metrics';
 import { Metrics } from '../metrics/metrics';
+import { PrismaModule } from '../prisma';
 
 let metrics: Metrics;
 let module: TestingModule;
 
 beforeEach(async () => {
   module = await Test.createTestingModule({
-    imports: [MetricsModule],
+    imports: [MetricsModule, PrismaModule],
   }).compile();
 
   metrics = module.get(Metrics);
