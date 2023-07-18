@@ -28,6 +28,7 @@ const OptimizeOptionOptions: (
   minimize: buildFlags.mode === 'production',
   minimizer: [
     new TerserPlugin({
+      minify: TerserPlugin.swcMinify,
       parallel: true,
       extractComments: true,
       terserOptions: {
