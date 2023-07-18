@@ -84,11 +84,7 @@ const WorkspaceDetailPage = (): ReactElement => {
     if (currentWorkspace.id !== workspaceId) {
       return;
     }
-    if (
-      typeof pageId === 'string' &&
-      location.pathname === '/workspace/[workspaceId]/[pageId]' &&
-      currentPageId
-    ) {
+    if (typeof pageId === 'string' && currentPageId) {
       if (currentPageId !== pageId) {
         setCurrentPageId(pageId);
       } else {
