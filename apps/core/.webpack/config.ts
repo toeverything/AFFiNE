@@ -21,19 +21,6 @@ export const rootPath = fileURLToPath(new URL('..', import.meta.url));
 
 const require = createRequire(rootPath);
 
-const packages = [
-  '@affine/component',
-  '@affine/i18n',
-  '@affine/debug',
-  '@affine/env',
-  '@affine/templates',
-  '@affine/workspace',
-  '@affine/jotai',
-  '@affine/copilot',
-  '@toeverything/hooks',
-  '@toeverything/y-indexeddb',
-];
-
 const OptimizeOptionOptions: (
   buildFlags: BuildFlags
 ) => webpack.Configuration['optimization'] = buildFlags => ({
@@ -120,10 +107,6 @@ export const createConfiguration: (
       extensionAlias: {
         '.js': ['.js', '.tsx', '.ts'],
         '.mjs': ['.mjs', '.mts'],
-      },
-      alias: {
-        // fixme: remove this in the future
-        'next/config': resolve(rootPath, 'src/next-config.ts'),
       },
       extensions: ['.js', '.ts', '.tsx'],
     },

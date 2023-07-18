@@ -162,7 +162,7 @@ export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-  globalThis.runtimeConfig = JSON.parse(process.env.RUNTIME_CONFIG ?? '{}');
+  globalThis.runtimeConfig = process.env.RUNTIME_CONFIG as any;
   runtimeFlagsSchema.parse(globalThis.runtimeConfig);
 
   let environment: Environment;
