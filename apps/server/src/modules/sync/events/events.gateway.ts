@@ -63,9 +63,7 @@ export class EventsGateway {
     @MessageBody('workspace_id') workspace_id: string,
     @ConnectedSocket() client: Socket
   ) {
-    const roomId = `awareness-${workspace_id}`;
-    await client.join(roomId);
-    client.to(roomId).emit('new-client-awareness-init');
+    client.to(workspace_id).emit('new-client-awareness-init');
   }
 
   @SubscribeMessage('awareness-update')
@@ -73,11 +71,9 @@ export class EventsGateway {
     @MessageBody() message: { workspaceId: string; awarenessUpdate: string },
     @ConnectedSocket() client: Socket
   ) {
-    client
-      .to(`awareness-${message.workspaceId}`)
-      .emit('server-awareness-broadcast', {
-        ...message,
-      });
+    client.to(message.workspaceId).emit('server-awareness-broadcast', {
+      ...message,
+    });
 
     return 'ack';
   }
