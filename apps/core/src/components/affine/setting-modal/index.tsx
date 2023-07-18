@@ -83,7 +83,11 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
           </div>
           <div className="footer">
             <ContactWithUsIcon />
-            <a href="https://community.affine.pro/home" target="_blank">
+            <a
+              href="https://community.affine.pro/home"
+              target="_blank"
+              rel="noreferrer"
+            >
               {t[
                 'Need more customization options? You can suggest them to us in the community.'
               ]()}

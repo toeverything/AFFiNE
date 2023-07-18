@@ -46,6 +46,7 @@ export const TmpDisableAffineCloudModal: React.FC<
               progress and be notified on availability, you can fill out the
               <a
                 href="https://6dxre9ihosp.typeform.com/to/B8IHwuyy"
+                rel="noreferrer"
                 target="_blank"
                 style={{
                   color: 'var(--affine-link-color)',

@@ -3,8 +3,8 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { pageSettingsAtom, setPageModeAtom } from '../../../atoms';
-import type { BlockSuiteWorkspace } from '../../../shared';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import type { BlockSuiteWorkspace } from '../../../shared';
 
 export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const { openPage } = useNavigateHelper();
