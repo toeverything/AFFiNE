@@ -1,6 +1,7 @@
 {
   "name": "@affine/env",
   "private": true,
+  "type": "module",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "types": "./src/global.ts",

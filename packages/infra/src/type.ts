@@ -1,4 +1,4 @@
-import type { TypedEventEmitter } from './core/event-emitter';
+import type { TypedEventEmitter } from './core/event-emitter.js';
 
 export abstract class HandlerManager<
   Namespace extends string,

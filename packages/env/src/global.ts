@@ -10,13 +10,11 @@ import type {
   UpdaterHandlerManager,
   WorkspaceHandlerManager,
 } from '@toeverything/infra';
-// fixme(himself65): remove `next/config` dependency
-import getConfig from 'next/config';
 import { z } from 'zod';
 
-import { isBrowser, isDesktop, isServer } from './constant';
-import { isValidIPAddress } from './is-valid-ip-address';
-import { UaHelper } from './ua-helper';
+import { isBrowser, isDesktop, isServer } from './constant.js';
+import { isValidIPAddress } from './is-valid-ip-address.js';
+import { UaHelper } from './ua-helper.js';
 
 declare global {
   interface Window {
@@ -46,7 +44,7 @@ declare global {
   // eslint-disable-next-line no-var
   var environment: Environment;
   // eslint-disable-next-line no-var
-  var runtimeConfig: PublicRuntimeConfig;
+  var runtimeConfig: RuntimeConfig;
   // eslint-disable-next-line no-var
   var $AFFINE_SETUP: boolean | undefined;
   // eslint-disable-next-line no-var
@@ -57,7 +55,18 @@ declare global {
   var websocketPrefixUrl: string;
 }
 
-export const buildFlagsSchema = z.object({
+export const blockSuiteFeatureFlags = z.object({
+  enable_database: z.boolean(),
+  enable_drag_handle: z.boolean(),
+  enable_surface: z.boolean(),
+  enable_block_hub: z.boolean(),
+  enable_slash_menu: z.boolean(),
+  enable_edgeless_toolbar: z.boolean(),
+  enable_linked_page: z.boolean(),
+  enable_bookmark_operation: z.boolean(),
+});
+
+export const runtimeFlagsSchema = z.object({
   enablePlugin: z.boolean(),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
@@ -72,41 +81,15 @@ export const buildFlagsSchema = z.object({
   enableNotificationCenter: z.boolean(),
   enableCloud: z.boolean(),
   enableMoveDatabase: z.boolean(),
-});
-
-export const blockSuiteFeatureFlags = z.object({
-  enable_database: z.boolean(),
-  enable_drag_handle: z.boolean(),
-  enable_surface: z.boolean(),
-  enable_block_hub: z.boolean(),
-  enable_slash_menu: z.boolean(),
-  enable_edgeless_toolbar: z.boolean(),
-  enable_linked_page: z.boolean(),
-  enable_bookmark_operation: z.boolean(),
+  serverAPI: z.string(),
+  editorFlags: blockSuiteFeatureFlags,
+  appVersion: z.string(),
+  editorVersion: z.string(),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;
 
-export type BuildFlags = z.infer<typeof buildFlagsSchema>;
-
-export const publicRuntimeConfigSchema = buildFlagsSchema.extend({
-  PROJECT_NAME: z.string(),
-  BUILD_DATE: z.string(),
-  gitVersion: z.string(),
-  appVersion: z.string(),
-  editorVersion: z.string(),
-  hash: z.string(),
-  serverAPI: z.string(),
-  editorFlags: blockSuiteFeatureFlags,
-});
-
-export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
-
-const { publicRuntimeConfig: config } = getConfig() as {
-  publicRuntimeConfig: PublicRuntimeConfig;
-};
-
-publicRuntimeConfigSchema.parse(config);
+export type RuntimeConfig = z.infer<typeof runtimeFlagsSchema>;
 
 export const platformSchema = z.enum([
   'aix',
@@ -175,27 +158,12 @@ interface Desktop extends ChromeBrowser {
 
 export type Environment = Browser | Server | Desktop;
 
-function printBuildInfo() {
-  console.group('Build info');
-  console.log('Project:', config.PROJECT_NAME);
-  console.log(
-    'Build date:',
-    config.BUILD_DATE ? new Date(config.BUILD_DATE).toLocaleString() : 'Unknown'
-  );
-
-  console.log('Version:', config.gitVersion);
-  console.log(
-    'AFFiNE is an open source project, you can view its source code on GitHub!'
-  );
-  console.log(`https://github.com/toeverything/AFFiNE/tree/${config.hash}`);
-  console.groupEnd();
-}
-
 export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-  globalThis.runtimeConfig = config;
+  runtimeFlagsSchema.parse(runtimeConfig);
+
   let environment: Environment;
   const isDebug = process.env.NODE_ENV === 'development';
   if (isServer) {
@@ -239,7 +207,6 @@ export function setupGlobal() {
   globalThis.environment = environment;
 
   if (environment.isBrowser) {
-    printBuildInfo();
     globalThis.editorVersion = global.editorVersion;
   }
 

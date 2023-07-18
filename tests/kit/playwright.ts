@@ -42,6 +42,18 @@ export const test = baseTest.extend<{
     await use({
       current: async () => {
         return await page.evaluate(async () => {
+          if (!(globalThis as any).currentWorkspace) {
+            await new Promise<void>((resolve, reject) => {
+              globalThis.addEventListener(
+                'affine:workspace:change',
+                () => resolve(),
+                {
+                  once: true,
+                }
+              );
+              setTimeout(() => reject(new Error('timeout')), 2000);
+            });
+          }
           return (globalThis as any).currentWorkspace;
         });
       },

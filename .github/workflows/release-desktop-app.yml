@@ -66,10 +66,10 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RELEASE_VERSION: ${{ github.event.inputs.version || steps.get-canary-version.outputs.RELEASE_VERSION }}
 
-      - name: Upload Artifact (web-static)
+      - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
-          name: before-make-web-static
+          name: core
           path: apps/electron/resources/web-static
 
   make-distribution:
@@ -120,7 +120,7 @@ jobs:
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - uses: actions/download-artifact@v3
         with:
-          name: before-make-web-static
+          name: core
           path: apps/electron/resources/web-static
 
       - name: Build Plugins

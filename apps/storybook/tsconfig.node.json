@@ -16,6 +16,9 @@
     { "path": "../../packages/i18n" },
     {
       "path": "../../packages/env"
+    },
+    {
+      "path": "../../apps/core/tsconfig.node.json"
     }
   ]
 }

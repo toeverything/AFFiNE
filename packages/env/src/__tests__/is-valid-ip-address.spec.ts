@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { isValidIPAddress } from '../is-valid-ip-address';
+import { isValidIPAddress } from '../is-valid-ip-address.js';
 
 describe('isValidIpAddress', () => {
   test('should return true for valid IP address', () => {

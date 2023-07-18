@@ -10,7 +10,7 @@
   "tasks": {
     "start-web": {
       "name": "Start Web",
-      "command": "yarn nx dev @affine/web --port 8080",
+      "command": "yarn dev-core",
       "runAtStart": true,
       "preview": {
         "port": 8080
