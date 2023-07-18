@@ -15,6 +15,7 @@ import type { BuildFlags } from '@affine/cli/config';
 import { projectRoot } from '@affine/cli/config';
 import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
 import { getRuntimeConfig } from './runtime-config.js';
+import { computeCacheKey } from './utils.js';
 
 const IN_CI = !!process.env.CI;
 
@@ -32,17 +33,11 @@ const OptimizeOptionOptions: (
       parallel: true,
       extractComments: true,
       terserOptions: {
-        parse: {
-          ecma: 2019,
-        },
+        ecma: 2020,
         compress: {
-          comparisons: false,
+          unused: true,
         },
-        output: {
-          comments: false,
-          // https://github.com/facebookincubator/create-react-app/issues/2488
-          ascii_only: true,
-        },
+        mangle: true,
       },
     }),
   ],
@@ -75,9 +70,11 @@ export const createConfiguration: (
 ) => webpack.Configuration = buildFlags => {
   let publicPath = process.env.PUBLIC_PATH ?? '/';
 
+  const cacheKey = computeCacheKey(buildFlags);
+
   return {
     name: 'affine',
-    // to set a correct base path for source map
+    // to set a correct base path for the source map
     context: projectRoot,
     output: {
       environment: {
@@ -113,6 +110,14 @@ export const createConfiguration: (
         '.mjs': ['.mjs', '.mts'],
       },
       extensions: ['.js', '.ts', '.tsx'],
+    },
+
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [fileURLToPath(import.meta.url)],
+      },
+      version: cacheKey,
     },
 
     module: {
@@ -159,6 +164,12 @@ export const createConfiguration: (
                   },
                   experimental: {
                     keepImportAssertions: true,
+                    plugins: [
+                      buildFlags.coverage && [
+                        'swc-plugin-coverage-instrument',
+                        {},
+                      ],
+                    ].filter(Boolean),
                   },
                 },
               },

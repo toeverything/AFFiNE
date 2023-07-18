@@ -4,6 +4,7 @@ export type BuildFlags = {
   distribution: 'browser' | 'desktop';
   mode: 'development' | 'production';
   channel: 'stable' | 'beta' | 'canary';
+  coverage?: boolean;
 };
 
 export const projectRoot = fileURLToPath(

@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import * as p from '@clack/prompts';
 
-import { projectRoot } from '../config/index.js';
+import { type BuildFlags, projectRoot } from '../config/index.js';
 
 const cwd = path.resolve(projectRoot, 'apps', 'core');
 
@@ -11,7 +11,8 @@ const flags = {
   distribution: 'browser',
   mode: 'development',
   channel: 'canary',
-};
+  coverage: true,
+} satisfies BuildFlags;
 
 const buildFlags = await p.group(
   {
@@ -53,8 +54,8 @@ const buildFlags = await p.group(
   }
 );
 
-flags.mode = buildFlags.mode;
-flags.channel = buildFlags.channel;
+flags.mode = buildFlags.mode as any;
+flags.channel = buildFlags.channel as any;
 
 spawn(
   'node',
