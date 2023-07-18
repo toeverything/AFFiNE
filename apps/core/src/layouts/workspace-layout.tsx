@@ -47,7 +47,6 @@ import {
   openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
-import { useTrackRouterHistoryEffect } from '../atoms/history';
 import { useAppSetting } from '../atoms/settings';
 import { AppContainer } from '../components/affine/app-container';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
@@ -136,7 +135,6 @@ export const CurrentWorkspaceContext = ({
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    useTrackRouterHistoryEffect();
     const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const meta = useMemo(

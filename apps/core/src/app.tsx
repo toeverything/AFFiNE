@@ -5,16 +5,17 @@ import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
+import type { RouterState } from '@remix-run/router'
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom, rootStore
+} from '@toeverything/plugin-infra/manager'
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
+import { historyBaseAtom, MAX_HISTORY } from './atoms/history'
 import createEmotionCache from './utils/create-emotion-cache';
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom
-} from '@toeverything/plugin-infra/manager'
-import type { RouterState } from '@remix-run/router'
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,8 @@ const router = createBrowserRouter([
     lazy: () => import('./pages/workspace/detail-page'),
   },
 ]);
+
+//#region atoms bootstrap
 
 currentWorkspaceIdAtom.onMount = set => {
   const callback = (state: RouterState) => {
@@ -61,6 +64,48 @@ currentPageIdAtom.onMount = set => {
     unsubscribe()
   };
 };
+
+const unsubscribe = router.subscribe(state => {
+  if (unsubscribe) {
+    unsubscribe()
+  }
+  rootStore.set(historyBaseAtom, prev => {
+    const url = state.location.pathname
+    console.log('push', url, prev.skip, prev.stack.length, prev.current);
+    if (prev.skip) {
+      return {
+        stack: [...prev.stack],
+        current: prev.current,
+        skip: false,
+      };
+    } else {
+      if (prev.current < prev.stack.length - 1) {
+        const newStack = prev.stack.slice(0, prev.current);
+        newStack.push(url);
+        if (newStack.length > MAX_HISTORY) {
+          newStack.shift();
+        }
+        return {
+          stack: newStack,
+          current: newStack.length - 1,
+          skip: false,
+        };
+      } else {
+        const newStack = [...prev.stack, url];
+        if (newStack.length > MAX_HISTORY) {
+          newStack.shift();
+        }
+        return {
+          stack: newStack,
+          current: newStack.length - 1,
+          skip: false,
+        };
+      }
+    }
+  })
+})
+
+//#endregion
 
 const i18n = createI18n();
 const cache = createEmotionCache();
