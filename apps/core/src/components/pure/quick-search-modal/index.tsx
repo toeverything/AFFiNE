@@ -1,19 +1,12 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
-import type React from 'react';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react';
+import { startTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import type { AllWorkspace } from '../../../shared';
 import { Footer } from './footer';
-import { PublishedResults } from './published-results';
 import { Results } from './results';
 import { SearchInput } from './search-input';
 import {
@@ -23,7 +16,6 @@ import {
   StyledModalHeader,
   StyledShortcut,
 } from './style';
-import { useLocation } from 'react-router-dom';
 
 export type QuickSearchModalProps = {
   workspace: AllWorkspace;
@@ -39,7 +31,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   const blockSuiteWorkspace = workspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [loading, startTransition] = useTransition();
   const [query, _setQuery] = useState('');
   const setQuery = useCallback((query: string) => {
     startTransition(() => {
@@ -51,7 +42,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     () => location.pathname.startsWith('/public-workspace'),
     [location]
   );
-  const [publishWorkspaceName, setPublishWorkspaceName] = useState('');
   const [showCreatePage, setShowCreatePage] = useState(true);
   const isPublicAndNoQuery = useCallback(() => {
     return isPublicWorkspace && query.length === 0;
@@ -136,13 +126,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                   return;
                 }
               }}
-              placeholder={
-                isPublicWorkspace
-                  ? t['Quick search placeholder2']({
-                      workspace: publishWorkspaceName,
-                    })
-                  : t['Quick search placeholder']()
-              }
+              placeholder={t['Quick search placeholder']()}
             />
             <StyledShortcut>
               {environment.isBrowser && environment.isMacOs
@@ -157,23 +141,12 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
             <StyledContent
               style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
             >
-              {isPublicWorkspace ? (
-                <PublishedResults
-                  blockSuiteWorkspace={blockSuiteWorkspace}
-                  query={query}
-                  loading={loading}
-                  onClose={handleClose}
-                  setPublishWorkspaceName={setPublishWorkspaceName}
-                  data-testid="published-search-results"
-                />
-              ) : (
-                <Results
-                  query={query}
-                  onClose={handleClose}
-                  workspace={workspace}
-                  setShowCreatePage={setShowCreatePage}
-                />
-              )}
+              <Results
+                query={query}
+                onClose={handleClose}
+                workspace={workspace}
+                setShowCreatePage={setShowCreatePage}
+              />
             </StyledContent>
             {isPublicWorkspace ? null : showCreatePage ? (
               <>

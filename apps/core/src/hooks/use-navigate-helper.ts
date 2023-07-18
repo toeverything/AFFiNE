@@ -59,10 +59,30 @@ export function useNavigateHelper() {
     [jumpToPage, jumpToPublicWorkspacePage, location.pathname]
   );
 
+  const jumpToIndex = useCallback(
+    (logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate('/', {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
+
+  const jumpTo404 = useCallback(
+    (logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate('/404', {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
+
   return {
     jumpToPage,
     jumpToPublicWorkspacePage,
     jumpToSubPath,
+    jumpToIndex,
+    jumpTo404,
     openPage,
   };
 }

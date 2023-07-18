@@ -4,8 +4,9 @@ import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
-import { useAtomValue } from 'jotai/index';
+import { useAtomValue } from 'jotai/react';
 import { useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { pageSettingFamily } from '../../../../atoms';
 import * as styles from '../favorite/styles.css';
@@ -22,9 +23,9 @@ export const ReferencePage = ({
   metaMapping,
   parentIds,
 }: ReferencePageProps) => {
-  const router = useRouter();
+  const params = useParams();
   const setting = useAtomValue(pageSettingFamily(pageId));
-  const active = router.query.pageId === pageId;
+  const active = params.pageId === pageId;
   const icon = setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
   const references = useBlockSuitePageReferences(workspace, pageId);
   const referencesToShow = useMemo(() => {

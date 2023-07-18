@@ -1,13 +1,15 @@
 import { Button, Confirm } from '@affine/component';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
+import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 
 export const TrashButtonGroup = () => {
   // fixme(himself65): remove these hooks ASAP
@@ -21,7 +23,7 @@ export const TrashButtonGroup = () => {
   );
   assertExists(pageMeta);
   const t = useAFFiNEI18N();
-  const router = useRouter();
+  const { jumpToSubPath } = useNavigateHelper();
   const { restoreFromTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
 
   const [open, setOpen] = useState(false);
@@ -54,20 +56,10 @@ export const TrashButtonGroup = () => {
         confirmText={t['Delete']()}
         confirmType="danger"
         open={open}
-        onConfirm={() => {
-          // fixme(himself65): remove these hooks ASAP
-          router
-            .push({
-              pathname: '/workspace/[workspaceId]/all',
-              query: {
-                workspaceId: workspace.id,
-              },
-            })
-            .catch(error => {
-              console.error(error);
-            });
+        onConfirm={useCallback(() => {
+          jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
           blockSuiteWorkspace.removePage(pageId);
-        }}
+        }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id])}
         onCancel={() => {
           setOpen(false);
         }}

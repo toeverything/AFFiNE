@@ -7,6 +7,7 @@ import {
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
@@ -24,6 +25,7 @@ import type { ReactElement } from 'react';
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
+import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { filterPage } from '../../../../utils/filter';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
@@ -129,17 +131,11 @@ const CollectionRenderer = ({
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
   const setting = useCollectionManager(workspace.id);
-  const router = useRouter();
+  const { jumpToSubPath } = useNavigateHelper();
   const clickCollection = useCallback(() => {
-    router
-      .push(`/workspace/${workspace.id}/all`)
-      .then(() => {
-        setting.selectCollection(collection.id);
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [router, workspace.id, setting, collection.id]);
+    jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+    setting.selectCollection(collection.id);
+  }, [jumpToSubPath, workspace.id, setting, collection.id]);
   const { setNodeRef, isOver } = useDroppable({
     id: `${Collections_DROP_AREA_PREFIX}${collection.id}`,
     data: {

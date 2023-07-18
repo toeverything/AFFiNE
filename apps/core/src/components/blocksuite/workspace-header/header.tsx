@@ -5,7 +5,6 @@ import {
 } from '@affine/component/app-sidebar';
 import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
@@ -25,11 +24,8 @@ import { contentLayoutAtom } from '../../../atoms/layout';
 import { currentModeAtom } from '../../../atoms/mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { DownloadClientTip } from './download-tips';
-import EditPage from './header-right-items/edit-page';
 import { EditorOptionMenu } from './header-right-items/editor-option-menu';
-import { HeaderShareMenu } from './header-right-items/share-menu';
 import TrashButtonGroup from './header-right-items/trash-button-group';
-import UserAvatar from './header-right-items/user-avatar';
 import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
 
@@ -45,10 +41,6 @@ export type BaseHeaderProps<
 export enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
   TrashButtonGroup = 'trashButtonGroup',
-  ShareMenu = 'shareMenu',
-  EditPage = 'editPage',
-  UserAvatar = 'userAvatar',
-
   // some windows only items
   WindowsAppControls = 'windowsAppControls',
 }
@@ -70,24 +62,6 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
     Component: TrashButtonGroup,
     availableWhen: (_, currentPage) => {
       return currentPage?.meta.trash === true;
-    },
-  },
-  [HeaderRightItemName.ShareMenu]: {
-    Component: HeaderShareMenu,
-    availableWhen: (workspace, currentPage) => {
-      return workspace.flavour !== WorkspaceFlavour.PUBLIC && !!currentPage;
-    },
-  },
-  [HeaderRightItemName.EditPage]: {
-    Component: EditPage,
-    availableWhen: (workspace, currentPage, { isPublic }) => {
-      return isPublic;
-    },
-  },
-  [HeaderRightItemName.UserAvatar]: {
-    Component: UserAvatar,
-    availableWhen: (workspace, currentPage, { isPublic }) => {
-      return isPublic;
     },
   },
   [HeaderRightItemName.EditorOptionMenu]: {

@@ -15,10 +15,8 @@ import { Provider } from 'jotai/react';
 import type { ErrorInfo, ReactElement, ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';
-
-export type AffineErrorBoundaryProps = React.PropsWithChildren<{
-  router: NextRouter;
-}>;
+import { useLocation, useParams } from 'react-router-dom';
+export type AffineErrorBoundaryProps = React.PropsWithChildren;
 
 type AffineError =
   | QueryParamError
@@ -31,13 +29,13 @@ interface AffineErrorBoundaryState {
   error: AffineError | null;
 }
 
-export const DumpInfo = (props: Pick<AffineErrorBoundaryProps, 'router'>) => {
-  const router = props.router;
+export const DumpInfo = () => {
+  const location = useLocation();
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const currentPageId = useAtomValue(currentPageIdAtom);
-  const path = router.asPath;
-  const query = router.query;
+  const path = location.pathname;
+  const query = useParams();
   return (
     <>
       <div>
@@ -90,24 +88,6 @@ export class AffineErrorBoundary extends Component<
                 Cannot find page {error.pageId} in workspace{' '}
                 {error.workspace.id}
               </span>
-              <button
-                onClick={() => {
-                  this.props.router
-                    .replace({
-                      pathname: '/workspace/[workspaceId]/[pageId]',
-                      query: {
-                        workspaceId: error.workspace.id,
-                        pageId: error.workspace.meta.pageMetas[0].id,
-                      },
-                    })
-                    .finally(() => {
-                      this.setState({ error: null });
-                    });
-                }}
-              >
-                {' '}
-                refresh{' '}
-              </button>
             </>
           </>
         );
@@ -123,7 +103,7 @@ export class AffineErrorBoundary extends Component<
         <>
           {errorDetail}
           <Provider key="JotaiProvider" store={rootStore}>
-            <DumpInfo router={this.props.router} />
+            <DumpInfo />
           </Provider>
         </>
       );

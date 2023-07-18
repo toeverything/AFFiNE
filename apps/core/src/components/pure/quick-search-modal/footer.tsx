@@ -9,9 +9,9 @@ import { Command } from 'cmdk';
 import type React from 'react';
 import { useCallback } from 'react';
 
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { StyledModalFooterContent } from './style';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 
 export type FooterProps = {
   query: string;

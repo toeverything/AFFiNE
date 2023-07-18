@@ -15,9 +15,11 @@ import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite
 import { useAtomValue } from 'jotai/index';
 import type { ReactElement } from 'react';
 import React, { useCallback, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { pageSettingFamily } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
+import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { ReferencePage } from '../components/reference-page';
 import * as styles from './styles.css';
 
@@ -132,16 +134,17 @@ export const Page = ({
   allPageMeta: Record<string, PageMeta>;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
-  const router = useRouter();
+  const params = useParams();
+  const { jumpToPage } = useNavigateHelper();
   const t = useAFFiNEI18N();
   const pageId = page.id;
-  const active = router.query.pageId === pageId;
+  const active = params.pageId === pageId;
   const setting = useAtomValue(pageSettingFamily(pageId));
   const icon = setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
   const references = useBlockSuitePageReferences(workspace, pageId);
   const clickPage = useCallback(() => {
-    return router.push(`/workspace/${workspace.id}/${page.id}`);
-  }, [page.id, router, workspace.id]);
+    jumpToPage(workspace.id, page.id);
+  }, [jumpToPage, page.id, workspace.id]);
   const referencesToRender = references.filter(id => !allPageMeta[id]?.trash);
   return (
     <Collapsible.Root open={!collapsed}>
