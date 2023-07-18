@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import HTMLPlugin from 'html-webpack-plugin';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 import { PerfseePlugin } from '@perfsee/webpack';
+import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
 
 import CopyPlugin from 'copy-webpack-plugin';
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
@@ -282,6 +283,20 @@ export const createConfiguration: (
     config.plugins.push(
       new PerfseePlugin({
         project: 'affine-toeverything',
+      })
+    );
+  }
+
+  if (
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+  ) {
+    config.plugins.push(
+      sentryWebpackPlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
       })
     );
   }
