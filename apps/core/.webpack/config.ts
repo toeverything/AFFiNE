@@ -7,11 +7,12 @@ import type { Configuration as DevServerConfiguration } from 'webpack-dev-server
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 
 import { productionCacheGroups } from './cache-group.js';
 import type { BuildFlags } from '@affine/cli/config';
 import { projectRoot } from '@affine/cli/config';
-
+import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
 const IN_CI = !!process.env.CI;
 
 export const rootPath = fileURLToPath(new URL('..', import.meta.url));
@@ -119,7 +120,17 @@ export const createConfiguration: (
         '.mjs': ['.mjs', '.mts'],
       },
       alias: {
+        // fixme: remove this in the future
         'next/config': resolve(rootPath, 'src/next-config.ts'),
+        '@blocksuite/block-std': resolve(rootPath, 'node_modules', '@blocksuite', 'block-std'),
+        '@blocksuite/blocks': resolve(rootPath, 'node_modules', '@blocksuite', 'blocks'),
+        '@blocksuite/editor': resolve(rootPath, 'node_modules', '@blocksuite', 'editor'),
+        '@blocksuite/global': resolve(rootPath, 'node_modules', '@blocksuite', 'global'),
+        '@blocksuite/lit': resolve(rootPath, 'node_modules', '@blocksuite', 'lit'),
+        '@blocksuite/phasor': resolve(rootPath, 'node_modules', '@blocksuite', 'phasor'),
+        '@blocksuite/store': resolve(rootPath, 'node_modules', '@blocksuite', 'store'),
+        '@blocksuite/virgo': resolve(rootPath, 'node_modules', '@blocksuite', 'virgo'),
+        'yjs': resolve(projectRoot, 'node_modules', 'yjs'),
       },
       extensions: ['.js', '.ts', '.tsx'],
     },
@@ -201,6 +212,30 @@ export const createConfiguration: (
               test: /\.txt$/,
               loader: 'raw-loader',
             },
+            {
+              test: /\.css$/,
+              use: [
+                MiniCssExtractPlugin.loader,
+                {
+                  loader: 'css-loader',
+                  options: {
+                    url: false,
+                    sourceMap: false,
+                    modules: false,
+                    import: true,
+                    importLoaders: 1,
+                  },
+                },
+                {
+                  loader: 'postcss-loader',
+                  options: {
+                    postcssOptions: {
+                      config: resolve(rootPath, '.webpack', 'postcss.config.cjs')
+                    },
+                  },
+                },
+              ],
+            },
           ],
         },
       ],
@@ -219,6 +254,13 @@ export const createConfiguration: (
         chunks: ['index'],
         filename: 'index.html',
       }),
+      new MiniCssExtractPlugin({
+        filename: `[name].[chunkhash:8].css`,
+      }),
+      new VanillaExtractPlugin(),
+      new webpack.DefinePlugin({
+        'process.env': JSON.stringify({}),
+      }),
     ],
 
     optimization: OptimizeOptionOptions(buildFlags),
@@ -228,6 +270,10 @@ export const createConfiguration: (
       liveReload: false,
       client: undefined,
       historyApiFallback: true,
+      static: {
+        directory: resolve(rootPath, 'public'),
+        publicPath: '/'
+      }
     } as DevServerConfiguration,
   };
 };
