@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect } from 'react'
 
 type DetailPageParam = {
   workspaceId: string;
@@ -8,5 +9,9 @@ type DetailPageParam = {
 export const Component = () => {
   const param = useParams<DetailPageParam>();
   console.log('param', param);
-  return <div></div>;
+  // const navigate = useNavigate()
+  // useEffect(() => {
+  //   navigate('/')
+  // }, [navigate])
+  return <div>1</div>;
 };
