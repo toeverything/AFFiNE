@@ -4,6 +4,7 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
+    "moduleResolution": "Node16",
     "outDir": "lib"
   },
   "references": [

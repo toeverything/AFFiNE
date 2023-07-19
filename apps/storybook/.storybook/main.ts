@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { mergeConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
+import { getRuntimeConfig } from '../../core/.webpack/runtime-config';
 
 runCli(
   {
@@ -20,7 +21,7 @@ runCli(
 
 export default {
   stories: ['../src/**/*.stories.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
-  staticDirs: ['../../../apps/web/public'],
+  staticDirs: ['../../../apps/core/public'],
   addons: [
     '@storybook/addon-links',
     '@storybook/addon-essentials',
@@ -42,17 +43,17 @@ export default {
       ],
       define: {
         'process.env': {},
+        runtimeConfig: getRuntimeConfig({
+          distribution: 'browser',
+          mode: 'development',
+          channel: 'canary',
+          coverage: false,
+        }),
       },
       resolve: {
         alias: {
           'dotenv/config': fileURLToPath(
             new URL('../../../scripts/vitest/dotenv-config.ts', import.meta.url)
-          ),
-          'next/config': fileURLToPath(
-            new URL(
-              '../../../scripts/vitest/next-config-mock.ts',
-              import.meta.url
-            )
           ),
         },
       },

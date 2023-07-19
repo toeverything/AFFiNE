@@ -25,8 +25,3 @@ export interface Blob {
   size: number;
   data: Buffer;
 }
-
-export interface SearchResult {
-  blockId: string;
-  score: number;
-}

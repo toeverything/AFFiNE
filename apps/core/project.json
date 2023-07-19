@@ -1,0 +1,40 @@
+{
+  "name": "@affine/core",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "root": "apps/core",
+  "sourceRoot": "apps/core/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "dependsOn": ["^build"],
+      "inputs": [
+        "{projectRoot}/**/*",
+        "{workspaceRoot}/packages/component/src/**/*",
+        "{workspaceRoot}/packages/debug/src/**/*",
+        "{workspaceRoot}/packages/graphql/src/**/*",
+        "{workspaceRoot}/packages/hooks/src/**/*",
+        "{workspaceRoot}/packages/jotai/src/**/*",
+        "{workspaceRoot}/packages/templates/src/**/*",
+        "{workspaceRoot}/packages/workspace/src/**/*",
+        {
+          "env": "BUILD_TYPE"
+        },
+        {
+          "env": "PERFSEE_TOKEN"
+        }
+      ],
+      "options": {
+        "script": "build"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "dev": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "dev"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    }
+  }
+}

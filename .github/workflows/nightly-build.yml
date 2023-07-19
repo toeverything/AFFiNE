@@ -62,10 +62,10 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
 
-      - name: Upload Artifact (web-static)
+      - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
-          name: before-make-web-static
+          name: core
           path: apps/electron/resources/web-static
 
   make-distribution:
