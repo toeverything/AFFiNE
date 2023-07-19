@@ -48,6 +48,7 @@ Selector labels
 {{- define "graphql.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "graphql.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/monitoring: enabled
 {{- end }}
 
 {{/*

@@ -2,12 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { Doc } from 'yjs';
 import * as Y from 'yjs';
 
+import { Metrics } from '../../../metrics/metrics';
 import { DocManager } from '../../doc';
 import { assertExists } from '../utils';
 
 @Injectable()
 export class WorkspaceService {
-  constructor(private readonly docManager: DocManager) {}
+  constructor(
+    private readonly docManager: DocManager,
+    private readonly metric: Metrics
+  ) {}
 
   async getDocsFromWorkspaceId(workspaceId: string): Promise<
     Array<{

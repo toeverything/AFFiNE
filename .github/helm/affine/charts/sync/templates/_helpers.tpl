@@ -48,6 +48,7 @@ Selector labels
 {{- define "sync.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "sync.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/monitoring: enabled
 {{- end }}
 
 {{/*
