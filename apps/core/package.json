@@ -12,6 +12,7 @@
     "@affine-test/fixtures": "workspace:*",
     "@affine/bookmark-block": "workspace:*",
     "@affine/component": "workspace:*",
+    "@affine/copilot": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
