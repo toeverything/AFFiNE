@@ -44,6 +44,7 @@
     "parse-duration": "^1.1.0",
     "pretty-time": "^1.1.0",
     "prisma": "^5.0.0",
+    "prom-client": "^14.2.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "socket.io": "^4.7.1",

@@ -1,0 +1,13 @@
+{{- if .Values.gke.enabled -}}
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/monitoring: enabled
+  endpoints:
+    - port: metrics
+      interval: 30s
+{{- end }}
