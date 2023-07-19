@@ -1,9 +1,23 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import * as p from '@clack/prompts';
+import { config } from 'dotenv';
 
 import { type BuildFlags, projectRoot } from '../config/index.js';
+
+const files = ['.env', '.env.local'];
+
+for (const file of files) {
+  if (existsSync(path.resolve(projectRoot, file))) {
+    config({
+      path: path.resolve(projectRoot, file),
+    });
+    console.log(`${file} loaded`);
+    break;
+  }
+}
 
 const cwd = path.resolve(projectRoot, 'apps', 'core');
 
@@ -16,6 +30,19 @@ const flags: BuildFlags = {
 
 const buildFlags = await p.group(
   {
+    distribution: () =>
+      p.select({
+        message: 'Distribution',
+        options: [
+          {
+            value: 'browser',
+          },
+          {
+            value: 'desktop',
+          },
+        ],
+        initialValue: 'browser',
+      }),
     mode: () =>
       p.select({
         message: 'Mode',
@@ -59,6 +86,7 @@ const buildFlags = await p.group(
   }
 );
 
+flags.distribution = buildFlags.distribution as any;
 flags.mode = buildFlags.mode as any;
 flags.channel = buildFlags.channel as any;
 flags.coverage = buildFlags.coverage;
