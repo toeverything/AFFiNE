@@ -4,7 +4,7 @@ import { ImagePreviewModal } from '@affine/component/image-preview-modal';
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/manager';
 import type { Meta } from '@storybook/react';
 
 export default {

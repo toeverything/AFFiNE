@@ -1,6 +1,6 @@
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/manager';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type React from 'react';

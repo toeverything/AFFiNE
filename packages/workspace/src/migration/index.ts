@@ -1,7 +1,7 @@
 import { migrateToSubdoc } from '@affine/env/blocksuite';
 import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/manager';
 import { nanoid, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 const Y = Workspace.Y;

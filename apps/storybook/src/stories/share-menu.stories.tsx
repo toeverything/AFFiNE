@@ -9,7 +9,7 @@ import type {
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/manager';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { StoryFn } from '@storybook/react';

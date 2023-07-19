@@ -14,8 +14,8 @@ import {
 } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/plugin-infra/__internal__/workspace';
 
-import { createStaticStorage } from './blob/local-static-storage';
-import { createSQLiteStorage } from './blob/sqlite-blob-storage';
+import { createStaticStorage } from '../blob/local-static-storage';
+import { createSQLiteStorage } from '../blob/sqlite-blob-storage';
 
 function setEditorFlags(workspace: Workspace) {
   Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {

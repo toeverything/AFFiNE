@@ -1,6 +1,6 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/manager';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { atom } from 'jotai';

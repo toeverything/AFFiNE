@@ -6,7 +6,7 @@ import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import { z } from 'zod';
 
-import { createEmptyBlockSuiteWorkspace } from '../utils';
+import { createEmptyBlockSuiteWorkspace } from '../manager';
 
 const getStorage = () => createJSONStorage(() => localStorage);
 

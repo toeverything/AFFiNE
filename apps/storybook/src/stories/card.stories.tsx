@@ -2,7 +2,7 @@ import { toast, Tooltip } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
 import { WorkspaceCard } from '@affine/component/card/workspace-card';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/manager';
 import {
   EdgelessIcon,
   ExportToHtmlIcon,

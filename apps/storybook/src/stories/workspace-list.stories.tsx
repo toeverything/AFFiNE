@@ -1,7 +1,7 @@
 import type { WorkspaceListProps } from '@affine/component/workspace-list';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/manager';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Meta } from '@storybook/react';
 import { useState } from 'react';
