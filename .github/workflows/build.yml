@@ -212,7 +212,7 @@ jobs:
     name: Server E2E Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [build-storage, build-web]
+    needs: [build-storage, build-core]
     services:
       postgres:
         image: postgres
@@ -250,11 +250,11 @@ jobs:
         working-directory: apps/server
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-      - name: Download artifact
+      - name: Download core artifact
         uses: actions/download-artifact@v3
         with:
-          name: next-js-static
-          path: ./apps/web/out
+          name: core
+          path: ./apps/core/dist
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:
@@ -541,7 +541,7 @@ jobs:
     name: Build Docker
     needs:
       - lint
-      - build-web
+      - build-core
       - build-storage
     runs-on: ubuntu-latest
     steps:
