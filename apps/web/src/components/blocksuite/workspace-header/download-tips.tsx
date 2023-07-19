@@ -1,5 +1,4 @@
 import { DownloadTips } from '@affine/component/affine-banner';
-import { isDesktop } from '@affine/env/constant';
 
 export const DownloadClientTip = ({
   show,
@@ -19,7 +18,7 @@ export const DownloadClientTip = ({
   show: boolean;
   onClose: () => void;
 }) => {
-  if (!show || isDesktop) {
+  if (!show || environment.isDesktop) {
     return null;
   }
   return <DownloadTips onClose={onClose} />;
