@@ -1,2 +1,2 @@
-export * from './handler';
-export * from './type';
+export * from './handler.js';
+export * from './type.js';

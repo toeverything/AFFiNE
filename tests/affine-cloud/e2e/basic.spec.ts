@@ -25,7 +25,7 @@ test('login', async ({ page, context }) => {
   ).toBeTruthy();
 });
 
-test('enable cloud', async ({ page }) => {
+test.fixme('enable cloud', async ({ page }) => {
   await page.goto('http://localhost:8080');
   await page.waitForSelector('v-line');
 

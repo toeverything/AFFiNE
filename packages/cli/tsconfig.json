@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "Node16",
+    "outDir": "lib"
+  },
+  "include": ["src/bin", "src"]
+}

@@ -61,8 +61,9 @@ export const scrollbar = style({
   },
 });
 export const TableScrollbar = style({
-  paddingTop: '60px',
-  paddingBottom: '60px',
+  marginTop: '60px',
+  height: 'calc(100% - 120px)',
+  borderRadius: '4px',
 });
 
 export const scrollbarThumb = style({
