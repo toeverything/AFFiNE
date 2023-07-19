@@ -32,7 +32,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableMoveDatabase: false,
       enableNotificationCenter: false,
       enableCloud: true,
-      enableNewAuth: false,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -53,7 +52,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableMoveDatabase: false,
       enableNotificationCenter: true,
       enableCloud: true,
-      enableNewAuth: false,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -101,9 +99,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : currentBuildPreset.enableNotificationCenter,
     enableCloud: process.env.ENABLE_CLOUD
       ? process.env.ENABLE_CLOUD === 'true'
-      : currentBuildPreset.enableCloud,
-    enableNewAuth: process.env.ENABLE_CLOUD
-      ? process.env.ENABLE_NEW_AUTH === 'true'
       : currentBuildPreset.enableCloud,
     enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
       ? process.env.ENABLE_MOVE_DATABASE === 'true'

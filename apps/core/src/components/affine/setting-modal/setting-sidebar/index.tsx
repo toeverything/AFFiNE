@@ -14,7 +14,6 @@ import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__inter
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import { useAtom } from 'jotai';
-import { signIn } from 'next-auth/react';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
 import { Suspense } from 'react';
@@ -74,11 +73,7 @@ export const SignInButton = () => {
     <div
       className={accountButton}
       onClick={useCallback(() => {
-        if (runtimeConfig.enableNewAuth) {
-          setAuthModal({ open: true, state: 'signIn' });
-        } else {
-          signIn().catch(console.error);
-        }
+        setAuthModal({ open: true, state: 'signIn' });
       }, [setAuthModal])}
     >
       <div className="avatar not-sign">

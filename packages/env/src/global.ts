@@ -75,7 +75,6 @@ export const runtimeFlagsSchema = z.object({
   enableSQLiteProvider: z.boolean(),
   enableNotificationCenter: z.boolean(),
   enableCloud: z.boolean(),
-  enableNewAuth: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
