@@ -106,7 +106,11 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   };
 
   if (buildFlags.mode === 'development') {
-    currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
+    if (buildFlags.distribution === 'browser')
+      currentBuildPreset.serverUrlPrefix = '';
+    else if (buildFlags.distribution === 'desktop') {
+      currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
+    }
   }
 
   return {
