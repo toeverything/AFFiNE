@@ -14,7 +14,6 @@ export const inputStyle = style({
   padding: '8px 12px',
   color: 'var(--affine-text-primary-color)',
   border: '1px solid',
-  borderColor: 'var(--affine-border-color)', // TODO: check out disableColor,
   backgroundColor: 'var(--affine-white)',
   borderRadius: '10px',
   selectors: {
@@ -27,8 +26,25 @@ export const inputStyle = style({
     '&::placeholder': {
       color: 'var(--affine-placeholder-color)',
     },
-    '&:focus': {
+
+    '&.error': {
+      borderColor: 'var(--affine-error-color)',
+    },
+    '&.success': {
+      borderColor: 'var(--affine-success-color)',
+    },
+    '&.warning': {
+      borderColor: 'var(--affine-warning-color)',
+    },
+    '&.default': {
+      borderColor: 'var(--affine-border-color)',
+    },
+    '&.default:focus': {
       borderColor: 'var(--affine-primary-color)',
+    },
+    '&.disable': {
+      borderColor: 'var(--affine-disable-color)',
+      color: 'var(--affine-text-disable-color)',
     },
   },
 });

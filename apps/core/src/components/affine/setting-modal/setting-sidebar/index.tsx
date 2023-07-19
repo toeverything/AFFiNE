@@ -8,16 +8,18 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { AffineLogoSBlue2_1Icon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
-import { signIn } from 'next-auth/react';
+import { useAtom } from 'jotai';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
 
+import { openAuthModalAtom } from '../../../../atoms';
 import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -65,20 +67,18 @@ export const UserInfo = ({
 
 export const SignInButton = () => {
   const t = useAFFiNEI18N();
+  const [, setAuthModal] = useAtom(openAuthModalAtom);
+
   return (
     <div
       className={accountButton}
       onClick={useCallback(() => {
-        signIn().catch(console.error);
-      }, [])}
+        setAuthModal({ open: true, state: 'signIn' });
+      }, [setAuthModal])}
     >
-      <img
-        src="/default-avatar.png"
-        height={28}
-        width={28}
-        alt="AFFiNE"
-        className="avatar"
-      />
+      <div className="avatar not-sign">
+        <AffineLogoSBlue2_1Icon />
+      </div>
 
       <div className="content">
         <div className="name" title={t['com.affine.settings.sign']()}>

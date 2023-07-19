@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
+    "@affine/bookmark-block": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
