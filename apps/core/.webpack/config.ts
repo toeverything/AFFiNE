@@ -84,10 +84,13 @@ export const createConfiguration: (
         module: true,
         dynamicImport: true,
       },
-      filename: 'js/[name].js',
+      filename:
+        buildFlags.mode === 'production'
+          ? 'js/[name]-[contenthash:8].js'
+          : 'js/[name].js',
       // In some cases webpack will emit files starts with "_" which is reserved in web extension.
       chunkFilename: 'js/chunk.[name].js',
-      assetModuleFilename: 'assets/[hash][ext][query]',
+      assetModuleFilename: 'assets/[contenthash:8][ext][query]',
       devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
       hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
       hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
