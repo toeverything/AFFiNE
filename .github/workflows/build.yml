@@ -119,12 +119,6 @@ jobs:
           name: core
           path: ./apps/core/dist
           if-no-files-found: error
-      - name: Upload next routes conf
-        uses: actions/upload-artifact@v3
-        with:
-          name: next-routes-conf
-          path: ./apps/web/next-routes.conf
-          if-no-files-found: error
 
   build-storage:
     name: Build Storage
