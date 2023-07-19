@@ -13,6 +13,8 @@ import {
   Workspace,
 } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/plugin-infra/__internal__/workspace';
+import type { Doc } from 'yjs';
+import type { Transaction } from 'yjs';
 
 import { createStaticStorage } from '../blob/local-static-storage';
 import { createSQLiteStorage } from '../blob/sqlite-blob-storage';
@@ -30,11 +32,56 @@ function setEditorFlags(workspace: Workspace) {
   );
 }
 
-export function createEmptyBlockSuiteWorkspace(
-  id: string,
-  flavour: WorkspaceFlavour.AFFINE_CLOUD | WorkspaceFlavour.LOCAL
-): Workspace;
-export function createEmptyBlockSuiteWorkspace(
+type UpdateCallback = (
+  update: Uint8Array,
+  origin: string | number | null,
+  doc: Doc,
+  transaction: Transaction
+) => void;
+
+type SubdocEvent = {
+  loaded: Set<Doc>;
+  removed: Set<Doc>;
+  added: Set<Doc>;
+};
+
+const docUpdateCallbackWeakMap = new WeakMap<Doc, UpdateCallback>();
+
+const createMonitor = (doc: Doc) => {
+  const onUpdate: UpdateCallback = (update, origin) => {
+    if (process.env.NODE_ENV === 'development') {
+      if (typeof origin !== 'string' && typeof origin !== 'number') {
+        console.warn(
+          'origin is not a string or number, this will cause problems in the future',
+          origin
+        );
+      }
+    } else {
+    }
+  };
+  docUpdateCallbackWeakMap.set(doc, onUpdate);
+  doc.on('update', onUpdate);
+  const onSubdocs = (event: SubdocEvent) => {
+    event.added.forEach(subdoc => {
+      if (!docUpdateCallbackWeakMap.has(subdoc)) {
+        createMonitor(subdoc);
+      }
+    });
+    event.removed.forEach(subdoc => {
+      if (docUpdateCallbackWeakMap.has(subdoc)) {
+        docUpdateCallbackWeakMap.delete(subdoc);
+      }
+    });
+  };
+  doc.on('subdocs', onSubdocs);
+  doc.on('destroy', () => {
+    docUpdateCallbackWeakMap.delete(doc);
+    doc.off('update', onSubdocs);
+  });
+};
+
+// if not exist, create a new workspace
+export function getOrCreateWorkspace(
   id: string,
   flavour: WorkspaceFlavour
 ): Workspace {
@@ -76,6 +123,7 @@ export function createEmptyBlockSuiteWorkspace(
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
+  createMonitor(workspace.doc);
   setEditorFlags(workspace);
   INTERNAL_BLOCKSUITE_HASH_MAP.set(id, workspace);
   return workspace;

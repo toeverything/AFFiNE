@@ -259,6 +259,7 @@ export const createConfiguration: (
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),
+        'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({
