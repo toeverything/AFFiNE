@@ -5,3 +5,5 @@ export * from './continue-button';
 export * from './google-button';
 export * from './modal';
 export * from './modal-header';
+export * from './password-input';
+export * from './resend-button';

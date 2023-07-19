@@ -131,7 +131,8 @@ globalStyle(`${authContent} a`, {
 });
 
 export const authCodeContainer = style({
-  paddingBottom: '8px',
+  paddingBottom: '40px',
+  position: 'relative',
 });
 export const authCodeWrapper = style({
   display: 'flex',
@@ -142,36 +143,25 @@ export const authCodeWrapper = style({
 export const authCodeErrorMessage = style({
   color: 'var(--affine-error-color)',
   fontSize: 'var(--affine-font-sm)',
-  marginTop: '8px',
   textAlign: 'center',
   lineHeight: '1.5',
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  bottom: 5,
+  margin: 'auto',
 });
-export const authInput = style({
-  lineHeight: '22px',
-  padding: '8px 12px',
-  color: 'var(--affine-text-primary-color)',
-  border: '1px solid',
-  backgroundColor: 'var(--affine-white)',
-  borderRadius: '10px',
-  textAlign: 'center',
-  width: '44px',
-  height: '40',
-  selectors: {
-    '&': {
-      borderColor: 'var(--affine-border-color)', // TODO: check out disableColor,
-    },
-    '&:focus': {
-      borderColor: 'var(--affine-primary-color)',
-      boxShadow:
-        '0px 0px 30px 0px rgba(75, 75, 75, 0.20), 0px 0px 4px 0px rgba(75, 75, 75, 0.30), 0px 0px 0px 1px #E3E2E4 inset',
-    },
-    '&.error': {
-      borderColor: 'var(--affine-error-color)',
-    },
-    '&.error:focus': {
-      borderColor: 'var(--affine-error-color)',
-      boxShadow:
-        '0px 0px 30px 0px rgba(75, 75, 75, 0.20), 0px 0px 4px 0px rgba(75, 75, 75, 0.30), 0px 0px 0px 1px #E3E2E4 inset',
-    },
-  },
+
+export const resendButtonWrapper = style({
+  height: 32,
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: 30,
+});
+
+globalStyle(`${resendButtonWrapper} .resend-code-hint`, {
+  fontWeight: 600,
+  fontSize: 'var(--affine-font-sm)',
+  marginRight: 8,
 });

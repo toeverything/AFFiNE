@@ -5,14 +5,15 @@ import {
 import { type FC, useMemo, useState } from 'react';
 
 import { ConfirmCode } from './confirm-code';
+import { SetPassword } from './set-password';
 import { SignIn } from './sign-in';
-
+import { SignInWithPassword } from './sign-in-with-password';
 export type AuthModalProps = AuthModalBaseProps & {
   state:
     | 'signIn'
-    | 'loginWithPassword'
+    | 'signInWithPassword'
     | 'confirmCode'
-    | 'forgotPassword'
+    | 'setPassword'
     | 'resetPassword';
   setAuthState: (state: AuthModalProps['state']) => void;
 };
@@ -27,9 +28,9 @@ const config: {
   [k in AuthModalProps['state']]: FC<AuthPanelProps>;
 } = {
   signIn: SignIn,
-  loginWithPassword: () => <div>loginWithPassword</div>,
+  signInWithPassword: SignInWithPassword,
   confirmCode: ConfirmCode,
-  forgotPassword: () => <div>forgotPassword</div>,
+  setPassword: SetPassword,
   resetPassword: () => <div>resetPassword</div>,
 };
 
@@ -43,6 +44,7 @@ export const AuthModal: FC<AuthModalProps> = ({
   const CurrentPanel = useMemo(() => {
     return config[state];
   }, [state]);
+  console.log('index', currentEmail);
 
   return (
     <AuthModalBase open={open} setOpen={setOpen}>

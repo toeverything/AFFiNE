@@ -13,3 +13,12 @@ export const authMessage = style({
 globalStyle(`${authMessage} a`, {
   color: 'var(--affine-link-color)',
 });
+
+export const forgetPasswordButton = style({
+  fontSize: 'var(--affine-font-sm)',
+  color: 'var(--affine-text-secondary-color)',
+  position: 'absolute',
+  right: 0,
+  bottom: 0,
+  display: 'none',
+});
