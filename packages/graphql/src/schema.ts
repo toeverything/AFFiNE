@@ -155,7 +155,7 @@ export type GetUserQuery = {
     name: string;
     avatarUrl: string | null;
     email: string;
-  };
+  } | null;
 };
 
 export type GetWorkspacePublicByIdQueryVariables = Exact<{

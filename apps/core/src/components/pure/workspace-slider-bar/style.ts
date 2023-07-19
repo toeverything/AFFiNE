@@ -1,6 +1,6 @@
 import { displayFlex, styled, textEllipsis } from '@affine/component';
+import { Link } from '@mui/material';
 import { baseTheme } from '@toeverything/theme';
-import Link from 'next/link';
 
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
   return {
