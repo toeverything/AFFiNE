@@ -5,8 +5,16 @@ prometheus:
   server:
     extraFlags:
       - web.enable-remote-write-receiver
+      - web.enable-lifecycle
     persistentVolume:
       storageClass: "standard-rwo"
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 8000Mi
+      requests:
+        cpu: 1000m
+        memory: 8000Mi
 
 grafana:
   persistence:

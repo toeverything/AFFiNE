@@ -10,7 +10,7 @@ export function signUp(name: string, email: string, password: string): any {
     JSON.stringify({
       query: `mutation signUp($name: String!, $email: String!, $password: String!) {
           signUp(name: $name, email: $email, password: $password) {
-            id
+            token { token }
           }
         }`,
       variables: { name, email, password },
@@ -26,5 +26,32 @@ export function signUp(name: string, email: string, password: string): any {
     'status is 200': r => r.status === 200,
   });
 
-  return response.json('data.signUp');
+  return response.json('data.signUp.token.token');
+}
+
+export function currentUser(token: string): any {
+  const response = http.post(
+    gql,
+    JSON.stringify({
+      query: `
+          query {
+            currentUser {
+              id, name, email, emailVerified, avatarUrl, createdAt
+            }
+          }
+        `,
+    }),
+    {
+      headers: {
+        'content-type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  check(response, {
+    'status is 200': r => r.status === 200,
+  });
+
+  return response.json('data.currentUser');
 }

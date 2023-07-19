@@ -1,82 +1,34 @@
-import { check, fail } from 'k6';
-import ws from 'k6/ws';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import { group } from 'k6';
 
-import { makeConnection } from './socketio';
+import { startSync } from './sync';
 
 export const options = {
-  vus: 1000,
-  duration: '30s',
-  ext: {
-    loadimpact: {
-      projectID: 3633177,
-      name: 'websocket test',
-    },
+  stages: [
+    { duration: '10s', target: 20 },
+    { duration: '30s', target: 20 },
+    { duration: '1m', target: 20 },
+    { duration: '1m', target: 20 },
+    { duration: '1m', target: 20 },
+  ],
+  tags: {
+    name: 'sync test',
+    scenario: 'sync',
   },
 };
 
-const domain = '[::1]:3010';
-const workspaceId = '6688e9d2-8fc6-475e-885d-25d4d20fff75';
-const guid = '4c964294-3fc3-4132-9404-0caf285b70eb';
-
-function randomString(length: number, charset = 'abcdefghijklmnopqrstuvwxyz') {
-  let res = '';
-  const start = Math.random();
-  while (length--) res += charset[(start * 255 + length) % charset.length | 0];
-  return res;
-}
-
-function generateWorkspaceUpdate() {
-  const msg = [
-    'client-update',
-    { workspaceId, guid, update: randomString(100) },
-  ];
-  return `42${JSON.stringify(msg)}`;
-}
-
 export default function () {
-  const sid = makeConnection(domain);
-  const url = `ws://${domain}/socket.io/?EIO=4&transport=websocket&sid=${sid}`;
-
-  const response = ws.connect(url, null, socket => {
-    let closed = false;
-
-    socket.on('open', function open() {
-      socket.send('2probe');
-    });
-
-    socket.on('message', msg => {
-      switch (msg) {
-        case '3probe':
-          socket.setInterval(function timeout() {
-            if (!closed) {
-              socket.ping();
-              socket.send(generateWorkspaceUpdate());
-            }
-          }, 10);
-          break;
-        case '2':
-          socket.send('3');
-          break;
-        default:
-          console.log(msg);
-      }
-    });
-
-    socket.on('error', e => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      if (e.error() != 'websocket: close sent' && e.code != 1005) {
-        fail('An unexpected error occurred: ' + e.error());
-      }
-    });
-
-    socket.setTimeout(function () {
-      closed = true;
-      socket.setTimeout(function () {
-        socket.close();
-      }, 1000);
-    }, 2000);
+  group('each user uses a separate room', () => {
+    startSync(uuidv4());
   });
 
-  check(response, { 'status is 101': r => r && r.status === 101 });
+  // group('each user uses the same room', () => {
+  //   startSync('test');
+  // });
+
+  // group('pre 10 user uses a separate room', () => {
+  //   startSync(uuidv4());
+  // })
 }

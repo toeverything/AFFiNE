@@ -1,3 +1,4 @@
+import { fail } from 'k6';
 import http from 'k6/http';
 
 export enum socketResponseType {
@@ -29,6 +30,8 @@ export function makeConnection(domain: string): string {
     `http://${domain}/socket.io/?EIO=4&transport=polling&t=${hashDate()}`
   );
 
+  if (res.error) fail(`failed to handshake to socket.io: ${res.error}`);
+
   const sid = getSid(res.body as string);
 
   const data = `${socketResponseType.message}${socketResponseCode.connect}`;
@@ -56,7 +59,6 @@ export function makeConnection(domain: string): string {
  * @param message the socket.io response
  */
 export function checkResponse(response: string) {
-  console.log(response);
   return { type: parseInt(response[0]), code: parseInt(response[1]) };
 }
 

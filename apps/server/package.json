@@ -14,7 +14,7 @@
     "test:watch": "yarn exec ts-node-esm ./scripts/run-test.ts all --watch",
     "test:coverage": "c8 yarn exec ts-node-esm ./scripts/run-test.ts all",
     "test:k6:gql": "vite build -c k6.config.js && k6 run -o experimental-prometheus-rw dist/graphql.cjs",
-    "test:k6:ws": "vite build -c k6.config.js && k6 run -o experimental-prometheus-rw dist/websocket.cjs",
+    "test:k6:ws": "vite build -c k6.config.js && k6 run dist/websocket.cjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
