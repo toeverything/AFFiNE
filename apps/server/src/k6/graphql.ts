@@ -8,7 +8,7 @@ export const options = {
   ext: {
     loadimpact: {
       projectID: 3633177,
-      name: 'smoke test',
+      name: 'graphql test',
     },
   },
 };
