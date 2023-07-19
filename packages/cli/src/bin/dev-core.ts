@@ -16,6 +16,19 @@ const flags: BuildFlags = {
 
 const buildFlags = await p.group(
   {
+    distribution: () =>
+      p.select({
+        message: 'Distribution',
+        options: [
+          {
+            value: 'browser',
+          },
+          {
+            value: 'desktop',
+          },
+        ],
+        initialValue: 'browser',
+      }),
     mode: () =>
       p.select({
         message: 'Mode',
@@ -59,6 +72,7 @@ const buildFlags = await p.group(
   }
 );
 
+flags.distribution = buildFlags.distribution as any;
 flags.mode = buildFlags.mode as any;
 flags.channel = buildFlags.channel as any;
 flags.coverage = buildFlags.coverage;
