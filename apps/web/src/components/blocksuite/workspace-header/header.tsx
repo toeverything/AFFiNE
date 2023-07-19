@@ -12,7 +12,6 @@ import {
   useState,
 } from 'react';
 
-import { useGuideHidden } from '../../../hooks/use-is-first-load';
 import {
   useSidebarFloating,
   useSidebarStatus,
@@ -140,7 +139,6 @@ export const Header = forwardRef<
   HTMLDivElement,
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
-  const [isTipsHidden, setTipsHidden] = useGuideHidden();
   const [showWarning, setShowWarning] = useState(false);
   const [showGuideDownloadClientTip, setShowGuideDownloadClientTip] =
     useState(true);
