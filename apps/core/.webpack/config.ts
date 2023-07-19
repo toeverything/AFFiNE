@@ -247,7 +247,7 @@ export const createConfiguration: (
         ? [new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })]
         : [
             new MiniCssExtractPlugin({
-              filename: `[name].[chunkhash:8].css`,
+              filename: `[name].[contenthash:8].css`,
               ignoreOrder: true,
             }),
           ]),
