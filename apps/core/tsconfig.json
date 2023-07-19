@@ -45,6 +45,14 @@
     {
       "path": "../../packages/workspace"
     },
+
+    {
+      "path": "../../plugins/bookmark-block"
+    },
+    {
+      "path": "../../plugins/copilot"
+    },
+
     {
       "path": "./tsconfig.node.json"
     },
