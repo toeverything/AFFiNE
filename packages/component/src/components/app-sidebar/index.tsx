@@ -1,4 +1,4 @@
-import { NoSsr, Skeleton } from '@mui/material';
+import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
@@ -53,7 +53,6 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   const [appSidebarFloating, setAppSidebarFloating] = useAtom(
     appSidebarFloatingAtom
   );
-  const initialRender = open === undefined;
 
   const isResizing = useAtomValue(appSidebarResizingAtom);
   const navRef = useRef<HTMLDivElement>(null);
@@ -85,10 +84,6 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
   const enableAnimation = useEnableAnimation();
 
   const isMacosDesktop = environment.isDesktop && environment.isMacOs;
-  if (initialRender) {
-    // avoid the UI flash
-    return <div />;
-  }
 
   return (
     <>
@@ -107,9 +102,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         data-enable-animation={enableAnimation && !isResizing}
       >
         <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
-          <NoSsr>
-            <SidebarHeader router={props.router} />
-          </NoSsr>
+          <SidebarHeader router={props.router} />
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {props.children}
           </div>

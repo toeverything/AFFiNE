@@ -53,6 +53,7 @@
     "skipLibCheck": true, // skip all type checks for .d.ts files
 
     "paths": {
+      "@affine/cli/*": ["./packages/cli/src/*"],
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [
         "./packages/component/src/components/*/index",
@@ -92,13 +93,13 @@
       "path": "./apps/electron"
     },
     {
-      "path": "./apps/web"
-    },
-    {
       "path": "./apps/server"
     },
     {
       "path": "./apps/storybook"
+    },
+    {
+      "path": "./apps/core"
     },
     // Top level packages
     {
@@ -122,6 +123,9 @@
     },
     // Packages
     {
+      "path": "./packages/cli"
+    },
+    {
       "path": "./packages/component"
     },
     {
@@ -140,9 +144,6 @@
       "path": "./packages/y-indexeddb"
     },
     // Tests
-    {
-      "path": "./tests/unit"
-    },
     {
       "path": "./tests/kit"
     },
