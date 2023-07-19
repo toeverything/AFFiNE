@@ -16,8 +16,8 @@ import type {
 import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
 import { tryMigrate } from './utils';
 
-const indexeddbOrigin = Symbol('indexeddb-provider-origin');
-const snapshotOrigin = Symbol('snapshot-origin');
+const indexeddbOrigin = 'indexeddb-provider-origin';
+const snapshotOrigin = 'snapshot-origin';
 
 let mergeCount = 500;
 
@@ -31,13 +31,17 @@ const saveAlert = (event: BeforeUnloadEvent) => {
 };
 
 export const writeOperation = async (op: Promise<unknown>) => {
-  window.addEventListener('beforeunload', saveAlert, {
-    capture: true,
-  });
-  await op;
-  window.removeEventListener('beforeunload', saveAlert, {
-    capture: true,
-  });
+  if (self) {
+    await op;
+  } else if (window) {
+    window.addEventListener('beforeunload', saveAlert, {
+      capture: true,
+    });
+    await op;
+    window.removeEventListener('beforeunload', saveAlert, {
+      capture: true,
+    });
+  }
 };
 
 export function setMergeCount(count: number) {

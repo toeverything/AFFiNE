@@ -1,10 +1,6 @@
 import { isBrowser, isDesktop } from '@affine/env/constant';
 import type { BlockSuiteFeatureFlags } from '@affine/env/global';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import {
-  createAffineProviders,
-  createLocalProviders,
-} from '@affine/workspace/providers';
+import type { WorkspaceFlavour } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
 import {
@@ -16,6 +12,9 @@ import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/plugin-infra/__inter
 
 import { createStaticStorage } from './blob/local-static-storage';
 import { createSQLiteStorage } from './blob/sqlite-blob-storage';
+import { bindWorkerSync, createWorkerSync } from './worker/main';
+
+const workerSync = createWorkerSync();
 
 function setEditorFlags(workspace: Workspace) {
   Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
@@ -36,7 +35,7 @@ export function createEmptyBlockSuiteWorkspace(
 ): Workspace;
 export function createEmptyBlockSuiteWorkspace(
   id: string,
-  flavour: WorkspaceFlavour
+  _flavour: WorkspaceFlavour
 ): Workspace {
   const providerCreators: DocProviderCreator[] = [];
   if (INTERNAL_BLOCKSUITE_HASH_MAP.has(id)) {
@@ -46,24 +45,11 @@ export function createEmptyBlockSuiteWorkspace(
 
   const blobStorages: StoreOptions['blobStorages'] = [];
 
-  if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-    if (isBrowser) {
-      blobStorages.push(createIndexeddbStorage);
-      if (isDesktop && runtimeConfig.enableSQLiteProvider) {
-        blobStorages.push(createSQLiteStorage);
-      }
-
-      // todo(JimmFly): add support for cloud storage
+  if (isBrowser) {
+    blobStorages.push(createIndexeddbStorage);
+    if (isDesktop && runtimeConfig.enableSQLiteProvider) {
+      blobStorages.push(createSQLiteStorage);
     }
-    providerCreators.push(...createAffineProviders());
-  } else {
-    if (isBrowser) {
-      blobStorages.push(createIndexeddbStorage);
-      if (isDesktop && runtimeConfig.enableSQLiteProvider) {
-        blobStorages.push(createSQLiteStorage);
-      }
-    }
-    providerCreators.push(...createLocalProviders());
   }
   blobStorages.push(createStaticStorage);
 
@@ -76,6 +62,7 @@ export function createEmptyBlockSuiteWorkspace(
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
+  bindWorkerSync(workerSync, workspace);
   setEditorFlags(workspace);
   INTERNAL_BLOCKSUITE_HASH_MAP.set(id, workspace);
   return workspace;
