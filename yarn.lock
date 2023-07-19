@@ -158,7 +158,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/copilot@workspace:plugins/copilot":
+"@affine/copilot@workspace:*, @affine/copilot@workspace:plugins/copilot":
   version: 0.0.0-use.local
   resolution: "@affine/copilot@workspace:plugins/copilot"
   dependencies:
@@ -189,6 +189,7 @@ __metadata:
     "@affine-test/fixtures": "workspace:*"
     "@affine/bookmark-block": "workspace:*"
     "@affine/component": "workspace:*"
+    "@affine/copilot": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
@@ -389,6 +390,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/jotai@workspace:packages/jotai"
   dependencies:
+    "@blocksuite/block-std": 0.0.0-20230718155514-65ea63b4-nightly
     "@blocksuite/blocks": 0.0.0-20230718155514-65ea63b4-nightly
     "@blocksuite/editor": 0.0.0-20230718155514-65ea63b4-nightly
     "@blocksuite/global": 0.0.0-20230718155514-65ea63b4-nightly
@@ -397,6 +399,7 @@ __metadata:
     jotai: ^2.2.2
     lottie-web: ^5.12.2
   peerDependencies:
+    "@blocksuite/block-std": "*"
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
     "@blocksuite/global": "*"
