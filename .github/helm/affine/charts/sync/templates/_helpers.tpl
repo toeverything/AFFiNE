@@ -40,6 +40,7 @@ helm.sh/chart: {{ include "sync.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/monitoring: enabled
 {{- end }}
 
 {{/*
@@ -48,7 +49,6 @@ Selector labels
 {{- define "sync.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "sync.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/monitoring: enabled
 {{- end }}
 
 {{/*
