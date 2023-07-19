@@ -1,9 +1,23 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import * as p from '@clack/prompts';
+import { config } from 'dotenv';
 
 import { type BuildFlags, projectRoot } from '../config/index.js';
+
+const files = ['.env', '.env.local'];
+
+for (const file of files) {
+  if (existsSync(path.resolve(projectRoot, file))) {
+    config({
+      path: path.resolve(projectRoot, file),
+    });
+    console.log(`${file} loaded`);
+    break;
+  }
+}
 
 const cwd = path.resolve(projectRoot, 'apps', 'core');
 
