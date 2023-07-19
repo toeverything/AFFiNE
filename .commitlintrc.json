@@ -7,7 +7,7 @@
       [
         "electron",
         "server",
-        "web",
+        "core",
         "docs",
         "storybook",
         "component",
