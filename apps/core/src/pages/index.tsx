@@ -1,15 +1,10 @@
 import { DebugLogger } from '@affine/debug';
-import { WorkspaceSubPath, WorkspaceVersion } from '@affine/env/workspace';
-import {
-  type RootWorkspaceMetadataV2,
-  rootWorkspacesMetadataAtom,
-} from '@affine/workspace/atom';
+import { WorkspaceSubPath } from '@affine/env/workspace';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
-import { rootStore } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
 import { lazy, useEffect, useRef } from 'react';
 
-import { WorkspaceAdapters } from '../adapters/workspace';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useWorkspace } from '../hooks/use-workspace';
 
@@ -22,36 +17,6 @@ const AllWorkspaceModals = lazy(() =>
 type WorkspaceLoaderProps = {
   id: string;
 };
-
-const createFirst = (): RootWorkspaceMetadataV2[] => {
-  const Plugins = Object.values(WorkspaceAdapters).sort(
-    (a, b) => a.loadPriority - b.loadPriority
-  );
-
-  return Plugins.flatMap(Plugin => {
-    return Plugin.Events['app:init']?.().map(
-      id =>
-        ({
-          id,
-          flavour: Plugin.flavour,
-          // new workspace should all support sub-doc feature
-          version: WorkspaceVersion.SubDoc,
-        }) satisfies RootWorkspaceMetadataV2
-    );
-  }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
-};
-
-rootStore
-  .get(rootWorkspacesMetadataAtom)
-  .then(meta => {
-    if (meta.length === 0 && localStorage.getItem('is-first-open') === null) {
-      const result = createFirst();
-      console.info('create first workspace', result);
-      localStorage.setItem('is-first-open', 'false');
-      rootStore.set(rootWorkspacesMetadataAtom, result).catch(console.error);
-    }
-  })
-  .catch(console.error);
 
 const WorkspaceLoader = (props: WorkspaceLoaderProps): null => {
   useWorkspace(props.id);
