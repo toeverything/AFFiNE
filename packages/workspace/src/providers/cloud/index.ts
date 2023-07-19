@@ -54,10 +54,8 @@ export const createMergeCloudSnapshotProvider: DocProviderCreator = (
   doc
 ): ActiveDocProvider => {
   let _resolve: () => void;
-  let _reject: (error: unknown) => void;
-  const promise = new Promise<void>((resolve, reject) => {
+  const promise = new Promise<void>(resolve => {
     _resolve = resolve;
-    _reject = reject;
   });
 
   return {

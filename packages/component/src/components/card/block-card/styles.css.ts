@@ -5,21 +5,22 @@ export const blockCard = style({
   gap: '12px',
   padding: '8px 12px',
   color: 'var(--affine-text-primary-color)',
-  backgroundColor: 'var(--affine-background-primary-color)',
-  borderRadius: '4px',
+  backgroundColor: 'var(--affine-white-80)',
+  borderRadius: '8px',
   userSelect: 'none',
   cursor: 'pointer',
   textAlign: 'start',
+  boxShadow: 'var(--affine-shadow-1)',
   selectors: {
     '&:hover': {
-      boxShadow: 'var(--affine-shadow-1)',
+      backgroundColor: 'var(--affine-hover-color)',
     },
     '&[aria-disabled]': {
       color: 'var(--affine-text-disable-color)',
     },
     '&[aria-disabled]:hover': {
+      backgroundColor: 'var(--affine-white-80)',
       cursor: 'not-allowed',
-      boxShadow: 'none',
     },
     // TODO active styles
   },

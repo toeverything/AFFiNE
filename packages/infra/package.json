@@ -1,22 +1,22 @@
 {
   "name": "@toeverything/infra",
   "type": "module",
-  "module": "./dist/index.mjs",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/src/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
     "./core/*": {
-      "types": "./dist/core/*.d.ts",
+      "types": "./dist/src/core/*.d.ts",
       "import": "./dist/core/*.js",
       "require": "./dist/core/*.cjs"
     },
     "./preload/*": {
-      "types": "./dist/preload/*.d.ts",
+      "types": "./dist/src/preload/*.d.ts",
       "import": "./dist/preload/*.js",
       "require": "./dist/preload/*.cjs"
     }
