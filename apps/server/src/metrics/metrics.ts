@@ -5,8 +5,6 @@ import { metricsCreator } from './utils';
 
 @Injectable()
 export class Metrics implements OnModuleDestroy {
-  constructor() {}
-
   onModuleDestroy(): void {
     register.clear();
   }
