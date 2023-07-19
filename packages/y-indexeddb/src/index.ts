@@ -16,8 +16,8 @@ import type {
 import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
 import { tryMigrate } from './utils';
 
-const indexeddbOrigin = Symbol('indexeddb-provider-origin');
-const snapshotOrigin = Symbol('snapshot-origin');
+const indexeddbOrigin = 'indexeddb-provider-origin';
+const snapshotOrigin = 'snapshot-origin';
 
 let mergeCount = 500;
 
