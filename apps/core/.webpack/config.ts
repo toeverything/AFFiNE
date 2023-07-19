@@ -209,7 +209,9 @@ export const createConfiguration: (
             {
               test: /\.css$/,
               use: [
-                MiniCssExtractPlugin.loader,
+                buildFlags.mode === 'development'
+                  ? 'style-loader'
+                  : MiniCssExtractPlugin.loader,
                 {
                   loader: 'css-loader',
                   options: {
@@ -243,7 +245,12 @@ export const createConfiguration: (
       ...(IN_CI ? [] : [new webpack.ProgressPlugin({ percentBy: 'entries' })]),
       ...(buildFlags.mode === 'development'
         ? [new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })]
-        : []),
+        : [
+            new MiniCssExtractPlugin({
+              filename: `[name].[contenthash:8].css`,
+              ignoreOrder: true,
+            }),
+          ]),
       new HTMLPlugin({
         template: join(rootPath, '.webpack', 'template.html'),
         inject: 'body',
@@ -251,10 +258,6 @@ export const createConfiguration: (
         minify: false,
         chunks: ['index', 'plugin'],
         filename: 'index.html',
-      }),
-      new MiniCssExtractPlugin({
-        filename: `[name].[chunkhash:8].css`,
-        ignoreOrder: true,
       }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
@@ -289,6 +292,36 @@ export const createConfiguration: (
         project: 'affine-toeverything',
       })
     );
+  }
+
+  if (buildFlags.mode === 'development') {
+    config.optimization = {
+      ...config.optimization,
+      minimize: false,
+      runtimeChunk: false,
+      splitChunks: {
+        maxInitialRequests: Infinity,
+        chunks: 'all',
+        cacheGroups: {
+          defaultVendors: {
+            test: `[\\/]node_modules[\\/](?!.*vanilla-extract)`,
+            priority: -10,
+            reuseExistingChunk: true,
+          },
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+          styles: {
+            name: 'styles',
+            type: 'css/mini-extract',
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      },
+    };
   }
 
   if (
