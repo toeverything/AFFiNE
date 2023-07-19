@@ -249,7 +249,7 @@ export const createConfiguration: (
         inject: 'body',
         scriptLoading: 'defer',
         minify: false,
-        chunks: ['index'],
+        chunks: ['index', 'plugin'],
         filename: 'index.html',
       }),
       new MiniCssExtractPlugin({
