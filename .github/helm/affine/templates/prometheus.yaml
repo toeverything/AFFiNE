@@ -1,5 +1,5 @@
 {{- if .Values.gke.enabled -}}
-apiVersion: v1
+apiVersion: monitoring.googleapis.com/v1
 kind: PodMonitoring
 metadata:
   name: prometheus
