@@ -1,5 +1,3 @@
-import { hash } from './utils.js';
-
 function testPackageName(regexp: RegExp): (module: any) => boolean {
   return (module: any) =>
     module.nameForCondition && regexp.test(module.nameForCondition());
@@ -13,7 +11,7 @@ export const productionCacheGroups = {
       const name =
         module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)?.[1] ??
         'unknown';
-      return `npm-async-${hash(name)}`;
+      return `npm-async-${name}`;
     },
     priority: Number.MAX_SAFE_INTEGER,
     chunks: 'async' as const,
