@@ -24,7 +24,7 @@ import { pageSettingFamily } from '../atoms';
 import { contentLayoutAtom } from '../atoms/layout';
 import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-import { editor } from './page-detail-editor.css';
+import * as styles from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
 
 export type PageDetailEditorProps = {
@@ -72,7 +72,7 @@ const EditorWrapper = memo(function EditorWrapper({
 
   return (
     <Editor
-      className={clsx(editor, {
+      className={clsx(styles.editor, {
         'full-screen': appSettings.fullWidthLayout,
       })}
       style={

@@ -241,6 +241,7 @@ __metadata:
     react-resizable-panels: ^0.0.53
     react-router-dom: ^6.14.1
     rxjs: ^7.8.1
+    style-loader: ^3.3.3
     swc-loader: ^0.2.3
     swc-plugin-coverage-instrument: ^0.0.19
     swr: ^2.1.5
@@ -30168,6 +30169,15 @@ __metadata:
     "@tokenizer/token": ^0.3.0
     peek-readable: ^4.1.0
   checksum: 90732cff3f325aef7c47c511f609b593e0873ec77b5081810071cde941344e6a0ee3ccb0cae1a9f5b4e12c81a2546fd6b322fabcdfbd1dd08362c2ce5291334a
+  languageName: node
+  linkType: hard
+
+"style-loader@npm:^3.3.3":
+  version: 3.3.3
+  resolution: "style-loader@npm:3.3.3"
+  peerDependencies:
+    webpack: ^5.0.0
+  checksum: f59c953f56f6a935bd6a1dfa409f1128fed2b66b48ce4a7a75b85862a7156e5e90ab163878962762f528ec4d510903d828da645e143fbffd26f055dc1c094078
   languageName: node
   linkType: hard
 

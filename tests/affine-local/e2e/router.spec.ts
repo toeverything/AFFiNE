@@ -16,6 +16,8 @@ test('goto not found workspace', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   const currentUrl = page.url();
+  // if doesn't wait for timeout, data won't be saved into indexedDB
+  await page.waitForTimeout(1000);
   await page.goto(new URL('/workspace/invalid/all', webUrl).toString());
   await waitEditorLoad(page);
   expect(page.url()).toEqual(currentUrl);
