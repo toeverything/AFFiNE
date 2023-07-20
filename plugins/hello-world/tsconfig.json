@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "references": [
+    {
+      "path": "../../packages/plugin-infra"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}
