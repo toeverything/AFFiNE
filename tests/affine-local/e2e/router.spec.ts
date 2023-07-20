@@ -14,7 +14,6 @@ test('goto not found page', async ({ page }) => {
 
 test('goto not found workspace', async ({ page }) => {
   await openHomePage(page);
-  await page.locator('body').click();
   await waitEditorLoad(page);
   const currentUrl = page.url();
   // if doesn't wait for timeout, data won't be saved into indexedDB
