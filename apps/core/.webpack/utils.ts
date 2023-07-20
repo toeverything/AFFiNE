@@ -6,5 +6,6 @@ export function computeCacheKey(buildFlags: BuildFlags) {
     'node' + process.version,
     buildFlags.mode,
     buildFlags.distribution,
+    buildFlags.channel,
   ].join('-');
 }
