@@ -49,7 +49,7 @@ export const BlockSuiteEditorHeader: FC<
 
   const headerRef = useRef<HTMLDivElement>(null);
   assertExists(pageMeta);
-  const title = pageMeta.title;
+  const title = pageMeta?.title;
   return (
     <Header ref={headerRef} {...props}>
       {children}
@@ -73,7 +73,7 @@ export const BlockSuiteEditorHeader: FC<
                     className={styles.title}
                     type="text"
                     data-testid="title-content"
-                    defaultValue={pageMeta.title}
+                    defaultValue={pageMeta?.title}
                     onBlur={handleClick}
                     ref={inputRef}
                   />
