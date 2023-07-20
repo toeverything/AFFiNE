@@ -77,10 +77,10 @@ const customRequire = (id: string) => {
     return harden(BlockSuiteGlobalUtils);
   }
   if (id === 'jotai') {
-    return Jotai;
+    return harden(Jotai);
   }
   if (id === 'jotai/utils') {
-    return JotaiUtils;
+    return harden(JotaiUtils);
   }
   if (id === '../app.js') {
     return entryCompartment.evaluate('exports');
