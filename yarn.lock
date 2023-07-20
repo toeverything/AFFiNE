@@ -64,19 +64,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/bookmark-block@workspace:*, @affine/bookmark-block@workspace:plugins/bookmark-block":
+"@affine/bookmark-block@workspace:plugins/bookmark-block":
   version: 0.0.0-use.local
   resolution: "@affine/bookmark-block@workspace:plugins/bookmark-block"
   dependencies:
+    "@toeverything/plugin-infra": "workspace:*"
+    link-preview-js: ^3.0.4
+  languageName: unknown
+  linkType: soft
+
+"@affine/bookmark-plugin@workspace:plugins/bookmark":
+  version: 0.0.0-use.local
+  resolution: "@affine/bookmark-plugin@workspace:plugins/bookmark"
+  dependencies:
     "@affine/component": "workspace:*"
+    "@blocksuite/icons": ^2.1.25
     "@toeverything/plugin-infra": "workspace:*"
     foxact: ^0.2.11
-    link-preview-js: ^3.0.4
-    react: 18.2.0
-    react-dom: 18.2.0
-  peerDependencies:
-    react: "*"
-    react-dom: "*"
   languageName: unknown
   linkType: soft
 
@@ -165,8 +169,6 @@ __metadata:
     "@affine/component": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
     "@types/marked": ^5.0.0
-    "@types/react": ^18.2.14
-    "@types/react-dom": ^18.2.6
     idb: ^7.1.1
     jotai: ^2.2.2
     langchain: ^0.0.107
@@ -187,7 +189,6 @@ __metadata:
   resolution: "@affine/core@workspace:apps/core"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
-    "@affine/bookmark-block": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/copilot": "workspace:*"
     "@affine/debug": "workspace:*"
@@ -241,6 +242,7 @@ __metadata:
     react-resizable-panels: ^0.0.53
     react-router-dom: ^6.14.1
     rxjs: ^7.8.1
+    ses: ^0.18.5
     style-loader: ^3.3.3
     swc-loader: ^0.2.3
     swc-plugin-coverage-instrument: ^0.0.19
@@ -373,6 +375,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/hello-world-plugin@workspace:plugins/hello-world":
+  version: 0.0.0-use.local
+  resolution: "@affine/hello-world-plugin@workspace:plugins/hello-world"
+  dependencies:
+    "@affine/component": "workspace:*"
+    "@blocksuite/icons": ^2.1.25
+    "@toeverything/plugin-infra": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@affine/i18n@workspace:*, @affine/i18n@workspace:packages/i18n":
   version: 0.0.0-use.local
   resolution: "@affine/i18n@workspace:packages/i18n"
@@ -434,7 +446,7 @@ __metadata:
     "@typescript-eslint/parser": ^5.60.1
     "@vanilla-extract/vite-plugin": ^3.8.2
     "@vanilla-extract/webpack-plugin": ^2.2.0
-    "@vitejs/plugin-react": ^4.0.1
+    "@vitejs/plugin-react-swc": ^3.3.2
     "@vitest/coverage-istanbul": ^0.32.2
     "@vitest/ui": ^0.32.2
     eslint: ^8.44.0
@@ -464,6 +476,7 @@ __metadata:
     typescript: ^5.1.6
     vite: ^4.3.9
     vite-plugin-istanbul: ^4.1.0
+    vite-plugin-static-copy: ^0.17.0
     vite-tsconfig-paths: ^4.2.0
     vitest: ^0.32.2
     vitest-fetch-mock: ^0.2.2
@@ -4654,6 +4667,13 @@ __metadata:
   version: 0.3.1
   resolution: "@emotion/weak-memoize@npm:0.3.1"
   checksum: b2be47caa24a8122622ea18cd2d650dbb4f8ad37b636dc41ed420c2e082f7f1e564ecdea68122b546df7f305b159bf5ab9ffee872abd0f052e687428459af594
+  languageName: node
+  linkType: hard
+
+"@endo/env-options@npm:^0.1.1":
+  version: 0.1.1
+  resolution: "@endo/env-options@npm:0.1.1"
+  checksum: c721db3e2d3f9a52a5c391dc8e6d473ffc44cf2bb252fad3048551e35aac52484d612753211116ff9a7157a0768d7c61352c494f491e3463e78fef438beb1d42
   languageName: node
   linkType: hard
 
@@ -11385,7 +11405,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@swc/core@npm:^1.3.70":
+"@swc/core@npm:^1.3.61, @swc/core@npm:^1.3.70":
   version: 1.3.70
   resolution: "@swc/core@npm:1.3.70"
   dependencies:
@@ -12838,6 +12858,17 @@ __metadata:
   peerDependencies:
     webpack: ^4.30.0 || ^5.20.2
   checksum: 3e1741062eb849192558718e85c99d2e1aeefab01f17863d2381d493ec337a1a5137b8aef7bb60687ad754facda184d15ba763231f7bdad307170761755abf67
+  languageName: node
+  linkType: hard
+
+"@vitejs/plugin-react-swc@npm:^3.3.2":
+  version: 3.3.2
+  resolution: "@vitejs/plugin-react-swc@npm:3.3.2"
+  dependencies:
+    "@swc/core": ^1.3.61
+  peerDependencies:
+    vite: ^4
+  checksum: 1e44b1b7c50b6ae381e2ded9a7971af42286144bf257d7ed1a9dbf8acec0c4af78fe46982941566d31b80b7886649d9b1c06a873571d228e0b8fce68742b9ff4
   languageName: node
   linkType: hard
 
@@ -19460,8 +19491,8 @@ __metadata:
   linkType: hard
 
 "foxact@npm:^0.2.11":
-  version: 0.2.11
-  resolution: "foxact@npm:0.2.11"
+  version: 0.2.17
+  resolution: "foxact@npm:0.2.17"
   dependencies:
     client-only: ^0.0.1
     server-only: ^0.0.1
@@ -19470,7 +19501,7 @@ __metadata:
   peerDependenciesMeta:
     react:
       optional: true
-  checksum: 711a5d1e287c45eb258a9003910d13fc2c82f3c6cd0e4e9c673dbe64c6a7d95da7cc983b5f143270bc6304b9ceb0de2d25c01588e066e01e8eb0dbb55e55eaa6
+  checksum: 9229ac42032dbce52c95f5583601ba5dbfe8e4bd40b6ec3b372d91793b7b621e01eb45bb953dfe077e65a2ecd4dcdaa42c8f1c60efbf43048a3cd0038a754b60
   languageName: node
   linkType: hard
 
@@ -29218,6 +29249,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ses@npm:^0.18.5":
+  version: 0.18.5
+  resolution: "ses@npm:0.18.5"
+  dependencies:
+    "@endo/env-options": ^0.1.1
+  checksum: b41faaf28efc97c09b0322de5c12603e015238e4b2cf5195c8fc3f5fb9bc66169dd394c63bcdb30d8fa36a55d03eeda3df64857ab724b2297fb6b60c4f5dc0e2
+  languageName: node
+  linkType: hard
+
 "set-blocking@npm:^2.0.0":
   version: 2.0.0
   resolution: "set-blocking@npm:2.0.0"
@@ -31921,6 +31961,20 @@ __metadata:
   peerDependencies:
     vite: ">=2.9.1 <= 5"
   checksum: b7b766638ec8d8f261ea758c61bdfeb66e00b1dbdd456db93e9541dd13dce63a4707faeeb888b516f7150a5cdb10fa8775dfdc314a39e975f8ca15d26c11c50b
+  languageName: node
+  linkType: hard
+
+"vite-plugin-static-copy@npm:^0.17.0":
+  version: 0.17.0
+  resolution: "vite-plugin-static-copy@npm:0.17.0"
+  dependencies:
+    chokidar: ^3.5.3
+    fast-glob: ^3.2.11
+    fs-extra: ^11.1.0
+    picocolors: ^1.0.0
+  peerDependencies:
+    vite: ^3.0.0 || ^4.0.0
+  checksum: b73f001f080517d7c2342ad5b0779c1e5ec8b5820e85a57280e8f979d095946a32ab717a59eaae60e3f715784a138785208619aa6d936cd9a80e6a03e364e4fc
   languageName: node
   linkType: hard
 

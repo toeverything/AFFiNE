@@ -6,7 +6,7 @@ import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import { z } from 'zod';
 
-import { createEmptyBlockSuiteWorkspace } from '../utils';
+import { getOrCreateWorkspace } from '../manager';
 
 const getStorage = () => createJSONStorage(() => localStorage);
 
@@ -41,7 +41,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     if (!id) {
       return null;
     }
-    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+    const blockSuiteWorkspace = getOrCreateWorkspace(
       id,
       WorkspaceFlavour.LOCAL
     );
@@ -59,7 +59,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
       storage.setItem(kStoreKey, []);
     const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(doc);
     const id = nanoid();
-    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+    const blockSuiteWorkspace = getOrCreateWorkspace(
       id,
       WorkspaceFlavour.LOCAL
     );

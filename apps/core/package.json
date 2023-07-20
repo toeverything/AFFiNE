@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
-    "@affine/bookmark-block": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/copilot": "workspace:*",
     "@affine/debug": "workspace:*",
@@ -53,6 +52,7 @@
     "react-resizable-panels": "^0.0.53",
     "react-router-dom": "^6.14.1",
     "rxjs": "^7.8.1",
+    "ses": "^0.18.5",
     "swr": "^2.1.5",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.6",

@@ -62,6 +62,7 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
 };
 
 const cache: WeakMap<Doc, Uint8Array> = new WeakMap();
+const indexedDBDownloadOrigin = 'indexeddb-download-provider';
 
 const createIndexedDBDownloadProvider: DocProviderCreator = (
   id,
@@ -76,11 +77,11 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
   async function downloadBinaryRecursively(doc: Doc) {
     if (cache.has(doc)) {
       const binary = cache.get(doc) as Uint8Array;
-      Y.applyUpdate(doc, binary);
+      Y.applyUpdate(doc, binary, indexedDBDownloadOrigin);
     } else {
       const binary = await downloadBinary(doc.guid);
       if (binary) {
-        Y.applyUpdate(doc, binary);
+        Y.applyUpdate(doc, binary, indexedDBDownloadOrigin);
         cache.set(doc, binary);
       }
     }

@@ -262,6 +262,7 @@ export const createConfiguration: (
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),
+        'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({
@@ -275,12 +276,13 @@ export const createConfiguration: (
 
     devServer: {
       hot: 'only',
-      liveReload: false,
+      liveReload: true,
       client: undefined,
       historyApiFallback: true,
       static: {
         directory: resolve(rootPath, 'public'),
         publicPath: '/',
+        watch: true,
       },
     } as DevServerConfiguration,
   } satisfies webpack.Configuration;
