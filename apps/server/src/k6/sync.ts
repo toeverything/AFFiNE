@@ -6,7 +6,7 @@ import ws from 'k6/ws';
 
 import { makeConnection } from './socketio';
 
-const domain = '[::1]:3010';
+const domain = 'affine.fail';
 
 function randomString(length: number, charset = 'abcdefghijklmnopqrstuvwxyz') {
   let res = '';
@@ -25,7 +25,7 @@ function generateWorkspaceUpdate(workspaceId: string, guid = uuidv4()) {
 
 export function startSync(workspaceId: string) {
   const sid = makeConnection(domain);
-  const url = `ws://${domain}/socket.io/?EIO=4&transport=websocket&sid=${sid}`;
+  const url = `wss://${domain}/socket.io/?EIO=4&transport=websocket&sid=${sid}`;
 
   const response = ws.connect(url, null, socket => {
     let closed = false;

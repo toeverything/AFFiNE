@@ -7,11 +7,11 @@ import { startSync } from './sync';
 
 export const options = {
   stages: [
-    { duration: '10s', target: 20 },
-    { duration: '30s', target: 20 },
-    { duration: '1m', target: 20 },
-    { duration: '1m', target: 20 },
-    { duration: '1m', target: 20 },
+    { duration: '10s', target: 100 },
+    { duration: '30s', target: 200 },
+    { duration: '1m', target: 500 },
+    { duration: '1m', target: 1000 },
+    { duration: '1m', target: 0 },
   ],
   tags: {
     name: 'sync test',
