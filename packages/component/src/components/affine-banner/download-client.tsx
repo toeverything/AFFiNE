@@ -1,5 +1,5 @@
 import { Trans } from '@affine/i18n';
-import { CloseIcon,Logo1Icon } from '@blocksuite/icons';
+import { CloseIcon, Logo1Icon } from '@blocksuite/icons';
 
 import {
   downloadCloseButtonStyle,
