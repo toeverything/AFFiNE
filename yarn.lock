@@ -623,7 +623,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/y-provider@workspace:packages/y-provider":
+"@affine/y-provider@workspace:*, @affine/y-provider@workspace:packages/y-provider":
   version: 0.0.0-use.local
   resolution: "@affine/y-provider@workspace:packages/y-provider"
   dependencies:
@@ -11633,6 +11633,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
   dependencies:
+    "@affine/y-provider": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230718155514-65ea63b4-nightly
     "@blocksuite/store": 0.0.0-20230718155514-65ea63b4-nightly
     idb: ^7.1.1
