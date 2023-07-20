@@ -8,7 +8,7 @@ import { logger } from '../logger';
 import type { YOrigin } from '../type';
 import { getWorkspaceMeta } from '../workspace';
 import { BaseSQLiteAdapter } from './base-db-adapter';
-import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
+import { WorkspaceSQLiteDB } from './workspace-db-adapter';
 
 const FLUSH_WAIT_TIME = 5000;
 const FLUSH_MAX_WAIT_TIME = 10000;

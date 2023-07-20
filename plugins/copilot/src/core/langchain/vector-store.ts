@@ -1,7 +1,7 @@
 // fixme: vector store has not finished
 import type { DBSchema } from 'idb';
 import { Document } from 'langchain/document';
-import type { Embeddings } from 'langchain/embeddings';
+import { Embeddings } from 'langchain/embeddings';
 import { VectorStore } from 'langchain/vectorstores';
 import { similarity as ml_distance_similarity } from 'ml-distance';
 
