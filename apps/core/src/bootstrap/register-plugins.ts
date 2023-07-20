@@ -27,6 +27,17 @@ import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
 
+if (!process.env.COVERAGE) {
+  lockdown({
+    evalTaming: 'unsafeEval',
+    overrideTaming: 'severe',
+    consoleTaming: 'unsafe',
+    errorTaming: 'unsafe',
+    errorTrapping: 'platform',
+    unhandledRejectionTrapping: 'report',
+  });
+}
+
 const PluginProvider = ({ children }: PropsWithChildren) =>
   React.createElement(
     Provider,
@@ -36,11 +47,9 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
     children
   );
 
-console.log('JotaiUtils', JotaiUtils);
-
 const customRequire = (id: string) => {
   if (id === '@toeverything/plugin-infra/manager') {
-    return harden(Manager);
+    return Manager;
   }
   if (id === 'react') {
     return React;
@@ -55,22 +64,22 @@ const customRequire = (id: string) => {
     return ReactDomClient;
   }
   if (id === '@blocksuite/icons') {
-    return harden(Icons);
+    return Icons;
   }
   if (id === '@affine/component') {
-    return harden(AFFiNEComponent);
+    return AFFiNEComponent;
   }
   if (id === '@blocksuite/blocks/std') {
-    return harden(BlockSuiteBlocksStd);
+    return BlockSuiteBlocksStd;
   }
   if (id === '@blocksuite/global/utils') {
-    return harden(BlockSuiteGlobalUtils);
+    return BlockSuiteGlobalUtils;
   }
   if (id === 'jotai') {
-    return harden(Jotai);
+    return Jotai;
   }
   if (id === 'jotai/utils') {
-    return harden(JotaiUtils);
+    return JotaiUtils;
   }
   if (id === '../plugin.js') {
     return entryCompartment.evaluate('exports');
@@ -80,7 +89,7 @@ const customRequire = (id: string) => {
 
 const createGlobalThis = () => {
   return {
-    process: harden({
+    process: Object.freeze({
       env: {
         NODE_ENV: process.env.NODE_ENV,
       },
