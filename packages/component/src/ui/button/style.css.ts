@@ -15,22 +15,22 @@ export const button = style({
   ['WebkitAppRegion' as string]: 'no-drag',
   // changeable
   height: '28px',
-  backgroundColor: 'var(--affine-white)',
+  background: 'var(--affine-white)',
   borderColor: 'var(--affine-border-color)',
   color: 'var(--affine-text-primary-color)',
 
   selectors: {
     '&:hover': {
-      backgroundColor: 'var(--affine-hover-color)',
+      background: 'var(--affine-hover-color)',
     },
-    '&.disabled': {
+    '&.disabled, &.loading': {
       opacity: '.4',
       cursor: 'default',
       color: 'var(--affine-disable-color)',
       pointerEvents: 'none',
     },
-    '&.disabled:hover': {
-      backgroundColor: 'inherit',
+    '&.disabled:hover, &.loading:hover': {
+      background: 'inherit',
     },
 
     '&.block': { display: 'flex', width: '100%' },
@@ -63,11 +63,12 @@ export const button = style({
 
     '&.primary': {
       color: 'var(--affine-white)',
-      backgroundColor: 'var(--affine-primary-color)',
+      background: 'var(--affine-primary-color)',
       borderColor: 'var(--affine-black-10)',
+      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.primary:hover': {
-      backgroundColor:
+      background:
         'linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), var(--affine-primary-color)',
     },
     '&.primary.disabled': {
@@ -75,16 +76,17 @@ export const button = style({
       cursor: 'default',
     },
     '&.primary.disabled:hover': {
-      backgroundColor: 'var(--affine-primary-color)',
+      background: 'var(--affine-primary-color)',
     },
 
     '&.error': {
       color: 'var(--affine-white)',
-      backgroundColor: 'var(--affine-error-color)',
+      background: 'var(--affine-error-color)',
       borderColor: 'var(--affine-black-10)',
+      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.error:hover': {
-      backgroundColor:
+      background:
         'linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), var(--affine-error-color)',
     },
     '&.error.disabled': {
@@ -92,16 +94,17 @@ export const button = style({
       cursor: 'default',
     },
     '&.error.disabled:hover': {
-      backgroundColor: 'var(--affine-error-color)',
+      background: 'var(--affine-error-color)',
     },
 
     '&.warning': {
       color: 'var(--affine-white)',
-      backgroundColor: 'var(--affine-warning-color)',
+      background: 'var(--affine-warning-color)',
       borderColor: 'var(--affine-black-10)',
+      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.warning:hover': {
-      backgroundColor:
+      background:
         'linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), var(--affine-warning-color)',
     },
     '&.warning.disabled': {
@@ -109,16 +112,17 @@ export const button = style({
       cursor: 'default',
     },
     '&.warning.disabled:hover': {
-      backgroundColor: 'var(--affine-warning-color)',
+      background: 'var(--affine-warning-color)',
     },
 
     '&.success': {
       color: 'var(--affine-white)',
-      backgroundColor: 'var(--affine-success-color)',
+      background: 'var(--affine-success-color)',
       borderColor: 'var(--affine-black-10)',
+      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.success:hover': {
-      backgroundColor:
+      background:
         'linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), var(--affine-success-color)',
     },
     '&.success.disabled': {
@@ -126,16 +130,17 @@ export const button = style({
       cursor: 'default',
     },
     '&.success.disabled:hover': {
-      backgroundColor: 'var(--affine-success-color)',
+      background: 'var(--affine-success-color)',
     },
 
     '&.processing': {
       color: 'var(--affine-white)',
-      backgroundColor: 'var(--affine-processing-color)',
+      background: 'var(--affine-processing-color)',
       borderColor: 'var(--affine-black-10)',
+      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.processing:hover': {
-      backgroundColor:
+      background:
         'linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), var(--affine-processing-color)',
     },
     '&.processing.disabled': {
@@ -143,7 +148,7 @@ export const button = style({
       cursor: 'default',
     },
     '&.processing.disabled:hover': {
-      backgroundColor: 'var(--affine-processing-color)',
+      background: 'var(--affine-processing-color)',
     },
   },
 });
@@ -157,6 +162,8 @@ globalStyle(`${button} > span`, {
 export const buttonIcon = style({
   flexShrink: 0,
   display: 'inline-flex',
+  justifyContent: 'center',
+  alignItems: 'center',
   color: 'var(--affine-icon-color)',
   fontSize: '16px',
   width: '16px',

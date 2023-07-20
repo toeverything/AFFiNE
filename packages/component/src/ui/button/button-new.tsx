@@ -5,10 +5,11 @@ import {
   type HTMLAttributes,
   type PropsWithChildren,
   type ReactElement,
+  useMemo,
 } from 'react';
 
 import { button, buttonIcon } from './style.css';
-
+import { Loading } from '../loading';
 export type ButtonType =
   | 'default'
   | 'primary'
@@ -81,6 +82,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ...defaultProps,
       ...props,
     };
+
+    const currentIcon = useMemo(() => {
+      if (loading) {
+        return <Loading />;
+      }
+      return icon;
+    }, [icon, loading]);
+
     return (
       <button
         ref={ref}
@@ -97,22 +106,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           circle: shape === 'circle',
           round: shape === 'round',
           block,
+          loading,
         })}
         disabled={disabled}
         {...otherProps}
       >
-        {loading ? (
-          <></>
-        ) : (
-          <>
-            {' '}
-            {icon && iconPosition === 'start' ? (
-              <ButtonIcon {...props} />
-            ) : null}
-            <span>{children}</span>
-            {icon && iconPosition === 'end' ? <ButtonIcon {...props} /> : null}
-          </>
-        )}
+        {currentIcon && iconPosition === 'start' ? (
+          <ButtonIcon {...props} icon={currentIcon} />
+        ) : null}
+        <span>{children}</span>
+        {currentIcon && iconPosition === 'end' ? (
+          <ButtonIcon {...props} />
+        ) : null}
       </button>
     );
   }
