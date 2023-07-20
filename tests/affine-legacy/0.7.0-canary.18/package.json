@@ -11,15 +11,15 @@
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
     "@affine/env": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230718155514-65ea63b4-nightly",
-    "@blocksuite/blocks": "0.0.0-20230718155514-65ea63b4-nightly",
-    "@blocksuite/global": "0.0.0-20230718155514-65ea63b4-nightly",
-    "@blocksuite/store": "0.0.0-20230718155514-65ea63b4-nightly",
+    "@blocksuite/block-std": "0.0.0-20230719163314-76d863fc-nightly",
+    "@blocksuite/blocks": "0.0.0-20230719163314-76d863fc-nightly",
+    "@blocksuite/global": "0.0.0-20230719163314-76d863fc-nightly",
+    "@blocksuite/store": "0.0.0-20230719163314-76d863fc-nightly",
     "@playwright/test": "^1.35.1",
     "express": "^4.18.2",
     "http-proxy-middleware": "^3.0.0-beta.1",
     "serve": "^14.2.0",
-    "vitest": "^0.32.2"
+    "vitest": "^0.33.0"
   },
   "version": "0.7.0-canary.47"
 }

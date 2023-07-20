@@ -9,7 +9,7 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const pluginOutputDir = resolve(rootDir, './apps/electron/dist/plugins');
 
 export default defineConfig({
-  plugins: [react(), vanillaExtractPlugin()],
+  plugins: [react() as any, vanillaExtractPlugin()],
   assetsInclude: ['**/*.md'],
   resolve: {
     alias: {
