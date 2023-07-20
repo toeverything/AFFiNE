@@ -5,9 +5,9 @@ import { DropdownButton } from '@affine/component';
 import { RadioButton, RadioButtonGroup } from '@affine/component';
 import { Menu } from '@affine/component';
 import { toast } from '@affine/component';
+import { InformationIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
-
 export default {
   title: 'AFFiNE/Button',
   component: Button,
@@ -22,8 +22,9 @@ const Template: StoryFn<ButtonProps> = args => <Button {...args} />;
 export const Primary = Template.bind(undefined);
 Primary.args = {
   type: 'primary',
-  children: 'This is a primary button',
+  children: 'Content',
   onClick: () => toast('Click button'),
+  icon: <InformationIcon />,
 };
 
 export const Default = Template.bind(undefined);
@@ -35,7 +36,7 @@ Default.args = {
 
 export const Light = Template.bind(undefined);
 Light.args = {
-  type: 'light',
+  type: 'error',
   children: 'This is a light button',
   onClick: () => toast('Click button'),
 };
@@ -49,7 +50,7 @@ Warning.args = {
 
 export const Danger = Template.bind(undefined);
 Danger.args = {
-  type: 'danger',
+  type: 'success',
   children: 'This is a danger button',
   onClick: () => toast('Click button'),
 };
