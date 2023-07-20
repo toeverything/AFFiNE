@@ -45,7 +45,7 @@
       "options": {
         "script": "build"
       },
-      "outputs": ["{projectRoot}/dist"]
+      "outputs": ["{projectRoot}/dist", "{projectRoot}/public/plugins"]
     }
   }
 }

@@ -7,21 +7,22 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
-import type {
-  AffinePlugin,
-  LayoutNode,
-  PluginUIAdapter,
-} from '@toeverything/plugin-infra/type';
-import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
+import type { CallbackMap } from '@toeverything/plugin-infra/entry';
+import {
+  affinePluginsAtom,
+  contentLayoutAtom,
+  editorItemsAtom,
+  rootStore,
+  windowItemsAtom,
+} from '@toeverything/plugin-infra/manager';
+import type { AffinePlugin, LayoutNode } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, FC, ReactElement } from 'react';
-import { memo, Suspense, useCallback, useMemo } from 'react';
+import { memo, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
-import { contentLayoutAtom } from '../atoms/layout';
 import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import * as styles from './page-detail-editor.css';
@@ -42,11 +43,6 @@ const EditorWrapper = memo(function EditorWrapper({
   onLoad,
   isPublic,
 }: PageDetailEditorProps) {
-  const affinePluginsMap = useAtomValue(affinePluginsAtom);
-  const plugins = useMemo(
-    () => Object.values(affinePluginsMap),
-    [affinePluginsMap]
-  );
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
   if (!page) {
     throw new PageNotFoundError(workspace, pageId);
@@ -100,33 +96,65 @@ const EditorWrapper = memo(function EditorWrapper({
           if (onLoad) {
             dispose = onLoad(page, editor);
           }
-          const uiDecorators = plugins
-            .map(plugin => plugin.blockSuiteAdapter.uiDecorator)
-            .filter((ui): ui is PluginBlockSuiteAdapter['uiDecorator'] =>
-              Boolean(ui)
-            );
-          const disposes = uiDecorators.map(ui => ui(editor));
+          const editorItems = rootStore.get(editorItemsAtom);
+          let disposes: (() => void)[] = [];
+          const renderTimeout = setTimeout(() => {
+            disposes = Object.entries(editorItems).map(([id, editorItem]) => {
+              const div = document.createElement('div');
+              div.setAttribute('plugin-id', id);
+              const cleanup = editorItem(div, editor);
+              assertExists(parent);
+              document.body.appendChild(div);
+              return () => {
+                cleanup();
+                document.body.removeChild(div);
+              };
+            });
+          });
+
           return () => {
-            disposes.forEach(fn => fn());
             dispose();
+            clearTimeout(renderTimeout);
+            setTimeout(() => {
+              disposes.forEach(dispose => dispose());
+            });
           };
         },
-        [plugins, onLoad]
+        [onLoad]
       )}
     />
   );
 });
 
 const PluginContentAdapter = memo<{
-  detailContent: PluginUIAdapter['detailContent'];
-}>(function PluginContentAdapter({ detailContent }) {
-  return (
-    <div className={pluginContainer}>
-      {detailContent({
-        contentLayoutAtom,
-      })}
-    </div>
-  );
+  windowItem: CallbackMap['window'];
+}>(function PluginContentAdapter({ windowItem }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) {
+      return;
+    }
+    let cleanup: () => void = () => {};
+    let childDiv: HTMLDivElement | null = null;
+    const renderTimeout = setTimeout(() => {
+      const div = document.createElement('div');
+      cleanup = windowItem(div);
+      root.appendChild(div);
+      childDiv = div;
+    });
+
+    return () => {
+      clearTimeout(renderTimeout);
+      setTimeout(() => {
+        cleanup();
+        if (childDiv) {
+          root.removeChild(childDiv);
+        }
+      });
+    };
+  }, [windowItem]);
+  return <div className={pluginContainer} ref={ref} />;
 });
 
 type LayoutPanelProps = {
@@ -139,16 +167,13 @@ const LayoutPanel = memo(function LayoutPanel(
   props: LayoutPanelProps
 ): ReactElement {
   const node = props.node;
+  const windowItems = useAtomValue(windowItemsAtom);
   if (typeof node === 'string') {
     if (node === 'editor') {
       return <EditorWrapper {...props.editorProps} />;
     } else {
-      const plugin = props.plugins.find(
-        plugin => plugin.definition.id === node
-      );
-      const Content = plugin?.uiAdapter.detailContent;
-      assertExists(Content);
-      return <PluginContentAdapter detailContent={Content} />;
+      const windowItem = windowItems[node];
+      return <PluginContentAdapter windowItem={windowItem} />;
     }
   } else {
     return (
