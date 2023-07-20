@@ -20,6 +20,6 @@ Server using [Nest.js](https://nestjs.com/).
 
 Storybook using [Storybook](https://storybook.js.org/).
 
-## web
+## Core
 
 AFFiNE Core Application using [React.js](https://reactjs.org/).

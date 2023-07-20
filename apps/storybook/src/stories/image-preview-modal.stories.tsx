@@ -4,7 +4,7 @@ import { ImagePreviewModal } from '@affine/component/image-preview-modal';
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { Meta } from '@storybook/react';
 
 export default {
@@ -12,10 +12,7 @@ export default {
   component: ImagePreviewModal,
 } satisfies Meta;
 
-const workspace = createEmptyBlockSuiteWorkspace(
-  'test',
-  WorkspaceFlavour.LOCAL
-);
+const workspace = getOrCreateWorkspace('test', WorkspaceFlavour.LOCAL);
 const page = workspace.createPage('page0');
 initEmptyPage(page);
 fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))

@@ -45,6 +45,11 @@
     {
       "path": "../../packages/workspace"
     },
+
+    {
+      "path": "../../plugins/copilot"
+    },
+
     {
       "path": "./tsconfig.node.json"
     },

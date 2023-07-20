@@ -2,7 +2,7 @@ import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { style } from '@vanilla-extract/css';
 
 export const headerContainer = style({
-  height: '52px',
+  height: 'auto',
   flexShrink: 0,
   position: 'sticky',
   top: 0,
@@ -247,3 +247,10 @@ export const windowAppControl = style({
     },
   },
 } as ComplexStyleRule);
+
+export const pluginHeaderItems = style({
+  display: 'flex',
+  gap: '12px',
+  alignItems: 'center',
+  height: '100%',
+});

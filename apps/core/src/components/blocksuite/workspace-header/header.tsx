@@ -7,22 +7,21 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
-import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
+import { headerItemsAtom } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
-  memo,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
-import { contentLayoutAtom } from '../../../atoms/layout';
 import { currentModeAtom } from '../../../atoms/mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
+import DownloadClientTip from './download-tips';
 import { EditorOptionMenu } from './header-right-items/editor-option-menu';
 import TrashButtonGroup from './header-right-items/trash-button-group';
 import * as styles from './styles.css';
@@ -123,41 +122,37 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
 
 export type HeaderProps = BaseHeaderProps;
 
-const PluginHeaderItemAdapter = memo<{
-  headerItem: PluginUIAdapter['headerItem'];
-}>(function PluginHeaderItemAdapter({ headerItem }) {
-  return (
-    <div>
-      {headerItem({
-        contentLayoutAtom,
-      })}
-    </div>
-  );
-});
-
 const PluginHeader = () => {
-  const affinePluginsMap = useAtomValue(affinePluginsAtom);
-  const plugins = useMemo(
-    () => Object.values(affinePluginsMap),
-    [affinePluginsMap]
-  );
+  const rootRef = useRef<HTMLDivElement>(null);
+  const headerItems = useAtomValue(headerItemsAtom);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) {
+      return;
+    }
+    let disposes: (() => void)[] = [];
+    const renderTimeout = setTimeout(() => {
+      disposes = Object.entries(headerItems).map(([id, headerItem]) => {
+        const div = document.createElement('div');
+        div.setAttribute('plugin-id', id);
+        const cleanup = headerItem(div);
+        root.appendChild(div);
+        return () => {
+          cleanup();
+          root.removeChild(div);
+        };
+      });
+    });
 
-  return (
-    <div>
-      {plugins
-        .filter(plugin => plugin.uiAdapter.headerItem != null)
-        .map(plugin => {
-          const headerItem = plugin.uiAdapter
-            .headerItem as PluginUIAdapter['headerItem'];
-          return (
-            <PluginHeaderItemAdapter
-              key={plugin.definition.id}
-              headerItem={headerItem}
-            />
-          );
-        })}
-    </div>
-  );
+    return () => {
+      clearTimeout(renderTimeout);
+      setTimeout(() => {
+        disposes.forEach(dispose => dispose());
+      });
+    };
+  }, [headerItems]);
+
+  return <div className={styles.pluginHeaderItems} ref={rootRef} />;
 };
 
 export const Header = forwardRef<
@@ -165,6 +160,7 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
+  const [showDownloadTip, setShowDownloadTip] = useState(true);
   // const [shouldShowGuideDownloadClientTip] = useAtom(
   //   guideDownloadClientTipAtom
   // );
@@ -184,14 +180,20 @@ export const Header = forwardRef<
       data-open={open}
       data-sidebar-floating={appSidebarFloating}
     >
-      <BrowserWarning
-        show={showWarning}
-        message={<OSWarningMessage />}
-        onClose={() => {
-          setShowWarning(false);
-        }}
-      />
-
+      {showDownloadTip ? (
+        <DownloadClientTip
+          show={showDownloadTip}
+          onClose={() => setShowDownloadTip(false)}
+        />
+      ) : (
+        <BrowserWarning
+          show={showWarning}
+          message={<OSWarningMessage />}
+          onClose={() => {
+            setShowWarning(false);
+          }}
+        />
+      )}
       <div
         className={styles.header}
         data-has-warning={showWarning}

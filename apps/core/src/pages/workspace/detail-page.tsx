@@ -8,7 +8,7 @@ import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
-import { useAtomValue } from 'jotai/index';
+import { useAtomValue } from 'jotai';
 import { useAtom } from 'jotai/react';
 import { type ReactElement, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';

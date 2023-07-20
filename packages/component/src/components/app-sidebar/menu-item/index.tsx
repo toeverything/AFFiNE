@@ -1,7 +1,6 @@
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
+import { Link, type LinkProps } from '@mui/material';
 import clsx from 'clsx';
-import type { LinkProps } from 'next/link';
-import Link from 'next/link';
 import React from 'react';
 
 import * as styles from './index.css';

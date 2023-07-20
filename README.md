@@ -28,7 +28,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
 [![AFFiNE macOS x64](https://img.shields.io/badge/-macOS_x86%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
 [![AFFiNE Window x64](https://img.shields.io/badge/-Windows%20%E2%86%92-blue?style=flat-square&logo=windows&logoColor=white)](https://affine.pro/download)
-[![AFFiNE Linux](https://img.shields.io/badge/-Linux%20%E2%86%92-yellow?style=flat-square&logo=linux&logoColor=white)](https://affine.pro/download)
+[![AFFiNE Linux](https://img.shidelds.io/badge/-Linux%20%E2%86%92-yellow?style=flat-square&logo=linux&logoColor=white)](https://affine.pro/download)
 
 [![Releases](https://img.shields.io/github/downloads/toeverything/AFFiNE/total)](https://github.com/toeverything/AFFiNE/releases/latest)
 [![stars-icon]](https://github.com/toeverything/AFFiNE)
@@ -202,5 +202,5 @@ See [LICENSE] for details.
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
-[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fweb%2Fpackage.json&color=rgb(97%2C228%2C251)
-[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fweb%2Fpackage.json&label=blocksuite
+[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
+[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fcore%2Fpackage.json&label=blocksuite

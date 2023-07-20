@@ -1,7 +1,7 @@
 import type { WorkspaceListProps } from '@affine/component/workspace-list';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Meta } from '@storybook/react';
 import { useState } from 'react';
@@ -17,26 +17,17 @@ export const Default = () => {
       {
         id: '1',
         flavour: WorkspaceFlavour.LOCAL,
-        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
-          '1',
-          WorkspaceFlavour.LOCAL
-        ),
+        blockSuiteWorkspace: getOrCreateWorkspace('1', WorkspaceFlavour.LOCAL),
       },
       {
         id: '2',
         flavour: WorkspaceFlavour.LOCAL,
-        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
-          '2',
-          WorkspaceFlavour.LOCAL
-        ),
+        blockSuiteWorkspace: getOrCreateWorkspace('2', WorkspaceFlavour.LOCAL),
       },
       {
         id: '3',
         flavour: WorkspaceFlavour.LOCAL,
-        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
-          '3',
-          WorkspaceFlavour.LOCAL
-        ),
+        blockSuiteWorkspace: getOrCreateWorkspace('3', WorkspaceFlavour.LOCAL),
       },
     ] satisfies WorkspaceListProps['items'];
 
