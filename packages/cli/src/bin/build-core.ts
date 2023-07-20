@@ -21,8 +21,23 @@ const getChannel = () => {
   }
 };
 
+const getDistribution = () => {
+  switch (process.env.DISTRIBUTION) {
+    case 'browser':
+    case 'desktop':
+      return process.env.DISTRIBUTION;
+    case undefined: {
+      console.log('DISTRIBUTION is not set, defaulting to browser');
+      return 'browser';
+    }
+    default: {
+      throw new Error('DISTRIBUTION must be one of browser, desktop');
+    }
+  }
+};
+
 const flags = {
-  distribution: 'browser',
+  distribution: getDistribution(),
   mode: 'production',
   channel: getChannel(),
   coverage: process.env.COVERAGE === 'true',

@@ -16,8 +16,8 @@ import {
   CRUD,
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 
@@ -36,7 +36,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   loadPriority: LoadPriority.LOW,
   Events: {
     'app:init': () => {
-      const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+      const blockSuiteWorkspace = getOrCreateWorkspace(
         nanoid(),
         WorkspaceFlavour.LOCAL
       );
