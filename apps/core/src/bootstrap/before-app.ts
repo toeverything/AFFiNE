@@ -21,6 +21,7 @@ import { rootStore } from '@toeverything/plugin-infra/manager';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
+console.log('setup global');
 setupGlobal();
 
 rootStore.set(

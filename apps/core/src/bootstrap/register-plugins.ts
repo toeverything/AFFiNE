@@ -3,4 +3,4 @@ if (runtimeConfig.enablePlugin) {
   import('@affine/copilot');
 }
 
-export {};
+console.log('register plugins finished');

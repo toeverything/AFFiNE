@@ -12,6 +12,8 @@ import { registerPlugin } from './plugin';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
 
+app.enableSandbox();
+
 if (require('electron-squirrel-startup')) app.quit();
 // allow tests to overwrite app name through passing args
 if (process.argv.includes('--app-name')) {
