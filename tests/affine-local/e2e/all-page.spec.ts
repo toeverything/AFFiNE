@@ -15,7 +15,6 @@ import {
 } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
-  closeDownloadTip,
   getBlockSuiteEditorTitle,
   waitEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
@@ -74,7 +73,6 @@ test('allow creation of filters by favorite', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
-  await closeDownloadTip(page);
   await createFirstFilter(page, 'Favourited');
   await page
     .locator('[data-testid="filter-arg"]', { hasText: 'true' })
@@ -89,7 +87,6 @@ test('allow creation of filters by created time', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
-  await closeDownloadTip(page);
   await createFirstFilter(page, 'Created');
   await checkFilterName(page, 'after');
   // init date
@@ -120,7 +117,6 @@ test('creation of filters by created time, then click date picker to modify the 
   await openHomePage(page);
   await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
-  await closeDownloadTip(page);
   await createFirstFilter(page, 'Created');
   await checkFilterName(page, 'after');
   // init date
@@ -149,7 +145,6 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
-  await closeDownloadTip(page);
   await createFirstFilter(page, 'Created');
   await checkFilterName(page, 'after');
   // init date
@@ -173,11 +168,9 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
 test('allow creation of filters by tags', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
-  await closeDownloadTip(page);
   await createPageWithTag(page, { title: 'Page A', tags: ['A'] });
   await createPageWithTag(page, { title: 'Page B', tags: ['B'] });
   await clickSideBarAllPageButton(page);
-  await closeDownloadTip(page);
   await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
   await checkPagesCount(page, 2);

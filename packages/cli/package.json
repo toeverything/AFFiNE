@@ -3,10 +3,11 @@
   "type": "module",
   "private": true,
   "bin": {
-    "dev-web": "./src/dev.mjs"
+    "build-core": "./src/bin/build-core.mjs",
+    "dev-core": "./src/bin/dev-core.mjs"
   },
-  "scripts": {
-    "start": "ts-node-esm ./src/dev.mjs"
+  "exports": {
+    "./config": "./src/config/index.ts"
   },
   "devDependencies": {
     "@clack/core": "^0.3.2",

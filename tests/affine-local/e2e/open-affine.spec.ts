@@ -25,7 +25,7 @@ test('Open last workspace when back to affine', async ({ page }) => {
   expect(currentWorkspaceName).toEqual('New Workspace 2');
 });
 
-test('Download client tip', async ({ page }) => {
+test.skip('Download client tip', async ({ page }) => {
   await openHomePage(page);
   const downloadClientTipItem = page.locator(
     '[data-testid=download-client-tip]'

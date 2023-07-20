@@ -53,7 +53,7 @@ rust:
 
 package:y-indexeddb: 'packages/y-indexeddb/**/*'
 
-app:web: 'apps/web/**/*'
+app:core: 'apps/core/**/*'
 
 app:electron: 'apps/electron/**/*'
 

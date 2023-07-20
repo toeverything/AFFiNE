@@ -3,7 +3,7 @@
   "private": true,
   "exports": {
     "./atom": "./src/atom.ts",
-    "./utils": "./src/utils.ts",
+    "./manager": "./src/manager/index.ts",
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
@@ -33,7 +33,6 @@
   },
   "devDependencies": {
     "@types/ws": "^8.5.5",
-    "next": "=13.4.2",
     "ws": "^8.13.0"
   },
   "version": "0.7.0-canary.47"

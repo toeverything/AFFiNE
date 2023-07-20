@@ -2,7 +2,11 @@ import type { Page } from '@blocksuite/store';
 
 export async function initPageWithPreloading(page: Page) {
   const workspace = page.workspace;
-  const { data } = await import('@affine/templates/preloading.json');
+  const {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    data,
+  } = await import('@affine/templates/preloading.json');
   await page.waitForLoaded();
   await workspace.importPageSnapshot(data['space:hello-world'], page.id);
 }
@@ -17,4 +21,4 @@ export async function initEmptyPage(page: Page) {
   page.addBlock('affine:paragraph', {}, noteBlockId);
 }
 
-export * from './subdoc-migration';
+export * from './subdoc-migration.js';

@@ -1,16 +1,21 @@
-import { toast } from '@affine/component';
+import { toast, Tooltip } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
 import { WorkspaceCard } from '@affine/component/card/workspace-card';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
-import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
+import {
+  EdgelessIcon,
+  ExportToHtmlIcon,
+  HelpIcon,
+  PageIcon,
+} from '@blocksuite/icons';
 
 export default {
   title: 'AFFiNE/Card',
   component: WorkspaceCard,
 };
 
-const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+const blockSuiteWorkspace = getOrCreateWorkspace(
   'blocksuite-local',
   WorkspaceFlavour.LOCAL
 );
@@ -47,6 +52,17 @@ export const AffineBlockCard = () => {
         left={<PageIcon width={20} height={20} />}
         right={<EdgelessIcon width={20} height={20} />}
         onClick={() => toast('clicked edgeless')}
+      />
+      <BlockCard
+        left={<ExportToHtmlIcon width={20} height={20} />}
+        title="HTML"
+        disabled
+        right={
+          <Tooltip content={'Learn how to Import pages into AFFiNE.'}>
+            <HelpIcon />
+          </Tooltip>
+        }
+        onClick={() => toast('click HTML')}
       />
     </div>
   );
