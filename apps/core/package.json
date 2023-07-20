@@ -33,7 +33,6 @@
     "@emotion/react": "^11.11.1",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@endo/static-module-record": "^0.7.20",
     "@mui/material": "^5.14.0",
     "@react-hookz/web": "^23.1.0",
     "async-call-rpc": "^6.3.1",
