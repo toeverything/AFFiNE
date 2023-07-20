@@ -27,6 +27,15 @@ import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
 
+lockdown({
+  evalTaming: 'unsafeEval',
+  overrideTaming: 'severe',
+  consoleTaming: 'unsafe',
+  errorTaming: 'unsafe',
+  errorTrapping: 'none',
+  unhandledRejectionTrapping: 'none',
+});
+
 const PluginProvider = ({ children }: PropsWithChildren) =>
   React.createElement(
     Provider,
@@ -35,8 +44,6 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
     },
     children
   );
-
-console.log('JotaiUtils', JotaiUtils);
 
 const customRequire = (id: string) => {
   if (id === '@toeverything/plugin-infra/manager') {
