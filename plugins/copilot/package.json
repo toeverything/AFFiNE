@@ -1,10 +1,11 @@
 {
   "name": "@affine/copilot",
   "private": true,
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "exports": {
-    ".": "./src/index.ts"
+  "affinePlugin": {
+    "release": false,
+    "entry": {
+      "core": "./src/index.ts"
+    }
   },
   "dependencies": {
     "@affine/component": "workspace:*",

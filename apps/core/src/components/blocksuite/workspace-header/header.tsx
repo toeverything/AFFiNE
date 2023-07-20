@@ -9,6 +9,7 @@ import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import {
   affinePluginsAtom,
+  contentLayoutAtom,
   headerItemsAtom,
 } from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
@@ -24,7 +25,6 @@ import {
   useState,
 } from 'react';
 
-import { contentLayoutAtom } from '../../../atoms/layout';
 import { currentModeAtom } from '../../../atoms/mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import DownloadClientTip from './download-tips';

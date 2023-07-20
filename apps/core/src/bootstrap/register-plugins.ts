@@ -16,11 +16,27 @@ import {
   headerItemsAtom,
   registeredPluginAtom,
   rootStore,
+  windowItemsAtom,
 } from '@toeverything/plugin-infra/manager';
+import * as Jotai from 'jotai';
+import { Provider } from 'jotai/react';
+import * as JotaiUtils from 'jotai/utils';
+import type { PropsWithChildren } from 'react';
 import * as React from 'react';
 import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
+
+const PluginProvider = ({ children }: PropsWithChildren) =>
+  React.createElement(
+    Provider,
+    {
+      store: rootStore,
+    },
+    children
+  );
+
+console.log('JotaiUtils', JotaiUtils);
 
 lockdown({
   evalTaming:
@@ -31,10 +47,6 @@ lockdown({
   errorTrapping: 'none',
   unhandledRejectionTrapping: 'none',
 });
-
-if (process.env.NODE_ENV === 'development') {
-  import('@affine/copilot');
-}
 
 const customRequire = (id: string) => {
   if (id === '@toeverything/plugin-infra/manager') {
@@ -64,13 +76,20 @@ const customRequire = (id: string) => {
   if (id === '@blocksuite/global/utils') {
     return harden(BlockSuiteGlobalUtils);
   }
+  if (id === 'jotai') {
+    return Jotai;
+  }
+  if (id === 'jotai/utils') {
+    return JotaiUtils;
+  }
+  if (id === '../app.js') {
+    return entryCompartment.evaluate('exports');
+  }
   throw new Error(`Cannot find module '${id}'`);
 };
 
 const createGlobalThis = () => {
   return {
-    // fixme: unknown output that will read `React` variable
-    React,
     process: harden({
       env: {
         NODE_ENV: process.env.NODE_ENV,
@@ -79,6 +98,23 @@ const createGlobalThis = () => {
     // UNSAFE: React will read `window` and `document`
     window,
     document,
+    navigator,
+    userAgent: navigator.userAgent,
+
+    // fixme: use our own db api
+    indexedDB: globalThis.indexedDB,
+    IDBRequest: globalThis.IDBRequest,
+    IDBDatabase: globalThis.IDBDatabase,
+    IDBCursorWithValue: globalThis.IDBCursorWithValue,
+    IDBFactory: globalThis.IDBFactory,
+    IDBKeyRange: globalThis.IDBKeyRange,
+    IDBOpenDBRequest: globalThis.IDBOpenDBRequest,
+    IDBTransaction: globalThis.IDBTransaction,
+    IDBObjectStore: globalThis.IDBObjectStore,
+    IDBIndex: globalThis.IDBIndex,
+    IDBCursor: globalThis.IDBCursor,
+    IDBVersionChangeEvent: globalThis.IDBVersionChangeEvent,
+
     exports: {},
     console: globalThis.console,
     require: customRequire,
@@ -90,10 +126,16 @@ const pluginList = await (
   await fetch(new URL(`./plugins/plugin-list.json`, window.location.origin))
 ).json();
 const builtInPlugins: string[] = pluginList.map((plugin: any) => plugin.name);
+const pluginGlobalThis = createGlobalThis();
+const pluginEntry = await fetch('/plugins/plugin.js').then(res => res.text());
+const entryCompartment = new Compartment(pluginGlobalThis, {});
+console.log('pluginEntry', pluginEntry);
+entryCompartment.evaluate(pluginEntry, {
+  __evadeHtmlCommentTest__: true,
+});
 await Promise.all(
   builtInPlugins.map(plugin => {
-    const pluginCompartment = new Compartment(createGlobalThis());
-
+    const pluginCompartment = new Compartment(createGlobalThis(), {});
     const pluginGlobalThis = pluginCompartment.globalThis;
     const baseURL = new URL(`./plugins/${plugin}/`, window.location.origin);
     const packageJsonURL = new URL('package.json', baseURL);
@@ -122,9 +164,17 @@ await Promise.all(
               ...items,
               [plugin]: callback as CallbackMap['editor'],
             }));
+          } else if (part === 'window') {
+            rootStore.set(windowItemsAtom, items => ({
+              ...items,
+              [plugin]: callback as CallbackMap['window'],
+            }));
           } else {
             throw new Error(`Unknown part: ${part}`);
           }
+        },
+        utils: {
+          PluginProvider,
         },
       } satisfies PluginContext;
       const dispose = pluginCompartment.evaluate(

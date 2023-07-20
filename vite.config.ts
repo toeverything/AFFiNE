@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vite';
 
@@ -9,7 +10,7 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 
 const require = createRequire(import.meta.url);
 
-const builtInPlugins = ['hello-world', 'bookmark'];
+const builtInPlugins = ['hello-world', 'bookmark', 'copilot'];
 
 const outputJson: [pluginName: string, output: string][] = [];
 
@@ -41,7 +42,9 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
+        manualChunks: () => 'plugin',
         entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
       },
       external: [
         // built-in packages
@@ -52,8 +55,15 @@ export default defineConfig({
         // react
         /^react/,
         /^react-dom/,
+
+        // store
+        /^jotai/,
+
+        // css
+        /^@vanilla-extract/,
       ],
       plugins: [
+        vanillaExtractPlugin(),
         {
           name: 'generate-manifest',
           generateBundle() {

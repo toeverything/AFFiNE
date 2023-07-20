@@ -4,7 +4,12 @@ import { atom, createStore } from 'jotai/vanilla';
 
 import { getWorkspace, waitForWorkspace } from './__internal__/workspace';
 import type { CallbackMap } from './entry';
-import type { AffinePlugin, Definition, ServerAdapter } from './type';
+import type {
+  AffinePlugin,
+  Definition,
+  ExpectedLayout,
+  ServerAdapter,
+} from './type';
 import type { Loader, PluginUIAdapter } from './type';
 import type { PluginBlockSuiteAdapter } from './type';
 
@@ -20,6 +25,7 @@ export const headerItemsAtom = atom<Record<string, CallbackMap['headerItem']>>(
 );
 export const editorItemsAtom = atom<Record<string, CallbackMap['editor']>>({});
 export const registeredPluginAtom = atom<string[]>([]);
+export const windowItemsAtom = atom<Record<string, CallbackMap['window']>>({});
 
 /**
  * @deprecated
@@ -48,6 +54,38 @@ export const currentPageAtom = atom<Promise<Page>>(async get => {
   }
   return page;
 });
+
+const contentLayoutBaseAtom = atom<ExpectedLayout>('editor');
+
+type SetStateAction<Value> = Value | ((prev: Value) => Value);
+export const contentLayoutAtom = atom<
+  ExpectedLayout,
+  [SetStateAction<ExpectedLayout>],
+  void
+>(
+  get => get(contentLayoutBaseAtom),
+  (get, set, layout) => {
+    set(contentLayoutBaseAtom, prev => {
+      let setV: (prev: ExpectedLayout) => ExpectedLayout;
+      if (typeof layout !== 'function') {
+        setV = () => layout;
+      } else {
+        setV = layout;
+      }
+      const nextValue = setV(prev);
+      if (nextValue === 'editor') {
+        return nextValue;
+      }
+      if (nextValue.first !== 'editor') {
+        throw new Error('The first element of the layout should be editor.');
+      }
+      if (nextValue.splitPercentage && nextValue.splitPercentage < 70) {
+        throw new Error('The split percentage should be greater than 70.');
+      }
+      return nextValue;
+    });
+  }
+);
 
 export function definePlugin<ID extends string>(
   definition: Definition<ID>,
