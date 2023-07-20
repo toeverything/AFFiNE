@@ -1,8 +1,11 @@
 /// <reference types="@types/webpack-env" />
 import 'ses';
 
+import { DisposableGroup } from '@blocksuite/global/utils';
+import * as Icons from '@blocksuite/icons';
 import type { PluginContext } from '@toeverything/plugin-infra/entry';
 import * as Manager from '@toeverything/plugin-infra/manager';
+import { headerItemsAtom, rootStore } from '@toeverything/plugin-infra/manager';
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
@@ -24,7 +27,7 @@ if (runtimeConfig.enablePlugin) {
 
 const customRequire = (id: string) => {
   if (id === '@toeverything/plugin-infra/manager') {
-    return Manager;
+    return harden(Manager);
   }
   if (id === 'react') {
     return React;
@@ -35,11 +38,15 @@ const customRequire = (id: string) => {
   if (id === 'react-dom/client') {
     return ReactDomClient;
   }
+  if (id === '@blocksuite/icons') {
+    return harden(Icons);
+  }
   throw new Error(`Cannot find module '${id}'`);
 };
 
 const createGlobalThis = () => {
   return {
+    React,
     process: harden({
       env: {
         NODE_ENV: process.env.NODE_ENV,
@@ -52,6 +59,7 @@ const createGlobalThis = () => {
 };
 
 if (runtimeConfig.enablePlugin) {
+  const group = new DisposableGroup();
   const builtInPlugins: string[] = ['hello-world'];
   await Promise.all(
     builtInPlugins.map(plugin => {
@@ -66,15 +74,30 @@ if (runtimeConfig.enablePlugin) {
         const codeText = await fetch(coreEntry).then(res => res.text());
         pluginCompartment.evaluate(codeText);
         pluginGlobalThis.__INTERNAL__ENTRY = {
-          register: (_, callback) => {
-            const div = document.createElement('div');
-            callback(div);
-            return () => {
-              div.remove();
-            };
+          register: (part, callback) => {
+            if (part === 'headerItem') {
+              const div = document.createElement('div');
+              rootStore.set(headerItemsAtom, items => ({
+                ...items,
+                [plugin]: div,
+              }));
+              callback(div);
+              return () => {
+                div.remove();
+              };
+            } else {
+              throw new Error(`Unknown part: ${part}`);
+            }
           },
         } satisfies PluginContext;
-        pluginCompartment.evaluate('exports.entry(__INTERNAL__ENTRY)');
+        const dispose = pluginCompartment.evaluate(
+          'exports.entry(__INTERNAL__ENTRY)'
+        );
+        if (typeof dispose !== 'function') {
+          throw new Error('Plugin entry must return a function');
+        }
+        pluginGlobalThis.__INTERNAL__ENTRY = undefined;
+        group.add(dispose);
       });
     })
   );

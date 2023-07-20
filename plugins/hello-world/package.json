@@ -10,6 +10,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@blocksuite/icons": "^2.1.25",
     "@toeverything/plugin-infra": "workspace:*"
   },
   "devDependencies": {

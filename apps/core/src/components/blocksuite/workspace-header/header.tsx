@@ -7,7 +7,10 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
+import {
+  affinePluginsAtom,
+  headerItemsAtom,
+} from '@toeverything/plugin-infra/manager';
 import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
@@ -17,6 +20,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -124,6 +128,9 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
 
 export type HeaderProps = BaseHeaderProps;
 
+/**
+ * @deprecated
+ */
 const PluginHeaderItemAdapter = memo<{
   headerItem: PluginUIAdapter['headerItem'];
 }>(function PluginHeaderItemAdapter({ headerItem }) {
@@ -142,9 +149,27 @@ const PluginHeader = () => {
     () => Object.values(affinePluginsMap),
     [affinePluginsMap]
   );
+  const divRef = useRef<HTMLDivElement>(null);
+  const headerItems = useAtomValue(headerItemsAtom);
+  useEffect(() => {
+    console.log('headerItems', headerItems);
+    const div = divRef.current;
+    if (!div) {
+      return;
+    }
+    Object.entries(headerItems).forEach(([id, headerItem]) => {
+      headerItem.setAttribute('data-plugin-id', id);
+      div.appendChild(headerItem);
+    });
+    return () => {
+      Object.entries(headerItems).forEach(([_, headerItem]) => {
+        div.removeChild(headerItem);
+      });
+    };
+  }, [headerItems]);
 
   return (
-    <div>
+    <div className={styles.pluginHeaderItems} ref={divRef}>
       {plugins
         .filter(plugin => plugin.uiAdapter.headerItem != null)
         .map(plugin => {

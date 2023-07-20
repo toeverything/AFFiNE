@@ -28,9 +28,10 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [
+        '@blocksuite/icons',
         '@toeverything/plugin-infra/manager',
-        'react',
-        'react-dom/client',
+        /^react/,
+        /^react-dom/,
       ],
     },
   },

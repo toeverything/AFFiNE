@@ -13,6 +13,9 @@ const isClient = typeof window !== 'undefined';
 // global store
 export const rootStore = createStore();
 
+// id -> HTML element
+export const headerItemsAtom = atom<Record<string, HTMLElement>>({});
+
 // todo: for now every plugin is enabled by default
 export const affinePluginsAtom = atom<Record<string, AffinePlugin<string>>>({});
 export const currentWorkspaceIdAtom = atom<string | null>(null);
