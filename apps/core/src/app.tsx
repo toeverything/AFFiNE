@@ -48,8 +48,6 @@ currentWorkspaceIdAtom.onMount = set => {
     if (value) {
       set(value);
       localStorage.setItem('last_workspace_id', value);
-    } else {
-      set(null);
     }
   };
   callback(router.state);
@@ -65,8 +63,6 @@ currentPageIdAtom.onMount = set => {
     const value = state.location.pathname.split('/')[3];
     if (value) {
       set(value);
-    } else {
-      set(null);
     }
   };
   callback(router.state);
