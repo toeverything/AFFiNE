@@ -3,7 +3,7 @@
   "private": true,
   "exports": {
     "./atom": "./src/atom.ts",
-    "./utils": "./src/utils.ts",
+    "./manager": "./src/manager/index.ts",
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",

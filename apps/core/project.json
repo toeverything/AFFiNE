@@ -22,17 +22,28 @@
         },
         {
           "env": "PERFSEE_TOKEN"
+        },
+        {
+          "env": "SENTRY_ORG"
+        },
+        {
+          "env": "SENTRY_PROJECT"
+        },
+        {
+          "env": "SENTRY_AUTH_TOKEN"
+        },
+        {
+          "env": "NEXT_PUBLIC_SENTRY_DSN"
+        },
+        {
+          "env": "DISTRIBUTION"
+        },
+        {
+          "env": "COVERAGE"
         }
       ],
       "options": {
         "script": "build"
-      },
-      "outputs": ["{projectRoot}/dist"]
-    },
-    "dev": {
-      "executor": "nx:run-script",
-      "options": {
-        "script": "dev"
       },
       "outputs": ["{projectRoot}/dist"]
     }
