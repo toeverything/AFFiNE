@@ -82,7 +82,7 @@ const customRequire = (id: string) => {
   if (id === 'jotai/utils') {
     return harden(JotaiUtils);
   }
-  if (id === '../app.js') {
+  if (id === '../plugin.js') {
     return entryCompartment.evaluate('exports');
   }
   throw new Error(`Cannot find module '${id}'`);
