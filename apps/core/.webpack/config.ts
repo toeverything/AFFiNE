@@ -276,12 +276,13 @@ export const createConfiguration: (
 
     devServer: {
       hot: 'only',
-      liveReload: false,
+      liveReload: true,
       client: undefined,
       historyApiFallback: true,
       static: {
         directory: resolve(rootPath, 'public'),
         publicPath: '/',
+        watch: true,
       },
     } as DevServerConfiguration,
   } satisfies webpack.Configuration;

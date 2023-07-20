@@ -9,6 +9,11 @@
     "dist"
   ],
   "exports": {
+    "./entry": {
+      "type": "./dist/entry.d.ts",
+      "import": "./dist/entry.js",
+      "require": "./dist/entry.cjs"
+    },
     "./manager": {
       "type": "./dist/manager.d.ts",
       "import": "./dist/manager.js",

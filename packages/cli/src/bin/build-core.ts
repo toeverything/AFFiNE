@@ -43,6 +43,12 @@ const flags = {
   coverage: process.env.COVERAGE === 'true',
 } satisfies BuildFlags;
 
+spawn('vite', ['build'], {
+  cwd: projectRoot,
+  stdio: 'inherit',
+  shell: true,
+});
+
 spawn(
   'node',
   [

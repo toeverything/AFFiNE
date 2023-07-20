@@ -1,7 +1,6 @@
 import type { IndexedDBChatMessageHistory } from '@affine/copilot/core/langchain/message-history';
 import { atom, useAtomValue } from 'jotai';
-import { atomWithDefault } from 'jotai/utils';
-import { atomWithStorage } from 'jotai/utils';
+import { atomWithDefault, atomWithStorage } from 'jotai/utils';
 import type { WritableAtom } from 'jotai/vanilla';
 import type { LLMChain } from 'langchain/chains';
 import { type ConversationChain } from 'langchain/chains';

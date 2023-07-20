@@ -8,7 +8,8 @@ import {
 } from '@blocksuite/blocks/std';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import type { FC } from 'react';
+import type { FC, ReactElement } from 'react';
+import { StrictMode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type BookMarkProps = {
@@ -95,7 +96,8 @@ const shouldShowBookmarkMenu = (pastedBlocks: SerializedBlock[]) => {
   }
   return !!firstBlock.text[0].attributes?.link;
 };
-export const BookMarkUI: FC<BookMarkProps> = ({ page }) => {
+
+const BookMarkUI: FC<BookMarkProps> = ({ page }) => {
   const [anchor, setAnchor] = useState<Range | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>(
     menuOptions[0].id
@@ -217,4 +219,16 @@ export const BookMarkUI: FC<BookMarkProps> = ({ page }) => {
       </div>
     </MuiClickAwayListener>
   ) : null;
+};
+
+type AppProps = {
+  page: Page;
+};
+
+export const App = (props: AppProps): ReactElement => {
+  return (
+    <StrictMode>
+      <BookMarkUI page={props.page} />
+    </StrictMode>
+  );
 };
