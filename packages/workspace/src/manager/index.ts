@@ -57,6 +57,7 @@ const createMonitor = (doc: Doc) => {
         );
       }
     } else {
+      // todo: add monitor in the future
     }
   };
   docUpdateCallbackWeakMap.set(doc, onUpdate);
