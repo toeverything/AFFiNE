@@ -174,9 +174,7 @@ export const createConfiguration: (
                     plugins: [
                       buildFlags.coverage && [
                         'swc-plugin-coverage-instrument',
-                        {
-                          esModules: true,
-                        },
+                        {},
                       ],
                     ].filter(Boolean),
                   },
