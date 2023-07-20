@@ -169,8 +169,6 @@ __metadata:
     "@affine/component": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
     "@types/marked": ^5.0.0
-    "@types/react": ^18.2.14
-    "@types/react-dom": ^18.2.6
     idb: ^7.1.1
     jotai: ^2.2.2
     langchain: ^0.0.107
@@ -448,7 +446,6 @@ __metadata:
     "@typescript-eslint/parser": ^5.60.1
     "@vanilla-extract/vite-plugin": ^3.8.2
     "@vanilla-extract/webpack-plugin": ^2.2.0
-    "@vitejs/plugin-react": ^4.0.1
     "@vitejs/plugin-react-swc": ^3.3.2
     "@vitest/coverage-istanbul": ^0.32.2
     "@vitest/ui": ^0.32.2
