@@ -129,7 +129,6 @@ const builtInPlugins: string[] = pluginList.map((plugin: any) => plugin.name);
 const pluginGlobalThis = createGlobalThis();
 const pluginEntry = await fetch('/plugins/plugin.js').then(res => res.text());
 const entryCompartment = new Compartment(pluginGlobalThis, {});
-console.log('pluginEntry', pluginEntry);
 entryCompartment.evaluate(pluginEntry, {
   __evadeHtmlCommentTest__: true,
 });
