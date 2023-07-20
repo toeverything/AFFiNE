@@ -106,8 +106,8 @@ export const createConfiguration: (
     devtool:
       buildFlags.mode === 'production'
         ? buildFlags.distribution === 'desktop'
-          ? 'inline-source-map'
-          : 'hidden-nosources-source-map'
+          ? 'inline-cheap-source-map'
+          : 'source-map'
         : 'eval-cheap-module-source-map',
 
     resolve: {
@@ -174,7 +174,9 @@ export const createConfiguration: (
                     plugins: [
                       buildFlags.coverage && [
                         'swc-plugin-coverage-instrument',
-                        {},
+                        {
+                          esModules: true,
+                        },
                       ],
                     ].filter(Boolean),
                   },
@@ -199,7 +201,7 @@ export const createConfiguration: (
               type: 'asset/resource',
             },
             {
-              test: /\.(ttf|eot|woff|woff2)$/i,
+              test: /\.(ttf|eot|woff|woff2)$/,
               type: 'asset/resource',
             },
             {
