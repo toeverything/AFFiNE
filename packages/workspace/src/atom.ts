@@ -104,7 +104,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
 
       // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
       if (
-        maybeMetadata.some(meta => !('version' in meta)) ||
+        maybeMetadata.some(meta => !('version' in meta)) &&
         !globalThis.$migrationDone
       ) {
         await new Promise<void>((resolve, reject) => {
