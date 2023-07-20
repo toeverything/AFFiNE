@@ -7,6 +7,7 @@ import type { PluginContext } from '@toeverything/plugin-infra/entry';
 import * as Manager from '@toeverything/plugin-infra/manager';
 import { headerItemsAtom, rootStore } from '@toeverything/plugin-infra/manager';
 import * as React from 'react';
+import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
 
@@ -31,6 +32,9 @@ const customRequire = (id: string) => {
   }
   if (id === 'react') {
     return React;
+  }
+  if (id === 'react/jsx-runtime') {
+    return ReactJSXRuntime;
   }
   if (id === 'react-dom') {
     return ReactDom;
@@ -70,7 +74,10 @@ if (runtimeConfig.enablePlugin) {
       const packageJsonURL = new URL('package.json', baseURL);
       return fetch(packageJsonURL).then(async res => {
         const packageJson = await res.json();
-        const coreEntry = new URL(packageJson.entry.core, baseURL.toString());
+        const coreEntry = new URL(
+          packageJson['affinePlugin'].entry.core,
+          baseURL.toString()
+        );
         const codeText = await fetch(coreEntry).then(res => res.text());
         pluginCompartment.evaluate(codeText);
         pluginGlobalThis.__INTERNAL__ENTRY = {

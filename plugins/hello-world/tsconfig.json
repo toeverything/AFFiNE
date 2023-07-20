@@ -9,9 +9,6 @@
   "references": [
     {
       "path": "../../packages/plugin-infra"
-    },
-    {
-      "path": "./tsconfig.node.json"
     }
   ]
 }
