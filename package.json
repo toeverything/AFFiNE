@@ -26,7 +26,7 @@
     "build:electron": "yarn nx build @affine/electron",
     "build:storage": "yarn nx run-many -t build -p @affine/storage",
     "build:infra": "yarn nx run-many -t build -p plugin-infra infra",
-    "build:plugins": "yarn nx run-many -t build -p @affine/bookmark-block",
+    "build:plugins": "yarn workspace @affine/bookmark-block build && yarn vite build",
     "build:storybook": "yarn nx build @affine/storybook",
     "start:web-static": "yarn workspace @affine/core static-server",
     "start:storybook": "yarn exec serve apps/storybook/storybook-static -l 6006",

@@ -9,6 +9,9 @@
   "references": [
     {
       "path": "../../packages/plugin-infra"
+    },
+    {
+      "path": "../../packages/component"
     }
   ]
 }

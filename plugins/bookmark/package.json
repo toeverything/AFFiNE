@@ -1,7 +1,8 @@
 {
   "name": "@affine/bookmark-plugin",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "affinePlugin": {
+    "release": true,
     "entry": {
       "core": "./src/index.ts"
     }

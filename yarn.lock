@@ -64,7 +64,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/bookmark-block@workspace:*, @affine/bookmark-block@workspace:plugins/bookmark-block":
+"@affine/bookmark-block@workspace:plugins/bookmark-block":
   version: 0.0.0-use.local
   resolution: "@affine/bookmark-block@workspace:plugins/bookmark-block"
   dependencies:
@@ -191,7 +191,6 @@ __metadata:
   resolution: "@affine/core@workspace:apps/core"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
-    "@affine/bookmark-block": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/copilot": "workspace:*"
     "@affine/debug": "workspace:*"
@@ -382,6 +381,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/hello-world-plugin@workspace:plugins/hello-world"
   dependencies:
+    "@affine/component": "workspace:*"
     "@blocksuite/icons": ^2.1.25
     "@toeverything/plugin-infra": "workspace:*"
   languageName: unknown

@@ -24,17 +24,7 @@ definePlugin(
   undefined,
   undefined,
   {
-    load: () =>
-      import(
-        /* webpackIgnore: true */
-        './server'
-      ),
-    hotModuleReload: onHot =>
-      onHot(
-        import(
-          /* webpackIgnore: true */
-          './server'
-        )
-      ),
+    load: () => import('./server'),
+    hotModuleReload: onHot => onHot(import('./server')),
   }
 );

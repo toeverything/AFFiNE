@@ -19,6 +19,7 @@ export const headerItemsAtom = atom<Record<string, CallbackMap['headerItem']>>(
   {}
 );
 export const editorItemsAtom = atom<Record<string, CallbackMap['editor']>>({});
+export const registeredPluginAtom = atom<string[]>([]);
 
 /**
  * @deprecated

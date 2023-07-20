@@ -14,6 +14,7 @@ import * as Manager from '@toeverything/plugin-infra/manager';
 import {
   editorItemsAtom,
   headerItemsAtom,
+  registeredPluginAtom,
   rootStore,
 } from '@toeverything/plugin-infra/manager';
 import * as React from 'react';
@@ -31,8 +32,7 @@ lockdown({
   unhandledRejectionTrapping: 'none',
 });
 
-import('@affine/bookmark-block');
-if (runtimeConfig.enablePlugin) {
+if (process.env.NODE_ENV === 'development') {
   import('@affine/copilot');
 }
 
@@ -85,55 +85,58 @@ const createGlobalThis = () => {
   };
 };
 
-if (runtimeConfig.enablePlugin) {
-  const group = new DisposableGroup();
-  const pluginList = await (
-    await fetch(new URL(`./plugins/plugin-list.json`, window.location.origin))
-  ).json();
-  const builtInPlugins: string[] = pluginList.map((plugin: any) => plugin.name);
-  await Promise.all(
-    builtInPlugins.map(plugin => {
-      const pluginCompartment = new Compartment(createGlobalThis());
+const group = new DisposableGroup();
+const pluginList = await (
+  await fetch(new URL(`./plugins/plugin-list.json`, window.location.origin))
+).json();
+const builtInPlugins: string[] = pluginList.map((plugin: any) => plugin.name);
+await Promise.all(
+  builtInPlugins.map(plugin => {
+    const pluginCompartment = new Compartment(createGlobalThis());
 
-      const pluginGlobalThis = pluginCompartment.globalThis;
-      const baseURL = new URL(`./plugins/${plugin}/`, window.location.origin);
-      const packageJsonURL = new URL('package.json', baseURL);
-      return fetch(packageJsonURL).then(async res => {
-        const packageJson = await res.json();
-        const coreEntry = new URL(
-          packageJson['affinePlugin'].entry.core,
-          baseURL.toString()
-        );
-        const codeText = await fetch(coreEntry).then(res => res.text());
-        pluginCompartment.evaluate(codeText);
-        pluginGlobalThis.__INTERNAL__ENTRY = {
-          register: (part, callback) => {
-            if (part === 'headerItem') {
-              rootStore.set(headerItemsAtom, items => ({
-                ...items,
-                [plugin]: callback as CallbackMap['headerItem'],
-              }));
-            } else if (part === 'editor') {
-              rootStore.set(editorItemsAtom, items => ({
-                ...items,
-                [plugin]: callback as CallbackMap['editor'],
-              }));
-            } else {
-              throw new Error(`Unknown part: ${part}`);
-            }
-          },
-        } satisfies PluginContext;
-        const dispose = pluginCompartment.evaluate(
-          'exports.entry(__INTERNAL__ENTRY)'
-        );
-        if (typeof dispose !== 'function') {
-          throw new Error('Plugin entry must return a function');
-        }
-        pluginGlobalThis.__INTERNAL__ENTRY = undefined;
-        group.add(dispose);
-      });
-    })
-  );
-}
+    const pluginGlobalThis = pluginCompartment.globalThis;
+    const baseURL = new URL(`./plugins/${plugin}/`, window.location.origin);
+    const packageJsonURL = new URL('package.json', baseURL);
+    return fetch(packageJsonURL).then(async res => {
+      const packageJson = await res.json();
+      const pluginConfig = packageJson['affinePlugin'];
+      if (
+        pluginConfig.release === false &&
+        process.env.NODE_ENV !== 'development'
+      ) {
+        return;
+      }
+      rootStore.set(registeredPluginAtom, prev => [...prev, plugin]);
+      const coreEntry = new URL(pluginConfig.entry.core, baseURL.toString());
+      const codeText = await fetch(coreEntry).then(res => res.text());
+      pluginCompartment.evaluate(codeText);
+      pluginGlobalThis.__INTERNAL__ENTRY = {
+        register: (part, callback) => {
+          if (part === 'headerItem') {
+            rootStore.set(headerItemsAtom, items => ({
+              ...items,
+              [plugin]: callback as CallbackMap['headerItem'],
+            }));
+          } else if (part === 'editor') {
+            rootStore.set(editorItemsAtom, items => ({
+              ...items,
+              [plugin]: callback as CallbackMap['editor'],
+            }));
+          } else {
+            throw new Error(`Unknown part: ${part}`);
+          }
+        },
+      } satisfies PluginContext;
+      const dispose = pluginCompartment.evaluate(
+        'exports.entry(__INTERNAL__ENTRY)'
+      );
+      if (typeof dispose !== 'function') {
+        throw new Error('Plugin entry must return a function');
+      }
+      pluginGlobalThis.__INTERNAL__ENTRY = undefined;
+      group.add(dispose);
+    });
+  })
+);
 
 console.log('register plugins finished');
