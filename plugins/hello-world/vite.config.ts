@@ -27,7 +27,11 @@ export default defineConfig({
       formats: ['cjs'],
     },
     rollupOptions: {
-      external: ['@toeverything/plugin-infra/manager'],
+      external: [
+        '@toeverything/plugin-infra/manager',
+        'react',
+        'react-dom/client',
+      ],
     },
   },
   plugins: [

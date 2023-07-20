@@ -11,6 +11,7 @@ export default defineConfig({
     minify: false,
     lib: {
       entry: {
+        entry: resolve(root, 'src/entry.ts'),
         type: resolve(root, 'src/type.ts'),
         manager: resolve(root, 'src/manager.ts'),
         '__internal__/workspace': resolve(
