@@ -1,6 +1,6 @@
 {{- if .Values.gke.enabled -}}
 apiVersion: monitoring.googleapis.com/v1
-kind: PodMonitoring
+kind: ClusterPodMonitoring
 metadata:
   name: prometheus
 spec:
