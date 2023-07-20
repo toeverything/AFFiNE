@@ -1,5 +1,5 @@
 import { Menu, MenuItem } from '@affine/component';
-import { Logo1Icon,SignOutIcon } from '@blocksuite/icons';
+import { Logo1Icon, SignOutIcon } from '@blocksuite/icons';
 import type { CSSProperties } from 'react';
 import { forwardRef } from 'react';
 

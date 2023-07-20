@@ -246,7 +246,7 @@ __metadata:
     style-loader: ^3.3.3
     swc-loader: ^0.2.3
     swc-plugin-coverage-instrument: ^0.0.19
-    swr: ^2.1.5
+    swr: 2.1.5
     thread-loader: ^4.0.2
     ts-node: ^10.9.1
     webpack: ^5.88.2
@@ -29397,14 +29397,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"swr@npm:^2.1.5":
-  version: 2.2.0
-  resolution: "swr@npm:2.2.0"
+"swr@npm:2.1.5":
+  version: 2.1.5
+  resolution: "swr@npm:2.1.5"
   dependencies:
     use-sync-external-store: ^1.2.0
   peerDependencies:
     react: ^16.11.0 || ^17.0.0 || ^18.0.0
-  checksum: 1f04795ff9dff54987cbf8a544afc9e42d1350a99e899be8a7cdc4885f561e3ee464f78245ee2ebc8ced262b04023d134f731e276227319dc2d6e1843389ddd8
+  checksum: f2ef9b83ec4b2ebf4d520578ab847307700db01ffcab64b3aec6ea94feaf96ca10e38e8b08bc8adfab8eaa6ec1bdfd64f82b6f5c14cc4cb5cf11e6fd22b405a4
   languageName: node
   linkType: hard
 
