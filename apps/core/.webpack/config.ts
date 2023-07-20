@@ -281,7 +281,6 @@ export const createConfiguration: (
       static: {
         directory: resolve(rootPath, 'public'),
         publicPath: '/',
-        watch: true,
       },
     } as DevServerConfiguration,
   } satisfies webpack.Configuration;
