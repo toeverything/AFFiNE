@@ -91,6 +91,12 @@ flags.mode = buildFlags.mode as any;
 flags.channel = buildFlags.channel as any;
 flags.coverage = buildFlags.coverage;
 
+spawn('vite', ['build', '--watch'], {
+  cwd: projectRoot,
+  stdio: 'inherit',
+  shell: true,
+});
+
 spawn(
   'node',
   [

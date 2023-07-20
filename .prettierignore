@@ -12,3 +12,5 @@ tests/affine-legacy/0.7.0-canary.18/static
 .github/helm
 _next
 storybook-static
+web-static
+public

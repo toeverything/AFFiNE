@@ -1,0 +1,16 @@
+{
+  "name": "@affine/hello-world-plugin",
+  "private": true,
+  "version": "0.0.1",
+  "affinePlugin": {
+    "release": false,
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@blocksuite/icons": "^2.1.25",
+    "@toeverything/plugin-infra": "workspace:*"
+  }
+}
