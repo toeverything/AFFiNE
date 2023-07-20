@@ -42,6 +42,7 @@ cd(repoRootDir);
 // step 1: build web (nextjs) dist
 if (!process.env.SKIP_WEB_BUILD) {
   await $`DISTRIBUTION=desktop yarn nx build @affine/core`;
+  await fs.move(affineCoreOutDir, publicAffineOutDir, { overwrite: true });
 }
 
 // step 2: update app-updater.yml content with build type in resources folder
