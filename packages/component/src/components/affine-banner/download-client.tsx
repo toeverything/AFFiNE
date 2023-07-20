@@ -1,5 +1,5 @@
 import { Trans } from '@affine/i18n';
-import { AffineLogoSBlue2_1Icon, CloseIcon } from '@blocksuite/icons';
+import { CloseIcon, Logo1Icon } from '@blocksuite/icons';
 
 import {
   downloadCloseButtonStyle,
@@ -17,7 +17,7 @@ export const DownloadTips = ({ onClose }: { onClose: () => void }) => {
       data-testid="download-client-tip"
     >
       <div className={downloadTipStyle}>
-        <AffineLogoSBlue2_1Icon className={downloadTipIconStyle} />
+        <Logo1Icon className={downloadTipIconStyle} />
         <div className={downloadMessageStyle}>
           <Trans i18nKey="com.affine.banner.content">
             This demo is limited.

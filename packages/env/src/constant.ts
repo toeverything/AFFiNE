@@ -1,5 +1,5 @@
 // This file should has not side effect
-import type { Workspace } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 
 declare global {
   interface Window {
