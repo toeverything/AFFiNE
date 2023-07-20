@@ -8,9 +8,5 @@ export default {
 };
 
 export const Basic: StoryFn = () => {
-  return (
-    <Switch>
-      Switch
-    </Switch>
-  );
+  return <Switch>Switch</Switch>;
 };
