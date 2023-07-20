@@ -28,7 +28,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.6",
+    "yjs": "^13.6.7",
     "zod": "^3.21.4"
   },
   "devDependencies": {

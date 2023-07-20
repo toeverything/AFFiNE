@@ -6,7 +6,7 @@
   "module": "./src/index.ts",
   "types": "./src/global.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230718155514-65ea63b4-nightly",
+    "@blocksuite/global": "0.0.0-20230719163314-76d863fc-nightly",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "zod": "^3.21.4"
@@ -25,7 +25,7 @@
     "@toeverything/infra": "workspace:*"
   },
   "dependencies": {
-    "lit": "^2.7.5"
+    "lit": "^2.7.6"
   },
   "version": "0.7.0-canary.47"
 }

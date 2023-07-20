@@ -26,10 +26,10 @@
     "@affine-test/kit": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/native": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230718155514-65ea63b4-nightly",
-    "@blocksuite/editor": "0.0.0-20230718155514-65ea63b4-nightly",
-    "@blocksuite/lit": "0.0.0-20230718155514-65ea63b4-nightly",
-    "@blocksuite/store": "0.0.0-20230718155514-65ea63b4-nightly",
+    "@blocksuite/blocks": "0.0.0-20230719163314-76d863fc-nightly",
+    "@blocksuite/editor": "0.0.0-20230719163314-76d863fc-nightly",
+    "@blocksuite/lit": "0.0.0-20230719163314-76d863fc-nightly",
+    "@blocksuite/store": "0.0.0-20230719163314-76d863fc-nightly",
     "@electron-forge/cli": "^6.2.1",
     "@electron-forge/core": "^6.2.1",
     "@electron-forge/core-utils": "^6.2.1",
@@ -54,7 +54,7 @@
     "undici": "^5.22.1",
     "uuid": "^9.0.0",
     "which": "^3.0.1",
-    "zx": "^7.2.2"
+    "zx": "^7.2.3"
   },
   "dependencies": {
     "@toeverything/plugin-infra": "workspace:*",
@@ -64,7 +64,7 @@
     "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
     "rxjs": "^7.8.1",
-    "yjs": "^13.6.6"
+    "yjs": "^13.6.7"
   },
   "build": {
     "protocols": [
