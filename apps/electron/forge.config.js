@@ -56,6 +56,7 @@ module.exports = {
       : undefined,
     // We need the following line for updater
     extraResource: ['./resources/app-update.yml'],
+    asar: true,
   },
   makers: [
     {
@@ -102,6 +103,7 @@ module.exports = {
       },
     },
   ],
+  plugins: [{ name: '@electron-forge/plugin-auto-unpack-natives', config: {} }],
   hooks: {
     readPackageJson: async (_, packageJson) => {
       // we want different package name for canary build

@@ -311,6 +311,7 @@ __metadata:
     "@electron-forge/maker-dmg": ^6.2.1
     "@electron-forge/maker-squirrel": ^6.2.1
     "@electron-forge/maker-zip": ^6.2.1
+    "@electron-forge/plugin-auto-unpack-natives": ^6.2.1
     "@electron-forge/shared-types": ^6.2.1
     "@electron/remote": 2.0.10
     "@toeverything/infra": "workspace:*"
@@ -4309,6 +4310,16 @@ __metadata:
     fs-extra: ^10.0.0
     got: ^11.8.5
   checksum: d78468fad71895bf794983e9e7f77aaa95c962a3e59e7d40266ab4aa27f23f65ca288ffaa8db025e7b6c108c41108fabbfbdc6c6297a085be50fa9a06d330a66
+  languageName: node
+  linkType: hard
+
+"@electron-forge/plugin-auto-unpack-natives@npm:^6.2.1":
+  version: 6.2.1
+  resolution: "@electron-forge/plugin-auto-unpack-natives@npm:6.2.1"
+  dependencies:
+    "@electron-forge/plugin-base": 6.2.1
+    "@electron-forge/shared-types": 6.2.1
+  checksum: dc8b72ce3646f488975f27ce8190ba55dc269ac40dc4fc4f0d92c303177b6092fcc93a8318546fe2246364e5395ce819d1d5466f09910fa8bb820651e73534fd
   languageName: node
   linkType: hard
 
