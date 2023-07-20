@@ -38,15 +38,6 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
 
 console.log('JotaiUtils', JotaiUtils);
 
-lockdown({
-  evalTaming: 'unsafeEval',
-  overrideTaming: 'severe',
-  consoleTaming: 'unsafe',
-  errorTaming: 'unsafe',
-  errorTrapping: 'none',
-  unhandledRejectionTrapping: 'none',
-});
-
 const customRequire = (id: string) => {
   if (id === '@toeverything/plugin-infra/manager') {
     return harden(Manager);
