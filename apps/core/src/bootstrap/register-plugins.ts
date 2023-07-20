@@ -39,8 +39,7 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
 console.log('JotaiUtils', JotaiUtils);
 
 lockdown({
-  evalTaming:
-    process.env.NODE_ENV === 'development' ? 'unsafeEval' : 'safeEval',
+  evalTaming: 'unsafeEval',
   overrideTaming: 'severe',
   consoleTaming: 'unsafe',
   errorTaming: 'unsafe',
