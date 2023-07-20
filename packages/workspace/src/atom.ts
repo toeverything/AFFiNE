@@ -1,6 +1,6 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { assertEquals } from '@blocksuite/global/utils';
@@ -152,7 +152,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         meta.flavour === WorkspaceFlavour.AFFINE_CLOUD ||
         meta.flavour === WorkspaceFlavour.LOCAL
       ) {
-        createEmptyBlockSuiteWorkspace(id, meta.flavour);
+        getOrCreateWorkspace(id, meta.flavour);
       } else {
         throw new Error(`unknown flavour ${meta.flavour}`);
       }
