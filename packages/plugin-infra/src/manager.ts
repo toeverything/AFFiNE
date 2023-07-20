@@ -1,9 +1,9 @@
-import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { atom, createStore } from 'jotai/vanilla';
 
 import { getWorkspace, waitForWorkspace } from './__internal__/workspace';
+import type { CallbackMap } from './entry';
 import type { AffinePlugin, Definition, ServerAdapter } from './type';
 import type { Loader, PluginUIAdapter } from './type';
 import type { PluginBlockSuiteAdapter } from './type';
@@ -15,9 +15,14 @@ const isClient = typeof window !== 'undefined';
 export const rootStore = createStore();
 
 // id -> HTML element
-export const headerItemsAtom = atom<Record<string, HTMLElement>>({});
+export const headerItemsAtom = atom<Record<string, CallbackMap['headerItem']>>(
+  {}
+);
+export const editorItemsAtom = atom<Record<string, CallbackMap['editor']>>({});
 
-// todo: for now every plugin is enabled by default
+/**
+ * @deprecated
+ */
 export const affinePluginsAtom = atom<Record<string, AffinePlugin<string>>>({});
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);
@@ -42,7 +47,6 @@ export const currentPageAtom = atom<Promise<Page>>(async get => {
   }
   return page;
 });
-export const currentEditor = atom<EditorContainer | null>(null);
 
 export function definePlugin<ID extends string>(
   definition: Definition<ID>,

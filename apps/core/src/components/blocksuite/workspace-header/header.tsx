@@ -149,27 +149,38 @@ const PluginHeader = () => {
     () => Object.values(affinePluginsMap),
     [affinePluginsMap]
   );
-  const divRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const headerItems = useAtomValue(headerItemsAtom);
   useEffect(() => {
     console.log('headerItems', headerItems);
-    const div = divRef.current;
-    if (!div) {
+    const root = rootRef.current;
+    if (!root) {
       return;
     }
-    Object.entries(headerItems).forEach(([id, headerItem]) => {
-      headerItem.setAttribute('data-plugin-id', id);
-      div.appendChild(headerItem);
+    let disposes: (() => void)[] = [];
+    const renderTimeout = setTimeout(() => {
+      disposes = Object.entries(headerItems).map(([id, headerItem]) => {
+        const div = document.createElement('div');
+        div.setAttribute('plugin-id', id);
+        const cleanup = headerItem(div);
+        root.appendChild(div);
+        return () => {
+          cleanup();
+          root.removeChild(div);
+        };
+      });
     });
+
     return () => {
-      Object.entries(headerItems).forEach(([_, headerItem]) => {
-        div.removeChild(headerItem);
+      clearTimeout(renderTimeout);
+      setTimeout(() => {
+        disposes.forEach(dispose => dispose());
       });
     };
   }, [headerItems]);
 
   return (
-    <div className={styles.pluginHeaderItems} ref={divRef}>
+    <div className={styles.pluginHeaderItems} ref={rootRef}>
       {plugins
         .filter(plugin => plugin.uiAdapter.headerItem != null)
         .map(plugin => {

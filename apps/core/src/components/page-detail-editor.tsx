@@ -9,7 +9,7 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import {
   affinePluginsAtom,
-  currentEditor,
+  editorItemsAtom,
   rootStore,
 } from '@toeverything/plugin-infra/manager';
 import type {
@@ -17,7 +17,6 @@ import type {
   LayoutNode,
   PluginUIAdapter,
 } from '@toeverything/plugin-infra/type';
-import type { PluginBlockSuiteAdapter } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, FC, ReactElement } from 'react';
@@ -46,11 +45,6 @@ const EditorWrapper = memo(function EditorWrapper({
   onLoad,
   isPublic,
 }: PageDetailEditorProps) {
-  const affinePluginsMap = useAtomValue(affinePluginsAtom);
-  const plugins = useMemo(
-    () => Object.values(affinePluginsMap),
-    [affinePluginsMap]
-  );
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
   if (!page) {
     throw new PageNotFoundError(workspace, pageId);
@@ -100,23 +94,35 @@ const EditorWrapper = memo(function EditorWrapper({
             updatedDate: Date.now(),
           });
           localStorage.setItem('last_page_id', page.id);
-          rootStore.set(currentEditor, editor);
           let dispose = () => {};
           if (onLoad) {
             dispose = onLoad(page, editor);
           }
-          const uiDecorators = plugins
-            .map(plugin => plugin.blockSuiteAdapter.uiDecorator)
-            .filter((ui): ui is PluginBlockSuiteAdapter['uiDecorator'] =>
-              Boolean(ui)
-            );
-          const disposes = uiDecorators.map(ui => ui(editor));
+          const editorItems = rootStore.get(editorItemsAtom);
+          let disposes: (() => void)[] = [];
+          const renderTimeout = setTimeout(() => {
+            disposes = Object.entries(editorItems).map(([id, editorItem]) => {
+              const div = document.createElement('div');
+              div.setAttribute('plugin-id', id);
+              const cleanup = editorItem(div, editor);
+              assertExists(parent);
+              document.body.appendChild(div);
+              return () => {
+                cleanup();
+                document.body.removeChild(div);
+              };
+            });
+          });
+
           return () => {
-            disposes.forEach(fn => fn());
             dispose();
+            clearTimeout(renderTimeout);
+            setTimeout(() => {
+              disposes.forEach(dispose => dispose());
+            });
           };
         },
-        [plugins, onLoad]
+        [onLoad]
       )}
     />
   );

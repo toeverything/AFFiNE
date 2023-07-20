@@ -1,11 +1,21 @@
 /// <reference types="@types/webpack-env" />
 import 'ses';
 
+import * as AFFiNEComponent from '@affine/component';
+import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import { DisposableGroup } from '@blocksuite/global/utils';
+import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
-import type { PluginContext } from '@toeverything/plugin-infra/entry';
+import type {
+  CallbackMap,
+  PluginContext,
+} from '@toeverything/plugin-infra/entry';
 import * as Manager from '@toeverything/plugin-infra/manager';
-import { headerItemsAtom, rootStore } from '@toeverything/plugin-infra/manager';
+import {
+  editorItemsAtom,
+  headerItemsAtom,
+  rootStore,
+} from '@toeverything/plugin-infra/manager';
 import * as React from 'react';
 import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
@@ -45,17 +55,30 @@ const customRequire = (id: string) => {
   if (id === '@blocksuite/icons') {
     return harden(Icons);
   }
+  if (id === '@affine/component') {
+    return harden(AFFiNEComponent);
+  }
+  if (id === '@blocksuite/blocks/std') {
+    return harden(BlockSuiteBlocksStd);
+  }
+  if (id === '@blocksuite/global/utils') {
+    return harden(BlockSuiteGlobalUtils);
+  }
   throw new Error(`Cannot find module '${id}'`);
 };
 
 const createGlobalThis = () => {
   return {
+    // fixme: unknown output that will read `React` variable
     React,
     process: harden({
       env: {
         NODE_ENV: process.env.NODE_ENV,
       },
     }),
+    // UNSAFE: React will read `window` and `document`
+    window,
+    document,
     exports: {},
     console: globalThis.console,
     require: customRequire,
@@ -64,7 +87,10 @@ const createGlobalThis = () => {
 
 if (runtimeConfig.enablePlugin) {
   const group = new DisposableGroup();
-  const builtInPlugins: string[] = ['hello-world'];
+  const pluginList = await (
+    await fetch(new URL(`./plugins/plugin-list.json`, window.location.origin))
+  ).json();
+  const builtInPlugins: string[] = pluginList.map((plugin: any) => plugin.name);
   await Promise.all(
     builtInPlugins.map(plugin => {
       const pluginCompartment = new Compartment(createGlobalThis());
@@ -83,15 +109,15 @@ if (runtimeConfig.enablePlugin) {
         pluginGlobalThis.__INTERNAL__ENTRY = {
           register: (part, callback) => {
             if (part === 'headerItem') {
-              const div = document.createElement('div');
               rootStore.set(headerItemsAtom, items => ({
                 ...items,
-                [plugin]: div,
+                [plugin]: callback as CallbackMap['headerItem'],
               }));
-              callback(div);
-              return () => {
-                div.remove();
-              };
+            } else if (part === 'editor') {
+              rootStore.set(editorItemsAtom, items => ({
+                ...items,
+                [plugin]: callback as CallbackMap['editor'],
+              }));
             } else {
               throw new Error(`Unknown part: ${part}`);
             }

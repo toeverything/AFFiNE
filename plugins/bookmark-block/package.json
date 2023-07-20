@@ -12,18 +12,8 @@
     "dev": "node ./scripts/dev.mjs"
   },
   "dependencies": {
-    "@affine/component": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
-    "foxact": "^0.2.11",
     "link-preview-js": "^3.0.4"
-  },
-  "devDependencies": {
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
-  },
-  "peerDependencies": {
-    "react": "*",
-    "react-dom": "*"
   },
   "version": "0.7.0-canary.47"
 }

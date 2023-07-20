@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 
 const require = createRequire(import.meta.url);
 
-const builtInPlugins = ['hello-world'];
+const builtInPlugins = ['hello-world', 'bookmark'];
 
 const outputJson: [pluginName: string, output: string][] = [];
 
@@ -44,8 +44,12 @@ export default defineConfig({
         entryFileNames: '[name].js',
       },
       external: [
-        '@blocksuite/icons',
-        '@toeverything/plugin-infra/manager',
+        // built-in packages
+        /^@affine/,
+        /^@blocksuite/,
+        /^@toeverything/,
+
+        // react
         /^react/,
         /^react-dom/,
       ],
@@ -53,6 +57,15 @@ export default defineConfig({
         {
           name: 'generate-manifest',
           generateBundle() {
+            this.emitFile({
+              type: 'asset',
+              fileName: `plugin-list.json`,
+              source: JSON.stringify(
+                builtInPlugins.map(plugin => ({
+                  name: plugin,
+                }))
+              ),
+            });
             outputJson.forEach(([name, json]) => {
               this.emitFile({
                 type: 'asset',
