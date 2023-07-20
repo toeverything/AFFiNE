@@ -4,7 +4,7 @@ import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { assertEquals } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
@@ -25,7 +25,7 @@ export function useAppHelper() {
   return {
     addLocalWorkspace: useCallback(
       async (workspaceId: string): Promise<string> => {
-        createEmptyBlockSuiteWorkspace(workspaceId, WorkspaceFlavour.LOCAL);
+        getOrCreateWorkspace(workspaceId, WorkspaceFlavour.LOCAL);
         saveWorkspaceToLocalStorage(workspaceId);
         await set(workspaces => [
           ...workspaces,
@@ -42,7 +42,7 @@ export function useAppHelper() {
     ),
     createLocalWorkspace: useCallback(
       async (name: string): Promise<string> => {
-        const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+        const blockSuiteWorkspace = getOrCreateWorkspace(
           nanoid(),
           WorkspaceFlavour.LOCAL
         );
@@ -50,7 +50,7 @@ export function useAppHelper() {
         const id = await LocalAdapter.CRUD.create(blockSuiteWorkspace);
         {
           // this is hack, because CRUD doesn't return the workspace
-          const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+          const blockSuiteWorkspace = getOrCreateWorkspace(
             id,
             WorkspaceFlavour.LOCAL
           );
