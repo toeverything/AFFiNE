@@ -106,8 +106,8 @@ export const createConfiguration: (
     devtool:
       buildFlags.mode === 'production'
         ? buildFlags.distribution === 'desktop'
-          ? 'inline-source-map'
-          : 'hidden-nosources-source-map'
+          ? 'inline-cheap-source-map'
+          : 'source-map'
         : 'eval-cheap-module-source-map',
 
     resolve: {
@@ -199,7 +199,7 @@ export const createConfiguration: (
               type: 'asset/resource',
             },
             {
-              test: /\.(ttf|eot|woff|woff2)$/i,
+              test: /\.(ttf|eot|woff|woff2)$/,
               type: 'asset/resource',
             },
             {
@@ -262,6 +262,7 @@ export const createConfiguration: (
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),
+        'process.env.COVERAGE': JSON.stringify(!!buildFlags.coverage),
         'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
