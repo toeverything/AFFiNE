@@ -1,3 +1,4 @@
+import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { atom, createStore } from 'jotai/vanilla';
@@ -41,6 +42,7 @@ export const currentPageAtom = atom<Promise<Page>>(async get => {
   }
   return page;
 });
+export const currentEditor = atom<EditorContainer | null>(null);
 
 export function definePlugin<ID extends string>(
   definition: Definition<ID>,

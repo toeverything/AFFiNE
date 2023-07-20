@@ -1,5 +1,6 @@
 import type { PluginContext } from '@toeverything/plugin-infra/entry';
 import {
+  currentEditor,
   currentWorkspaceIdAtom,
   rootStore,
 } from '@toeverything/plugin-infra/manager';
@@ -16,7 +17,13 @@ export const entry = (context: PluginContext) => {
     createRoot(div).render(createElement(HeaderItem));
   });
 
+  const unsub = rootStore.sub(currentEditor, () => {
+    const editor = rootStore.get(currentEditor);
+    console.log('editor change', editor);
+  });
+
   return () => {
     console.log('unregister');
+    unsub();
   };
 };

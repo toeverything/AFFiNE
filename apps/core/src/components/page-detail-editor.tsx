@@ -7,7 +7,11 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import { affinePluginsAtom } from '@toeverything/plugin-infra/manager';
+import {
+  affinePluginsAtom,
+  currentEditor,
+  rootStore,
+} from '@toeverything/plugin-infra/manager';
 import type {
   AffinePlugin,
   LayoutNode,
@@ -96,6 +100,7 @@ const EditorWrapper = memo(function EditorWrapper({
             updatedDate: Date.now(),
           });
           localStorage.setItem('last_page_id', page.id);
+          rootStore.set(currentEditor, editor);
           let dispose = () => {};
           if (onLoad) {
             dispose = onLoad(page, editor);
