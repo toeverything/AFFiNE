@@ -39,6 +39,7 @@
     "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/theme": "^0.7.6",
     "@vanilla-extract/dynamic": "^2.0.3",
+    "check-password-strength": "^2.0.7",
     "clsx": "^1.2.1",
     "dayjs": "^1.11.9",
     "jotai": "^2.2.2",

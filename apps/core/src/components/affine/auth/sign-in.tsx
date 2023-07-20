@@ -46,11 +46,11 @@ export const SignIn: FC<AuthPanelProps> = ({
     const res = await verifyUser({ email });
     setLoading(false);
 
+    setCurrentEmail(email);
     if (res?.user) {
-      setAuthState('loginWithPassword');
+      setAuthState('signInWithPassword');
     } else {
       setAuthState('confirmCode');
-      setCurrentEmail(email);
     }
   }, [email, setAuthState, setCurrentEmail, verifyUser]);
   return (
@@ -69,6 +69,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         <AuthInput
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
+          value={email}
           onChange={value => {
             setEmail(value);
           }}

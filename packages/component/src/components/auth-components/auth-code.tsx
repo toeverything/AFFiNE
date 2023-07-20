@@ -1,7 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import clsx from 'clsx';
 import {
-  type ChangeEvent,
   type ClipboardEvent,
   type CSSProperties,
   type FC,
@@ -10,11 +9,11 @@ import {
   useState,
 } from 'react';
 
+import { Input } from '../../ui/input';
 import {
   authCodeContainer,
   authCodeErrorMessage,
   authCodeWrapper,
-  authInput,
 } from './share.css';
 
 export type AuthCodeProps = {
@@ -56,9 +55,7 @@ export const AuthCode: FC<AuthCodeProps> = ({
   );
 
   const changeHandler = useCallback(
-    (e: ChangeEvent<HTMLInputElement>, index: number) => {
-      const value = e.target.value || '';
-
+    (value: string, index: number) => {
       codes[index] = value;
       setCodes([...codes]);
       if (value.length === 1 && index < codeNumber - 1) {
@@ -79,17 +76,20 @@ export const AuthCode: FC<AuthCodeProps> = ({
       >
         {new Array(codeNumber).fill(0).map((_, index) => {
           return (
-            <input
+            <Input
               ref={ref => {
                 inputs[index] = ref as HTMLInputElement;
                 setInputs(inputs);
               }}
               value={codes[index] || ''}
               key={index}
-              className={clsx(authInput, { error })}
+              width={44}
+              status={error ? 'error' : 'default'}
+              inputStyle={{ textAlign: 'center' }}
               maxLength={1}
-              onChange={e => {
-                changeHandler(e, index);
+              size="extraLarge"
+              onChange={value => {
+                changeHandler(value, index);
               }}
               onPaste={e => {
                 pasteHandler(e, index);

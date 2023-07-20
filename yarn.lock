@@ -144,6 +144,7 @@ __metadata:
     "@types/react-dom": ^18.2.6
     "@vanilla-extract/css": ^1.12.0
     "@vanilla-extract/dynamic": ^2.0.3
+    check-password-strength: ^2.0.7
     clsx: ^1.2.1
     dayjs: ^1.11.9
     jotai: ^2.2.2
@@ -15513,6 +15514,13 @@ __metadata:
   version: 1.0.2
   resolution: "check-error@npm:1.0.2"
   checksum: d9d106504404b8addd1ee3f63f8c0eaa7cd962a1a28eb9c519b1c4a1dc7098be38007fc0060f045ee00f075fbb7a2a4f42abcf61d68323677e11ab98dc16042e
+  languageName: node
+  linkType: hard
+
+"check-password-strength@npm:^2.0.7":
+  version: 2.0.7
+  resolution: "check-password-strength@npm:2.0.7"
+  checksum: 0d859f6e434a86efc66f4dbbeb28b8be7c0e929726b80f68d3148bd410984857b411e4f980ba25a629a6f581de9bff3e1ad2d280af45c28f619a7457c65af1ba
   languageName: node
   linkType: hard
 
