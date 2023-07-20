@@ -119,6 +119,27 @@ jobs:
           path: ./apps/core/dist
           if-no-files-found: error
 
+  build-core-desktop:
+    name: Build @affine/core
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build Core
+        run: yarn nx build @affine/core
+        env:
+          DISTRIBUTION: desktop
+
+      - name: Upload core artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-desktop
+          path: ./apps/core/dist
+          if-no-files-found: error
+
   server-test:
     name: Server Test
     runs-on: ubuntu-latest
@@ -333,7 +354,7 @@ jobs:
               target: x86_64-pc-windows-msvc,
               test: true,
             }
-    needs: build-core
+    needs: build-core-desktop
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
