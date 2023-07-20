@@ -53,20 +53,20 @@ jobs:
       - name: Replace Version
         run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - name: generate-assets
-        working-directory: apps/core
-        run: yarn build
+        working-directory: apps/electron
+        run: yarn generate-assets
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          DISTRIBUTION: desktop
+          RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
 
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
           name: core
-          path: apps/core/dist
+          path: apps/electron/resources/web-static
 
   make-distribution:
     environment: production
@@ -120,7 +120,7 @@ jobs:
         run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3
         with:
-          name: core
+          name: before-make-web-static
           path: apps/electron/resources/web-static
 
       - name: Build Plugins

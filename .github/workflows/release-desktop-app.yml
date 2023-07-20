@@ -59,20 +59,18 @@ jobs:
           fi
           echo "RELEASE_VERSION=$(node -p "require('./apps/electron/package.json').version")" >> $GITHUB_OUTPUT
       - name: generate-assets
-        run: yarn build
-        working-directory: apps/core
+        run: yarn workspace @affine/electron generate-assets
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RELEASE_VERSION: ${{ github.event.inputs.version || steps.get-canary-version.outputs.RELEASE_VERSION }}
-          DISTRIBUTION: desktop
 
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
           name: core
-          path: apps/core/dist
+          path: apps/electron/resources/web-static
 
   make-distribution:
     environment: production

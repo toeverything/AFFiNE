@@ -39,7 +39,12 @@ if (process.platform === 'win32') {
 
 cd(repoRootDir);
 
-// update app-updater.yml content with build type in resources folder
+// step 1: build web (nextjs) dist
+if (!process.env.SKIP_WEB_BUILD) {
+  await $`DISTRIBUTION=desktop yarn nx build @affine/core`;
+}
+
+// step 2: update app-updater.yml content with build type in resources folder
 if (process.env.BUILD_TYPE === 'internal') {
   const appUpdaterYml = path.join(publicDistDir, 'app-update.yml');
   const appUpdaterYmlContent = await fs.readFile(appUpdaterYml, 'utf-8');
