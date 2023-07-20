@@ -15,8 +15,13 @@ export default async function (cli_env: any, _: any) {
   return merge(config, {
     entry: {
       index: {
-        asyncChunks: true,
+        asyncChunks: false,
         import: resolve(rootPath, 'src/index.tsx'),
+      },
+      plugin: {
+        dependOn: ['index'],
+        asyncChunks: true,
+        import: resolve(rootPath, 'src/bootstrap/register-plugins.ts'),
       },
     },
   });

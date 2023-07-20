@@ -8,7 +8,6 @@ async function main() {
   assertExists(root);
 
   createRoot(root).render(<App />);
-  await import('./bootstrap/register-plugins');
 }
 
 await main();
