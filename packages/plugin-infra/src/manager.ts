@@ -13,9 +13,6 @@ import type {
 import type { Loader, PluginUIAdapter } from './type';
 import type { PluginBlockSuiteAdapter } from './type';
 
-const isServer = typeof window === 'undefined';
-const isClient = typeof window !== 'undefined';
-
 // global store
 export const rootStore = createStore();
 
@@ -95,8 +92,8 @@ export function definePlugin<ID extends string>(
 ) {
   const basePlugin = {
     definition,
-    uiAdapter: {},
-    blockSuiteAdapter: {},
+    uiAdapter: undefined,
+    blockSuiteAdapter: undefined,
   };
 
   rootStore.set(affinePluginsAtom, plugins => ({
@@ -104,76 +101,21 @@ export function definePlugin<ID extends string>(
     [definition.id]: basePlugin,
   }));
 
-  if (isServer) {
-    if (serverAdapter) {
-      console.log('register server adapter');
-      serverAdapter
-        .load()
-        .then(({ default: adapter }) => {
-          rootStore.set(affinePluginsAtom, plugins => ({
-            ...plugins,
-            [definition.id]: {
-              ...basePlugin,
-              serverAdapter: adapter,
-            },
-          }));
-        })
-        .catch(err => {
-          console.error(err);
-        });
-    }
-  } else if (isClient) {
-    if (blockSuiteAdapter) {
-      const updateAdapter = (adapter: Partial<PluginBlockSuiteAdapter>) => {
+  if (serverAdapter) {
+    console.log('register server adapter');
+    serverAdapter
+      .load()
+      .then(({ default: adapter }) => {
         rootStore.set(affinePluginsAtom, plugins => ({
           ...plugins,
           [definition.id]: {
             ...basePlugin,
-            blockSuiteAdapter: adapter,
+            serverAdapter: adapter,
           },
         }));
-      };
-
-      blockSuiteAdapter
-        .load()
-        .then(({ default: adapter }) => updateAdapter(adapter))
-        .catch(err => {
-          console.error('[definePlugin] blockSuiteAdapter error', err);
-        });
-
-      if (import.meta.webpackHot) {
-        blockSuiteAdapter.hotModuleReload(async _ => {
-          const adapter = (await _).default;
-          updateAdapter(adapter);
-          console.info('[HMR] Plugin', definition.id, 'hot reloaded.');
-        });
-      }
-    }
-    if (uiAdapterLoader) {
-      const updateAdapter = (adapter: Partial<PluginUIAdapter>) => {
-        rootStore.set(affinePluginsAtom, plugins => ({
-          ...plugins,
-          [definition.id]: {
-            ...basePlugin,
-            uiAdapter: adapter,
-          },
-        }));
-      };
-
-      uiAdapterLoader
-        .load()
-        .then(({ default: adapter }) => updateAdapter(adapter))
-        .catch(err => {
-          console.error('[definePlugin] blockSuiteAdapter error', err);
-        });
-
-      if (import.meta.webpackHot) {
-        uiAdapterLoader.hotModuleReload(async _ => {
-          const adapter = (await _).default;
-          updateAdapter(adapter);
-          console.info('[HMR] Plugin', definition.id, 'hot reloaded.');
-        });
-      }
-    }
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }
 }

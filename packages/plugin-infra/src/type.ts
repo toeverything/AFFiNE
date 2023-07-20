@@ -185,7 +185,7 @@ export type ServerAdapter = (affine: AFFiNEServer) => () => void;
 
 export type AffinePlugin<ID extends string> = {
   definition: Definition<ID>;
-  uiAdapter: Partial<PluginUIAdapter>;
-  blockSuiteAdapter: Partial<PluginBlockSuiteAdapter>;
+  uiAdapter: undefined;
+  blockSuiteAdapter: undefined;
   serverAdapter?: ServerAdapter;
 };

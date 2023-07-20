@@ -7,17 +7,11 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import {
-  affinePluginsAtom,
-  contentLayoutAtom,
-  headerItemsAtom,
-} from '@toeverything/plugin-infra/manager';
-import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
+import { headerItemsAtom } from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
-  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -128,27 +122,7 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
 
 export type HeaderProps = BaseHeaderProps;
 
-/**
- * @deprecated
- */
-const PluginHeaderItemAdapter = memo<{
-  headerItem: PluginUIAdapter['headerItem'];
-}>(function PluginHeaderItemAdapter({ headerItem }) {
-  return (
-    <div>
-      {headerItem({
-        contentLayoutAtom,
-      })}
-    </div>
-  );
-});
-
 const PluginHeader = () => {
-  const affinePluginsMap = useAtomValue(affinePluginsAtom);
-  const plugins = useMemo(
-    () => Object.values(affinePluginsMap),
-    [affinePluginsMap]
-  );
   const rootRef = useRef<HTMLDivElement>(null);
   const headerItems = useAtomValue(headerItemsAtom);
   useEffect(() => {
@@ -179,22 +153,7 @@ const PluginHeader = () => {
     };
   }, [headerItems]);
 
-  return (
-    <div className={styles.pluginHeaderItems} ref={rootRef}>
-      {plugins
-        .filter(plugin => plugin.uiAdapter.headerItem != null)
-        .map(plugin => {
-          const headerItem = plugin.uiAdapter
-            .headerItem as PluginUIAdapter['headerItem'];
-          return (
-            <PluginHeaderItemAdapter
-              key={plugin.definition.id}
-              headerItem={headerItem}
-            />
-          );
-        })}
-    </div>
-  );
+  return <div className={styles.pluginHeaderItems} ref={rootRef} />;
 };
 
 export const Header = forwardRef<
