@@ -130,6 +130,22 @@ query getPublicWorkspace($id: String!) {
 }`,
 };
 
+export const getUserQuery = {
+  id: 'getUserQuery' as const,
+  operationName: 'getUser',
+  definitionName: 'user',
+  containsFile: false,
+  query: `
+query getUser($email: String!) {
+  user(email: $email) {
+    id
+    name
+    avatarUrl
+    email
+  }
+}`,
+};
+
 export const getWorkspacePublicByIdQuery = {
   id: 'getWorkspacePublicByIdQuery' as const,
   operationName: 'getWorkspacePublicById',

@@ -12,7 +12,7 @@ import { forwardRef, useCallback } from 'react';
 
 import { heightVar, inputStyle, widthVar } from './index.css';
 
-type InputProps = {
+export type InputProps = {
   // We don't have `value` props here,
   //  see https://foxact.skk.moe/use-composition-input
   defaultValue?: string | undefined;
@@ -26,13 +26,10 @@ type InputProps = {
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   noBorder?: boolean;
+  status?: 'error' | 'success' | 'warning' | 'default';
 } & Omit<
   HTMLAttributes<HTMLInputElement>,
-  | 'onChange'
-  | 'value'
-  | 'defaultValue'
-  | 'onCompositionStart'
-  | 'onCompositionEnd'
+  'onChange' | 'defaultValue' | 'onCompositionStart' | 'onCompositionEnd'
 >;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -47,6 +44,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     onChange,
     noBorder = false,
     className,
+    status = 'default',
+    style = {},
     ...otherProps
   }: InputProps,
   ref: ForwardedRef<HTMLInputElement>
@@ -62,11 +61,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
   return (
     <input
-      className={clsx(inputStyle, className)}
-      style={assignInlineVars({
-        [widthVar]: width ? `${width}px` : '100%',
-        [heightVar]: height ? `${height}px` : 'unset',
+      className={clsx(inputStyle, className, {
+        error: status === 'error',
+        success: status === 'success',
+        warning: status === 'warning',
+        default: status === 'default',
+        disabled: disabled,
       })}
+      style={{
+        ...assignInlineVars({
+          [widthVar]: width ? `${width}px` : '100%',
+          [heightVar]: height ? `${height}px` : 'unset',
+        }),
+        ...style,
+      }}
       data-no-border={noBorder}
       data-disabled={disabled}
       ref={ref}

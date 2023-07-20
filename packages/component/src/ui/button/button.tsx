@@ -32,8 +32,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const iconElement =
       icon &&
       cloneElement(Children.only(icon), {
-        width: iconSize,
-        height: iconSize,
+        width: icon.props.width || iconSize,
+        height: icon.props.height || iconSize,
         className: `affine-button-icon ${icon.props.className ?? ''}`,
       });
 

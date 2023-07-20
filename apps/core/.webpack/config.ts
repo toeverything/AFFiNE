@@ -84,10 +84,13 @@ export const createConfiguration: (
         module: true,
         dynamicImport: true,
       },
-      filename: 'js/[name].js',
+      filename:
+        buildFlags.mode === 'production'
+          ? 'js/[name]-[contenthash:8].js'
+          : 'js/[name].js',
       // In some cases webpack will emit files starts with "_" which is reserved in web extension.
       chunkFilename: 'js/chunk.[name].js',
-      assetModuleFilename: 'assets/[hash][ext][query]',
+      assetModuleFilename: 'assets/[contenthash:8][ext][query]',
       devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
       hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
       hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
@@ -206,7 +209,9 @@ export const createConfiguration: (
             {
               test: /\.css$/,
               use: [
-                MiniCssExtractPlugin.loader,
+                buildFlags.mode === 'development'
+                  ? 'style-loader'
+                  : MiniCssExtractPlugin.loader,
                 {
                   loader: 'css-loader',
                   options: {
@@ -240,18 +245,19 @@ export const createConfiguration: (
       ...(IN_CI ? [] : [new webpack.ProgressPlugin({ percentBy: 'entries' })]),
       ...(buildFlags.mode === 'development'
         ? [new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })]
-        : []),
+        : [
+            new MiniCssExtractPlugin({
+              filename: `[name].[contenthash:8].css`,
+              ignoreOrder: true,
+            }),
+          ]),
       new HTMLPlugin({
         template: join(rootPath, '.webpack', 'template.html'),
         inject: 'body',
         scriptLoading: 'defer',
         minify: false,
-        chunks: ['index'],
+        chunks: ['index', 'plugin'],
         filename: 'index.html',
-      }),
-      new MiniCssExtractPlugin({
-        filename: `[name].[chunkhash:8].css`,
-        ignoreOrder: true,
       }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
@@ -291,6 +297,36 @@ export const createConfiguration: (
         project: 'affine-toeverything',
       })
     );
+  }
+
+  if (buildFlags.mode === 'development') {
+    config.optimization = {
+      ...config.optimization,
+      minimize: false,
+      runtimeChunk: false,
+      splitChunks: {
+        maxInitialRequests: Infinity,
+        chunks: 'all',
+        cacheGroups: {
+          defaultVendors: {
+            test: `[\\/]node_modules[\\/](?!.*vanilla-extract)`,
+            priority: -10,
+            reuseExistingChunk: true,
+          },
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+          styles: {
+            name: 'styles',
+            type: 'css/mini-extract',
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      },
+    };
   }
 
   if (
