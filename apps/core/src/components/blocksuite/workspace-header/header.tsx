@@ -126,7 +126,6 @@ const PluginHeader = () => {
   const rootRef = useRef<HTMLDivElement>(null);
   const headerItems = useAtomValue(headerItemsAtom);
   useEffect(() => {
-    console.log('headerItems', headerItems);
     const root = rootRef.current;
     if (!root) {
       return;
