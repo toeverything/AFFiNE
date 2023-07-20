@@ -81,9 +81,30 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     // fixme(himself65): we might not need step 1
     // step 1: try load metadata from localStorage
     {
+      const loadFromLocalStorage = (): RootWorkspaceMetadata[] => {
+        // don't change this key,
+        // otherwise it will cause the data loss in the production
+        const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
+        if (primitiveMetadata) {
+          try {
+            const items = JSON.parse(primitiveMetadata) as z.infer<
+              typeof rootWorkspaceMetadataArraySchema
+            >;
+            rootWorkspaceMetadataArraySchema.parse(items);
+            return [...items];
+          } catch (e) {
+            console.error('cannot parse worksapce', e);
+          }
+          return [];
+        }
+        return [];
+      };
+
+      const maybeMetadata = loadFromLocalStorage();
+
       // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
       if (
-        metadata.some(meta => !('version' in meta)) &&
+        maybeMetadata.some(meta => !('version' in meta)) &&
         !globalThis.$migrationDone
       ) {
         await new Promise<void>((resolve, reject) => {
@@ -94,20 +115,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         });
       }
 
-      // don't change this key,
-      // otherwise it will cause the data loss in the production
-      const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
-      if (primitiveMetadata) {
-        try {
-          const items = JSON.parse(primitiveMetadata) as z.infer<
-            typeof rootWorkspaceMetadataArraySchema
-          >;
-          rootWorkspaceMetadataArraySchema.parse(items);
-          metadata.push(...items);
-        } catch (e) {
-          console.error('cannot parse worksapce', e);
-        }
-      }
+      metadata.push(...loadFromLocalStorage());
     }
     // step 2: fetch from adapters
     {
