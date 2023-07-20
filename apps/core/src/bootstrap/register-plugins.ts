@@ -27,6 +27,17 @@ import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
 
+if (!process.env.COVERAGE) {
+  lockdown({
+    evalTaming: 'unsafeEval',
+    overrideTaming: 'severe',
+    consoleTaming: 'unsafe',
+    errorTaming: 'unsafe',
+    errorTrapping: 'platform',
+    unhandledRejectionTrapping: 'report',
+  });
+}
+
 const PluginProvider = ({ children }: PropsWithChildren) =>
   React.createElement(
     Provider,
