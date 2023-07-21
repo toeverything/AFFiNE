@@ -51,13 +51,13 @@ export const LanguageMenu: React.FC = () => {
           disablePortal={true}
         >
           <StyledButton
+            type="plain"
             icon={
               <StyledArrowDownContainer>
                 <ArrowDownSmallIcon />
               </StyledArrowDownContainer>
             }
             iconPosition="end"
-            noBorder={true}
             data-testid="language-menu-button"
           >
             <StyledCurrentLanguage>

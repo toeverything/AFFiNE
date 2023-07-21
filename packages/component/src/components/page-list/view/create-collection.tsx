@@ -56,12 +56,7 @@ export const EditCollectionModel = ({
           background: 'var(--affine-background-primary-color)',
         }}
       >
-        <ModalCloseButton
-          top={12}
-          right={12}
-          onClick={onClose}
-          hoverColor="var(--affine-icon-color)"
-        />
+        <ModalCloseButton top={12} right={12} onClick={onClose} />
         {init ? (
           <EditCollection
             propertiesMeta={propertiesMeta}
@@ -283,7 +278,7 @@ export const SaveCollectionButton = ({
       <Button
         className={styles.saveButton}
         onClick={() => changeShow(true)}
-        size="middle"
+        size="large"
         data-testid="save-as-collection"
       >
         <div className={styles.saveButtonContainer}>

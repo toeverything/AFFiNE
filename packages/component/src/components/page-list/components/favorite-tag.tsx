@@ -19,12 +19,7 @@ export const FavoriteTag = forwardRef<
     >
       <IconButton
         ref={ref}
-        iconSize={[20, 20]}
-        style={{
-          color: active
-            ? 'var(--affine-primary-color)'
-            : 'var(--affine-icon-color)',
-        }}
+        active={active}
         onClick={e => {
           e.stopPropagation();
           onClick?.(e);
