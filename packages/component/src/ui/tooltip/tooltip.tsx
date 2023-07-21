@@ -15,6 +15,7 @@ const StyledTooltip = styled(StyledPopperContainer)(() => {
     fontSize: 'var(--affine-font-sm)',
     borderRadius: '8px',
     marginBottom: '12px',
+    overflowWrap: 'break-word',
   };
 });
 
