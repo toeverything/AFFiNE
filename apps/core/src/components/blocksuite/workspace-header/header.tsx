@@ -200,7 +200,7 @@ export const Header = forwardRef<
         data-testid="editor-header-items"
         data-is-edgeless={mode === 'edgeless'}
       >
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div className={styles.headerLeftSide}>
           {!open && <SidebarSwitch />}
           {props.leftSlot}
         </div>
