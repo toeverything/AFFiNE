@@ -144,8 +144,6 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-            - name: metrics
-              containerPort: {{ .Values.service.port }}
           livenessProbe:
             httpGet:
               path: /
