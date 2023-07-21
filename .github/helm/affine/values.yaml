@@ -18,9 +18,8 @@ global:
     username: ''
     password: ''
     database: 0
-
-gke:
-  enabled: true
+  gke:
+    enabled: true
 
 graphql:
   service:
