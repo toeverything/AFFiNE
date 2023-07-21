@@ -14,6 +14,7 @@ export const loader: LoaderFunction = async args => {
     return redirect('/404');
   }
   if (args.params.workspaceId) {
+    localStorage.setItem('last_workspace_id', args.params.workspaceId);
     rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
   }
   return null;

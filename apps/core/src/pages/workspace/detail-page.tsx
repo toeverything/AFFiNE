@@ -125,6 +125,7 @@ export const DetailPage = (): ReactElement => {
 
 export const loader: LoaderFunction = args => {
   if (args.params.pageId) {
+    localStorage.setItem('last_page_id', args.params.pageId);
     rootStore.set(currentPageIdAtom, args.params.pageId);
   }
   return null;
