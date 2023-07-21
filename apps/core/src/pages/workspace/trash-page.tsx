@@ -6,7 +6,6 @@ import { getUIAdapter } from '../../adapters/workspace';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { WorkspaceLayout } from '../../layouts/workspace-layout';
 
 const TrashPage = () => {
   const { jumpToPage } = useNavigateHelper();
@@ -44,9 +43,5 @@ const TrashPage = () => {
 };
 
 export const Component = () => {
-  return (
-    <WorkspaceLayout>
-      <TrashPage />
-    </WorkspaceLayout>
-  );
+  return <TrashPage />;
 };

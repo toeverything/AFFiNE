@@ -6,7 +6,6 @@ import { useCallback } from 'react';
 import { getUIAdapter } from '../../adapters/workspace';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { WorkspaceLayout } from '../../layouts/workspace-layout';
 
 const AllPage = () => {
   const { jumpToPage } = useNavigateHelper();
@@ -42,9 +41,5 @@ const AllPage = () => {
 };
 
 export const Component = () => {
-  return (
-    <WorkspaceLayout>
-      <AllPage />
-    </WorkspaceLayout>
-  );
+  return <AllPage />;
 };

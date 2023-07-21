@@ -16,7 +16,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getUIAdapter } from '../../adapters/workspace';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { WorkspaceLayout } from '../../layouts/workspace-layout';
 
 const WorkspaceDetailPageImpl = (): ReactElement => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
@@ -114,9 +113,5 @@ const WorkspaceDetailPage = (): ReactElement => {
 };
 
 export const Component = () => {
-  return (
-    <WorkspaceLayout>
-      <WorkspaceDetailPage />
-    </WorkspaceLayout>
-  );
+  return <WorkspaceDetailPage />;
 };

@@ -17,28 +17,41 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { historyBaseAtom, MAX_HISTORY } from './atoms/history';
 import createEmotionCache from './utils/create-emotion-cache';
 
-const router = createBrowserRouter([
+const router = createBrowserRouter(
+  [
+    {
+      path: '/',
+      lazy: () => import('./pages/index'),
+    },
+    {
+      path: '/404',
+      lazy: () => import('./pages/404'),
+    },
+    {
+      path: '/workspace/:workspaceId',
+      lazy: () => import('./pages/workspace/index'),
+      children: [
+        {
+          path: 'all',
+          lazy: () => import('./pages/workspace/all-page'),
+        },
+        {
+          path: 'trash',
+          lazy: () => import('./pages/workspace/trash-page'),
+        },
+        {
+          path: ':pageId',
+          lazy: () => import('./pages/workspace/detail-page'),
+        },
+      ],
+    },
+  ],
   {
-    path: '/',
-    lazy: () => import('./pages/index'),
-  },
-  {
-    path: '/404',
-    lazy: () => import('./pages/404'),
-  },
-  {
-    path: '/workspace/:workspaceId/all',
-    lazy: () => import('./pages/workspace/all-page'),
-  },
-  {
-    path: '/workspace/:workspaceId/trash',
-    lazy: () => import('./pages/workspace/trash-page'),
-  },
-  {
-    path: '/workspace/:workspaceId/:pageId',
-    lazy: () => import('./pages/workspace/detail-page'),
-  },
-]);
+    future: {
+      v7_normalizeFormMethod: true,
+    },
+  }
+);
 
 //#region atoms bootstrap
 
@@ -132,6 +145,10 @@ const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
   );
 };
 
+const future = {
+  v7_startTransition: true,
+} as const;
+
 export const App = memo(function App() {
   useEffect(() => {
     document.documentElement.lang = i18n.language;
@@ -145,7 +162,11 @@ export const App = memo(function App() {
       <AffineContext>
         <DebugProvider>
           <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
-            <RouterProvider router={router} />
+            <RouterProvider
+              fallbackElement={<WorkspaceFallback key="RouterFallback" />}
+              router={router}
+              future={future}
+            />
           </Suspense>
         </DebugProvider>
       </AffineContext>
