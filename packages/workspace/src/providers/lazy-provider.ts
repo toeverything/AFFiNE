@@ -3,7 +3,7 @@ import {
   applyUpdate,
   type Doc,
   encodeStateAsUpdate,
-  encodeStateVectorFromUpdate,
+  encodeStateVector,
 } from 'yjs';
 
 import type { DatasourceDocAdapter } from './datasource-doc-adapter';
@@ -37,25 +37,21 @@ export const createLazyProvider = (
 
   async function syncDoc(doc: Doc) {
     const guid = doc.guid;
-    // perf: optimize me
-    const currentUpdate = encodeStateAsUpdate(doc);
 
     const remoteUpdate = await datasource.queryDocState(guid, {
-      stateVector: encodeStateVectorFromUpdate(currentUpdate),
+      stateVector: encodeStateVector(doc),
     });
 
-    const updates = [currentUpdate];
     pendingMap.set(guid, []);
 
     if (remoteUpdate) {
       applyUpdate(doc, remoteUpdate, selfUpdateOrigin);
-      const newUpdate = encodeStateAsUpdate(
-        doc,
-        encodeStateVectorFromUpdate(remoteUpdate)
-      );
-      updates.push(newUpdate);
-      await datasource.sendDocUpdate(guid, newUpdate);
     }
+
+    // perf: optimize me
+    // it is possible the doc is only in memory but not yet in the datasource
+    // we need to send the whole update to the datasource
+    await datasource.sendDocUpdate(guid, encodeStateAsUpdate(doc));
   }
 
   function setupDocListener(doc: Doc) {

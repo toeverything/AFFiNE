@@ -3,7 +3,7 @@ import {
   applyUpdate,
   type Doc,
   encodeStateAsUpdate,
-  encodeStateVectorFromUpdate,
+  encodeStateVector,
 } from 'yjs';
 
 import type { DatasourceDocAdapter } from './types';
@@ -33,30 +33,24 @@ export const createLazyProvider = (
   let connected = false;
   const pendingMap = new Map<string, Uint8Array[]>(); // guid -> pending-updates
   const disposableMap = new Map<string, Set<() => void>>();
-  const connectedDocs = new Set();
+  const connectedDocs = new Set<string>();
   let datasourceUnsub: (() => void) | undefined;
 
   async function syncDoc(doc: Doc) {
     const guid = doc.guid;
-    // perf: optimize me
-    const currentUpdate = encodeStateAsUpdate(doc);
 
     const remoteUpdate = await datasource.queryDocState(guid, {
-      stateVector: encodeStateVectorFromUpdate(currentUpdate),
+      stateVector: encodeStateVector(doc),
     });
 
-    const updates = [currentUpdate];
     pendingMap.set(guid, []);
 
     if (remoteUpdate) {
       applyUpdate(doc, remoteUpdate, selfUpdateOrigin);
-      const newUpdate = encodeStateAsUpdate(
-        doc,
-        encodeStateVectorFromUpdate(remoteUpdate)
-      );
-      updates.push(newUpdate);
-      await datasource.sendDocUpdate(guid, newUpdate);
     }
+
+    // perf: optimize me
+    await datasource.sendDocUpdate(guid, encodeStateAsUpdate(doc));
   }
 
   /**
@@ -73,10 +67,7 @@ export const createLazyProvider = (
       datasource.sendDocUpdate(doc.guid, update).catch(console.error);
     };
 
-    const subdocLoadHandler = (event: {
-      loaded: Set<Doc>;
-      removed: Set<Doc>;
-    }) => {
+    const subdocsHandler = (event: { loaded: Set<Doc>; removed: Set<Doc> }) => {
       event.loaded.forEach(subdoc => {
         connectDoc(subdoc).catch(console.error);
       });
@@ -86,11 +77,11 @@ export const createLazyProvider = (
     };
 
     doc.on('update', updateHandler);
-    doc.on('subdocs', subdocLoadHandler);
+    doc.on('subdocs', subdocsHandler);
     // todo: handle destroy?
     disposables.add(() => {
       doc.off('update', updateHandler);
-      doc.off('subdocs', subdocLoadHandler);
+      doc.off('subdocs', subdocsHandler);
     });
   }
 
@@ -127,6 +118,7 @@ export const createLazyProvider = (
     connectedDocs.add(doc.guid);
     setupDocListener(doc);
     await syncDoc(doc);
+
     await Promise.all(
       [...doc.subdocs]
         .filter(subdoc => subdoc.shouldLoad)
