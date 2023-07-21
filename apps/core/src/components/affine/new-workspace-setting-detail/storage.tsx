@@ -79,14 +79,13 @@ export const StoragePanel: FC<{
             <Button
               data-testid="move-folder"
               className={style.urlButton}
-              size="middle"
+              size="large"
               onClick={handleMoveTo}
             >
               {secondaryPath}
             </Button>
           </Tooltip>
           <Button
-            size="small"
             data-testid="reveal-folder"
             data-disabled={moveToInProgress}
             onClick={onRevealDBFile}
@@ -96,7 +95,6 @@ export const StoragePanel: FC<{
         </FlexWrapper>
       ) : (
         <Button
-          size="small"
           data-testid="move-folder"
           data-disabled={moveToInProgress}
           onClick={handleMoveTo}

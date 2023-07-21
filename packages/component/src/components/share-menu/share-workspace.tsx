@@ -6,9 +6,9 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { FC } from 'react';
 
+import { Button } from '../../ui/button';
 import { descriptionStyle, menuItemStyle } from './index.css';
 import type { ShareMenuProps } from './share-menu';
-import { StyledButton } from './styles';
 
 const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
   const t = useAFFiNEI18N();
@@ -17,14 +17,14 @@ const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
       <div className={descriptionStyle}>
         {t['Share Menu Public Workspace Description1']()}
       </div>
-      <StyledButton
+      <Button
         data-testid="share-menu-enable-affine-cloud-button"
         onClick={() => {
           props.onOpenWorkspaceSettings(props.workspace);
         }}
       >
         {t['Open Workspace Settings']()}
-      </StyledButton>
+      </Button>
     </div>
   );
 };
@@ -42,14 +42,14 @@ const ShareAffineWorkspace: FC<
           ? t['Share Menu Public Workspace Description2']()
           : t['Share Menu Public Workspace Description1']()}
       </div>
-      <StyledButton
+      <Button
         data-testid="share-menu-publish-to-web-button"
         onClick={() => {
           props.onOpenWorkspaceSettings(props.workspace);
         }}
       >
         {t['Open Workspace Settings']()}
-      </StyledButton>
+      </Button>
     </div>
   );
 };

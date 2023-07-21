@@ -84,13 +84,12 @@ export const ProfilePanel: FC<{
         />
         {input === workspace.blockSuiteWorkspace.meta.name ? null : (
           <IconButton
-            size="middle"
             data-testid="save-workspace-name"
             onClick={() => {
               handleUpdateWorkspaceName(input);
             }}
+            active={true}
             style={{
-              color: 'var(--affine-primary-color)',
               marginLeft: '12px',
             }}
           >

@@ -99,7 +99,7 @@ export const WorkspaceDeleteModal = ({
             data-testid="delete-workspace-confirm-button"
             disabled={!allowDelete}
             onClick={handleDelete}
-            type="danger"
+            type="error"
             shape="circle"
             style={{ marginLeft: '24px' }}
           >
