@@ -13,6 +13,8 @@ export const button = style({
   fontSize: 'var(--affine-font-base)',
   transition: 'all .3s',
   ['WebkitAppRegion' as string]: 'no-drag',
+  fontWeight: 600,
+
   // changeable
   height: '28px',
   background: 'var(--affine-white)',
@@ -20,6 +22,9 @@ export const button = style({
   color: 'var(--affine-text-primary-color)',
 
   selectors: {
+    '&.text-bold': {
+      fontWeight: 600,
+    },
     '&:hover': {
       background: 'var(--affine-hover-color)',
     },
@@ -49,7 +54,6 @@ export const button = style({
       borderRadius: '16px',
     },
     '&.extraLarge': {
-      fontWeight: 600,
       height: '40px',
     },
     '&.round.extraLarge': {
@@ -214,6 +218,9 @@ export const iconButton = style({
     '&.without-padding': {
       margin: '-2px',
     },
+    '&.active': {
+      color: 'var(--affine-primary-color)',
+    },
 
     '&:hover': {
       background: 'var(--affine-hover-color)',
@@ -244,6 +251,9 @@ export const iconButton = style({
     '&.plain': {
       color: 'var(--affine-icon-color)',
       borderColor: 'transparent',
+    },
+    '&.plain.active': {
+      color: 'var(--affine-primary-color)',
     },
 
     '&.primary': {

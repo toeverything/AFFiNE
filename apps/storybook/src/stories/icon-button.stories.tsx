@@ -1,8 +1,5 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
-import {
-  IconButton,
-  type IconButtonProps,
-} from '@affine/component';
+import { IconButton, type IconButtonProps } from '@affine/component';
 import { toast } from '@affine/component';
 import { InformationIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';

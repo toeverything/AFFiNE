@@ -1,10 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import { Modal, ModalCloseButton } from '../../..';
+import { Button } from '../../../ui/button';
 import {
-  StyledButton,
   StyledButtonContent,
-  StyledDangerButton,
   StyledModalHeader,
   StyledModalWrapper,
   StyledTextContent,
@@ -33,8 +32,9 @@ export const PublicLinkDisableModal = ({
         </StyledTextContent>
 
         <StyledButtonContent>
-          <StyledButton onClick={onClose}>{t['Cancel']()}</StyledButton>
-          <StyledDangerButton
+          <Button onClick={onClose}>{t['Cancel']()}</Button>
+          <Button
+            type="error"
             data-testid="disable-public-link-confirm-button"
             onClick={() => {
               onConfirmDisable();
@@ -43,7 +43,7 @@ export const PublicLinkDisableModal = ({
             style={{ marginLeft: '24px' }}
           >
             {t['Disable']()}
-          </StyledDangerButton>
+          </Button>
         </StyledButtonContent>
       </StyledModalWrapper>
     </Modal>

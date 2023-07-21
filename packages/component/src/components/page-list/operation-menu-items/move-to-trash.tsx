@@ -44,7 +44,7 @@ const ConfirmModal = ({
         title: title || 'Untitled',
       })}
       confirmText={t.Delete()}
-      confirmType="danger"
+      confirmType="error"
       {...confirmModalProps}
     />
   );
