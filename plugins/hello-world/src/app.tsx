@@ -1,5 +1,5 @@
 import { IconButton, Tooltip } from '@affine/component';
-import { AffineLogoSBlue2_1Icon } from '@blocksuite/icons';
+import { Logo1Icon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 
 export const HeaderItem = () => {
@@ -10,7 +10,7 @@ export const HeaderItem = () => {
           console.log('clicked hello world!');
         }, [])}
       >
-        <AffineLogoSBlue2_1Icon />
+        <Logo1Icon />
       </IconButton>
     </Tooltip>
   );
