@@ -238,3 +238,10 @@ export const windowAppControl = style({
     },
   },
 } as ComplexStyleRule);
+
+export const pluginHeaderItems = style({
+  display: 'flex',
+  gap: '12px',
+  alignItems: 'center',
+  height: '100%',
+});

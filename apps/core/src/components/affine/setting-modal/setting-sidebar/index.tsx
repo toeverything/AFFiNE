@@ -8,7 +8,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { AffineLogoSBlue2_1Icon } from '@blocksuite/icons';
+import { Logo1Icon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 import clsx from 'clsx';
@@ -77,7 +77,7 @@ export const SignInButton = () => {
       }, [setAuthModal])}
     >
       <div className="avatar not-sign">
-        <AffineLogoSBlue2_1Icon />
+        <Logo1Icon />
       </div>
 
       <div className="content">

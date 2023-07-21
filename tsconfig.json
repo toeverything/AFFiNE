@@ -119,7 +119,13 @@
       "path": "./plugins/bookmark-block"
     },
     {
+      "path": "./plugins/bookmark"
+    },
+    {
       "path": "./plugins/copilot"
+    },
+    {
+      "path": "./plugins/hello-world"
     },
     // Packages
     {

@@ -8,6 +8,7 @@
     "outDir": "lib"
   },
   "include": [
+    "vite.config.ts",
     "vitest.config.ts",
     "scripts",
     "apps/core/.webpack/runtime-config.ts"

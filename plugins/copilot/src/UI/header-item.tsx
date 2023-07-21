@@ -1,12 +1,10 @@
 import { IconButton, Tooltip } from '@affine/component';
-import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
+import { contentLayoutAtom } from '@toeverything/plugin-infra/manager';
 import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 
-export const HeaderItem: PluginUIAdapter['headerItem'] = ({
-  contentLayoutAtom,
-}): ReactElement => {
+export const HeaderItem = (): ReactElement => {
   const setLayout = useSetAtom(contentLayoutAtom);
   return (
     <Tooltip content="Chat with AI" placement="bottom-end">
@@ -18,7 +16,7 @@ export const HeaderItem: PluginUIAdapter['headerItem'] = ({
                 return {
                   direction: 'horizontal',
                   first: 'editor',
-                  second: 'com.affine.copilot',
+                  second: 'copilot',
                   splitPercentage: 70,
                 };
               } else {
