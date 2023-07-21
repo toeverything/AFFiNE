@@ -1,7 +1,8 @@
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
-import { Link, type LinkProps } from '@mui/material';
 import clsx from 'clsx';
 import React from 'react';
+import type { LinkProps } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import * as styles from './index.css';
 
@@ -16,7 +17,7 @@ export interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export interface MenuLinkItemProps
   extends MenuItemProps,
-    Pick<LinkProps, 'href'> {}
+    Pick<LinkProps, 'to'> {}
 
 const stopPropagation: React.MouseEventHandler = e => {
   e.stopPropagation();
@@ -90,9 +91,9 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
 MenuItem.displayName = 'MenuItem';
 
 export const MenuLinkItem = React.forwardRef<HTMLDivElement, MenuLinkItemProps>(
-  ({ href, ...props }, ref) => {
+  ({ to, ...props }, ref) => {
     return (
-      <Link href={href} className={styles.linkItemRoot}>
+      <Link to={to} className={styles.linkItemRoot}>
         {/* The <a> element rendered by Link does not generate display box due to `display: contents` style */}
         {/* Thus ref is passed to MenuItem instead of Link */}
         <MenuItem ref={ref} {...props}></MenuItem>
