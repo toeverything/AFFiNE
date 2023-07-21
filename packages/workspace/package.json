@@ -3,7 +3,7 @@
   "private": true,
   "exports": {
     "./atom": "./src/atom.ts",
-    "./utils": "./src/utils.ts",
+    "./manager": "./src/manager/index.ts",
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
@@ -31,12 +31,12 @@
     "react-dom": "18.2.0",
     "socket.io-client": "^4.7.1",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.6",
+    "yjs": "^13.6.7",
     "zod": "^3.21.4"
   },
   "devDependencies": {
     "@types/ws": "^8.5.5",
     "ws": "^8.13.0"
   },
-  "version": "0.7.0-canary.47"
+  "version": "0.7.0-canary.50"
 }

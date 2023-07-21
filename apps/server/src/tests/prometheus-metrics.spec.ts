@@ -24,7 +24,7 @@ afterEach(async () => {
 });
 
 test('should be able to increment counter', async () => {
-  metrics.socketIOCounter(1, { event: 'client-handshake' });
+  metrics.socketIOEventCounter(1, { event: 'client-handshake' });
   const socketIOCounterMetric = await register.getSingleMetric(
     'socket_io_counter'
   );
@@ -37,11 +37,11 @@ test('should be able to increment counter', async () => {
 });
 
 test('should be able to timer', async () => {
-  const endTimer = metrics.socketIOTimer({ event: 'client-handshake' });
+  const endTimer = metrics.socketIOEventTimer({ event: 'client-handshake' });
   await new Promise(resolve => setTimeout(resolve, 50));
   endTimer();
 
-  const endTimer2 = metrics.socketIOTimer({ event: 'client-handshake' });
+  const endTimer2 = metrics.socketIOEventTimer({ event: 'client-handshake' });
   await new Promise(resolve => setTimeout(resolve, 100));
   endTimer2();
 

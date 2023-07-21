@@ -27,9 +27,6 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: metrics
-              containerPort: {{ .Values.service.port }}
           env:
           - name: AUTH_PRIVATE_KEY
             valueFrom:
@@ -42,13 +39,13 @@ spec:
             value: "graphql"
           - name: NEXTAUTH_URL
             value: "{{ .Values.global.ingress.host }}"
-          - name: DATABSE_PASSWORD
+          - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: pg-postgresql
                 key: postgres-password
           - name: DATABASE_URL
-            value: postgres://{{ .Values.global.database.user }}:$(DATABSE_PASSWORD)@{{ .Values.global.database.url }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
+            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.url }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
           - name: REDIS_SERVER_ENABLED
             value: "true"
           - name: REDIS_SERVER_HOST

@@ -1,0 +1,16 @@
+{
+  "name": "@affine/bookmark-plugin",
+  "version": "0.7.0-canary.50",
+  "affinePlugin": {
+    "release": true,
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@blocksuite/icons": "^2.1.26",
+    "@toeverything/plugin-infra": "workspace:*",
+    "foxact": "^0.2.17"
+  }
+}

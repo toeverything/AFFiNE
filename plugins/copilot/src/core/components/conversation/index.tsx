@@ -1,5 +1,4 @@
 import { Button } from '@affine/component';
-import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { PlusIcon, ResetIcon } from '@blocksuite/icons';
 import { clsx } from 'clsx';
 import type { MessageType } from 'langchain/schema';
@@ -31,7 +30,6 @@ export const Conversation = (props: ConversationProps): ReactElement => {
         [styles.avatarRightStyle]: props.type === 'human',
       })}
     >
-      <WorkspaceAvatar workspace={null} />
       <div className={styles.conversationContainerStyle}>
         <div
           className={clsx(styles.conversationStyle, {

@@ -41,6 +41,27 @@
         },
         {
           "env": "BUILD_TYPE"
+        },
+        {
+          "env": "PERFSEE_TOKEN"
+        },
+        {
+          "env": "SENTRY_ORG"
+        },
+        {
+          "env": "SENTRY_PROJECT"
+        },
+        {
+          "env": "SENTRY_AUTH_TOKEN"
+        },
+        {
+          "env": "NEXT_PUBLIC_SENTRY_DSN"
+        },
+        {
+          "env": "DISTRIBUTION"
+        },
+        {
+          "env": "COVERAGE"
         }
       ]
     },

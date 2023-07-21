@@ -309,7 +309,7 @@ export const createIndexedDBProvider = (
       const fakeDoc = new Doc();
       fakeDoc.transact(() => {
         updates.forEach(update => {
-          applyUpdate(fakeDoc, update);
+          applyUpdate(fakeDoc, update, indexeddbOrigin);
         });
       }, indexeddbOrigin);
       const newUpdate = diffUpdate(
@@ -330,7 +330,7 @@ export const createIndexedDBProvider = (
       );
       doc.transact(() => {
         updates.forEach(update => {
-          applyUpdate(doc, update);
+          applyUpdate(doc, update, indexeddbOrigin);
         });
       }, indexeddbOrigin);
     }

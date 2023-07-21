@@ -1,6 +1,6 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { assertEquals } from '@blocksuite/global/utils';
@@ -88,9 +88,30 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     // fixme(himself65): we might not need step 1
     // step 1: try load metadata from localStorage
     {
+      const loadFromLocalStorage = (): RootWorkspaceMetadata[] => {
+        // don't change this key,
+        // otherwise it will cause the data loss in the production
+        const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
+        if (primitiveMetadata) {
+          try {
+            const items = JSON.parse(primitiveMetadata) as z.infer<
+              typeof rootWorkspaceMetadataArraySchema
+            >;
+            rootWorkspaceMetadataArraySchema.parse(items);
+            return [...items];
+          } catch (e) {
+            console.error('cannot parse worksapce', e);
+          }
+          return [];
+        }
+        return [];
+      };
+
+      const maybeMetadata = loadFromLocalStorage();
+
       // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
       if (
-        metadata.some(meta => !('version' in meta)) &&
+        maybeMetadata.some(meta => !('version' in meta)) &&
         !globalThis.$migrationDone
       ) {
         await new Promise<void>((resolve, reject) => {
@@ -101,20 +122,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         });
       }
 
-      // don't change this key,
-      // otherwise it will cause the data loss in the production
-      const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
-      if (primitiveMetadata) {
-        try {
-          const items = JSON.parse(primitiveMetadata) as z.infer<
-            typeof rootWorkspaceMetadataArraySchema
-          >;
-          rootWorkspaceMetadataArraySchema.parse(items);
-          metadata.push(...items);
-        } catch (e) {
-          console.error('cannot parse worksapce', e);
-        }
-      }
+      metadata.push(...loadFromLocalStorage());
     }
     // step 2: fetch from adapters
     {
@@ -152,7 +160,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         meta.flavour === WorkspaceFlavour.AFFINE_CLOUD ||
         meta.flavour === WorkspaceFlavour.LOCAL
       ) {
-        createEmptyBlockSuiteWorkspace(id, meta.flavour);
+        getOrCreateWorkspace(id, meta.flavour);
       } else {
         throw new Error(`unknown flavour ${meta.flavour}`);
       }

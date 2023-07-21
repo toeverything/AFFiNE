@@ -1,3 +1,4 @@
+import { Tooltip } from '@affine/component';
 import { EditCollectionModel } from '@affine/component/page-list';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
@@ -102,9 +103,21 @@ export const CollectionBar = ({
               width: 20,
             }}
           />
-          <div style={{ marginRight: 10 }}>
-            {setting.currentCollection.name}
-          </div>
+          <Tooltip
+            content={setting.currentCollection.name}
+            pointerEnterDelay={1500}
+          >
+            <div
+              style={{
+                marginRight: 10,
+                maxWidth: 200,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {setting.currentCollection.name}
+            </div>
+          </Tooltip>
           {actions.map(action => {
             return (
               <div

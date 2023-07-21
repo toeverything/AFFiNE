@@ -10,11 +10,11 @@ import {
   getWorkspacesQuery,
 } from '@affine/graphql';
 import { fetcher } from '@affine/workspace/affine/gql';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import {
   deleteLocalBlobStorage,
   moveLocalBlobStorage,
 } from '@affine/workspace/migration';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { Workspace } from '@blocksuite/store';
 import {
   createIndexedDBProvider,
@@ -46,7 +46,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
       },
     });
     createdWorkspaces.push(blockSuiteWorkspace.id);
-    const newBLockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+    const newBLockSuiteWorkspace = getOrCreateWorkspace(
       createWorkspace.id,
       WorkspaceFlavour.AFFINE_CLOUD
     );
@@ -105,7 +105,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
       return {
         id,
         flavour: WorkspaceFlavour.AFFINE_CLOUD,
-        blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+        blockSuiteWorkspace: getOrCreateWorkspace(
           id,
           WorkspaceFlavour.AFFINE_CLOUD
         ),
@@ -138,7 +138,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
           ({
             id,
             flavour: WorkspaceFlavour.AFFINE_CLOUD,
-            blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+            blockSuiteWorkspace: getOrCreateWorkspace(
               id,
               WorkspaceFlavour.AFFINE_CLOUD
             ),
