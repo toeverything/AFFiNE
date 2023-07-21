@@ -147,8 +147,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
           onClick={() => {
             setOpen(true);
           }}
-          hoverBackground="var(--affine-background-error-color)"
-          hoverColor="var(--affine-error-color)"
         >
           <DeletePermanentlyIcon />
         </IconButton>
@@ -157,7 +155,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
         title={t['Delete permanently?']()}
         content={t['TrashButtonGroupDescription']()}
         confirmText={t['Delete']()}
-        confirmType="danger"
+        confirmType="error"
         open={open}
         onConfirm={() => {
           onPermanentlyDeletePage();

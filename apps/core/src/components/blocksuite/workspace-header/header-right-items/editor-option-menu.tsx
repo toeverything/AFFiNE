@@ -45,7 +45,7 @@ const CommonMenu = () => {
         disablePortal={true}
         trigger="click"
       >
-        <IconButton data-testid="editor-option-menu" iconSize={[24, 24]}>
+        <IconButton data-testid="editor-option-menu">
           <MoreVerticalIcon />
         </IconButton>
       </Menu>
@@ -138,7 +138,7 @@ const PageMenu = () => {
           disablePortal={true}
           trigger="click"
         >
-          <IconButton data-testid="editor-option-menu" iconSize={[24, 24]}>
+          <IconButton data-testid="editor-option-menu">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>

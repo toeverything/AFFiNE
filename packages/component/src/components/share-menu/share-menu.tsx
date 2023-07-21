@@ -9,12 +9,13 @@ import type { FC } from 'react';
 import { useRef } from 'react';
 import { useCallback, useState } from 'react';
 
+import { Button } from '../../ui/button';
 import { Menu } from '../../ui/menu/menu';
 import { Export } from './export';
 import { containerStyle, indicatorContainerStyle, tabStyle } from './index.css';
 import { SharePage } from './share-page';
 import { ShareWorkspace } from './share-workspace';
-import { StyledIndicator, StyledShareButton, TabItem } from './styles';
+import { StyledIndicator, TabItem } from './styles';
 type SharePanel = 'SharePage' | 'Export' | 'ShareWorkspace';
 const MenuItems: Record<SharePanel, FC<ShareMenuProps>> = {
   SharePage: SharePage,
@@ -134,15 +135,15 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
         setOpen(false);
       }}
     >
-      <StyledShareButton
+      <Button
         data-testid="share-menu-button"
         onClick={() => {
           setOpen(!open);
         }}
-        isShared={isPublic}
+        type={isPublic ? 'primary' : undefined}
       >
         <div>{isPublic ? 'Shared' : 'Share'}</div>
-      </StyledShareButton>
+      </Button>
     </Menu>
   );
 };

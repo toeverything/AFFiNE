@@ -17,7 +17,7 @@ export type ConfirmProps = {
   confirmText?: string;
   cancelText?: string;
   // TODO: Confirm button's color should depend on confirm type
-  confirmType?: 'primary' | 'warning' | 'danger';
+  confirmType?: 'primary' | 'warning' | 'error';
   buttonDirection?: 'row' | 'column';
   onConfirm?: () => void;
   onCancel?: () => void;
@@ -53,7 +53,6 @@ export const Confirm = ({
           <StyledRowButtonWrapper>
             <Button
               shape="round"
-              bold={true}
               onClick={() => {
                 onCancel?.();
               }}
@@ -65,7 +64,6 @@ export const Confirm = ({
             <Button
               type={confirmType}
               shape="round"
-              bold={true}
               onClick={() => {
                 onConfirm?.();
               }}
@@ -79,7 +77,6 @@ export const Confirm = ({
             <Button
               type={confirmType}
               shape="round"
-              bold={true}
               onClick={() => {
                 onConfirm?.();
               }}
@@ -90,7 +87,6 @@ export const Confirm = ({
             </Button>
             <Button
               shape="round"
-              bold={true}
               onClick={() => {
                 onCancel?.();
               }}
