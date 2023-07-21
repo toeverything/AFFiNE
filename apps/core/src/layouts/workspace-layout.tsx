@@ -53,6 +53,10 @@ import {
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import {
+  AllWorkspaceModals,
+  CurrentWorkspaceModals,
+} from '../providers/modal-provider';
 import { pathGenerator } from '../shared';
 import { toast } from '../utils';
 
@@ -128,6 +132,14 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
       (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
     return (
       <>
+        {/* load all workspaces is costly, do not block the whole UI */}
+        <Suspense fallback={null}>
+          <AllWorkspaceModals />
+          <CurrentWorkspaceContext>
+            {/* fixme(himself65): don't re-render whole modals */}
+            <CurrentWorkspaceModals key={currentWorkspaceId} />
+          </CurrentWorkspaceContext>
+        </Suspense>
         <CurrentWorkspaceContext>
           <Suspense fallback={<WorkspaceFallback />}>
             <Provider>
