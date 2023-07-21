@@ -3,6 +3,8 @@ import { Inject } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -17,7 +19,8 @@ import { WorkspaceService } from './workspace';
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
 })
-export class EventsGateway {
+export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private connectionCount = 0;
   constructor(
     private readonly storageService: WorkspaceService,
     private readonly docManager: DocManager,
@@ -28,13 +31,25 @@ export class EventsGateway {
   @WebSocketServer()
   server!: Server;
 
+  handleConnection() {
+    this.connectionCount++;
+    this.metric.socketIOConnectionGauge(this.connectionCount, {});
+  }
+
+  handleDisconnect() {
+    this.connectionCount--;
+    this.metric.socketIOConnectionGauge(this.connectionCount, {});
+  }
+
   @SubscribeMessage('client-handshake')
   async handleClientHandShake(
     @MessageBody() workspace_id: string,
     @ConnectedSocket() client: Socket
   ) {
-    this.metric.socketIOCounter(1, { event: 'client-handshake' });
-    const endTimer = this.metric.socketIOTimer({ event: 'client-handshake' });
+    this.metric.socketIOEventCounter(1, { event: 'client-handshake' });
+    const endTimer = this.metric.socketIOEventTimer({
+      event: 'client-handshake',
+    });
     const docs = await this.storageService.getDocsFromWorkspaceId(workspace_id);
     await client.join(workspace_id);
 
@@ -57,8 +72,8 @@ export class EventsGateway {
     },
     @ConnectedSocket() client: Socket
   ) {
-    this.metric.socketIOCounter(1, { event: 'client-update' });
-    const endTimer = this.metric.socketIOTimer({ event: 'client-update' });
+    this.metric.socketIOEventCounter(1, { event: 'client-update' });
+    const endTimer = this.metric.socketIOEventTimer({ event: 'client-update' });
     const update = Buffer.from(message.update, 'base64');
     client.to(message.workspaceId).emit('server-update', message);
 
@@ -71,8 +86,10 @@ export class EventsGateway {
     @MessageBody('workspace_id') workspace_id: string,
     @ConnectedSocket() client: Socket
   ) {
-    this.metric.socketIOCounter(1, { event: 'init-awareness' });
-    const endTimer = this.metric.socketIOTimer({ event: 'init-awareness' });
+    this.metric.socketIOEventCounter(1, { event: 'init-awareness' });
+    const endTimer = this.metric.socketIOEventTimer({
+      event: 'init-awareness',
+    });
     client.to(workspace_id).emit('new-client-awareness-init');
     endTimer();
   }
@@ -82,8 +99,10 @@ export class EventsGateway {
     @MessageBody() message: { workspaceId: string; awarenessUpdate: string },
     @ConnectedSocket() client: Socket
   ) {
-    this.metric.socketIOCounter(1, { event: 'awareness-update' });
-    const endTimer = this.metric.socketIOTimer({ event: 'awareness-update' });
+    this.metric.socketIOEventCounter(1, { event: 'awareness-update' });
+    const endTimer = this.metric.socketIOEventTimer({
+      event: 'awareness-update',
+    });
     client.to(message.workspaceId).emit('server-awareness-broadcast', {
       ...message,
     });
