@@ -636,6 +636,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/y-provider@workspace:packages/y-provider":
+  version: 0.0.0-use.local
+  resolution: "@affine/y-provider@workspace:packages/y-provider"
+  dependencies:
+    "@blocksuite/store": 0.0.0-20230719163314-76d863fc-nightly
+  peerDependencies:
+    yjs: ^13.5.51
+  languageName: unknown
+  linkType: soft
+
 "@alloc/quick-lru@npm:^5.2.0":
   version: 5.2.0
   resolution: "@alloc/quick-lru@npm:5.2.0"
