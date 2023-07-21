@@ -32,11 +32,7 @@ export const ThemeSettings = () => {
         [setTheme]
       )}
     >
-      <RadioButton
-        bold={true}
-        value="system"
-        data-testid="system-theme-trigger"
-      >
+      <RadioButton value="system" data-testid="system-theme-trigger">
         {t['system']()}
       </RadioButton>
       <RadioButton bold={true} value="light" data-testid="light-theme-trigger">
@@ -117,7 +113,7 @@ export const AppearanceSettings = () => {
           desc={t['Select the language for the interface.']()}
         >
           <div className={settingWrapper}>
-            <LanguageMenu triggerProps={{ size: 'small' }} />
+            <LanguageMenu />
           </div>
         </SettingRow>
         {environment.isDesktop ? (
