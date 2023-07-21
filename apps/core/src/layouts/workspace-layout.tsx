@@ -135,19 +135,12 @@ export const CurrentWorkspaceContext = ({
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    const { jumpToIndex } = useNavigateHelper();
     const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
     const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
     const meta = useMemo(
       () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
       [currentWorkspaceId, jotaiWorkspaces]
     );
-
-    useEffect(() => {
-      if (!meta) {
-        jumpToIndex();
-      }
-    }, [jumpToIndex, meta]);
 
     if (!meta) {
       return <WorkspaceFallback />;
