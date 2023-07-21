@@ -1,13 +1,13 @@
 {{- if .Values.global.gke.enabled -}}
 apiVersion: monitoring.googleapis.com/v1
-kind: ClusterPodMonitoring
+kind: PodMonitoring
 metadata:
-  name: prometheus
+  name: "{{ .Chart.Name }}-monitoring"
 spec:
   selector:
     matchLabels:
-      monitoring: enabled
+      app.kubernetes.io/name: "{{ include "graphql.name" . }}"
   endpoints:
-    - port: http
+    - port: "{{ .Values.service.port }}"
       interval: 30s
 {{- end }}

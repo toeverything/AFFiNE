@@ -6,8 +6,8 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: "{{ include "sync.name" . }}"
+      app.kubernetes.io/name: "{{ include "sync.name" . }}"
   endpoints:
-    - port: http
+    - port: "{{ .Values.service.port }}"
       interval: 30s
 {{- end }}
