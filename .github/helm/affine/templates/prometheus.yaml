@@ -8,6 +8,6 @@ spec:
     matchLabels:
       app.kubernetes.io/monitoring: enabled
   endpoints:
-    - port: metrics
+    - port: http
       interval: 30s
 {{- end }}
