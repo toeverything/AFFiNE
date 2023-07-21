@@ -71,13 +71,7 @@ export class SocketIOProvider extends Observable<string> {
     const update = base64ToUint8Array(message.update);
     const doc = this.docMap.get(message.guid);
     if (!doc) {
-      const updates = this.updateCache.get(message.guid) || [];
-      updates.push(update);
-      !this.intervalId &&
-        (this.intervalId = window.setInterval(
-          this.applyCachedUpdate,
-          this.cacheClearingInterval
-        ));
+      this.cacheUnloadDocUpdate(message.guid, update);
       return;
     }
 
@@ -127,17 +121,24 @@ export class SocketIOProvider extends Observable<string> {
     const update = base64ToUint8Array(message.update);
     const doc = this.docMap.get(message.guid);
     if (!doc) {
-      const updates = this.updateCache.get(message.guid) || [];
-      updates.push(update);
-      !this.intervalId &&
-        (this.intervalId = window.setInterval(
-          this.applyCachedUpdate,
-          this.cacheClearingInterval
-        ));
+      this.cacheUnloadDocUpdate(message.guid, update);
     } else {
       Y.applyUpdate(doc, update, 'server');
     }
   };
+
+  cacheUnloadDocUpdate(guid: string, update: Uint8Array) {
+    const updates = this.updateCache.get(guid) || [];
+    updates.push(update);
+    if (!this.updateCache.has(guid)) {
+      this.updateCache.set(guid, updates);
+    }
+    !this.intervalId &&
+      (this.intervalId = window.setInterval(
+        this.applyCachedUpdate,
+        this.cacheClearingInterval
+      ));
+  }
 
   newClientAwarenessInitHandler = () => {
     const awareness = this.awareness;

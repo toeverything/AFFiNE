@@ -287,7 +287,10 @@ export const createConfiguration: (
       },
       proxy: {
         '/api': 'http://localhost:3010',
-        '/socket.io': 'http://localhost:3010',
+        '/socket.io': {
+          target: 'http://localhost:3010',
+          ws: true,
+        },
         '/graphql': 'http://localhost:3010',
       },
     } as DevServerConfiguration,
