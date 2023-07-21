@@ -10,6 +10,7 @@ import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broa
 import {
   createIndexedDBProvider as create,
   downloadBinary,
+  EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 
@@ -39,6 +40,17 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
     connect: () => {
       logger.info('connect indexeddb provider', id);
       indexeddbProvider.connect();
+      indexeddbProvider.whenSynced
+        .then(() => {
+          connected = true;
+        })
+        .catch(error => {
+          connected = false;
+          if (error instanceof EarlyDisconnectError) {
+            return;
+          }
+          throw error;
+        });
     },
     disconnect: () => {
       assertExists(indexeddbProvider);
