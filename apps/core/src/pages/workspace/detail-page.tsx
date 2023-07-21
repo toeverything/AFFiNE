@@ -95,6 +95,13 @@ export const DetailPage = (): ReactElement => {
           currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
         if (!page) {
           navigate('/404');
+        } else {
+          // fixme: cleanup jumpOnce in the right time
+          if (page.meta.jumpOnce) {
+            currentWorkspace.blockSuiteWorkspace.setPageMeta(currentPageId, {
+              jumpOnce: false,
+            });
+          }
         }
       }
     }

@@ -42,6 +42,7 @@ const createAndPinCollection = async (
   await page.getByTestId('collection-bar-option-pin').click();
   await page.waitForTimeout(100);
 };
+
 test('Show collections items in sidebar', async ({ page }) => {
   await createAndPinCollection(page);
   const collections = page.getByTestId('collections');
