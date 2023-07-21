@@ -150,6 +150,7 @@ export const createLazyProvider = (
       disposables.forEach(dispose => dispose());
     });
     disposableMap.clear();
+    connectedDocs.clear();
   }
 
   /**

@@ -2,7 +2,7 @@ import {
   createLazyProvider,
   type DatasourceDocAdapter,
 } from '@affine/y-provider';
-import { openDB } from 'idb';
+import { type IDBPDatabase, openDB } from 'idb';
 import type { Doc } from 'yjs';
 import { diffUpdate, mergeUpdates } from 'yjs';
 
@@ -37,29 +37,27 @@ export function setMergeCount(count: number) {
   mergeCount = count;
 }
 
+type Ref<T> = { current: T };
+type DbPromiseRef = Ref<Promise<IDBPDatabase<BlockSuiteBinaryDB>> | null>;
+
 const createDatasource = ({
-  dbName = DEFAULT_DB_NAME,
+  dbRef,
   mergeCount,
 }: {
-  dbName?: string;
+  dbRef: DbPromiseRef;
   mergeCount?: number;
 }) => {
-  let disconnected = false;
-  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
-    upgrade: upgradeDB,
-  });
+  const disconnected = false;
 
   const adapter = {
     queryDocState: async (guid, options) => {
-      const db = await dbPromise;
+      if (!dbRef.current) {
+        return false;
+      }
+      const db = await dbRef.current;
       const store = db
         .transaction('workspace', 'readonly')
         .objectStore('workspace');
-
-      if (disconnected) {
-        return false;
-      }
-
       const data = await store.get(guid);
 
       if (!data || disconnected) {
@@ -76,7 +74,10 @@ const createDatasource = ({
       return diff;
     },
     sendDocUpdate: async (guid, update) => {
-      const db = await dbPromise;
+      if (!dbRef.current) {
+        return;
+      }
+      const db = await dbRef.current;
       const store = db
         .transaction('workspace', 'readwrite')
         .objectStore('workspace');
@@ -107,39 +108,35 @@ const createDatasource = ({
     },
   } satisfies DatasourceDocAdapter;
 
-  return {
-    ...adapter,
-    disconnect: async () => {
-      disconnected = true;
-      const db = await dbPromise;
-      db.close();
-    },
-    cleanup: async () => {
-      const db = await dbPromise;
-      await db.clear('workspace');
-    },
-  };
+  return adapter;
 };
 
 export const createIndexedDBProvider = (
   doc: Doc,
   dbName: string = DEFAULT_DB_NAME
 ): IndexedDBProvider => {
-  const datasource = createDatasource({ dbName, mergeCount });
+  const dbRef: DbPromiseRef = { current: null };
+  const datasource = createDatasource({ dbRef, mergeCount });
   const provider = createLazyProvider(doc, datasource);
 
   return {
     ...provider,
     whenSynced: Promise.resolve(),
     connect: () => {
+      dbRef.current = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+        upgrade: upgradeDB,
+      });
       provider.connect();
     },
     disconnect: () => {
+      dbRef.current?.then(db => db.close()).catch(console.error);
+      dbRef.current = null;
       provider.disconnect();
-      datasource.disconnect().catch(console.error);
     },
-    cleanup: () => {
-      return datasource.cleanup();
+    cleanup: async () => {
+      return dbRef.current
+        ?.then(db => db.clear('workspace'))
+        .catch(console.error);
     },
     get connected() {
       return provider.connected;
