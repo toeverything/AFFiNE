@@ -7,17 +7,21 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
+import {
+  currentPageIdAtom,
+  rootStore,
+} from '@toeverything/plugin-infra/manager';
 import { useAtomValue } from 'jotai';
 import { useAtom } from 'jotai/react';
 import { type ReactElement, useCallback, useEffect } from 'react';
+import type { LoaderFunction } from 'react-router-dom';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 
-const WorkspaceDetailPageImpl = (): ReactElement => {
+const DetailPageImpl = (): ReactElement => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
   const currentPageId = useAtomValue(currentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
@@ -67,7 +71,7 @@ const WorkspaceDetailPageImpl = (): ReactElement => {
   );
 };
 
-const WorkspaceDetailPage = (): ReactElement => {
+export const DetailPage = (): ReactElement => {
   const { workspaceId, pageId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -109,9 +113,16 @@ const WorkspaceDetailPage = (): ReactElement => {
   if (!currentPageId || !page) {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
-  return <WorkspaceDetailPageImpl />;
+  return <DetailPageImpl />;
+};
+
+export const loader: LoaderFunction = args => {
+  if (args.params.pageId) {
+    rootStore.set(currentPageIdAtom, args.params.pageId);
+  }
+  return null;
 };
 
 export const Component = () => {
-  return <WorkspaceDetailPage />;
+  return <DetailPage />;
 };

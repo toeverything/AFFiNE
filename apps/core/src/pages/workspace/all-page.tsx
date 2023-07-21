@@ -10,7 +10,7 @@ import { getUIAdapter } from '../../adapters/workspace';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 
-const AllPage = () => {
+export const AllPage = () => {
   const { jumpToPage } = useNavigateHelper();
   const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();

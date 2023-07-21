@@ -7,7 +7,7 @@ import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 
-const TrashPage = () => {
+export const TrashPage = () => {
   const { jumpToPage } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
   const onClickPage = useCallback(

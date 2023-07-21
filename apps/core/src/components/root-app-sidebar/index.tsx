@@ -66,7 +66,7 @@ const RouteMenuLinkItem = React.forwardRef<
       ref={ref}
       {...props}
       active={active}
-      href={path ?? ''}
+      to={path ?? ''}
       icon={icon}
     >
       {children}
