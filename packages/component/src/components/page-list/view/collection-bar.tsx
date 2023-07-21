@@ -129,7 +129,8 @@ export const CollectionBar = ({
         }}
       >
         <Button
-          style={{ border: 'none', position: 'static' }}
+          type="plain"
+          style={{ position: 'static' }}
           onClick={() => setting.backToAll()}
         >
           {t['Back to all']()}

@@ -47,7 +47,7 @@ const LanguageMenuContent: FC<{
     </>
   );
 };
-export const LanguageMenu: FC<{ triggerProps: ButtonProps }> = ({
+export const LanguageMenu: FC<{ triggerProps?: ButtonProps }> = ({
   triggerProps,
 }) => {
   const i18n = useI18N();

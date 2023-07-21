@@ -50,8 +50,6 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
               <ModalCloseButton
                 top={6}
                 right={6}
-                size={[24, 24]}
-                iconSize={[15, 15]}
                 onClick={() => {
                   onClose();
                 }}

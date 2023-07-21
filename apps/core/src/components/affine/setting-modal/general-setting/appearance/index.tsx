@@ -117,7 +117,7 @@ export const AppearanceSettings = () => {
           desc={t['Select the language for the interface.']()}
         >
           <div className={settingWrapper}>
-            <LanguageMenu triggerProps={{ size: 'small' }} />
+            <LanguageMenu />
           </div>
         </SettingRow>
         {environment.isDesktop ? (

@@ -37,12 +37,7 @@ export const SetPassword: FC<AuthPanelProps> = ({ currentEmail }) => {
           }, [])}
         />
       </Wrapper>
-      <Button
-        type="primary"
-        size="middle"
-        style={{ width: '100%' }}
-        disabled={!passwordPass}
-      >
+      <Button type="primary" size="large" block={true} disabled={!passwordPass}>
         {t['com.affine.auth.create.count']()}
       </Button>
     </>

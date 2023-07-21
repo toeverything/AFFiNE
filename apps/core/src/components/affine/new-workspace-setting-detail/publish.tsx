@@ -81,13 +81,13 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
         >
           <Button
             className={style.urlButton}
-            size="middle"
+            size="large"
             onClick={handleClick}
             title={shareLink}
           >
             {shareLink}
           </Button>
-          <Button size="middle" onClick={copyUrl}>
+          <Button size="large" onClick={copyUrl}>
             {t['Copy']()}
           </Button>
         </FlexWrapper>

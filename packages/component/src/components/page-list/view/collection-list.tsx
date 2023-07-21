@@ -194,9 +194,7 @@ export const CollectionList = ({
           }
         >
           <Button
-            size="small"
             className={clsx(styles.viewButton)}
-            hoverColor="var(--affine-icon-color)"
             data-testid="collection-select"
           >
             {setting.currentCollection.name}
@@ -217,8 +215,6 @@ export const CollectionList = ({
         <Button
           icon={<FilteredIcon />}
           className={clsx(styles.filterButton)}
-          size="small"
-          hoverColor="var(--affine-icon-color)"
           data-testid="create-first-filter"
         >
           {t['com.affine.filter']()}

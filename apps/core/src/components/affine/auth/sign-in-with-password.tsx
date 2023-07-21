@@ -50,8 +50,8 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
       </Wrapper>
       <Button
         type="primary"
-        size="middle"
-        style={{ width: '100%' }}
+        size="large"
+        block={true}
         onClick={useCallback(() => {
           console.log('password', password);
         }, [password])}
@@ -60,18 +60,13 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
       </Button>
 
       <Button
-        size="small"
-        bold={true}
-        noBorder={true}
         onClick={useCallback(() => {
           setAuthState('signIn');
         }, [setAuthState])}
         style={{
-          color: 'var(--affine-text-secondary-color)',
           marginTop: 8,
           marginLeft: -16,
         }}
-        hoverColor={'var(--affine-text-secondary-color)'}
         icon={
           <ArrowLeftSmallIcon
             style={{

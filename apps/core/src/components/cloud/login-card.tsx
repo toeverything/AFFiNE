@@ -16,8 +16,6 @@ export const LoginCard = () => {
   return (
     <StyledSignInButton
       data-testid="sign-in-button"
-      noBorder
-      bold
       icon={
         <div className="circle">
           <CloudWorkspaceIcon />

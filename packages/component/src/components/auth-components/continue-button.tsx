@@ -4,9 +4,6 @@ import type { FC } from 'react';
 import { useCallback } from 'react';
 
 import { Button } from '../../ui/button';
-import { loading } from './share.css';
-
-const Loading = () => <div className={loading}></div>;
 
 export const ContinueButton: FC<{
   onClick?: () => void;
@@ -16,23 +13,16 @@ export const ContinueButton: FC<{
 
   return (
     <Button
-      style={{
-        width: '100%',
-        fontWeight: '600',
-        borderRadius: '8px',
-      }}
-      size="middle"
+      block={true}
+      size="large"
       icon={
-        loading ? (
-          <Loading />
-        ) : (
-          <ArrowDownBigIcon
-            width={20}
-            height={20}
-            style={{ transform: 'rotate(-90deg)', color: 'var(--affine-blue)' }}
-          />
-        )
+        <ArrowDownBigIcon
+          width={20}
+          height={20}
+          style={{ transform: 'rotate(-90deg)', color: 'var(--affine-blue)' }}
+        />
       }
+      loading={loading}
       iconPosition="end"
       onClick={useCallback(() => {
         if (loading) return;

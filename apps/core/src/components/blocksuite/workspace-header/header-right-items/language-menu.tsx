@@ -57,7 +57,6 @@ export const LanguageMenu: React.FC = () => {
               </StyledArrowDownContainer>
             }
             iconPosition="end"
-            noBorder={true}
             data-testid="language-menu-button"
           >
             <StyledCurrentLanguage>

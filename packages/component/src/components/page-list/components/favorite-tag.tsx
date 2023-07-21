@@ -2,8 +2,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import { forwardRef } from 'react';
 
-import type { IconButtonProps } from '../../..';
-import { IconButton, Tooltip } from '../../..';
+import { Tooltip } from '../../..';
+import { IconButton, type IconButtonProps } from '../../../ui/button';
 
 export const FavoriteTag = forwardRef<
   HTMLButtonElement,
@@ -19,12 +19,7 @@ export const FavoriteTag = forwardRef<
     >
       <IconButton
         ref={ref}
-        iconSize={[20, 20]}
-        style={{
-          color: active
-            ? 'var(--affine-primary-color)'
-            : 'var(--affine-icon-color)',
-        }}
+        active={active}
         onClick={e => {
           e.stopPropagation();
           onClick?.(e);

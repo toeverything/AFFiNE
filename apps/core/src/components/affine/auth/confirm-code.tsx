@@ -50,18 +50,14 @@ export const ConfirmCode: FC<AuthPanelProps> = ({
       </div>
 
       <Button
-        size="small"
-        bold={true}
-        noBorder={true}
+        type="plain"
         onClick={useCallback(() => {
           setAuthState('signIn');
         }, [setAuthState])}
         style={{
-          color: 'var(--affine-text-secondary-color)',
           marginTop: 8,
           marginLeft: -16,
         }}
-        hoverColor={'var(--affine-text-secondary-color)'}
         icon={
           <ArrowLeftSmallIcon
             style={{
