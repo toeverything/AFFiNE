@@ -24,6 +24,7 @@ import {
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
 import { type PropsWithChildren, useState } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 
 export default {
   title: 'Components/AppSidebar',
@@ -31,18 +32,20 @@ export default {
 } satisfies Meta;
 
 const Container = ({ children }: PropsWithChildren) => (
-  <main
-    style={{
-      position: 'relative',
-      width: '100vw',
-      height: 'calc(100vh - 40px)',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'row',
-    }}
-  >
-    {children}
-  </main>
+  <MemoryRouter>
+    <main
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: 'calc(100vh - 40px)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'row',
+      }}
+    >
+      {children}
+    </main>
+  </MemoryRouter>
 );
 const Main = () => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
