@@ -8,8 +8,8 @@ import {
   useMemo,
 } from 'react';
 
-import { button, buttonIcon } from './style.css';
 import { Loading } from '../loading';
+import { button, buttonIcon } from './style.css';
 export type ButtonType =
   | 'default'
   | 'primary'
@@ -73,7 +73,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       shape,
       size,
-      icon,
+      icon: propsIcon,
       iconPosition,
       block,
       loading,
@@ -83,12 +83,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ...props,
     };
 
-    const currentIcon = useMemo(() => {
+    const icon = useMemo(() => {
       if (loading) {
         return <Loading />;
       }
-      return icon;
-    }, [icon, loading]);
+      return propsIcon;
+    }, [propsIcon, loading]);
 
     return (
       <button
@@ -111,13 +111,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled}
         {...otherProps}
       >
-        {currentIcon && iconPosition === 'start' ? (
-          <ButtonIcon {...props} icon={currentIcon} />
+        {icon && iconPosition === 'start' ? (
+          <ButtonIcon {...props} icon={icon} />
         ) : null}
         <span>{children}</span>
-        {currentIcon && iconPosition === 'end' ? (
-          <ButtonIcon {...props} />
-        ) : null}
+        {icon && iconPosition === 'end' ? <ButtonIcon {...props} /> : null}
       </button>
     );
   }
