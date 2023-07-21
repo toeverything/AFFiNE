@@ -6,7 +6,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/monitoring: enabled
+      monitoring: enabled
   endpoints:
     - port: http
       interval: 30s
