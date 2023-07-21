@@ -16,7 +16,7 @@ import { useAtom } from 'jotai';
 import type { MouseEvent, ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
-import { Button, MenuItem } from '../../..';
+import { Button, MenuItem, Tooltip } from '../../..';
 import Menu from '../../../ui/menu/menu';
 import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
@@ -80,39 +80,53 @@ const CollectionOption = ({
       key={collection.id}
       className={styles.viewMenu}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+      <Tooltip
+        content={collection.name}
+        placement="right"
+        pointerEnterDelay={1500}
       >
-        <div>{collection.name}</div>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
-          {actions.map((v, i) => {
-            const onClick = (e: MouseEvent<HTMLDivElement>) => {
-              e.stopPropagation();
-              v.click();
-            };
-            return (
-              <div
-                data-testid={`collection-select-option-${v.name}`}
-                key={i}
-                onClick={onClick}
-                style={{ marginLeft: i === 0 ? 28 : undefined }}
-                className={clsx(styles.viewOption, v.className)}
-              >
-                {v.icon}
-              </div>
-            );
-          })}
+          <div
+            style={{
+              maxWidth: '150px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {collection.name}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            {actions.map((v, i) => {
+              const onClick = (e: MouseEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                v.click();
+              };
+              return (
+                <div
+                  data-testid={`collection-select-option-${v.name}`}
+                  key={i}
+                  onClick={onClick}
+                  style={{ marginLeft: i === 0 ? 28 : undefined }}
+                  className={clsx(styles.viewOption, v.className)}
+                >
+                  {v.icon}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </Tooltip>
     </MenuItem>
   );
 };
@@ -155,7 +169,6 @@ export const CollectionList = ({
         [styles.filterButtonCollapse]: !open,
       })}
       style={{
-        marginLeft: 4,
         display: 'flex',
         alignItems: 'center',
       }}
@@ -199,7 +212,12 @@ export const CollectionList = ({
             hoverColor="var(--affine-icon-color)"
             data-testid="collection-select"
           >
-            {setting.currentCollection.name}
+            <Tooltip
+              content={setting.currentCollection.name}
+              pointerEnterDelay={1500}
+            >
+              <>{setting.currentCollection.name}</>
+            </Tooltip>
           </Button>
         </Menu>
       )}

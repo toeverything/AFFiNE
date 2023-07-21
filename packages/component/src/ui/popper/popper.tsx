@@ -22,7 +22,7 @@ export const Popper = ({
   defaultVisible = false,
   visible: propsVisible,
   trigger = 'hover',
-  pointerEnterDelay = 100,
+  pointerEnterDelay = 500,
   pointerLeaveDelay = 100,
   onVisibleChange,
   popoverStyle,
