@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
-    "@blocksuite/icons": "^2.1.26",
+    "@blocksuite/icons": "^2.1.27",
     "@toeverything/plugin-infra": "workspace:*",
     "foxact": "^0.2.17"
   }
