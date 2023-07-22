@@ -74,7 +74,7 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
       <FlexWrapper justifyContent="space-between">
         <Button
           className={style.urlButton}
-          size="middle"
+          size="large"
           onClick={useCallback(() => {
             window.open(shareUrl, '_blank');
           }, [shareUrl])}
@@ -82,7 +82,7 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
         >
           {shareUrl}
         </Button>
-        <Button size="middle" onClick={copyUrl}>
+        <Button size="large" onClick={copyUrl}>
           {t['Copy']()}
         </Button>
       </FlexWrapper>

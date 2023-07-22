@@ -1,73 +1,76 @@
-import type { CSSProperties, HTMLAttributes, ReactElement } from 'react';
+import clsx from 'clsx';
+import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { forwardRef } from 'react';
 
-import { StyledIconButton } from './styles';
-const SIZE_SMALL = 'small' as const;
-const SIZE_MIDDLE = 'middle' as const;
-const SIZE_NORMAL = 'normal' as const;
-// TODO: IconButton should merge into Button, but it has not been designed yet
-const SIZE_CONFIG = {
-  [SIZE_SMALL]: {
-    iconSize: 16,
-    areaSize: 20,
-  },
-  [SIZE_MIDDLE]: {
-    iconSize: 20,
-    areaSize: 24,
-  },
-  [SIZE_NORMAL]: {
-    iconSize: 24,
-    areaSize: 32,
-  },
-} as const;
+import { Loading } from '../loading';
+import type { ButtonType } from './button';
+import { iconButton } from './style.css';
 
-export type IconButtonProps = {
-  size?:
-    | typeof SIZE_SMALL
-    | typeof SIZE_MIDDLE
-    | typeof SIZE_NORMAL
-    | [number, number];
-  iconSize?:
-    | typeof SIZE_SMALL
-    | typeof SIZE_MIDDLE
-    | typeof SIZE_NORMAL
-    | [number, number];
-  disabled?: boolean;
-  hoverBackground?: CSSProperties['background'];
-  hoverColor?: string;
-  hoverStyle?: CSSProperties;
-  children: ReactElement<HTMLAttributes<SVGElement>, 'svg'>;
-  darker?: boolean;
-} & HTMLAttributes<HTMLButtonElement>;
+export type IconButtonSize = 'default' | 'large' | 'small' | 'extraSmall';
+export type IconButtonProps = PropsWithChildren &
+  Omit<HTMLAttributes<HTMLButtonElement>, 'type'> & {
+    type?: ButtonType;
+    disabled?: boolean;
+    size?: IconButtonSize;
+    loading?: boolean;
+    withoutPadding?: boolean;
+    active?: boolean;
+  };
+const defaultProps = {
+  type: 'plain',
+  disabled: false,
+  size: 'default',
+  loading: false,
+  withoutPadding: false,
+  active: false,
+};
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  (
-    { size = 'normal', iconSize, disabled = false, children, ...props },
-    ref
-  ) => {
-    iconSize = size;
-    const [width, height] = Array.isArray(size)
-      ? size
-      : [SIZE_CONFIG[size]['areaSize'], SIZE_CONFIG[size]['areaSize']];
-    const [iconWidth] = Array.isArray(iconSize)
-      ? iconSize
-      : [SIZE_CONFIG[iconSize]['iconSize'], SIZE_CONFIG[iconSize]['iconSize']];
+  (props, ref) => {
+    const {
+      type,
+      size,
+      withoutPadding,
+      children,
+      disabled,
+      loading,
+      active,
+      ...otherProps
+    } = {
+      ...defaultProps,
+      ...props,
+    };
 
     return (
-      <StyledIconButton
+      <button
         ref={ref}
+        className={clsx(iconButton, {
+          'without-padding': withoutPadding,
+
+          primary: type === 'primary',
+          plain: type === 'plain',
+          error: type === 'error',
+          warning: type === 'warning',
+          success: type === 'success',
+          processing: type === 'processing',
+
+          large: size === 'large',
+          small: size === 'small',
+          'extra-small': size === 'extraSmall',
+
+          disabled,
+          loading,
+          active,
+        })}
         disabled={disabled}
-        width={width}
-        height={height}
-        borderRadius={iconWidth / 4}
-        fontSize={iconWidth}
-        {...props}
+        data-disabled={disabled}
+        {...otherProps}
       >
-        {children}
-      </StyledIconButton>
+        {loading ? <Loading /> : children}
+      </button>
     );
   }
 );
-IconButton.displayName = 'IconButton';
 
+IconButton.displayName = 'IconButton';
 export default IconButton;
