@@ -4,7 +4,8 @@
   "private": true,
   "bin": {
     "build-core": "./src/bin/build-core.mjs",
-    "dev-core": "./src/bin/dev-core.mjs"
+    "dev-core": "./src/bin/dev-core.mjs",
+    "dev-plugin": "./src/bin/dev-plugin.mjs"
   },
   "exports": {
     "./config": "./src/config/index.ts"

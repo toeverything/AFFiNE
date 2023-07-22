@@ -97,6 +97,7 @@ __metadata:
   bin:
     build-core: ./src/bin/build-core.mjs
     dev-core: ./src/bin/dev-core.mjs
+    dev-plugin: ./src/bin/dev-plugin.mjs
   languageName: unknown
   linkType: soft
 
