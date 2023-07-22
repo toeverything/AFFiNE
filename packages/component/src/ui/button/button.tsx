@@ -1,71 +1,125 @@
-import { Children, cloneElement, forwardRef } from 'react';
+import clsx from 'clsx';
+import {
+  type FC,
+  forwardRef,
+  type HTMLAttributes,
+  type PropsWithChildren,
+  type ReactElement,
+  useMemo,
+} from 'react';
 
-import type { ButtonProps } from './interface';
-import { Loading } from './loading';
-import { StyledButton } from './styles';
-import { getSize } from './utils';
+import { Loading } from '../loading';
+import { button, buttonIcon } from './style.css';
+export type ButtonType =
+  | 'default'
+  | 'primary'
+  | 'plain'
+  | 'error'
+  | 'warning'
+  | 'success'
+  | 'processing';
+export type ButtonSize = 'default' | 'large' | 'extraLarge';
+export type ButtonProps = PropsWithChildren &
+  Omit<HTMLAttributes<HTMLButtonElement>, 'type'> & {
+    type?: ButtonType;
+    disabled?: boolean;
+    icon?: ReactElement;
+    iconPosition?: 'start' | 'end';
+    shape?: 'default' | 'round' | 'circle';
+    block?: boolean;
+    size?: ButtonSize;
+    loading?: boolean;
+  };
+const defaultProps = {
+  type: 'default',
+  disabled: false,
+  shape: 'default',
+  size: 'default',
+  iconPosition: 'start',
+  loading: false,
+};
 
-export type { ButtonProps };
-
+const ButtonIcon: FC<ButtonProps> = props => {
+  const {
+    size,
+    icon,
+    iconPosition = 'start',
+    children,
+    type,
+  } = {
+    ...defaultProps,
+    ...props,
+  };
+  const onlyIcon = icon && !children;
+  return (
+    <div
+      className={clsx(buttonIcon, {
+        'color-white': type !== 'default' && type !== 'plain',
+        large: size === 'large',
+        extraLarge: size === 'extraLarge',
+        end: iconPosition === 'end' && !onlyIcon,
+        start: iconPosition === 'start' && !onlyIcon,
+      })}
+    >
+      {icon}
+    </div>
+  );
+};
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      size = 'default',
-      disabled = false,
-      hoverBackground,
-      hoverColor,
-      hoverStyle,
-      shape = 'default',
-      icon,
-      iconPosition = 'start',
-      type = 'default',
+  (props, ref) => {
+    const {
       children,
-      bold = false,
-      loading = false,
-      noBorder = false,
-      ...props
-    },
-    ref
-  ) => {
-    const { iconSize } = getSize(size);
+      type,
+      disabled,
+      shape,
+      size,
+      icon: propsIcon,
+      iconPosition,
+      block,
+      loading,
+      ...otherProps
+    } = {
+      ...defaultProps,
+      ...props,
+    };
 
-    const iconElement =
-      icon &&
-      cloneElement(Children.only(icon), {
-        width: iconSize,
-        height: iconSize,
-        className: `affine-button-icon ${icon.props.className ?? ''}`,
-      });
+    const icon = useMemo(() => {
+      if (loading) {
+        return <Loading />;
+      }
+      return propsIcon;
+    }, [propsIcon, loading]);
 
     return (
-      <StyledButton
+      <button
         ref={ref}
+        className={clsx(button, {
+          primary: type === 'primary',
+          plain: type === 'plain',
+          error: type === 'error',
+          warning: type === 'warning',
+          success: type === 'success',
+          processing: type === 'processing',
+          large: size === 'large',
+          extraLarge: size === 'extraLarge',
+          disabled,
+          circle: shape === 'circle',
+          round: shape === 'round',
+          block,
+          loading,
+        })}
         disabled={disabled}
-        size={size}
-        shape={shape}
-        hoverBackground={hoverBackground}
-        hoverColor={hoverColor}
-        hoverStyle={hoverStyle}
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        type={type}
-        bold={bold}
-        noBorder={noBorder}
-        {...props}
+        data-disabled={disabled}
+        {...otherProps}
       >
-        {loading ? (
-          <Loading type={type}></Loading>
-        ) : (
-          <>
-            {iconPosition === 'start' && iconElement}
-            {children && <span>{children}</span>}
-            {iconPosition === 'end' && iconElement}
-          </>
-        )}
-      </StyledButton>
+        {icon && iconPosition === 'start' ? (
+          <ButtonIcon {...props} icon={icon} />
+        ) : null}
+        <span>{children}</span>
+        {icon && iconPosition === 'end' ? <ButtonIcon {...props} /> : null}
+      </button>
     );
   }
 );
 Button.displayName = 'Button';
-
 export default Button;

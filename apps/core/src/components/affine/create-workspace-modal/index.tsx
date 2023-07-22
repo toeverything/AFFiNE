@@ -79,7 +79,7 @@ const NameWorkspaceContent = ({
       <div className={style.buttonGroup}>
         <Button
           data-testid="create-workspace-close-button"
-          type="light"
+          type="primary"
           onClick={onClose}
         >
           {t.Cancel()}
@@ -155,7 +155,7 @@ const SetDBLocationContent = ({
         <Button
           disabled={opening}
           data-testid="create-workspace-customize-button"
-          type="light"
+          type="primary"
           onClick={handleSelectDBFileLocation}
         >
           {t['Customize']()}
