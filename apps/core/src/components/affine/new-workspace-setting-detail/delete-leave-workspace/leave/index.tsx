@@ -37,7 +37,7 @@ export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
           </Button>
           <Button
             onClick={handleLeave}
-            type="danger"
+            type="error"
             shape="circle"
             style={{ marginLeft: '24px' }}
           >

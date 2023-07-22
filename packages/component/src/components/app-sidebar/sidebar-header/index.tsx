@@ -23,7 +23,6 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
         <>
           {environment.isMacOs && <div style={{ flex: 1 }} />}
           <IconButton
-            size="middle"
             data-testid="app-sidebar-arrow-button-back"
             disabled={props.router?.history.current === 0}
             onClick={() => {
@@ -33,7 +32,6 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
             <ArrowLeftSmallIcon />
           </IconButton>
           <IconButton
-            size="middle"
             data-testid="app-sidebar-arrow-button-forward"
             disabled={
               props.router

@@ -62,3 +62,46 @@ test('Convert to edgeless by editor header items', async ({ page }) => {
   const edgeless = page.locator('affine-edgeless-page');
   expect(await edgeless.isVisible()).toBe(true);
 });
+
+test('Able to insert the title of an untitled page', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  const titleBarTextContent = await page.getByTestId('title-edit-button');
+  await titleBarTextContent.click({ delay: 100 });
+  const titleContent = await page.getByTestId('title-content');
+  await titleContent.fill('test');
+  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  expect(await titleBarTextContent.textContent()).toBe('test');
+});
+
+test('Able to edit the title of an existing page', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  const titleBarTextContent = await page.getByTestId('title-edit-button');
+  await titleBarTextContent.click({ delay: 100 });
+  const titleContent = await page.getByTestId('title-content');
+  await titleContent.fill('test');
+  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  expect(await titleBarTextContent.textContent()).toBe('test');
+  await titleBarTextContent.click({ delay: 100 });
+  await titleContent.fill('Sample text 2');
+  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  expect(await titleBarTextContent.textContent()).toBe('Sample text 2');
+});
+
+test('Clearing out the title bar will remove the page title', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  const titleBarTextContent = await page.getByTestId('title-edit-button');
+  await titleBarTextContent.click({ delay: 100 });
+  const titleContent = await page.getByTestId('title-content');
+  await titleContent.fill('test');
+  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  expect(await titleBarTextContent.textContent()).toBe('test');
+  await titleBarTextContent.click({ delay: 100 });
+  await titleContent.fill('');
+  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  expect(await titleBarTextContent.textContent()).toBe('Untitled');
+});

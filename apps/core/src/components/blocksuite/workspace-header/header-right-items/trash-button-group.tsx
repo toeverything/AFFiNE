@@ -31,7 +31,6 @@ export const TrashButtonGroup = () => {
   return (
     <>
       <Button
-        bold={true}
         shape="round"
         style={{ marginRight: '24px' }}
         onClick={() => {
@@ -41,9 +40,8 @@ export const TrashButtonGroup = () => {
         {t['Restore it']()}
       </Button>
       <Button
-        bold={true}
         shape="round"
-        type="danger"
+        type="error"
         onClick={() => {
           setOpen(true);
         }}
@@ -54,7 +52,7 @@ export const TrashButtonGroup = () => {
         title={t['TrashButtonGroupTitle']()}
         content={t['TrashButtonGroupDescription']()}
         confirmText={t['Delete']()}
-        confirmType="danger"
+        confirmType="error"
         open={open}
         onConfirm={useCallback(() => {
           jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
