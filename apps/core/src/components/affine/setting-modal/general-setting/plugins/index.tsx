@@ -9,7 +9,6 @@ import { useAtomValue } from 'jotai';
 export const Plugins = () => {
   const t = useAFFiNEI18N();
   const allowedPlugins = useAtomValue(registeredPluginAtom);
-  console.log('allowedPlugins', allowedPlugins);
   return (
     <>
       <SettingHeader
