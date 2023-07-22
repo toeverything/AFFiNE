@@ -140,12 +140,12 @@ await build({
         const txt = await file.readFile({
           encoding: 'utf-8',
         });
-        console.log(txt);
         if (!txt) {
           console.log('generate plugin-list.json');
           await file.write(
             JSON.stringify([
               {
+                release: json.affinePlugin.release,
                 name: plugin,
                 assets: [...metadata.assets],
               },
@@ -157,6 +157,7 @@ await build({
           const index = list.findIndex((item: any) => item.name === plugin);
           if (index === -1) {
             list.push({
+              release: json.affinePlugin.release,
               name: plugin,
               assets: [...metadata.assets],
             });

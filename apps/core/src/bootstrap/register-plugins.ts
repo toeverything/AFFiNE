@@ -81,9 +81,6 @@ const customRequire = (id: string) => {
   if (id === 'jotai/utils') {
     return JotaiUtils;
   }
-  if (id === '../plugin.js') {
-    return entryCompartment.evaluate('exports');
-  }
   throw new Error(`Cannot find module '${id}'`);
 };
 
@@ -121,35 +118,48 @@ const createGlobalThis = () => {
 };
 
 const group = new DisposableGroup();
-const pluginList = await (
+const pluginList = (await (
   await fetch(new URL(`./plugins/plugin-list.json`, window.location.origin))
-).json();
-const builtInPlugins: string[] = pluginList.map((plugin: any) => plugin.name);
-const pluginGlobalThis = createGlobalThis();
-const pluginEntry = await fetch('/plugins/plugin.js').then(res => res.text());
-const entryCompartment = new Compartment(pluginGlobalThis, {});
-entryCompartment.evaluate(pluginEntry, {
-  __evadeHtmlCommentTest__: true,
-});
+).json()) as { name: string; assets: string[]; release: boolean }[];
+
 await Promise.all(
-  builtInPlugins.map(plugin => {
+  pluginList.map(({ name: plugin, release, assets }) => {
+    if (!release && process.env.NODE_ENV !== 'development') {
+      return Promise.resolve();
+    }
     const pluginCompartment = new Compartment(createGlobalThis(), {});
     const pluginGlobalThis = pluginCompartment.globalThis;
     const baseURL = new URL(`./plugins/${plugin}/`, window.location.origin);
-    const packageJsonURL = new URL('package.json', baseURL);
-    return fetch(packageJsonURL).then(async res => {
-      const packageJson = await res.json();
-      const pluginConfig = packageJson['affinePlugin'];
-      if (
-        pluginConfig.release === false &&
-        process.env.NODE_ENV !== 'development'
-      ) {
-        return;
+    const entryURL = new URL('index.js', baseURL);
+    rootStore.set(registeredPluginAtom, prev => [...prev, plugin]);
+    return fetch(entryURL).then(async res => {
+      if (assets.length > 0) {
+        await Promise.all(
+          assets.map(asset => {
+            if (asset.endsWith('.css')) {
+              return fetch(new URL(asset, baseURL)).then(res => {
+                if (res.ok) {
+                  // todo: how to put css file into sandbox?
+                  return res.text().then(text => {
+                    console.log('text', text);
+                    const style = document.createElement('style');
+                    style.setAttribute('plugin-id', plugin);
+                    style.textContent = text;
+                    document.head.appendChild(style);
+                  });
+                }
+                return null;
+              });
+            } else {
+              return Promise.resolve();
+            }
+          })
+        );
       }
-      rootStore.set(registeredPluginAtom, prev => [...prev, plugin]);
-      const coreEntry = new URL(pluginConfig.entry.core, baseURL.toString());
-      const codeText = await fetch(coreEntry).then(res => res.text());
-      pluginCompartment.evaluate(codeText);
+      const codeText = await res.text();
+      pluginCompartment.evaluate(codeText, {
+        __evadeHtmlCommentTest__: true,
+      });
       pluginGlobalThis.__INTERNAL__ENTRY = {
         register: (part, callback) => {
           if (part === 'headerItem') {
