@@ -12,13 +12,13 @@
     "@toeverything/plugin-infra": "workspace:*",
     "idb": "^7.1.1",
     "langchain": "^0.0.107",
-    "marked": "^5.1.0",
+    "marked": "^5.1.1",
     "marked-gfm-heading-id": "^3.0.4",
     "marked-mangle": "^1.1.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/marked": "^5.0.0",
+    "@types/marked": "^5.0.1",
     "jotai": "^2.2.2",
     "react": "18.2.0",
     "react-dom": "18.2.0"

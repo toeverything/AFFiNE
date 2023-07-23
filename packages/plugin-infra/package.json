@@ -36,15 +36,15 @@
     }
   },
   "dependencies": {
-    "@blocksuite/global": "0.0.0-20230719163314-76d863fc-nightly",
-    "@blocksuite/store": "0.0.0-20230719163314-76d863fc-nightly",
+    "@blocksuite/global": "0.0.0-20230721134812-6e0e3bef-nightly",
+    "@blocksuite/store": "0.0.0-20230721134812-6e0e3bef-nightly",
     "jotai": "^2.2.2"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230719163314-76d863fc-nightly",
-    "@blocksuite/editor": "0.0.0-20230719163314-76d863fc-nightly",
-    "@blocksuite/lit": "0.0.0-20230719163314-76d863fc-nightly",
-    "vite": "^4.4.4",
+    "@blocksuite/blocks": "0.0.0-20230721134812-6e0e3bef-nightly",
+    "@blocksuite/editor": "0.0.0-20230721134812-6e0e3bef-nightly",
+    "@blocksuite/lit": "0.0.0-20230721134812-6e0e3bef-nightly",
+    "vite": "^4.4.6",
     "vite-plugin-dts": "3.3.1"
   },
   "peerDependencies": {
