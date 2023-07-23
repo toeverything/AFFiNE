@@ -12,9 +12,10 @@ import {
 } from '@toeverything/plugin-infra/manager';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense, useEffect } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
 
 import { historyBaseAtom, MAX_HISTORY } from './atoms/history';
+import { WorkspaceLayout } from './layouts/workspace-layout';
 import createEmotionCache from './utils/create-emotion-cache';
 
 const router = createBrowserRouter([
@@ -27,16 +28,26 @@ const router = createBrowserRouter([
     lazy: () => import('./pages/404'),
   },
   {
-    path: '/workspace/:workspaceId/all',
-    lazy: () => import('./pages/workspace/all-page'),
-  },
-  {
-    path: '/workspace/:workspaceId/trash',
-    lazy: () => import('./pages/workspace/trash-page'),
-  },
-  {
-    path: '/workspace/:workspaceId/:pageId',
-    lazy: () => import('./pages/workspace/detail-page'),
+    path: '/workspace/:workspaceId',
+    Component: () => (
+      <WorkspaceLayout>
+        <Outlet />
+      </WorkspaceLayout>
+    ),
+    children: [
+      {
+        path: 'all',
+        lazy: () => import('./pages/workspace/all-page'),
+      },
+      {
+        path: 'trash',
+        lazy: () => import('./pages/workspace/trash-page'),
+      },
+      {
+        path: ':pageId',
+        lazy: () => import('./pages/workspace/detail-page'),
+      },
+    ],
   },
 ]);
 
