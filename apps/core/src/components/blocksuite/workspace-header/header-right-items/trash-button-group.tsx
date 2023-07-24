@@ -29,7 +29,7 @@ export const TrashButtonGroup = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <>
+    <div style={{ position: 'absolute', bottom: '100px', left: '50vw' }}>
       <Button
         shape="round"
         style={{ marginRight: '24px' }}
@@ -65,7 +65,7 @@ export const TrashButtonGroup = () => {
           setOpen(false);
         }}
       />
-    </>
+    </div>
   );
 };
 
