@@ -2,6 +2,7 @@ import type {
   SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
+import { getDoc } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
@@ -17,6 +18,28 @@ type SubDocsEvent = {
   added: Set<Doc>;
   removed: Set<Doc>;
   loaded: Set<Doc>;
+};
+
+// workaround: there maybe new updates before SQLite is connected
+// we need to exchange them with the SQLite db
+// will be removed later when we have lazy load doc provider
+const syncDiff = async (rootDoc: Doc, subdocId?: string) => {
+  try {
+    const workspaceId = rootDoc.guid;
+    const doc = subdocId ? getDoc(rootDoc, subdocId) : rootDoc;
+    if (!doc) {
+      logger.error('doc not found', workspaceId, subdocId);
+      return;
+    }
+    const update = await window.apis?.db.getDocAsUpdates(workspaceId, subdocId);
+    const diff = Y.encodeStateAsUpdate(
+      doc,
+      Y.encodeStateVectorFromUpdate(update)
+    );
+    await window.apis.db.applyDocUpdate(workspaceId, diff, subdocId);
+  } catch (err) {
+    logger.error('failed to sync diff', err);
+  }
 };
 
 /**
@@ -74,6 +97,9 @@ export const createSQLiteProvider: DocProviderCreator = (
   };
 
   function trackDoc(doc: Doc) {
+    syncDiff(rootDoc, rootDoc !== doc ? doc.guid : undefined).catch(
+      logger.error
+    );
     doc.on('update', createOrHandleUpdate(doc));
     doc.on('subdocs', createOrGetHandleSubDocs(doc));
     doc.subdocs.forEach(doc => {
@@ -93,6 +119,9 @@ export const createSQLiteProvider: DocProviderCreator = (
   let connected = false;
 
   const connect = () => {
+    if (connected) {
+      return;
+    }
     logger.info('connecting sqlite provider', id);
     trackDoc(rootDoc);
 
@@ -161,7 +190,7 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
   });
 
   async function syncUpdates(doc: Doc) {
-    logger.info('syncing updates from sqlite', id);
+    logger.info('syncing updates from sqlite', doc.guid);
     const subdocId = doc.guid === id ? undefined : doc.guid;
     const updates = await apis.db.getDocAsUpdates(id, subdocId);
 
@@ -173,7 +202,10 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
       Y.applyUpdate(doc, updates, sqliteOrigin);
     }
 
-    const mergedUpdates = Y.encodeStateAsUpdate(doc);
+    const mergedUpdates = Y.encodeStateAsUpdate(
+      doc,
+      Y.encodeStateVectorFromUpdate(updates)
+    );
 
     // also apply updates to sqlite
     await apis.db.applyDocUpdate(id, mergedUpdates, subdocId);
