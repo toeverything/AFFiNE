@@ -57,7 +57,7 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
     availableWhen: (_, currentPage, { isPublic }) => {
-      return !isPublic;
+      return !isPublic && currentPage?.meta.trash !== true;
     },
   },
   [HeaderRightItemName.WindowsAppControls]: {
