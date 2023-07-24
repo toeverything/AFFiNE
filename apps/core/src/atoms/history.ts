@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
+import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,17 +13,26 @@ export type History = {
 
 export const MAX_HISTORY = 50;
 
-const historyBaseAtom = atomWithStorage<History>('router-history', {
-  stack: [],
-  current: 0,
-  skip: false,
-});
+const historyBaseAtom = atomWithStorage<History>(
+  'router-history',
+  {
+    stack: [],
+    current: 0,
+    skip: false,
+  },
+  createJSONStorage(() => sessionStorage)
+);
 
 historyBaseAtom.onMount = set => {
   const unsubscribe = router.subscribe(state => {
     set(prev => {
       const url = state.location.pathname;
-      console.log('push', url, prev.skip, prev.stack.length, prev.current);
+
+      // if stack top is the same as current, skip
+      if (prev.stack[prev.current] === url) {
+        return prev;
+      }
+
       if (prev.skip) {
         return {
           stack: [...prev.stack],
