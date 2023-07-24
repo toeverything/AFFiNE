@@ -80,6 +80,7 @@ export const EditorModeSwitch = ({
           data-testid="switch-page-mode-button"
           active={currentMode === 'page'}
           hide={trash && currentMode !== 'page'}
+          trash={trash}
           onClick={() => {
             setSetting(setting => {
               if (setting?.mode !== 'page') {
@@ -93,6 +94,7 @@ export const EditorModeSwitch = ({
           data-testid="switch-edgeless-mode-button"
           active={currentMode === 'edgeless'}
           hide={trash && currentMode !== 'edgeless'}
+          trash={trash}
           onClick={() => {
             setSetting(setting => {
               if (setting?.mode !== 'edgeless') {
