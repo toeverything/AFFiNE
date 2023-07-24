@@ -10,7 +10,6 @@ import {
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
-import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   rootBlockHubAtom,
@@ -30,14 +29,11 @@ import {
 } from '@dnd-kit/core';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/manager';
+import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { lazy, Suspense, useCallback, useMemo } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import {
@@ -111,20 +107,6 @@ export const CurrentWorkspaceContext = ({
   const workspaceId = useAtomValue(currentWorkspaceIdAtom);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
-  const navigate = useNavigate();
-  // fixme(himself65): this is not a good way to handle this,
-  //  need a better way to check whether this workspace really exist.
-  useEffect(() => {
-    const id = setTimeout(() => {
-      if (!exist) {
-        navigate('/');
-        globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
-      }
-    }, globalThis.HALTING_PROBLEM_TIMEOUT);
-    return () => {
-      clearTimeout(id);
-    };
-  }, [exist, metadata.length, navigate]);
   if (metadata.length === 0) {
     return <WorkspaceFallback key="no-workspace" />;
   }
@@ -171,23 +153,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
-  const { jumpToPage, openPage } = useNavigateHelper();
+  const { openPage } = useNavigateHelper();
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
-
-  useEffect(() => {
-    const page = currentWorkspace.blockSuiteWorkspace.getPage(
-      `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`
-    );
-    if (page && page.meta.jumpOnce) {
-      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(page.id, {
-        jumpOnce: false,
-      });
-      setCurrentPageId(currentPageId);
-      jumpToPage(currentWorkspace.id, page.id);
-    }
-  }, [currentPageId, currentWorkspace, jumpToPage, setCurrentPageId]);
 
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(

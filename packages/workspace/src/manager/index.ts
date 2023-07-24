@@ -1,10 +1,6 @@
 import { isBrowser, isDesktop } from '@affine/env/constant';
 import type { BlockSuiteFeatureFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import {
-  createAffineProviders,
-  createLocalProviders,
-} from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
 import {
@@ -18,6 +14,7 @@ import type { Transaction } from 'yjs';
 
 import { createStaticStorage } from '../blob/local-static-storage';
 import { createSQLiteStorage } from '../blob/sqlite-blob-storage';
+import { createAffineProviders, createLocalProviders } from '../providers';
 
 function setEditorFlags(workspace: Workspace) {
   Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {

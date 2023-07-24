@@ -50,6 +50,8 @@ export const createLazyProvider = (
     }
 
     // perf: optimize me
+    // it is possible the doc is only in memory but not yet in the datasource
+    // we need to send the whole update to the datasource
     await datasource.sendDocUpdate(guid, encodeStateAsUpdate(doc));
   }
 
