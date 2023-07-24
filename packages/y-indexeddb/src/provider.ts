@@ -82,8 +82,6 @@ const createDatasource = ({
           .transaction('workspace', 'readwrite')
           .objectStore('workspace');
 
-        console.log('sendDocUpdate', guid, update.length);
-
         // TODO: maybe we do not need to get data every time
         const { updates } = (await store.get(guid)) ?? { updates: [] };
         let rows: UpdateMessage[] = [
