@@ -10984,6 +10984,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@toeverything/theme@npm:^0.7.9":
+  version: 0.7.9
+  resolution: "@toeverything/theme@npm:0.7.9"
+  checksum: ac7eeea49f9099e34e8aacbd327ef5e48cc9fc02c32a20309da3dbcb4363c8dda3d2c887cf0e8eb8bb0fa2c50e73f123332f7009d2926961ef7ecbbb921a856d
+  languageName: node
+  linkType: hard
+
 "@toeverything/y-indexeddb@workspace:*, @toeverything/y-indexeddb@workspace:packages/y-indexeddb":
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
