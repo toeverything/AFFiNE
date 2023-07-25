@@ -96,37 +96,8 @@ async function watchLayers() {
   });
 }
 
-async function watchWorkers() {
-  return new Promise(async resolve => {
-    let initialBuild = false;
-
-    const buildContext = await esbuild.context({
-      ...common.workers,
-      plugins: [
-        ...(common.workers.plugins ?? []),
-        {
-          name: 'electron-dev:reload-app-on-workers-change',
-          setup(build) {
-            build.onEnd(() => {
-              if (initialBuild) {
-                console.log(`[workers] has changed, [re]launching electron...`);
-                spawnOrReloadElectron();
-              } else {
-                resolve();
-                initialBuild = true;
-              }
-            });
-          },
-        },
-      ],
-    });
-    await buildContext.watch();
-  });
-}
-
 async function main() {
   await watchLayers();
-  await watchWorkers();
 
   if (watchMode) {
     console.log(`Watching for changes...`);
