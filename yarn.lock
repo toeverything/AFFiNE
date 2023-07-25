@@ -330,6 +330,7 @@ __metadata:
     undici: ^5.22.1
     uuid: ^9.0.0
     which: ^3.0.1
+    yargs: ^17.7.2
     yjs: ^13.6.7
     zx: ^7.2.3
   peerDependencies:

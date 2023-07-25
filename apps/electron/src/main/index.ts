@@ -1,5 +1,6 @@
 import './security-restrictions';
 
+import { argsParser } from '@affine/electron/main/utils/args-parser';
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
@@ -15,10 +16,8 @@ import { registerUpdater } from './updater';
 app.enableSandbox();
 
 if (require('electron-squirrel-startup')) app.quit();
-// allow tests to overwrite app name through passing args
-if (process.argv.includes('--app-name')) {
-  const appNameIndex = process.argv.indexOf('--app-name');
-  const appName = process.argv[appNameIndex + 1];
+const { appName } = argsParser();
+if (appName) {
   app.setName(appName);
 }
 

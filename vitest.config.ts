@@ -30,20 +30,16 @@ export default defineConfig({
       resolve(rootDir, './scripts/setup/lottie-web.ts'),
       resolve(rootDir, './scripts/setup/global.ts'),
     ],
-    // split tests that include native addons or not
-    include: process.env.NATIVE_TEST
-      ? ['apps/electron/src/**/*.spec.ts']
-      : [
-          'packages/**/*.spec.ts',
-          'packages/**/*.spec.tsx',
-          'apps/web/**/*.spec.ts',
-          'apps/web/**/*.spec.tsx',
-          'tests/unit/**/*.spec.ts',
-          'tests/unit/**/*.spec.tsx',
-        ],
+    include: [
+      'packages/**/*.spec.ts',
+      'packages/**/*.spec.tsx',
+      'apps/web/**/*.spec.ts',
+      'apps/web/**/*.spec.tsx',
+      'tests/unit/**/*.spec.ts',
+      'tests/unit/**/*.spec.tsx',
+    ],
     exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
     testTimeout: 5000,
-    singleThread: Boolean(process.env.NATIVE_TEST),
     threads: !process.env.NATIVE_TEST,
     coverage: {
       provider: 'istanbul', // or 'c8'
