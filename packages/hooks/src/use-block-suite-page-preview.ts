@@ -26,6 +26,7 @@ export function useBlockSuitePagePreview(page: Page): Atom<string> {
       const disposable = page.slots.yUpdated.on(() => {
         set(getPagePreviewText(page));
       });
+      set(getPagePreviewText(page));
       return () => {
         disposable.dispose();
       };

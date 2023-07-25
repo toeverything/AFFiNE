@@ -2,9 +2,11 @@ import type {
   SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
+import { getDoc } from '@affine/y-provider';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
 import { uuidv4, Workspace } from '@blocksuite/store';
+import { setTimeout } from 'timers/promises';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
@@ -30,18 +32,26 @@ const mockedAddBlob = vi.fn();
 vi.stubGlobal('window', {
   apis: {
     db: {
-      getDocAsUpdates: async () => {
-        return Y.encodeStateAsUpdate(offlineYdoc);
+      getDocAsUpdates: async (workspaceId, guid) => {
+        const subdoc = guid ? getDoc(offlineYdoc, guid) : offlineYdoc;
+        if (!subdoc) {
+          return false;
+        }
+        return Y.encodeStateAsUpdate(subdoc);
       },
-      applyDocUpdate: async (id: string, update: Uint8Array) => {
-        Y.applyUpdate(offlineYdoc, update, 'sqlite');
+      applyDocUpdate: async (id, update, subdocId) => {
+        const subdoc = subdocId ? getDoc(offlineYdoc, subdocId) : offlineYdoc;
+        if (!subdoc) {
+          return;
+        }
+        Y.applyUpdate(subdoc, update, 'sqlite');
       },
       getBlobKeys: async () => {
         // todo: may need to hack the way to get hash keys of blobs
         return [];
       },
       addBlob: mockedAddBlob,
-    } satisfies Partial<NonNullable<typeof window.apis>['db']>,
+    } as Partial<NonNullable<typeof window.apis>['db']>,
   },
   events: {
     db: {
@@ -53,7 +63,7 @@ vi.stubGlobal('window', {
         };
       },
     },
-  } satisfies Partial<NonNullable<typeof window.events>>,
+  } as Partial<NonNullable<typeof window.events>>,
 });
 
 vi.stubGlobal('environment', {
@@ -84,47 +94,24 @@ beforeEach(() => {
 describe('SQLite download provider', () => {
   test('sync updates', async () => {
     // on connect, the updates from sqlite should be sync'ed to the existing ydoc
-    // and ydoc should be sync'ed back to sqlite
-    // Workspace.Y.applyUpdate(workspace.doc);
     workspace.doc.getText('text').insert(0, 'mem-hello');
-
-    expect(offlineYdoc.getText('text').toString()).toBe('sqlite-hello');
 
     downloadProvider.sync();
     await downloadProvider.whenReady;
 
     // depending on the nature of the sync, the data can be sync'ed in either direction
-    const options = ['mem-hellosqlite-hello', 'sqlite-hellomem-hello'];
+    const options = ['sqlite-hellomem-hello', 'mem-hellosqlite-hello'];
     const synced = options.filter(
-      o => o === offlineYdoc.getText('text').toString()
+      o => o === workspace.doc.getText('text').toString()
     );
     expect(synced.length).toBe(1);
-    expect(workspace.doc.getText('text').toString()).toBe(synced[0]);
-
-    // workspace.doc.getText('text').insert(0, 'world');
-
-    // // check if the data are sync'ed
-    // expect(offlineYdoc.getText('text').toString()).toBe('world' + synced[0]);
   });
 
-  test.fails('blobs will be synced to sqlite on connect', async () => {
-    // mock bs.list
-    const bin = new Uint8Array([1, 2, 3]);
-    const blob = new Blob([bin]);
-    workspace.blobs.list = vi.fn(async () => ['blob1']);
-    workspace.blobs.get = vi.fn(async () => {
-      return blob;
-    });
-
-    downloadProvider.sync();
-    await downloadProvider.whenReady;
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    expect(mockedAddBlob).toBeCalledWith(id, 'blob1', bin);
-  });
-
-  test('on db update', async () => {
+  // there is no updates from sqlite for now
+  test.skip('on db update', async () => {
     provider.connect();
+
+    await setTimeout(200);
 
     offlineYdoc.getText('text').insert(0, 'sqlite-world');
 

@@ -15,7 +15,7 @@ export type ListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
-  preview?: string;
+  preview?: React.ReactNode;
   tags: Tag[];
   favorite: boolean;
   createDate: Date;
@@ -34,7 +34,7 @@ export type TrashListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
-  preview?: string;
+  preview?: React.ReactNode;
   createDate: Date;
   // TODO remove optional after assert that trashDate is always set
   trashDate?: Date;
