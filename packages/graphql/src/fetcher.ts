@@ -1,6 +1,7 @@
 import type { ExecutionResult } from 'graphql';
 import { GraphQLError } from 'graphql';
 import { isNil, isObject, merge } from 'lodash-es';
+import { v4 as uuidv4 } from 'uuid';
 
 import type { GraphQLQuery } from './graphql';
 import type { Mutations, Queries } from './schema';
@@ -168,6 +169,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
     const headers: Record<string, string> = {
       'x-operation-name': options.query.operationName,
       'x-definition-name': options.query.definitionName,
+      'x-request-id': uuidv4(),
     };
     if (!isFormData) {
       headers['content-type'] = 'application/json';
