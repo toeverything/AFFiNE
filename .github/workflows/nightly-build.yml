@@ -120,7 +120,7 @@ jobs:
         run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3
         with:
-          name: before-make-web-static
+          name: core
           path: apps/electron/resources/web-static
 
       - name: Build Plugins
