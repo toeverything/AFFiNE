@@ -52,23 +52,5 @@ export const config = () => {
       assetNames: '[name]',
       treeShaking: true,
     },
-    workers: {
-      entryPoints: [
-        resolve(electronDir, './src/main/workers/plugin.worker.ts'),
-      ],
-      entryNames: '[dir]/[name]',
-      outdir: resolve(electronDir, './dist/workers'),
-      bundle: true,
-      target: `node${NODE_MAJOR_VERSION}`,
-      platform: 'node',
-      external: ['@toeverything/plugin-infra', 'async-call-rpc'],
-      define: define,
-      format: 'cjs',
-      loader: {
-        '.node': 'copy',
-      },
-      assetNames: '[name]',
-      treeShaking: true,
-    },
   };
 };

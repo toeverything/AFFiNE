@@ -64,15 +64,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/bookmark-block@workspace:plugins/bookmark-block":
-  version: 0.0.0-use.local
-  resolution: "@affine/bookmark-block@workspace:plugins/bookmark-block"
-  dependencies:
-    "@toeverything/plugin-infra": "workspace:*"
-    link-preview-js: ^3.0.4
-  languageName: unknown
-  linkType: soft
-
 "@affine/bookmark-plugin@workspace:plugins/bookmark":
   version: 0.0.0-use.local
   resolution: "@affine/bookmark-plugin@workspace:plugins/bookmark"
@@ -81,6 +72,7 @@ __metadata:
     "@blocksuite/icons": ^2.1.27
     "@toeverything/plugin-infra": "workspace:*"
     foxact: ^0.2.17
+    link-preview-js: ^3.0.4
   languageName: unknown
   linkType: soft
 

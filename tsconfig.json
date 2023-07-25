@@ -115,9 +115,6 @@
       "path": "./packages/plugin-infra"
     },
     {
-      "path": "./plugins/bookmark-block"
-    },
-    {
       "path": "./plugins/bookmark"
     },
     {
