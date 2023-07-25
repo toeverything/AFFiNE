@@ -2,6 +2,7 @@ import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
+import type { LitBlockSpec } from '@blocksuite/lit';
 import type { Page } from '@blocksuite/store';
 import { Skeleton } from '@mui/material';
 import { use } from 'foxact/use';
@@ -25,6 +26,8 @@ export type EditorProps = {
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
+  pagePreset?: LitBlockSpec[];
+  edgelessPreset?: LitBlockSpec[];
 };
 
 export type ErrorBoundaryProps = {
@@ -59,6 +62,11 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     editorRef.current = new JotaiEditorContainer();
     editorRef.current.autofocus = true;
     globalThis.currentEditor = editorRef.current;
+
+    // set page preset
+    if (props.pagePreset) editorRef.current.pagePreset = props.pagePreset;
+    if (props.edgelessPreset)
+      editorRef.current.edgelessPreset = props.edgelessPreset;
   }
   const editor = editorRef.current;
   assertExists(editorRef, 'editorRef.current should not be null');
