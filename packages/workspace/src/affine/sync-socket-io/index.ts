@@ -17,6 +17,7 @@ import type {
 } from './utils';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './utils';
 
+// TODO: remove this after lazy-provider stable
 export class SocketIOProvider extends Observable<string> {
   updateHandlerMap = new Map<string, UpdateHandler>();
   subdocsHandlerMap = new Map<string, SubdocsHandler>();
@@ -322,7 +323,7 @@ export class SocketIOProvider extends Observable<string> {
       this._connected = true;
       socket.emit('client-handshake', rootDoc.guid);
       // ask for other clients' awareness
-      socket.emit('init-awareness', rootDoc.guid);
+      socket.emit('awareness-init', rootDoc.guid);
     });
     this.disconnectPromise = new Promise(resolve => {
       this.disconnectResolve = resolve;

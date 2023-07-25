@@ -63,6 +63,7 @@ export const createLazyProvider = (
     // it is possible the doc is only in memory but not yet in the datasource
     // we need to send the whole update to the datasource
     await datasource.sendDocUpdate(guid, encodeStateAsUpdate(doc, sv));
+    doc.emit('sync', []);
   }
 
   /**
@@ -79,7 +80,11 @@ export const createLazyProvider = (
       datasource.sendDocUpdate(doc.guid, update).catch(console.error);
     };
 
-    const subdocsHandler = (event: { loaded: Set<Doc>; removed: Set<Doc> }) => {
+    const subdocsHandler = (event: {
+      loaded: Set<Doc>;
+      removed: Set<Doc>;
+      added: Set<Doc>;
+    }) => {
       event.loaded.forEach(subdoc => {
         connectDoc(subdoc).catch(console.error);
       });
