@@ -141,7 +141,6 @@ await Promise.all(
                 if (res.ok) {
                   // todo: how to put css file into sandbox?
                   return res.text().then(text => {
-                    console.log('text', text);
                     const style = document.createElement('style');
                     style.setAttribute('plugin-id', plugin);
                     style.textContent = text;
