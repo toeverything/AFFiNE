@@ -132,7 +132,7 @@ __metadata:
     "@radix-ui/react-toast": ^1.1.4
     "@toeverything/hooks": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
-    "@toeverything/theme": ^0.7.7
+    "@toeverything/theme": ^0.7.9
     "@types/react": ^18.2.15
     "@types/react-datepicker": ^4.11.2
     "@types/react-dnd": ^3.0.2
@@ -10977,10 +10977,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:0.7.7, @toeverything/theme@npm:^0.7.7":
+"@toeverything/theme@npm:0.7.7":
   version: 0.7.7
   resolution: "@toeverything/theme@npm:0.7.7"
   checksum: 5a449eb440c49c712069203d85acc73613a000324807ce2e42c3b441b74b74e54ba76292144b60e3900d54bf41a13f98923174fee527c20303ad6c68e26e6176
+  languageName: node
+  linkType: hard
+
+"@toeverything/theme@npm:^0.7.9":
+  version: 0.7.9
+  resolution: "@toeverything/theme@npm:0.7.9"
+  checksum: ac7eeea49f9099e34e8aacbd327ef5e48cc9fc02c32a20309da3dbcb4363c8dda3d2c887cf0e8eb8bb0fa2c50e73f123332f7009d2926961ef7ecbbb921a856d
   languageName: node
   linkType: hard
 

@@ -25,6 +25,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
+import TrashButtonGroup from './blocksuite/workspace-header/header-right-items/trash-button-group';
 import * as styles from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
 
@@ -67,62 +68,65 @@ const EditorWrapper = memo(function EditorWrapper({
   }, [appSettings.fontStyle]);
 
   return (
-    <Editor
-      className={clsx(styles.editor, {
-        'full-screen': appSettings.fullWidthLayout,
-      })}
-      style={
-        {
-          '--affine-font-family': value,
-        } as CSSProperties
-      }
-      key={`${workspace.id}-${pageId}`}
-      mode={isPublic ? 'page' : currentMode}
-      page={page}
-      onInit={useCallback(
-        (page: Page, editor: Readonly<EditorContainer>) => {
-          onInit(page, editor);
-        },
-        [onInit]
-      )}
-      setBlockHub={setBlockHub}
-      onLoad={useCallback(
-        (page: Page, editor: EditorContainer) => {
-          page.workspace.setPageMeta(page.id, {
-            updatedDate: Date.now(),
-          });
-          localStorage.setItem('last_page_id', page.id);
-          let dispose = () => {};
-          if (onLoad) {
-            dispose = onLoad(page, editor);
-          }
-          const editorItems = rootStore.get(editorItemsAtom);
-          let disposes: (() => void)[] = [];
-          const renderTimeout = setTimeout(() => {
-            disposes = Object.entries(editorItems).map(([id, editorItem]) => {
-              const div = document.createElement('div');
-              div.setAttribute('plugin-id', id);
-              const cleanup = editorItem(div, editor);
-              assertExists(parent);
-              document.body.appendChild(div);
-              return () => {
-                cleanup();
-                document.body.removeChild(div);
-              };
+    <>
+      <Editor
+        className={clsx(styles.editor, {
+          'full-screen': appSettings.fullWidthLayout,
+        })}
+        style={
+          {
+            '--affine-font-family': value,
+          } as CSSProperties
+        }
+        key={`${workspace.id}-${pageId}`}
+        mode={isPublic ? 'page' : currentMode}
+        page={page}
+        onInit={useCallback(
+          (page: Page, editor: Readonly<EditorContainer>) => {
+            onInit(page, editor);
+          },
+          [onInit]
+        )}
+        setBlockHub={setBlockHub}
+        onLoad={useCallback(
+          (page: Page, editor: EditorContainer) => {
+            page.workspace.setPageMeta(page.id, {
+              updatedDate: Date.now(),
             });
-          });
+            localStorage.setItem('last_page_id', page.id);
+            let dispose = () => {};
+            if (onLoad) {
+              dispose = onLoad(page, editor);
+            }
+            const editorItems = rootStore.get(editorItemsAtom);
+            let disposes: (() => void)[] = [];
+            const renderTimeout = setTimeout(() => {
+              disposes = Object.entries(editorItems).map(([id, editorItem]) => {
+                const div = document.createElement('div');
+                div.setAttribute('plugin-id', id);
+                const cleanup = editorItem(div, editor);
+                assertExists(parent);
+                document.body.appendChild(div);
+                return () => {
+                  cleanup();
+                  document.body.removeChild(div);
+                };
+              });
+            });
 
-          return () => {
-            dispose();
-            clearTimeout(renderTimeout);
-            setTimeout(() => {
-              disposes.forEach(dispose => dispose());
-            });
-          };
-        },
-        [onLoad]
-      )}
-    />
+            return () => {
+              dispose();
+              clearTimeout(renderTimeout);
+              setTimeout(() => {
+                disposes.forEach(dispose => dispose());
+              });
+            };
+          },
+          [onLoad]
+        )}
+      />
+      {meta.trash && <TrashButtonGroup />}
+    </>
   );
 });
 

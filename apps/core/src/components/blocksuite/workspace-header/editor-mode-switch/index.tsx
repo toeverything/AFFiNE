@@ -43,6 +43,9 @@ export const EditorModeSwitch = ({
   assertExists(pageMeta);
   const { trash } = pageMeta;
   useEffect(() => {
+    if (trash) {
+      return;
+    }
     const keydown = (e: KeyboardEvent) => {
       if (
         !environment.isServer && environment.isMacOs
@@ -64,7 +67,7 @@ export const EditorModeSwitch = ({
     document.addEventListener('keydown', keydown, { capture: true });
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
-  }, [setSetting, t]);
+  }, [setSetting, t, trash]);
 
   return (
     <Tooltip content={<TooltipContent />}>
@@ -77,6 +80,7 @@ export const EditorModeSwitch = ({
           data-testid="switch-page-mode-button"
           active={currentMode === 'page'}
           hide={trash && currentMode !== 'page'}
+          trash={trash}
           onClick={() => {
             setSetting(setting => {
               if (setting?.mode !== 'page') {
@@ -90,6 +94,7 @@ export const EditorModeSwitch = ({
           data-testid="switch-edgeless-mode-button"
           active={currentMode === 'edgeless'}
           hide={trash && currentMode !== 'edgeless'}
+          trash={trash}
           onClick={() => {
             setSetting(setting => {
               if (setting?.mode !== 'edgeless') {

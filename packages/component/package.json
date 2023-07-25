@@ -37,7 +37,7 @@
     "@radix-ui/react-toast": "^1.1.4",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
-    "@toeverything/theme": "^0.7.7",
+    "@toeverything/theme": "^0.7.9",
     "@vanilla-extract/dynamic": "^2.0.3",
     "clsx": "^2.0.0",
     "dayjs": "^1.11.9",
