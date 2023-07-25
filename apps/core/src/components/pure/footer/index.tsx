@@ -1,18 +1,33 @@
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { CSSProperties } from 'react';
-import type React from 'react';
-import { forwardRef } from 'react';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { CloudWorkspaceIcon } from '@blocksuite/icons';
+import { useSetAtom } from 'jotai';
+import { type CSSProperties, type FC, forwardRef } from 'react';
 
-import { WorkspaceAdapters } from '../../../adapters/workspace';
+import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { stringToColour } from '../../../utils';
-import { StyledFooter } from './styles';
+import { StyledFooter, StyledSignInButton } from './styles';
 
-export const Footer: React.FC = () => {
-  const LoginCard =
-    WorkspaceAdapters[WorkspaceFlavour.AFFINE_CLOUD].UI.LoginCard;
+export const Footer: FC = () => {
+  const t = useAFFiNEI18N();
+  const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
-      {runtimeConfig.enableCloud && <LoginCard />}
+      <StyledSignInButton
+        data-testid="sign-in-button"
+        type="plain"
+        icon={
+          <div className="circle">
+            <CloudWorkspaceIcon />
+          </div>
+        }
+        onClick={async () => {
+          if (!runtimeConfig.enableCloud) {
+            setOpen(true);
+          }
+        }}
+      >
+        {t['Sign in']()}
+      </StyledSignInButton>
     </StyledFooter>
   );
 };

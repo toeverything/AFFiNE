@@ -53,20 +53,10 @@ export const Conversation = (props: ConversationProps): ReactElement => {
         </div>
         {props.type === 'ai' ? (
           <div className={styles.insertButtonsStyle}>
-            <Button
-              icon={<PlusIcon />}
-              size="small"
-              className={styles.insertButtonStyle}
-              hoverColor="var(--affine-text-primary-color)"
-            >
+            <Button icon={<PlusIcon />} className={styles.insertButtonStyle}>
               Insert list block only
             </Button>
-            <Button
-              icon={<PlusIcon />}
-              size="small"
-              className={styles.insertButtonStyle}
-              hoverColor="var(--affine-text-primary-color)"
-            >
+            <Button icon={<PlusIcon />} className={styles.insertButtonStyle}>
               Insert all
             </Button>
           </div>

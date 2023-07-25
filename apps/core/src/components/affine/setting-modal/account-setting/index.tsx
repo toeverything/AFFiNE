@@ -86,7 +86,6 @@ export const AvatarAndName = () => {
               />
               {input && input === user.name ? null : (
                 <IconButton
-                  size="middle"
                   data-testid="save-user-name"
                   onClick={() => {
                     handleUpdateUserName(input);
@@ -125,7 +124,6 @@ export const AccountSetting = () => {
         disabled={true}
       >
         <Button
-          size="small"
           onClick={() => {
             toast('Function coming soon');
           }}
@@ -139,7 +137,6 @@ export const AccountSetting = () => {
         disabled={true}
       >
         <Button
-          size="small"
           onClick={() => {
             toast('Function coming soon');
           }}

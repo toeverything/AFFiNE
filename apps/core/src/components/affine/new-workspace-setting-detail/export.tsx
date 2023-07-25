@@ -14,7 +14,6 @@ export const ExportPanel: FC<{
     <>
       <SettingRow name={t['Export']()} desc={t['Export Description']()}>
         <Button
-          size="small"
           data-testid="export-affine-backup"
           onClick={async () => {
             const result = await window.apis?.dialog.saveDBFileAs(workspaceId);
