@@ -409,6 +409,7 @@ describe('utils', () => {
     initEmptyPage(page);
     const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
+    await setTimeout(200);
     provider.disconnect();
     const update = (await downloadBinary(
       workspace.id,

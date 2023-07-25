@@ -12,3 +12,19 @@ export function getDoc(doc: Doc, guid: string): Doc | undefined {
   }
   return undefined;
 }
+
+const saveAlert = (event: BeforeUnloadEvent) => {
+  event.preventDefault();
+  return (event.returnValue =
+    'Data is not saved. Are you sure you want to leave?');
+};
+
+export const writeOperation = async (op: Promise<unknown>) => {
+  window.addEventListener('beforeunload', saveAlert, {
+    capture: true,
+  });
+  await op;
+  window.removeEventListener('beforeunload', saveAlert, {
+    capture: true,
+  });
+};

@@ -47,7 +47,7 @@ const docUpdateCallbackWeakMap = new WeakMap<Doc, UpdateCallback>();
 const createMonitor = (doc: Doc) => {
   const onUpdate: UpdateCallback = (update, origin) => {
     if (process.env.NODE_ENV === 'development') {
-      if (origin && typeof origin !== 'string' && typeof origin !== 'number') {
+      if (typeof origin !== 'string' && typeof origin !== 'number') {
         console.warn(
           'origin is not a string or number, this will cause problems in the future',
           origin
