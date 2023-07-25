@@ -4,14 +4,7 @@ import { atom, createStore } from 'jotai/vanilla';
 
 import { getWorkspace, waitForWorkspace } from './__internal__/workspace';
 import type { CallbackMap } from './entry';
-import type {
-  AffinePlugin,
-  Definition,
-  ExpectedLayout,
-  ServerAdapter,
-} from './type';
-import type { Loader, PluginUIAdapter } from './type';
-import type { PluginBlockSuiteAdapter } from './type';
+import type { ExpectedLayout } from './type';
 
 // global store
 export const rootStore = createStore();
@@ -24,10 +17,6 @@ export const editorItemsAtom = atom<Record<string, CallbackMap['editor']>>({});
 export const registeredPluginAtom = atom<string[]>([]);
 export const windowItemsAtom = atom<Record<string, CallbackMap['window']>>({});
 
-/**
- * @deprecated
- */
-export const affinePluginsAtom = atom<Record<string, AffinePlugin<string>>>({});
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);
 export const currentWorkspaceAtom = atom<Promise<Workspace>>(async get => {
@@ -83,39 +72,3 @@ export const contentLayoutAtom = atom<
     });
   }
 );
-
-export function definePlugin<ID extends string>(
-  definition: Definition<ID>,
-  uiAdapterLoader?: Loader<Partial<PluginUIAdapter>>,
-  blockSuiteAdapter?: Loader<Partial<PluginBlockSuiteAdapter>>,
-  serverAdapter?: Loader<ServerAdapter>
-) {
-  const basePlugin = {
-    definition,
-    uiAdapter: undefined,
-    blockSuiteAdapter: undefined,
-  };
-
-  rootStore.set(affinePluginsAtom, plugins => ({
-    ...plugins,
-    [definition.id]: basePlugin,
-  }));
-
-  if (serverAdapter) {
-    console.log('register server adapter');
-    serverAdapter
-      .load()
-      .then(({ default: adapter }) => {
-        rootStore.set(affinePluginsAtom, plugins => ({
-          ...plugins,
-          [definition.id]: {
-            ...basePlugin,
-            serverAdapter: adapter,
-          },
-        }));
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }
-}

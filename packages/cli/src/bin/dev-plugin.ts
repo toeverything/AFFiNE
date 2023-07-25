@@ -40,6 +40,7 @@ const packageJsonSchema = z.object({
     release: z.boolean(),
     entry: z.object({
       core: z.string(),
+      server: z.string().optional(),
     }),
   }),
 });
@@ -59,6 +60,9 @@ const external = [
 
   // css
   /^@vanilla-extract/,
+
+  // remove this when bookmark plugin is ready
+  'link-preview-js',
 ];
 
 const allPluginDir = path.resolve(projectRoot, 'plugins');
@@ -91,7 +95,7 @@ const metadata: Metadata = {
   assets: new Set(),
 };
 
-const outDir = path.resolve(
+const coreOutDir = path.resolve(
   projectRoot,
   'apps',
   'core',
@@ -100,15 +104,43 @@ const outDir = path.resolve(
   plugin
 );
 
-const pluginListJsonPath = path.resolve(outDir, '..', 'plugin-list.json');
+const serverOutDir = path.resolve(
+  projectRoot,
+  'apps',
+  'electron',
+  'dist',
+  'plugins',
+  plugin
+);
+
+const pluginListJsonPath = path.resolve(coreOutDir, '..', 'plugin-list.json');
 
 const coreEntry = path.resolve(pluginDir, json.affinePlugin.entry.core);
+if (json.affinePlugin.entry.server) {
+  const serverEntry = path.resolve(pluginDir, json.affinePlugin.entry.server);
+  await build({
+    build: {
+      watch: isWatch ? {} : undefined,
+      minify: false,
+      outDir: serverOutDir,
+      emptyOutDir: true,
+      lib: {
+        entry: serverEntry,
+        fileName: 'index',
+        formats: ['cjs'],
+      },
+      rollupOptions: {
+        external,
+      },
+    },
+  });
+}
 
 await build({
   build: {
     watch: isWatch ? {} : undefined,
     minify: false,
-    outDir,
+    outDir: coreOutDir,
     emptyOutDir: true,
     lib: {
       entry: coreEntry,
