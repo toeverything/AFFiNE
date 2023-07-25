@@ -37,7 +37,7 @@ const MembersPanelLocal = () => {
     >
       <div className={style.fakeWrapper}>
         <SettingRow name={`${t['Members']()} (0)`} desc={t['Members hint']()}>
-          <Button size="middle">{t['Invite Members']()}</Button>
+          <Button size="large">{t['Invite Members']()}</Button>
         </SettingRow>
       </div>
     </Tooltip>
@@ -118,7 +118,6 @@ export const CloudWorkspaceMembersPanel = (
               trigger="click"
             >
               <IconButton
-                iconSize={[24, 24]}
                 className={`${style.displayNone} ${
                   currentUser.email !== member.email ? style.iconButton : ''
                 }`}
@@ -140,7 +139,7 @@ export const CloudWorkspaceMembersPanel = (
         desc={t['Members hint']()}
       >
         {isOwner && (
-          <Button size="middle" onClick={onClickInvite}>
+          <Button size="large" onClick={onClickInvite}>
             {t['Invite Members']()}
           </Button>
         )}

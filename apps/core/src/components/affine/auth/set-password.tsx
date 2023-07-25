@@ -39,7 +39,7 @@ export const SetPassword: FC<AuthPanelProps> = ({ currentEmail }) => {
       </Wrapper>
       <Button
         type="primary"
-        size="middle"
+        size="large"
         style={{ width: '100%' }}
         disabled={!passwordPass}
       >
