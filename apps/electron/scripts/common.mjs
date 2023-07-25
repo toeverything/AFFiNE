@@ -15,7 +15,7 @@ const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
 /** @type 'production' | 'development'' */
 const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
 
-/** @return {{layers: import('esbuild').BuildOptions, workers: import('esbuild').BuildOptions}} */
+/** @return {{layers: import('esbuild').BuildOptions}} */
 export const config = () => {
   const define = Object.fromEntries([
     ['process.env.NODE_ENV', `"${mode}"`],
