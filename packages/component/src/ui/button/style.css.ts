@@ -70,7 +70,7 @@ export const button = style({
       color: 'var(--affine-white)',
       background: 'var(--affine-primary-color)',
       borderColor: 'var(--affine-black-10)',
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
+      boxShadow: 'var(--affine-button-inner-shadow)',
     },
     '&.primary:hover': {
       background:
@@ -85,10 +85,10 @@ export const button = style({
     },
 
     '&.error': {
-      color: 'var(--affine-white)',
+      color: 'var(--affine-pure-white)',
       background: 'var(--affine-error-color)',
       borderColor: 'var(--affine-black-10)',
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
+      boxShadow: 'var(--affine-button-inner-shadow)',
     },
     '&.error:hover': {
       background:
@@ -106,7 +106,7 @@ export const button = style({
       color: 'var(--affine-white)',
       background: 'var(--affine-warning-color)',
       borderColor: 'var(--affine-black-10)',
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
+      boxShadow: 'var(--affine-button-inner-shadow)',
     },
     '&.warning:hover': {
       background:
@@ -121,10 +121,10 @@ export const button = style({
     },
 
     '&.success': {
-      color: 'var(--affine-white)',
+      color: 'var(--affine-pure-white)',
       background: 'var(--affine-success-color)',
       borderColor: 'var(--affine-black-10)',
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
+      boxShadow: 'var(--affine-button-inner-shadow)',
     },
     '&.success:hover': {
       background:
@@ -139,10 +139,10 @@ export const button = style({
     },
 
     '&.processing': {
-      color: 'var(--affine-white)',
+      color: 'var(--affine-pure-white)',
       background: 'var(--affine-processing-color)',
       borderColor: 'var(--affine-black-10)',
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
+      boxShadow: 'var(--affine-button-inner-shadow)',
     },
     '&.processing:hover': {
       background:

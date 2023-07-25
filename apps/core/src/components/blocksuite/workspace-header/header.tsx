@@ -23,7 +23,6 @@ import { currentModeAtom } from '../../../atoms/mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import DownloadClientTip from './download-tips';
 import { EditorOptionMenu } from './header-right-items/editor-option-menu';
-import TrashButtonGroup from './header-right-items/trash-button-group';
 import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
 
@@ -38,7 +37,6 @@ export type BaseHeaderProps<
 
 export enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
-  TrashButtonGroup = 'trashButtonGroup',
   // some windows only items
   WindowsAppControls = 'windowsAppControls',
 }
@@ -56,16 +54,10 @@ type HeaderItem = {
 };
 
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
-  [HeaderRightItemName.TrashButtonGroup]: {
-    Component: TrashButtonGroup,
-    availableWhen: (_, currentPage) => {
-      return currentPage?.meta.trash === true;
-    },
-  },
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
     availableWhen: (_, currentPage, { isPublic }) => {
-      return !isPublic;
+      return !isPublic && currentPage?.meta.trash !== true;
     },
   },
   [HeaderRightItemName.WindowsAppControls]: {

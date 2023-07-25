@@ -54,8 +54,8 @@ export const icon = style({
 });
 
 export const collapsedIconContainer = style({
-  width: '12px',
-  height: '12px',
+  width: '16px',
+  height: '16px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

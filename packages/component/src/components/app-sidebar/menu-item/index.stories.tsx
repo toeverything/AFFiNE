@@ -18,7 +18,7 @@ export const Default: StoryFn = () => {
       </MenuItem>
       <MenuLinkItem
         icon={<SettingsIcon />}
-        href="/test"
+        to="/test"
         onClick={() => alert('opened')}
       >
         Normal Link Item
@@ -26,7 +26,7 @@ export const Default: StoryFn = () => {
       <MenuLinkItem
         active
         icon={<SettingsIcon />}
-        href="/test"
+        to="/test"
         onClick={() => alert('opened')}
       >
         Primary Item

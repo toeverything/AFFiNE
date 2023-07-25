@@ -11,7 +11,6 @@ import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broa
 import {
   createIndexedDBProvider as create,
   downloadBinary,
-  EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 
@@ -77,17 +76,6 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
     connect: () => {
       logger.info('connect indexeddb provider', id);
       indexeddbProvider.connect();
-      indexeddbProvider.whenSynced
-        .then(() => {
-          connected = true;
-        })
-        .catch(error => {
-          connected = false;
-          if (error instanceof EarlyDisconnectError) {
-            return;
-          }
-          throw error;
-        });
     },
     disconnect: () => {
       assertExists(indexeddbProvider);
@@ -98,7 +86,6 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
   };
 };
 
-const cache: WeakMap<Doc, Uint8Array> = new WeakMap();
 const indexedDBDownloadOrigin = 'indexeddb-download-provider';
 
 const createIndexedDBDownloadProvider: DocProviderCreator = (
@@ -111,19 +98,11 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     _resolve = resolve;
     _reject = reject;
   });
-
-  async function downloadBinaryRecursively(doc: Doc) {
-    if (cache.has(doc)) {
-      const binary = cache.get(doc) as Uint8Array;
+  async function downloadAndApply(doc: Doc) {
+    const binary = await downloadBinary(doc.guid);
+    if (binary) {
       Y.applyUpdate(doc, binary, indexedDBDownloadOrigin);
-    } else {
-      const binary = await downloadBinary(doc.guid);
-      if (binary) {
-        Y.applyUpdate(doc, binary, indexedDBDownloadOrigin);
-        cache.set(doc, binary);
-      }
     }
-    await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
   }
 
   return {
@@ -137,7 +116,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     },
     sync: () => {
       logger.info('sync indexeddb provider', id);
-      downloadBinaryRecursively(doc).then(_resolve).catch(_reject);
+      downloadAndApply(doc).then(_resolve).catch(_reject);
     },
   };
 };

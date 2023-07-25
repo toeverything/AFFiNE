@@ -1,5 +1,9 @@
+import { Button } from '@affine/component';
 import { assertExists } from '@blocksuite/global/utils';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import { useSetAtom } from 'jotai';
 import type {
   FC,
@@ -7,7 +11,7 @@ import type {
   PropsWithChildren,
   ReactElement,
 } from 'react';
-import { useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
 import { QuickSearchButton } from '../../pure/quick-search-button';
@@ -27,10 +31,25 @@ export const BlockSuiteEditorHeader: FC<
   const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
     meta => meta.id === currentPage?.id
   );
+  const pageTitleMeta = usePageMetaHelper(workspace.blockSuiteWorkspace);
+  const [isEditable, setIsEditable] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleClick = useCallback(() => {
+    if (isEditable) {
+      setIsEditable(!isEditable);
+      const value = inputRef.current?.value;
+      if (value !== pageMeta?.title && currentPage) {
+        pageTitleMeta.setPageTitle(currentPage?.id, value || '');
+      }
+    } else {
+      setIsEditable(!isEditable);
+    }
+  }, [currentPage, isEditable, pageMeta?.title, pageTitleMeta]);
+
   const headerRef = useRef<HTMLDivElement>(null);
   assertExists(pageMeta);
-  const title = pageMeta.title;
-
+  const title = pageMeta?.title;
   return (
     <Header ref={headerRef} {...props}>
       {children}
@@ -46,8 +65,38 @@ export const BlockSuiteEditorHeader: FC<
                 }}
               />
             </div>
-            <div className={styles.title}>{title || 'Untitled'}</div>
-
+            <div>
+              {isEditable ? (
+                <div>
+                  <input
+                    autoFocus={true}
+                    className={styles.title}
+                    type="text"
+                    data-testid="title-content"
+                    defaultValue={pageMeta?.title}
+                    onBlur={handleClick}
+                    ref={inputRef}
+                  />
+                  <Button
+                    onClick={handleClick}
+                    data-testid="save-edit-button"
+                    style={{
+                      marginLeft: '12px',
+                    }}
+                  >
+                    Save
+                  </Button>
+                </div>
+              ) : (
+                <span
+                  data-testid="title-edit-button"
+                  onClick={handleClick}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {title || 'Untitled'}
+                </span>
+              )}
+            </div>
             <div className={styles.searchArrowWrapper}>
               <QuickSearchButton
                 onClick={() => {

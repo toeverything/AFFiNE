@@ -1,6 +1,5 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
-import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { assertEquals } from '@blocksuite/global/utils';
@@ -10,6 +9,8 @@ import {
 } from '@toeverything/plugin-infra/manager';
 import { atom } from 'jotai';
 import { z } from 'zod';
+
+import { getOrCreateWorkspace } from './manager';
 
 const rootWorkspaceMetadataV1Schema = z.object({
   id: z.string(),

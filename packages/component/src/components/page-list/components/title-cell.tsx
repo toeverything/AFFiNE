@@ -11,7 +11,7 @@ import {
 type TitleCellProps = {
   icon: JSX.Element;
   text: string;
-  desc?: string;
+  desc?: React.ReactNode;
   suffix?: JSX.Element;
   /**
    * Customize the children of the cell

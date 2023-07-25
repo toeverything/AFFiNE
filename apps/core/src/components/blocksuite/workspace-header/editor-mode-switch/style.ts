@@ -34,14 +34,19 @@ export const StyledEditorModeSwitch = styled('div')<{
 export const StyledSwitchItem = styled('button')<{
   active?: boolean;
   hide?: boolean;
-}>(({ active = false, hide = false }) => {
+  trash?: boolean;
+}>(({ active = false, hide = false, trash = false }) => {
   return {
     width: '24px',
     height: '24px',
     borderRadius: '8px',
     WebkitAppRegion: 'no-drag',
     boxShadow: active ? 'var(--affine-shadow-1)' : 'none',
-    color: active ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)',
+    color: active
+      ? trash
+        ? 'var(--affine-error-color)'
+        : 'var(--affine-primary-color)'
+      : 'var(--affine-icon-color)',
     display: hide ? 'none' : 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
