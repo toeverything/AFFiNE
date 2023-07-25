@@ -37,7 +37,7 @@ export const DebugContent: PluginUIAdapter['debugContent'] = () => {
             )}
           />
           <Button
-            size="middle"
+            size="large"
             onClick={() => {
               indexedDB.deleteDatabase(conversationHistoryDBName);
               location.reload();

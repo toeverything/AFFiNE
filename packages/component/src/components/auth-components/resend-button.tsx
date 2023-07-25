@@ -57,12 +57,7 @@ export const ResendButton: FC<{
   return (
     <div className={resendButtonWrapper}>
       {canResend ? (
-        <Button
-          size="middle"
-          noBorder={true}
-          bold={true}
-          onClick={onButtonClick}
-        >
+        <Button type="plain" size="large" onClick={onButtonClick}>
           {t['com.affine.auth.sign.auth.code.resend.hint']()}
         </Button>
       ) : (

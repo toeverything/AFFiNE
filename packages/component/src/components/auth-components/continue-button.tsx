@@ -21,7 +21,7 @@ export const ContinueButton: FC<{
         fontWeight: '600',
         borderRadius: '8px',
       }}
-      size="middle"
+      size="large"
       icon={
         loading ? (
           <Loading />
