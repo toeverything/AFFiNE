@@ -24,10 +24,15 @@ export class LoggerPlugin implements ApolloServerPlugin {
   > {
     const operation = reqContext.request.operationName;
     const headers = reqContext.request.http?.headers;
+    const requestId = headers
+      ? headers.get(`${REQUEST_ID}`)
+      : 'Unknown Request ID';
+    const operationName = headers
+      ? headers.get(`${OPERATION_NAME}`)
+      : 'Unknown Operation Name';
+
     this.logger.log(
-      `${REQUEST_ID}: ${headers?.get(
-        `${REQUEST_ID}`
-      )}, ${OPERATION_NAME}: ${headers?.get(`${OPERATION_NAME}`)}`
+      `${REQUEST_ID}: ${requestId}, ${OPERATION_NAME}: ${operationName}, query: ${reqContext.request.query}, variables: ${reqContext.request.variables}`
     );
     this.metrics.gqlRequest(1, { operation });
 
