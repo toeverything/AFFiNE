@@ -4,13 +4,15 @@ import { PageList, PageListTrashView } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import { type PageMeta, type Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { getPagePreviewText } from '@toeverything/hooks/use-block-suite-page-preview';
-import { useAtom } from 'jotai';
+import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
+import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
+import { useAtom, useAtomValue } from 'jotai';
 import type React from 'react';
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
@@ -37,6 +39,34 @@ const filter = {
     return !parentMeta?.trash && pageMeta.trash;
   },
   shared: (pageMeta: PageMeta) => pageMeta.isPublic && !pageMeta.trash,
+};
+
+const PagePreviewInner = ({
+  workspace,
+  pageId,
+}: {
+  workspace: Workspace;
+  pageId: string;
+}) => {
+  const page = useBlockSuiteWorkspacePage(workspace, pageId);
+  assertExists(page);
+  const previewAtom = useBlockSuitePagePreview(page);
+  const preview = useAtomValue(previewAtom);
+  return preview;
+};
+
+const PagePreview = ({
+  workspace,
+  pageId,
+}: {
+  workspace: Workspace;
+  pageId: string;
+}) => {
+  return (
+    <Suspense>
+      <PagePreviewInner workspace={workspace} pageId={pageId} />
+    </Suspense>
+  );
 };
 
 const PageListEmpty = (props: {
@@ -147,8 +177,6 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
 
   if (listType === 'trash') {
     const pageList: TrashListData[] = list.map(pageMeta => {
-      const page = blockSuiteWorkspace.getPage(pageMeta.id);
-      const preview = page ? getPagePreviewText(page) : undefined;
       return {
         icon: isPreferredEdgeless(pageMeta.id) ? (
           <EdgelessIcon />
@@ -157,7 +185,9 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
         ),
         pageId: pageMeta.id,
         title: pageMeta.title,
-        preview,
+        preview: (
+          <PagePreview workspace={blockSuiteWorkspace} pageId={pageMeta.id} />
+        ),
         createDate: new Date(pageMeta.createDate),
         trashDate: pageMeta.trashDate
           ? new Date(pageMeta.trashDate)
@@ -186,12 +216,13 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
 
   const pageList: ListData[] = list.map(pageMeta => {
     const page = blockSuiteWorkspace.getPage(pageMeta.id);
-    const preview = page ? getPagePreviewText(page) : undefined;
     return {
       icon: isPreferredEdgeless(pageMeta.id) ? <EdgelessIcon /> : <PageIcon />,
       pageId: pageMeta.id,
       title: pageMeta.title,
-      preview,
+      preview: (
+        <PagePreview workspace={blockSuiteWorkspace} pageId={pageMeta.id} />
+      ),
       tags:
         page?.meta.tags?.map(id => tagOptionMap[id]).filter(v => v != null) ??
         [],

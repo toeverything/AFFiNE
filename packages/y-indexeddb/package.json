@@ -36,6 +36,7 @@
     "idb": "^7.1.1"
   },
   "devDependencies": {
+    "@affine/y-provider": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230721134812-6e0e3bef-nightly",
     "@blocksuite/store": "0.0.0-20230721134812-6e0e3bef-nightly",
     "vite": "^4.4.6",
