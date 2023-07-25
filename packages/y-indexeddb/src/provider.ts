@@ -93,10 +93,12 @@ const createDatasource = ({
           rows = [{ timestamp: Date.now(), update: merged }];
         }
 
-        await store.put({
-          id: guid,
-          updates: rows,
-        });
+        await writeOperation(
+          store.put({
+            id: guid,
+            updates: rows,
+          })
+        );
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {
           throw err;
@@ -110,6 +112,10 @@ const createDatasource = ({
     disconnect: () => {
       dbPromise.then(db => db.close()).catch(console.error);
     },
+    cleanup: async () => {
+      const db = await dbPromise;
+      await db.clear('workspace');
+    },
   };
 };
 
@@ -121,7 +127,6 @@ export const createIndexedDBProvider = (
   let provider: ReturnType<typeof createLazyProvider> | null = null;
 
   return {
-    whenSynced: Promise.resolve(),
     connect: () => {
       datasource = createDatasource({ dbName, mergeCount });
       provider = createLazyProvider(doc, datasource);
@@ -134,7 +139,7 @@ export const createIndexedDBProvider = (
       provider = null;
     },
     cleanup: async () => {
-      // TODO: implement later
+      await datasource?.cleanup();
     },
     get connected() {
       return provider?.connected || false;
