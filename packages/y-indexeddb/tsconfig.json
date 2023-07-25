@@ -9,6 +9,9 @@
   "references": [
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "../y-provider"
     }
   ]
 }

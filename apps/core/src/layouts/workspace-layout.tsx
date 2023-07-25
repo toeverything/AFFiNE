@@ -27,7 +27,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
 import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/manager';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -43,6 +42,7 @@ import {
 } from '../atoms';
 import { useAppSetting } from '../atoms/settings';
 import { AppContainer } from '../components/affine/app-container';
+import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
@@ -158,13 +158,16 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
-  const helper = useBlockSuiteWorkspaceHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const helper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
 
   const handleCreatePage = useCallback(() => {
-    return helper.createPage(nanoid());
-  }, [helper]);
+    const id = nanoid();
+    helper.createPage(id);
+    const page = currentWorkspace.blockSuiteWorkspace.getPage(id);
+    assertExists(page);
+    return page;
+  }, [currentWorkspace.blockSuiteWorkspace, helper]);
+
   const handleOpenWorkspaceListModal = useCallback(() => {
     setOpenWorkspacesModal(true);
   }, [setOpenWorkspacesModal]);
