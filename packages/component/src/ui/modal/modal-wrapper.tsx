@@ -11,7 +11,7 @@ export const ModalWrapper = styled('div')<{
     width,
     height,
     minHeight,
-    backgroundColor: 'var(--affine-background-secondary-color)',
+    backgroundColor: 'var(--affine-background-overlay-panel-color)',
     boxShadow: 'var(--affine-shadow-3)',
     borderRadius: '12px',
     position: 'relative',
