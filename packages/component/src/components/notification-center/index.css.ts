@@ -19,7 +19,7 @@ const swipeOut = keyframes({
 
 export const notificationCenterViewportStyle = style({
   position: 'fixed',
-  bottom: '200px',
+  bottom: '110px',
   right: '60px',
   width: '380px',
   margin: 0,
