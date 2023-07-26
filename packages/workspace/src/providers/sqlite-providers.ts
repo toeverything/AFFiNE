@@ -53,7 +53,7 @@ export const createSQLiteProvider: DocProviderCreator = (
     passive: true,
     connect: () => {
       datasource = createDatasource(id);
-      provider = createLazyProvider(rootDoc, datasource);
+      provider = createLazyProvider(rootDoc, datasource, { origin: 'sqlite' });
       provider.connect();
       connected = true;
     },

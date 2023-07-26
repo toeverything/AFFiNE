@@ -114,7 +114,7 @@ export const createIndexedDBProvider = (
   return {
     connect: () => {
       datasource = createDatasource({ dbName, mergeCount });
-      provider = createLazyProvider(doc, datasource);
+      provider = createLazyProvider(doc, datasource, { origin: 'idb' });
       provider.connect();
     },
     disconnect: () => {
