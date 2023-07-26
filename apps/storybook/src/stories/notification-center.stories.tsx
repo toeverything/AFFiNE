@@ -12,6 +12,12 @@ export default {
 } satisfies Meta<typeof NotificationCenter>;
 
 let id = 0;
+const image = (
+  <img
+    src="https://cdn.affine.pro/94d27d73c5767986d26b81a0ced25ac6ab16686971734ba0d9c0987c.gif"
+    alt="gif"
+  />
+);
 export const Basic = () => {
   const push = useSetAtom(pushNotificationAtom);
   const expand = useAtomValue(expandNotificationCenterAtom);
@@ -194,6 +200,23 @@ export const Basic = () => {
           }}
         >
           dark error
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: `gif test`,
+              type: 'info',
+              multimedia: image,
+              timeout: 3000,
+            });
+          }}
+        >
+          gif
         </button>
       </div>
       <NotificationCenter />

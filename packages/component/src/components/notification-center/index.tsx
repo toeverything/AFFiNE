@@ -288,10 +288,20 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       }}
     >
       <div
-        className={clsx(styles.notificationContentStyle, {
+        className={clsx({
           [typeStyle]: notification.theme,
+          [styles.hasMediaStyle]: notification.multimedia,
+          [styles.notificationContentStyle]: !notification.multimedia,
         })}
       >
+        {notification.multimedia ? (
+          <div className={styles.notificationMultimediaStyle}>
+            <>{notification.multimedia}</>
+            <IconButton className={styles.closeButtonWithMediaStyle}>
+              <CloseIcon onClick={onClickRemove} />
+            </IconButton>
+          </div>
+        ) : null}
         <Toast.Title
           className={clsx(styles.notificationTitleStyle, {
             [styles.darkColorStyle]: notification.theme === 'dark',
@@ -318,19 +328,21 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
               UNDO
             </div>
           )}
-          <IconButton
-            className={clsx(styles.closeButtonStyle, {
-              [styles.closeButtonWithoutUndoStyle]: !notification.undo,
-            })}
-            style={{
-              color:
-                notification.theme === 'dark'
-                  ? 'var(--affine-white)'
-                  : 'var(--affine-icon-color)',
-            }}
-          >
-            <CloseIcon onClick={onClickRemove} />
-          </IconButton>
+          {notification.multimedia ? null : (
+            <IconButton
+              className={clsx(styles.closeButtonStyle, {
+                [styles.closeButtonWithoutUndoStyle]: !notification.undo,
+              })}
+              style={{
+                color:
+                  notification.theme === 'dark'
+                    ? 'var(--affine-white)'
+                    : 'var(--affine-icon-color)',
+              }}
+            >
+              <CloseIcon onClick={onClickRemove} />
+            </IconButton>
+          )}
         </Toast.Title>
         <Toast.Description
           className={clsx(styles.messageStyle, {
