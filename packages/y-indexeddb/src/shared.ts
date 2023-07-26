@@ -12,7 +12,6 @@ export interface IndexedDBProvider {
   connect: () => void;
   disconnect: () => void;
   cleanup: () => Promise<void>;
-  whenSynced: Promise<void>;
   readonly connected: boolean;
 }
 
