@@ -154,3 +154,30 @@ test('create temporary filter by click tag', async ({ page }) => {
   await page.getByRole('tooltip').getByText('TODO Tag').click();
   expect(await page.getByTestId('title').count()).toBe(2);
 });
+
+test('add collection from sidebar', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('test page');
+  await page.getByTestId('all-pages').click();
+  const cell = page.getByRole('cell', {
+    name: 'test page',
+  });
+  await expect(cell).toBeVisible();
+  const nullCollection = page.getByTestId(
+    'slider-bar-collection-null-description'
+  );
+  await expect(nullCollection).toBeVisible();
+  await page.getByTestId('slider-bar-add-collection-button').click();
+  const title = page.getByTestId('input-collection-title');
+  await title.isVisible();
+  await title.fill('test collection');
+  await page.getByTestId('save-collection').click();
+  await page.waitForTimeout(100);
+  const collections = page.getByTestId('collections');
+  const items = collections.getByTestId('collection-item');
+  expect(await items.count()).toBe(1);
+  await expect(nullCollection).not.toBeVisible();
+});

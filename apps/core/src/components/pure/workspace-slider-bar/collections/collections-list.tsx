@@ -12,6 +12,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   FilterIcon,
+  InformationIcon,
   MoreHorizontalIcon,
   UnpinIcon,
   ViewLayersIcon,
@@ -251,21 +252,34 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
   const { savedCollections } = useSavedCollections(workspace.id);
   const getPageInfo = useGetPageInfoById(workspace);
+  const pinedCollections = useMemo(
+    () => savedCollections.filter(v => v.pinned),
+    [savedCollections]
+  );
+  if (pinedCollections.length === 0) {
+    return (
+      <MenuItem
+        data-testid="slider-bar-collection-null-description"
+        icon={<InformationIcon />}
+        disabled
+      >
+        <span>Create a collection</span>
+      </MenuItem>
+    );
+  }
   return (
     <div data-testid="collections" className={styles.wrapper}>
-      {savedCollections
-        .filter(v => v.pinned)
-        .map(view => {
-          return (
-            <CollectionRenderer
-              getPageInfo={getPageInfo}
-              key={view.id}
-              collection={view}
-              pages={metas}
-              workspace={workspace}
-            />
-          );
-        })}
+      {pinedCollections.map(view => {
+        return (
+          <CollectionRenderer
+            getPageInfo={getPageInfo}
+            key={view.id}
+            collection={view}
+            pages={metas}
+            workspace={workspace}
+          />
+        );
+      })}
     </div>
   );
 };

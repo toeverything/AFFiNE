@@ -22,7 +22,6 @@ export const viewButton = style({
   background: 'var(--affine-white)',
   ['WebkitAppRegion' as string]: 'no-drag',
   maxWidth: '200px',
-  overflow: 'hidden',
   color: 'var(--affine-text-secondary-color)',
   border: '1px solid var(--affine-border-color)',
   transition: 'margin-left 0.2s ease-in-out',
@@ -42,6 +41,8 @@ export const viewButton = style({
   },
 });
 globalStyle(`${viewButton} > span`, {
+  display: 'block',
+  width: '100%',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
@@ -76,6 +77,9 @@ export const filterButton = style({
   padding: '4px 8px',
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-white)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   color: 'var(--affine-text-secondary-color)',
   border: '1px solid var(--affine-border-color)',
   ['WebkitAppRegion' as string]: 'no-drag',
