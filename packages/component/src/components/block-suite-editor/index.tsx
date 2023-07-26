@@ -45,7 +45,7 @@ const ImagePreviewModal = lazy(() =>
 );
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
-  const { onLoad, page, mode, style, onInit } = props;
+  const { onLoad, page, mode, style } = props;
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
@@ -66,14 +66,9 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     editor.mode = mode;
   }
 
-  useEffect(() => {
-    if (editor.page !== page) {
-      editor.page = page;
-      if (page.root === null) {
-        onInit(page, editor);
-      }
-    }
-  }, [editor, page, onInit]);
+  if (editor.page !== page) {
+    editor.page = page;
+  }
 
   useEffect(() => {
     if (editor.page && onLoad) {

@@ -24,6 +24,7 @@ import {
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
 import { type PropsWithChildren, useState } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 
 export default {
   title: 'Components/AppSidebar',
@@ -31,18 +32,20 @@ export default {
 } satisfies Meta;
 
 const Container = ({ children }: PropsWithChildren) => (
-  <main
-    style={{
-      position: 'relative',
-      width: '100vw',
-      height: 'calc(100vh - 40px)',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'row',
-    }}
-  >
-    {children}
-  </main>
+  <MemoryRouter>
+    <main
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: 'calc(100vh - 40px)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'row',
+      }}
+    >
+      {children}
+    </main>
+  </MemoryRouter>
 );
 const Main = () => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
@@ -94,21 +97,21 @@ export const WithItems: StoryFn = () => {
           <div style={{ height: '20px' }} />
           <MenuLinkItem
             icon={<SettingsIcon />}
-            href="/test"
+            to="/test"
             onClick={() => alert('opened')}
           >
             Settings
           </MenuLinkItem>
           <MenuLinkItem
             icon={<SettingsIcon />}
-            href="/test"
+            to="/test"
             onClick={() => alert('opened')}
           >
             Settings
           </MenuLinkItem>
           <MenuLinkItem
             icon={<SettingsIcon />}
-            href="/test"
+            to="/test"
             onClick={() => alert('opened')}
           >
             Settings
@@ -121,7 +124,7 @@ export const WithItems: StoryFn = () => {
             collapsed={collapsed}
             onCollapsedChange={setCollapsed}
             icon={<SettingsIcon />}
-            href="/test"
+            to="/test"
             onClick={() => alert('opened')}
           >
             Collapsible Item
@@ -130,14 +133,14 @@ export const WithItems: StoryFn = () => {
             collapsed={!collapsed}
             onCollapsedChange={setCollapsed}
             icon={<SettingsIcon />}
-            href="/test"
+            to="/test"
             onClick={() => alert('opened')}
           >
             Collapsible Item
           </MenuLinkItem>
           <MenuLinkItem
             icon={<SettingsIcon />}
-            href="/test"
+            to="/test"
             onClick={() => alert('opened')}
           >
             Settings
@@ -146,7 +149,7 @@ export const WithItems: StoryFn = () => {
           <CategoryDivider label="Others" />
           <MenuLinkItem
             icon={<DeleteTemporarilyIcon />}
-            href="/test"
+            to="/test"
             onClick={() => alert('opened')}
           >
             Trash

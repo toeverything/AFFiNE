@@ -10,7 +10,7 @@ import { useCallback, useState } from 'react';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
-
+import { buttonContainer, group } from './styles.css';
 export const TrashButtonGroup = () => {
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
@@ -29,25 +29,29 @@ export const TrashButtonGroup = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <>
-      <Button
-        shape="round"
-        style={{ marginRight: '24px' }}
-        onClick={() => {
-          restoreFromTrash(pageId);
-        }}
-      >
-        {t['Restore it']()}
-      </Button>
-      <Button
-        shape="round"
-        type="error"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {t['Delete permanently']()}
-      </Button>
+    <div className={group}>
+      <div className={buttonContainer}>
+        <Button
+          type="processing"
+          onClick={() => {
+            restoreFromTrash(pageId);
+          }}
+          size="large"
+        >
+          {t['Restore it']()}
+        </Button>
+      </div>
+      <div className={buttonContainer}>
+        <Button
+          type="error"
+          onClick={() => {
+            setOpen(true);
+          }}
+          size="large"
+        >
+          {t['Delete permanently']()}
+        </Button>
+      </div>
       <Confirm
         title={t['TrashButtonGroupTitle']()}
         content={t['TrashButtonGroupDescription']()}
@@ -65,7 +69,7 @@ export const TrashButtonGroup = () => {
           setOpen(false);
         }}
       />
-    </>
+    </div>
   );
 };
 

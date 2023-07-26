@@ -56,6 +56,7 @@ export const Confirm = ({
               onClick={() => {
                 onCancel?.();
               }}
+              size="large"
               style={{ marginRight: '24px' }}
               data-testid={cancelButtonTestId}
             >
@@ -67,6 +68,7 @@ export const Confirm = ({
               onClick={() => {
                 onConfirm?.();
               }}
+              size="large"
               data-testid={confirmButtonTestId}
             >
               {confirmText}

@@ -62,11 +62,9 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
 
     const provider = createIndexedDBProvider(
       newBLockSuiteWorkspace.doc,
-      DEFAULT_DB_NAME,
-      false
+      DEFAULT_DB_NAME
     );
     provider.connect();
-    await provider.whenSynced;
     moveLocalBlobStorage(blockSuiteWorkspace.id, createWorkspace.id)
       .then(() => deleteLocalBlobStorage(blockSuiteWorkspace.id))
       .catch(e => {

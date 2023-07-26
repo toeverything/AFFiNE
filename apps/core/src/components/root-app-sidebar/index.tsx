@@ -53,7 +53,7 @@ const RouteMenuLinkItem = React.forwardRef<
   HTMLDivElement,
   {
     currentPath: string; // todo: pass through useRouter?
-    path?: string | null;
+    path: string;
     icon: ReactElement;
     children?: ReactElement;
     isDraggedOver?: boolean;
@@ -66,7 +66,7 @@ const RouteMenuLinkItem = React.forwardRef<
       ref={ref}
       {...props}
       active={active}
-      href={path ?? ''}
+      to={path ?? ''}
       icon={icon}
     >
       {children}
@@ -169,7 +169,7 @@ export const RootAppSidebar = ({
           <RouteMenuLinkItem
             icon={<FolderIcon />}
             currentPath={currentPath}
-            path={currentWorkspaceId && paths.all(currentWorkspaceId)}
+            path={paths.all(currentWorkspaceId)}
             onClick={backToAll}
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
@@ -198,7 +198,7 @@ export const RootAppSidebar = ({
             isDraggedOver={trashDroppable.isOver}
             icon={<DeleteTemporarilyIcon />}
             currentPath={currentPath}
-            path={currentWorkspaceId && paths.trash(currentWorkspaceId)}
+            path={paths.trash(currentWorkspaceId)}
           >
             <span data-testid="trash-page">{t['Trash']()}</span>
           </RouteMenuLinkItem>

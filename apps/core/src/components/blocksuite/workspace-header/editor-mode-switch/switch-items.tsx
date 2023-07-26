@@ -8,12 +8,14 @@ import { StyledSwitchItem } from './style';
 type HoverAnimateControllerProps = {
   active?: boolean;
   hide?: boolean;
+  trash?: boolean;
   children: React.ReactElement;
 } & HTMLAttributes<HTMLButtonElement>;
 
 const HoverAnimateController = ({
   active,
   hide,
+  trash,
   children,
   ...props
 }: HoverAnimateControllerProps) => {
@@ -22,6 +24,7 @@ const HoverAnimateController = ({
     <StyledSwitchItem
       hide={hide}
       active={active}
+      trash={trash}
       onMouseEnter={() => {
         setStartAnimate(true);
       }}
