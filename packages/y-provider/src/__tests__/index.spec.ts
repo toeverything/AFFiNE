@@ -1,6 +1,6 @@
 import { setTimeout } from 'node:timers/promises';
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import { createLazyProvider } from '../lazy-provider';
@@ -177,5 +177,20 @@ describe('y-provider', () => {
     expect(remoteSubdoc.getText('text').toJSON()).toBe('');
 
     expect(provider.connected).toBe(false);
+  });
+
+  test('should not send remote update back', async () => {
+    const remoteRootDoc = new Doc(); // this is the remote doc lives in remote
+    const datasource = createMemoryDatasource(remoteRootDoc);
+    const spy = vi.spyOn(datasource, 'sendDocUpdate');
+
+    const rootDoc = new Doc({ guid: remoteRootDoc.guid }); // this is the doc that we want to sync
+    const provider = createLazyProvider(rootDoc, datasource);
+
+    provider.connect();
+
+    remoteRootDoc.getText('text').insert(0, 'test-value');
+
+    expect(spy).not.toBeCalled();
   });
 });
