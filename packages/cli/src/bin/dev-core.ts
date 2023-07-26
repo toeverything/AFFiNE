@@ -7,7 +7,6 @@ import { config } from 'dotenv';
 
 import { type BuildFlags, projectRoot } from '../config/index.js';
 import { watchI18N } from '../util/i18n.js';
-import { watchInfra } from '../util/infra.js';
 
 const files = ['.env', '.env.local'];
 
@@ -94,7 +93,6 @@ flags.channel = buildFlags.channel as any;
 flags.coverage = buildFlags.coverage;
 
 watchI18N();
-await watchInfra();
 spawn(
   'node',
   [
