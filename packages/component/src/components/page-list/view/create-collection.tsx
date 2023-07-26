@@ -243,14 +243,14 @@ export const EditCollection = ({
           marginTop: 40,
         }}
       >
-        <Button className={styles.cancelButton} onClick={onCancel}>
+        <Button size="large" onClick={onCancel}>
           {t['Cancel']()}
         </Button>
         <Button
           style={{
             marginLeft: 20,
-            borderRadius: '8px',
           }}
+          size="large"
           data-testid="save-collection"
           type="primary"
           onClick={() => {
@@ -276,17 +276,13 @@ export const SaveCollectionButton = ({
   return (
     <>
       <Button
-        className={styles.saveButton}
         onClick={() => changeShow(true)}
-        size="large"
         data-testid="save-as-collection"
+        icon={<SaveIcon />}
+        size="large"
+        style={{ padding: '7px 8px' }}
       >
-        <div className={styles.saveButtonContainer}>
-          <div className={styles.saveIcon}>
-            <SaveIcon />
-          </div>
-          <div className={styles.saveText}>Save As Collection</div>
-        </div>
+        Save As Collection
       </Button>
       <EditCollectionModel
         title={t['Save As New Collection']()}
