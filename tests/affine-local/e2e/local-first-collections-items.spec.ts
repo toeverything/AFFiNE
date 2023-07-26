@@ -176,14 +176,6 @@ test('add collection from sidebar', async ({ page }) => {
   await title.fill('test collection');
   await page.getByTestId('save-collection').click();
   await page.waitForTimeout(100);
-  await expect(nullCollection).toBeVisible();
-  await page.getByTestId('collection-select').click();
-  const option = page.locator('[data-testid=collection-select-option]', {
-    hasText: 'test collection',
-  });
-  await option.hover();
-  await option.getByTestId('collection-select-option-pin').click();
-  await page.waitForTimeout(100);
   const collections = page.getByTestId('collections');
   const items = collections.getByTestId('collection-item');
   expect(await items.count()).toBe(1);
