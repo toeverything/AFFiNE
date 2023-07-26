@@ -29,6 +29,7 @@ export async function savePDFFileAs(
         buttonLabel: 'Save',
         defaultPath: `${pageTitle}.pdf`,
         message: 'Save Page as a PDF file',
+        filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
       }));
     const filePath = ret.filePath;
     if (ret.canceled || !filePath) {
