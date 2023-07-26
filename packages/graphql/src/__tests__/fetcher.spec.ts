@@ -51,17 +51,18 @@ describe('GraphQL fetcher', () => {
       variables: { a: 1, b: '2', c: { d: false } },
     });
 
-    expect(fetch.mock.lastCall[1]).toMatchInlineSnapshot(`
-      {
-        "body": "{\\"query\\":\\"query { field }\\",\\"variables\\":{\\"a\\":1,\\"b\\":\\"2\\",\\"c\\":{\\"d\\":false}},\\"operationName\\":\\"query\\"}",
-        "headers": {
-          "content-type": "application/json",
-          "x-definition-name": "query",
-          "x-operation-name": "query",
-        },
-        "method": "POST",
-      }
-    `);
+    expect(fetch.mock.lastCall[1]).toEqual(
+      expect.objectContaining({
+        body: '{"query":"query { field }","variables":{"a":1,"b":"2","c":{"d":false}},"operationName":"query"}',
+        headers: expect.objectContaining({
+          'content-type': 'application/json',
+          'x-definition-name': 'query',
+          'x-operation-name': 'query',
+          'x-request-id': expect.any(String),
+        }),
+        method: 'POST',
+      })
+    );
   });
 
   it('should correctly ignore nil variables', async () => {
