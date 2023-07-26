@@ -5,8 +5,10 @@ import {
 } from '@apollo/server';
 import { Plugin } from '@nestjs/apollo';
 import { Logger } from '@nestjs/common';
+import { Response } from 'express';
 
 import { Metrics } from '../metrics/metrics';
+import { ReqContext } from '../types';
 
 const OPERATION_NAME = 'x-operation-name';
 const REQUEST_ID = 'x-request-id';
@@ -18,10 +20,9 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
   constructor(private readonly metrics: Metrics) {}
 
   requestDidStart(
-    reqContext: GraphQLRequestContext<{ req: Express.Request }>
-  ): Promise<
-    GraphQLRequestListener<GraphQLRequestContext<{ req: Express.Request }>>
-  > {
+    reqContext: GraphQLRequestContext<ReqContext>
+  ): Promise<GraphQLRequestListener<GraphQLRequestContext<ReqContext>>> {
+    const res = reqContext.contextValue.req.res as Response;
     const operation = reqContext.request.operationName;
     const headers = reqContext.request.http?.headers;
     const requestId = headers
@@ -32,16 +33,27 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
       : 'Unknown Operation Name';
 
     this.metrics.gqlRequest(1, { operation });
+    const timer = this.metrics.gqlTimer({ operation });
 
     const requestInfo = `${REQUEST_ID}: ${requestId}, ${OPERATION_NAME}: ${operationName}`;
 
     return Promise.resolve({
       willSendResponse: () => {
+        const costInSeconds = timer();
+        res.setHeader(
+          'Server-Timing',
+          `gql;dur=${costInSeconds};desc="GraphQL ${operation}"`
+        );
         this.logger.log(requestInfo);
         return Promise.resolve();
       },
       didEncounterErrors: () => {
         this.metrics.gqlError(1, { operation });
+        const costInSeconds = timer();
+        res.setHeader(
+          'Server-Timing',
+          `gql;dur=${costInSeconds};desc="GraphQL ${operation}"`
+        );
         const variables = reqContext.request.variables;
         this.logger.error(
           `${requestInfo}, query: ${reqContext.request.query}, ${

@@ -2,7 +2,12 @@
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
-import { static as staticMiddleware } from 'express';
+import {
+  NextFunction,
+  Request,
+  Response,
+  static as staticMiddleware,
+} from 'express';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
@@ -16,6 +21,11 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   cors: true,
   bodyParser: true,
   logger: AFFINE_ENV === 'production' ? ['warn'] : ['verbose'],
+});
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  req.res = res;
+  next();
 });
 
 app.use(

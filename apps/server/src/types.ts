@@ -6,3 +6,9 @@ export interface FileUpload {
   encoding: string;
   createReadStream: () => Readable;
 }
+
+export interface ReqContext {
+  req: Express.Request & {
+    res: Express.Response;
+  };
+}
