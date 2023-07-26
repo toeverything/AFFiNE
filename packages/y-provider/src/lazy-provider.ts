@@ -9,8 +9,6 @@ import {
 
 import type { DatasourceDocAdapter } from './types';
 
-const selfUpdateOrigin = 'lazy-provider-self-origin';
-
 function getDoc(doc: Doc, guid: string): Doc | undefined {
   if (doc.guid === guid) {
     return doc;
@@ -24,18 +22,25 @@ function getDoc(doc: Doc, guid: string): Doc | undefined {
   return undefined;
 }
 
+interface LazyProviderOptions {
+  origin?: string;
+}
+
 /**
  * Creates a lazy provider that connects to a datasource and synchronizes a root document.
  */
 export const createLazyProvider = (
   rootDoc: Doc,
-  datasource: DatasourceDocAdapter
+  datasource: DatasourceDocAdapter,
+  options: LazyProviderOptions = {}
 ): Omit<PassiveDocProvider, 'flavour'> => {
   let connected = false;
   const pendingMap = new Map<string, Uint8Array[]>(); // guid -> pending-updates
   const disposableMap = new Map<string, Set<() => void>>();
   const connectedDocs = new Set<string>();
   let datasourceUnsub: (() => void) | undefined;
+
+  const { origin = 'lazy-provider' } = options;
 
   async function syncDoc(doc: Doc) {
     const guid = doc.guid;
@@ -47,7 +52,7 @@ export const createLazyProvider = (
     pendingMap.set(guid, []);
 
     if (remoteUpdate) {
-      applyUpdate(doc, remoteUpdate, selfUpdateOrigin);
+      applyUpdate(doc, remoteUpdate, origin);
     }
 
     const sv = remoteUpdate
@@ -67,8 +72,8 @@ export const createLazyProvider = (
   function setupDocListener(doc: Doc) {
     const disposables = new Set<() => void>();
     disposableMap.set(doc.guid, disposables);
-    const updateHandler = async (update: Uint8Array, origin: unknown) => {
-      if (origin === selfUpdateOrigin) {
+    const updateHandler = async (update: Uint8Array, updateOrigin: unknown) => {
+      if (origin === updateOrigin) {
         return;
       }
       datasource.sendDocUpdate(doc.guid, update).catch(console.error);
@@ -100,10 +105,12 @@ export const createLazyProvider = (
     datasourceUnsub = datasource.onDocUpdate?.((guid, update) => {
       const doc = getDoc(rootDoc, guid);
       if (doc) {
-        applyUpdate(doc, update);
+        applyUpdate(doc, update, origin);
         //
         if (pendingMap.has(guid)) {
-          pendingMap.get(guid)?.forEach(update => applyUpdate(doc, update));
+          pendingMap
+            .get(guid)
+            ?.forEach(update => applyUpdate(doc, update, origin));
           pendingMap.delete(guid);
         }
       } else {
