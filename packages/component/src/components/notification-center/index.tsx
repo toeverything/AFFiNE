@@ -322,6 +322,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
             <div
               className={clsx(styles.undoButtonStyle, {
                 [styles.darkColorStyle]: notification.theme === 'dark',
+                [styles.undoButtonWithMediaStyle]: notification.multimedia,
               })}
               onClick={onClickUndo}
             >

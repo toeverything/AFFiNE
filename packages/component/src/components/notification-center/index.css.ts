@@ -244,6 +244,10 @@ export const undoButtonStyle = style({
   color: 'var(--affine-processing-color)',
   cursor: 'pointer',
 });
+export const undoButtonWithMediaStyle = style({
+  marginLeft: 'auto',
+  marginRight: '16px',
+});
 export const messageStyle = style({
   fontSize: 'var(--affine-font-sm)',
   width: '200px',

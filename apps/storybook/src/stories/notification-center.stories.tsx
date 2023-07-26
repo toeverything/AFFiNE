@@ -213,6 +213,10 @@ export const Basic = () => {
               type: 'info',
               multimedia: image,
               timeout: 3000,
+              undo: async () => {
+                console.log('undo');
+              },
+              progressingBar: true,
             });
           }}
         >
