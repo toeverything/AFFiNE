@@ -20,6 +20,7 @@ export const viewButton = style({
   padding: '4px 8px',
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-white)',
+  ['WebkitAppRegion' as string]: 'no-drag',
   maxWidth: '200px',
   color: 'var(--affine-text-secondary-color)',
   border: '1px solid var(--affine-border-color)',
@@ -81,6 +82,7 @@ export const filterButton = style({
   justifyContent: 'center',
   color: 'var(--affine-text-secondary-color)',
   border: '1px solid var(--affine-border-color)',
+  ['WebkitAppRegion' as string]: 'no-drag',
   transition: 'margin-left 0.2s ease-in-out',
   ':hover': {
     borderColor: 'var(--affine-border-color)',
