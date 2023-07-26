@@ -138,6 +138,8 @@ type Mutation {
   deleteAccount: DeleteAccount!
   signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
+  changePassword(email: String!, password: String!, oldPassword: String!): UserType!
+  sendChangePasswordEmail(email: String!, callbackUrl: String!): Boolean!
 }
 
 """The `Upload` scalar type represents a file upload."""

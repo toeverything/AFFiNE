@@ -62,4 +62,25 @@ export class AuthResolver {
     ctx.req.user = user;
     return user;
   }
+
+  @Mutation(() => UserType)
+  async changePassword(
+    @Context() ctx: { req: Request },
+    @Args('email') email: string,
+    @Args('password') password: string,
+    @Args('oldPassword') oldPassword: string
+  ) {
+    const user = await this.auth.changePassword(email, password, oldPassword);
+    ctx.req.user = user;
+    return user;
+  }
+
+  @Mutation(() => Boolean)
+  async sendChangePasswordEmail(
+    @Context() ctx: { req: Request },
+    @Args('email') email: string,
+    @Args('callbackUrl') callbackUrl: string
+  ) {
+    return this.auth.sendChangePasswordEmail(email, callbackUrl);
+  }
 }

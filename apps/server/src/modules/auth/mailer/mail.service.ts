@@ -41,4 +41,17 @@ export class MailService {
       html,
     });
   }
+  async sendChangePasswordEmail(to: string, url: string) {
+    const html = `
+      <h1>Change password</h1>
+      <p>change password email</p>
+      <a href="${url}">${url}</a>
+    `;
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: `Change password`,
+      html,
+    });
+  }
 }
