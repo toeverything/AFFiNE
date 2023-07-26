@@ -6,7 +6,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 
 import { Config } from './config';
-import { LoggerPlugin } from './graphql/logger-plugin';
+import { GQLLoggerPlugin } from './graphql/logger-plugin';
 import { Metrics } from './metrics/metrics';
 
 @Global()
@@ -26,7 +26,7 @@ import { Metrics } from './metrics/metrics';
             '..',
             'schema.gql'
           ),
-          plugins: [new LoggerPlugin(metrics)],
+          plugins: [new GQLLoggerPlugin(metrics)],
         };
       },
       inject: [Config, Metrics],

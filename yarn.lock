@@ -385,6 +385,7 @@ __metadata:
     "@types/lodash-es": ^4.17.7
     graphql: ^16.7.1
     lodash-es: ^4.17.21
+    nanoid: ^4.0.2
     prettier: ^3.0.0
   languageName: unknown
   linkType: soft

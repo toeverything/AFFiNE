@@ -12,8 +12,8 @@ const OPERATION_NAME = 'x-operation-name';
 const REQUEST_ID = 'x-request-id';
 
 @Plugin()
-export class LoggerPlugin implements ApolloServerPlugin {
-  protected logger = new Logger(LoggerPlugin.name);
+export class GQLLoggerPlugin implements ApolloServerPlugin {
+  protected logger = new Logger(GQLLoggerPlugin.name);
 
   constructor(private readonly metrics: Metrics) {}
 
@@ -31,17 +31,23 @@ export class LoggerPlugin implements ApolloServerPlugin {
       ? headers.get(`${OPERATION_NAME}`)
       : 'Unknown Operation Name';
 
-    this.logger.log(
-      `${REQUEST_ID}: ${requestId}, ${OPERATION_NAME}: ${operationName}, query: ${reqContext.request.query}, variables: ${reqContext.request.variables}`
-    );
     this.metrics.gqlRequest(1, { operation });
+
+    const requestInfo = `${REQUEST_ID}: ${requestId}, ${OPERATION_NAME}: ${operationName}`;
 
     return Promise.resolve({
       willSendResponse: () => {
+        this.logger.log(requestInfo);
         return Promise.resolve();
       },
       didEncounterErrors: () => {
         this.metrics.gqlError(1, { operation });
+        const variables = reqContext.request.variables;
+        this.logger.error(
+          `${requestInfo}, query: ${reqContext.request.query}, ${
+            variables ? `variables: ${JSON.stringify(variables)}` : ''
+          }`
+        );
         return Promise.resolve();
       },
     });
