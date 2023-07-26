@@ -8,6 +8,6 @@ spec:
     matchLabels:
       app.kubernetes.io/name: "{{ include "sync.name" . }}"
   endpoints:
-    - port: "{{ .Values.service.port }}"
+    - port: {{ .Values.service.port }}
       interval: 30s
 {{- end }}
