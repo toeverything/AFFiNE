@@ -6,7 +6,7 @@ import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
-import * as Manager from '@toeverything/plugin-infra/atom';
+import * as Atom from '@toeverything/plugin-infra/atom';
 import {
   editorItemsAtom,
   headerItemsAtom,
@@ -48,8 +48,8 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
   );
 
 const customRequire = (id: string) => {
-  if (id === '@toeverything/plugin-infra/manager') {
-    return Manager;
+  if (id === '@toeverything/plugin-infra/atom') {
+    return Atom;
   }
   if (id === 'react') {
     return React;
