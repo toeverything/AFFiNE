@@ -111,6 +111,7 @@ export const createConfiguration: (
         : 'eval-cheap-module-source-map',
 
     resolve: {
+      symlinks: true,
       extensionAlias: {
         '.js': ['.js', '.tsx', '.ts'],
         '.mjs': ['.mjs', '.mts'],

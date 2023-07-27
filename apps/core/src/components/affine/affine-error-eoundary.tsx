@@ -9,7 +9,7 @@ import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
   rootStore,
-} from '@toeverything/plugin-infra/manager';
+} from '@toeverything/plugin-infra/atom';
 import { useAtomValue } from 'jotai/react';
 import { Provider } from 'jotai/react';
 import type { ErrorInfo, ReactElement, ReactNode } from 'react';
