@@ -13,6 +13,8 @@ export async function newPage(page: Page) {
     delay: 100,
   });
   await waitEditorLoad(page);
+
+  return page.url().split('/').reverse()[0];
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {

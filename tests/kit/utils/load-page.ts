@@ -4,4 +4,6 @@ export const webUrl = 'http://localhost:8080';
 
 export async function openHomePage(page: Page) {
   await page.goto(webUrl);
+
+  return page.url().split('/').reverse()[0];
 }
