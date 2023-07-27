@@ -2,7 +2,7 @@ import type { Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import { CloseIcon, PlusIcon } from '@blocksuite/icons';
 
-import { Menu } from '../../..';
+import { Button, IconButton, Menu } from '../../..';
 import { Condition } from './condition';
 import * as styles from './index.css';
 import { CreateFilterMenu } from './vars';
@@ -22,6 +22,7 @@ export const FilterList = ({
         display: 'flex',
         flexWrap: 'wrap',
         gap: 10,
+        alignItems: 'center',
       }}
     >
       {value.map((filter, i) => {
@@ -57,17 +58,19 @@ export const FilterList = ({
           />
         }
       >
-        <div
-          style={{
-            cursor: 'pointer',
-            padding: 4,
-            marginLeft: 4,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <PlusIcon />
-        </div>
+        {value.length === 0 ? (
+          <Button
+            icon={<PlusIcon />}
+            iconPosition="end"
+            style={{ fontSize: 'var(--affine-font-xs)', padding: '0 8px' }}
+          >
+            Add Filters
+          </Button>
+        ) : (
+          <IconButton size="small">
+            <PlusIcon />
+          </IconButton>
+        )}
       </Menu>
     </div>
   );
