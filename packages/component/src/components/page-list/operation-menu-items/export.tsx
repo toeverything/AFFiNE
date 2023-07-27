@@ -203,7 +203,6 @@ export const ExportToMarkdownMenuItem = ({
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
-          timeout: 30000,
         });
       })
       .catch(err => {
