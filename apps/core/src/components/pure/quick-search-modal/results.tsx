@@ -52,7 +52,7 @@ export const Results: FC<ResultsProps> = ({
       return page.trash !== true;
     }
   });
-  if (!resultsPageMeta.length) {
+  if (resultsPageMeta.length === 0) {
     //Determine whether to display the ‘+ New page’
     setShowCreatePage(true);
   }
