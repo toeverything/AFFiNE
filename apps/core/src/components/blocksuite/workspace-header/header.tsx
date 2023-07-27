@@ -7,7 +7,7 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { headerItemsAtom } from '@toeverything/plugin-infra/manager';
+import { headerItemsAtom } from '@toeverything/plugin-infra/atom';
 import { useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {

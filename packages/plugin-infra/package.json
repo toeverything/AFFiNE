@@ -14,10 +14,10 @@
       "import": "./dist/entry.js",
       "require": "./dist/entry.cjs"
     },
-    "./manager": {
-      "type": "./dist/manager.d.ts",
-      "import": "./dist/manager.js",
-      "require": "./dist/manager.cjs"
+    "./atom": {
+      "type": "./dist/atom.d.ts",
+      "import": "./dist/atom.js",
+      "require": "./dist/atom.cjs"
     },
     "./type": {
       "type": "./dist/type.d.ts",

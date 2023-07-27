@@ -1,8 +1,8 @@
-import type { PluginContext } from '@toeverything/plugin-infra/entry';
 import {
   currentWorkspaceIdAtom,
   rootStore,
-} from '@toeverything/plugin-infra/manager';
+} from '@toeverything/plugin-infra/atom';
+import type { PluginContext } from '@toeverything/plugin-infra/entry';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 

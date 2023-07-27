@@ -7,13 +7,13 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import type { CallbackMap } from '@toeverything/plugin-infra/entry';
 import {
   contentLayoutAtom,
   editorItemsAtom,
   rootStore,
   windowItemsAtom,
-} from '@toeverything/plugin-infra/manager';
+} from '@toeverything/plugin-infra/atom';
+import type { CallbackMap } from '@toeverything/plugin-infra/entry';
 import type { LayoutNode } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
