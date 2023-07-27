@@ -1,3 +1,4 @@
+import { Tooltip } from '@affine/component';
 import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
@@ -19,6 +20,7 @@ import type {
   GeneralSettingList,
 } from '../general-setting';
 import {
+  currentWorkspaceLabel,
   settingSlideBar,
   sidebarItemsWrapper,
   sidebarSelectItem,
@@ -133,9 +135,18 @@ const WorkspaceListItem = ({
       <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
       <span className="setting-name">{workspaceName}</span>
       {isCurrent ? (
-        <div className="current-label" data-testid="current-workspace-label">
-          Current
-        </div>
+        <Tooltip
+          content="Current"
+          title="Current"
+          offset={[0, -5]}
+          placement="top"
+          disablePortal={false}
+        >
+          <div
+            className={currentWorkspaceLabel}
+            data-testid="current-workspace-label"
+          ></div>
+        </Tooltip>
       ) : null}
     </div>
   );
