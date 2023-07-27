@@ -8,7 +8,7 @@ export const root = style({
   minHeight: '30px',
   userSelect: 'none',
   cursor: 'pointer',
-  padding: '0 8px 0 12px',
+  padding: '0 12px',
   fontSize: 'var(--affine-font-sm)',
   margin: '2px 0',
   selectors: {
@@ -32,7 +32,20 @@ export const root = style({
     '&[data-collapsible="true"]': {
       width: 'calc(100% + 8px)',
       transform: 'translateX(-8px)',
-      paddingLeft: '8px',
+      paddingLeft: '4px',
+      paddingRight: '12px',
+    },
+    '&[data-type="collection-list-item"][data-collapsible="false"]:hover': {
+      width: 'calc(100% + 8px)',
+      transform: 'translateX(-8px)',
+      paddingLeft: '20px',
+      paddingRight: '12px',
+    },
+    '&[data-type="favorite-list-item"][data-collapsible="false"]:hover': {
+      width: 'calc(100% + 8px)',
+      transform: 'translateX(-8px)',
+      paddingLeft: '20px',
+      paddingRight: '12px',
     },
   },
 });
@@ -79,7 +92,7 @@ export const iconsContainer = style({
   flexShrink: 0,
   selectors: {
     '&[data-collapsible="true"]': {
-      width: '40px',
+      width: '44px',
     },
   },
 });

@@ -193,6 +193,7 @@ const CollectionRenderer = ({
       />
       <MenuItem
         data-testid="collection-item"
+        data-type="collection-list-item"
         ref={setNodeRef}
         onCollapsedChange={setCollapsed}
         active={isOver}
