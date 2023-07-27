@@ -12,6 +12,12 @@ export default {
 } satisfies Meta<typeof NotificationCenter>;
 
 let id = 0;
+const image = (
+  <video autoPlay muted loop>
+    <source src="/editingVideo.mp4" type="video/mp4" />
+    <source src="/editingVideo.webm" type="video/webm" />
+  </video>
+);
 export const Basic = () => {
   const push = useSetAtom(pushNotificationAtom);
   const expand = useAtomValue(expandNotificationCenterAtom);
@@ -194,6 +200,27 @@ export const Basic = () => {
           }}
         >
           dark error
+        </button>
+      </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              key: `${key}`,
+              title: `${key} title`,
+              message: `gif test`,
+              type: 'info',
+              multimedia: image,
+              timeout: 3000,
+              undo: async () => {
+                console.log('undo');
+              },
+              progressingBar: true,
+            });
+          }}
+        >
+          gif
         </button>
       </div>
       <NotificationCenter />

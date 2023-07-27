@@ -1,14 +1,13 @@
 import { Button, FlexWrapper, Input } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { SettingWrapper } from '@affine/component/setting-components';
-import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
 import { useAtom } from 'jotai';
-import { useCallback } from 'react';
+import { type ReactElement, useCallback } from 'react';
 
 import { openAIApiKeyAtom } from '../core/hooks';
 import { conversationHistoryDBName } from '../core/langchain/message-history';
 
-export const DebugContent: PluginUIAdapter['debugContent'] = () => {
+export const DebugContent = (): ReactElement => {
   const [key, setKey] = useAtom(openAIApiKeyAtom);
   const desc = (
     <>

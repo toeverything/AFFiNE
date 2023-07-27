@@ -28,7 +28,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
-import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/manager';
+import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useMemo } from 'react';

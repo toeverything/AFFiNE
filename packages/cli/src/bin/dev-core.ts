@@ -6,6 +6,7 @@ import * as p from '@clack/prompts';
 import { config } from 'dotenv';
 
 import { type BuildFlags, projectRoot } from '../config/index.js';
+import { watchI18N } from '../util/i18n.js';
 
 const files = ['.env', '.env.local'];
 
@@ -91,6 +92,7 @@ flags.mode = buildFlags.mode as any;
 flags.channel = buildFlags.channel as any;
 flags.coverage = buildFlags.coverage;
 
+watchI18N();
 spawn(
   'node',
   [

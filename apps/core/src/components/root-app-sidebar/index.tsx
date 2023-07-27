@@ -29,6 +29,7 @@ import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
+import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 import ImportPage from './import-page';
@@ -190,7 +191,9 @@ export const RootAppSidebar = ({
         <SidebarScrollableContainer>
           <CategoryDivider label={t['Favorites']()} />
           <FavoriteList workspace={blockSuiteWorkspace} />
-          <CategoryDivider label={t['Collections']()} />
+          <CategoryDivider label={t['Collections']()}>
+            <AddCollectionButton workspace={blockSuiteWorkspace} />
+          </CategoryDivider>
           <CollectionsList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['others']()} />
           <RouteMenuLinkItem

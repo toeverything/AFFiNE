@@ -133,19 +133,7 @@ export const groupStyle = style({
 });
 
 export const buttonStyle = style({
-  minWidth: '24px',
-  height: '24px',
   margin: '10px 6px',
-  padding: '0 0',
-  ':hover': {
-    backgroundColor: 'var(--affine-background-error-color)',
-    backgroundSize: '24px 24px',
-  },
-});
-
-export const buttonIconStyle = style({
-  width: '20px',
-  height: '20px',
 });
 
 export const scaleIndicatorButtonStyle = style({

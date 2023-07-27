@@ -14,10 +14,10 @@
       "import": "./dist/entry.js",
       "require": "./dist/entry.cjs"
     },
-    "./manager": {
-      "type": "./dist/manager.d.ts",
-      "import": "./dist/manager.js",
-      "require": "./dist/manager.cjs"
+    "./atom": {
+      "type": "./dist/atom.d.ts",
+      "import": "./dist/atom.js",
+      "require": "./dist/atom.cjs"
     },
     "./type": {
       "type": "./dist/type.d.ts",
@@ -36,15 +36,15 @@
     }
   },
   "dependencies": {
-    "@blocksuite/global": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "@blocksuite/store": "0.0.0-20230721134812-6e0e3bef-nightly",
+    "@blocksuite/global": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/store": "0.0.0-20230720073515-bea92e0f-nightly",
     "jotai": "^2.2.2"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "@blocksuite/editor": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "@blocksuite/lit": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "vite": "^4.4.6",
+    "@blocksuite/blocks": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/editor": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/lit": "0.0.0-20230720073515-bea92e0f-nightly",
+    "vite": "^4.4.7",
     "vite-plugin-dts": "3.3.1"
   },
   "peerDependencies": {
@@ -54,5 +54,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.7.0-canary.51"
+  "version": "0.7.0-canary.55"
 }

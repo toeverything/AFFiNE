@@ -1,6 +1,6 @@
 import { IconButton } from '@affine/component';
 import { SendIcon } from '@blocksuite/icons';
-import { contentLayoutAtom } from '@toeverything/plugin-infra/manager';
+import { contentLayoutAtom } from '@toeverything/plugin-infra/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';

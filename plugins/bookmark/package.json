@@ -1,16 +1,18 @@
 {
   "name": "@affine/bookmark-plugin",
-  "version": "0.7.0-canary.51",
+  "version": "0.7.0-canary.55",
   "affinePlugin": {
     "release": true,
     "entry": {
-      "core": "./src/index.ts"
+      "core": "./src/index.ts",
+      "server": "./src/server.ts"
     }
   },
   "dependencies": {
     "@affine/component": "workspace:*",
     "@blocksuite/icons": "^2.1.27",
     "@toeverything/plugin-infra": "workspace:*",
-    "foxact": "^0.2.17"
+    "foxact": "^0.2.17",
+    "link-preview-js": "^3.0.4"
   }
 }

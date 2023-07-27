@@ -1,4 +1,4 @@
-import type { ServerAdapter } from '@toeverything/plugin-infra/type';
+import type { ServerContext } from '@toeverything/plugin-infra/server';
 import { getLinkPreview } from 'link-preview-js';
 
 type MetaData = {
@@ -27,8 +27,8 @@ export interface PreviewType {
   favicons: string[];
 }
 
-const adapter: ServerAdapter = affine => {
-  affine.registerCommand(
+export const entry = (context: ServerContext) => {
+  context.registerCommand(
     'com.blocksuite.bookmark-block.get-bookmark-data-by-link',
     async (url: string): Promise<MetaData> => {
       const previewData = (await getLinkPreview(url, {
@@ -58,10 +58,8 @@ const adapter: ServerAdapter = affine => {
     }
   );
   return () => {
-    affine.unregisterCommand(
+    context.unregisterCommand(
       'com.blocksuite.bookmark-block.get-bookmark-data-by-link'
     );
   };
 };
-
-export default adapter;
