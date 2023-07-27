@@ -1,6 +1,7 @@
 import { useAtom } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 import { useCallback } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useNavigate } from 'react-router-dom';
 
 import { router } from '../router';
