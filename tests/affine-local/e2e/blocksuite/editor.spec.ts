@@ -1,6 +1,10 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  getBlockSuiteEditorTitle,
+  newPage,
+  waitEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 const addDatabase = async (page: Page) => {
@@ -19,9 +23,10 @@ test('database is useable', async ({ page }) => {
   await waitEditorLoad(page);
   await newPage(page);
   await waitEditorLoad(page);
+  const title = getBlockSuiteEditorTitle(page);
+  await title.dblclick();
   await page.keyboard.insertText('test title');
   await page.keyboard.press('Enter');
-  const title = page.locator('.affine-default-page-block-title');
   expect(await title.innerText()).toBe('test title');
   await addDatabase(page);
   const database = page.locator('.affine-database-table');
@@ -32,7 +37,7 @@ test('database is useable', async ({ page }) => {
   await waitEditorLoad(page);
   await page.keyboard.insertText('test title2');
   await page.keyboard.press('Enter');
-  const title2 = page.locator('.affine-default-page-block-title');
+  const title2 = getBlockSuiteEditorTitle(page);
   await page.waitForTimeout(500);
   expect(await title2.innerText()).toBe('test title2');
   await addDatabase(page);
@@ -45,15 +50,17 @@ test('link page is useable', async ({ page }) => {
   await waitEditorLoad(page);
   await newPage(page);
   await waitEditorLoad(page);
+  const title = getBlockSuiteEditorTitle(page);
+  await title.dblclick();
   await page.keyboard.insertText('page1');
   await page.keyboard.press('Enter');
-  const title = page.locator('.affine-default-page-block-title');
   expect(await title.innerText()).toBe('page1');
   await newPage(page);
   await waitEditorLoad(page);
+  const title2 = getBlockSuiteEditorTitle(page);
+  await title2.dblclick();
   await page.keyboard.insertText('page2');
   await page.keyboard.press('Enter');
-  const title2 = page.locator('.affine-default-page-block-title');
   expect(await title2.innerText()).toBe('page2');
   await page.keyboard.press('@', { delay: 50 });
   await page.keyboard.press('p');
