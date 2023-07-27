@@ -13,7 +13,7 @@ export default defineConfig({
       entry: {
         entry: resolve(root, 'src/entry.ts'),
         type: resolve(root, 'src/type.ts'),
-        manager: resolve(root, 'src/manager.ts'),
+        atom: resolve(root, 'src/atom.ts'),
         '__internal__/workspace': resolve(
           root,
           'src/__internal__/workspace.ts'

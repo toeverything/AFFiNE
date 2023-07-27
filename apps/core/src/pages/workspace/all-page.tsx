@@ -3,10 +3,7 @@ import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/plugin-infra/__internal__/workspace';
-import {
-  currentPageIdAtom,
-  rootStore,
-} from '@toeverything/plugin-infra/manager';
+import { currentPageIdAtom, rootStore } from '@toeverything/plugin-infra/atom';
 import { useAtom } from 'jotai/react';
 import { useCallback, useEffect } from 'react';
 import type { LoaderFunction } from 'react-router-dom';

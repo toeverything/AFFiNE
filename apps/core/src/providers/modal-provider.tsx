@@ -5,7 +5,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/manager';
+} from '@toeverything/plugin-infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';

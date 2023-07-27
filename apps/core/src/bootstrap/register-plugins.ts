@@ -6,18 +6,18 @@ import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
-import type {
-  CallbackMap,
-  PluginContext,
-} from '@toeverything/plugin-infra/entry';
-import * as Manager from '@toeverything/plugin-infra/manager';
+import * as Manager from '@toeverything/plugin-infra/atom';
 import {
   editorItemsAtom,
   headerItemsAtom,
   registeredPluginAtom,
   rootStore,
   windowItemsAtom,
-} from '@toeverything/plugin-infra/manager';
+} from '@toeverything/plugin-infra/atom';
+import type {
+  CallbackMap,
+  PluginContext,
+} from '@toeverything/plugin-infra/entry';
 import * as Jotai from 'jotai';
 import { Provider } from 'jotai/react';
 import * as JotaiUtils from 'jotai/utils';
@@ -96,6 +96,8 @@ const createGlobalThis = () => {
     document,
     navigator,
     userAgent: navigator.userAgent,
+    // todo: permission control
+    fetch: globalThis.fetch,
 
     // fixme: use our own db api
     indexedDB: globalThis.indexedDB,
@@ -135,20 +137,19 @@ await Promise.all(
     return fetch(entryURL).then(async res => {
       if (assets.length > 0) {
         await Promise.all(
-          assets.map(asset => {
+          assets.map(async asset => {
             if (asset.endsWith('.css')) {
-              return fetch(new URL(asset, baseURL)).then(res => {
-                if (res.ok) {
-                  // todo: how to put css file into sandbox?
-                  return res.text().then(text => {
-                    const style = document.createElement('style');
-                    style.setAttribute('plugin-id', plugin);
-                    style.textContent = text;
-                    document.head.appendChild(style);
-                  });
-                }
-                return null;
-              });
+              const res = await fetch(new URL(asset, baseURL));
+              if (res.ok) {
+                // todo: how to put css file into sandbox?
+                return res.text().then(text => {
+                  const style = document.createElement('style');
+                  style.setAttribute('plugin-id', plugin);
+                  style.textContent = text;
+                  document.head.appendChild(style);
+                });
+              }
+              return null;
             } else {
               return Promise.resolve();
             }
