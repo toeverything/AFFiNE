@@ -75,20 +75,21 @@ globalStyle(`${settingSlideBar} .setting-name`, {
   whiteSpace: 'nowrap',
   flexGrow: 1,
 });
-globalStyle(`${settingSlideBar} .current-label`, {
+export const currentWorkspaceLabel = style({
+  width: '20px',
   height: '20px',
-  borderRadius: '8px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  padding: '0 5px',
-  // TODO: use color variable
-  background: '#1E96EB',
-  fontSize: 'var(--affine-font-xs)',
-  fontWeight: '600',
-  color: 'var(--affine-white)',
-  marginLeft: '10px',
-  flexShrink: 0,
+  selectors: {
+    '&::after': {
+      content: '""',
+      width: '8px',
+      height: '8px',
+      borderRadius: '50%',
+      background: 'var(--affine-blue)',
+    },
+  },
 });
 
 export const accountButton = style({
