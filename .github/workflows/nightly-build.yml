@@ -159,6 +159,7 @@ jobs:
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
+          mv apps/electron/out/*/make/AppImage/x64/*.AppImage ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.AppImage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3

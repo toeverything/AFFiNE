@@ -101,6 +101,18 @@ module.exports = {
         loadingGif: './resources/icons/affine_installing.gif',
       },
     },
+    {
+      name: '@reforged/maker-appimage',
+      config: {
+        name: 'AFFiNE',
+        iconUrl: icoPath,
+        setupIcon: icoPath,
+        platforms: ['linux'],
+        options: {
+          bin: productName,
+        },
+      },
+    },
   ],
   hooks: {
     readPackageJson: async (_, packageJson) => {
