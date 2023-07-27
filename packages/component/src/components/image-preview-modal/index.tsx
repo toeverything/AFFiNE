@@ -1,6 +1,5 @@
 import '@blocksuite/blocks';
 
-import { Button, Tooltip } from '@affine/component';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -24,9 +23,10 @@ import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 import useSWR from 'swr';
 
+import { Button, IconButton } from '../../ui/button';
+import { Tooltip } from '../../ui/tooltip';
 import { useZoomControls } from './hooks/use-zoom';
 import {
-  buttonIconStyle,
   buttonStyle,
   captionStyle,
   groupStyle,
@@ -339,9 +339,9 @@ const ImagePreviewModalImpl = (
         <div className={imagePreviewActionBarStyle}>
           <div>
             <Tooltip content={'Previous'} disablePortal={false}>
-              <Button
+              <IconButton
                 data-testid="previous-image-button"
-                icon={<ArrowLeftSmallIcon className={buttonIconStyle} />}
+                icon={<ArrowLeftSmallIcon />}
                 type="plain"
                 className={buttonStyle}
                 onClick={() => {
@@ -351,9 +351,9 @@ const ImagePreviewModalImpl = (
               />
             </Tooltip>
             <Tooltip content={'Next'} disablePortal={false}>
-              <Button
+              <IconButton
                 data-testid="next-image-button"
-                icon={<ArrowRightSmallIcon className={buttonIconStyle} />}
+                icon={<ArrowRightSmallIcon />}
                 className={buttonStyle}
                 type="plain"
                 onClick={() => {
@@ -369,18 +369,18 @@ const ImagePreviewModalImpl = (
             disablePortal={true}
             showArrow={false}
           >
-            <Button
+            <IconButton
               data-testid="fit-to-screen-button"
-              icon={<ViewBarIcon className={buttonIconStyle} />}
+              icon={<ViewBarIcon />}
               type="plain"
               className={buttonStyle}
               onClick={() => resetZoom()}
             />
           </Tooltip>
           <Tooltip content={'Zoom out'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="zoom-out-button"
-              icon={<MinusIcon className={buttonIconStyle} />}
+              icon={<MinusIcon />}
               className={buttonStyle}
               type="plain"
               onClick={zoomOut}
@@ -398,9 +398,9 @@ const ImagePreviewModalImpl = (
             </Button>
           </Tooltip>
           <Tooltip content={'Zoom in'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="zoom-in-button"
-              icon={<PlusIcon className={buttonIconStyle} />}
+              icon={<PlusIcon />}
               className={buttonStyle}
               type="plain"
               onClick={() => zoomIn()}
@@ -408,9 +408,9 @@ const ImagePreviewModalImpl = (
           </Tooltip>
           <div className={groupStyle}></div>
           <Tooltip content={'Download'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="download-button"
-              icon={<DownloadIcon className={buttonIconStyle} />}
+              icon={<DownloadIcon />}
               type="plain"
               className={buttonStyle}
               onClick={() => {
@@ -422,9 +422,9 @@ const ImagePreviewModalImpl = (
             />
           </Tooltip>
           <Tooltip content={'Copy to clipboard'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="copy-to-clipboard-button"
-              icon={<CopyIcon className={buttonIconStyle} />}
+              icon={<CopyIcon />}
               type="plain"
               className={buttonStyle}
               onClick={() => {
@@ -463,9 +463,9 @@ const ImagePreviewModalImpl = (
           </Tooltip>
           <div className={groupStyle}></div>
           <Tooltip content={'Delete'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="delete-button"
-              icon={<DeleteIcon className={buttonIconStyle} />}
+              icon={<DeleteIcon />}
               type="plain"
               className={buttonStyle}
               onClick={() => blockId && deleteHandler(blockId)}

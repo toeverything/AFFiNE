@@ -83,12 +83,6 @@ export const navBodyStyle = style({
   flexDirection: 'column',
 });
 
-export const sidebarButtonStyle = style({
-  height: '32px',
-  color: 'var(--affine-icon-color)',
-  zIndex: 1,
-});
-
 export const sidebarFloatMaskStyle = style({
   transition: 'opacity .15s',
   opacity: 0,
