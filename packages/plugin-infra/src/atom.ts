@@ -19,6 +19,9 @@ export const windowItemsAtom = atom<Record<string, CallbackMap['window']>>({});
 export const settingItemsAtom = atom<Record<string, CallbackMap['setting']>>(
   {}
 );
+export const formatBarItemsAtom = atom<
+  Record<string, CallbackMap['formatBar']>
+>({});
 
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);

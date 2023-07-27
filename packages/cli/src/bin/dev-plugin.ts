@@ -167,7 +167,7 @@ await build({
         if (!existsSync(outDir)) {
           await mkdir(outDir, { recursive: true });
         }
-        const file = await open(pluginListJsonPath, 'w+', 0o777);
+        const file = await open(pluginListJsonPath, 'as+', 0o777);
         const txt = await file.readFile({
           encoding: 'utf-8',
         });

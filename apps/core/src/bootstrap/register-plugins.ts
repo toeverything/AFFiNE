@@ -2,6 +2,7 @@
 import 'ses';
 
 import * as AFFiNEComponent from '@affine/component';
+import { FormatQuickBar } from '@blocksuite/blocks';
 import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
@@ -204,6 +205,14 @@ await Promise.all(
               ...items,
               [plugin]: callback as CallbackMap['setting'],
             }));
+          } else if (part === 'formatBar') {
+            console.log('1');
+            FormatQuickBar.customElements.push((page, getBlockRange) => {
+              console.log('2');
+              const div = document.createElement('div');
+              (callback as CallbackMap['formatBar'])(div, page, getBlockRange);
+              return div;
+            });
           } else {
             throw new Error(`Unknown part: ${part}`);
           }
