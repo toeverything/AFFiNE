@@ -7,11 +7,9 @@ import { Plugin } from '@nestjs/apollo';
 import { Logger } from '@nestjs/common';
 import { Response } from 'express';
 
+import { OPERATION_NAME, REQUEST_ID } from '../constants';
 import { Metrics } from '../metrics/metrics';
 import { ReqContext } from '../types';
-
-const OPERATION_NAME = 'x-operation-name';
-const REQUEST_ID = 'x-request-id';
 
 @Plugin()
 export class GQLLoggerPlugin implements ApolloServerPlugin {

@@ -169,12 +169,11 @@ export const gqlFetcherFactory = (endpoint: string) => {
     const headers: Record<string, string> = {
       'x-operation-name': options.query.operationName,
       'x-definition-name': options.query.definitionName,
-      'x-request-id': nanoid(),
     };
     if (!isFormData) {
       headers['content-type'] = 'application/json';
     }
-    const ret = fetch(
+    const ret = fetchWithRequestId(
       endpoint,
       merge(options.context, {
         method: 'POST',
@@ -205,4 +204,19 @@ export const gqlFetcherFactory = (endpoint: string) => {
   };
 
   return gqlFetch;
+};
+
+export const fetchWithRequestId = (
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> => {
+  init = init || {};
+  init.headers = init.headers || new Headers();
+  if (init.headers instanceof Headers) {
+    init.headers.append('x-request-id', nanoid());
+  } else {
+    (init.headers as Record<string, string>)['x-request-id'] = nanoid();
+  }
+
+  return fetch(input, init);
 };

@@ -1,4 +1,5 @@
 /// <reference types="./global.d.ts" />
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
@@ -13,6 +14,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';
 import { Config } from './config';
+import { REQUEST_ID } from './constants';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const { AFFINE_ENV } = process.env;
@@ -23,8 +25,19 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   logger: AFFINE_ENV === 'production' ? ['warn'] : ['verbose'],
 });
 
+const logger = new Logger('GlobalTimer');
+
 app.use((req: Request, res: Response, next: NextFunction) => {
-  req.res = res;
+  const requestId = req.headers[REQUEST_ID] || 'unknown';
+  const now = process.hrtime();
+  req.res = res; // used in logger-plugin.ts
+  res.on('finish', () => {
+    const delta = process.hrtime(now);
+    const value = delta[0] + delta[1] / 1e9;
+    logger.log(
+      `${REQUEST_ID}: ${requestId}, path: ${req.path}, total time cost in seconds: ${value}`
+    );
+  });
   next();
 });
 
