@@ -1,7 +1,7 @@
 {
   "name": "@affine/y-provider",
   "type": "module",
-  "version": "0.7.0-canary.55",
+  "version": "0.7.0-canary.56",
   "description": "Yjs provider utilities for AFFiNE",
   "main": "./src/index.ts",
   "devDependencies": {

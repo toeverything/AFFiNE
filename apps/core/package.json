@@ -2,7 +2,7 @@
   "name": "@affine/core",
   "type": "module",
   "private": true,
-  "version": "0.7.0-canary.55",
+  "version": "0.7.0-canary.56",
   "scripts": {
     "build": "yarn -T run build-core",
     "dev": "yarn -T run dev-core",
