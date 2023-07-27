@@ -308,6 +308,7 @@ __metadata:
     "@electron-forge/maker-zip": ^6.2.1
     "@electron-forge/shared-types": ^6.2.1
     "@electron/remote": 2.0.10
+    "@reforged/maker-appimage": ^3.3.1
     "@toeverything/infra": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
     "@types/fs-extra": ^11.0.1
@@ -3764,7 +3765,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron-forge/maker-base@npm:6.2.1":
+"@electron-forge/maker-base@npm:6.2.1, @electron-forge/maker-base@npm:^6.0.4":
   version: 6.2.1
   resolution: "@electron-forge/maker-base@npm:6.2.1"
   dependencies:
@@ -8404,6 +8405,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@reforged/maker-appimage@npm:^3.3.1":
+  version: 3.3.1
+  resolution: "@reforged/maker-appimage@npm:3.3.1"
+  dependencies:
+    "@electron-forge/maker-base": ^6.0.4
+    "@spacingbat3/lss": ^1.0.0
+    node-fetch: ^3.2.5
+    semver: ^7.3.8
+  checksum: 9761c4eaf73df9ab6eca0b002d4967856185fbbec1dd423439eff2c62aa1da6befd9d4161cb4f9a219acbddca9da8a576f4a40bce4231b6de7dd431d94f81168
+  languageName: node
+  linkType: hard
+
 "@remix-run/router@npm:1.7.2":
   version: 1.7.2
   resolution: "@remix-run/router@npm:1.7.2"
@@ -9158,6 +9171,13 @@ __metadata:
     "@smithy/types": ^2.0.2
     tslib: ^2.5.0
   checksum: d85893533b4222545151d8a0e4c67400a8370bc3dce34c17f5ce0c19b4dadf102ffa7b3ef2b5004abcf0892c318825b07498f8a86f2430cc886f55bf7369a57f
+  languageName: node
+  linkType: hard
+
+"@spacingbat3/lss@npm:^1.0.0":
+  version: 1.2.0
+  resolution: "@spacingbat3/lss@npm:1.2.0"
+  checksum: 7fa48f95e94c6a763a4c886eda65f964ad1a39bb5e3e3c439ab6ce4794b4712724badef90f16115707b2a74b066856eb3825f2510d5adaa9b7aa2d4f22d6f2b2
   languageName: node
   linkType: hard
 
@@ -24183,6 +24203,17 @@ __metadata:
     encoding:
       optional: true
   checksum: 3bc1655203d47ee8e313c0d96664b9673a3d4dd8002740318e9d27d14ef306693a4b2ef8d6525775056fd912a19e23f3ac0d7111ad8925877b7567b29a625592
+  languageName: node
+  linkType: hard
+
+"node-fetch@npm:^3.2.5":
+  version: 3.3.2
+  resolution: "node-fetch@npm:3.3.2"
+  dependencies:
+    data-uri-to-buffer: ^4.0.0
+    fetch-blob: ^3.1.4
+    formdata-polyfill: ^4.0.10
+  checksum: 06a04095a2ddf05b0830a0d5302699704d59bda3102894ea64c7b9d4c865ecdff2d90fd042df7f5bc40337266961cb6183dcc808ea4f3000d024f422b462da92
   languageName: node
   linkType: hard
 
