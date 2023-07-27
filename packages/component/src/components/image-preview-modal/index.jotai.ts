@@ -1,5 +1,4 @@
 import { isBrowser } from '@affine/env/constant';
-import type { EmbedBlockDoubleClickData } from '@blocksuite/blocks';
 import { atom } from 'jotai';
 
 export const previewBlockIdAtom = atom<string | null>(null);
@@ -7,12 +6,20 @@ export const hasAnimationPlayedAtom = atom<boolean | null>(true);
 
 previewBlockIdAtom.onMount = set => {
   if (isBrowser) {
-    const callback = (event: CustomEvent<EmbedBlockDoubleClickData>) => {
-      set(event.detail.blockId);
+    const callback = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLImageElement) {
+        const imageBlock = target.closest('affine-image');
+        if (imageBlock) {
+          const blockId = imageBlock.getAttribute('data-block-id');
+          if (!blockId) return;
+          set(blockId);
+        }
+      }
     };
-    window.addEventListener('affine.embed-block-db-click', callback);
+    window.addEventListener('dblclick', callback);
     return () => {
-      window.removeEventListener('affine.embed-block-db-click', callback);
+      window.removeEventListener('dblclick', callback);
     };
   }
   return;
