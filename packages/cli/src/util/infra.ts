@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 
 import { build } from 'vite';
@@ -27,16 +28,14 @@ export const buildInfra = async () => {
 };
 
 export const watchInfra = async () => {
-  await build({
-    configFile: infraFilePath,
-    build: {
-      watch: {},
-    },
+  spawn('vite', ['build', '--watch'], {
+    cwd: resolve(projectRoot, 'packages', 'infra'),
+    shell: true,
+    stdio: 'inherit',
   });
-  await build({
-    configFile: pluginInfraFilePath,
-    build: {
-      watch: {},
-    },
+  spawn('vite', ['build', '--watch'], {
+    cwd: resolve(projectRoot, 'packages', 'plugin-infra'),
+    shell: true,
+    stdio: 'inherit',
   });
 };
