@@ -3,11 +3,12 @@ import {
   EditCollectionModel,
   useCollectionManager,
 } from '@affine/component/page-list';
+import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PlusIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
 import { uuidv4 } from '@blocksuite/store';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
 
@@ -22,18 +23,23 @@ export const AddCollectionButton = ({
   const setting = useCollectionManager(workspace.id);
   const t = useAFFiNEI18N();
   const [show, showUpdateCollection] = useState(false);
-  const defaultCollection = {
-    id: uuidv4(),
-    name: '',
-    pinned: true,
-    filterList: [],
-    workspaceId: workspace.id,
-  };
+  const [defaultCollection, setDefaultCollection] = useState<Collection>();
+  const handleClick = useCallback(() => {
+    showUpdateCollection(true);
+    setDefaultCollection({
+      id: uuidv4(),
+      name: '',
+      pinned: true,
+      filterList: [],
+      workspaceId: workspace.id,
+    });
+  }, [showUpdateCollection, workspace.id]);
+
   return (
     <>
       <IconButton
         data-testid="slider-bar-add-collection-button"
-        onClick={() => showUpdateCollection(true)}
+        onClick={handleClick}
         size="small"
       >
         <PlusIcon />

@@ -1,4 +1,4 @@
-import type { Collection } from '@affine/env/filter';
+import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -8,6 +8,7 @@ import {
   RemoveIcon,
   SaveIcon,
 } from '@blocksuite/icons';
+import { uuidv4 } from '@blocksuite/store';
 import { useCallback, useState } from 'react';
 
 import {
@@ -29,6 +30,15 @@ type CreateCollectionProps = {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
 };
+
+type SaveCollectionButtonProps = {
+  onConfirm: (collection: Collection) => void;
+  getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
+  filterList: Filter[];
+  workspaceId: string;
+};
+
 export const EditCollectionModel = ({
   init,
   onConfirm,
@@ -266,17 +276,28 @@ export const EditCollection = ({
   );
 };
 export const SaveCollectionButton = ({
-  init,
   onConfirm,
   getPageInfo,
   propertiesMeta,
-}: CreateCollectionProps) => {
+  filterList,
+  workspaceId,
+}: SaveCollectionButtonProps) => {
   const [show, changeShow] = useState(false);
+  const [init, setInit] = useState<Collection>();
+  const handleClick = useCallback(() => {
+    changeShow(true);
+    setInit({
+      id: uuidv4(),
+      name: '',
+      filterList,
+      workspaceId,
+    });
+  }, [changeShow, workspaceId, filterList]);
   const t = useAFFiNEI18N();
   return (
     <>
       <Button
-        onClick={() => changeShow(true)}
+        onClick={handleClick}
         data-testid="save-as-collection"
         icon={<SaveIcon />}
         size="large"
