@@ -7,7 +7,7 @@
     "./utils/*": "./utils/*.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.36.1"
+    "@playwright/test": "^1.36.2"
   },
   "peerDependencies": {
     "@playwright/test": "*"
