@@ -1,5 +1,4 @@
 import { Content, displayFlex } from '@affine/component';
-import { AffineWatermark } from '@affine/component/affine-watermark';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
 import { NotificationCenter } from '@affine/component/notification-center';
@@ -260,7 +259,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
               <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
               <HelpIsland showList={pageId ? undefined : showList} />
             </ToolContainer>
-            <AffineWatermark />
           </MainContainer>
         </AppContainer>
         <PageListTitleCellDragOverlay />
