@@ -12,6 +12,7 @@ import {
   headerItemsAtom,
   registeredPluginAtom,
   rootStore,
+  settingItemsAtom,
   windowItemsAtom,
 } from '@toeverything/plugin-infra/atom';
 import type {
@@ -96,8 +97,28 @@ const createGlobalThis = () => {
     document,
     navigator,
     userAgent: navigator.userAgent,
-    // todo: permission control
-    fetch: globalThis.fetch,
+    // todo(himself65): permission control
+    fetch: function (input: RequestInfo, init?: RequestInit) {
+      return globalThis.fetch(input, init);
+    },
+    setTimeout: function (callback: () => void, timeout: number) {
+      return globalThis.setTimeout(callback, timeout);
+    },
+    clearTimeout: function (id: number) {
+      return globalThis.clearTimeout(id);
+    },
+    // copilot uses these
+    crypto: globalThis.crypto,
+    CustomEvent: globalThis.CustomEvent,
+    Date: globalThis.Date,
+    Math: globalThis.Math,
+    URL: globalThis.URL,
+    URLSearchParams: globalThis.URLSearchParams,
+    Headers: globalThis.Headers,
+    TextEncoder: globalThis.TextEncoder,
+    TextDecoder: globalThis.TextDecoder,
+    Request: globalThis.Request,
+    Error: globalThis.Error,
 
     // fixme: use our own db api
     indexedDB: globalThis.indexedDB,
@@ -176,6 +197,12 @@ await Promise.all(
             rootStore.set(windowItemsAtom, items => ({
               ...items,
               [plugin]: callback as CallbackMap['window'],
+            }));
+          } else if (part === 'setting') {
+            console.log('setting');
+            rootStore.set(settingItemsAtom, items => ({
+              ...items,
+              [plugin]: callback as CallbackMap['setting'],
             }));
           } else {
             throw new Error(`Unknown part: ${part}`);
