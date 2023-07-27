@@ -338,6 +338,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        timeout-minutes: 10
         with:
           playwright-install: true
           hard-link-nm: false
