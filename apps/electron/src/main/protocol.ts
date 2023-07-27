@@ -25,6 +25,8 @@ function toAbsolutePath(url: string) {
       // else, fallback to load the index.html instead
       realpath = join(webStaticDir, 'index.html');
     }
+  } else {
+    realpath = join(webStaticDir, decodeURIComponent(url));
   }
   return realpath;
 }
