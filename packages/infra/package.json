@@ -31,7 +31,7 @@
   "devDependencies": {
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../apps/electron/node_modules/electron",
-    "vite": "^4.4.6",
+    "vite": "^4.4.7",
     "vite-plugin-dts": "3.3.1"
   },
   "peerDependencies": {
