@@ -1,3 +1,4 @@
+import { lightCssVariables } from '@toeverything/theme';
 import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { globalStyle, style } from '@vanilla-extract/css';
 
@@ -52,6 +53,12 @@ globalStyle(`html[data-theme="light"] ${appStyle}`, {
 globalStyle(`html[data-theme="dark"] ${appStyle}`, {
   vars: {
     '--affine-noise-opacity': '0.1',
+  },
+
+  '@media': {
+    print: {
+      vars: lightCssVariables,
+    },
   },
 });
 
