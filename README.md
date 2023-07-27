@@ -126,10 +126,10 @@ If you have questions, you are welcome to contact us. One of the best places to 
 >
 > (Currently, plugins are under heavy development, and the SDK is not yet available.)
 
-| Name                                             |                                           |
-| ------------------------------------------------ | ----------------------------------------- |
-| [@affine/bookmark-block](plugins/bookmark-block) | A block for bookmarking a website         |
-| [@affine/copilot](plugins/copilot)               | AI Copilot that help you document writing |
+| Name                                 |                                           |
+| ------------------------------------ | ----------------------------------------- |
+| [@affine/bookmark](plugins/bookmark) | A block for bookmarking a website         |
+| [@affine/copilot](plugins/copilot)   | AI Copilot that help you document writing |
 
 ## Thanks
 
