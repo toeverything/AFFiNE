@@ -5,7 +5,7 @@
   "description": "Yjs provider utilities for AFFiNE",
   "main": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/store": "0.0.0-20230721134812-6e0e3bef-nightly"
+    "@blocksuite/store": "0.0.0-20230720073515-bea92e0f-nightly"
   },
   "peerDependencies": {
     "yjs": "^13.5.51"

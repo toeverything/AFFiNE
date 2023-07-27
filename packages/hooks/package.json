@@ -10,12 +10,12 @@
     "@toeverything/y-indexeddb": "workspace:*"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "@blocksuite/blocks": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "@blocksuite/editor": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "@blocksuite/global": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "@blocksuite/lit": "0.0.0-20230721134812-6e0e3bef-nightly",
-    "@blocksuite/store": "0.0.0-20230721134812-6e0e3bef-nightly"
+    "@blocksuite/block-std": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/blocks": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/editor": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/global": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/lit": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/store": "0.0.0-20230720073515-bea92e0f-nightly"
   },
   "peerDependencies": {
     "@blocksuite/block-std": "*",
