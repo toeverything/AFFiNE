@@ -9,7 +9,6 @@ import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
-import { uuidv4 } from '@blocksuite/store';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 
@@ -71,13 +70,9 @@ export function WorkspaceHeader({
                     currentWorkspace.blockSuiteWorkspace.meta.properties
                   }
                   getPageInfo={getPageInfoById}
-                  init={{
-                    id: uuidv4(),
-                    name: '',
-                    filterList: setting.currentCollection.filterList,
-                    workspaceId: currentWorkspaceId,
-                  }}
                   onConfirm={saveToCollection}
+                  filterList={setting.currentCollection.filterList}
+                  workspaceId={currentWorkspaceId}
                 ></SaveCollectionButton>
               ) : null}
             </div>
