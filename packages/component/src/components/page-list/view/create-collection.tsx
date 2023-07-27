@@ -191,6 +191,7 @@ export const EditCollection = ({
             borderRadius: 8,
             padding: 18,
             marginTop: 20,
+            minHeight: '200px',
           }}
         >
           <div className={styles.filterTitle}>Filters</div>
