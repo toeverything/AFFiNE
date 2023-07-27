@@ -13,10 +13,10 @@ export default {
 
 let id = 0;
 const image = (
-  <img
-    src="https://cdn.affine.pro/94d27d73c5767986d26b81a0ced25ac6ab16686971734ba0d9c0987c.gif"
-    alt="gif"
-  />
+  <video autoPlay muted loop>
+    <source src="/editingVideo.mp4" type="video/mp4" />
+    <source src="/editingVideo.webm" type="video/webm" />
+  </video>
 );
 export const Basic = () => {
   const push = useSetAtom(pushNotificationAtom);
