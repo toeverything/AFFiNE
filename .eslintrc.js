@@ -22,9 +22,14 @@ const createPattern = packageName => [
     allowTypeImports: false,
   },
   {
-    group: ['@blocksuite/store'],
+    group: ['@blocksuite  /store'],
     message: "Import from '@blocksuite/global/utils'",
     importNames: ['assertExists', 'assertEquals'],
+  },
+  {
+    group: ['react-router-dom'],
+    message: 'Use `useNavigateHelper` instead',
+    importNames: ['useNavigate'],
   },
 ];
 
@@ -143,6 +148,11 @@ const config = {
             group: ['@blocksuite/store'],
             message: "Import from '@blocksuite/global/utils'",
             importNames: ['assertExists', 'assertEquals'],
+          },
+          {
+            group: ['react-router-dom'],
+            message: 'Use `useNavigateHelper` instead',
+            importNames: ['useNavigate'],
           },
         ],
       },

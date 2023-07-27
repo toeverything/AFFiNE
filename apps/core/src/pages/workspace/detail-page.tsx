@@ -12,7 +12,7 @@ import { useAtomValue } from 'jotai';
 import { useAtom } from 'jotai/react';
 import { type ReactElement, useCallback, useEffect } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
@@ -71,7 +71,7 @@ const DetailPageImpl = (): ReactElement => {
 export const DetailPage = (): ReactElement => {
   const { workspaceId, pageId } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
+  const { jumpTo404 } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
   const page = currentPageId
@@ -91,7 +91,7 @@ export const DetailPage = (): ReactElement => {
         const page =
           currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
         if (!page) {
-          navigate('/404');
+          jumpTo404();
         } else {
           // fixme: cleanup jumpOnce in the right time
           if (page.meta.jumpOnce) {
@@ -106,8 +106,8 @@ export const DetailPage = (): ReactElement => {
     currentPageId,
     currentWorkspace.blockSuiteWorkspace,
     currentWorkspace.id,
+    jumpTo404,
     location.pathname,
-    navigate,
     pageId,
     setCurrentPageId,
     workspaceId,
