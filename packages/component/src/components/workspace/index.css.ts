@@ -35,6 +35,11 @@ export const appStyle = style({
         '--affine-editor-width': '550px',
       },
     },
+    print: {
+      vars: {
+        '--affine-editor-width': '800px',
+      },
+    },
   },
 });
 
