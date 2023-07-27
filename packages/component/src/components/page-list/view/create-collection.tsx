@@ -289,7 +289,6 @@ export const SaveCollectionButton = ({
     setInit({
       id: uuidv4(),
       name: '',
-      pinned: true,
       filterList,
       workspaceId,
     });
