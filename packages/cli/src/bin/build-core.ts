@@ -4,7 +4,6 @@ import path from 'node:path';
 import type { BuildFlags } from '../config/index.js';
 import { projectRoot } from '../config/index.js';
 import { buildI18N } from '../util/i18n.js';
-import { buildInfra } from '../util/infra.js';
 
 const cwd = path.resolve(projectRoot, 'apps', 'core');
 
@@ -46,7 +45,6 @@ const flags = {
 } satisfies BuildFlags;
 
 buildI18N();
-await buildInfra();
 spawn(
   'node',
   [
