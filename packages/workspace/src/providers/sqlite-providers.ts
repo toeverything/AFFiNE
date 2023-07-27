@@ -30,7 +30,7 @@ const createDatasource = (workspaceId: string): DatasourceDocAdapter => {
     },
     sendDocUpdate: async (guid, update) => {
       return window.apis.db.applyDocUpdate(
-        guid,
+        workspaceId,
         update,
         workspaceId === guid ? undefined : guid
       );
