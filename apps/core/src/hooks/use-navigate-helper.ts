@@ -1,5 +1,6 @@
 import type { WorkspaceSubPath } from '@affine/env/workspace';
 import { useCallback } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export enum RouteLogic {
