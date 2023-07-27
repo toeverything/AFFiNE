@@ -59,8 +59,11 @@ export const TrashButtonGroup = () => {
         confirmType="error"
         open={open}
         onConfirm={useCallback(() => {
-          jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-          blockSuiteWorkspace.removePage(pageId);
+          jumpToSubPath(workspace.id, WorkspaceSubPath.TRASH);
+          // fixme: remove this setTimeout
+          setTimeout(() => {
+            blockSuiteWorkspace.removePage(pageId);
+          });
         }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id])}
         onCancel={() => {
           setOpen(false);
@@ -72,5 +75,3 @@ export const TrashButtonGroup = () => {
     </div>
   );
 };
-
-export default TrashButtonGroup;
