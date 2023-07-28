@@ -17,7 +17,7 @@ export default defineConfig({
     'process.env.PLUGIN_DIR': JSON.stringify(pluginOutputDir),
   },
   test: {
-    include: [resolve(rootDir, 'apps/electron/src/**/*.spec.ts')],
+    include: [resolve(rootDir, './apps/electron/src/**/*.spec.ts')],
     exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
     testTimeout: 5000,
     singleThread: true,
