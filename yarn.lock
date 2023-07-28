@@ -330,6 +330,7 @@ __metadata:
     ts-node: ^10.9.1
     undici: ^5.22.1
     uuid: ^9.0.0
+    vitest: ^0.33.0
     which: ^3.0.1
     yjs: ^13.6.7
     zx: ^7.2.3
