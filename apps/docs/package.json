@@ -1,6 +1,6 @@
 {
   "name": "@affine/docs",
-  "version": "0.7.0-canary.57",
+  "version": "0.7.0-canary.58",
   "type": "module",
   "private": true,
   "scripts": {
