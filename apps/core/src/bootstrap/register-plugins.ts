@@ -179,6 +179,37 @@ await Promise.all(
         );
       }
       const codeText = await res.text();
+      const dbName = 'plugin-db';
+      const request = indexedDB.open(dbName, 1);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        const objectStoreName = 'plugin-store';
+
+        if (!db.objectStoreNames.contains(objectStoreName)) {
+          db.createObjectStore(objectStoreName);
+        }
+      };
+
+      const db: IDBObjectStore = await new Promise((resolve, reject) => {
+        request.onsuccess = () => {
+          const db = request.result;
+          console.log('Database opened successfully!');
+          resolve(
+            db
+              .transaction('plugin-store', 'readwrite')
+              .objectStore('plugin-store')
+          );
+        };
+        request.onerror = () => {
+          reject(new Error('Error opening database'));
+        };
+      });
+
+      request.onerror = () => {
+        console.error('Error opening database:', request.error);
+      };
+
       pluginCompartment.evaluate(codeText, {
         __evadeHtmlCommentTest__: true,
       });
@@ -219,6 +250,44 @@ await Promise.all(
         },
         utils: {
           PluginProvider,
+        },
+        indexedDB: {
+          async get<T>(key: string): Promise<T | undefined> {
+            return new Promise((resolve, reject) => {
+              const request = db.get(key);
+              request.onsuccess = () => {
+                resolve(request.result);
+              };
+              request.onerror = () => {
+                reject(request.error);
+              };
+            });
+          },
+
+          async set<T>(key: string, val: T): Promise<void> {
+            return new Promise((resolve, reject) => {
+              const request = db.put(val, key);
+              request.onsuccess = () => {
+                resolve();
+              };
+              request.onerror = () => {
+                reject(request.error);
+              };
+            });
+          },
+
+          async getKeys(): Promise<string[]> {
+            return new Promise((resolve, reject) => {
+              const request = db.getAllKeys();
+              request.onsuccess = () => {
+                const keys = request.result as string[];
+                resolve(keys);
+              };
+              request.onerror = () => {
+                reject(request.error);
+              };
+            });
+          },
         },
       } satisfies PluginContext;
       const dispose = pluginCompartment.evaluate(

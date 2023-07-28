@@ -22,4 +22,9 @@ export interface PluginContext {
   utils: {
     PluginProvider: FC;
   };
+  indexedDB: {
+    get: (key: string) => Promise<any>;
+    set: (key: string, val: any) => Promise<any>;
+    getKeys: () => Promise<readonly string[]>;
+  };
 }

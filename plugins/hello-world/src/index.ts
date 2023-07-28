@@ -27,7 +27,7 @@ export const entry = (context: PluginContext) => {
       root.unmount();
     };
   });
-
+  context.indexedDB.set('sample', 'hello, world!');
   return () => {
     console.log('unregister');
   };
