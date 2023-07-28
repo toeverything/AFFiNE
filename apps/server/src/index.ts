@@ -1,21 +1,14 @@
 /// <reference types="./global.d.ts" />
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
-import {
-  NextFunction,
-  Request,
-  Response,
-  static as staticMiddleware,
-} from 'express';
+import { static as staticMiddleware } from 'express';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
-import onHeaders from 'on-headers';
 
 import { AppModule } from './app';
 import { Config } from './config';
-import { REQUEST_ID } from './constants';
+import { serverTiming } from './middleware/timing';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const { AFFINE_ENV } = process.env;
@@ -26,33 +19,7 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   logger: AFFINE_ENV === 'production' ? ['warn'] : ['verbose'],
 });
 
-const logger = new Logger('GlobalTimer');
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  req.res = res; // used in logger-plugin.ts
-  const now = process.hrtime();
-  const requestId = req.headers[REQUEST_ID] || 'unknown';
-
-  onHeaders(res, () => {
-    const delta = process.hrtime(now);
-    const costInMilliseconds = (delta[0] + delta[1] / 1e9) * 1000;
-
-    const serverTiming = res.getHeader('Server-Timing') as string | undefined;
-    if (serverTiming) {
-      res.setHeader(
-        'Server-Timing',
-        `${serverTiming}, Total;dur=${costInMilliseconds}`
-      );
-    } else {
-      res.setHeader('Server-Timing', `total;dur=${costInMilliseconds}`);
-    }
-    logger.verbose(
-      `${REQUEST_ID}: ${requestId}, path: ${req.path}, total time cost in seconds: ${costInMilliseconds}`
-    );
-  });
-
-  next();
-});
+app.use(serverTiming);
 
 app.use(
   graphqlUploadExpress({
