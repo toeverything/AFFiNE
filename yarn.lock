@@ -164,7 +164,7 @@ __metadata:
     "@types/marked": ^5.0.1
     idb: ^7.1.1
     jotai: ^2.2.2
-    langchain: ^0.0.107
+    langchain: ^0.0.118
     marked: ^5.1.1
     marked-gfm-heading-id: ^3.0.4
     marked-mangle: ^1.1.0
@@ -657,7 +657,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@anthropic-ai/sdk@npm:^0.5.3":
+"@anthropic-ai/sdk@npm:^0.5.7":
   version: 0.5.8
   resolution: "@anthropic-ai/sdk@npm:0.5.8"
   dependencies:
@@ -22258,11 +22258,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"langchain@npm:^0.0.107":
-  version: 0.0.107
-  resolution: "langchain@npm:0.0.107"
+"langchain@npm:^0.0.118":
+  version: 0.0.118
+  resolution: "langchain@npm:0.0.118"
   dependencies:
-    "@anthropic-ai/sdk": ^0.5.3
+    "@anthropic-ai/sdk": ^0.5.7
     ansi-styles: ^5.0.0
     binary-extensions: ^2.2.0
     camelcase: 6
@@ -22272,7 +22272,7 @@ __metadata:
     js-tiktoken: ^1.0.7
     js-yaml: ^4.1.0
     jsonpointer: ^5.0.1
-    langchainplus-sdk: ^0.0.19
+    langsmith: ~0.0.11
     ml-distance: ^4.0.0
     object-hash: ^3.0.0
     openai: ^3.3.0
@@ -22285,6 +22285,7 @@ __metadata:
     zod-to-json-schema: ^3.20.4
   peerDependencies:
     "@aws-sdk/client-dynamodb": ^3.310.0
+    "@aws-sdk/client-kendra": ^3.352.0
     "@aws-sdk/client-lambda": ^3.310.0
     "@aws-sdk/client-s3": ^3.310.0
     "@aws-sdk/client-sagemaker-runtime": ^3.310.0
@@ -22294,11 +22295,13 @@ __metadata:
     "@getmetal/metal-sdk": "*"
     "@getzep/zep-js": ^0.4.1
     "@gomomento/sdk": ^1.23.0
+    "@google-ai/generativelanguage": ^0.2.1
     "@google-cloud/storage": ^6.10.1
     "@huggingface/inference": ^1.5.1
     "@notionhq/client": ^2.2.5
     "@opensearch-project/opensearch": "*"
     "@pinecone-database/pinecone": "*"
+    "@planetscale/database": ^1.8.0
     "@qdrant/js-client-rest": ^1.2.0
     "@supabase/postgrest-js": ^1.1.1
     "@supabase/supabase-js": ^2.10.0
@@ -22316,10 +22319,12 @@ __metadata:
     d3-dsv: ^2.0.0
     epub2: ^3.0.1
     faiss-node: ^0.2.1
-    google-auth-library: ^8.8.0
+    firebase-admin: ^11.9.0
+    google-auth-library: ^8.9.0
     hnswlib-node: ^1.4.2
     html-to-text: ^9.0.5
     ignore: ^5.2.0
+    ioredis: ^5.3.2
     mammoth: "*"
     mongodb: ^5.2.0
     mysql2: ^3.3.3
@@ -22327,11 +22332,12 @@ __metadata:
     pdf-parse: 1.1.1
     peggy: ^3.0.2
     pg: ^8.11.0
+    pg-copy-streams: ^6.0.5
     pickleparser: ^0.1.0
     playwright: ^1.32.1
     puppeteer: ^19.7.2
     redis: ^4.6.4
-    replicate: ^0.9.0
+    replicate: ^0.12.3
     sonix-speech-recognition: ^2.1.1
     srt-parser-2: ^1.2.2
     typeorm: ^0.3.12
@@ -22340,6 +22346,8 @@ __metadata:
     weaviate-ts-client: ^1.0.0
   peerDependenciesMeta:
     "@aws-sdk/client-dynamodb":
+      optional: true
+    "@aws-sdk/client-kendra":
       optional: true
     "@aws-sdk/client-lambda":
       optional: true
@@ -22359,6 +22367,8 @@ __metadata:
       optional: true
     "@gomomento/sdk":
       optional: true
+    "@google-ai/generativelanguage":
+      optional: true
     "@google-cloud/storage":
       optional: true
     "@huggingface/inference":
@@ -22368,6 +22378,8 @@ __metadata:
     "@opensearch-project/opensearch":
       optional: true
     "@pinecone-database/pinecone":
+      optional: true
+    "@planetscale/database":
       optional: true
     "@qdrant/js-client-rest":
       optional: true
@@ -22403,6 +22415,8 @@ __metadata:
       optional: true
     faiss-node:
       optional: true
+    firebase-admin:
+      optional: true
     google-auth-library:
       optional: true
     hnswlib-node:
@@ -22410,6 +22424,8 @@ __metadata:
     html-to-text:
       optional: true
     ignore:
+      optional: true
+    ioredis:
       optional: true
     mammoth:
       optional: true
@@ -22424,6 +22440,8 @@ __metadata:
     peggy:
       optional: true
     pg:
+      optional: true
+    pg-copy-streams:
       optional: true
     pickleparser:
       optional: true
@@ -22447,13 +22465,13 @@ __metadata:
       optional: true
     weaviate-ts-client:
       optional: true
-  checksum: d1f01321db83aebae5b619ade2060b2416459e1b55723793c0e3244a9ec8fe57775f8c159f406b85eb58b66761a59705e17e9a2efb522876e81e881056711227
+  checksum: 080e56911adf4e869d30ad92228356468d21ebcfb2b67e88d1625faa2fc9c9b267b0fd5c0776a5de704794b7db5ae255d3a8204b52c09b5798d233ee226b7288
   languageName: node
   linkType: hard
 
-"langchainplus-sdk@npm:^0.0.19":
-  version: 0.0.19
-  resolution: "langchainplus-sdk@npm:0.0.19"
+"langsmith@npm:~0.0.11":
+  version: 0.0.15
+  resolution: "langsmith@npm:0.0.15"
   dependencies:
     "@types/uuid": ^9.0.1
     commander: ^10.0.1
@@ -22461,8 +22479,8 @@ __metadata:
     p-retry: 4
     uuid: ^9.0.0
   bin:
-    langchain: dist/cli/main.cjs
-  checksum: f0174c1e248e4bc5034a7dd182f703b895a485b6408aa518c91ff12b3f015febd5546eeb7f821c82b63a9d2b67a7ea903a1a57ad196049743f0934ff1c524ae8
+    langsmith: dist/cli/main.cjs
+  checksum: d23111aa0e65d5c28ebe08dd846b12fd788cc08a9de068c76f4ba362a0e5009939380efd7662d154375809d549eaba3a6658890f2676fea9b94b95de36ce62f1
   languageName: node
   linkType: hard
 
