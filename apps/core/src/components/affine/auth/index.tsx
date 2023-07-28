@@ -4,15 +4,17 @@ import {
 } from '@affine/component/auth-components';
 import { type FC, useMemo, useState } from 'react';
 
-import { ConfirmCode } from './confirm-code';
+import { AfterSignUpSendEmail } from './after-sign-up-send-email';
 import { SetPassword } from './set-password';
 import { SignIn } from './sign-in';
 import { SignInWithPassword } from './sign-in-with-password';
 export type AuthModalProps = AuthModalBaseProps & {
   state:
     | 'signIn'
+    | 'afterSignUpSendEmail'
+    | 'afterSignInSendEmail'
+    // throw away
     | 'signInWithPassword'
-    | 'confirmCode'
     | 'setPassword'
     | 'resetPassword';
   setAuthState: (state: AuthModalProps['state']) => void;
@@ -28,8 +30,8 @@ const config: {
   [k in AuthModalProps['state']]: FC<AuthPanelProps>;
 } = {
   signIn: SignIn,
+  afterSignUpSendEmail: AfterSignUpSendEmail,
   signInWithPassword: SignInWithPassword,
-  confirmCode: ConfirmCode,
   setPassword: SetPassword,
   resetPassword: () => <div>resetPassword</div>,
 };
@@ -44,7 +46,6 @@ export const AuthModal: FC<AuthModalProps> = ({
   const CurrentPanel = useMemo(() => {
     return config[state];
   }, [state]);
-  console.log('index', currentEmail);
 
   return (
     <AuthModalBase open={open} setOpen={setOpen}>

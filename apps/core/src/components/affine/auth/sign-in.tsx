@@ -11,19 +11,19 @@ import { useMutation } from '@affine/workspace/affine/gql';
 import { signIn } from 'next-auth/react';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
-
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
-function validateEmail(email: string) {
+function validateEmail(currentEmail: string) {
   return new RegExp(
     /^(?:(?:[^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(?:(?:\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|((?:[a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  ).test(email);
+  ).test(currentEmail);
 }
 
 export const SignIn: FC<AuthPanelProps> = ({
   setAuthState,
   setCurrentEmail,
+  currentEmail,
 }) => {
   const t = useAFFiNEI18N();
 
@@ -32,27 +32,33 @@ export const SignIn: FC<AuthPanelProps> = ({
   });
   const [isValidEmail, setIsValidEmail] = useState(true);
 
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   const onContinue = useCallback(async () => {
-    if (!validateEmail(email)) {
+    if (!validateEmail(currentEmail)) {
       setIsValidEmail(false);
       return;
     }
 
     setIsValidEmail(true);
     setLoading(true);
-    const res = await verifyUser({ email });
+    const res = await verifyUser({ email: currentEmail });
     setLoading(false);
 
-    setCurrentEmail(email);
+    setCurrentEmail(currentEmail);
     if (res?.user) {
+      console.log('has user', res.user);
+
       setAuthState('signInWithPassword');
     } else {
-      setAuthState('confirmCode');
+      signIn('email', {
+        email: currentEmail,
+        callbackUrl: '/auth/setPassword',
+      }).catch(console.error);
+
+      setAuthState('afterSignUpSendEmail');
     }
-  }, [email, setAuthState, setCurrentEmail, verifyUser]);
+  }, [currentEmail, setAuthState, setCurrentEmail, verifyUser]);
   return (
     <>
       <ModalHeader
@@ -69,9 +75,9 @@ export const SignIn: FC<AuthPanelProps> = ({
         <AuthInput
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
-          value={email}
+          value={currentEmail}
           onChange={value => {
-            setEmail(value);
+            setCurrentEmail(value);
           }}
           error={!isValidEmail}
           errorHint={

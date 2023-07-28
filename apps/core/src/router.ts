@@ -25,6 +25,10 @@ export const router = createBrowserRouter(
       ],
     },
     {
+      path: '/auth/:authType',
+      lazy: () => import('./pages/auth'),
+    },
+    {
       path: '/404',
       lazy: () => import('./pages/404'),
     },

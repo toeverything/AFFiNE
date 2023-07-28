@@ -165,3 +165,29 @@ globalStyle(`${resendButtonWrapper} .resend-code-hint`, {
   fontSize: 'var(--affine-font-sm)',
   marginRight: 8,
 });
+
+export const authPageContainer = style({
+  height: '100vh',
+  width: '100vw',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: 'var(--affine-font-base)',
+});
+globalStyle(`${authPageContainer} .wrapper`, {
+  display: 'flex',
+  alignItems: 'center',
+});
+globalStyle(`${authPageContainer} .content`, {
+  maxWidth: '700px',
+});
+
+globalStyle(`${authPageContainer} .title`, {
+  fontSize: 'var(--affine-font-title)',
+  fontWeight: 600,
+  marginBottom: '28px',
+});
+
+globalStyle(`${authPageContainer} .subtitle`, {
+  marginBottom: '28px',
+});

@@ -1,6 +1,5 @@
 import { Button } from '@affine/component';
 import {
-  AuthCode,
   AuthContent,
   ModalHeader,
   ResendButton,
@@ -12,36 +11,23 @@ import { type FC, useCallback, useState } from 'react';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
-export const ConfirmCode: FC<AuthPanelProps> = ({
+export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
   currentEmail,
   setAuthState,
 }) => {
   const t = useAFFiNEI18N();
-  const [isErrorCode, setIsErrorCode] = useState(false);
 
   return (
     <>
       <ModalHeader
         title={t['com.affine.auth.sign.up']()}
-        subTitle={t['com.affine.auth.email.confirm']()}
+        subTitle={t['com.affine.auth.sign.up.sent.email.subtitle']()}
       />
-      <AuthContent>
-        {t['com.affine.auth.sign.confirm.message']()}
+      <AuthContent style={{ height: 162 }}>
+        {t['com.affine.auth.sign.sent.email.message.start']()}
         <a href={`mailto:${currentEmail}`}>{currentEmail}</a>
+        {t['com.affine.auth.sign.sent.email.message.end']()}
       </AuthContent>
-      <AuthCode
-        style={{ marginTop: '30px' }}
-        error={isErrorCode}
-        onComplete={useCallback(
-          (code: string) => {
-            if (code === '123123') {
-              setAuthState('setPassword');
-            }
-            setIsErrorCode(code !== '123123');
-          },
-          [setAuthState]
-        )}
-      />
 
       <ResendButton onClick={() => {}} />
 
@@ -54,9 +40,10 @@ export const ConfirmCode: FC<AuthPanelProps> = ({
         onClick={useCallback(() => {
           setAuthState('signIn');
         }, [setAuthState])}
+        withoutHover={true}
         style={{
           marginTop: 8,
-          marginLeft: -16,
+          marginLeft: -20,
         }}
         icon={
           <ArrowLeftSmallIcon

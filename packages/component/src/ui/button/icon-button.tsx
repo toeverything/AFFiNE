@@ -15,6 +15,7 @@ export type IconButtonProps = PropsWithChildren &
     loading?: boolean;
     withoutPadding?: boolean;
     active?: boolean;
+    withoutHover?: boolean;
   };
 const defaultProps = {
   type: 'plain',
@@ -23,6 +24,7 @@ const defaultProps = {
   loading: false,
   withoutPadding: false,
   active: false,
+  withoutHover: false,
 };
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
@@ -35,6 +37,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       disabled,
       loading,
       active,
+      withoutHover,
       ...otherProps
     } = {
       ...defaultProps,
@@ -61,6 +64,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           disabled,
           loading,
           active,
+          'without-hover': withoutHover,
         })}
         disabled={disabled}
         data-disabled={disabled}

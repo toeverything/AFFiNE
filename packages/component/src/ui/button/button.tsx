@@ -29,6 +29,7 @@ export type ButtonProps = PropsWithChildren &
     block?: boolean;
     size?: ButtonSize;
     loading?: boolean;
+    withoutHover?: boolean;
   };
 const defaultProps = {
   type: 'default',
@@ -37,6 +38,7 @@ const defaultProps = {
   size: 'default',
   iconPosition: 'start',
   loading: false,
+  withoutHover: false,
 };
 
 const ButtonIcon: FC<ButtonProps> = props => {
@@ -77,6 +79,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       iconPosition,
       block,
       loading,
+      withoutHover,
       ...otherProps
     } = {
       ...defaultProps,
@@ -107,6 +110,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           round: shape === 'round',
           block,
           loading,
+          'without-hover': withoutHover,
         })}
         disabled={disabled}
         data-disabled={disabled}

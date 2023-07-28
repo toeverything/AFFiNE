@@ -227,9 +227,9 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         return session;
       },
-      redirect: async ({ url }) => {
-        return url;
-      },
+      // redirect: async ({ url }) => {
+      //   return url;
+      // },
     };
     return nextAuthOptions;
   },
