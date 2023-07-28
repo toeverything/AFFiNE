@@ -305,8 +305,18 @@ export class WorkspaceResolver {
       },
     });
 
-    // TODO:
-    // delete all related data, like websocket connections, etc.
+    await this.prisma.$transaction([
+      this.prisma.update.deleteMany({
+        where: {
+          workspaceId: id,
+        },
+      }),
+      this.prisma.snapshot.deleteMany({
+        where: {
+          workspaceId: id,
+        },
+      }),
+    ]);
 
     return true;
   }

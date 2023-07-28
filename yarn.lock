@@ -636,6 +636,7 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
+    "@affine/y-provider": "workspace:*"
     "@toeverything/hooks": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
     "@toeverything/y-indexeddb": "workspace:*"
