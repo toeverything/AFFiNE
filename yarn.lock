@@ -6620,7 +6620,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@node-rs/argon2@npm:^1.5.2":
+"@node-rs/argon2@npm:^1.5.0, @node-rs/argon2@npm:^1.5.2":
   version: 1.5.2
   resolution: "@node-rs/argon2@npm:1.5.2"
   dependencies:

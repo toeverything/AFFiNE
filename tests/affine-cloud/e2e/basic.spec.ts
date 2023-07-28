@@ -1,9 +1,20 @@
-import userA from '@affine-test/fixtures/userA.json';
 import { test } from '@affine-test/kit/playwright';
+import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
 import { expect } from '@playwright/test';
 
+let user: {
+  name: string;
+  email: string;
+  password: string;
+};
+
 async function flushDB() {
+  user = {
+    name: faker.internet.userName(),
+    email: faker.internet.email(),
+    password: faker.internet.password(),
+  };
   const {
     PrismaClient,
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -24,8 +35,8 @@ async function flushDB() {
   );
   await client.user.create({
     data: {
-      ...userA,
-      password: await hash(userA.password),
+      ...user,
+      password: await hash(user.password),
     },
   });
   await client.$disconnect();
@@ -49,8 +60,8 @@ test.fixme('login', async ({ page, context }) => {
 
   await page.getByText('Demo Workspace').click();
   await page.getByText('Sign in AFFiNE Cloud').click();
-  await page.getByPlaceholder('torvalds@osdl.org').fill(userA.email);
-  await page.getByLabel('Password').fill(userA.password);
+  await page.getByPlaceholder('torvalds@osdl.org').fill(user.email);
+  await page.getByLabel('Password').fill(user.password);
   await page.getByText('Sign in with Password').click();
   await page.getByText('Demo Workspace').click();
   expect(
@@ -58,14 +69,14 @@ test.fixme('login', async ({ page, context }) => {
   ).toBeTruthy();
 });
 
-test.fixme('enable cloud', async ({ page }) => {
+test('enable cloud', async ({ page }) => {
   await page.goto('http://localhost:8080');
   await page.waitForSelector('v-line');
 
   await page.getByText('Demo Workspace').click();
   await page.getByText('Sign in AFFiNE Cloud').click();
-  await page.getByPlaceholder('torvalds@osdl.org').fill(userA.email);
-  await page.getByLabel('Password').fill(userA.password);
+  await page.getByPlaceholder('torvalds@osdl.org').fill(user.email);
+  await page.getByLabel('Password').fill(user.password);
   await page.getByText('Sign in with Password').click();
   await page.waitForTimeout(1000);
   await page.getByText('Demo Workspace').click();
