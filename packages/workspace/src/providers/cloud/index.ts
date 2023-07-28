@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { fetchWithRequestId } from '@affine/graphql';
 import type { ActiveDocProvider, DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import type { Doc } from 'yjs';
@@ -9,7 +10,7 @@ const logger = new DebugLogger('affine:cloud');
 
 async function downloadBinaryRecursively(rootGuid: string, doc: Doc) {
   const guid = doc.guid;
-  const response = await fetch(
+  const response = await fetchWithRequestId(
     runtimeConfig.serverUrlPrefix + `/api/workspaces/${rootGuid}/docs/${guid}`
   );
   if (response.ok) {

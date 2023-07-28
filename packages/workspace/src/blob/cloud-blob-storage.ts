@@ -1,5 +1,6 @@
 import {
   deleteBlobMutation,
+  fetchWithRequestId,
   listBlobsQuery,
   setBlobMutation,
 } from '@affine/graphql';
@@ -11,7 +12,7 @@ export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
   return {
     crud: {
       get: async key => {
-        return fetch(
+        return fetchWithRequestId(
           runtimeConfig.serverUrlPrefix +
             `/api/workspaces/${workspaceId}/blobs/${key}`
         ).then(res => res.blob());

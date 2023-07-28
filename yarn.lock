@@ -380,6 +380,7 @@ __metadata:
     "@types/lodash-es": ^4.17.8
     graphql: ^16.7.1
     lodash-es: ^4.17.21
+    nanoid: ^4.0.2
     prettier: ^3.0.0
   languageName: unknown
   linkType: soft
@@ -535,6 +536,7 @@ __metadata:
     "@types/lodash-es": ^4.17.8
     "@types/node": ^18.17.1
     "@types/nodemailer": ^6.4.9
+    "@types/on-headers": ^1.0.0
     "@types/pretty-time": ^1.1.2
     "@types/sinon": ^10.0.15
     "@types/supertest": ^2.0.12
@@ -11782,6 +11784,15 @@ __metadata:
   version: 0.11.1
   resolution: "@types/object-path@npm:0.11.1"
   checksum: 007e819d1d9dc830491b60023b1502ef1e421416d9953d6fefcda7d06eb91548eef8ee30073a9cfb6a834ac977042f6e1a761cde2d6a7973b06ddca753be91e3
+  languageName: node
+  linkType: hard
+
+"@types/on-headers@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@types/on-headers@npm:1.0.0"
+  dependencies:
+    "@types/node": "*"
+  checksum: 470c26ccfe2430118a21a331a13792a5c02201478b5b5cfea375e9a0097a38eedbc7d33cb5d4c622dffa3afb87fc8c370b2597ca932e6479773f5d50ed04a52c
   languageName: node
   linkType: hard
 
