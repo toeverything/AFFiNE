@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from 'vitest/config';
@@ -17,7 +17,12 @@ export default defineConfig({
     'process.env.PLUGIN_DIR': JSON.stringify(pluginOutputDir),
   },
   test: {
-    include: [resolve(rootDir, './apps/electron/src/**/*.spec.ts')],
+    include: [
+      relative(
+        process.cwd(),
+        resolve(rootDir, './apps/electron/src/**/*.spec.ts')
+      ),
+    ],
     exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
     testTimeout: 5000,
     singleThread: true,
