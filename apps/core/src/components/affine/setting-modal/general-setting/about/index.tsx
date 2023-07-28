@@ -62,7 +62,7 @@ export const AboutAffine = () => {
               style={{ cursor: 'pointer' }}
               onClick={() => {
                 window.open(
-                  'https://affine.pro/blog/what-is-new-affine-0717',
+                  'https://affine.pro/blog/what-is-new-affine-0728',
                   '_blank'
                 );
               }}
