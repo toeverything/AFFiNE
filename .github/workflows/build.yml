@@ -350,9 +350,8 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: yarn nx test @affine/monorepo
-        env:
-          NATIVE_TEST: 'true'
+        run: yarn vitest
+        working-directory: ./apps/electron
 
       - name: Download core artifact
         uses: actions/download-artifact@v3
