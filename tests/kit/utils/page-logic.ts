@@ -16,7 +16,7 @@ export async function newPage(page: Page) {
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {
-  return page.locator('v-line').nth(0);
+  return page.locator('.affine-default-page-block-title').nth(0);
 }
 
 export async function type(page: Page, content: string, delay = 50) {
