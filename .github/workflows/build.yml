@@ -350,7 +350,8 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: yarn vitest -c ./apps/electron/vitest.config.ts
+        run: yarn vitest
+        working-directory: ./apps/electron
 
       - name: Download core artifact
         uses: actions/download-artifact@v3
