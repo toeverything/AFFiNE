@@ -92,15 +92,15 @@ export const WorkspaceDeleteModal = ({
           />
         </StyledInputContent>
         <StyledButtonContent>
-          <Button shape="circle" onClick={onClose}>
+          <Button onClick={onClose} size="large">
             {t['Cancel']()}
           </Button>
           <Button
             data-testid="delete-workspace-confirm-button"
             disabled={!allowDelete}
             onClick={handleDelete}
+            size="large"
             type="error"
-            shape="circle"
             style={{ marginLeft: '24px' }}
           >
             {t['Delete']()}
