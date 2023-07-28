@@ -80,6 +80,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       block,
       loading,
       withoutHover,
+      className,
       ...otherProps
     } = {
       ...defaultProps,
@@ -96,22 +97,26 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={clsx(button, {
-          primary: type === 'primary',
-          plain: type === 'plain',
-          error: type === 'error',
-          warning: type === 'warning',
-          success: type === 'success',
-          processing: type === 'processing',
-          large: size === 'large',
-          extraLarge: size === 'extraLarge',
-          disabled,
-          circle: shape === 'circle',
-          round: shape === 'round',
-          block,
-          loading,
-          'without-hover': withoutHover,
-        })}
+        className={clsx(
+          button,
+          {
+            primary: type === 'primary',
+            plain: type === 'plain',
+            error: type === 'error',
+            warning: type === 'warning',
+            success: type === 'success',
+            processing: type === 'processing',
+            large: size === 'large',
+            extraLarge: size === 'extraLarge',
+            disabled,
+            circle: shape === 'circle',
+            round: shape === 'round',
+            block,
+            loading,
+            'without-hover': withoutHover,
+          },
+          className
+        )}
         disabled={disabled}
         data-disabled={disabled}
         {...otherProps}

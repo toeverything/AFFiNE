@@ -69,7 +69,7 @@ export const button = style({
     },
 
     '&.primary': {
-      color: 'var(--affine-white)',
+      color: 'var(--affine-pure-white)',
       background: 'var(--affine-primary-color)',
       borderColor: 'var(--affine-black-10)',
       boxShadow: 'var(--affine-button-inner-shadow)',

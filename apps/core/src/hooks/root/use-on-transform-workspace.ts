@@ -1,19 +1,23 @@
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import { WorkspaceVersion } from '@affine/env/workspace';
+import { WorkspaceSubPath, WorkspaceVersion } from '@affine/env/workspace';
 import {
   rootWorkspacesMetadataAtom,
   workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
+import { currentPageIdAtom } from '@toeverything/plugin-infra/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { openSettingModalAtom } from '../../atoms';
+import { useNavigateHelper } from '../use-navigate-helper';
 
 export function useOnTransformWorkspace() {
   const setSettingModal = useSetAtom(openSettingModalAtom);
   const WorkspaceAdapters = useAtomValue(workspaceAdaptersAtom);
   const setMetadata = useSetAtom(rootWorkspacesMetadataAtom);
+  const { openPage } = useNavigateHelper();
+  const currentPageId = useAtomValue(currentPageIdAtom);
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -49,8 +53,9 @@ export function useOnTransformWorkspace() {
           },
         })
       );
+      openPage(newId, currentPageId ?? WorkspaceSubPath.ALL);
     },
-    [WorkspaceAdapters, setMetadata, setSettingModal]
+    [WorkspaceAdapters, setMetadata, setSettingModal, openPage, currentPageId]
   );
 }
 

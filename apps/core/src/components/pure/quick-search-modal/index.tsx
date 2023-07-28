@@ -2,8 +2,7 @@ import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
 import { startTransition } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { AllWorkspace } from '../../../shared';
 import { Footer } from './footer';
@@ -37,15 +36,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       _setQuery(query);
     });
   }, []);
-  const location = useLocation();
-  const isPublicWorkspace = useMemo(
-    () => location.pathname.startsWith('/public-workspace'),
-    [location]
-  );
   const [showCreatePage, setShowCreatePage] = useState(true);
-  const isPublicAndNoQuery = useCallback(() => {
-    return isPublicWorkspace && query.length === 0;
-  }, [isPublicWorkspace, query.length]);
   const handleClose = useCallback(() => {
     setOpen(false);
   }, [setOpen]);
@@ -88,7 +79,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         width={608}
         style={{
           maxHeight: '80vh',
-          minHeight: isPublicAndNoQuery() ? '72px' : '412px',
+          minHeight: '412px',
           top: '80px',
           overflow: 'hidden',
         }}
@@ -134,13 +125,9 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                 : 'Ctrl + K'}
             </StyledShortcut>
           </StyledModalHeader>
-          <StyledModalDivider
-            style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
-          />
+          <StyledModalDivider />
           <Command.List>
-            <StyledContent
-              style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
-            >
+            <StyledContent>
               <Results
                 query={query}
                 onClose={handleClose}
@@ -148,7 +135,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                 setShowCreatePage={setShowCreatePage}
               />
             </StyledContent>
-            {isPublicWorkspace ? null : showCreatePage ? (
+            {showCreatePage ? (
               <>
                 <StyledModalDivider />
                 <StyledModalFooter>

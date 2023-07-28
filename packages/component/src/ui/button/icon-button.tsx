@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, type ReactElement } from 'react';
 
 import { Loading } from '../loading';
 import type { ButtonType } from './button';
@@ -16,6 +16,7 @@ export type IconButtonProps = PropsWithChildren &
     withoutPadding?: boolean;
     active?: boolean;
     withoutHover?: boolean;
+    icon?: ReactElement;
   };
 const defaultProps = {
   type: 'plain',
@@ -38,6 +39,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       loading,
       active,
       withoutHover,
+      icon: propsIcon,
+      className,
       ...otherProps
     } = {
       ...defaultProps,
@@ -47,30 +50,34 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     return (
       <button
         ref={ref}
-        className={clsx(iconButton, {
-          'without-padding': withoutPadding,
+        className={clsx(
+          iconButton,
+          {
+            'without-padding': withoutPadding,
 
-          primary: type === 'primary',
-          plain: type === 'plain',
-          error: type === 'error',
-          warning: type === 'warning',
-          success: type === 'success',
-          processing: type === 'processing',
+            primary: type === 'primary',
+            plain: type === 'plain',
+            error: type === 'error',
+            warning: type === 'warning',
+            success: type === 'success',
+            processing: type === 'processing',
 
-          large: size === 'large',
-          small: size === 'small',
-          'extra-small': size === 'extraSmall',
+            large: size === 'large',
+            small: size === 'small',
+            'extra-small': size === 'extraSmall',
 
-          disabled,
-          loading,
-          active,
-          'without-hover': withoutHover,
-        })}
+            disabled,
+            loading,
+            active,
+            'without-hover': withoutHover,
+          },
+          className
+        )}
         disabled={disabled}
         data-disabled={disabled}
         {...otherProps}
       >
-        {loading ? <Loading /> : children}
+        {loading ? <Loading /> : children || propsIcon}
       </button>
     );
   }

@@ -78,47 +78,48 @@ export async function tryMigrate(
       }
       // run the migration
       await Promise.all(
-        allDb.map(meta => {
-          if (meta.name && meta.version === 1) {
-            const name = meta.name;
-            const version = meta.version;
-            return openDB<IDBPDatabase<OldYjsDB>>(name, version).then(
-              async oldDB => {
-                if (!oldDB.objectStoreNames.contains('updates')) {
-                  return;
+        allDb &&
+          allDb.map(meta => {
+            if (meta.name && meta.version === 1) {
+              const name = meta.name;
+              const version = meta.version;
+              return openDB<IDBPDatabase<OldYjsDB>>(name, version).then(
+                async oldDB => {
+                  if (!oldDB.objectStoreNames.contains('updates')) {
+                    return;
+                  }
+                  const t = oldDB
+                    .transaction('updates', 'readonly')
+                    .objectStore('updates');
+                  const updates = await t.getAll();
+                  if (
+                    !Array.isArray(updates) ||
+                    !updates.every(update => update instanceof Uint8Array)
+                  ) {
+                    return;
+                  }
+                  const update = mergeUpdates(updates);
+                  const workspaceTransaction = db
+                    .transaction('workspace', 'readwrite')
+                    .objectStore('workspace');
+                  const data = await workspaceTransaction.get(name);
+                  if (!data) {
+                    console.log('upgrading the database');
+                    await workspaceTransaction.put({
+                      id: name,
+                      updates: [
+                        {
+                          timestamp: Date.now(),
+                          update,
+                        },
+                      ],
+                    });
+                  }
                 }
-                const t = oldDB
-                  .transaction('updates', 'readonly')
-                  .objectStore('updates');
-                const updates = await t.getAll();
-                if (
-                  !Array.isArray(updates) ||
-                  !updates.every(update => update instanceof Uint8Array)
-                ) {
-                  return;
-                }
-                const update = mergeUpdates(updates);
-                const workspaceTransaction = db
-                  .transaction('workspace', 'readwrite')
-                  .objectStore('workspace');
-                const data = await workspaceTransaction.get(name);
-                if (!data) {
-                  console.log('upgrading the database');
-                  await workspaceTransaction.put({
-                    id: name,
-                    updates: [
-                      {
-                        timestamp: Date.now(),
-                        update,
-                      },
-                    ],
-                  });
-                }
-              }
-            );
-          }
-          return void 0;
-        })
+              );
+            }
+            return void 0;
+          })
       );
       localStorage.setItem(`${dbName}-migration`, 'true');
       break;

@@ -3,7 +3,6 @@ import { SidebarIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
 
 import { IconButton, Tooltip } from '../../../';
-import { sidebarButtonStyle } from '../index.css';
 import { appSidebarOpenAtom } from '../index.jotai';
 
 export const SidebarSwitch = () => {
@@ -20,11 +19,14 @@ export const SidebarSwitch = () => {
       zIndex={1000}
     >
       <IconButton
+        size="large"
         data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
-        className={sidebarButtonStyle}
+        style={{
+          zIndex: 1,
+        }}
         onClick={() => setOpen(open => !open)}
       >
-        <SidebarIcon width={24} height={24} />
+        <SidebarIcon />
       </IconButton>
     </Tooltip>
   );

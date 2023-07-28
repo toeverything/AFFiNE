@@ -2,7 +2,12 @@
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/styles.css
 
-import { keyframes, style, styleVariants } from '@vanilla-extract/css';
+import {
+  globalStyle,
+  keyframes,
+  style,
+  styleVariants,
+} from '@vanilla-extract/css';
 
 const swipeOut = keyframes({
   '0%': {
@@ -19,12 +24,28 @@ const swipeOut = keyframes({
 
 export const notificationCenterViewportStyle = style({
   position: 'fixed',
-  bottom: '200px',
-  right: '60px',
+  height: '500px',
+  bottom: '20px',
+  right: '20px',
   width: '380px',
-  margin: 0,
   zIndex: 2147483647,
   outline: 'none',
+  display: 'flex',
+  alignItems: 'flex-end',
+});
+export const notificationMultimediaStyle = style({
+  position: 'relative',
+  width: '100%',
+  height: '230px',
+  borderRadius: '8px 8px 0 0',
+  overflow: 'hidden',
+  marginBottom: '16px',
+});
+globalStyle(`${notificationMultimediaStyle} > *`, {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  cursor: 'unset',
 });
 
 export const notificationStyle = style({
@@ -128,18 +149,32 @@ export const notificationStyle = style({
 export const notificationIconStyle = style({
   fontSize: '24px',
   marginLeft: '18px',
-  marginRight: '12px',
+  marginRight: '8px',
   color: 'var(--affine-processing-color)',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
 });
+export const hasMediaStyle = style({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  paddingTop: '0',
+  paddingBottom: '16px',
+  width: '380px',
+  borderRadius: '8px',
+  boxShadow: 'var(--affine-shadow-1)',
+  border: '1px solid var(--affine-border-color)',
+  background: 'var(--affine-white)',
+  transition: 'all 0.3s',
+});
 export const notificationContentStyle = style({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
-  padding: '16px 0',
-  width: '100%',
+  paddingTop: '16px',
+  paddingBottom: '16px',
+  width: '380px',
   borderRadius: '8px',
   boxShadow: 'var(--affine-shadow-1)',
   border: '1px solid var(--affine-border-color)',
@@ -181,6 +216,26 @@ export const closeButtonStyle = style({
 export const closeButtonWithoutUndoStyle = style({
   marginLeft: '92px',
 });
+export const closeButtonWithMediaStyle = style({
+  position: 'absolute',
+  width: '22px',
+  height: '22px',
+  fontSize: '16px',
+  top: '6px',
+  right: '6px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  cursor: 'pointer',
+  borderRadius: '4px',
+  color: 'var(--affine-pure-black)',
+  ':hover': {
+    background: 'var(--affine-hover-color)',
+  },
+});
+export const closeButtonColorStyle = style({
+  color: 'var(--affine-white)',
+});
 export const undoButtonStyle = style({
   fontSize: 'var(--affine-font-sm)',
   background: 'var(--affine-hover-color)',
@@ -188,6 +243,10 @@ export const undoButtonStyle = style({
   borderRadius: '4px',
   color: 'var(--affine-processing-color)',
   cursor: 'pointer',
+});
+export const undoButtonWithMediaStyle = style({
+  marginLeft: 'auto',
+  marginRight: '16px',
 });
 export const messageStyle = style({
   fontSize: 'var(--affine-font-sm)',

@@ -7,15 +7,14 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import type { CallbackMap } from '@toeverything/plugin-infra/entry';
 import {
-  affinePluginsAtom,
   contentLayoutAtom,
   editorItemsAtom,
   rootStore,
   windowItemsAtom,
-} from '@toeverything/plugin-infra/manager';
-import type { AffinePlugin, LayoutNode } from '@toeverything/plugin-infra/type';
+} from '@toeverything/plugin-infra/atom';
+import type { CallbackMap } from '@toeverything/plugin-infra/entry';
+import type { LayoutNode } from '@toeverything/plugin-infra/type';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, FC, ReactElement } from 'react';
@@ -25,7 +24,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-import TrashButtonGroup from './blocksuite/workspace-header/header-right-items/trash-button-group';
+import { TrashButtonGroup } from './blocksuite/workspace-header/header-right-items/trash-button-group';
 import * as styles from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
 
@@ -164,7 +163,6 @@ const PluginContentAdapter = memo<{
 type LayoutPanelProps = {
   node: LayoutNode;
   editorProps: PageDetailEditorProps;
-  plugins: AffinePlugin<string>[];
 };
 
 const LayoutPanel = memo(function LayoutPanel(
@@ -189,21 +187,13 @@ const LayoutPanel = memo(function LayoutPanel(
       >
         <Panel defaultSize={node.splitPercentage}>
           <Suspense>
-            <LayoutPanel
-              node={node.first}
-              editorProps={props.editorProps}
-              plugins={props.plugins}
-            />
+            <LayoutPanel node={node.first} editorProps={props.editorProps} />
           </Suspense>
         </Panel>
         <PanelResizeHandle />
         <Panel defaultSize={100 - node.splitPercentage}>
           <Suspense>
-            <LayoutPanel
-              node={node.second}
-              editorProps={props.editorProps}
-              plugins={props.plugins}
-            />
+            <LayoutPanel node={node.second} editorProps={props.editorProps} />
           </Suspense>
         </Panel>
       </PanelGroup>
@@ -219,16 +209,11 @@ export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
   }
 
   const layout = useAtomValue(contentLayoutAtom);
-  const affinePluginsMap = useAtomValue(affinePluginsAtom);
-  const plugins = useMemo(
-    () => Object.values(affinePluginsMap),
-    [affinePluginsMap]
-  );
 
   return (
     <>
       <Suspense>
-        <LayoutPanel node={layout} editorProps={props} plugins={plugins} />
+        <LayoutPanel node={layout} editorProps={props} />
       </Suspense>
     </>
   );

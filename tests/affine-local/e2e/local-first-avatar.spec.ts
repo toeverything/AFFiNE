@@ -21,7 +21,7 @@ test('should create a page with a local first avatar', async ({
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('workspace-card').nth(1).click();
   await page.getByTestId('settings-modal-trigger').click();
-  await page.getByText('current').click();
+  await page.getByTestId('current-workspace-label').click();
   await page
     .getByTestId('upload-avatar')
     .setInputFiles(resolve(rootDir, 'tests', 'fixtures', 'smile.png'));

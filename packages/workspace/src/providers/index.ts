@@ -4,6 +4,7 @@ import type {
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
+import { createLazyProvider } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
@@ -14,7 +15,7 @@ import {
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 
-import { SocketIOProvider } from '../affine/sync-socket-io';
+import { createAffineDataSource } from '../affine';
 import {
   createCloudDownloadProvider,
   createMergeCloudSnapshotProvider,
@@ -32,30 +33,11 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   doc,
   { awareness }
 ): AffineSocketIOProvider => {
-  const provider = new SocketIOProvider(
-    runtimeConfig.serverUrlPrefix + '/',
-    id,
-    doc,
-    {
-      awareness,
-    }
-  );
+  const dataSource = createAffineDataSource(id, doc, awareness);
   return {
     flavour: 'affine-socket-io',
-    passive: true,
-    get connected() {
-      return provider.connected;
-    },
-    connect: () => {
-      provider.connect();
-    },
-    disconnect: () => {
-      provider.disconnect();
-    },
-    cleanup: () => {
-      provider.destroy();
-    },
-  } satisfies AffineSocketIOProvider;
+    ...createLazyProvider(doc, dataSource),
+  };
 };
 
 const createIndexedDBBackgroundProvider: DocProviderCreator = (

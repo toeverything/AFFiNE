@@ -1,3 +1,4 @@
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
@@ -9,23 +10,27 @@ import type { FC, SVGProps } from 'react';
 import { useMemo } from 'react';
 
 import { openSettingModalAtom } from '../../../atoms';
-import { pathGenerator } from '../../../shared';
 
-export const useSwitchToConfig = (
-  workspaceId: string
-): {
-  title: string;
-  href?: string;
-  onClick?: () => void;
-  icon: FC<SVGProps<SVGSVGElement>>;
-}[] => {
+export type Config =
+  | {
+      title: string;
+      icon: FC<SVGProps<SVGSVGElement>>;
+      subPath: WorkspaceSubPath;
+    }
+  | {
+      title: string;
+      icon: FC<SVGProps<SVGSVGElement>>;
+      onClick: () => void;
+    };
+
+export const useSwitchToConfig = (workspaceId: string): Config[] => {
   const t = useAFFiNEI18N();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
   return useMemo(
     () => [
       {
         title: t['All pages'](),
-        href: pathGenerator.all(workspaceId),
+        subPath: WorkspaceSubPath.ALL,
         icon: FolderIcon,
       },
       {
@@ -41,7 +46,7 @@ export const useSwitchToConfig = (
       },
       {
         title: t['Trash'](),
-        href: pathGenerator.trash(workspaceId),
+        subPath: WorkspaceSubPath.TRASH,
         icon: DeleteTemporarilyIcon,
       },
     ],

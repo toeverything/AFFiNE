@@ -18,4 +18,5 @@ export class Metrics implements OnModuleDestroy {
 
   gqlRequest = metricsCreator.counter('gql_request', ['operation']);
   gqlError = metricsCreator.counter('gql_error', ['operation']);
+  gqlTimer = metricsCreator.timer('gql_timer', ['operation']);
 }

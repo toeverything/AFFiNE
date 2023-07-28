@@ -1,6 +1,7 @@
 import type { ExecutionResult } from 'graphql';
 import { GraphQLError } from 'graphql';
 import { isNil, isObject, merge } from 'lodash-es';
+import { nanoid } from 'nanoid';
 
 import type { GraphQLQuery } from './graphql';
 import type { Mutations, Queries } from './schema';
@@ -172,7 +173,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
     if (!isFormData) {
       headers['content-type'] = 'application/json';
     }
-    const ret = fetch(
+    const ret = fetchWithRequestId(
       endpoint,
       merge(options.context, {
         method: 'POST',
@@ -203,4 +204,19 @@ export const gqlFetcherFactory = (endpoint: string) => {
   };
 
   return gqlFetch;
+};
+
+export const fetchWithRequestId = (
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> => {
+  init = init || {};
+  init.headers = init.headers || new Headers();
+  if (init.headers instanceof Headers) {
+    init.headers.append('x-request-id', nanoid());
+  } else {
+    (init.headers as Record<string, string>)['x-request-id'] = nanoid();
+  }
+
+  return fetch(input, init);
 };

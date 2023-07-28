@@ -2,7 +2,7 @@ import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
   currentWorkspaceIdAtom,
   rootStore,
-} from '@toeverything/plugin-infra/manager';
+} from '@toeverything/plugin-infra/atom';
 import type { ReactElement } from 'react';
 import { type LoaderFunction, Outlet, redirect } from 'react-router-dom';
 

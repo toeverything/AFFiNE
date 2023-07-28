@@ -19,6 +19,7 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
+    "@affine/y-provider": "workspace:*",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
@@ -38,5 +39,5 @@
     "@types/ws": "^8.5.5",
     "ws": "^8.13.0"
   },
-  "version": "0.7.0-canary.51"
+  "version": "0.7.0-canary.59"
 }

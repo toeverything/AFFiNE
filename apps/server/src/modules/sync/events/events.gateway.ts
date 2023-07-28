@@ -10,6 +10,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import * as Y from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
 import { StorageProvide } from '../../../storage';
@@ -43,22 +44,27 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('client-handshake')
   async handleClientHandShake(
-    @MessageBody() workspace_id: string,
+    @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
   ) {
     this.metric.socketIOEventCounter(1, { event: 'client-handshake' });
     const endTimer = this.metric.socketIOEventTimer({
       event: 'client-handshake',
     });
-    const docs = await this.storageService.getDocsFromWorkspaceId(workspace_id);
-    await client.join(workspace_id);
+    await client.join(workspaceId);
+    endTimer();
+  }
 
-    for (const { guid, update } of docs) {
-      client.emit('server-handshake', {
-        guid,
-        update: update.toString('base64'),
-      });
-    }
+  @SubscribeMessage('client-leave')
+  async handleClientLeave(
+    @MessageBody() workspaceId: string,
+    @ConnectedSocket() client: Socket
+  ) {
+    this.metric.socketIOEventCounter(1, { event: 'client-leave' });
+    const endTimer = this.metric.socketIOEventTimer({
+      event: 'client-leave',
+    });
+    await client.leave(workspaceId);
     endTimer();
   }
 
@@ -81,16 +87,48 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     endTimer();
   }
 
-  @SubscribeMessage('init-awareness')
+  @SubscribeMessage('doc-load')
+  async loadDoc(
+    @MessageBody()
+    message: {
+      workspaceId: string;
+      guid: string;
+      stateVector?: string;
+      targetClientId?: number;
+    }
+  ): Promise<string | false> {
+    this.metric.socketIOEventCounter(1, { event: 'doc-load' });
+    const endTimer = this.metric.socketIOEventTimer({ event: 'doc-load' });
+    let update = await this.docManager.getLatest(
+      message.workspaceId,
+      message.guid
+    );
+
+    const stateVector = message.stateVector
+      ? Buffer.from(message.stateVector, 'base64')
+      : null;
+
+    if (update && stateVector) {
+      const doc = new Y.Doc({ guid: message.guid });
+      Y.applyUpdate(doc, update);
+      update = Buffer.from(Y.encodeStateAsUpdate(doc, stateVector));
+    }
+
+    endTimer();
+
+    return update ? update.toString('base64') : false;
+  }
+
+  @SubscribeMessage('awareness-init')
   async handleInitAwareness(
-    @MessageBody('workspace_id') workspace_id: string,
+    @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
   ) {
-    this.metric.socketIOEventCounter(1, { event: 'init-awareness' });
+    this.metric.socketIOEventCounter(1, { event: 'awareness-init' });
     const endTimer = this.metric.socketIOEventTimer({
       event: 'init-awareness',
     });
-    client.to(workspace_id).emit('new-client-awareness-init');
+    client.to(workspaceId).emit('new-client-awareness-init');
     endTimer();
   }
 
