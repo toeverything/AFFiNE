@@ -1,15 +1,15 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
-import { useSetAtom } from 'jotai';
+import { signIn } from 'next-auth/react';
+// import { useSetAtom } from 'jotai';
 import { type CSSProperties, type FC, forwardRef } from 'react';
 
-import { openDisableCloudAlertModalAtom } from '../../../atoms';
+// import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { stringToColour } from '../../../utils';
 import { StyledFooter, StyledSignInButton } from './styles';
-
 export const Footer: FC = () => {
   const t = useAFFiNEI18N();
-  const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
+  // const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
       <StyledSignInButton
@@ -21,9 +21,7 @@ export const Footer: FC = () => {
           </div>
         }
         onClick={async () => {
-          if (!runtimeConfig.enableCloud) {
-            setOpen(true);
-          }
+          signIn().catch(console.error);
         }}
       >
         {t['Sign in']()}
