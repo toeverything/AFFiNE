@@ -61,10 +61,7 @@ export const AboutAffine = () => {
               desc={t['View the AFFiNE Changelog.']()}
               style={{ cursor: 'pointer' }}
               onClick={() => {
-                window.open(
-                  'https://affine.pro/blog/what-is-new-affine-0717',
-                  '_blank'
-                );
+                window.open(runtimeConfig.changelogUrl, '_blank');
               }}
             >
               <ArrowRightSmallIcon />
