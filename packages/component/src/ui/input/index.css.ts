@@ -3,32 +3,64 @@ import { createVar, style } from '@vanilla-extract/css';
 export const heightVar = createVar('heightVar');
 export const widthVar = createVar('widthVar');
 
-export const inputStyle = style({
+export const inputWrapper = style({
   vars: {
-    [heightVar]: 'unset',
     [widthVar]: '100%',
   },
   width: widthVar,
-  height: heightVar,
+  height: 28,
   lineHeight: '22px',
-  padding: '8px 12px',
+  padding: '0 10px',
   color: 'var(--affine-text-primary-color)',
   border: '1px solid',
-  borderColor: 'var(--affine-border-color)', // TODO: check out disableColor,
   backgroundColor: 'var(--affine-white)',
-  borderRadius: '10px',
+  borderRadius: 8,
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: 'var(--affine-font-base)',
   selectors: {
-    '&[data-no-border="true"]': {
+    '&.no-border': {
       border: 'unset',
     },
-    '&[data-disabled="true"]': {
-      color: 'var(--affine-text-disable-color)',
+    // size
+    '&.large': {
+      height: 32,
     },
+    '&.extra-large': {
+      height: 40,
+      fontWeight: 600,
+    },
+    // color
+    '&.error': {
+      borderColor: 'var(--affine-error-color)',
+    },
+    '&.success': {
+      borderColor: 'var(--affine-success-color)',
+    },
+    '&.warning': {
+      borderColor: 'var(--affine-warning-color)',
+    },
+    '&.default': {
+      borderColor: 'var(--affine-border-color)',
+    },
+    '&.default.focus': {
+      borderColor: 'var(--affine-primary-color)',
+      boxShadow: '0px 0px 0px 2px rgba(30, 150, 235, 0.30);',
+    },
+  },
+});
+
+export const input = style({
+  height: '100%',
+  width: '0',
+  flex: 1,
+  selectors: {
     '&::placeholder': {
       color: 'var(--affine-placeholder-color)',
     },
-    '&:focus': {
-      borderColor: 'var(--affine-primary-color)',
+    '&:disabled': {
+      color: 'var(--affine-text-disable-color)',
     },
   },
 });

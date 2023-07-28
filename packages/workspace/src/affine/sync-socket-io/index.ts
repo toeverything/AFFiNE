@@ -17,10 +17,11 @@ import type {
 } from './utils';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './utils';
 
+// TODO: remove this after lazy-provider stable
 export class SocketIOProvider extends Observable<string> {
-  updateHandlerWeakMap = new WeakMap<Doc, UpdateHandler>();
-  subdocsHandlerWeakMap = new WeakMap<Doc, SubdocsHandler>();
-  destroyHandlerWeakMap = new WeakMap<Doc, DestroyHandler>();
+  updateHandlerMap = new Map<string, UpdateHandler>();
+  subdocsHandlerMap = new Map<string, SubdocsHandler>();
+  destroyHandlerMap = new Map<string, DestroyHandler>();
   docMap = new Map<string, Doc>();
   updateCache = new Map<string, Uint8Array[]>();
   intervalId: number | null = null;
@@ -71,13 +72,7 @@ export class SocketIOProvider extends Observable<string> {
     const update = base64ToUint8Array(message.update);
     const doc = this.docMap.get(message.guid);
     if (!doc) {
-      const updates = this.updateCache.get(message.guid) || [];
-      updates.push(update);
-      !this.intervalId &&
-        (this.intervalId = window.setInterval(
-          this.applyCachedUpdate,
-          this.cacheClearingInterval
-        ));
+      this.cacheUnloadDocUpdate(message.guid, update);
       return;
     }
 
@@ -127,17 +122,24 @@ export class SocketIOProvider extends Observable<string> {
     const update = base64ToUint8Array(message.update);
     const doc = this.docMap.get(message.guid);
     if (!doc) {
-      const updates = this.updateCache.get(message.guid) || [];
-      updates.push(update);
-      !this.intervalId &&
-        (this.intervalId = window.setInterval(
-          this.applyCachedUpdate,
-          this.cacheClearingInterval
-        ));
+      this.cacheUnloadDocUpdate(message.guid, update);
     } else {
       Y.applyUpdate(doc, update, 'server');
     }
   };
+
+  cacheUnloadDocUpdate(guid: string, update: Uint8Array) {
+    const updates = this.updateCache.get(guid) || [];
+    updates.push(update);
+    if (!this.updateCache.has(guid)) {
+      this.updateCache.set(guid, updates);
+    }
+    !this.intervalId &&
+      (this.intervalId = window.setInterval(
+        this.applyCachedUpdate,
+        this.cacheClearingInterval
+      ));
+  }
 
   newClientAwarenessInitHandler = () => {
     const awareness = this.awareness;
@@ -197,6 +199,9 @@ export class SocketIOProvider extends Observable<string> {
   };
 
   initDocMap = (doc: Doc) => {
+    if (this.docMap.has(doc.guid)) {
+      return;
+    }
     // register all doc into map
     this.docMap.set(doc.guid, doc);
     doc.subdocs.forEach(this.initDocMap);
@@ -224,8 +229,8 @@ export class SocketIOProvider extends Observable<string> {
   };
 
   createOrGetUpdateHandler = (doc: Doc): UpdateHandler => {
-    if (this.updateHandlerWeakMap.has(doc)) {
-      return this.updateHandlerWeakMap.get(doc) as UpdateHandler;
+    if (this.updateHandlerMap.has(doc.guid)) {
+      return this.updateHandlerMap.get(doc.guid) as UpdateHandler;
     }
     const handler: UpdateHandler = (update, origin) => {
       if (origin === 'server') {
@@ -241,13 +246,13 @@ export class SocketIOProvider extends Observable<string> {
         })
         .catch(err => console.error(err));
     };
-    this.updateHandlerWeakMap.set(doc, handler);
+    this.updateHandlerMap.set(doc.guid, handler);
     return handler;
   };
 
   createOrGetSubdocsHandler = (doc: Doc): SubdocsHandler => {
-    if (this.subdocsHandlerWeakMap.has(doc)) {
-      return this.subdocsHandlerWeakMap.get(doc) as SubdocsHandler;
+    if (this.subdocsHandlerMap.has(doc.guid)) {
+      return this.subdocsHandlerMap.get(doc.guid) as SubdocsHandler;
     }
 
     const handler: SubdocsHandler = event => {
@@ -260,20 +265,20 @@ export class SocketIOProvider extends Observable<string> {
       event.removed.forEach(this.unregisterDoc);
     };
 
-    this.subdocsHandlerWeakMap.set(doc, handler);
+    this.subdocsHandlerMap.set(doc.guid, handler);
     return handler;
   };
 
   createOrGetDestroyHandler = (doc: Doc): DestroyHandler => {
-    if (this.destroyHandlerWeakMap.has(doc)) {
-      return this.destroyHandlerWeakMap.get(doc) as DestroyHandler;
+    if (this.destroyHandlerMap.has(doc.guid)) {
+      return this.destroyHandlerMap.get(doc.guid) as DestroyHandler;
     }
 
     const handler: DestroyHandler = () => {
       this.unregisterDoc(doc);
     };
 
-    this.destroyHandlerWeakMap.set(doc, handler);
+    this.destroyHandlerMap.set(doc.guid, handler);
     return handler;
   };
 
@@ -318,7 +323,7 @@ export class SocketIOProvider extends Observable<string> {
       this._connected = true;
       socket.emit('client-handshake', rootDoc.guid);
       // ask for other clients' awareness
-      socket.emit('init-awareness', rootDoc.guid);
+      socket.emit('awareness-init', rootDoc.guid);
     });
     this.disconnectPromise = new Promise(resolve => {
       this.disconnectResolve = resolve;
@@ -366,6 +371,8 @@ export class SocketIOProvider extends Observable<string> {
       this.serverAwarenessBroadcastHandler
     );
     this.awareness.off('update', this.awarenessUpdateHandler);
+
+    this.docMap.clear();
   };
 
   override destroy = () => {

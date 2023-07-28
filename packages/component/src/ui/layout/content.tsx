@@ -13,7 +13,7 @@ export type ContentProps = {
   lineHeight?: CSSProperties['lineHeight'];
   ellipsis?: boolean;
   lineNum?: number;
-  children: string;
+  children: React.ReactNode;
 };
 export const Content = styled('div', {
   shouldForwardProp: prop => {

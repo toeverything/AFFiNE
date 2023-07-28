@@ -68,7 +68,15 @@ describe('download provider', () => {
       ) as LocalIndexedDBDownloadProvider;
       provider.sync();
       await provider.whenReady;
-      expect(workspace.doc.toJSON()).toEqual(prev);
+      expect(workspace.doc.toJSON()).toEqual({
+        ...prev,
+        // download provider only download the root doc
+        spaces: {
+          'space:page0': {
+            blocks: {},
+          },
+        },
+      });
     }
   });
 });

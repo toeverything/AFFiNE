@@ -52,12 +52,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   };
 
   setupListener(docId?: string) {
-    logger.debug(
-      'WorkspaceSQLiteDB:setupListener',
-      this.workspaceId,
-      docId,
-      this.getWorkspaceName()
-    );
+    logger.debug('WorkspaceSQLiteDB:setupListener', this.workspaceId, docId);
     const doc = this.getDoc(docId);
     if (doc) {
       const onUpdate = async (update: Uint8Array, origin: YOrigin) => {

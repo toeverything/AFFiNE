@@ -7,7 +7,7 @@
       [
         "electron",
         "server",
-        "web",
+        "core",
         "docs",
         "storybook",
         "component",
@@ -22,7 +22,9 @@
         "templates",
         "y-indexeddb",
         "debug",
-        "storage"
+        "storage",
+        "infra",
+        "plugin-infra"
       ]
     ]
   }

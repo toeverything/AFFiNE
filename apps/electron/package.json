@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.7.0-canary.40",
+  "version": "0.7.0-canary.58",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -26,10 +26,10 @@
     "@affine-test/kit": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/native": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230711103520-ce18dd84-nightly",
-    "@blocksuite/editor": "0.0.0-20230711103520-ce18dd84-nightly",
-    "@blocksuite/lit": "0.0.0-20230711103520-ce18dd84-nightly",
-    "@blocksuite/store": "0.0.0-20230711103520-ce18dd84-nightly",
+    "@blocksuite/blocks": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/editor": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/lit": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/store": "0.0.0-20230720073515-bea92e0f-nightly",
     "@electron-forge/cli": "^6.2.1",
     "@electron-forge/core": "^6.2.1",
     "@electron-forge/core-utils": "^6.2.1",
@@ -39,20 +39,22 @@
     "@electron-forge/maker-zip": "^6.2.1",
     "@electron-forge/shared-types": "^6.2.1",
     "@electron/remote": "2.0.10",
+    "@reforged/maker-appimage": "^3.3.1",
     "@toeverything/infra": "workspace:*",
     "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.2",
     "cross-env": "7.0.3",
-    "electron": "^25.2.0",
+    "electron": "^25.3.1",
     "electron-log": "^5.0.0-beta.24",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",
-    "esbuild": "^0.18.11",
+    "esbuild": "^0.18.15",
     "fs-extra": "^11.1.1",
     "jotai": "^2.2.2",
     "ts-node": "^10.9.1",
     "undici": "^5.22.1",
     "uuid": "^9.0.0",
+    "vitest": "^0.33.0",
     "which": "^3.0.1",
     "zx": "^7.2.3"
   },
@@ -64,7 +66,7 @@
     "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
     "rxjs": "^7.8.1",
-    "yjs": "^13.6.6"
+    "yjs": "^13.6.7"
   },
   "build": {
     "protocols": [

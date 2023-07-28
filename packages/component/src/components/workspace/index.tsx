@@ -1,5 +1,10 @@
 import { clsx } from 'clsx';
-import type { FC, PropsWithChildren, ReactElement } from 'react';
+import type {
+  FC,
+  HTMLAttributes,
+  PropsWithChildren,
+  ReactElement,
+} from 'react';
 
 import { AppSidebarFallback } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
@@ -35,7 +40,7 @@ export type MainContainerProps = PropsWithChildren<{
   className?: string;
   padding?: boolean;
 }> &
-  React.HTMLAttributes<HTMLDivElement>;
+  HTMLAttributes<HTMLDivElement>;
 
 export const MainContainer = ({
   className,
@@ -47,7 +52,7 @@ export const MainContainer = ({
     <div
       {...props}
       className={clsx(mainContainerStyle, 'main-container', className)}
-      data-is-macos={environment.isBrowser && environment.isMacOs}
+      data-is-macos={environment.isDesktop && environment.isMacOs}
       data-show-padding={padding}
     >
       {children}

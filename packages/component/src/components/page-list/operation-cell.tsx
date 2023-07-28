@@ -155,7 +155,7 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
         title={t['Delete permanently?']()}
         content={t['TrashButtonGroupDescription']()}
         confirmText={t['Delete']()}
-        confirmType="danger"
+        confirmType="error"
         open={open}
         onConfirm={() => {
           onPermanentlyDeletePage();

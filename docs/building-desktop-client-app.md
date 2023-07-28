@@ -23,6 +23,9 @@ To run AFFiNE Desktop Client Application locally, run the following commands:
 yarn install
 yarn dev
 
+# in packages/native
+yarn build
+
 # in apps/electron
 yarn generate-assets
 yarn dev

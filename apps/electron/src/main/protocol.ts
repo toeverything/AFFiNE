@@ -15,7 +15,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 function toAbsolutePath(url: string) {
-  let realpath = decodeURIComponent(url);
+  let realpath: string;
   const webStaticDir = join(__dirname, '../resources/web-static');
   if (url.startsWith('./')) {
     // if is a file type, load the file in resources
@@ -25,6 +25,8 @@ function toAbsolutePath(url: string) {
       // else, fallback to load the index.html instead
       realpath = join(webStaticDir, 'index.html');
     }
+  } else {
+    realpath = join(webStaticDir, decodeURIComponent(url));
   }
   return realpath;
 }
@@ -44,6 +46,8 @@ export function registerProtocol() {
     return true;
   });
 
+  // hack for CORS
+  // todo: should use a whitelist
   session.defaultSession.webRequest.onHeadersReceived(
     (responseDetails, callback) => {
       const { responseHeaders } = responseDetails;

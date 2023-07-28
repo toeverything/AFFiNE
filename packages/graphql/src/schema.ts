@@ -143,6 +143,21 @@ export type GetPublicWorkspaceQuery = {
   publicWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
+export type GetUserQueryVariables = Exact<{
+  email: Scalars['String']['input'];
+}>;
+
+export type GetUserQuery = {
+  __typename?: 'Query';
+  user: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    email: string;
+  } | null;
+};
+
 export type GetWorkspacePublicByIdQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -255,6 +270,7 @@ export type InviteByEmailMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   email: Scalars['String']['input'];
   permission: Permission;
+  sendInviteMail: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type InviteByEmailMutation = { __typename?: 'Mutation'; invite: string };
@@ -298,6 +314,11 @@ export type Queries =
       name: 'getPublicWorkspaceQuery';
       variables: GetPublicWorkspaceQueryVariables;
       response: GetPublicWorkspaceQuery;
+    }
+  | {
+      name: 'getUserQuery';
+      variables: GetUserQueryVariables;
+      response: GetUserQuery;
     }
   | {
       name: 'getWorkspacePublicByIdQuery';

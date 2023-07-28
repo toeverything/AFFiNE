@@ -7,7 +7,7 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
-import { toast } from '../..';
+import { Button, toast } from '../..';
 import { PublicLinkDisableModal } from './disable-public-link';
 import {
   descriptionStyle,
@@ -15,26 +15,22 @@ import {
   menuItemStyle,
 } from './index.css';
 import type { ShareMenuProps } from './share-menu';
-import {
-  StyledButton,
-  StyledDisableButton,
-  StyledInput,
-  StyledLinkSpan,
-} from './styles';
+import { StyledDisableButton, StyledInput, StyledLinkSpan } from './styles';
 
 export const LocalSharePage: FC<ShareMenuProps> = props => {
   const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
       <div className={descriptionStyle}>{t['Shared Pages Description']()}</div>
-      <StyledButton
+      <Button
+        type="primary"
         data-testid="share-menu-enable-affine-cloud-button"
         onClick={() => {
           props.onEnableAffineCloud(props.workspace as LocalWorkspace);
         }}
       >
         {t['Enable AFFiNE Cloud']()}
-      </StyledButton>
+      </Button>
     </div>
   );
 };
@@ -74,20 +70,20 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
           value={isPublic ? sharingUrl : 'https://app.affine.pro/xxxx'}
         />
         {!isPublic && (
-          <StyledButton
+          <Button
             data-testid="affine-share-create-link"
             onClick={onClickCreateLink}
           >
             {t['Create']()}
-          </StyledButton>
+          </Button>
         )}
         {isPublic && (
-          <StyledButton
+          <Button
             data-testid="affine-share-copy-link"
             onClick={onClickCopyLink}
           >
             {t['Copy Link']()}
-          </StyledButton>
+          </Button>
         )}
       </div>
       <div className={descriptionStyle}>

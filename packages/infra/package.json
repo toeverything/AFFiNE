@@ -1,22 +1,22 @@
 {
   "name": "@toeverything/infra",
   "type": "module",
-  "module": "./dist/index.mjs",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/src/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
     "./core/*": {
-      "types": "./dist/core/*.d.ts",
+      "types": "./dist/src/core/*.d.ts",
       "import": "./dist/core/*.js",
       "require": "./dist/core/*.cjs"
     },
     "./preload/*": {
-      "types": "./dist/preload/*.d.ts",
+      "types": "./dist/src/preload/*.d.ts",
       "import": "./dist/preload/*.js",
       "require": "./dist/preload/*.cjs"
     }
@@ -31,8 +31,8 @@
   "devDependencies": {
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../apps/electron/node_modules/electron",
-    "vite": "^4.4.3",
-    "vite-plugin-dts": "3.2.0"
+    "vite": "^4.4.7",
+    "vite-plugin-dts": "3.3.1"
   },
   "peerDependencies": {
     "async-call-rpc": "*",
@@ -46,5 +46,5 @@
       "optional": true
     }
   },
-  "version": "0.7.0-canary.40"
+  "version": "0.7.0-canary.58"
 }

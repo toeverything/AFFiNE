@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../app';
+import { MailService } from '../modules/auth/mailer';
 import { AuthService } from '../modules/auth/service';
 import {
   acceptInvite,
@@ -26,12 +27,14 @@ describe('Workspace Module - invite', () => {
   const client = new PrismaClient();
 
   let auth: AuthService;
+  let mail: MailService;
 
   // cleanup database before each test
   beforeEach(async () => {
     await client.$connect();
     await client.user.deleteMany({});
-    await client.doc.deleteMany({});
+    await client.snapshot.deleteMany({});
+    await client.update.deleteMany({});
     await client.workspace.deleteMany({});
     await client.$disconnect();
   });
@@ -50,6 +53,7 @@ describe('Workspace Module - invite', () => {
     await app.init();
 
     auth = module.get(AuthService);
+    mail = module.get(MailService);
   });
 
   afterEach(async () => {
@@ -164,5 +168,22 @@ describe('Workspace Module - invite', () => {
     const currMember = currWorkspace.members.find(u => u.email === u2.email);
     ok(currMember !== undefined, 'failed to invite user');
     ok(currMember.inviteId === invite, 'failed to check invite id');
+  });
+
+  it('should send invite email', async () => {
+    if (mail.hasConfigured()) {
+      const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+      const u2 = await signUp(app, 'test', 'production@toeverything.info', '1');
+
+      const workspace = await createWorkspace(app, u1.token.token);
+      await inviteUser(
+        app,
+        u1.token.token,
+        workspace.id,
+        u2.email,
+        'Admin',
+        true
+      );
+    }
   });
 });

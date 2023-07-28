@@ -21,8 +21,8 @@ body:
       label: Distribution version
       description: What version of AFFiNE are you using?
       options:
-        - macOS x64
-        - macOS ARM 64
+        - macOS x64 (Intel)
+        - macOS ARM 64 (Apple Silicon)
         - Windows x64
         - Linux
         - Web (app.affine.pro)

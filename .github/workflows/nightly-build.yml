@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     outputs:
-      version: 0.0.0-${{ steps.version.outputs.version }}
+      version: 0.0.0-internal.${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v3
       - uses: toeverything/set-build-version@latest
@@ -62,10 +62,10 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
 
-      - name: Upload Artifact (web-static)
+      - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
-          name: before-make-web-static
+          name: core
           path: apps/electron/resources/web-static
 
   make-distribution:
@@ -120,7 +120,7 @@ jobs:
         run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3
         with:
-          name: before-make-web-static
+          name: core
           path: apps/electron/resources/web-static
 
       - name: Build Plugins
@@ -159,6 +159,7 @@ jobs:
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
+          mv apps/electron/out/*/make/AppImage/x64/*.AppImage ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.AppImage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3

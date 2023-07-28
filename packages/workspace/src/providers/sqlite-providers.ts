@@ -2,7 +2,10 @@ import type {
   SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
-import { assertExists } from '@blocksuite/global/utils';
+import {
+  createLazyProvider,
+  type DatasourceDocAdapter,
+} from '@affine/y-provider';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { Doc } from 'yjs';
@@ -13,10 +16,26 @@ const Y = BlockSuiteWorkspace.Y;
 
 const sqliteOrigin = Symbol('sqlite-provider-origin');
 
-type SubDocsEvent = {
-  added: Set<Doc>;
-  removed: Set<Doc>;
-  loaded: Set<Doc>;
+const createDatasource = (workspaceId: string): DatasourceDocAdapter => {
+  if (!window.apis?.db) {
+    throw new Error('sqlite datasource is not available');
+  }
+
+  return {
+    queryDocState: async guid => {
+      return window.apis.db.getDocAsUpdates(
+        workspaceId,
+        workspaceId === guid ? undefined : guid
+      );
+    },
+    sendDocUpdate: async (guid, update) => {
+      return window.apis.db.applyDocUpdate(
+        workspaceId,
+        update,
+        workspaceId === guid ? undefined : guid
+      );
+    },
+  };
 };
 
 /**
@@ -26,120 +45,27 @@ export const createSQLiteProvider: DocProviderCreator = (
   id,
   rootDoc
 ): SQLiteProvider => {
-  const { apis, events } = window;
-  // make sure it is being used in Electron with APIs
-  assertExists(apis);
-  assertExists(events);
-
-  const updateHandlerMap = new WeakMap<
-    Doc,
-    (update: Uint8Array, origin: unknown) => void
-  >();
-  const subDocsHandlerMap = new WeakMap<Doc, (event: SubDocsEvent) => void>();
-
-  const createOrHandleUpdate = (doc: Doc) => {
-    if (updateHandlerMap.has(doc)) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return updateHandlerMap.get(doc)!;
-    }
-
-    function handleUpdate(update: Uint8Array, origin: unknown) {
-      if (origin === sqliteOrigin) {
-        return;
-      }
-      const subdocId = doc.guid === id ? undefined : doc.guid;
-      apis.db.applyDocUpdate(id, update, subdocId).catch(err => {
-        logger.error(err);
-      });
-    }
-    updateHandlerMap.set(doc, handleUpdate);
-    return handleUpdate;
-  };
-
-  const createOrGetHandleSubDocs = (doc: Doc) => {
-    if (subDocsHandlerMap.has(doc)) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return subDocsHandlerMap.get(doc)!;
-    }
-    function handleSubdocs(event: SubDocsEvent) {
-      event.removed.forEach(doc => {
-        untrackDoc(doc);
-      });
-      event.loaded.forEach(doc => {
-        trackDoc(doc);
-      });
-    }
-    subDocsHandlerMap.set(doc, handleSubdocs);
-    return handleSubdocs;
-  };
-
-  function trackDoc(doc: Doc) {
-    doc.on('update', createOrHandleUpdate(doc));
-    doc.on('subdocs', createOrGetHandleSubDocs(doc));
-    doc.subdocs.forEach(doc => {
-      trackDoc(doc);
-    });
-  }
-
-  function untrackDoc(doc: Doc) {
-    doc.subdocs.forEach(doc => {
-      untrackDoc(doc);
-    });
-    doc.off('update', createOrHandleUpdate(doc));
-    doc.off('subdocs', createOrGetHandleSubDocs(doc));
-  }
-
-  let unsubscribe = () => {};
+  let datasource: ReturnType<typeof createDatasource> | null = null;
+  let provider: ReturnType<typeof createLazyProvider> | null = null;
   let connected = false;
-
-  const connect = () => {
-    logger.info('connecting sqlite provider', id);
-    trackDoc(rootDoc);
-
-    unsubscribe = events.db.onExternalUpdate(
-      ({
-        update,
-        workspaceId,
-        docId,
-      }: {
-        workspaceId: string;
-        update: Uint8Array;
-        docId?: string;
-      }) => {
-        if (workspaceId === id) {
-          if (docId) {
-            for (const doc of rootDoc.subdocs) {
-              if (doc.guid === docId) {
-                Y.applyUpdate(doc, update, sqliteOrigin);
-                return;
-              }
-            }
-          } else {
-            Y.applyUpdate(rootDoc, update, sqliteOrigin);
-          }
-        }
-      }
-    );
-    connected = true;
-    logger.info('connecting sqlite done', id);
-  };
-
-  const cleanup = () => {
-    logger.info('disconnecting sqlite provider', id);
-    unsubscribe();
-    untrackDoc(rootDoc);
-    connected = false;
-  };
-
   return {
     flavour: 'sqlite',
     passive: true,
-    get connected(): boolean {
+    connect: () => {
+      datasource = createDatasource(id);
+      provider = createLazyProvider(rootDoc, datasource, { origin: 'sqlite' });
+      provider.connect();
+      connected = true;
+    },
+    disconnect: () => {
+      provider?.disconnect();
+      datasource = null;
+      provider = null;
+      connected = false;
+    },
+    get connected() {
       return connected;
     },
-    cleanup,
-    connect,
-    disconnect: cleanup,
   };
 };
 
@@ -151,7 +77,6 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
   rootDoc
 ): SQLiteDBDownloadProvider => {
   const { apis } = window;
-  let disconnected = false;
 
   let _resolve: () => void;
   let _reject: (error: unknown) => void;
@@ -161,32 +86,15 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
   });
 
   async function syncUpdates(doc: Doc) {
-    logger.info('syncing updates from sqlite', id);
+    logger.info('syncing updates from sqlite', doc.guid);
     const subdocId = doc.guid === id ? undefined : doc.guid;
     const updates = await apis.db.getDocAsUpdates(id, subdocId);
-
-    if (disconnected) {
-      return false;
-    }
 
     if (updates) {
       Y.applyUpdate(doc, updates, sqliteOrigin);
     }
 
-    const mergedUpdates = Y.encodeStateAsUpdate(doc);
-
-    // also apply updates to sqlite
-    await apis.db.applyDocUpdate(id, mergedUpdates, subdocId);
-
     return true;
-  }
-
-  async function syncAllUpdates(doc: Doc) {
-    if (await syncUpdates(doc)) {
-      // load all subdocs
-      const subdocs = Array.from(doc.subdocs);
-      await Promise.all(subdocs.map(syncAllUpdates));
-    }
   }
 
   return {
@@ -196,12 +104,12 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
       return promise;
     },
     cleanup: () => {
-      disconnected = true;
+      // todo
     },
     sync: async () => {
       logger.info('connect sqlite download provider', id);
       try {
-        await syncAllUpdates(rootDoc);
+        await syncUpdates(rootDoc);
         _resolve();
       } catch (error) {
         _reject(error);

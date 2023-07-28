@@ -130,6 +130,22 @@ query getPublicWorkspace($id: String!) {
 }`,
 };
 
+export const getUserQuery = {
+  id: 'getUserQuery' as const,
+  operationName: 'getUser',
+  definitionName: 'user',
+  containsFile: false,
+  query: `
+query getUser($email: String!) {
+  user(email: $email) {
+    id
+    name
+    avatarUrl
+    email
+  }
+}`,
+};
+
 export const getWorkspacePublicByIdQuery = {
   id: 'getWorkspacePublicByIdQuery' as const,
   operationName: 'getWorkspacePublicById',
@@ -267,8 +283,13 @@ export const inviteByEmailMutation = {
   definitionName: 'invite',
   containsFile: false,
   query: `
-mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!) {
-  invite(workspaceId: $workspaceId, email: $email, permission: $permission)
+mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Permission!, $sendInviteMail: Boolean) {
+  invite(
+    workspaceId: $workspaceId
+    email: $email
+    permission: $permission
+    sendInviteMail: $sendInviteMail
+  )
 }`,
 };
 

@@ -1,7 +1,5 @@
-/// <reference types="react/experimental" />
 import '@blocksuite/blocks';
 
-import { Button, Tooltip } from '@affine/component';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -25,9 +23,10 @@ import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 import useSWR from 'swr';
 
+import { Button, IconButton } from '../../ui/button';
+import { Tooltip } from '../../ui/tooltip';
 import { useZoomControls } from './hooks/use-zoom';
 import {
-  buttonIconStyle,
   buttonStyle,
   captionStyle,
   groupStyle,
@@ -340,12 +339,11 @@ const ImagePreviewModalImpl = (
         <div className={imagePreviewActionBarStyle}>
           <div>
             <Tooltip content={'Previous'} disablePortal={false}>
-              <Button
+              <IconButton
                 data-testid="previous-image-button"
-                icon={<ArrowLeftSmallIcon className={buttonIconStyle} />}
-                noBorder={true}
+                icon={<ArrowLeftSmallIcon />}
+                type="plain"
                 className={buttonStyle}
-                hoverColor={'-moz-initial'}
                 onClick={() => {
                   assertExists(blockId);
                   previousImageHandler(blockId);
@@ -353,12 +351,11 @@ const ImagePreviewModalImpl = (
               />
             </Tooltip>
             <Tooltip content={'Next'} disablePortal={false}>
-              <Button
+              <IconButton
                 data-testid="next-image-button"
-                icon={<ArrowRightSmallIcon className={buttonIconStyle} />}
-                noBorder={true}
+                icon={<ArrowRightSmallIcon />}
                 className={buttonStyle}
-                hoverColor={'-moz-initial'}
+                type="plain"
                 onClick={() => {
                   assertExists(blockId);
                   nextImageHandler(blockId);
@@ -372,55 +369,50 @@ const ImagePreviewModalImpl = (
             disablePortal={true}
             showArrow={false}
           >
-            <Button
+            <IconButton
               data-testid="fit-to-screen-button"
-              icon={<ViewBarIcon className={buttonIconStyle} />}
-              noBorder={true}
-              hoverColor={'-moz-initial'}
+              icon={<ViewBarIcon />}
+              type="plain"
               className={buttonStyle}
               onClick={() => resetZoom()}
             />
           </Tooltip>
           <Tooltip content={'Zoom out'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="zoom-out-button"
-              icon={<MinusIcon className={buttonIconStyle} />}
-              noBorder={true}
+              icon={<MinusIcon />}
               className={buttonStyle}
-              hoverColor={'-moz-initial'}
+              type="plain"
               onClick={zoomOut}
             />
           </Tooltip>
           <Tooltip content={'Reset Scale'} disablePortal={false}>
             <Button
               data-testid="reset-scale-button"
-              noBorder={true}
-              size={'middle'}
+              type="plain"
+              size={'large'}
               className={scaleIndicatorButtonStyle}
-              hoverColor={'-moz-initial'}
               onClick={resetScale}
             >
               {`${(currentScale * 100).toFixed(0)}%`}
             </Button>
           </Tooltip>
           <Tooltip content={'Zoom in'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="zoom-in-button"
-              icon={<PlusIcon className={buttonIconStyle} />}
-              noBorder={true}
+              icon={<PlusIcon />}
               className={buttonStyle}
-              hoverColor={'-moz-initial'}
+              type="plain"
               onClick={() => zoomIn()}
             />
           </Tooltip>
           <div className={groupStyle}></div>
           <Tooltip content={'Download'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="download-button"
-              icon={<DownloadIcon className={buttonIconStyle} />}
-              noBorder={true}
+              icon={<DownloadIcon />}
+              type="plain"
               className={buttonStyle}
-              hoverColor={'-moz-initial'}
               onClick={() => {
                 assertExists(blockId);
                 downloadHandler(blockId).catch(err => {
@@ -430,12 +422,11 @@ const ImagePreviewModalImpl = (
             />
           </Tooltip>
           <Tooltip content={'Copy to clipboard'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="copy-to-clipboard-button"
-              icon={<CopyIcon className={buttonIconStyle} />}
-              noBorder={true}
+              icon={<CopyIcon />}
+              type="plain"
               className={buttonStyle}
-              hoverColor={'-moz-initial'}
               onClick={() => {
                 if (!imageRef.current) {
                   return;
@@ -472,13 +463,12 @@ const ImagePreviewModalImpl = (
           </Tooltip>
           <div className={groupStyle}></div>
           <Tooltip content={'Delete'} disablePortal={false}>
-            <Button
+            <IconButton
               data-testid="delete-button"
-              icon={<DeleteIcon className={buttonIconStyle} />}
-              noBorder={true}
+              icon={<DeleteIcon />}
+              type="plain"
               className={buttonStyle}
               onClick={() => blockId && deleteHandler(blockId)}
-              hoverColor={'-moz-initial'}
             />
           </Tooltip>
         </div>

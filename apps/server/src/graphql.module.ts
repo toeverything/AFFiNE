@@ -6,13 +6,15 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 
 import { Config } from './config';
+import { MetricsPlugin } from './graphql/metrics-plugin';
+import { Metrics } from './metrics/metrics';
 
 @Global()
 @Module({
   imports: [
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      useFactory: (config: Config) => {
+      useFactory: (config: Config, metrics: Metrics) => {
         return {
           ...config.graphql,
           path: `${config.path}/graphql`,
@@ -24,9 +26,10 @@ import { Config } from './config';
             '..',
             'schema.gql'
           ),
+          plugins: [new MetricsPlugin(metrics)],
         };
       },
-      inject: [Config],
+      inject: [Config, Metrics],
     }),
   ],
 })

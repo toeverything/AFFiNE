@@ -4,6 +4,7 @@ import type {
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
+import { createLazyProvider } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
@@ -11,12 +12,14 @@ import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broa
 import {
   createIndexedDBProvider as create,
   downloadBinary,
-  EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 
-import { SocketIOProvider } from '../affine/sync-socket-io';
-import { createCloudDownloadProvider } from './cloud';
+import { createAffineDataSource } from '../affine';
+import {
+  createCloudDownloadProvider,
+  createMergeCloudSnapshotProvider,
+} from './cloud';
 import {
   createSQLiteDBDownloadProvider,
   createSQLiteProvider,
@@ -30,25 +33,11 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   doc,
   { awareness }
 ): AffineSocketIOProvider => {
-  const provider = new SocketIOProvider('/', id, doc, {
-    awareness,
-  });
+  const dataSource = createAffineDataSource(id, doc, awareness);
   return {
     flavour: 'affine-socket-io',
-    passive: true,
-    get connected() {
-      return provider.connected;
-    },
-    connect: () => {
-      provider.connect();
-    },
-    disconnect: () => {
-      provider.disconnect();
-    },
-    cleanup: () => {
-      provider.destroy();
-    },
-  } satisfies AffineSocketIOProvider;
+    ...createLazyProvider(doc, dataSource),
+  };
 };
 
 const createIndexedDBBackgroundProvider: DocProviderCreator = (
@@ -69,17 +58,6 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
     connect: () => {
       logger.info('connect indexeddb provider', id);
       indexeddbProvider.connect();
-      indexeddbProvider.whenSynced
-        .then(() => {
-          connected = true;
-        })
-        .catch(error => {
-          connected = false;
-          if (error instanceof EarlyDisconnectError) {
-            return;
-          }
-          throw error;
-        });
     },
     disconnect: () => {
       assertExists(indexeddbProvider);
@@ -90,7 +68,7 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
   };
 };
 
-const cache: WeakMap<Doc, Uint8Array> = new WeakMap();
+const indexedDBDownloadOrigin = 'indexeddb-download-provider';
 
 const createIndexedDBDownloadProvider: DocProviderCreator = (
   id,
@@ -102,19 +80,11 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     _resolve = resolve;
     _reject = reject;
   });
-
-  async function downloadBinaryRecursively(doc: Doc) {
-    if (cache.has(doc)) {
-      const binary = cache.get(doc) as Uint8Array;
-      Y.applyUpdate(doc, binary);
-    } else {
-      const binary = await downloadBinary(doc.guid);
-      if (binary) {
-        Y.applyUpdate(doc, binary);
-        cache.set(doc, binary);
-      }
+  async function downloadAndApply(doc: Doc) {
+    const binary = await downloadBinary(doc.guid);
+    if (binary) {
+      Y.applyUpdate(doc, binary, indexedDBDownloadOrigin);
     }
-    await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
   }
 
   return {
@@ -128,7 +98,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     },
     sync: () => {
       logger.info('sync indexeddb provider', id);
-      downloadBinaryRecursively(doc).then(_resolve).catch(_reject);
+      downloadAndApply(doc).then(_resolve).catch(_reject);
     },
   };
 };
@@ -166,8 +136,8 @@ export const createAffineProviders = (): DocProviderCreator[] => {
       runtimeConfig.enableBroadcastChannelProvider &&
         createBroadcastChannelProvider,
       runtimeConfig.enableCloud && createAffineSocketIOProvider,
+      runtimeConfig.enableCloud && createMergeCloudSnapshotProvider,
       createIndexedDBDownloadProvider,
-      createCloudDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));
 };

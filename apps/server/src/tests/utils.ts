@@ -1,6 +1,11 @@
 import type { INestApplication, LoggerService } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { PrismaClient } from '@prisma/client';
+// @ts-expect-error graphql-upload is not typed
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
+import { AppModule } from '../app';
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
 import type { WorkspaceType } from '../modules/workspaces';
@@ -155,7 +160,8 @@ async function inviteUser(
   token: string,
   workspaceId: string,
   email: string,
-  permission: string
+  permission: string,
+  sendInviteMail = false
 ): Promise<string> {
   const res = await request(app.getHttpServer())
     .post(gql)
@@ -163,7 +169,7 @@ async function inviteUser(
     .send({
       query: `
           mutation {
-            invite(workspaceId: "${workspaceId}", email: "${email}", permission: ${permission})
+            invite(workspaceId: "${workspaceId}", email: "${email}", permission: ${permission}, sendInviteMail: ${sendInviteMail})
           }
         `,
     })
@@ -331,11 +337,45 @@ async function setBlob(
   return res.body.data.setBlob;
 }
 
+async function flushDB() {
+  const client = new PrismaClient();
+  await client.$connect();
+  const result: { tablename: string }[] =
+    await client.$queryRaw`SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema'`;
+
+  // remove all table data
+  await client.$executeRawUnsafe(
+    `TRUNCATE TABLE ${result
+      .map(({ tablename }) => tablename)
+      .filter(name => !name.includes('migrations'))
+      .join(', ')}`
+  );
+
+  await client.$disconnect();
+}
+
+async function createTestApp() {
+  const module = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
+  const app = module.createNestApplication();
+  app.use(
+    graphqlUploadExpress({
+      maxFileSize: 10 * 1024 * 1024,
+      maxFiles: 5,
+    })
+  );
+  await app.init();
+  return app;
+}
+
 export {
   acceptInvite,
   acceptInviteById,
+  createTestApp,
   createWorkspace,
   currentUser,
+  flushDB,
   getPublicWorkspace,
   getWorkspace,
   inviteUser,

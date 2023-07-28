@@ -2,11 +2,10 @@ import { DebugLogger } from '@affine/debug';
 import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
-import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import { z } from 'zod';
 
-import { createEmptyBlockSuiteWorkspace } from '../utils';
+import { getOrCreateWorkspace } from '../manager';
 
 const getStorage = () => createJSONStorage(() => localStorage);
 
@@ -41,7 +40,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     if (!id) {
       return null;
     }
-    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+    const blockSuiteWorkspace = getOrCreateWorkspace(
       id,
       WorkspaceFlavour.LOCAL
     );
@@ -59,7 +58,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
       storage.setItem(kStoreKey, []);
     const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(doc);
     const id = nanoid();
-    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+    const blockSuiteWorkspace = getOrCreateWorkspace(
       id,
       WorkspaceFlavour.LOCAL
     );
@@ -75,12 +74,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
         }
       });
     });
-
-    const persistence = createIndexedDBProvider(blockSuiteWorkspace.doc);
-    persistence.connect();
-    await persistence.whenSynced.then(() => {
-      persistence.disconnect();
-    });
+    // todo: do we need to persist doc to persistence datasource?
     saveWorkspaceToLocalStorage(id);
     return id;
   },

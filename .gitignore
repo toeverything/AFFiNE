@@ -13,6 +13,7 @@
 /out-tsc
 .nyc_output
 .coverage
+.swc
 
 # dependencies
 node_modules
@@ -60,9 +61,10 @@ out/
 storybook-static
 i18n-generated.ts
 
-/test-results/
-/playwright-report/
-/playwright/.cache/
+test-results
+playwright-report
+playwright/.cache
+download
 
 # Cache
 .eslintcache

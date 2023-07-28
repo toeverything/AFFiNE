@@ -1,3 +1,4 @@
+import { lightCssVariables } from '@toeverything/theme';
 import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { globalStyle, style } from '@vanilla-extract/css';
 
@@ -35,6 +36,11 @@ export const appStyle = style({
         '--affine-editor-width': '550px',
       },
     },
+    print: {
+      vars: {
+        '--affine-editor-width': '800px',
+      },
+    },
   },
 });
 
@@ -48,11 +54,18 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
   vars: {
     '--affine-noise-opacity': '0.1',
   },
+
+  '@media': {
+    print: {
+      vars: lightCssVariables,
+    },
+  },
 });
 
 export const mainContainerStyle = style({
   position: 'relative',
-  flexGrow: 1,
+  width: 0,
+  flex: 1,
   maxWidth: '100%',
   zIndex: 2,
   backgroundColor: 'var(--affine-background-primary-color)',

@@ -7,10 +7,18 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "lib"
   },
-  "include": ["vitest.config.ts", "scripts", "packages/cli/src"],
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "scripts",
+    "apps/core/.webpack/runtime-config.ts"
+  ],
   "references": [
     {
       "path": "./packages/env"
+    },
+    {
+      "path": "./packages/cli"
     }
   ]
 }

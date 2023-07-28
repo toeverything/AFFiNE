@@ -16,16 +16,10 @@ const outputList = [
       'preload.js',
       'affine.darwin-arm64.node',
       'plugins',
-      'workers',
     ],
   ],
-  ['dist/plugins', ['bookmark-block']],
-  ['dist/plugins/bookmark-block', ['index.mjs']],
-  ['dist/workers', ['plugin.worker.js']],
-  [
-    'node_modules/@toeverything/plugin-infra/dist',
-    ['manager.js', 'manager.cjs'],
-  ],
+  ['dist/plugins', ['bookmark']],
+  ['dist/plugins/bookmark', ['index.js']],
 ] as [entry: string, expected: string[]][];
 
 await Promise.all(

@@ -1,3 +1,4 @@
+import { Tooltip } from '@affine/component';
 import { EditCollectionModel } from '@affine/component/page-list';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
@@ -22,12 +23,14 @@ export const CollectionBar = ({
   getPageInfo,
   propertiesMeta,
   columnsCount,
+  workspaceId,
 }: {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   columnsCount: number;
+  workspaceId: string;
 }) => {
-  const setting = useCollectionManager();
+  const setting = useCollectionManager(workspaceId);
   const collection = setting.currentCollection;
   const [open, setOpen] = useState(false);
   const actions: {
@@ -69,7 +72,7 @@ export const CollectionBar = ({
         },
       },
       {
-        icon: <DeleteIcon style={{ color: 'red' }} />,
+        icon: <DeleteIcon style={{ color: 'var(--affine-error-color)' }} />,
         name: 'delete',
         click: () => {
           setting.deleteCollection(collection.id).catch(err => {
@@ -100,9 +103,21 @@ export const CollectionBar = ({
               width: 20,
             }}
           />
-          <div style={{ marginRight: 10 }}>
-            {setting.currentCollection.name}
-          </div>
+          <Tooltip
+            content={setting.currentCollection.name}
+            pointerEnterDelay={1500}
+          >
+            <div
+              style={{
+                marginRight: 10,
+                maxWidth: 200,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {setting.currentCollection.name}
+            </div>
+          </Tooltip>
           {actions.map(action => {
             return (
               <div

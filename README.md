@@ -126,10 +126,10 @@ If you have questions, you are welcome to contact us. One of the best places to 
 >
 > (Currently, plugins are under heavy development, and the SDK is not yet available.)
 
-| Name                                             |                                           |
-| ------------------------------------------------ | ----------------------------------------- |
-| [@affine/bookmark-block](plugins/bookmark-block) | A block for bookmarking a website         |
-| [@affine/copilot](plugins/copilot)               | AI Copilot that help you document writing |
+| Name                                 |                                           |
+| ------------------------------------ | ----------------------------------------- |
+| [@affine/bookmark](plugins/bookmark) | A block for bookmarking a website         |
+| [@affine/copilot](plugins/copilot)   | AI Copilot that help you document writing |
 
 ## Thanks
 
@@ -202,5 +202,5 @@ See [LICENSE] for details.
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
-[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fweb%2Fpackage.json&color=rgb(97%2C228%2C251)
-[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fweb%2Fpackage.json&label=blocksuite
+[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
+[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fcore%2Fpackage.json&label=blocksuite

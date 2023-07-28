@@ -25,6 +25,7 @@ import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth';
+import { MailService } from '../auth/mailer';
 import { AuthService } from '../auth/service';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
@@ -86,6 +87,7 @@ export class UpdateWorkspaceInput extends PickType(
 export class WorkspaceResolver {
   constructor(
     private readonly auth: AuthService,
+    private readonly mailer: MailService,
     private readonly prisma: PrismaService,
     private readonly permissionProvider: PermissionService,
     @Inject(StorageProvide) private readonly storage: Storage
@@ -264,8 +266,13 @@ export class WorkspaceResolver {
       },
     });
 
-    const storageWorkspace = await this.storage.createWorkspace(workspace.id);
-    await this.storage.sync(workspace.id, storageWorkspace.doc.guid, buffer);
+    await this.prisma.snapshot.create({
+      data: {
+        id: workspace.id,
+        workspaceId: workspace.id,
+        blob: buffer,
+      },
+    });
 
     return workspace;
   }
@@ -298,15 +305,18 @@ export class WorkspaceResolver {
       },
     });
 
-    await this.prisma.userWorkspacePermission.deleteMany({
-      where: {
-        workspaceId: id,
-      },
-    });
-
-    // TODO:
-    // delete all related data, like websocket connections, blobs, etc.
-    await this.storage.deleteWorkspace(id);
+    await this.prisma.$transaction([
+      this.prisma.update.deleteMany({
+        where: {
+          workspaceId: id,
+        },
+      }),
+      this.prisma.snapshot.deleteMany({
+        where: {
+          workspaceId: id,
+        },
+      }),
+    ]);
 
     return true;
   }
@@ -316,7 +326,9 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
     @Args('email') email: string,
-    @Args('permission', { type: () => Permission }) permission: Permission
+    @Args('permission', { type: () => Permission }) permission: Permission,
+    // TODO: add rate limit
+    @Args('sendInviteMail', { nullable: true }) sendInviteMail: boolean
   ) {
     await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
 
@@ -342,14 +354,26 @@ export class WorkspaceResolver {
         return originRecord.id;
       }
 
-      return await this.permissionProvider.grant(
+      const inviteId = await this.permissionProvider.grant(
         workspaceId,
         target.id,
         permission
       );
+      if (sendInviteMail) {
+        await this.mailer.sendInviteEmail(email, workspaceId, inviteId);
+      }
+      return inviteId;
     } else {
       const user = await this.auth.createAnonymousUser(email);
-      return this.permissionProvider.grant(workspaceId, user.id, permission);
+      const inviteId = await this.permissionProvider.grant(
+        workspaceId,
+        user.id,
+        permission
+      );
+      if (sendInviteMail) {
+        await this.mailer.sendInviteEmail(email, workspaceId, inviteId);
+      }
+      return inviteId;
     }
   }
 

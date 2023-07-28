@@ -53,6 +53,7 @@
     "skipLibCheck": true, // skip all type checks for .d.ts files
 
     "paths": {
+      "@affine/cli/*": ["./packages/cli/src/*"],
       "@affine/server/*": ["./apps/server/src/*"],
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [
@@ -73,10 +74,9 @@
       "@affine/electron/scripts/*": ["./apps/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
-      "@toeverything/infra": ["./packages/infra/src"],
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"],
-      "@toeverything/plugin-infra": ["./packages/plugin-infra/src"],
+      "@toeverything/infra/*": ["./packages/infra/src/*"],
       "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
       "@affine/native/*": ["./packages/native/*"],
@@ -93,13 +93,13 @@
       "path": "./apps/electron"
     },
     {
-      "path": "./apps/web"
-    },
-    {
       "path": "./apps/server"
     },
     {
       "path": "./apps/storybook"
+    },
+    {
+      "path": "./apps/core"
     },
     // Top level packages
     {
@@ -116,17 +116,18 @@
       "path": "./packages/plugin-infra"
     },
     {
-      "path": "./plugins/bookmark-block"
+      "path": "./plugins/bookmark"
     },
     {
       "path": "./plugins/copilot"
     },
-
-    // Tests
     {
-      "path": "./tests"
+      "path": "./plugins/hello-world"
     },
-
+    // Packages
+    {
+      "path": "./packages/cli"
+    },
     {
       "path": "./packages/component"
     },
@@ -145,15 +146,15 @@
     {
       "path": "./packages/y-indexeddb"
     },
-
-    {
-      "path": "./tests/fixtures"
-    },
+    // Tests
     {
       "path": "./tests/kit"
     },
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tests/affine-local"
     },
     {
       "path": "./tests/affine-legacy/0.7.0-canary.18"

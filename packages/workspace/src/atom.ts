@@ -1,12 +1,16 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
-import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { assertEquals } from '@blocksuite/global/utils';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/plugin-infra/atom';
 import { atom } from 'jotai';
-import Router from 'next/router';
 import { z } from 'zod';
+
+import { getOrCreateWorkspace } from './manager';
 
 const rootWorkspaceMetadataV1Schema = z.object({
   id: z.string(),
@@ -75,27 +79,6 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     null,
     'rootWorkspacesMetadataPrimitiveAtom should be null'
   );
-  const createFirst = (): RootWorkspaceMetadataV2[] => {
-    if (signal.aborted) {
-      return [];
-    }
-
-    const Plugins = Object.values(WorkspaceAdapters).sort(
-      (a, b) => a.loadPriority - b.loadPriority
-    );
-
-    return Plugins.flatMap(Plugin => {
-      return Plugin.Events['app:init']?.().map(
-        id =>
-          ({
-            id,
-            flavour: Plugin.flavour,
-            // new workspace should all support sub-doc feature
-            version: WorkspaceVersion.SubDoc,
-          }) satisfies RootWorkspaceMetadataV2
-      );
-    }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
-  };
 
   if (environment.isServer) {
     // return a promise in SSR to avoid the hydration mismatch
@@ -106,24 +89,30 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     // fixme(himself65): we might not need step 1
     // step 1: try load metadata from localStorage
     {
-      // don't change this key,
-      // otherwise it will cause the data loss in the production
-      const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
-      if (primitiveMetadata) {
-        try {
-          const items = JSON.parse(primitiveMetadata) as z.infer<
-            typeof rootWorkspaceMetadataArraySchema
-          >;
-          rootWorkspaceMetadataArraySchema.parse(items);
-          metadata.push(...items);
-        } catch (e) {
-          console.error('cannot parse worksapce', e);
+      const loadFromLocalStorage = (): RootWorkspaceMetadata[] => {
+        // don't change this key,
+        // otherwise it will cause the data loss in the production
+        const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
+        if (primitiveMetadata) {
+          try {
+            const items = JSON.parse(primitiveMetadata) as z.infer<
+              typeof rootWorkspaceMetadataArraySchema
+            >;
+            rootWorkspaceMetadataArraySchema.parse(items);
+            return [...items];
+          } catch (e) {
+            console.error('cannot parse worksapce', e);
+          }
+          return [];
         }
-      }
+        return [];
+      };
+
+      const maybeMetadata = loadFromLocalStorage();
 
       // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
       if (
-        metadata.some(meta => !('version' in meta)) &&
+        maybeMetadata.some(meta => !('version' in meta)) &&
         !globalThis.$migrationDone
       ) {
         await new Promise<void>((resolve, reject) => {
@@ -133,6 +122,8 @@ const rootWorkspacesMetadataPromiseAtom = atom<
           });
         });
       }
+
+      metadata.push(...loadFromLocalStorage());
     }
     // step 2: fetch from adapters
     {
@@ -163,17 +154,6 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         }
       }
     }
-    // step 3: create initial workspaces
-    {
-      if (
-        metadata.length === 0 &&
-        localStorage.getItem('is-first-open') === null
-      ) {
-        metadata.push(...createFirst());
-        console.info('create first workspace', metadata);
-        localStorage.setItem('is-first-open', 'false');
-      }
-    }
     const metadataMap = new Map(metadata.map(x => [x.id, x]));
     // init workspace data
     metadataMap.forEach((meta, id) => {
@@ -181,7 +161,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         meta.flavour === WorkspaceFlavour.AFFINE_CLOUD ||
         meta.flavour === WorkspaceFlavour.LOCAL
       ) {
-        createEmptyBlockSuiteWorkspace(id, meta.flavour);
+        getOrCreateWorkspace(id, meta.flavour);
       } else {
         throw new Error(`unknown flavour ${meta.flavour}`);
       }
@@ -201,9 +181,6 @@ export const rootWorkspacesMetadataAtom = atom<
   Promise<RootWorkspaceMetadata[]>
 >(
   async get => {
-    if (environment.isServer) {
-      return Promise.resolve([]);
-    }
     const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
     if (maybeMetadata !== null) {
       return maybeMetadata;
@@ -220,8 +197,8 @@ export const rootWorkspacesMetadataAtom = atom<
       metadata = await get(rootWorkspacesMetadataPromiseAtom);
     }
 
-    const oldWorkspaceId = get(rootCurrentWorkspaceIdAtom);
-    const oldPageId = get(rootCurrentPageIdAtom);
+    const oldWorkspaceId = get(currentWorkspaceIdAtom);
+    const oldPageId = get(currentPageIdAtom);
 
     // update metadata
     if (typeof action === 'function') {
@@ -232,72 +209,27 @@ export const rootWorkspacesMetadataAtom = atom<
 
     const metadataMap = new Map(metadata.map(x => [x.id, x]));
     metadata = Array.from(metadataMap.values());
-
     // write back to localStorage
     rootWorkspaceMetadataArraySchema.parse(metadata);
     localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
-    set(rootCurrentPageIdAtom, null);
-    set(rootCurrentWorkspaceIdAtom, null);
+    set(currentPageIdAtom, null);
+    set(currentWorkspaceIdAtom, null);
     set(rootWorkspacesMetadataPrimitiveAtom, metadata);
 
     // if the current workspace is deleted, reset the current workspace
     if (oldWorkspaceId && metadata.some(x => x.id === oldWorkspaceId)) {
-      set(rootCurrentWorkspaceIdAtom, oldWorkspaceId);
-      set(rootCurrentPageIdAtom, oldPageId);
+      set(currentWorkspaceIdAtom, oldWorkspaceId);
+      set(currentPageIdAtom, oldPageId);
     }
 
     if (newWorkspaceId) {
-      set(rootCurrentPageIdAtom, null);
-      set(rootCurrentWorkspaceIdAtom, newWorkspaceId);
+      set(currentPageIdAtom, null);
+      set(currentWorkspaceIdAtom, newWorkspaceId);
     }
 
     return metadata;
   }
 );
-
-// two more atoms to store the current workspace and page
-export const rootCurrentWorkspaceIdAtom = atom<string | null>(null);
-
-rootCurrentWorkspaceIdAtom.onMount = set => {
-  if (environment.isBrowser) {
-    const callback = (url: string) => {
-      const value = url.split('/')[2];
-      if (value) {
-        set(value);
-        localStorage.setItem('last_workspace_id', value);
-      } else {
-        set(null);
-      }
-    };
-    callback(window.location.pathname);
-    Router.events.on('routeChangeStart', callback);
-    return () => {
-      Router.events.off('routeChangeStart', callback);
-    };
-  }
-  return;
-};
-
-export const rootCurrentPageIdAtom = atom<string | null>(null);
-
-rootCurrentPageIdAtom.onMount = set => {
-  if (environment.isBrowser) {
-    const callback = (url: string) => {
-      const value = url.split('/')[3];
-      if (value) {
-        set(value);
-      } else {
-        set(null);
-      }
-    };
-    callback(window.location.pathname);
-    Router.events.on('routeChangeStart', callback);
-    return () => {
-      Router.events.off('routeChangeStart', callback);
-    };
-  }
-  return;
-};
 
 // blocksuite atoms,
 // each app should have only one block-hub in the same time
