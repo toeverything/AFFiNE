@@ -27,7 +27,12 @@ export const entry = (context: PluginContext) => {
       root.unmount();
     };
   });
+
+  // sample for new indexedDB API
   context.indexedDB.set('sample', 'hello, world!');
+  context.indexedDB.get('sample').then(console.log);
+  context.indexedDB.getKeys().then(console.log);
+
   return () => {
     console.log('unregister');
   };
