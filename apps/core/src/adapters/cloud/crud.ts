@@ -50,15 +50,24 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
       createWorkspace.id,
       WorkspaceFlavour.AFFINE_CLOUD
     );
+
     Y.applyUpdate(
       newBLockSuiteWorkspace.doc,
-      Y.encodeStateAsUpdate(newBLockSuiteWorkspace.doc)
+      Y.encodeStateAsUpdate(blockSuiteWorkspace.doc)
     );
-    blockSuiteWorkspace.doc.subdocs.forEach(subdoc => {
-      newBLockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
-        Y.applyUpdate(newSubdoc, Y.encodeStateAsUpdate(subdoc));
-      });
-    });
+
+    await Promise.all(
+      [...blockSuiteWorkspace.doc.subdocs].map(async subdoc => {
+        subdoc.load();
+        return subdoc.whenLoaded.then(() => {
+          newBLockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
+            if (newSubdoc.guid === subdoc.guid) {
+              Y.applyUpdate(newSubdoc, Y.encodeStateAsUpdate(subdoc));
+            }
+          });
+        });
+      })
+    );
 
     const provider = createIndexedDBProvider(
       newBLockSuiteWorkspace.doc,

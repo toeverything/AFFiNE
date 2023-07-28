@@ -1,5 +1,4 @@
 import { Content, displayFlex } from '@affine/component';
-import { AffineWatermark } from '@affine/component/affine-watermark';
 import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
 import { NotificationCenter } from '@affine/component/notification-center';
@@ -28,7 +27,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
-import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/manager';
+import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useMemo } from 'react';
@@ -255,7 +254,6 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
               <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
               <HelpIsland showList={pageId ? undefined : showList} />
             </ToolContainer>
-            <AffineWatermark />
           </MainContainer>
         </AppContainer>
         <PageListTitleCellDragOverlay />

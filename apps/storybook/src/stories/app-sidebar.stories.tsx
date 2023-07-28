@@ -6,10 +6,7 @@ import {
 } from '@affine/component/app-sidebar';
 import { AddPageButton } from '@affine/component/app-sidebar';
 import { CategoryDivider } from '@affine/component/app-sidebar';
-import {
-  navHeaderStyle,
-  sidebarButtonStyle,
-} from '@affine/component/app-sidebar';
+import { navHeaderStyle } from '@affine/component/app-sidebar';
 import { MenuLinkItem } from '@affine/component/app-sidebar';
 import { QuickSearchInput } from '@affine/component/app-sidebar';
 import {
@@ -54,7 +51,7 @@ const Main = () => {
       <div className={navHeaderStyle}>
         {!open && (
           <IconButton
-            className={sidebarButtonStyle}
+            size="large"
             onClick={() => {
               setOpen(true);
             }}

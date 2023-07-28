@@ -106,11 +106,12 @@ export const createConfiguration: (
     devtool:
       buildFlags.mode === 'production'
         ? buildFlags.distribution === 'desktop'
-          ? 'inline-cheap-source-map'
+          ? 'nosources-source-map'
           : 'source-map'
         : 'eval-cheap-module-source-map',
 
     resolve: {
+      symlinks: true,
       extensionAlias: {
         '.js': ['.js', '.tsx', '.ts'],
         '.mjs': ['.mjs', '.mts'],

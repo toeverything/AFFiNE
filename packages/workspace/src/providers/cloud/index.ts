@@ -69,7 +69,10 @@ export const createMergeCloudSnapshotProvider: DocProviderCreator = (
           _resolve();
         })
         // ignore error
-        .catch(console.error);
+        .catch(e => {
+          console.error(e);
+          _resolve();
+        });
     },
     get whenReady() {
       return promise;

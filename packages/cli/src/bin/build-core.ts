@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import type { BuildFlags } from '../config/index.js';
 import { projectRoot } from '../config/index.js';
+import { buildI18N } from '../util/i18n.js';
 
 const cwd = path.resolve(projectRoot, 'apps', 'core');
 
@@ -43,6 +44,7 @@ const flags = {
   coverage: process.env.COVERAGE === 'true',
 } satisfies BuildFlags;
 
+buildI18N();
 spawn(
   'node',
   [

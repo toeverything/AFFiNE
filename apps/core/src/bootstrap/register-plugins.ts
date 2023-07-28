@@ -2,22 +2,24 @@
 import 'ses';
 
 import * as AFFiNEComponent from '@affine/component';
+import { FormatQuickBar } from '@blocksuite/blocks';
 import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
-import type {
-  CallbackMap,
-  PluginContext,
-} from '@toeverything/plugin-infra/entry';
-import * as Manager from '@toeverything/plugin-infra/manager';
+import * as Atom from '@toeverything/plugin-infra/atom';
 import {
   editorItemsAtom,
   headerItemsAtom,
   registeredPluginAtom,
   rootStore,
+  settingItemsAtom,
   windowItemsAtom,
-} from '@toeverything/plugin-infra/manager';
+} from '@toeverything/plugin-infra/atom';
+import type {
+  CallbackMap,
+  PluginContext,
+} from '@toeverything/plugin-infra/entry';
 import * as Jotai from 'jotai';
 import { Provider } from 'jotai/react';
 import * as JotaiUtils from 'jotai/utils';
@@ -48,8 +50,8 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
   );
 
 const customRequire = (id: string) => {
-  if (id === '@toeverything/plugin-infra/manager') {
-    return Manager;
+  if (id === '@toeverything/plugin-infra/atom') {
+    return Atom;
   }
   if (id === 'react') {
     return React;
@@ -96,6 +98,28 @@ const createGlobalThis = () => {
     document,
     navigator,
     userAgent: navigator.userAgent,
+    // todo(himself65): permission control
+    fetch: function (input: RequestInfo, init?: RequestInit) {
+      return globalThis.fetch(input, init);
+    },
+    setTimeout: function (callback: () => void, timeout: number) {
+      return globalThis.setTimeout(callback, timeout);
+    },
+    clearTimeout: function (id: number) {
+      return globalThis.clearTimeout(id);
+    },
+    // copilot uses these
+    crypto: globalThis.crypto,
+    CustomEvent: globalThis.CustomEvent,
+    Date: globalThis.Date,
+    Math: globalThis.Math,
+    URL: globalThis.URL,
+    URLSearchParams: globalThis.URLSearchParams,
+    Headers: globalThis.Headers,
+    TextEncoder: globalThis.TextEncoder,
+    TextDecoder: globalThis.TextDecoder,
+    Request: globalThis.Request,
+    Error: globalThis.Error,
 
     // fixme: use our own db api
     indexedDB: globalThis.indexedDB,
@@ -135,21 +159,19 @@ await Promise.all(
     return fetch(entryURL).then(async res => {
       if (assets.length > 0) {
         await Promise.all(
-          assets.map(asset => {
+          assets.map(async asset => {
             if (asset.endsWith('.css')) {
-              return fetch(new URL(asset, baseURL)).then(res => {
-                if (res.ok) {
-                  // todo: how to put css file into sandbox?
-                  return res.text().then(text => {
-                    console.log('text', text);
-                    const style = document.createElement('style');
-                    style.setAttribute('plugin-id', plugin);
-                    style.textContent = text;
-                    document.head.appendChild(style);
-                  });
-                }
-                return null;
-              });
+              const res = await fetch(new URL(asset, baseURL));
+              if (res.ok) {
+                // todo: how to put css file into sandbox?
+                return res.text().then(text => {
+                  const style = document.createElement('style');
+                  style.setAttribute('plugin-id', plugin);
+                  style.textContent = text;
+                  document.head.appendChild(style);
+                });
+              }
+              return null;
             } else {
               return Promise.resolve();
             }
@@ -177,6 +199,20 @@ await Promise.all(
               ...items,
               [plugin]: callback as CallbackMap['window'],
             }));
+          } else if (part === 'setting') {
+            console.log('setting');
+            rootStore.set(settingItemsAtom, items => ({
+              ...items,
+              [plugin]: callback as CallbackMap['setting'],
+            }));
+          } else if (part === 'formatBar') {
+            console.log('1');
+            FormatQuickBar.customElements.push((page, getBlockRange) => {
+              console.log('2');
+              const div = document.createElement('div');
+              (callback as CallbackMap['formatBar'])(div, page, getBlockRange);
+              return div;
+            });
           } else {
             throw new Error(`Unknown part: ${part}`);
           }

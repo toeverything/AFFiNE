@@ -1,5 +1,6 @@
 import { ok } from 'node:assert';
-import { open, readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, open, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -40,6 +41,7 @@ const packageJsonSchema = z.object({
     release: z.boolean(),
     entry: z.object({
       core: z.string(),
+      server: z.string().optional(),
     }),
   }),
 });
@@ -59,6 +61,9 @@ const external = [
 
   // css
   /^@vanilla-extract/,
+
+  // remove this when bookmark plugin is ready
+  'link-preview-js',
 ];
 
 const allPluginDir = path.resolve(projectRoot, 'plugins');
@@ -91,24 +96,47 @@ const metadata: Metadata = {
   assets: new Set(),
 };
 
-const outDir = path.resolve(
+const outDir = path.resolve(projectRoot, 'apps', 'core', 'public', 'plugins');
+
+const coreOutDir = path.resolve(outDir, plugin);
+
+const serverOutDir = path.resolve(
   projectRoot,
   'apps',
-  'core',
-  'public',
+  'electron',
+  'dist',
   'plugins',
   plugin
 );
 
-const pluginListJsonPath = path.resolve(outDir, '..', 'plugin-list.json');
+const pluginListJsonPath = path.resolve(outDir, 'plugin-list.json');
 
 const coreEntry = path.resolve(pluginDir, json.affinePlugin.entry.core);
+if (json.affinePlugin.entry.server) {
+  const serverEntry = path.resolve(pluginDir, json.affinePlugin.entry.server);
+  await build({
+    build: {
+      watch: isWatch ? {} : undefined,
+      minify: false,
+      outDir: serverOutDir,
+      emptyOutDir: true,
+      lib: {
+        entry: serverEntry,
+        fileName: 'index',
+        formats: ['cjs'],
+      },
+      rollupOptions: {
+        external,
+      },
+    },
+  });
+}
 
 await build({
   build: {
     watch: isWatch ? {} : undefined,
     minify: false,
-    outDir,
+    outDir: coreOutDir,
     emptyOutDir: true,
     lib: {
       entry: coreEntry,
@@ -136,7 +164,10 @@ await build({
     {
       name: 'generate-list-json',
       async generateBundle() {
-        const file = await open(pluginListJsonPath, 'as+');
+        if (!existsSync(outDir)) {
+          await mkdir(outDir, { recursive: true });
+        }
+        const file = await open(pluginListJsonPath, 'as+', 0o777);
         const txt = await file.readFile({
           encoding: 'utf-8',
         });

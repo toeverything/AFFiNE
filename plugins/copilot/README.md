@@ -1,3 +1,3 @@
 # AFFiNE Copilot
 
-> AI Copilot for your writing
+> AI Copilot Plugin for your writing
