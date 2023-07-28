@@ -1,4 +1,4 @@
-import path, { resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
@@ -13,10 +13,8 @@ export default defineConfig({
   assetsInclude: ['**/*.md'],
   resolve: {
     alias: {
-      'next/router': 'next-router-mock',
-      'next/config': resolve(rootDir, './scripts/vitest/next-config-mock.ts'),
       // prevent tests using two different sources of yjs
-      yjs: path.resolve(__dirname, 'node_modules/yjs'),
+      yjs: resolve(rootDir, 'node_modules/yjs'),
     },
   },
   define: {
@@ -30,25 +28,20 @@ export default defineConfig({
       resolve(rootDir, './scripts/setup/lottie-web.ts'),
       resolve(rootDir, './scripts/setup/global.ts'),
     ],
-    // split tests that include native addons or not
-    include: process.env.NATIVE_TEST
-      ? ['apps/electron/src/**/*.spec.ts']
-      : [
-          'packages/**/*.spec.ts',
-          'packages/**/*.spec.tsx',
-          'apps/web/**/*.spec.ts',
-          'apps/web/**/*.spec.tsx',
-          'tests/unit/**/*.spec.ts',
-          'tests/unit/**/*.spec.tsx',
-        ],
+    include: [
+      resolve(rootDir, 'packages/**/*.spec.ts'),
+      resolve(rootDir, 'packages/**/*.spec.tsx'),
+      resolve(rootDir, 'apps/web/**/*.spec.ts'),
+      resolve(rootDir, 'apps/web/**/*.spec.tsx'),
+      resolve(rootDir, 'tests/unit/**/*.spec.ts'),
+      resolve(rootDir, 'tests/unit/**/*.spec.tsx'),
+    ],
     exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
     testTimeout: 5000,
-    singleThread: Boolean(process.env.NATIVE_TEST),
-    threads: !process.env.NATIVE_TEST,
     coverage: {
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],
-      reportsDirectory: '.coverage/store',
+      reportsDirectory: resolve(rootDir, '.coverage/store'),
     },
   },
 });

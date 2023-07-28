@@ -2,6 +2,7 @@ import type { PluginContext } from '@toeverything/plugin-infra/entry';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { DebugContent } from './UI/debug-content';
 import { DetailContent } from './UI/detail-content';
 import { HeaderItem } from './UI/header-item';
 
@@ -23,6 +24,20 @@ export const entry = (context: PluginContext) => {
         context.utils.PluginProvider,
         {},
         createElement(DetailContent)
+      )
+    );
+    return () => {
+      root.unmount();
+    };
+  });
+
+  context.register('setting', div => {
+    const root = createRoot(div);
+    root.render(
+      createElement(
+        context.utils.PluginProvider,
+        {},
+        createElement(DebugContent)
       )
     );
     return () => {

@@ -435,6 +435,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        timeout-minutes: 10
         with:
           playwright-install: true
           hard-link-nm: false
@@ -446,9 +447,8 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: yarn nx test @affine/monorepo
-        env:
-          NATIVE_TEST: 'true'
+        run: yarn vitest
+        working-directory: ./apps/electron
 
       - name: Download core artifact
         uses: actions/download-artifact@v3

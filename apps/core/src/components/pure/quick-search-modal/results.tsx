@@ -7,8 +7,6 @@ import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suit
 import { Command } from 'cmdk';
 import { useAtomValue } from 'jotai';
 import type { Dispatch, FC, SetStateAction } from 'react';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { recentPageSettingsAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -32,12 +30,11 @@ export const Results: FC<ResultsProps> = ({
   useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   assertExists(blockSuiteWorkspace.id);
-  const List = useSwitchToConfig(workspace.id);
+  const list = useSwitchToConfig(workspace.id);
 
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
-  const navigate = useNavigate();
-  const { jumpToPage } = useNavigateHelper();
+  const { jumpToPage, jumpToSubPath } = useNavigateHelper();
   const results = blockSuiteWorkspace.search({ query });
 
   // remove `space:` prefix
@@ -55,10 +52,7 @@ export const Results: FC<ResultsProps> = ({
       return page.trash !== true;
     }
   });
-  useEffect(() => {
-    setShowCreatePage(!resultsPageMeta.length);
-    //Determine whether to display the  ‘+ New page’
-  }, [resultsPageMeta.length, setShowCreatePage]);
+  setShowCreatePage(resultsPageMeta.length === 0);
   if (!query) {
     return (
       <>
@@ -90,15 +84,20 @@ export const Results: FC<ResultsProps> = ({
           </Command.Group>
         )}
         <Command.Group heading={t['Jump to']()}>
-          {List.map(link => {
+          {list.map(link => {
             return (
               <Command.Item
                 key={link.title}
                 value={link.title}
                 onSelect={() => {
                   onClose();
-                  link.href && navigate(link.href);
-                  link.onClick?.();
+                  if ('subPath' in link) {
+                    jumpToSubPath(blockSuiteWorkspace.id, link.subPath);
+                  } else if ('onClick' in link) {
+                    link.onClick();
+                  } else {
+                    throw new Error('Invalid link');
+                  }
                 }}
               >
                 <StyledListItem>
