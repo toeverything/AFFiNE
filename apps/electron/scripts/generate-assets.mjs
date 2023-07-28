@@ -41,6 +41,7 @@ cd(repoRootDir);
 
 // step 1: build web (nextjs) dist
 if (!process.env.SKIP_WEB_BUILD) {
+  await $`yarn -T run build:plugins`;
   await $`DISTRIBUTION=desktop yarn nx build @affine/core`;
   await fs.move(affineCoreOutDir, publicAffineOutDir, { overwrite: true });
 }
