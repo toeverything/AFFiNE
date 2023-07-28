@@ -37,20 +37,20 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
 
     return Promise.resolve({
       willSendResponse: () => {
-        const costInSeconds = timer();
+        const costInMilliseconds = timer() * 1000;
         res.setHeader(
           'Server-Timing',
-          `gql;dur=${costInSeconds};desc="GraphQL ${operation}"`
+          `gql;dur=${costInMilliseconds};desc="GraphQL"`
         );
         this.logger.log(requestInfo);
         return Promise.resolve();
       },
       didEncounterErrors: () => {
         this.metrics.gqlError(1, { operation });
-        const costInSeconds = timer();
+        const costInMilliseconds = timer() * 1000;
         res.setHeader(
           'Server-Timing',
-          `gql;dur=${costInSeconds};desc="GraphQL ${operation}"`
+          `gql;dur=${costInMilliseconds};desc="GraphQL ${operation}"`
         );
         const variables = reqContext.request.variables;
         this.logger.error(
