@@ -191,7 +191,12 @@ const LayoutPanel = memo(function LayoutPanel(
           </Suspense>
         </Panel>
         <PanelResizeHandle />
-        <Panel defaultSize={100 - node.splitPercentage}>
+        <Panel
+          defaultSize={100 - node.splitPercentage}
+          style={{
+            overflow: 'scroll',
+          }}
+        >
           <Suspense>
             <LayoutPanel node={node.second} editorProps={props.editorProps} />
           </Suspense>

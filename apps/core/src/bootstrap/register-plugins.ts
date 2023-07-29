@@ -76,7 +76,7 @@ await Promise.all(
         globalThis.__pluginPackageJson__.push(packageJson);
         logger.debug(`registering plugin ${pluginName}`);
         logger.debug(`package.json: ${packageJson}`);
-        if (!release) {
+        if (!release && process.env.NODE_ENV === 'production') {
           return Promise.resolve();
         }
         const pluginCompartment = new Compartment(createGlobalThis(), {});
