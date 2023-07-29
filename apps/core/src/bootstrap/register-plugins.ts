@@ -155,10 +155,18 @@ const group = new DisposableGroup();
 
 declare global {
   // eslint-disable-next-line no-var
-  var __pluginPackageJson__: any[];
+  var __pluginPackageJson__: unknown[];
 }
 
 globalThis.__pluginPackageJson__ = [];
+
+interface PluginLoadedEvent extends CustomEvent<{ plugins: unknown[] }> {}
+// add to window
+declare global {
+  interface WindowEventMap {
+    'plugin-loaded': PluginLoadedEvent;
+  }
+}
 
 await Promise.all(
   [...builtinPluginUrl].map(url => {
@@ -265,4 +273,12 @@ await Promise.all(
         console.error(`error when fetch plugin from ${url}`, e);
       });
   })
-);
+).then(() => {
+  window.dispatchEvent(
+    new CustomEvent('plugin-loaded', {
+      detail: {
+        plugins: globalThis.__pluginPackageJson__,
+      },
+    })
+  );
+});

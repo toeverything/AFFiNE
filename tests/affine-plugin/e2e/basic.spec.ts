@@ -3,6 +3,15 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
+// declare plugin loaded event
+interface PluginLoadedEvent extends CustomEvent<{ plugins: unknown[] }> {}
+// add to window
+declare global {
+  interface WindowEventMap {
+    'plugin-loaded': PluginLoadedEvent;
+  }
+}
+
 test('plugin should exist', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
@@ -11,8 +20,12 @@ test('plugin should exist', async ({ page }) => {
   });
   await page.waitForTimeout(50);
   const packageJson = await page.evaluate(
-    // @ts-expect-error
-    () => window.__pluginPackageJson__,
+    () =>
+      new Promise(resolve =>
+        window.addEventListener('plugin-loaded', e => {
+          resolve(e.detail.plugins);
+        })
+      ),
     []
   );
   expect(packageJson).toEqual([
