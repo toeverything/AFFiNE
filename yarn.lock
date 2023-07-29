@@ -155,9 +155,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/copilot@workspace:*, @affine/copilot@workspace:plugins/copilot":
+"@affine/copilot-plugin@workspace:plugins/copilot":
   version: 0.0.0-use.local
-  resolution: "@affine/copilot@workspace:plugins/copilot"
+  resolution: "@affine/copilot-plugin@workspace:plugins/copilot"
   dependencies:
     "@affine/component": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
@@ -183,7 +183,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/component": "workspace:*"
-    "@affine/copilot": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"

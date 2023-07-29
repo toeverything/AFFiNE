@@ -11,12 +11,13 @@ export const HeaderItem = (): ReactElement => {
       <IconButton
         onClick={useCallback(
           () =>
+            // todo: abstract a context function to open a new tab
             setLayout(layout => {
               if (layout === 'editor') {
                 return {
                   direction: 'horizontal',
                   first: 'editor',
-                  second: 'copilot',
+                  second: '@affine/copilot',
                   splitPercentage: 70,
                 };
               } else {
