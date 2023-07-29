@@ -7,7 +7,7 @@ test('plugin should exist', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await page.route('**/plugins/**/package.json', route => route.fetch(), {
-    times: 3,
+    times: 4,
   });
   await page.waitForTimeout(50);
   const packageJson = await page.evaluate(() => {
