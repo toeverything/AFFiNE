@@ -1,7 +1,9 @@
 /// <reference types="@types/webpack-env" />
+/* eslint no-console: ["error", { allow: ["warn", "error"] }] */
 import 'ses';
 
 import * as AFFiNEComponent from '@affine/component';
+import { DebugLogger } from '@affine/debug';
 import { FormatQuickBar } from '@blocksuite/blocks';
 import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import { DisposableGroup } from '@blocksuite/global/utils';
@@ -45,6 +47,8 @@ const builtinPluginUrl = new Set([
   '/plugins/copilot',
   '/plugins/hello-world',
 ]);
+
+const logger = new DebugLogger('register-plugins');
 
 const PluginProvider = ({ children }: PropsWithChildren) =>
   React.createElement(
@@ -153,6 +157,7 @@ await Promise.all(
   [...builtinPluginUrl].map(url => {
     return fetch(`${url}/package.json`)
       .then(async res => {
+        const packageJson = await res.json();
         const {
           name: pluginName,
           affinePlugin: {
@@ -160,7 +165,9 @@ await Promise.all(
             entry: { core },
             assets,
           },
-        } = await res.json();
+        } = packageJson;
+        logger.debug(`registering plugin ${pluginName}`);
+        logger.debug(`package.json: ${packageJson}`);
         if (!release && process.env.NODE_ENV !== 'development') {
           return Promise.resolve();
         }
@@ -197,6 +204,7 @@ await Promise.all(
           });
           pluginGlobalThis.__INTERNAL__ENTRY = {
             register: (part, callback) => {
+              logger.info(`Registering ${pluginName} to ${part}`);
               if (part === 'headerItem') {
                 rootStore.set(headerItemsAtom, items => ({
                   ...items,
@@ -213,7 +221,6 @@ await Promise.all(
                   [pluginName]: callback as CallbackMap['window'],
                 }));
               } else if (part === 'setting') {
-                console.log('setting');
                 rootStore.set(settingItemsAtom, items => ({
                   ...items,
                   [pluginName]: callback as CallbackMap['setting'],
@@ -251,5 +258,3 @@ await Promise.all(
       });
   })
 );
-
-console.log('register plugins finished');
