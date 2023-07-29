@@ -3,8 +3,13 @@
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
-    "moduleResolution": "Node16",
+    "moduleResolution": "Node",
     "outDir": "lib"
   },
-  "include": ["src/bin", "src"]
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../plugin-infra"
+    }
+  ]
 }
