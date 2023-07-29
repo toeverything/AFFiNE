@@ -12,4 +12,7 @@ export const entry = (context: PluginContext) => {
       root.unmount();
     };
   });
+  return () => {
+    // do nothing
+  };
 };
