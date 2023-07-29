@@ -39,43 +39,6 @@ const importsMap = new Map<string, Map<string, any>>();
 setupImportsMap();
 export { importsMap };
 
-const customRequire = (id: string) => {
-  if (id === '@toeverything/plugin-infra/atom') {
-    return Atom;
-  }
-  if (id === 'react') {
-    return React;
-  }
-  if (id === 'react/jsx-runtime') {
-    return ReactJSXRuntime;
-  }
-  if (id === 'react-dom') {
-    return ReactDom;
-  }
-  if (id === 'react-dom/client') {
-    return ReactDomClient;
-  }
-  if (id === '@blocksuite/icons') {
-    return Icons;
-  }
-  if (id === '@affine/component') {
-    return AFFiNEComponent;
-  }
-  if (id === '@blocksuite/blocks/std') {
-    return BlockSuiteBlocksStd;
-  }
-  if (id === '@blocksuite/global/utils') {
-    return BlockSuiteGlobalUtils;
-  }
-  if (id === 'jotai') {
-    return Jotai;
-  }
-  if (id === 'jotai/utils') {
-    return JotaiUtils;
-  }
-  throw new Error(`Cannot find module '${id}'`);
-};
-
 export const createGlobalThis = () => {
   return {
     process: Object.freeze({
@@ -100,12 +63,13 @@ export const createGlobalThis = () => {
     },
 
     // safe to use for all plugins
-    Error: globalThis.Error,
-    TypeError: globalThis.TypeError,
-    RangeError: globalThis.RangeError,
+    Error: harden(globalThis.Error),
+    TypeError: harden(globalThis.TypeError),
+    RangeError: harden(globalThis.RangeError),
+    console: harden(globalThis.console),
+    crypto: harden(globalThis.crypto),
 
     // copilot uses these
-    crypto: globalThis.crypto,
     CustomEvent: globalThis.CustomEvent,
     Date: globalThis.Date,
     Math: globalThis.Math,
@@ -133,9 +97,5 @@ export const createGlobalThis = () => {
     IDBIndex: globalThis.IDBIndex,
     IDBCursor: globalThis.IDBCursor,
     IDBVersionChangeEvent: globalThis.IDBVersionChangeEvent,
-
-    exports: {},
-    console: globalThis.console,
-    require: customRequire,
   };
 };
