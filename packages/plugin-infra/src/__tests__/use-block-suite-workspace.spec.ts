@@ -9,11 +9,11 @@ import { expect, test, vi } from 'vitest';
 import {
   usePassiveWorkspaceEffect,
   useStaticBlockSuiteWorkspace,
-} from '../__internal__/react';
+} from '../__internal__/react.js';
 import {
   getActiveBlockSuiteWorkspaceAtom,
   INTERNAL_BLOCKSUITE_HASH_MAP,
-} from '../__internal__/workspace';
+} from '../__internal__/workspace.js';
 
 test('useStaticBlockSuiteWorkspace', async () => {
   const sync = vi.fn();

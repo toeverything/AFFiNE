@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import {
   getActiveBlockSuiteWorkspaceAtom,
   workspacePassiveEffectWeakMap,
-} from './workspace';
+} from './workspace.js';
 
 export function useStaticBlockSuiteWorkspace(id: string): Workspace {
   return useAtomValue(getActiveBlockSuiteWorkspaceAtom(id));

@@ -1,6 +1,7 @@
 {
   "name": "@affine/copilot-plugin",
   "private": true,
+  "description": "Copilot plugin",
   "affinePlugin": {
     "release": false,
     "entry": {

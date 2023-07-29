@@ -10,27 +10,27 @@
   ],
   "exports": {
     "./entry": {
-      "type": "./dist/entry.d.ts",
+      "type": "./dist/src/entry.d.ts",
       "import": "./dist/entry.js",
       "require": "./dist/entry.cjs"
     },
     "./atom": {
-      "type": "./dist/atom.d.ts",
+      "type": "./dist/src/atom.d.ts",
       "import": "./dist/atom.js",
       "require": "./dist/atom.cjs"
     },
     "./type": {
-      "type": "./dist/type.d.ts",
+      "type": "./dist/src/type.d.ts",
       "import": "./dist/type.js",
       "require": "./dist/type.cjs"
     },
     "./__internal__/workspace": {
-      "type": "./dist/__internal__/workspace.d.ts",
+      "type": "./dist/src/__internal__/workspace.d.ts",
       "import": "./dist/__internal__/workspace.js",
       "require": "./dist/__internal__/workspace.cjs"
     },
     "./__internal__/react": {
-      "type": "./dist/__internal__/react.d.ts",
+      "type": "./dist/src/__internal__/react.d.ts",
       "import": "./dist/__internal__/react.js",
       "require": "./dist/__internal__/react.cjs"
     }
@@ -38,7 +38,8 @@
   "dependencies": {
     "@blocksuite/global": "0.0.0-20230729011742-613f3782-nightly",
     "@blocksuite/store": "0.0.0-20230729011742-613f3782-nightly",
-    "jotai": "^2.2.2"
+    "jotai": "^2.2.2",
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "@blocksuite/blocks": "0.0.0-20230729011742-613f3782-nightly",
