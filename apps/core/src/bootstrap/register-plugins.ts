@@ -20,7 +20,7 @@ import { Provider } from 'jotai/react';
 import type { PropsWithChildren } from 'react';
 import { createElement } from 'react';
 
-import { createGlobalThis } from './plugins/setup';
+import { createGlobalThis, importsMap } from './plugins/setup';
 
 if (!process.env.COVERAGE) {
   lockdown({
@@ -32,6 +32,29 @@ if (!process.env.COVERAGE) {
     unhandledRejectionTrapping: 'report',
   });
 }
+
+const imports = (
+  newUpdaters: [string, [string, ((val: any) => void)[]][]][]
+) => {
+  for (const [module, moduleUpdaters] of newUpdaters) {
+    const moduleImports = importsMap.get(module);
+    if (moduleImports) {
+      for (const [importName, importUpdaters] of moduleUpdaters) {
+        const updateImport = (value: any) => {
+          for (const importUpdater of importUpdaters) {
+            importUpdater(value);
+          }
+        };
+        if (moduleImports.has(importName)) {
+          const val = moduleImports.get(importName);
+          updateImport(val);
+        } else {
+          console.log('import not found', importName, module);
+        }
+      }
+    }
+  }
+};
 
 const builtinPluginUrl = new Set([
   '/plugins/bookmark',
@@ -79,8 +102,7 @@ await Promise.all(
         if (!release && process.env.NODE_ENV === 'production') {
           return Promise.resolve();
         }
-        const pluginCompartment = new Compartment(createGlobalThis(), {});
-        const pluginGlobalThis = pluginCompartment.globalThis;
+        const pluginCompartment = new Compartment(createGlobalThis());
         const baseURL = url;
         const entryURL = `${baseURL}/${core}`;
         rootStore.set(registeredPluginAtom, prev => [...prev, pluginName]);
@@ -107,58 +129,69 @@ await Promise.all(
             );
           }
           const codeText = await res.text();
-          pluginCompartment.evaluate(codeText, {
-            __evadeHtmlCommentTest__: true,
-          });
-          pluginGlobalThis.__INTERNAL__ENTRY = {
-            register: (part, callback) => {
-              logger.info(`Registering ${pluginName} to ${part}`);
-              if (part === 'headerItem') {
-                rootStore.set(headerItemsAtom, items => ({
-                  ...items,
-                  [pluginName]: callback as CallbackMap['headerItem'],
-                }));
-              } else if (part === 'editor') {
-                rootStore.set(editorItemsAtom, items => ({
-                  ...items,
-                  [pluginName]: callback as CallbackMap['editor'],
-                }));
-              } else if (part === 'window') {
-                rootStore.set(windowItemsAtom, items => ({
-                  ...items,
-                  [pluginName]: callback as CallbackMap['window'],
-                }));
-              } else if (part === 'setting') {
-                rootStore.set(settingItemsAtom, items => ({
-                  ...items,
-                  [pluginName]: callback as CallbackMap['setting'],
-                }));
-              } else if (part === 'formatBar') {
-                FormatQuickBar.customElements.push((page, getBlockRange) => {
-                  const div = document.createElement('div');
-                  (callback as CallbackMap['formatBar'])(
-                    div,
-                    page,
-                    getBlockRange
-                  );
-                  return div;
-                });
-              } else {
-                throw new Error(`Unknown part: ${part}`);
-              }
-            },
-            utils: {
-              PluginProvider,
-            },
-          } satisfies PluginContext;
-          const dispose = pluginCompartment.evaluate(
-            'exports.entry(__INTERNAL__ENTRY)'
-          );
-          if (typeof dispose !== 'function') {
-            throw new Error('Plugin entry must return a function');
+          try {
+            const entryPoint = pluginCompartment.evaluate(codeText, {
+              __evadeHtmlCommentTest__: true,
+            });
+            entryPoint({
+              imports,
+              onceVar: {
+                entry: (
+                  entryFunction: (context: PluginContext) => () => void
+                ) => {
+                  const cleanup = entryFunction({
+                    register: (part, callback) => {
+                      logger.info(`Registering ${pluginName} to ${part}`);
+                      if (part === 'headerItem') {
+                        rootStore.set(headerItemsAtom, items => ({
+                          ...items,
+                          [pluginName]: callback as CallbackMap['headerItem'],
+                        }));
+                      } else if (part === 'editor') {
+                        rootStore.set(editorItemsAtom, items => ({
+                          ...items,
+                          [pluginName]: callback as CallbackMap['editor'],
+                        }));
+                      } else if (part === 'window') {
+                        rootStore.set(windowItemsAtom, items => ({
+                          ...items,
+                          [pluginName]: callback as CallbackMap['window'],
+                        }));
+                      } else if (part === 'setting') {
+                        rootStore.set(settingItemsAtom, items => ({
+                          ...items,
+                          [pluginName]: callback as CallbackMap['setting'],
+                        }));
+                      } else if (part === 'formatBar') {
+                        FormatQuickBar.customElements.push(
+                          (page, getBlockRange) => {
+                            const div = document.createElement('div');
+                            (callback as CallbackMap['formatBar'])(
+                              div,
+                              page,
+                              getBlockRange
+                            );
+                            return div;
+                          }
+                        );
+                      } else {
+                        throw new Error(`Unknown part: ${part}`);
+                      }
+                    },
+                    utils: {
+                      PluginProvider,
+                    },
+                  });
+                  if (typeof cleanup !== 'function') {
+                    throw new Error('Plugin entry must return a function');
+                  }
+                  group.add(cleanup);
+                },
+              },
+            });
+          } catch (e) {
+            console.error(pluginName, e);
           }
-          pluginGlobalThis.__INTERNAL__ENTRY = undefined;
-          group.add(dispose);
         });
       })
       .catch(e => {

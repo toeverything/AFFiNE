@@ -9,6 +9,35 @@ import * as React from 'react';
 import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
+import * as SWR from 'swr';
+
+const setupImportsMap = () => {
+  importsMap.set('react', new Map(Object.entries(React)));
+  importsMap.set('react/jsx-runtime', new Map(Object.entries(ReactJSXRuntime)));
+  importsMap.set('react-dom', new Map(Object.entries(ReactDom)));
+  importsMap.set('react-dom/client', new Map(Object.entries(ReactDomClient)));
+  importsMap.set('@blocksuite/icons', new Map(Object.entries(Icons)));
+  importsMap.set('@affine/component', new Map(Object.entries(AFFiNEComponent)));
+  importsMap.set(
+    '@blocksuite/blocks/std',
+    new Map(Object.entries(BlockSuiteBlocksStd))
+  );
+  importsMap.set(
+    '@blocksuite/global/utils',
+    new Map(Object.entries(BlockSuiteGlobalUtils))
+  );
+  importsMap.set('jotai', new Map(Object.entries(Jotai)));
+  importsMap.set('jotai/utils', new Map(Object.entries(JotaiUtils)));
+  importsMap.set(
+    '@toeverything/plugin-infra/atom',
+    new Map(Object.entries(Atom))
+  );
+  importsMap.set('swr', new Map(Object.entries(SWR)));
+};
+
+const importsMap = new Map<string, Map<string, any>>();
+setupImportsMap();
+export { importsMap };
 
 const customRequire = (id: string) => {
   if (id === '@toeverything/plugin-infra/atom') {
@@ -69,6 +98,12 @@ export const createGlobalThis = () => {
     clearTimeout: function (id: number) {
       return globalThis.clearTimeout(id);
     },
+
+    // safe to use for all plugins
+    Error: globalThis.Error,
+    TypeError: globalThis.TypeError,
+    RangeError: globalThis.RangeError,
+
     // copilot uses these
     crypto: globalThis.crypto,
     CustomEvent: globalThis.CustomEvent,
@@ -80,8 +115,8 @@ export const createGlobalThis = () => {
     TextEncoder: globalThis.TextEncoder,
     TextDecoder: globalThis.TextDecoder,
     Request: globalThis.Request,
-    Error: globalThis.Error,
-    // bookmark uses these
+
+    // image-preview uses these
     Blob: globalThis.Blob,
     ClipboardItem: globalThis.ClipboardItem,
 

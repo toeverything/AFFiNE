@@ -1,5 +1,6 @@
 {
   "name": "@affine/image-preview-plugin",
+  "type": "module",
   "version": "0.8.0-canary.1",
   "description": "Image preview plugin",
   "affinePlugin": {
