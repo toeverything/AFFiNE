@@ -1,6 +1,12 @@
 {
   "name": "@affine/image-preview-plugin",
-  "version": "1.0.0",
+  "version": "0.8.0-canary.0",
+  "affinePlugin": {
+    "release": true,
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
   "dependencies": {
     "@affine/component": "workspace:*",
     "@blocksuite/icons": "^2.1.27",
