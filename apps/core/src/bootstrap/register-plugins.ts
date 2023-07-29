@@ -1,6 +1,3 @@
-/// <reference types="@types/webpack-env" />
-import 'ses';
-
 import { DebugLogger } from '@affine/debug';
 import { FormatQuickBar } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
@@ -20,18 +17,7 @@ import { Provider } from 'jotai/react';
 import type { PropsWithChildren } from 'react';
 import { createElement } from 'react';
 
-import { createGlobalThis, importsMap } from './plugins/setup';
-
-if (!process.env.COVERAGE) {
-  lockdown({
-    evalTaming: 'unsafeEval',
-    overrideTaming: 'severe',
-    consoleTaming: 'unsafe',
-    errorTaming: 'unsafe',
-    errorTrapping: 'platform',
-    unhandledRejectionTrapping: 'report',
-  });
-}
+const { createGlobalThis, importsMap } = await import('./plugins/setup');
 
 const imports = (
   newUpdaters: [string, [string, ((val: any) => void)[]][]][]

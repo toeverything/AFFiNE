@@ -16,7 +16,7 @@
     "jsxImportSource": "@emotion/react",
     "incremental": true,
     "experimentalDecorators": true,
-    "types": ["webpack-env"]
+    "types": ["webpack-env", "ses"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules"],

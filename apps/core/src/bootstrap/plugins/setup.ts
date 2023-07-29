@@ -3,11 +3,11 @@ import { DebugLogger } from '@affine/debug';
 import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
+import * as ReactJSXRuntime from '@emotion/react';
 import * as Atom from '@toeverything/plugin-infra/atom';
 import * as Jotai from 'jotai/index';
 import * as JotaiUtils from 'jotai/utils';
 import * as React from 'react';
-import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
 import * as SWR from 'swr';
@@ -16,29 +16,37 @@ import { createFetch } from './endowments/fercher';
 import { createTimers } from './endowments/timer';
 
 const logger = new DebugLogger('plugins:permission');
-
 const setupImportsMap = () => {
-  importsMap.set('react', new Map(Object.entries(React)));
-  importsMap.set('react/jsx-runtime', new Map(Object.entries(ReactJSXRuntime)));
-  importsMap.set('react-dom', new Map(Object.entries(ReactDom)));
-  importsMap.set('react-dom/client', new Map(Object.entries(ReactDomClient)));
-  importsMap.set('@blocksuite/icons', new Map(Object.entries(Icons)));
-  importsMap.set('@affine/component', new Map(Object.entries(AFFiNEComponent)));
+  importsMap.set('react', new Map(Object.entries(Object.freeze(React))));
+  importsMap.set(
+    'react/jsx-runtime',
+    new Map(Object.entries(harden(ReactJSXRuntime)))
+  );
+  importsMap.set('react-dom', new Map(Object.entries(harden(ReactDom))));
+  importsMap.set(
+    'react-dom/client',
+    new Map(Object.entries(harden(ReactDomClient)))
+  );
+  importsMap.set('@blocksuite/icons', new Map(Object.entries(harden(Icons))));
+  importsMap.set(
+    '@affine/component',
+    new Map(Object.entries(harden(AFFiNEComponent)))
+  );
   importsMap.set(
     '@blocksuite/blocks/std',
-    new Map(Object.entries(BlockSuiteBlocksStd))
+    new Map(Object.entries(harden(BlockSuiteBlocksStd)))
   );
   importsMap.set(
     '@blocksuite/global/utils',
-    new Map(Object.entries(BlockSuiteGlobalUtils))
+    new Map(Object.entries(harden(BlockSuiteGlobalUtils)))
   );
-  importsMap.set('jotai', new Map(Object.entries(Jotai)));
-  importsMap.set('jotai/utils', new Map(Object.entries(JotaiUtils)));
+  importsMap.set('jotai', new Map(Object.entries(harden(Jotai))));
+  importsMap.set('jotai/utils', new Map(Object.entries(harden(JotaiUtils))));
   importsMap.set(
     '@toeverything/plugin-infra/atom',
-    new Map(Object.entries(Atom))
+    new Map(Object.entries(harden(Atom)))
   );
-  importsMap.set('swr', new Map(Object.entries(SWR)));
+  importsMap.set('swr', new Map(Object.entries(harden(SWR))));
 };
 
 const importsMap = new Map<string, Map<string, any>>();
