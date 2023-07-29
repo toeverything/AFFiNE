@@ -1,5 +1,5 @@
 {
-  "name": "@affine/copilot",
+  "name": "@affine/copilot-plugin",
   "private": true,
   "affinePlugin": {
     "release": false,

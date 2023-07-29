@@ -12,7 +12,8 @@
     "tests/fixtures",
     "tests/kit",
     "tests/affine-legacy/*",
-    "tests/affine-local"
+    "tests/affine-local",
+    "tests/affine-plugin"
   ],
   "engines": {
     "node": ">=18.16.1 <19.0.0"
@@ -20,7 +21,6 @@
   "scripts": {
     "dev": "dev-core",
     "dev:electron": "yarn workspace @affine/electron dev:app",
-    "dev:plugins": "./apps/electron/scripts/plugins/dev-plugins.mjs",
     "build": "yarn nx build @affine/core",
     "build:electron": "yarn nx build @affine/electron",
     "build:storage": "yarn nx run-many -t build -p @affine/storage",

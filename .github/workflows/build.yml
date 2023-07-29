@@ -110,6 +110,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Build Plugins
+        run: yarn run build:plugins
       - name: Build Core
         run: yarn nx build @affine/core
       - name: Upload core artifact
@@ -206,6 +208,48 @@ jobs:
         working-directory: ./apps/storybook
         run: |
           yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test"
+
+  e2e-plugin-test:
+    name: E2E Plugin Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: build-core
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+          electron-install: false
+      - name: Download core artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: core
+          path: ./apps/core/dist
+      - name: Run playwright tests
+        run: yarn e2e --forbid-only
+        working-directory: tests/affine-plugin
+        env:
+          COVERAGE: true
+      - name: Collect code coverage report
+        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
+      - name: Upload e2e test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/lcov.info
+          flags: e2e-plugin-test
+          name: affine
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-plugin
+          path: ./test-results
+          if-no-files-found: ignore
 
   e2e-test:
     name: E2E Test

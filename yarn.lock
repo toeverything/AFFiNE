@@ -48,6 +48,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine-test/affine-plugin@workspace:tests/affine-plugin":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/affine-plugin@workspace:tests/affine-plugin"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@playwright/test": ^1.36.2
+  languageName: unknown
+  linkType: soft
+
 "@affine-test/fixtures@workspace:*, @affine-test/fixtures@workspace:tests/fixtures":
   version: 0.0.0-use.local
   resolution: "@affine-test/fixtures@workspace:tests/fixtures"
@@ -155,9 +165,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/copilot@workspace:*, @affine/copilot@workspace:plugins/copilot":
+"@affine/copilot-plugin@workspace:plugins/copilot":
   version: 0.0.0-use.local
-  resolution: "@affine/copilot@workspace:plugins/copilot"
+  resolution: "@affine/copilot-plugin@workspace:plugins/copilot"
   dependencies:
     "@affine/component": "workspace:*"
     "@toeverything/plugin-infra": "workspace:*"
@@ -183,7 +193,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/component": "workspace:*"
-    "@affine/copilot": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"

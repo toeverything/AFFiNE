@@ -1,6 +1,5 @@
 import { ok } from 'node:assert';
-import { existsSync } from 'node:fs';
-import { mkdir, open, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -109,8 +108,6 @@ const serverOutDir = path.resolve(
   plugin
 );
 
-const pluginListJsonPath = path.resolve(outDir, 'plugin-list.json');
-
 const coreEntry = path.resolve(pluginDir, json.affinePlugin.entry.core);
 if (json.affinePlugin.entry.server) {
   const serverEntry = path.resolve(pluginDir, json.affinePlugin.entry.server);
@@ -162,41 +159,23 @@ await build({
     vanillaExtractPlugin(),
     react(),
     {
-      name: 'generate-list-json',
+      name: 'generate-package.json',
       async generateBundle() {
-        if (!existsSync(outDir)) {
-          await mkdir(outDir, { recursive: true });
-        }
-        const file = await open(pluginListJsonPath, 'as+', 0o777);
-        const txt = await file.readFile({
-          encoding: 'utf-8',
+        const packageJson = {
+          name: json.name,
+          affinePlugin: {
+            release: json.affinePlugin.release,
+            entry: {
+              core: 'index.js',
+            },
+            assets: [...metadata.assets],
+          },
+        };
+        this.emitFile({
+          type: 'asset',
+          fileName: 'package.json',
+          source: JSON.stringify(packageJson, null, 2),
         });
-        if (!txt) {
-          console.log('generate plugin-list.json');
-          await file.write(
-            JSON.stringify([
-              {
-                release: json.affinePlugin.release,
-                name: plugin,
-                assets: [...metadata.assets],
-              },
-            ])
-          );
-        } else {
-          console.log('modify plugin-list.json');
-          const list = JSON.parse(txt);
-          const index = list.findIndex((item: any) => item.name === plugin);
-          if (index === -1) {
-            list.push({
-              release: json.affinePlugin.release,
-              name: plugin,
-              assets: [...metadata.assets],
-            });
-          } else {
-            list[index].assets = [...metadata.assets];
-          }
-          await file.write(JSON.stringify(list), 0);
-        }
       },
     },
   ],
