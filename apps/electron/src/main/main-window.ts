@@ -4,10 +4,10 @@ import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
+import { isMacOS, isWindows } from '../shared/utils';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
-import { isMacOS, isWindows } from './utils';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
@@ -114,6 +114,7 @@ async function createWindow() {
 
 // singleton
 let browserWindow: Electron.BrowserWindow | undefined;
+
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
