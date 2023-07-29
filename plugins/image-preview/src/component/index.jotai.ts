@@ -5,8 +5,8 @@ export const hasAnimationPlayedAtom = atom<boolean | null>(true);
 
 previewBlockIdAtom.onMount = set => {
   const callback = (event: MouseEvent) => {
-    const target = event.target;
-    if (target instanceof HTMLImageElement) {
+    const target = event.target as HTMLElement | null;
+    if (target?.tagName === 'IMG') {
       const imageBlock = target.closest('affine-image');
       if (imageBlock) {
         const blockId = imageBlock.getAttribute('data-block-id');

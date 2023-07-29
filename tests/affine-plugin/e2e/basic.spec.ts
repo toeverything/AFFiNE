@@ -7,7 +7,7 @@ test('plugin should exist', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await page.route('**/plugins/**/package.json', route => route.fetch(), {
-    times: 3,
+    times: 4,
   });
   await page.waitForTimeout(50);
   const packageJson = await page.evaluate(() => {
@@ -17,14 +17,26 @@ test('plugin should exist', async ({ page }) => {
   expect(packageJson).toEqual([
     {
       name: '@affine/bookmark-plugin',
+      version: expect.any(String),
+      description: expect.any(String),
       affinePlugin: expect.anything(),
     },
     {
       name: '@affine/copilot-plugin',
+      version: expect.any(String),
+      description: expect.any(String),
       affinePlugin: expect.anything(),
     },
     {
       name: '@affine/hello-world-plugin',
+      version: expect.any(String),
+      description: expect.any(String),
+      affinePlugin: expect.anything(),
+    },
+    {
+      name: '@affine/image-preview-plugin',
+      version: expect.any(String),
+      description: expect.any(String),
       affinePlugin: expect.anything(),
     },
   ]);

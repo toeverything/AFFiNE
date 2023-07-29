@@ -1,0 +1,20 @@
+{
+  "name": "@affine/image-preview-plugin",
+  "version": "0.8.0-canary.0",
+  "description": "Image preview plugin",
+  "affinePlugin": {
+    "release": true,
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@blocksuite/icons": "^2.1.27",
+    "@toeverything/plugin-infra": "workspace:*",
+    "@toeverything/theme": "^0.7.9",
+    "clsx": "^2.0.0",
+    "react-error-boundary": "^4.0.10",
+    "swr": "2.1.5"
+  }
+}
