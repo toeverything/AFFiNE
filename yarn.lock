@@ -93,7 +93,6 @@ __metadata:
     "@clack/core": ^0.3.2
     "@clack/prompts": ^0.6.3
     "@endo/static-module-record": ^0.7.20
-    "@masknet/static-module-record-swc": ^0.5.0
     dotenv: ^16.3.1
     ts-node: ^10.9.1
   peerDependencies:
@@ -5883,20 +5882,6 @@ __metadata:
   peerDependencies:
     react: ">=16.8.0"
   checksum: 393869f22cfea70ff5b7483b7e23bc79fb39f1be7079baa388235a9ccf648845e10ef7c70a47081728ef09df682484bedfcf00c375bcd21a524fd114f892c9b5
-  languageName: node
-  linkType: hard
-
-"@masknet/static-module-record-swc@npm:^0.5.0":
-  version: 0.5.0
-  resolution: "@masknet/static-module-record-swc@npm:0.5.0"
-  dependencies:
-    cjs-module-lexer: ^1.2.2
-  peerDependencies:
-    "@swc/core": ^1.3.53
-  peerDependenciesMeta:
-    "@swc/core":
-      optional: true
-  checksum: c846b71b582b2f096ee2ca8c89fa2a4f1be6f1c5b8c7fc4c49b3afdf3ef83b84fe7ae908553e2c661a25081ccad8d225090d44ef8a2178baf4fbd57bc1f4ee02
   languageName: node
   linkType: hard
 
@@ -14612,7 +14597,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cjs-module-lexer@npm:^1.0.0, cjs-module-lexer@npm:^1.2.2":
+"cjs-module-lexer@npm:^1.0.0":
   version: 1.2.3
   resolution: "cjs-module-lexer@npm:1.2.3"
   checksum: 5ea3cb867a9bb609b6d476cd86590d105f3cfd6514db38ff71f63992ab40939c2feb68967faa15a6d2b1f90daa6416b79ea2de486e9e2485a6f8b66a21b4fb0a

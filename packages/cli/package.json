@@ -14,7 +14,6 @@
     "@clack/core": "^0.3.2",
     "@clack/prompts": "^0.6.3",
     "@endo/static-module-record": "^0.7.20",
-    "@masknet/static-module-record-swc": "^0.5.0",
     "ts-node": "^10.9.1"
   },
   "dependencies": {
