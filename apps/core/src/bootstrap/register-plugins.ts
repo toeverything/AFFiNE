@@ -1,5 +1,4 @@
 /// <reference types="@types/webpack-env" />
-/* eslint no-console: ["error", { allow: ["warn", "error"] }] */
 import 'ses';
 
 import * as AFFiNEComponent from '@affine/component';
@@ -274,12 +273,5 @@ await Promise.all(
       });
   })
 ).then(() => {
-  logger.info('All plugins loaded');
-  window.dispatchEvent(
-    new CustomEvent('plugin-loaded', {
-      detail: {
-        plugins: globalThis.__pluginPackageJson__,
-      },
-    })
-  );
+  console.info('All plugins loaded');
 });
