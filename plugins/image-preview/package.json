@@ -1,0 +1,9 @@
+{
+  "name": "@affine/image-preview-plugin",
+  "version": "1.0.0",
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@blocksuite/icons": "^2.1.27",
+    "@toeverything/plugin-infra": "workspace:*"
+  }
+}

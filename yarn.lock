@@ -403,6 +403,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/image-preview-plugin@workspace:plugins/image-preview":
+  version: 0.0.0-use.local
+  resolution: "@affine/image-preview-plugin@workspace:plugins/image-preview"
+  dependencies:
+    "@affine/component": "workspace:*"
+    "@blocksuite/icons": ^2.1.27
+    "@toeverything/plugin-infra": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@affine/jotai@workspace:*, @affine/jotai@workspace:packages/jotai":
   version: 0.0.0-use.local
   resolution: "@affine/jotai@workspace:packages/jotai"
