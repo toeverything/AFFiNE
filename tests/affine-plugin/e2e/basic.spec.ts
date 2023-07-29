@@ -17,14 +17,26 @@ test('plugin should exist', async ({ page }) => {
   expect(packageJson).toEqual([
     {
       name: '@affine/bookmark-plugin',
+      version: expect.any(Number),
+      description: expect.any(String),
       affinePlugin: expect.anything(),
     },
     {
       name: '@affine/copilot-plugin',
+      version: expect.any(Number),
+      description: expect.any(String),
       affinePlugin: expect.anything(),
     },
     {
       name: '@affine/hello-world-plugin',
+      version: expect.any(Number),
+      description: expect.any(String),
+      affinePlugin: expect.anything(),
+    },
+    {
+      name: '@affine/image-preview-plugin',
+      version: expect.any(Number),
+      description: expect.any(String),
       affinePlugin: expect.anything(),
     },
   ]);
