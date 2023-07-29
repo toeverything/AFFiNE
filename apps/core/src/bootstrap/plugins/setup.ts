@@ -81,6 +81,9 @@ export const createGlobalThis = () => {
     TextDecoder: globalThis.TextDecoder,
     Request: globalThis.Request,
     Error: globalThis.Error,
+    // bookmark uses these
+    Blob: globalThis.Blob,
+    ClipboardItem: globalThis.ClipboardItem,
 
     // fixme: use our own db api
     indexedDB: globalThis.indexedDB,

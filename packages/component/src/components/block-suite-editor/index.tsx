@@ -8,8 +8,7 @@ import { Skeleton } from '@mui/material';
 import { use } from 'foxact/use';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { lazy, memo, Suspense, useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -40,12 +39,6 @@ declare global {
   // eslint-disable-next-line no-var
   var currentEditor: EditorContainer | undefined;
 }
-
-const ImagePreviewModal = lazy(() =>
-  import('../image-preview-modal').then(module => ({
-    default: module.ImagePreviewModal,
-  }))
-);
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const { onLoad, page, mode, style } = props;
@@ -191,17 +184,6 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
       <Suspense fallback={<BlockSuiteFallback />}>
         <BlockSuiteEditorImpl {...props} />
       </Suspense>
-      {props.page && (
-        <Suspense fallback={null}>
-          {createPortal(
-            <ImagePreviewModal
-              workspace={props.page.workspace}
-              pageId={props.page.id}
-            />,
-            document.body
-          )}
-        </Suspense>
-      )}
     </ErrorBoundary>
   );
 });
