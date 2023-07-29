@@ -24,7 +24,6 @@ import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suit
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
 import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
-import * as styles from '../styles.css';
 import { LanguageMenu } from './language-menu';
 const CommonMenu = () => {
   const content = (
@@ -73,59 +72,43 @@ const PageMenu = () => {
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const EditMenu = (
     <>
-      <>
-        <MenuItem
-          data-testid="editor-option-menu-favorite"
-          onClick={() => {
-            setPageMeta(pageId, { favorite: !favorite });
-            toast(
-              favorite
-                ? t['Removed from Favorites']()
-                : t['Added to Favorites']()
-            );
-          }}
-          icon={
-            favorite ? (
-              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
-            ) : (
-              <FavoriteIcon />
-            )
-          }
-        >
-          {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
-        </MenuItem>
-        <MenuItem
-          icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
-          data-testid="editor-option-menu-edgeless"
-          onClick={() => {
-            setSetting(setting => ({
-              mode: setting?.mode === 'page' ? 'edgeless' : 'page',
-            }));
-          }}
-        >
-          {t['Convert to ']()}
-          {mode === 'page' ? t['Edgeless']() : t['Page']()}
-        </MenuItem>
-        <Export />
-        <MoveToTrash
-          data-testid="editor-option-menu-delete"
-          onItemClick={() => {
-            setOpenConfirm(true);
-          }}
-        />
-        <div className={styles.horizontalDividerContainer}>
-          <div className={styles.horizontalDivider} />
-        </div>
-      </>
-
-      <div
-        onClick={e => {
-          e.stopPropagation();
+      <MenuItem
+        data-testid="editor-option-menu-favorite"
+        onClick={() => {
+          setPageMeta(pageId, { favorite: !favorite });
+          toast(
+            favorite ? t['Removed from Favorites']() : t['Added to Favorites']()
+          );
+        }}
+        icon={
+          favorite ? (
+            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
+          ) : (
+            <FavoriteIcon />
+          )
+        }
+      >
+        {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
+      </MenuItem>
+      <MenuItem
+        icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
+        data-testid="editor-option-menu-edgeless"
+        onClick={() => {
+          setSetting(setting => ({
+            mode: setting?.mode === 'page' ? 'edgeless' : 'page',
+          }));
         }}
       >
-        <MenuThemeModeSwitch />
-        <LanguageMenu />
-      </div>
+        {t['Convert to ']()}
+        {mode === 'page' ? t['Edgeless']() : t['Page']()}
+      </MenuItem>
+      <Export />
+      <MoveToTrash
+        data-testid="editor-option-menu-delete"
+        onItemClick={() => {
+          setOpenConfirm(true);
+        }}
+      />
     </>
   );
 
