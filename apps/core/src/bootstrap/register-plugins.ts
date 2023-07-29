@@ -102,7 +102,7 @@ await Promise.all(
         if (!release && process.env.NODE_ENV === 'production') {
           return Promise.resolve();
         }
-        const pluginCompartment = new Compartment(createGlobalThis());
+        const pluginCompartment = new Compartment(createGlobalThis(pluginName));
         const baseURL = url;
         const entryURL = `${baseURL}/${core}`;
         rootStore.set(registeredPluginAtom, prev => [...prev, pluginName]);

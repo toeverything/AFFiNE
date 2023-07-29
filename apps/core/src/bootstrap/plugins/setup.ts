@@ -1,4 +1,5 @@
 import * as AFFiNEComponent from '@affine/component';
+import { DebugLogger } from '@affine/debug';
 import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
@@ -10,6 +11,11 @@ import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
 import * as SWR from 'swr';
+
+import { createFetch } from './endowments/fercher';
+import { createTimers } from './endowments/timer';
+
+const logger = new DebugLogger('plugins:permission');
 
 const setupImportsMap = () => {
   importsMap.set('react', new Map(Object.entries(React)));
@@ -39,27 +45,61 @@ const importsMap = new Map<string, Map<string, any>>();
 setupImportsMap();
 export { importsMap };
 
-export const createGlobalThis = () => {
-  return {
+const abortController = new AbortController();
+
+const pluginFetch = createFetch({});
+const timer = createTimers(abortController.signal);
+
+const sharedGlobalThis = Object.assign(Object.create(null), timer, {
+  fetch: pluginFetch,
+});
+
+export const createGlobalThis = (name: string) => {
+  return Object.assign(Object.create(null), sharedGlobalThis, {
     process: Object.freeze({
       env: {
         NODE_ENV: process.env.NODE_ENV,
       },
     }),
     // UNSAFE: React will read `window` and `document`
-    window,
-    document,
-    navigator,
-    userAgent: navigator.userAgent,
-    // todo(himself65): permission control
-    fetch: function (input: RequestInfo, init?: RequestInit) {
-      return globalThis.fetch(input, init);
-    },
-    setTimeout: function (callback: () => void, timeout: number) {
-      return globalThis.setTimeout(callback, timeout);
-    },
-    clearTimeout: function (id: number) {
-      return globalThis.clearTimeout(id);
+    window: new Proxy(
+      {},
+      {
+        get(_, key) {
+          logger.debug(`${name} is accessing window`, key);
+          if (sharedGlobalThis[key]) return sharedGlobalThis[key];
+          const result = Reflect.get(window, key);
+          if (typeof result === 'function') {
+            return function (...args: any[]) {
+              logger.debug(`${name} is calling window`, key, args);
+              return result.apply(window, args);
+            };
+          }
+          logger.debug('window', key, result);
+          return result;
+        },
+      }
+    ),
+    document: new Proxy(
+      {},
+      {
+        get(_, key) {
+          logger.debug(`${name} is accessing document`, key);
+          if (sharedGlobalThis[key]) return sharedGlobalThis[key];
+          const result = Reflect.get(document, key);
+          if (typeof result === 'function') {
+            return function (...args: any[]) {
+              logger.debug(`${name} is calling window`, key, args);
+              return result.apply(document, args);
+            };
+          }
+          logger.debug('document', key, result);
+          return result;
+        },
+      }
+    ),
+    navigator: {
+      userAgent: navigator.userAgent,
     },
 
     // safe to use for all plugins
@@ -97,5 +137,5 @@ export const createGlobalThis = () => {
     IDBIndex: globalThis.IDBIndex,
     IDBCursor: globalThis.IDBCursor,
     IDBVersionChangeEvent: globalThis.IDBVersionChangeEvent,
-  };
+  });
 };
