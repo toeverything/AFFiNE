@@ -11,6 +11,10 @@ test('plugin should exist', async ({ page }) => {
     () => window.__pluginPackageJson__,
     []
   );
+  await page.route('**/plugins/**/package.json', route => route.fetch(), {
+    times: 3,
+  });
+  await page.waitForTimeout(50);
   expect(packageJson).toEqual([
     {
       name: '@affine/bookmark-plugin',
