@@ -52,7 +52,8 @@ const external = [
   /^@toeverything/,
 
   // react
-  /^react/,
+  'react',
+  /^react\//,
   /^react-dom/,
 
   // store
