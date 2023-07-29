@@ -1,5 +1,6 @@
 {
   "name": "@affine/copilot-plugin",
+  "type": "module",
   "private": true,
   "description": "Copilot plugin",
   "affinePlugin": {

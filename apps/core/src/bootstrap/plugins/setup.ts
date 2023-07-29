@@ -9,43 +9,35 @@ import * as React from 'react';
 import * as ReactJSXRuntime from 'react/jsx-runtime';
 import * as ReactDom from 'react-dom';
 import * as ReactDomClient from 'react-dom/client';
+import * as SWR from 'swr';
 
-const customRequire = (id: string) => {
-  if (id === '@toeverything/plugin-infra/atom') {
-    return Atom;
-  }
-  if (id === 'react') {
-    return React;
-  }
-  if (id === 'react/jsx-runtime') {
-    return ReactJSXRuntime;
-  }
-  if (id === 'react-dom') {
-    return ReactDom;
-  }
-  if (id === 'react-dom/client') {
-    return ReactDomClient;
-  }
-  if (id === '@blocksuite/icons') {
-    return Icons;
-  }
-  if (id === '@affine/component') {
-    return AFFiNEComponent;
-  }
-  if (id === '@blocksuite/blocks/std') {
-    return BlockSuiteBlocksStd;
-  }
-  if (id === '@blocksuite/global/utils') {
-    return BlockSuiteGlobalUtils;
-  }
-  if (id === 'jotai') {
-    return Jotai;
-  }
-  if (id === 'jotai/utils') {
-    return JotaiUtils;
-  }
-  throw new Error(`Cannot find module '${id}'`);
+const setupImportsMap = () => {
+  importsMap.set('react', new Map(Object.entries(React)));
+  importsMap.set('react/jsx-runtime', new Map(Object.entries(ReactJSXRuntime)));
+  importsMap.set('react-dom', new Map(Object.entries(ReactDom)));
+  importsMap.set('react-dom/client', new Map(Object.entries(ReactDomClient)));
+  importsMap.set('@blocksuite/icons', new Map(Object.entries(Icons)));
+  importsMap.set('@affine/component', new Map(Object.entries(AFFiNEComponent)));
+  importsMap.set(
+    '@blocksuite/blocks/std',
+    new Map(Object.entries(BlockSuiteBlocksStd))
+  );
+  importsMap.set(
+    '@blocksuite/global/utils',
+    new Map(Object.entries(BlockSuiteGlobalUtils))
+  );
+  importsMap.set('jotai', new Map(Object.entries(Jotai)));
+  importsMap.set('jotai/utils', new Map(Object.entries(JotaiUtils)));
+  importsMap.set(
+    '@toeverything/plugin-infra/atom',
+    new Map(Object.entries(Atom))
+  );
+  importsMap.set('swr', new Map(Object.entries(SWR)));
 };
+
+const importsMap = new Map<string, Map<string, any>>();
+setupImportsMap();
+export { importsMap };
 
 export const createGlobalThis = () => {
   return {
@@ -69,8 +61,15 @@ export const createGlobalThis = () => {
     clearTimeout: function (id: number) {
       return globalThis.clearTimeout(id);
     },
-    // copilot uses these
+
+    // safe to use for all plugins
+    Error: globalThis.Error,
+    TypeError: globalThis.TypeError,
+    RangeError: globalThis.RangeError,
+    console: globalThis.console,
     crypto: globalThis.crypto,
+
+    // copilot uses these
     CustomEvent: globalThis.CustomEvent,
     Date: globalThis.Date,
     Math: globalThis.Math,
@@ -80,8 +79,8 @@ export const createGlobalThis = () => {
     TextEncoder: globalThis.TextEncoder,
     TextDecoder: globalThis.TextDecoder,
     Request: globalThis.Request,
-    Error: globalThis.Error,
-    // bookmark uses these
+
+    // image-preview uses these
     Blob: globalThis.Blob,
     ClipboardItem: globalThis.ClipboardItem,
 
@@ -98,9 +97,5 @@ export const createGlobalThis = () => {
     IDBIndex: globalThis.IDBIndex,
     IDBCursor: globalThis.IDBCursor,
     IDBVersionChangeEvent: globalThis.IDBVersionChangeEvent,
-
-    exports: {},
-    console: globalThis.console,
-    require: customRequire,
   };
 };

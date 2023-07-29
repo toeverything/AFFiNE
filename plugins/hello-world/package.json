@@ -1,5 +1,6 @@
 {
   "name": "@affine/hello-world-plugin",
+  "type": "module",
   "private": true,
   "description": "Hello world plugin",
   "version": "0.8.0-canary.1",

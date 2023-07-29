@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
+import { StaticModuleRecord } from '@endo/static-module-record';
 import {
   packageJsonInputSchema,
   packageJsonOutputSchema,
@@ -51,6 +52,9 @@ const external = [
 
   // store
   /^jotai/,
+
+  // utils
+  'swr',
 
   // css
   /^@vanilla-extract/,
@@ -132,7 +136,7 @@ await build({
     lib: {
       entry: coreEntry,
       fileName: 'index',
-      formats: ['cjs'],
+      formats: ['es'],
     },
     rollupOptions: {
       output: {
@@ -153,6 +157,28 @@ await build({
     vanillaExtractPlugin(),
     react(),
     {
+      name: 'parse-bundle',
+      renderChunk(code, chunk) {
+        if (chunk.fileName.endsWith('.mjs')) {
+          const record = new StaticModuleRecord(code, chunk.fileName);
+          this.emitFile({
+            type: 'asset',
+            fileName: 'analysis.json',
+            source: JSON.stringify(
+              {
+                exports: record.exports,
+                imports: record.imports,
+              },
+              null,
+              2
+            ),
+          });
+          return record.__syncModuleProgram__;
+        }
+        return code;
+      },
+    },
+    {
       name: 'generate-package.json',
       async generateBundle() {
         const packageJson = {
@@ -162,7 +188,7 @@ await build({
           affinePlugin: {
             release: json.affinePlugin.release,
             entry: {
-              core: 'index.js',
+              core: 'index.mjs',
             },
             assets: [...metadata.assets],
           },
