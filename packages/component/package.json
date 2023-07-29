@@ -52,12 +52,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230720073515-bea92e0f-nightly",
-    "@blocksuite/editor": "0.0.0-20230720073515-bea92e0f-nightly",
-    "@blocksuite/global": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/blocks": "0.0.0-20230729011742-613f3782-nightly",
+    "@blocksuite/editor": "0.0.0-20230729011742-613f3782-nightly",
+    "@blocksuite/global": "0.0.0-20230729011742-613f3782-nightly",
     "@blocksuite/icons": "^2.1.27",
-    "@blocksuite/lit": "0.0.0-20230720073515-bea92e0f-nightly",
-    "@blocksuite/store": "0.0.0-20230720073515-bea92e0f-nightly",
+    "@blocksuite/lit": "0.0.0-20230729011742-613f3782-nightly",
+    "@blocksuite/store": "0.0.0-20230729011742-613f3782-nightly",
     "@types/react": "^18.2.17",
     "@types/react-datepicker": "^4.15.0",
     "@types/react-dnd": "^3.0.2",
