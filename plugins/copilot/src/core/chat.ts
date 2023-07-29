@@ -11,6 +11,7 @@ import {
 
 import { IndexedDBChatMessageHistory } from './langchain/message-history';
 import { chatPrompt, followupQuestionPrompt } from './prompts';
+import { followupQuestionParser } from './prompts/output-parser';
 
 declare global {
   interface WindowEventMap {
@@ -77,6 +78,9 @@ export async function createChatAI(
   const followupPromptTemplate = new PromptTemplate({
     template: followupQuestionPrompt,
     inputVariables: ['human_conversation', 'ai_conversation'],
+    partialVariables: {
+      format_instructions: followupQuestionParser.getFormatInstructions(),
+    },
   });
 
   const followupChain = new LLMChain({

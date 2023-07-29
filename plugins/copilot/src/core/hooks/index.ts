@@ -1,4 +1,3 @@
-import type { IndexedDBChatMessageHistory } from '@affine/copilot/core/langchain/message-history';
 import { atom, useAtomValue } from 'jotai';
 import { atomWithDefault, atomWithStorage } from 'jotai/utils';
 import type { WritableAtom } from 'jotai/vanilla';
@@ -8,11 +7,10 @@ import { type BufferMemory } from 'langchain/memory';
 import type { BaseMessage } from 'langchain/schema';
 import { AIMessage } from 'langchain/schema';
 import { HumanMessage } from 'langchain/schema';
-import { z } from 'zod';
 
 import { createChatAI } from '../chat';
-
-const followupResponseSchema = z.array(z.string());
+import type { IndexedDBChatMessageHistory } from '../langchain/message-history';
+import { followupQuestionParser } from '../prompts/output-parser';
 
 export const openAIApiKeyAtom = atomWithStorage<string | null>(
   'com.affine.copilot.openai.token',
@@ -57,7 +55,11 @@ const getConversationAtom = (chat: ConversationChain) => {
     const llmStart = (): void => {
       setAtom(conversations => [...conversations, new AIMessage('')]);
     };
-    const llmNewToken = (event: CustomEvent<{ token: string }>): void => {
+    const llmNewToken = (
+      event: CustomEvent<{
+        token: string;
+      }>
+    ): void => {
       setAtom(conversations => {
         const last = conversations[conversations.length - 1] as AIMessage;
         last.content += event.detail.token;
@@ -105,7 +107,9 @@ const getConversationAtom = (chat: ConversationChain) => {
 const followingUpWeakMap = new WeakMap<
   LLMChain<string>,
   {
-    questionsAtom: ReturnType<typeof atomWithDefault<Promise<string[]>>>;
+    questionsAtom: ReturnType<
+      typeof atomWithDefault<Promise<string[]> | string[]>
+    >;
     generateChatAtom: WritableAtom<null, [], void>;
   }
 >();
@@ -116,11 +120,13 @@ const getFollowingUpAtoms = (
 ) => {
   if (followingUpWeakMap.has(followupLLMChain)) {
     return followingUpWeakMap.get(followupLLMChain) as {
-      questionsAtom: ReturnType<typeof atomWithDefault<Promise<string[]>>>;
+      questionsAtom: ReturnType<
+        typeof atomWithDefault<Promise<string[]> | string[]>
+      >;
       generateChatAtom: WritableAtom<null, [], void>;
     };
   }
-  const baseAtom = atomWithDefault<Promise<string[]>>(async () => {
+  const baseAtom = atomWithDefault<Promise<string[]> | string[]>(async () => {
     return chatHistory?.getFollowingUp() ?? [];
   });
   const setAtom = atom<null, [], void>(null, async (get, set) => {
@@ -137,10 +143,9 @@ const getFollowingUpAtoms = (
       ai_conversation: aiMessage,
       human_conversation: humanMessage,
     });
-    const followingUp = JSON.parse(response.text);
-    followupResponseSchema.parse(followingUp);
-    set(baseAtom, followingUp);
-    chatHistory.saveFollowingUp(followingUp).catch(() => {
+    const followingUp = await followupQuestionParser.parse(response.text);
+    set(baseAtom, followingUp.followupQuestions);
+    chatHistory.saveFollowingUp(followingUp.followupQuestions).catch(() => {
       console.error('failed to save followup');
     });
   });
