@@ -3,10 +3,14 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
+import {
+  packageJsonInputSchema,
+  packageJsonOutputSchema,
+} from '@toeverything/plugin-infra/type';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
 import { build } from 'vite';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 import { projectRoot } from '../config/index.js';
 
@@ -33,17 +37,6 @@ if (typeof plugin !== 'string') {
 
 const isWatch = result.values.watch;
 ok(typeof isWatch === 'boolean');
-
-const packageJsonSchema = z.object({
-  name: z.string(),
-  affinePlugin: z.object({
-    release: z.boolean(),
-    entry: z.object({
-      core: z.string(),
-      server: z.string().optional(),
-    }),
-  }),
-});
 
 const external = [
   // built-in packages
@@ -72,7 +65,7 @@ const getPluginDir = (plugin: string) => path.resolve(allPluginDir, plugin);
 const pluginDir = getPluginDir(plugin);
 const packageJsonFile = path.resolve(pluginDir, 'package.json');
 
-const json: z.infer<typeof packageJsonSchema> = await readFile(
+const json: z.infer<typeof packageJsonInputSchema> = await readFile(
   packageJsonFile,
   {
     encoding: 'utf-8',
@@ -80,7 +73,7 @@ const json: z.infer<typeof packageJsonSchema> = await readFile(
 )
   .then(text => JSON.parse(text))
   .then(async json => {
-    const { success } = await packageJsonSchema.safeParseAsync(json);
+    const { success } = await packageJsonInputSchema.safeParseAsync(json);
     if (success) {
       return json;
     } else {
@@ -164,6 +157,8 @@ await build({
       async generateBundle() {
         const packageJson = {
           name: json.name,
+          version: json.version,
+          description: json.description,
           affinePlugin: {
             release: json.affinePlugin.release,
             entry: {
@@ -172,6 +167,7 @@ await build({
             assets: [...metadata.assets],
           },
         };
+        packageJsonOutputSchema.parse(packageJson);
         this.emitFile({
           type: 'asset',
           fileName: 'package.json',
