@@ -47,6 +47,9 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
 test('export then add', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
 
+  await page.focus('.affine-default-page-block-title');
+  await page.fill('.affine-default-page-block-title', 'test1');
+
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
 
@@ -57,13 +60,13 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   // goto workspace setting
   await page.getByTestId('workspace-list-item').click();
 
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(200);
 
   // change workspace name
   await page.getByTestId('workspace-name-input').fill(newWorkspaceName);
   await page.getByTestId('save-workspace-name').click();
   await page.waitForSelector('text="Update workspace name success"');
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(200);
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
 
@@ -103,9 +106,16 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('create-workspace-continue-button').click();
 
   // sleep for a while to wait for the workspace to be added :D
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(500);
   const newWorkspace = await workspace.current();
   expect(newWorkspace.id).not.toBe(originalId);
   // check its name is correct
   await expect(page.getByTestId('workspace-name')).toHaveText(newWorkspaceName);
+
+  // find button which has the title "test1"
+  const test1PageButton = await page.waitForSelector(`text="test1"`);
+  await test1PageButton.click();
+
+  const title = page.locator('[data-block-is-title] >> text="test1"');
+  await expect(title).toBeVisible();
 });

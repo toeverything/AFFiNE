@@ -57,6 +57,11 @@ export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
         });
         blockSuiteWorkspace.meta.setPageMeta(pageId, { title: newTitle });
       },
+      setPageReadonly: (pageId: string, readonly: boolean) => {
+        const page = blockSuiteWorkspace.getPage(pageId);
+        assertExists(page);
+        page.awarenessStore.setReadonly(page, readonly);
+      },
       setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
         blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);
       },
