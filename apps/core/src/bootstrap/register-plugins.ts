@@ -59,15 +59,6 @@ declare global {
 
 globalThis.__pluginPackageJson__ = [];
 
-interface PluginLoadedEvent extends CustomEvent<{ plugins: unknown[] }> {}
-
-// add to window
-declare global {
-  interface WindowEventMap {
-    'plugin-loaded': PluginLoadedEvent;
-  }
-}
-
 await Promise.all(
   [...builtinPluginUrl].map(url => {
     return fetch(`${url}/package.json`)

@@ -1,7 +1,7 @@
 {
   "name": "@affine/hello-world-plugin",
   "private": true,
-  "version": "0.7.0-canary.59",
+  "version": "0.8.0-canary.0",
   "affinePlugin": {
     "release": false,
     "entry": {

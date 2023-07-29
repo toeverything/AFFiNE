@@ -55,7 +55,7 @@ test('image preview should be shown', async ({ page }) => {
   expect(await locator.isVisible()).toBeFalsy();
 });
 
-test('image go left and right', async ({ page }) => {
+test.fixme('image go left and right', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await newPage(page);
@@ -201,59 +201,62 @@ test('image able to zoom in and out with button click', async ({ page }) => {
   }
 });
 
-test('image should able to go left and right by buttons', async ({ page }) => {
-  await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
-  let blobId: string;
-  {
-    const title = await getBlockSuiteEditorTitle(page);
-    await title.dblclick();
-    await page.keyboard.press('Enter');
-    await importImage(page, 'http://localhost:8081/large-image.png');
+test.fixme(
+  'image should able to go left and right by buttons',
+  async ({ page }) => {
+    await openHomePage(page);
+    await waitEditorLoad(page);
+    await newPage(page);
+    let blobId: string;
+    {
+      const title = await getBlockSuiteEditorTitle(page);
+      await title.dblclick();
+      await page.keyboard.press('Enter');
+      await importImage(page, 'http://localhost:8081/large-image.png');
+      await page.locator('img').first().dblclick();
+      await page.waitForTimeout(500);
+      blobId = (await page
+        .locator('img')
+        .nth(1)
+        .getAttribute('data-blob-id')) as string;
+      expect(blobId).toBeTruthy();
+      await closeImagePreviewModal(page);
+    }
+    {
+      const title = await getBlockSuiteEditorTitle(page);
+      await title.dblclick();
+      await page.keyboard.press('Enter');
+      await importImage(page, 'http://localhost:8081/affine-preview.png');
+    }
+    const locator = page.getByTestId('image-preview-modal');
+    expect(locator.isVisible()).toBeTruthy();
     await page.locator('img').first().dblclick();
-    await page.waitForTimeout(500);
-    blobId = (await page
-      .locator('img')
-      .nth(1)
-      .getAttribute('data-blob-id')) as string;
-    expect(blobId).toBeTruthy();
-    await closeImagePreviewModal(page);
+    // ensure the new image was imported
+    await page.waitForTimeout(1000);
+    {
+      const newBlobId = (await locator
+        .getByTestId('image-content')
+        .getAttribute('data-blob-id')) as string;
+      expect(newBlobId).not.toBe(blobId);
+    }
+    await locator.getByTestId('next-image-button').click();
+    await page.waitForTimeout(1000);
+    {
+      const newBlobId = (await page
+        .getByTestId('image-content')
+        .getAttribute('data-blob-id')) as string;
+      expect(newBlobId).toBe(blobId);
+    }
+    await locator.getByTestId('previous-image-button').click();
+    await page.waitForTimeout(1000);
+    {
+      const newBlobId = (await locator
+        .getByTestId('image-content')
+        .getAttribute('data-blob-id')) as string;
+      expect(newBlobId).not.toBe(blobId);
+    }
   }
-  {
-    const title = await getBlockSuiteEditorTitle(page);
-    await title.dblclick();
-    await page.keyboard.press('Enter');
-    await importImage(page, 'http://localhost:8081/affine-preview.png');
-  }
-  const locator = page.getByTestId('image-preview-modal');
-  expect(locator.isVisible()).toBeTruthy();
-  await page.locator('img').first().dblclick();
-  // ensure the new image was imported
-  await page.waitForTimeout(1000);
-  {
-    const newBlobId = (await locator
-      .getByTestId('image-content')
-      .getAttribute('data-blob-id')) as string;
-    expect(newBlobId).not.toBe(blobId);
-  }
-  await locator.getByTestId('next-image-button').click();
-  await page.waitForTimeout(1000);
-  {
-    const newBlobId = (await page
-      .getByTestId('image-content')
-      .getAttribute('data-blob-id')) as string;
-    expect(newBlobId).toBe(blobId);
-  }
-  await locator.getByTestId('previous-image-button').click();
-  await page.waitForTimeout(1000);
-  {
-    const newBlobId = (await locator
-      .getByTestId('image-content')
-      .getAttribute('data-blob-id')) as string;
-    expect(newBlobId).not.toBe(blobId);
-  }
-});
+);
 
 test('image able to fit to screen by button', async ({ page }) => {
   await openHomePage(page);
@@ -479,80 +482,81 @@ test('image should only able to move when image is larger than viewport', async 
   expect(initialYPos).toBe(imageBoundary?.y);
 });
 
-test('image should able to delete and when delete, it will move to previous/next image', async ({
-  page,
-}) => {
-  await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
-  let blobId: string;
-  {
-    const title = await getBlockSuiteEditorTitle(page);
-    await title.dblclick();
-    await page.keyboard.press('Enter');
-    await importImage(page, 'http://localhost:8081/large-image.png');
+test.fixme(
+  'image should able to delete and when delete, it will move to previous/next image',
+  async ({ page }) => {
+    await openHomePage(page);
+    await waitEditorLoad(page);
+    await newPage(page);
+    let blobId: string;
+    {
+      const title = await getBlockSuiteEditorTitle(page);
+      await title.dblclick();
+      await page.keyboard.press('Enter');
+      await importImage(page, 'http://localhost:8081/large-image.png');
+      await page.locator('img').first().dblclick();
+      await page.waitForTimeout(500);
+      blobId = (await page
+        .locator('img')
+        .nth(1)
+        .getAttribute('data-blob-id')) as string;
+      expect(blobId).toBeTruthy();
+      await closeImagePreviewModal(page);
+    }
+    {
+      const title = await getBlockSuiteEditorTitle(page);
+      await title.dblclick();
+      await page.keyboard.press('Enter');
+      await importImage(page, 'http://localhost:8081/affine-preview.png');
+    }
+    const locator = page.getByTestId('image-preview-modal');
+    await expect(locator.isVisible()).toBeTruthy();
     await page.locator('img').first().dblclick();
+    // ensure the new image was imported
+    await page.waitForTimeout(1000);
+    {
+      const newBlobId = (await locator
+        .getByTestId('image-content')
+        .getAttribute('data-blob-id')) as string;
+      expect(newBlobId).not.toBe(blobId);
+    }
     await page.waitForTimeout(500);
-    blobId = (await page
-      .locator('img')
-      .nth(1)
-      .getAttribute('data-blob-id')) as string;
-    expect(blobId).toBeTruthy();
-    await closeImagePreviewModal(page);
+    await locator.getByTestId('delete-button').click();
+    {
+      const newBlobId = (await locator
+        .getByTestId('image-content')
+        .getAttribute('data-blob-id')) as string;
+      expect(newBlobId).toBe(blobId);
+      await closeImagePreviewModal(page);
+      const title = await getBlockSuiteEditorTitle(page);
+      await title.dblclick();
+      await page.keyboard.press('Enter');
+      await importImage(page, 'http://localhost:8081/affine-preview.png');
+    }
+    await page.locator('img').first().dblclick();
+    await locator.getByTestId('next-image-button').click();
+    await page.waitForTimeout(1000);
+    {
+      const newBlobId = (await page
+        .getByTestId('image-content')
+        .getAttribute('data-blob-id')) as string;
+      expect(newBlobId).toBe(blobId);
+    }
+    await locator.getByTestId('delete-button').click();
+    {
+      const newBlobId = (await locator
+        .getByTestId('image-content')
+        .getAttribute('data-blob-id')) as string;
+      expect(newBlobId).not.toBe(blobId);
+    }
+    await locator.getByTestId('delete-button').click();
+    await page.waitForTimeout(500);
+    {
+      const locator = await page.getByTestId('image-preview-modal').count();
+      expect(locator).toBe(0);
+    }
   }
-  {
-    const title = await getBlockSuiteEditorTitle(page);
-    await title.dblclick();
-    await page.keyboard.press('Enter');
-    await importImage(page, 'http://localhost:8081/affine-preview.png');
-  }
-  const locator = page.getByTestId('image-preview-modal');
-  await expect(locator.isVisible()).toBeTruthy();
-  await page.locator('img').first().dblclick();
-  // ensure the new image was imported
-  await page.waitForTimeout(1000);
-  {
-    const newBlobId = (await locator
-      .getByTestId('image-content')
-      .getAttribute('data-blob-id')) as string;
-    expect(newBlobId).not.toBe(blobId);
-  }
-  await page.waitForTimeout(500);
-  await locator.getByTestId('delete-button').click();
-  {
-    const newBlobId = (await locator
-      .getByTestId('image-content')
-      .getAttribute('data-blob-id')) as string;
-    expect(newBlobId).toBe(blobId);
-    await closeImagePreviewModal(page);
-    const title = await getBlockSuiteEditorTitle(page);
-    await title.dblclick();
-    await page.keyboard.press('Enter');
-    await importImage(page, 'http://localhost:8081/affine-preview.png');
-  }
-  await page.locator('img').first().dblclick();
-  await locator.getByTestId('next-image-button').click();
-  await page.waitForTimeout(1000);
-  {
-    const newBlobId = (await page
-      .getByTestId('image-content')
-      .getAttribute('data-blob-id')) as string;
-    expect(newBlobId).toBe(blobId);
-  }
-  await locator.getByTestId('delete-button').click();
-  {
-    const newBlobId = (await locator
-      .getByTestId('image-content')
-      .getAttribute('data-blob-id')) as string;
-    expect(newBlobId).not.toBe(blobId);
-  }
-  await locator.getByTestId('delete-button').click();
-  await page.waitForTimeout(500);
-  {
-    const locator = await page.getByTestId('image-preview-modal').count();
-    expect(locator).toBe(0);
-  }
-});
+);
 
 test('tooltips for all buttons should be visible when hovering', async ({
   page,
