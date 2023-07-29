@@ -63,11 +63,11 @@ export const createGlobalThis = () => {
     },
 
     // safe to use for all plugins
-    Error: harden(globalThis.Error),
-    TypeError: harden(globalThis.TypeError),
-    RangeError: harden(globalThis.RangeError),
-    console: harden(globalThis.console),
-    crypto: harden(globalThis.crypto),
+    Error: globalThis.Error,
+    TypeError: globalThis.TypeError,
+    RangeError: globalThis.RangeError,
+    console: globalThis.console,
+    crypto: globalThis.crypto,
 
     // copilot uses these
     CustomEvent: globalThis.CustomEvent,
