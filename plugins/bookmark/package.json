@@ -8,7 +8,10 @@
     "entry": {
       "core": "./src/index.ts",
       "server": "./src/server.ts"
-    }
+    },
+    "serverCommand": [
+      "com.blocksuite.bookmark-block.get-bookmark-data-by-link"
+    ]
   },
   "dependencies": {
     "@affine/component": "workspace:*",

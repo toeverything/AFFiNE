@@ -1,8 +1,8 @@
 import { app, Menu } from 'electron';
 
+import { isMacOS } from '../../shared/utils';
 import { revealLogFile } from '../logger';
 import { checkForUpdates } from '../updater';
-import { isMacOS } from '../utils';
 import { applicationMenuSubjects } from './subject';
 
 // Unique id for menuitems
