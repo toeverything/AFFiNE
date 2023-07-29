@@ -274,6 +274,7 @@ await Promise.all(
       });
   })
 ).then(() => {
+  logger.info('All plugins loaded');
   window.dispatchEvent(
     new CustomEvent('plugin-loaded', {
       detail: {

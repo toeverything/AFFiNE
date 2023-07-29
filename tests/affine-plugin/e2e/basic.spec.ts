@@ -3,9 +3,7 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
-// declare plugin loaded event
 interface PluginLoadedEvent extends CustomEvent<{ plugins: unknown[] }> {}
-// add to window
 declare global {
   interface WindowEventMap {
     'plugin-loaded': PluginLoadedEvent;
@@ -14,13 +12,8 @@ declare global {
 
 test('plugin should exist', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await page.route('**/plugins/**/package.json', route => route.fetch(), {
-    times: 3,
-  });
-  await page.waitForTimeout(50);
-  const packageJson = await page.evaluate(
-    () =>
+  const packageJsonPromise = page.evaluate(
+    async () =>
       new Promise(resolve =>
         window.addEventListener('plugin-loaded', e => {
           resolve(e.detail.plugins);
@@ -28,6 +21,12 @@ test('plugin should exist', async ({ page }) => {
       ),
     []
   );
+  await waitEditorLoad(page);
+  await page.route('**/plugins/**/package.json', route => route.fetch(), {
+    times: 3,
+  });
+  await page.waitForTimeout(50);
+  const packageJson = await packageJsonPromise;
   expect(packageJson).toEqual([
     {
       name: '@affine/bookmark-plugin',
