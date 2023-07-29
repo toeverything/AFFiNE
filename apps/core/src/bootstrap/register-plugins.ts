@@ -37,6 +37,7 @@ const builtinPluginUrl = new Set([
   '/plugins/bookmark',
   '/plugins/copilot',
   '/plugins/hello-world',
+  '/plugins/image-preview',
 ]);
 
 const logger = new DebugLogger('register-plugins');

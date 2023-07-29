@@ -45,7 +45,8 @@ const external = [
   /^@toeverything/,
 
   // react
-  /^react/,
+  'react',
+  /^react\//,
   /^react-dom/,
 
   // store
@@ -72,11 +73,11 @@ const json: z.infer<typeof packageJsonInputSchema> = await readFile(
 )
   .then(text => JSON.parse(text))
   .then(async json => {
-    const { success } = await packageJsonInputSchema.safeParseAsync(json);
-    if (success) {
+    const result = await packageJsonInputSchema.safeParseAsync(json);
+    if (result.success) {
       return json;
     } else {
-      throw new Error('invalid package.json');
+      throw new Error('invalid package.json', result.error);
     }
   });
 

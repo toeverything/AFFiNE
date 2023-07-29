@@ -1,16 +1,15 @@
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 
-spawnSync('yarn', ['-T', 'run', 'dev-plugin', '--plugin', 'bookmark'], {
-  stdio: 'inherit',
-  shell: true,
-});
+const builtInPlugins = ['bookmark', 'hello-world', 'copilot', 'image-preview'];
 
-spawnSync('yarn', ['-T', 'run', 'dev-plugin', '--plugin', 'hello-world'], {
-  stdio: 'inherit',
-  shell: true,
-});
-
-spawnSync('yarn', ['-T', 'run', 'dev-plugin', '--plugin', 'copilot'], {
-  stdio: 'inherit',
-  shell: true,
-});
+for (const plugin of builtInPlugins) {
+  const cp = spawn('yarn', ['-T', 'run', 'dev-plugin', '--plugin', plugin], {
+    stdio: 'inherit',
+    shell: true,
+  });
+  cp.on('exit', code => {
+    if (code !== 0) {
+      process.exit(code);
+    }
+  });
+}
