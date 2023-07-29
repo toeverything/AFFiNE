@@ -156,6 +156,9 @@
       "path": "./tests/affine-local"
     },
     {
+      "path": "./tests/affine-plugin"
+    },
+    {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
     }
   ],

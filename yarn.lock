@@ -48,6 +48,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine-test/affine-plugin@workspace:tests/affine-plugin":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/affine-plugin@workspace:tests/affine-plugin"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@playwright/test": ^1.36.2
+  languageName: unknown
+  linkType: soft
+
 "@affine-test/fixtures@workspace:*, @affine-test/fixtures@workspace:tests/fixtures":
   version: 0.0.0-use.local
   resolution: "@affine-test/fixtures@workspace:tests/fixtures"

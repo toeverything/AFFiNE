@@ -153,6 +153,13 @@ const createGlobalThis = () => {
 
 const group = new DisposableGroup();
 
+declare global {
+  // eslint-disable-next-line no-var
+  var __pluginPackageJson__: any[];
+}
+
+globalThis.__pluginPackageJson__ = [];
+
 await Promise.all(
   [...builtinPluginUrl].map(url => {
     return fetch(`${url}/package.json`)
@@ -166,6 +173,7 @@ await Promise.all(
             assets,
           },
         } = packageJson;
+        globalThis.__pluginPackageJson__.push(packageJson);
         logger.debug(`registering plugin ${pluginName}`);
         logger.debug(`package.json: ${packageJson}`);
         if (!release && process.env.NODE_ENV !== 'development') {
