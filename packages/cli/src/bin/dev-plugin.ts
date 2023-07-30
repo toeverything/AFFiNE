@@ -1,4 +1,5 @@
 import { ok } from 'node:assert';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -155,7 +156,21 @@ await build({
             throw new Error('no name');
           }
         },
-        manualChunks: () => 'plugin',
+        chunkFileNames: chunkInfo => {
+          if (chunkInfo.name) {
+            const hash = createHash('md5')
+              .update(
+                Object.values(chunkInfo.moduleIds)
+                  .map(m => m)
+                  .join()
+              )
+              .digest('hex')
+              .substring(0, 6);
+            return `${chunkInfo.name}-${hash}.mjs`;
+          } else {
+            throw new Error('no name');
+          }
+        },
       },
       external,
     },
@@ -166,15 +181,27 @@ await build({
     {
       name: 'parse-bundle',
       renderChunk(code, chunk) {
-        if (chunk.fileName.endsWith('.mjs')) {
+        if (chunk.fileName.endsWith('js')) {
           const record = new StaticModuleRecord(code, chunk.fileName);
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-expect-error
+          const reexports = record.__reexportMap__ as Record<
+            string,
+            [localName: string, exportedName: string][]
+          >;
+          const exports = Object.assign(
+            {},
+            record.__fixedExportMap__,
+            record.__liveExportMap__
+          );
           this.emitFile({
             type: 'asset',
-            fileName: 'analysis.json',
+            fileName: `${chunk.fileName}.json`,
             source: JSON.stringify(
               {
-                exports: record.exports,
+                exports: exports,
                 imports: record.imports,
+                reexports: reexports,
               },
               null,
               2
