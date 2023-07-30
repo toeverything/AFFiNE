@@ -1,13 +1,18 @@
 import { ok } from 'node:assert';
-import { existsSync } from 'node:fs';
-import { mkdir, open, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
+import { StaticModuleRecord } from '@endo/static-module-record';
+import {
+  packageJsonInputSchema,
+  packageJsonOutputSchema,
+} from '@toeverything/plugin-infra/type';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
-import { build } from 'vite';
-import { z } from 'zod';
+import { build, type PluginOption } from 'vite';
+import type { z } from 'zod';
 
 import { projectRoot } from '../config/index.js';
 
@@ -35,17 +40,6 @@ if (typeof plugin !== 'string') {
 const isWatch = result.values.watch;
 ok(typeof isWatch === 'boolean');
 
-const packageJsonSchema = z.object({
-  name: z.string(),
-  affinePlugin: z.object({
-    release: z.boolean(),
-    entry: z.object({
-      core: z.string(),
-      server: z.string().optional(),
-    }),
-  }),
-});
-
 const external = [
   // built-in packages
   /^@affine/,
@@ -53,11 +47,15 @@ const external = [
   /^@toeverything/,
 
   // react
-  /^react/,
+  'react',
+  /^react\//,
   /^react-dom/,
 
   // store
   /^jotai/,
+
+  // utils
+  'swr',
 
   // css
   /^@vanilla-extract/,
@@ -72,7 +70,7 @@ const getPluginDir = (plugin: string) => path.resolve(allPluginDir, plugin);
 const pluginDir = getPluginDir(plugin);
 const packageJsonFile = path.resolve(pluginDir, 'package.json');
 
-const json: z.infer<typeof packageJsonSchema> = await readFile(
+const json: z.infer<typeof packageJsonInputSchema> = await readFile(
   packageJsonFile,
   {
     encoding: 'utf-8',
@@ -80,11 +78,11 @@ const json: z.infer<typeof packageJsonSchema> = await readFile(
 )
   .then(text => JSON.parse(text))
   .then(async json => {
-    const { success } = await packageJsonSchema.safeParseAsync(json);
-    if (success) {
+    const result = await packageJsonInputSchema.safeParseAsync(json);
+    if (result.success) {
       return json;
     } else {
-      throw new Error('invalid package.json');
+      throw new Error('invalid package.json', result.error);
     }
   });
 
@@ -109,9 +107,116 @@ const serverOutDir = path.resolve(
   plugin
 );
 
-const pluginListJsonPath = path.resolve(outDir, 'plugin-list.json');
-
 const coreEntry = path.resolve(pluginDir, json.affinePlugin.entry.core);
+
+const generatePackageJson: PluginOption = {
+  name: 'generate-package.json',
+  async generateBundle() {
+    const packageJson = {
+      name: json.name,
+      version: json.version,
+      description: json.description,
+      affinePlugin: {
+        release: json.affinePlugin.release,
+        entry: {
+          core: 'index.mjs',
+        },
+        assets: [...metadata.assets],
+        serverCommand: json.affinePlugin.serverCommand,
+      },
+    } satisfies z.infer<typeof packageJsonOutputSchema>;
+    packageJsonOutputSchema.parse(packageJson);
+    this.emitFile({
+      type: 'asset',
+      fileName: 'package.json',
+      source: JSON.stringify(packageJson, null, 2),
+    });
+  },
+};
+
+// step 1: generate core bundle
+await build({
+  build: {
+    watch: isWatch ? {} : undefined,
+    minify: false,
+    outDir: coreOutDir,
+    emptyOutDir: true,
+    lib: {
+      entry: coreEntry,
+      fileName: 'index',
+      formats: ['es'],
+    },
+    rollupOptions: {
+      output: {
+        assetFileNames: chunkInfo => {
+          if (chunkInfo.name) {
+            metadata.assets.add(chunkInfo.name);
+            return chunkInfo.name;
+          } else {
+            throw new Error('no name');
+          }
+        },
+        chunkFileNames: chunkInfo => {
+          if (chunkInfo.name) {
+            const hash = createHash('md5')
+              .update(
+                Object.values(chunkInfo.moduleIds)
+                  .map(m => m)
+                  .join()
+              )
+              .digest('hex')
+              .substring(0, 6);
+            return `${chunkInfo.name}-${hash}.mjs`;
+          } else {
+            throw new Error('no name');
+          }
+        },
+      },
+      external,
+    },
+  },
+  plugins: [
+    vanillaExtractPlugin(),
+    react(),
+    {
+      name: 'parse-bundle',
+      renderChunk(code, chunk) {
+        if (chunk.fileName.endsWith('js')) {
+          const record = new StaticModuleRecord(code, chunk.fileName);
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-expect-error
+          const reexports = record.__reexportMap__ as Record<
+            string,
+            [localName: string, exportedName: string][]
+          >;
+          const exports = Object.assign(
+            {},
+            record.__fixedExportMap__,
+            record.__liveExportMap__
+          );
+          this.emitFile({
+            type: 'asset',
+            fileName: `${chunk.fileName}.json`,
+            source: JSON.stringify(
+              {
+                exports: exports,
+                imports: record.imports,
+                reexports: reexports,
+              },
+              null,
+              2
+            ),
+          });
+          return record.__syncModuleProgram__;
+        }
+        return code;
+      },
+    },
+    generatePackageJson,
+  ],
+});
+
+// step 2: generate server bundle
 if (json.affinePlugin.entry.server) {
   const serverEntry = path.resolve(pluginDir, json.affinePlugin.entry.server);
   await build({
@@ -129,75 +234,6 @@ if (json.affinePlugin.entry.server) {
         external,
       },
     },
+    plugins: [generatePackageJson],
   });
 }
-
-await build({
-  build: {
-    watch: isWatch ? {} : undefined,
-    minify: false,
-    outDir: coreOutDir,
-    emptyOutDir: true,
-    lib: {
-      entry: coreEntry,
-      fileName: 'index',
-      formats: ['cjs'],
-    },
-    rollupOptions: {
-      output: {
-        assetFileNames: chunkInfo => {
-          if (chunkInfo.name) {
-            metadata.assets.add(chunkInfo.name);
-            return chunkInfo.name;
-          } else {
-            throw new Error('no name');
-          }
-        },
-        manualChunks: () => 'plugin',
-      },
-      external,
-    },
-  },
-  plugins: [
-    vanillaExtractPlugin(),
-    react(),
-    {
-      name: 'generate-list-json',
-      async generateBundle() {
-        if (!existsSync(outDir)) {
-          await mkdir(outDir, { recursive: true });
-        }
-        const file = await open(pluginListJsonPath, 'as+', 0o777);
-        const txt = await file.readFile({
-          encoding: 'utf-8',
-        });
-        if (!txt) {
-          console.log('generate plugin-list.json');
-          await file.write(
-            JSON.stringify([
-              {
-                release: json.affinePlugin.release,
-                name: plugin,
-                assets: [...metadata.assets],
-              },
-            ])
-          );
-        } else {
-          console.log('modify plugin-list.json');
-          const list = JSON.parse(txt);
-          const index = list.findIndex((item: any) => item.name === plugin);
-          if (index === -1) {
-            list.push({
-              release: json.affinePlugin.release,
-              name: plugin,
-              assets: [...metadata.assets],
-            });
-          } else {
-            list[index].assets = [...metadata.assets];
-          }
-          await file.write(JSON.stringify(list), 0);
-        }
-      },
-    },
-  ],
-});

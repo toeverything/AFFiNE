@@ -32,6 +32,7 @@ const OptimizeOptionOptions: (
   minimizer: [
     new TerserPlugin({
       minify: TerserPlugin.swcMinify,
+      exclude: [/\.min\.js$/, /plugins\/.+\/.+\.mjs$/],
       parallel: true,
       extractComments: true,
       terserOptions: {
@@ -269,7 +270,10 @@ export const createConfiguration: (
       }),
       new CopyPlugin({
         patterns: [
-          { from: resolve(rootPath, 'public'), to: resolve(rootPath, 'dist') },
+          {
+            from: resolve(rootPath, 'public'),
+            to: resolve(rootPath, 'dist'),
+          },
         ],
       }),
     ],

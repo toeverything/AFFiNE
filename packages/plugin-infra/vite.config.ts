@@ -22,12 +22,8 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: ['react', /^jotai/, /^@blocksuite/],
+      external: ['react', /^jotai/, /^@blocksuite/, 'zod'],
     },
   },
-  plugins: [
-    dts({
-      insertTypesEntry: true,
-    }),
-  ],
+  plugins: [dts()],
 });

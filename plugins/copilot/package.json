@@ -1,6 +1,8 @@
 {
-  "name": "@affine/copilot",
+  "name": "@affine/copilot-plugin",
+  "type": "module",
   "private": true,
+  "description": "Copilot plugin",
   "affinePlugin": {
     "release": false,
     "entry": {
@@ -27,5 +29,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.7.0-canary.59"
+  "version": "0.8.0-canary.3"
 }

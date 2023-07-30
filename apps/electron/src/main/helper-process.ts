@@ -15,8 +15,8 @@ import {
   type WebContents,
 } from 'electron';
 
+import { MessageEventChannel } from '../shared/utils';
 import { logger } from './logger';
-import { MessageEventChannel } from './utils';
 
 const HELPER_PROCESS_PATH = path.join(__dirname, './helper.js');
 

@@ -7,6 +7,7 @@ import { DetailContent } from './UI/detail-content';
 import { HeaderItem } from './UI/header-item';
 
 export const entry = (context: PluginContext) => {
+  console.log('copilot entry');
   context.register('headerItem', div => {
     const root = createRoot(div);
     root.render(

@@ -1,51 +1,56 @@
-import type { IndexedDBChatMessageHistory } from '@affine/copilot/core/langchain/message-history';
 import { atom, useAtomValue } from 'jotai';
 import { atomWithDefault, atomWithStorage } from 'jotai/utils';
 import type { WritableAtom } from 'jotai/vanilla';
+import type { PrimitiveAtom } from 'jotai/vanilla';
 import type { LLMChain } from 'langchain/chains';
 import { type ConversationChain } from 'langchain/chains';
 import { type BufferMemory } from 'langchain/memory';
 import type { BaseMessage } from 'langchain/schema';
 import { AIMessage } from 'langchain/schema';
 import { HumanMessage } from 'langchain/schema';
-import { z } from 'zod';
 
+import type { ChatAIConfig } from '../chat';
 import { createChatAI } from '../chat';
-
-const followupResponseSchema = z.array(z.string());
+import type { IndexedDBChatMessageHistory } from '../langchain/message-history';
+import { followupQuestionParser } from '../prompts/output-parser';
 
 export const openAIApiKeyAtom = atomWithStorage<string | null>(
   'com.affine.copilot.openai.token',
   null
 );
 
-export const chatAtom = atom(async get => {
-  const openAIApiKey = get(openAIApiKeyAtom);
-  if (!openAIApiKey) {
-    throw new Error('OpenAI API key not set, chat will not work');
-  }
-  return createChatAI('default-copilot', openAIApiKey);
-});
-
+const conversationBaseWeakMap = new WeakMap<
+  ConversationChain,
+  PrimitiveAtom<BaseMessage[]>
+>();
 const conversationWeakMap = new WeakMap<
   ConversationChain,
   WritableAtom<BaseMessage[], [string], Promise<void>>
 >();
 
-const getConversationAtom = (chat: ConversationChain) => {
-  if (conversationWeakMap.has(chat)) {
-    return conversationWeakMap.get(chat) as WritableAtom<
-      BaseMessage[],
-      [string],
-      Promise<void>
-    >;
+export const chatAtom = atom(async get => {
+  const openAIApiKey = get(openAIApiKeyAtom);
+  if (!openAIApiKey) {
+    throw new Error('OpenAI API key not set, chat will not work');
   }
-  const conversationBaseAtom = atom<BaseMessage[]>([]);
-  conversationBaseAtom.onMount = setAtom => {
-    if (!chat) {
-      throw new Error();
-    }
-    const memory = chat.memory as BufferMemory;
+  const events: ChatAIConfig['events'] = {
+    llmStart: () => {
+      throw new Error('llmStart not set');
+    },
+    llmNewToken: () => {
+      throw new Error('llmNewToken not set');
+    },
+  };
+  const chatAI = await createChatAI('default-copilot', openAIApiKey, {
+    events,
+  });
+  getOrCreateConversationAtom(chatAI.conversationChain);
+  const baseAtom = conversationBaseWeakMap.get(chatAI.conversationChain);
+  if (!baseAtom) {
+    throw new TypeError();
+  }
+  baseAtom.onMount = setAtom => {
+    const memory = chatAI.conversationChain.memory as BufferMemory;
     memory.chatHistory
       .getMessages()
       .then(messages => {
@@ -54,23 +59,27 @@ const getConversationAtom = (chat: ConversationChain) => {
       .catch(err => {
         console.error(err);
       });
-    const llmStart = (): void => {
+    events.llmStart = () => {
       setAtom(conversations => [...conversations, new AIMessage('')]);
     };
-    const llmNewToken = (event: CustomEvent<{ token: string }>): void => {
+    events.llmNewToken = token => {
       setAtom(conversations => {
         const last = conversations[conversations.length - 1] as AIMessage;
-        last.content += event.detail.token;
+        last.content += token;
         return [...conversations];
       });
     };
-    window.addEventListener('llm-start', llmStart);
-    window.addEventListener('llm-new-token', llmNewToken);
-    return () => {
-      window.removeEventListener('llm-start', llmStart);
-      window.removeEventListener('llm-new-token', llmNewToken);
-    };
   };
+  return chatAI;
+});
+
+const getOrCreateConversationAtom = (chat: ConversationChain) => {
+  if (conversationWeakMap.has(chat)) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return conversationWeakMap.get(chat)!;
+  }
+  const conversationBaseAtom = atom<BaseMessage[]>([]);
+  conversationBaseWeakMap.set(chat, conversationBaseAtom);
 
   const conversationAtom = atom<BaseMessage[], [string], Promise<void>>(
     get => get(conversationBaseAtom),
@@ -105,7 +114,9 @@ const getConversationAtom = (chat: ConversationChain) => {
 const followingUpWeakMap = new WeakMap<
   LLMChain<string>,
   {
-    questionsAtom: ReturnType<typeof atomWithDefault<Promise<string[]>>>;
+    questionsAtom: ReturnType<
+      typeof atomWithDefault<Promise<string[]> | string[]>
+    >;
     generateChatAtom: WritableAtom<null, [], void>;
   }
 >();
@@ -115,12 +126,10 @@ const getFollowingUpAtoms = (
   chatHistory: IndexedDBChatMessageHistory
 ) => {
   if (followingUpWeakMap.has(followupLLMChain)) {
-    return followingUpWeakMap.get(followupLLMChain) as {
-      questionsAtom: ReturnType<typeof atomWithDefault<Promise<string[]>>>;
-      generateChatAtom: WritableAtom<null, [], void>;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return followingUpWeakMap.get(followupLLMChain)!;
   }
-  const baseAtom = atomWithDefault<Promise<string[]>>(async () => {
+  const baseAtom = atomWithDefault<Promise<string[]> | string[]>(async () => {
     return chatHistory?.getFollowingUp() ?? [];
   });
   const setAtom = atom<null, [], void>(null, async (get, set) => {
@@ -137,10 +146,9 @@ const getFollowingUpAtoms = (
       ai_conversation: aiMessage,
       human_conversation: humanMessage,
     });
-    const followingUp = JSON.parse(response.text);
-    followupResponseSchema.parse(followingUp);
-    set(baseAtom, followingUp);
-    chatHistory.saveFollowingUp(followingUp).catch(() => {
+    const followingUp = await followupQuestionParser.parse(response.text);
+    set(baseAtom, followingUp.followupQuestions);
+    chatHistory.saveFollowingUp(followingUp.followupQuestions).catch(() => {
       console.error('failed to save followup');
     });
   });
@@ -155,11 +163,11 @@ const getFollowingUpAtoms = (
 };
 
 export function useChatAtoms(): {
-  conversationAtom: ReturnType<typeof getConversationAtom>;
+  conversationAtom: ReturnType<typeof getOrCreateConversationAtom>;
   followingUpAtoms: ReturnType<typeof getFollowingUpAtoms>;
 } {
   const chat = useAtomValue(chatAtom);
-  const conversationAtom = getConversationAtom(chat.conversationChain);
+  const conversationAtom = getOrCreateConversationAtom(chat.conversationChain);
   const followingUpAtoms = getFollowingUpAtoms(
     chat.followupChain,
     chat.chatHistory
