@@ -8,9 +8,9 @@ export const productionCacheGroups = {
     test: /[\\/]node_modules[\\/]/,
     name(module: any) {
       // https://hackernoon.com/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
-      const name =
-        module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)?.[1] ??
-        'unknown';
+      const name = module.context.match(
+        /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+      )?.[1];
       return `npm-async-${name}`;
     },
     priority: Number.MAX_SAFE_INTEGER,

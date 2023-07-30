@@ -256,9 +256,9 @@ export const createConfiguration: (
       new HTMLPlugin({
         template: join(rootPath, '.webpack', 'template.html'),
         inject: 'body',
-        scriptLoading: 'defer',
+        scriptLoading: 'module',
         minify: false,
-        chunks: ['index', 'plugin'],
+        chunks: ['index', 'plugin', 'polyfill-ses'],
         filename: 'index.html',
       }),
       new VanillaExtractPlugin(),
