@@ -1,24 +1,5 @@
 {
   "name": "@affine/copilot-plugin",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "library",
-  "sourceRoot": "plugins/copilot/src",
-  "target": {
-    "build": {
-      "executor": "nx:run-script",
-      "dependsOn": ["^build"],
-      "options": {
-        "script": "build"
-      },
-      "inputs": [
-        "{projectRoot}/src/**/*",
-        "{workspaceRoot}/packages/plugin-cli/src/**/*"
-      ],
-      "outputs": [
-        "{workspaceRoot}/apps/core/public/plugins/copilot/**/*",
-        "{workspaceRoot}/apps/electron/dist/plugins/copilot/**/*"
-      ]
-    }
-  },
   "tags": ["plugin"]
 }

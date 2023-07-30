@@ -1,24 +1,5 @@
 {
   "name": "@affine/bookmark-plugin",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "library",
-  "sourceRoot": "plugins/bookmark/src",
-  "target": {
-    "build": {
-      "executor": "nx:run-script",
-      "dependsOn": ["^build"],
-      "options": {
-        "script": "build"
-      },
-      "inputs": [
-        "{projectRoot}/src/**/*",
-        "{workspaceRoot}/packages/plugin-cli/src/**/*"
-      ],
-      "outputs": [
-        "{workspaceRoot}/apps/core/public/plugins/bookmark/**/*",
-        "{workspaceRoot}/apps/electron/dist/plugins/bookmark/**/*"
-      ]
-    }
-  },
   "tags": ["plugin"]
 }
