@@ -4,9 +4,12 @@ import {
 } from '@toeverything/plugin-infra/atom';
 import type { PluginContext } from '@toeverything/plugin-infra/entry';
 import { createElement } from 'react';
+import { lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { HeaderItem } from './app';
+const HeaderItem = lazy(() =>
+  import('./app').then(({ HeaderItem }) => ({ default: HeaderItem }))
+);
 
 export const entry = (context: PluginContext) => {
   console.log('register');
