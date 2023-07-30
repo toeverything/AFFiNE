@@ -4,8 +4,7 @@
   "private": true,
   "bin": {
     "build-core": "./src/bin/build-core.mjs",
-    "dev-core": "./src/bin/dev-core.mjs",
-    "dev-plugin": "./src/bin/dev-plugin.mjs"
+    "dev-core": "./src/bin/dev-core.mjs"
   },
   "exports": {
     "./config": "./src/config/index.ts"
@@ -13,7 +12,6 @@
   "devDependencies": {
     "@clack/core": "^0.3.2",
     "@clack/prompts": "^0.6.3",
-    "@endo/static-module-record": "^0.7.20",
     "ts-node": "^10.9.1"
   },
   "dependencies": {

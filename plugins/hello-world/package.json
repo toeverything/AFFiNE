@@ -4,6 +4,10 @@
   "private": true,
   "description": "Hello world plugin",
   "version": "0.8.0-canary.3",
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
   "affinePlugin": {
     "release": false,
     "entry": {
@@ -14,5 +18,8 @@
     "@affine/component": "workspace:*",
     "@blocksuite/icons": "^2.1.27",
     "@toeverything/plugin-infra": "workspace:*"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*"
   }
 }

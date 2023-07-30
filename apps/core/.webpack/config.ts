@@ -32,7 +32,7 @@ const OptimizeOptionOptions: (
   minimizer: [
     new TerserPlugin({
       minify: TerserPlugin.swcMinify,
-      exclude: [/\.min\.js$/, /plugins\/.+\/.+\.mjs$/],
+      exclude: [/plugins\/.+\/.+\.js$/, /plugins\/.+\/.+\.mjs$/],
       parallel: true,
       extractComments: true,
       terserOptions: {
