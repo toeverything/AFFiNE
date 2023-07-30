@@ -50,13 +50,6 @@ export default {
           coverage: false,
         }),
       },
-      resolve: {
-        alias: {
-          'dotenv/config': fileURLToPath(
-            new URL('../../../scripts/vitest/dotenv-config.ts', import.meta.url)
-          ),
-        },
-      },
     });
   },
 } as StorybookConfig;
