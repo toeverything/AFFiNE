@@ -111,7 +111,7 @@ const generatePackageJson: PluginOption = {
       affinePlugin: {
         release: json.affinePlugin.release,
         entry: {
-          core: 'index.mjs',
+          core: 'index.js',
         },
         assets: [...metadata.assets],
         serverCommand: json.affinePlugin.serverCommand,
