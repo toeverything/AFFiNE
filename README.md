@@ -126,10 +126,11 @@ If you have questions, you are welcome to contact us. One of the best places to 
 >
 > (Currently, plugins are under heavy development, and the SDK is not yet available.)
 
-| Name                                 |                                           |
-| ------------------------------------ | ----------------------------------------- |
-| [@affine/bookmark](plugins/bookmark) | A block for bookmarking a website         |
-| [@affine/copilot](plugins/copilot)   | AI Copilot that help you document writing |
+| Official Plugin                                       | Description                               |
+| ----------------------------------------------------- | ----------------------------------------- |
+| [@affine/bookmark-plugin](plugins/bookmark)           | A block for bookmarking a website         |
+| [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing |
+| [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         |
 
 ## Thanks
 
