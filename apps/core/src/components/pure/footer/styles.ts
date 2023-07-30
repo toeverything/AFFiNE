@@ -131,6 +131,9 @@ export const StyledSignInButton = styled(Button)(() => {
   return {
     fontWeight: 600,
     paddingLeft: 0,
+    '&:hover': {
+      backgroundColor: 'transparent !important',
+    },
     '.circle': {
       width: '40px',
       height: '40px',
