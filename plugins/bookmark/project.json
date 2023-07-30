@@ -1,0 +1,7 @@
+{
+  "name": "@affine/bookmark-plugin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "plugins/bookmark/src",
+  "tags": ["plugin"]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@affine/copilot-plugin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "plugins/copilot/src",
+  "tags": ["plugin"]
+}

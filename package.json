@@ -25,7 +25,7 @@
     "build:electron": "yarn nx build @affine/electron",
     "build:storage": "yarn nx run-many -t build -p @affine/storage",
     "build:infra": "yarn nx run-many -t build -p plugin-infra infra",
-    "build:plugins": "node ./scripts/build-plugins.mjs",
+    "build:plugins": "yarn nx run-many -t build  --projects=tag:plugin",
     "build:storybook": "yarn nx build @affine/storybook",
     "start:web-static": "yarn workspace @affine/core static-server",
     "start:storybook": "yarn exec serve apps/storybook/storybook-static -l 6006",
@@ -58,6 +58,7 @@
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/cli": "workspace:*",
+    "@affine/plugin-cli": "workspace:*",
     "@commitlint/cli": "^17.6.7",
     "@commitlint/config-conventional": "^17.6.7",
     "@faker-js/faker": "^8.0.2",
