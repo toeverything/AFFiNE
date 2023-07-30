@@ -11,6 +11,7 @@ export const packageJsonInputSchema = z.object({
       core: z.string(),
       server: z.string().optional(),
     }),
+    serverCommand: z.array(z.string()).optional(),
   }),
 });
 
@@ -24,6 +25,7 @@ export const packageJsonOutputSchema = z.object({
       core: z.string(),
     }),
     assets: z.array(z.string()),
+    serverCommand: z.array(z.string()).optional(),
   }),
 });
 
