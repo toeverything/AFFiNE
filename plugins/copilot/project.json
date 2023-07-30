@@ -15,8 +15,8 @@
         "{workspaceRoot}/packages/plugin-cli/src/**/*"
       ],
       "outputs": [
-        "{workspaceRoot}/apps/core/public/plugins/**",
-        "{workspaceRoot}/apps/electron/dist/plugins/**"
+        "{workspaceRoot}/apps/core/public/plugins/copilot/**/*",
+        "{workspaceRoot}/apps/electron/dist/plugins/copilot/**/*"
       ]
     }
   },
