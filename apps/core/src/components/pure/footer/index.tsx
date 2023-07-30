@@ -14,7 +14,7 @@ export const Footer: FC = () => {
     <StyledFooter data-testid="workspace-list-modal-footer">
       <StyledSignInButton
         data-testid="sign-in-button"
-        type="plain"
+        type="transparent"
         icon={
           <div className="circle">
             <CloudWorkspaceIcon />

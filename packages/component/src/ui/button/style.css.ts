@@ -66,6 +66,15 @@ export const button = style({
       borderColor: 'transparent',
     },
 
+    '&.transparent': {
+      color: 'var(--affine-text-primary-color)',
+      borderColor: 'transparent',
+    },
+
+    '&.transparent:hover': {
+      background: 'transparent',
+    },
+
     '&.primary': {
       color: 'var(--affine-pure-white)',
       background: 'var(--affine-primary-color)',

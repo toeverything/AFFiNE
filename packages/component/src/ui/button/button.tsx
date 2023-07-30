@@ -14,6 +14,7 @@ export type ButtonType =
   | 'default'
   | 'primary'
   | 'plain'
+  | 'transparent'
   | 'error'
   | 'warning'
   | 'success'
@@ -99,6 +100,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           {
             primary: type === 'primary',
             plain: type === 'plain',
+            transparent: type === 'transparent',
             error: type === 'error',
             warning: type === 'warning',
             success: type === 'success',
