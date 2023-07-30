@@ -7,7 +7,7 @@ const child = spawnSync(
   [
     '--loader',
     'ts-node/esm/transpile-only',
-    fileURLToPath(new URL('./dev-plugin.ts', import.meta.url)),
+    fileURLToPath(new URL('./af.ts', import.meta.url)),
     ...process.argv.slice(2),
   ],
   { stdio: 'inherit' }

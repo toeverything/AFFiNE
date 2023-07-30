@@ -25,6 +25,9 @@ plugin:copilot:
 mod:plugin-infra:
   - 'packages/plugin-infra/**/*'
 
+mod:plugin-cli:
+  - 'packages/plugin-cli/**/*'
+
 mod:workspace: 'packages/workspace/**/*'
 
 mod:i18n: 'packages/i18n/**/*'

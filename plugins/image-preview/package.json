@@ -9,13 +9,21 @@
       "core": "./src/index.ts"
     }
   },
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
   "dependencies": {
     "@affine/component": "workspace:*",
     "@blocksuite/icons": "^2.1.27",
     "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/theme": "^0.7.9",
     "clsx": "^2.0.0",
+    "foxact": "^0.2.17",
     "react-error-boundary": "^4.0.10",
     "swr": "2.1.5"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*"
   }
 }

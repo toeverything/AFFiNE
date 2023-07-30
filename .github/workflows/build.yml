@@ -409,6 +409,12 @@ jobs:
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build
 
+      - name: Upload desktop dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          path: ./apps/electron/dist
+
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine/electron test

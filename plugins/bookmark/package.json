@@ -13,11 +13,18 @@
       "com.blocksuite.bookmark-block.get-bookmark-data-by-link"
     ]
   },
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
   "dependencies": {
     "@affine/component": "workspace:*",
     "@blocksuite/icons": "^2.1.27",
     "@toeverything/plugin-infra": "workspace:*",
     "foxact": "^0.2.17",
     "link-preview-js": "^3.0.4"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*"
   }
 }

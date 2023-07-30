@@ -1,0 +1,21 @@
+{
+  "name": "@affine/plugin-cli",
+  "type": "module",
+  "version": "0.8.0-canary.3",
+  "bin": {
+    "af": "./src/af.mjs"
+  },
+  "files": [
+    "src",
+    "tsconfig.json"
+  ],
+  "dependencies": {
+    "@endo/static-module-record": "^0.7.20",
+    "@swc/core": "^1.3.72",
+    "@toeverything/plugin-infra": "workspace:^",
+    "@vanilla-extract/rollup-plugin": "^1.2.2",
+    "rollup": "^3.27.0",
+    "rollup-plugin-swc3": "^0.9.1",
+    "ts-node": "^10.9.1"
+  }
+}
