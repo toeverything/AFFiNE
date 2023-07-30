@@ -5,6 +5,11 @@
   "sourceRoot": "plugins/hello-world/src",
   "target": {
     "build": {
+      "executor": "nx:run-script",
+      "dependsOn": ["^build"],
+      "options": {
+        "script": "build"
+      },
       "inputs": [
         "{projectRoot}/src/**/*",
         "{workspaceRoot}/packages/plugin-cli/src/**/*"
