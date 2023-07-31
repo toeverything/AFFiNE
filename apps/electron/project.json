@@ -7,14 +7,7 @@
   "targets": {
     "build": {
       "executor": "nx:run-script",
-      "dependsOn": [
-        {
-          "projects": ["@affine/bookmark-block"],
-          "target": "build",
-          "params": "ignore"
-        },
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "options": {
         "script": "build"
       },

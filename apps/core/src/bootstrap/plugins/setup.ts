@@ -396,7 +396,7 @@ const entryLogger = new DebugLogger('plugin:entry');
 export const evaluatePluginEntry = (pluginName: string) => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const currentImportMap = pluginNestedImportsMap.get(pluginName)!;
-  const pluginExports = currentImportMap.get('index.mjs');
+  const pluginExports = currentImportMap.get('index.js');
   assertExists(pluginExports);
   const entryFunction = pluginExports.get('entry');
   const cleanup = entryFunction(<PluginContext>{

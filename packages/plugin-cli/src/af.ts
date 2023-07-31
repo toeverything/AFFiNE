@@ -1,7 +1,7 @@
-import { ok } from 'node:assert';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { StaticModuleRecord } from '@endo/static-module-record';
@@ -14,31 +14,23 @@ import react from '@vitejs/plugin-react-swc';
 import { build, type PluginOption } from 'vite';
 import type { z } from 'zod';
 
-import { projectRoot } from '../config/index.js';
+const projectRoot = fileURLToPath(new URL('../../..', import.meta.url));
 
 const args = process.argv.splice(2);
 
 const result = parseArgs({
   args,
-  options: {
-    watch: {
-      type: 'boolean',
-      default: false,
-    },
-    plugin: {
-      type: 'string',
-    },
-  },
+  allowPositionals: true,
 });
 
-const plugin = result.values.plugin;
-
-if (typeof plugin !== 'string') {
-  throw new Error('plugin is required');
+const plugin = process.cwd().split(path.sep).pop();
+if (!plugin) {
+  throw new Error('plugin name not found');
 }
 
-const isWatch = result.values.watch;
-ok(typeof isWatch === 'boolean');
+const command = result.positionals[0];
+
+const isWatch = command === 'dev';
 
 const external = [
   // built-in packages
@@ -119,7 +111,7 @@ const generatePackageJson: PluginOption = {
       affinePlugin: {
         release: json.affinePlugin.release,
         entry: {
-          core: 'index.mjs',
+          core: 'index.js',
         },
         assets: [...metadata.assets],
         serverCommand: json.affinePlugin.serverCommand,

@@ -1,6 +1,3 @@
-/// <reference types="@types/webpack-env" />
-import 'ses';
-
 import { DebugLogger } from '@affine/debug';
 import {
   registeredPluginAtom,
@@ -8,17 +5,6 @@ import {
 } from '@toeverything/plugin-infra/atom';
 
 import { evaluatePluginEntry, setupPluginCode } from './plugins/setup';
-
-if (!process.env.COVERAGE) {
-  lockdown({
-    evalTaming: 'unsafeEval',
-    overrideTaming: 'severe',
-    consoleTaming: 'unsafe',
-    errorTaming: 'unsafe',
-    errorTrapping: 'platform',
-    unhandledRejectionTrapping: 'report',
-  });
-}
 
 const builtinPluginUrl = new Set([
   '/plugins/bookmark',

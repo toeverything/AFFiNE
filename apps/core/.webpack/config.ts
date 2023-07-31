@@ -32,7 +32,7 @@ const OptimizeOptionOptions: (
   minimizer: [
     new TerserPlugin({
       minify: TerserPlugin.swcMinify,
-      exclude: [/\.min\.js$/, /plugins\/.+\/.+\.mjs$/],
+      exclude: [/plugins\/.+\/.+\.js$/, /plugins\/.+\/.+\.mjs$/],
       parallel: true,
       extractComments: true,
       terserOptions: {
@@ -256,9 +256,9 @@ export const createConfiguration: (
       new HTMLPlugin({
         template: join(rootPath, '.webpack', 'template.html'),
         inject: 'body',
-        scriptLoading: 'defer',
+        scriptLoading: 'module',
         minify: false,
-        chunks: ['index', 'plugin'],
+        chunks: ['index', 'plugin', 'polyfill-ses'],
         filename: 'index.html',
       }),
       new VanillaExtractPlugin(),

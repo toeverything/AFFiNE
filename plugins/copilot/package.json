@@ -9,6 +9,10 @@
       "core": "./src/index.ts"
     }
   },
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
   "dependencies": {
     "@affine/component": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
@@ -20,6 +24,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@affine/plugin-cli": "workspace:*",
     "@types/marked": "^5.0.1",
     "jotai": "^2.2.2",
     "react": "18.2.0",
@@ -29,5 +34,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.8.0-canary.3"
+  "version": "0.8.0-canary.4"
 }
