@@ -6,7 +6,7 @@ import { WorkspaceFallback } from '@affine/component/workspace';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { lazy, memo, Suspense, useEffect } from 'react';
+import { lazy, memo, Suspense, useEffect, useLayoutEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { router } from './router';
@@ -32,6 +32,8 @@ const future = {
   v7_startTransition: true,
 } as const;
 
+const loadPromise = document.fonts.load('16px Kalam');
+
 export const App = memo(function App() {
   useEffect(() => {
     document.documentElement.lang = i18n.language;
@@ -40,13 +42,11 @@ export const App = memo(function App() {
       console.error(error);
     });
   }, []);
-  useEffect(() => {
-    document.fonts.onloadingdone = () => {};
 
-    (() => {
-      document.fonts.load('16px Kalam');
-    })();
+  useLayoutEffect(() => {
+    loadPromise.then(() => {});
   }, []);
+
   return (
     <CacheProvider value={cache}>
       <AffineContext>
