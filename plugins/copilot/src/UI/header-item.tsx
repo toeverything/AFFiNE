@@ -17,7 +17,7 @@ export const HeaderItem = (): ReactElement => {
                 return {
                   direction: 'horizontal',
                   first: 'editor',
-                  second: '@affine/copilot',
+                  second: '@affine/copilot-plugin',
                   splitPercentage: 70,
                 };
               } else {

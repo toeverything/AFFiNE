@@ -27,7 +27,7 @@ const DetailPageImpl = (): ReactElement => {
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const collectionManager = useCollectionManager(currentWorkspace.id);
   const onLoad = useCallback(
-    (page: Page, editor: EditorContainer) => {
+    (_: Page, editor: EditorContainer) => {
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });

@@ -14,14 +14,19 @@ export default async function (cli_env: any, _: any) {
   const config = createConfiguration(flags, runtimeConfig);
   return merge(config, {
     entry: {
-      index: {
+      'polyfill-ses': {
         asyncChunks: false,
-        import: resolve(rootPath, 'src/index.tsx'),
+        import: resolve(rootPath, 'src/polyfill/ses.ts'),
       },
       plugin: {
-        dependOn: ['index'],
         asyncChunks: true,
+        dependOn: ['polyfill-ses'],
         import: resolve(rootPath, 'src/bootstrap/register-plugins.ts'),
+      },
+      index: {
+        asyncChunks: false,
+        dependOn: ['polyfill-ses', 'plugin'],
+        import: resolve(rootPath, 'src/index.tsx'),
       },
     },
   });

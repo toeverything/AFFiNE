@@ -11,10 +11,10 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     // noPropertyAccessFromIndexSignature: false,
     // noUncheckedIndexedAccess: false,
-    // noUnusedLocals: false,
-    // noUnusedParameters: false,
     "useUnknownInCatchVariables": true,
 
     // Modules
@@ -126,6 +126,9 @@
     // Packages
     {
       "path": "./packages/cli"
+    },
+    {
+      "path": "./packages/plugin-cli"
     },
     {
       "path": "./packages/component"

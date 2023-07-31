@@ -126,10 +126,11 @@ If you have questions, you are welcome to contact us. One of the best places to 
 >
 > (Currently, plugins are under heavy development, and the SDK is not yet available.)
 
-| Name                                 |                                           |
-| ------------------------------------ | ----------------------------------------- |
-| [@affine/bookmark](plugins/bookmark) | A block for bookmarking a website         |
-| [@affine/copilot](plugins/copilot)   | AI Copilot that help you document writing |
+| Official Plugin                                       | Description                               |
+| ----------------------------------------------------- | ----------------------------------------- |
+| [@affine/bookmark-plugin](plugins/bookmark)           | A block for bookmarking a website         |
+| [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing |
+| [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         |
 
 ## Thanks
 
@@ -197,7 +198,7 @@ See [LICENSE] for details.
 [jobs available]: ./docs/jobs.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/master/.github/CLA.md
-[rust-version-icon]: https://img.shields.io/badge/Rust-1.70.0-dea584
+[rust-version-icon]: https://img.shields.io/badge/Rust-1.71.0-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success

@@ -11,22 +11,29 @@ import {
 
 import { IndexedDBChatMessageHistory } from './langchain/message-history';
 import { chatPrompt, followupQuestionPrompt } from './prompts';
+import { followupQuestionParser } from './prompts/output-parser';
 
-declare global {
-  interface WindowEventMap {
-    'llm-start': CustomEvent;
-    'llm-new-token': CustomEvent<{ token: string }>;
-  }
-}
+type ChatAI = {
+  // Core chat AI
+  conversationChain: ConversationChain;
+  // Followup AI, used to generate followup questions
+  followupChain: LLMChain<string>;
+  // Chat history, used to store messages
+  chatHistory: IndexedDBChatMessageHistory;
+};
+
+export type ChatAIConfig = {
+  events: {
+    llmStart: () => void;
+    llmNewToken: (token: string) => void;
+  };
+};
 
 export async function createChatAI(
   room: string,
-  openAIApiKey: string
-): Promise<{
-  conversationChain: ConversationChain;
-  followupChain: LLMChain<string>;
-  chatHistory: IndexedDBChatMessageHistory;
-}> {
+  openAIApiKey: string,
+  config: ChatAIConfig
+): Promise<ChatAI> {
   if (!openAIApiKey) {
     console.warn('OpenAI API key not set, chat will not work');
   }
@@ -44,25 +51,11 @@ export async function createChatAI(
     openAIApiKey: openAIApiKey,
     callbacks: [
       {
-        async handleLLMStart(llm, prompts, runId, parentRunId, extraParams) {
-          console.log(
-            'handleLLMStart',
-            llm,
-            prompts,
-            runId,
-            parentRunId,
-            extraParams
-          );
-          window.dispatchEvent(new CustomEvent('llm-start'));
+        async handleLLMStart() {
+          config.events.llmStart();
         },
-        async handleLLMNewToken(token, runId, parentRunId) {
-          console.log('handleLLMNewToken', token, runId, parentRunId);
-          window.dispatchEvent(
-            new CustomEvent('llm-new-token', { detail: { token } })
-          );
-        },
-        async handleLLMEnd(output, runId, parentRunId) {
-          console.log('handleLLMEnd', output, runId, parentRunId);
+        async handleLLMNewToken(token) {
+          config.events.llmNewToken(token);
         },
       },
     ],
@@ -77,6 +70,9 @@ export async function createChatAI(
   const followupPromptTemplate = new PromptTemplate({
     template: followupQuestionPrompt,
     inputVariables: ['human_conversation', 'ai_conversation'],
+    partialVariables: {
+      format_instructions: followupQuestionParser.getFormatInstructions(),
+    },
   });
 
   const followupChain = new LLMChain({
@@ -101,5 +97,5 @@ export async function createChatAI(
     conversationChain,
     followupChain,
     chatHistory,
-  } as const;
+  };
 }

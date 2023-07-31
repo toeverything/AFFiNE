@@ -21,5 +21,9 @@ export default defineConfig({
       external: ['idb', 'yjs'],
     },
   },
-  plugins: [dts()],
+  plugins: [
+    dts({
+      entryRoot: resolve(__dirname, 'src'),
+    }),
+  ],
 });
