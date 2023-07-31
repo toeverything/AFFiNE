@@ -1,16 +1,15 @@
-import {
-  AuthInput,
-  ContinueButton,
-  GoogleButton,
-  ModalHeader,
-} from '@affine/component/auth-components';
+import { Button } from '@affine/component';
+import { AuthInput, ModalHeader } from '@affine/component/auth-components';
+import { isDesktop } from '@affine/env/constant';
 import { getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
+import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { signIn } from 'next-auth/react';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
+
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
@@ -47,13 +46,20 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setCurrentEmail(currentEmail);
     if (res?.user) {
-      console.log('has user', res.user);
+      signIn('email', {
+        email: currentEmail,
+        callbackUrl: `/auth/signIn?isClient=${isDesktop ? 'true' : 'false'}`,
+        redirect: true,
+      }).catch(console.error);
 
-      setAuthState('signInWithPassword');
+      setAuthState('afterSignInSendEmail');
     } else {
       signIn('email', {
         email: currentEmail,
-        callbackUrl: '/auth/setPassword',
+        callbackUrl: `/auth/setPassword?isClient=${
+          isDesktop ? 'true' : 'false'
+        }`,
+        redirect: true,
       }).catch(console.error);
 
       setAuthState('afterSignUpSendEmail');
@@ -65,11 +71,21 @@ export const SignIn: FC<AuthPanelProps> = ({
         title={t['com.affine.auth.sign.in']()}
         subTitle={t['AFFiNE Cloud']()}
       />
-      <GoogleButton
+
+      <Button
+        type="primary"
+        block
+        size="extraLarge"
+        style={{
+          marginTop: 30,
+        }}
+        icon={<GoogleDuotoneIcon />}
         onClick={useCallback(() => {
           signIn('google').catch(console.error);
         }, [])}
-      />
+      >
+        {t['Continue with Google']()}
+      </Button>
 
       <div className={style.authModalContent}>
         <AuthInput
@@ -85,7 +101,28 @@ export const SignIn: FC<AuthPanelProps> = ({
           }
           onEnter={onContinue}
         />
-        <ContinueButton onClick={onContinue} loading={loading} />
+        {/*<ContinueButton onClick={onContinue} loading={loading} />*/}
+
+        <Button
+          size="extraLarge"
+          block
+          loading={loading}
+          icon={
+            <ArrowDownBigIcon
+              width={20}
+              height={20}
+              style={{
+                transform: 'rotate(-90deg)',
+                color: 'var(--affine-blue)',
+              }}
+            />
+          }
+          iconPosition="end"
+          onClick={onContinue}
+        >
+          {t['com.affine.auth.sign.email.continue']()}
+        </Button>
+
         <div className={style.authMessage}>
           {/*prettier-ignore*/}
           <Trans i18nKey="com.affine.auth.sign.message">

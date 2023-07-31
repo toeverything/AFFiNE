@@ -195,6 +195,9 @@ export const buttonIcon = style({
     '&.color-white': {
       color: 'var(--affine-white)',
     },
+    '&.loading': {
+      color: 'var(--affine-primary-color)',
+    },
   },
 });
 

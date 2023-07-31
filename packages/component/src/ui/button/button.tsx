@@ -48,6 +48,7 @@ const ButtonIcon: FC<ButtonProps> = props => {
     iconPosition = 'start',
     children,
     type,
+    loading,
   } = {
     ...defaultProps,
     ...props,
@@ -61,6 +62,7 @@ const ButtonIcon: FC<ButtonProps> = props => {
         extraLarge: size === 'extraLarge',
         end: iconPosition === 'end' && !onlyIcon,
         start: iconPosition === 'start' && !onlyIcon,
+        loading,
       })}
     >
       {icon}
@@ -125,7 +127,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           <ButtonIcon {...props} icon={icon} />
         ) : null}
         <span>{children}</span>
-        {icon && iconPosition === 'end' ? <ButtonIcon {...props} /> : null}
+        {icon && iconPosition === 'end' ? (
+          <ButtonIcon {...props} icon={icon} />
+        ) : null}
       </button>
     );
   }

@@ -1,3 +1,4 @@
+
 import { ForbiddenException } from '@nestjs/common';
 import {
   Args,
@@ -68,9 +69,9 @@ export class AuthResolver {
     @Context() ctx: { req: Request },
     @Args('email') email: string,
     @Args('password') password: string,
-    @Args('oldPassword') oldPassword: string
+    @Args('newPassword') newPassword: string
   ) {
-    const user = await this.auth.changePassword(email, password, oldPassword);
+    const user = await this.auth.changePassword(email, password, newPassword);
     ctx.req.user = user;
     return user;
   }

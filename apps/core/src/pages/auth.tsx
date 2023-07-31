@@ -1,4 +1,9 @@
-import { SetPasswordPage } from '@affine/component/auth-components';
+import {
+  SetPasswordPage,
+  SignInSuccessPage,
+} from '@affine/component/auth-components';
+import { changePasswordMutation } from '@affine/graphql';
+import { useMutation } from '@affine/workspace/affine/gql';
 import type { FC } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
@@ -7,11 +12,9 @@ import {
   useCurrentUser,
 } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-import { useMutation } from '@affine/workspace/affine/gql';
-import { changePasswordMutation } from '@affine/graphql';
 
-type AuthType = 'setPassword' | 'login' | 'register';
-const authTypes: AuthType[] = ['setPassword', 'login', 'register'];
+type AuthType = 'setPassword' | 'signIn';
+const authTypes: AuthType[] = ['setPassword', 'signIn'];
 
 export const AuthPage: FC<{ user: CheckedUser }> = ({ user }) => {
   const { authType } = useParams();
@@ -27,12 +30,21 @@ export const AuthPage: FC<{ user: CheckedUser }> = ({ user }) => {
         onSetPassword={password => {
           changePassword({
             email: user.email,
-            oldPassword: '',
-            password,
+            newPassword: password,
+            password: '',
           }).catch(console.error);
+        }}
+        onOpenAffine={() => {
           jumpToIndex(RouteLogic.REPLACE);
         }}
-        onLater={() => {
+      />
+    );
+  }
+
+  if (authType === 'signIn') {
+    return (
+      <SignInSuccessPage
+        onOpenAffine={() => {
           jumpToIndex(RouteLogic.REPLACE);
         }}
       />

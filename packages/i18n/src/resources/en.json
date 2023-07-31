@@ -47,8 +47,20 @@
   "com.affine.auth.sign.up.sent.email.subtitle": "Create your account",
   "com.affine.auth.sign.sent.email.message.start": "An email with a magic link has been sent to ",
   "com.affine.auth.sign.sent.email.message.end": " You can click the link to create an account automatically.",
+  "com.affine.auth.sign.up.success.title": "Your account has been created and you’re now signed in!",
+  "com.affine.auth.sign.up.success.subtitle": "The app will automatically open or redirect to the web version. if you encounter any issues, you can also click the button below to  manually open the AFFiNE app.",
   "com.affine.auth.page.sent.email.title": "Welcome to AFFiNE Cloud, you are almost there!",
-  "com.affine.auth.page.sent.email.subtitle": "Please set a password of 8-20 characters with both letters and numbers to continue signing up with ",  "com.affine.auth.later": "Later",
+  "com.affine.auth.page.sent.email.subtitle": "Please set a password of 8-20 characters with both letters and numbers to continue signing up with ",
+  "com.affine.auth.later": "Later",
+  "com.affine.auth.open.affine": "Open AFFiNE",
+  "com.affine.auth.sign.in.sent.email.subtitle": "Confirm your email",
+  "com.affine.auth.sign.auth.code.message": "If you haven't received the email, please check your spam folder.",
+  "com.affine.auth.sign.auth.code.message.password": "If you haven't received the email, please check your spam folder. Or <1>sign in with password</1> instead.",
+  "com.affine.auth.password.error": "Invalid password",
+  "com.affine.auth.forget": "Forgot password",
+  "com.affine.auth.has.signed": " has signed in!",
+  "com.affine.auth.signed.success.title": "You’re almost there!",
+  "com.affine.auth.signed.success.subtitle": "You have successfully signed in. The app will automatically open or redirect to the web version. if you encounter any issues, you can also click the button below to  manually open the AFFiNE app.",
 
   "com.affine.auth.sign.email.placeholder": "Enter your email address",
   "com.affine.auth.sign.email.continue": "Continue with Email",
@@ -60,7 +72,6 @@
   "com.affine.auth.sign.auth.code.error.hint": "Wrong code, please try again",
   "com.affine.auth.sign.auth.code.on.resend.hint": "Send code again",
   "com.affine.auth.sign.auth.code.resend.hint": "Resend code",
-  "com.affine.auth.sign.auth.code.message": "If you haven't received the email, please check your spam folder.",
 
   "com.affine.auth.password": "Password",
   "com.affine.auth.set.password": "Set password",
@@ -68,7 +79,6 @@
   "com.affine.auth.set.password.placeholder": "Set a password at least 8 letters long",
   "com.affine.auth.set.password.placeholder.confirm": "Confirm password",
   "com.affine.auth.create.count": "Create Account",
-  "com.affine.auth.forget": "Forgot password",
 
   "Back": "Back",
 

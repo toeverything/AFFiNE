@@ -4,6 +4,7 @@ import {
 } from '@affine/component/auth-components';
 import { type FC, useMemo, useState } from 'react';
 
+import { AfterSignInSendEmail } from './after-sign-in-send-email';
 import { AfterSignUpSendEmail } from './after-sign-up-send-email';
 import { SetPassword } from './set-password';
 import { SignIn } from './sign-in';
@@ -24,6 +25,7 @@ export type AuthPanelProps = {
   setAuthState: AuthModalProps['setAuthState'];
   setCurrentEmail: (email: string) => void;
   currentEmail: string;
+  setOpen: (open: boolean) => void;
 };
 
 const config: {
@@ -31,6 +33,8 @@ const config: {
 } = {
   signIn: SignIn,
   afterSignUpSendEmail: AfterSignUpSendEmail,
+  afterSignInSendEmail: AfterSignInSendEmail,
+
   signInWithPassword: SignInWithPassword,
   setPassword: SetPassword,
   resetPassword: () => <div>resetPassword</div>,
@@ -53,6 +57,7 @@ export const AuthModal: FC<AuthModalProps> = ({
         setAuthState={setAuthState}
         currentEmail={currentEmail}
         setCurrentEmail={setCurrentEmail}
+        setOpen={setOpen}
       />
     </AuthModalBase>
   );
