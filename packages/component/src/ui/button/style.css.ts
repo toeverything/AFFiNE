@@ -28,8 +28,13 @@ export const button = style({
     '&:not(.without-hover):hover': {
       background: 'var(--affine-hover-color)',
     },
-    '&.disabled, &.loading': {
+    '&.disabled': {
       opacity: '.4',
+      cursor: 'default',
+      color: 'var(--affine-disable-color)',
+      pointerEvents: 'none',
+    },
+    '&.loading': {
       cursor: 'default',
       color: 'var(--affine-disable-color)',
       pointerEvents: 'none',
@@ -195,9 +200,6 @@ export const buttonIcon = style({
     '&.color-white': {
       color: 'var(--affine-white)',
     },
-    '&.loading': {
-      color: 'var(--affine-primary-color)',
-    },
   },
 });
 
@@ -230,8 +232,13 @@ export const iconButton = style({
     '&:not(.without-hover):hover': {
       background: 'var(--affine-hover-color)',
     },
-    '&.disabled, &.loading': {
+    '&.disabled': {
       opacity: '.4',
+      cursor: 'default',
+      color: 'var(--affine-disable-color)',
+      pointerEvents: 'none',
+    },
+    '&.loading': {
       cursor: 'default',
       color: 'var(--affine-disable-color)',
       pointerEvents: 'none',

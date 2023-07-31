@@ -186,11 +186,7 @@ export class AuthService {
     return Boolean(user.password);
   }
 
-  async changePassword(
-    email: string,
-    password: string,
-    newPassword: string
-  ): Promise<User> {
+  async changePassword(email: string, newPassword: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
         email,
@@ -199,20 +195,6 @@ export class AuthService {
 
     if (!user) {
       throw new BadRequestException('Invalid email');
-    }
-
-    let equal = !user.password;
-    if (user.password) {
-      try {
-        equal = await verify(user.password, password);
-      } catch (e) {
-        console.error(e);
-        throw new InternalServerErrorException(e, 'Verify password failed');
-      }
-    }
-
-    if (!equal) {
-      throw new UnauthorizedException('Invalid password');
     }
 
     const hashedPassword = await hash(newPassword);

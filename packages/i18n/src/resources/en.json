@@ -65,6 +65,11 @@
   "com.affine.auth.reset.password.message": "You will receive an email with a link to reset your password. Please check your inbox.",
   "com.affine.auth.send.reset.link": "Send reset link",
   "com.affine.auth.sent": "Sent",
+  "com.affine.auth.sent.change.password.hint": "Reset password link has been sent.",
+  "com.affine.auth.sent.change.email.hint": "Verification link has been sent.",
+  "com.affine.auth.set.password.page.title": "Set your AFFiNE Cloud password",
+  "com.affine.auth.set.password.page.success": "Set your AFFiNE Cloud password",
+  "com.affine.auth.set.password.save": "Save Password",
 
   "com.affine.auth.sign.email.placeholder": "Enter your email address",
   "com.affine.auth.sign.email.continue": "Continue with Email",

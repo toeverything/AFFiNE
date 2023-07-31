@@ -71,7 +71,6 @@ export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
 
 export type ChangePasswordMutationVariables = Exact<{
   email: Scalars['String']['input'];
-  password: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
 }>;
 

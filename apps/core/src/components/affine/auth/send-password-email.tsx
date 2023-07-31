@@ -5,23 +5,28 @@ import {
   BackButton,
   ModalHeader,
 } from '@affine/component/auth-components';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { isDesktop } from '@affine/env/constant';
 import { sendChangePasswordEmailMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
-import { type FC, useCallback } from 'react';
+import { useSetAtom } from 'jotai/index';
+import { type FC, useCallback, useState } from 'react';
 
 import type { AuthPanelProps } from './index';
 
 export const SendPasswordEmail: FC<AuthPanelProps> = ({
   setAuthState,
   setAuthStore,
-  authStore: { currentEmail, hasSentPasswordEmail },
+  email,
+  authStore: { hasSentPasswordEmail },
 }) => {
   const t = useAFFiNEI18N();
   const { trigger: sendChangePasswordEmail } = useMutation({
     mutation: sendChangePasswordEmailMutation,
   });
+  const pushNotification = useSetAtom(pushNotificationAtom);
+  const [loading, setLoading] = useState(false);
   return (
     <>
       <ModalHeader
@@ -40,7 +45,7 @@ export const SendPasswordEmail: FC<AuthPanelProps> = ({
         <AuthInput
           label={t['com.affine.settings.email']()}
           disabled={true}
-          value={currentEmail}
+          value={email}
         />
       </Wrapper>
 
@@ -49,20 +54,32 @@ export const SendPasswordEmail: FC<AuthPanelProps> = ({
         size="extraLarge"
         style={{ width: '100%' }}
         disabled={hasSentPasswordEmail}
+        loading={loading}
         onClick={useCallback(async () => {
+          setLoading(true);
           const res = await sendChangePasswordEmail({
-            email: currentEmail,
+            email,
             callbackUrl: `/auth/changePassword?isClient=${
               isDesktop ? 'true' : 'false'
             }`,
           });
+          setLoading(false);
+          console.log('res', res?.sendChangePasswordEmail);
 
-          if (res?.sendChangePasswordEmail) {
+          if (!res?.sendChangePasswordEmail) {
+            // TODO: add error message
+            return;
           }
-          console.log('res1', res);
+          console.log('222', 222);
 
-          // setAuthStore({ hasSentPasswordEmail: true });
-        }, [currentEmail, sendChangePasswordEmail, setAuthStore])}
+          pushNotification({
+            title: t['com.affine.auth.sent.change.password.hint'](),
+            message: '',
+            key: Date.now().toString(),
+            type: 'success',
+          });
+          setAuthStore({ hasSentPasswordEmail: true });
+        }, [email, pushNotification, sendChangePasswordEmail, setAuthStore, t])}
       >
         {hasSentPasswordEmail
           ? t['com.affine.auth.sent']()

@@ -1,12 +1,10 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { FC } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Button } from '../../ui/button';
-import { Wrapper } from '../../ui/layout';
 import { AuthPageContainer } from './auth-page-container';
-import { PasswordInput } from './password-input';
-
+import { SetPassword } from './set-password';
 type User = {
   id: string;
   name: string;
@@ -56,49 +54,13 @@ export const SignUpPage: FC<{
           {t['com.affine.auth.open.affine']()}
         </Button>
       ) : (
-        <SetPassword onSetPassword={onSetPassword} onLater={onLater} />
+        <SetPassword
+          onSetPassword={onSetPassword}
+          onLater={onLater}
+          confirmButtonContent={t['com.affine.auth.create.count']()}
+          showLater={true}
+        />
       )}
     </AuthPageContainer>
-  );
-};
-
-const SetPassword: FC<{
-  onLater: () => void;
-  onSetPassword: (password: string) => void;
-}> = ({ onLater, onSetPassword }) => {
-  const t = useAFFiNEI18N();
-
-  const [passwordPass, setPasswordPass] = useState(false);
-  const passwordRef = useRef('');
-
-  return (
-    <>
-      <Wrapper marginTop={30} marginBottom={42}>
-        <PasswordInput
-          width={320}
-          onPass={useCallback(password => {
-            setPasswordPass(true);
-            passwordRef.current = password;
-          }, [])}
-          onPrevent={useCallback(() => {
-            setPasswordPass(false);
-          }, [])}
-        />
-      </Wrapper>
-      <Button
-        type="primary"
-        size="large"
-        disabled={!passwordPass}
-        style={{ marginRight: 20 }}
-        onClick={useCallback(() => {
-          onSetPassword(passwordRef.current);
-        }, [onSetPassword])}
-      >
-        {t['com.affine.auth.create.count']()}
-      </Button>
-      <Button type="plain" size="large" onClick={onLater}>
-        {t['com.affine.auth.later']()}
-      </Button>
-    </>
   );
 };

@@ -46,8 +46,8 @@ export const changePasswordMutation = {
   definitionName: 'changePassword',
   containsFile: false,
   query: `
-mutation changePassword($email: String!, $password: String!, $newPassword: String!) {
-  changePassword(email: $email, password: $password, newPassword: $newPassword) {
+mutation changePassword($email: String!, $newPassword: String!) {
+  changePassword(email: $email, newPassword: $newPassword) {
     id
     name
     avatarUrl

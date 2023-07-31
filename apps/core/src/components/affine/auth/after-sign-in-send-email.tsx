@@ -15,7 +15,7 @@ import * as style from './style.css';
 
 export const AfterSignInSendEmail: FC<AuthPanelProps> = ({
   setAuthState,
-  authStore: { currentEmail },
+  email,
 }) => {
   const t = useAFFiNEI18N();
 
@@ -27,20 +27,20 @@ export const AfterSignInSendEmail: FC<AuthPanelProps> = ({
       />
       <AuthContent style={{ height: 162 }}>
         {t['com.affine.auth.sign.sent.email.message.start']()}
-        <a href={`mailto:${currentEmail}`}>{currentEmail}</a>
+        <a href={`mailto:${email}`}>{email}</a>
         {t['com.affine.auth.sign.sent.email.message.end']()}
       </AuthContent>
 
       <ResendButton
-        onClick={() => {
+        onClick={useCallback(() => {
           signIn('email', {
-            email: currentEmail,
+            email,
             callbackUrl: `/auth/signIn?isClient=${
               isDesktop ? 'true' : 'false'
             }`,
             redirect: true,
           }).catch(console.error);
-        }}
+        }, [email])}
       />
 
       <div className={style.authMessage} style={{ marginTop: 20 }}>

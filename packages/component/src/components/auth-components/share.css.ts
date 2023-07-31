@@ -169,3 +169,6 @@ globalStyle(`${authPageContainer} .title`, {
 globalStyle(`${authPageContainer} .subtitle`, {
   marginBottom: '28px',
 });
+globalStyle(`${authPageContainer} a`, {
+  color: 'var(--affine-link-color)',
+});

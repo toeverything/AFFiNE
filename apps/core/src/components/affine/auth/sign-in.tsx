@@ -13,16 +13,16 @@ import { useCallback } from 'react';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
-function validateEmail(currentEmail: string) {
+function validateEmail(email: string) {
   return new RegExp(
     /^(?:(?:[^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(?:(?:\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|((?:[a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  ).test(currentEmail);
+  ).test(email);
 }
 
 export const SignIn: FC<AuthPanelProps> = ({
   setAuthState,
-  setAuthStore,
-  authStore: { currentEmail },
+  setAuthEmail,
+  email,
 }) => {
   const t = useAFFiNEI18N();
 
@@ -34,20 +34,20 @@ export const SignIn: FC<AuthPanelProps> = ({
   const [loading, setLoading] = useState(false);
 
   const onContinue = useCallback(async () => {
-    if (!validateEmail(currentEmail)) {
+    if (!validateEmail(email)) {
       setIsValidEmail(false);
       return;
     }
 
     setIsValidEmail(true);
     setLoading(true);
-    const res = await verifyUser({ email: currentEmail });
+    const res = await verifyUser({ email: email });
     setLoading(false);
 
-    setAuthStore({ currentEmail });
+    setAuthEmail(email);
     if (res?.user) {
       signIn('email', {
-        email: currentEmail,
+        email: email,
         callbackUrl: `/auth/signIn?isClient=${isDesktop ? 'true' : 'false'}`,
         redirect: true,
       }).catch(console.error);
@@ -55,14 +55,14 @@ export const SignIn: FC<AuthPanelProps> = ({
       setAuthState('afterSignInSendEmail');
     } else {
       signIn('email', {
-        email: currentEmail,
+        email: email,
         callbackUrl: `/auth/signUp?isClient=${isDesktop ? 'true' : 'false'}`,
         redirect: true,
       }).catch(console.error);
 
       setAuthState('afterSignUpSendEmail');
     }
-  }, [currentEmail, setAuthState, setAuthStore, verifyUser]);
+  }, [email, setAuthEmail, setAuthState, verifyUser]);
   return (
     <>
       <ModalHeader
@@ -89,12 +89,12 @@ export const SignIn: FC<AuthPanelProps> = ({
         <AuthInput
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
-          value={currentEmail}
+          value={email}
           onChange={useCallback(
             (value: string) => {
-              setAuthStore({ currentEmail: value });
+              setAuthEmail(value);
             },
-            [setAuthStore]
+            [setAuthEmail]
           )}
           error={!isValidEmail}
           errorHint={

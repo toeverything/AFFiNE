@@ -71,17 +71,15 @@ export class AuthResolver {
   async changePassword(
     @Context() ctx: { req: Request },
     @Args('email') email: string,
-    @Args('password') password: string,
     @Args('newPassword') newPassword: string
   ) {
-    const user = await this.auth.changePassword(email, password, newPassword);
+    const user = await this.auth.changePassword(email, newPassword);
     ctx.req.user = user;
     return user;
   }
 
   @Mutation(() => Boolean)
   async sendChangePasswordEmail(
-    @Context() ctx: { req: Request },
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {
@@ -92,7 +90,6 @@ export class AuthResolver {
 
   @Mutation(() => Boolean)
   async sendSetPasswordEmail(
-    @Context() ctx: { req: Request },
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {
@@ -103,7 +100,6 @@ export class AuthResolver {
 
   @Mutation(() => Boolean)
   async sendChangeEmail(
-    @Context() ctx: { req: Request },
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {

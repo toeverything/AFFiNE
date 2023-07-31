@@ -17,7 +17,7 @@ import { forgetPasswordButton } from './style.css';
 
 export const SignInWithPassword: FC<AuthPanelProps> = ({
   setAuthState,
-  authStore: { currentEmail },
+  email,
   setOpen,
 }) => {
   const t = useAFFiNEI18N();
@@ -46,7 +46,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         <AuthInput
           label={t['com.affine.settings.email']()}
           disabled={true}
-          value={currentEmail}
+          value={email}
         />
         <AuthInput
           label={t['com.affine.auth.password']()}
@@ -74,7 +74,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         style={{ width: '100%' }}
         onClick={useCallback(async () => {
           const res = await sigInWithPassword({
-            email: currentEmail,
+            email: email,
             password,
           });
 
@@ -84,21 +84,14 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           }
 
           pushNotification({
-            title: `${currentEmail}${t['com.affine.auth.has.signed']()}`,
+            title: `${email}${t['com.affine.auth.has.signed']()}`,
             message: '',
             key: Date.now().toString(),
             type: 'success',
           });
 
           setOpen(false);
-        }, [
-          currentEmail,
-          password,
-          pushNotification,
-          setOpen,
-          sigInWithPassword,
-          t,
-        ])}
+        }, [email, password, pushNotification, setOpen, sigInWithPassword, t])}
       >
         {t['com.affine.auth.sign.in']()}
       </Button>

@@ -20,10 +20,14 @@ export type AuthModalProps = AuthModalBaseProps & {
     | 'signInWithPassword'
     | 'sendPasswordEmail';
   setAuthState: (state: AuthModalProps['state']) => void;
+  setAuthEmail: (state: AuthModalProps['email']) => void;
+  email: string;
 };
 
 export type AuthPanelProps = {
+  email: string;
   setAuthState: AuthModalProps['setAuthState'];
+  setAuthEmail: AuthModalProps['setAuthEmail'];
   setOpen: (open: boolean) => void;
   authStore: AuthStoreAtom;
   setAuthStore: (data: Partial<AuthStoreAtom>) => void;
@@ -40,12 +44,10 @@ const config: {
 };
 
 type AuthStoreAtom = {
-  currentEmail: string;
   hasSentPasswordEmail: boolean;
   resendCountDown: number;
 };
 export const authStoreAtom = atom<AuthStoreAtom>({
-  currentEmail: '',
   hasSentPasswordEmail: false,
   resendCountDown: 60,
 });
@@ -54,6 +56,8 @@ export const AuthModal: FC<AuthModalProps> = ({
   open,
   state,
   setOpen,
+  email,
+  setAuthEmail,
   setAuthState,
 }) => {
   const [authStore, setAuthStore] = useAtom(authStoreAtom);
@@ -61,15 +65,23 @@ export const AuthModal: FC<AuthModalProps> = ({
   const CurrentPanel = useMemo(() => {
     return config[state];
   }, [state]);
+
   useEffect(() => {
     if (!open) {
+      setAuthStore({
+        hasSentPasswordEmail: false,
+        resendCountDown: 60,
+      });
+      setAuthEmail('');
     }
-  }, [open]);
+  }, [open, setAuthEmail, setAuthStore]);
 
   return (
     <AuthModalBase open={open} setOpen={setOpen}>
       <CurrentPanel
+        email={email}
         setAuthState={setAuthState}
+        setAuthEmail={setAuthEmail}
         setOpen={setOpen}
         authStore={authStore}
         setAuthStore={useCallback(

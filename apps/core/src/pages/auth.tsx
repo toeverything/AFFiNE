@@ -36,7 +36,6 @@ export const AuthPage: FC<{ user: CheckedUser }> = ({ user }) => {
       changePassword({
         email: user.email,
         newPassword: password,
-        password: '',
       }).catch(console.error);
     },
     [changePassword, user.email]
