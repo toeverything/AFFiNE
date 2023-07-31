@@ -45,7 +45,7 @@ type SubdocEvent = {
 const docUpdateCallbackWeakMap = new WeakMap<Doc, UpdateCallback>();
 
 const createMonitor = (doc: Doc) => {
-  const onUpdate: UpdateCallback = (update, origin) => {
+  const onUpdate: UpdateCallback = (_, origin) => {
     if (process.env.NODE_ENV === 'development') {
       if (typeof origin !== 'string' && typeof origin !== 'number') {
         console.warn(

@@ -32,7 +32,7 @@ export const notificationsAtom = atom<Notification[]>(get =>
   get(notificationsBaseAtom)
 );
 
-export const removeNotificationAtom = atom(null, (get, set, key: string) => {
+export const removeNotificationAtom = atom(null, (_, set, key: string) => {
   set(notificationsBaseAtom, notifications =>
     notifications.filter(notification => notification.key !== key)
   );
@@ -40,7 +40,7 @@ export const removeNotificationAtom = atom(null, (get, set, key: string) => {
 
 export const pushNotificationAtom = atom<null, [Notification], void>(
   null,
-  (get, set, newNotification) => {
+  (_, set, newNotification) => {
     const key = newNotification.key;
     const removeNotification = () =>
       set(notificationsBaseAtom, notifications =>

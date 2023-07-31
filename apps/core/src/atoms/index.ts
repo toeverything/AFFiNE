@@ -93,7 +93,7 @@ export const pageSettingFamily = atomFamily((pageId: string) =>
 
 export const setPageModeAtom = atom(
   void 0,
-  (get, set, pageId: string, mode: PageMode) => {
+  (_, set, pageId: string, mode: PageMode) => {
     set(pageSettingFamily(pageId), { mode });
   }
 );
