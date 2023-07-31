@@ -13,8 +13,8 @@ import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
 export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
-  currentEmail,
   setAuthState,
+  authStore: { currentEmail },
 }) => {
   const t = useAFFiNEI18N();
 
@@ -34,7 +34,7 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
         onClick={() => {
           signIn('email', {
             email: currentEmail,
-            callbackUrl: `/auth/setPassword?isClient=${
+            callbackUrl: `/auth/signUp?isClient=${
               isDesktop ? 'true' : 'false'
             }`,
             redirect: true,

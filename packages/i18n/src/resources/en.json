@@ -61,6 +61,10 @@
   "com.affine.auth.has.signed": " has signed in!",
   "com.affine.auth.signed.success.title": "You’re almost there!",
   "com.affine.auth.signed.success.subtitle": "You have successfully signed in. The app will automatically open or redirect to the web version. if you encounter any issues, you can also click the button below to  manually open the AFFiNE app.",
+  "com.affine.auth.reset.password": "Reset Password",
+  "com.affine.auth.reset.password.message": "You will receive an email with a link to reset your password. Please check your inbox.",
+  "com.affine.auth.send.reset.link": "Send reset link",
+  "com.affine.auth.sent": "Sent",
 
   "com.affine.auth.sign.email.placeholder": "Enter your email address",
   "com.affine.auth.sign.email.continue": "Continue with Email",

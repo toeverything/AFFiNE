@@ -1,4 +1,3 @@
-
 import { ForbiddenException } from '@nestjs/common';
 import {
   Args,
@@ -12,6 +11,7 @@ import {
 } from '@nestjs/graphql';
 import type { Request } from 'express';
 
+import { Config } from '../../config';
 import { UserType } from '../users/resolver';
 import { CurrentUser } from './guard';
 import { AuthService } from './service';
@@ -27,7 +27,10 @@ export class TokenType {
 
 @Resolver(() => UserType)
 export class AuthResolver {
-  constructor(private auth: AuthService) {}
+  constructor(
+    private readonly config: Config,
+    private auth: AuthService
+  ) {}
 
   @ResolveField(() => TokenType)
   token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
@@ -82,6 +85,30 @@ export class AuthResolver {
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {
-    return this.auth.sendChangePasswordEmail(email, callbackUrl);
+    const url = `${this.config.baseUrl}${callbackUrl}`;
+    const res = await this.auth.sendChangePasswordEmail(email, url);
+    return !res.rejected.length;
+  }
+
+  @Mutation(() => Boolean)
+  async sendSetPasswordEmail(
+    @Context() ctx: { req: Request },
+    @Args('email') email: string,
+    @Args('callbackUrl') callbackUrl: string
+  ) {
+    const url = `${this.config.baseUrl}${callbackUrl}`;
+    const res = await this.auth.sendSetPasswordEmail(email, url);
+    return !res.rejected.length;
+  }
+
+  @Mutation(() => Boolean)
+  async sendChangeEmail(
+    @Context() ctx: { req: Request },
+    @Args('email') email: string,
+    @Args('callbackUrl') callbackUrl: string
+  ) {
+    const url = `${this.config.baseUrl}${callbackUrl}`;
+    const res = await this.auth.sendChangeEmail(email, url);
+    return !res.rejected.length;
   }
 }

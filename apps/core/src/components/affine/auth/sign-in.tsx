@@ -21,8 +21,8 @@ function validateEmail(currentEmail: string) {
 
 export const SignIn: FC<AuthPanelProps> = ({
   setAuthState,
-  setCurrentEmail,
-  currentEmail,
+  setAuthStore,
+  authStore: { currentEmail },
 }) => {
   const t = useAFFiNEI18N();
 
@@ -44,7 +44,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     const res = await verifyUser({ email: currentEmail });
     setLoading(false);
 
-    setCurrentEmail(currentEmail);
+    setAuthStore({ currentEmail });
     if (res?.user) {
       signIn('email', {
         email: currentEmail,
@@ -56,15 +56,13 @@ export const SignIn: FC<AuthPanelProps> = ({
     } else {
       signIn('email', {
         email: currentEmail,
-        callbackUrl: `/auth/setPassword?isClient=${
-          isDesktop ? 'true' : 'false'
-        }`,
+        callbackUrl: `/auth/signUp?isClient=${isDesktop ? 'true' : 'false'}`,
         redirect: true,
       }).catch(console.error);
 
       setAuthState('afterSignUpSendEmail');
     }
-  }, [currentEmail, setAuthState, setCurrentEmail, verifyUser]);
+  }, [currentEmail, setAuthState, setAuthStore, verifyUser]);
   return (
     <>
       <ModalHeader
@@ -92,9 +90,12 @@ export const SignIn: FC<AuthPanelProps> = ({
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
           value={currentEmail}
-          onChange={value => {
-            setCurrentEmail(value);
-          }}
+          onChange={useCallback(
+            (value: string) => {
+              setAuthStore({ currentEmail: value });
+            },
+            [setAuthStore]
+          )}
           error={!isValidEmail}
           errorHint={
             isValidEmail ? '' : t['com.affine.auth.sign.email.error']()

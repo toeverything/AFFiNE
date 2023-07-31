@@ -17,7 +17,7 @@ import { forgetPasswordButton } from './style.css';
 
 export const SignInWithPassword: FC<AuthPanelProps> = ({
   setAuthState,
-  currentEmail,
+  authStore: { currentEmail },
   setOpen,
 }) => {
   const t = useAFFiNEI18N();
@@ -59,7 +59,12 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           errorHint={t['com.affine.auth.password.error']()}
         />
         <span></span>
-        <button className={forgetPasswordButton}>
+        <button
+          className={forgetPasswordButton}
+          onClick={useCallback(() => {
+            setAuthState('sendPasswordEmail');
+          }, [setAuthState])}
+        >
           {t['com.affine.auth.forget']()}
         </button>
       </Wrapper>

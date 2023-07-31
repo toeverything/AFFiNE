@@ -2,13 +2,15 @@ import {
   AuthModal as AuthModalBase,
   type AuthModalProps as AuthModalBaseProps,
 } from '@affine/component/auth-components';
-import { type FC, useMemo, useState } from 'react';
+import { atom, useAtom } from 'jotai';
+import { type FC, useCallback, useEffect, useMemo } from 'react';
 
 import { AfterSignInSendEmail } from './after-sign-in-send-email';
 import { AfterSignUpSendEmail } from './after-sign-up-send-email';
-import { SetPassword } from './set-password';
+import { SendPasswordEmail } from './send-password-email';
 import { SignIn } from './sign-in';
 import { SignInWithPassword } from './sign-in-with-password';
+
 export type AuthModalProps = AuthModalBaseProps & {
   state:
     | 'signIn'
@@ -16,16 +18,15 @@ export type AuthModalProps = AuthModalBaseProps & {
     | 'afterSignInSendEmail'
     // throw away
     | 'signInWithPassword'
-    | 'setPassword'
-    | 'resetPassword';
+    | 'sendPasswordEmail';
   setAuthState: (state: AuthModalProps['state']) => void;
 };
 
 export type AuthPanelProps = {
   setAuthState: AuthModalProps['setAuthState'];
-  setCurrentEmail: (email: string) => void;
-  currentEmail: string;
   setOpen: (open: boolean) => void;
+  authStore: AuthStoreAtom;
+  setAuthStore: (data: Partial<AuthStoreAtom>) => void;
 };
 
 const config: {
@@ -34,11 +35,20 @@ const config: {
   signIn: SignIn,
   afterSignUpSendEmail: AfterSignUpSendEmail,
   afterSignInSendEmail: AfterSignInSendEmail,
-
   signInWithPassword: SignInWithPassword,
-  setPassword: SetPassword,
-  resetPassword: () => <div>resetPassword</div>,
+  sendPasswordEmail: SendPasswordEmail,
 };
+
+type AuthStoreAtom = {
+  currentEmail: string;
+  hasSentPasswordEmail: boolean;
+  resendCountDown: number;
+};
+export const authStoreAtom = atom<AuthStoreAtom>({
+  currentEmail: '',
+  hasSentPasswordEmail: false,
+  resendCountDown: 60,
+});
 
 export const AuthModal: FC<AuthModalProps> = ({
   open,
@@ -46,18 +56,31 @@ export const AuthModal: FC<AuthModalProps> = ({
   setOpen,
   setAuthState,
 }) => {
-  const [currentEmail, setCurrentEmail] = useState('');
+  const [authStore, setAuthStore] = useAtom(authStoreAtom);
+
   const CurrentPanel = useMemo(() => {
     return config[state];
   }, [state]);
+  useEffect(() => {
+    if (!open) {
+    }
+  }, [open]);
 
   return (
     <AuthModalBase open={open} setOpen={setOpen}>
       <CurrentPanel
         setAuthState={setAuthState}
-        currentEmail={currentEmail}
-        setCurrentEmail={setCurrentEmail}
         setOpen={setOpen}
+        authStore={authStore}
+        setAuthStore={useCallback(
+          (data: Partial<AuthStoreAtom>) => {
+            setAuthStore(prev => ({
+              ...prev,
+              ...data,
+            }));
+          },
+          [setAuthStore]
+        )}
       />
     </AuthModalBase>
   );

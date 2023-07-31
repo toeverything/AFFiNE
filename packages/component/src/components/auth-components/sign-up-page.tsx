@@ -14,7 +14,7 @@ type User = {
   image: string;
 };
 
-export const SetPasswordPage: FC<{
+export const SignUpPage: FC<{
   user: User;
   onSetPassword: (password: string) => void;
   onOpenAffine: () => void;
@@ -51,7 +51,6 @@ export const SetPasswordPage: FC<{
         )
       }
     >
-      <h1>This is set page</h1>
       {hasSetUp ? (
         <Button type="primary" size="large" onClick={onOpenAffine}>
           {t['com.affine.auth.open.affine']()}

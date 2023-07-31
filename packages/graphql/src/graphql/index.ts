@@ -212,6 +212,17 @@ mutation revokeMemberPermission($workspaceId: String!, $userId: String!) {
 }`,
 };
 
+export const sendChangeEmailMutation = {
+  id: 'sendChangeEmailMutation' as const,
+  operationName: 'sendChangeEmail',
+  definitionName: 'sendChangeEmail',
+  containsFile: false,
+  query: `
+mutation sendChangeEmail($email: String!, $callbackUrl: String!) {
+  sendChangeEmail(email: $email, callbackUrl: $callbackUrl)
+}`,
+};
+
 export const sendChangePasswordEmailMutation = {
   id: 'sendChangePasswordEmailMutation' as const,
   operationName: 'sendChangePasswordEmail',
@@ -220,6 +231,17 @@ export const sendChangePasswordEmailMutation = {
   query: `
 mutation sendChangePasswordEmail($email: String!, $callbackUrl: String!) {
   sendChangePasswordEmail(email: $email, callbackUrl: $callbackUrl)
+}`,
+};
+
+export const sendSetPasswordEmailMutation = {
+  id: 'sendSetPasswordEmailMutation' as const,
+  operationName: 'sendSetPasswordEmail',
+  definitionName: 'sendSetPasswordEmail',
+  containsFile: false,
+  query: `
+mutation sendSetPasswordEmail($email: String!, $callbackUrl: String!) {
+  sendSetPasswordEmail(email: $email, callbackUrl: $callbackUrl)
 }`,
 };
 

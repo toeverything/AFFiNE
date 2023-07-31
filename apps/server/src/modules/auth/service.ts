@@ -230,4 +230,10 @@ export class AuthService {
   async sendChangePasswordEmail(email: string, callbackUrl: string) {
     return this.mailer.sendChangePasswordEmail(email, callbackUrl);
   }
+  async sendSetPasswordEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendSetPasswordEmail(email, callbackUrl);
+  }
+  async sendChangeEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendChangeEmail(email, callbackUrl);
+  }
 }

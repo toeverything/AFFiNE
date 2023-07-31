@@ -14,8 +14,8 @@ import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
 export const AfterSignInSendEmail: FC<AuthPanelProps> = ({
-  currentEmail,
   setAuthState,
+  authStore: { currentEmail },
 }) => {
   const t = useAFFiNEI18N();
 
