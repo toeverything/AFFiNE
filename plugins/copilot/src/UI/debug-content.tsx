@@ -18,6 +18,7 @@ export const DebugContent = (): ReactElement => {
             },
             [setKey]
           )}
+          placeholder="Enter your OPENAI_API_KEY here"
         />
         <Button
           size="large"
