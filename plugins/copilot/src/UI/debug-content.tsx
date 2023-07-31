@@ -11,6 +11,8 @@ export const DebugContent = (): ReactElement => {
     <div>
       <FlexWrapper justifyContent="space-between">
         <Input
+          width={280}
+          height={32}
           defaultValue={key ?? undefined}
           onChange={useCallback(
             (newValue: string) => {
@@ -18,7 +20,7 @@ export const DebugContent = (): ReactElement => {
             },
             [setKey]
           )}
-          placeholder="Enter your OPENAI_API_KEY here"
+          placeholder="Enter your API_KEY here"
         />
         <Button
           size="large"
