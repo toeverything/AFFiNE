@@ -4,7 +4,6 @@ import {
   styled,
   textEllipsis,
 } from '@affine/component';
-import { Button } from '@affine/component';
 
 export const StyledSplitLine = styled('div')(() => {
   return {
@@ -127,15 +126,22 @@ export const StyledModalHeader = styled('div')(() => {
   };
 });
 
-export const StyledSignInButton = styled(Button)(() => {
+export const StyledSignInButton = styled('button')(() => {
   return {
     fontWeight: 600,
     paddingLeft: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingRight: '15px',
+    borderRadius: '8px',
+    '&:hover': {
+      backgroundColor: 'var(--affine-hover-color)',
+    },
     '.circle': {
       width: '40px',
       height: '40px',
       borderRadius: '20px',
-      backgroundColor: 'var(--affine-hover-color)',
       color: 'var(--affine-primary-color)',
       fontSize: '24px',
       flexShrink: 0,
