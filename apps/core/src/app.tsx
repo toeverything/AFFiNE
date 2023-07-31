@@ -46,8 +46,11 @@ const languageLoadingPromise = new Promise<void>(resolve => {
   }
 });
 
+const loadFontPromise = document.fonts.load('16px Kalam');
+
 export const App = memo(function App() {
   use(languageLoadingPromise);
+  use(loadFontPromise);
   return (
     <CacheProvider value={cache}>
       <AffineContext>
