@@ -1,11 +1,17 @@
 {
-  "name": "@affine/copilot",
+  "name": "@affine/copilot-plugin",
+  "type": "module",
   "private": true,
+  "description": "Copilot plugin",
   "affinePlugin": {
     "release": false,
     "entry": {
       "core": "./src/index.ts"
     }
+  },
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
   },
   "dependencies": {
     "@affine/component": "workspace:*",
@@ -18,6 +24,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@affine/plugin-cli": "workspace:*",
     "@types/marked": "^5.0.1",
     "jotai": "^2.2.2",
     "react": "18.2.0",
@@ -27,5 +34,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.7.0-canary.59"
+  "version": "0.8.0-canary.5"
 }

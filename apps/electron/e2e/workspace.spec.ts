@@ -47,6 +47,9 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
 test('export then add', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
 
+  await page.focus('.affine-default-page-block-title');
+  await page.fill('.affine-default-page-block-title', 'test1');
+
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
 
@@ -108,4 +111,11 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   expect(newWorkspace.id).not.toBe(originalId);
   // check its name is correct
   await expect(page.getByTestId('workspace-name')).toHaveText(newWorkspaceName);
+
+  // find button which has the title "test1"
+  const test1PageButton = await page.waitForSelector(`text="test1"`);
+  await test1PageButton.click();
+
+  const title = page.locator('[data-block-is-title] >> text="test1"');
+  await expect(title).toBeVisible();
 });

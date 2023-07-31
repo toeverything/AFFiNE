@@ -92,17 +92,14 @@ export const createI18n = () => {
   return i18n;
 };
 export function setUpLanguage(i: i18n) {
-  if (typeof window !== 'undefined') {
-    let language;
-    const localStorageLanguage = localStorage.getItem(STORAGE_KEY);
-    if (localStorageLanguage) {
-      language = standardizeLocale(localStorageLanguage);
-    } else {
-      language = standardizeLocale(navigator.language);
-    }
-    return i.changeLanguage(language);
+  let language;
+  const localStorageLanguage = localStorage.getItem(STORAGE_KEY);
+  if (localStorageLanguage) {
+    language = standardizeLocale(localStorageLanguage);
+  } else {
+    language = standardizeLocale(navigator.language);
   }
-  return void 0;
+  return i.changeLanguage(language);
 }
 
 // const I18nProvider = I18nextProvider;

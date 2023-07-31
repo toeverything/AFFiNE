@@ -11,10 +11,10 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     // noPropertyAccessFromIndexSignature: false,
     // noUncheckedIndexedAccess: false,
-    // noUnusedLocals: false,
-    // noUnusedParameters: false,
     "useUnknownInCatchVariables": true,
 
     // Modules
@@ -128,6 +128,9 @@
       "path": "./packages/cli"
     },
     {
+      "path": "./packages/plugin-cli"
+    },
+    {
       "path": "./packages/component"
     },
     {
@@ -154,6 +157,9 @@
     },
     {
       "path": "./tests/affine-local"
+    },
+    {
+      "path": "./tests/affine-plugin"
     },
     {
       "path": "./tests/affine-legacy/0.7.0-canary.18"

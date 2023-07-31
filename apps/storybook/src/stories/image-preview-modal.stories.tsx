@@ -1,11 +1,13 @@
 import { BlockHubWrapper } from '@affine/component/block-hub';
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
-import { ImagePreviewModal } from '@affine/component/image-preview-modal';
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { ImagePreviewModal } from '@affine/image-preview-plugin/src/component';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { Meta } from '@storybook/react';
+import { createPortal } from 'react-dom';
 
 export default {
   title: 'Component/ImagePreviewModal',
@@ -52,6 +54,10 @@ export const Default = () => {
         }}
       >
         <BlockSuiteEditor mode="page" page={page} onInit={initEmptyPage} />
+        {createPortal(
+          <ImagePreviewModal pageId={page.id} workspace={page.workspace} />,
+          document.body
+        )}
       </div>
       <BlockHubWrapper
         style={{

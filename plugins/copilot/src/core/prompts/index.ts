@@ -18,12 +18,10 @@ You can only give one reply for each conversation turn.
 `;
 
 export const followupQuestionPrompt = `Rules you must follow:
-- You only respond in JSON format
-- Read the following conversation between AI and Human and generate at most 3 follow-up messages or questions the Human can ask
-- Your response MUST be a valid JSON array of strings like this: ["some question", "another question"]
-- Each message in your response should be concise, no more than 15 words
-- You MUST reply in the same written language as the conversation
-- Don't output anything other text
+Read the following conversation between AI and Human and generate at most 3 follow-up messages or questions the Human can ask
+Each message in your response should be concise, no more than 15 words
+You MUST reply in the same written language as the conversation
+{format_instructions}
 The conversation is inside triple quotes:
 \`\`\`
 Human: {human_conversation}

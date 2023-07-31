@@ -1,5 +1,4 @@
-import '@blocksuite/blocks';
-
+import { Button, IconButton, Tooltip } from '@affine/component';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -23,8 +22,6 @@ import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 import useSWR from 'swr';
 
-import { Button, IconButton } from '../../ui/button';
-import { Tooltip } from '../../ui/tooltip';
 import { useZoomControls } from './hooks/use-zoom';
 import {
   buttonStyle,

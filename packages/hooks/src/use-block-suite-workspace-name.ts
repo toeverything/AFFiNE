@@ -15,7 +15,7 @@ export function useBlockSuiteWorkspaceName(blockSuiteWorkspace: Workspace) {
     );
     const writableAtom = atom(
       get => get(baseAtom),
-      (get, set, name: string) => {
+      (_, set, name: string) => {
         blockSuiteWorkspace.meta.setName(name);
         set(baseAtom, name);
       }
