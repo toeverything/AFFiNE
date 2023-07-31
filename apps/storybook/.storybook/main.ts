@@ -32,7 +32,7 @@ export default {
   framework: {
     name: '@storybook/react-vite',
   },
-  async viteFinal(config, { configType }) {
+  async viteFinal(config, _) {
     return mergeConfig(config, {
       assetsInclude: ['**/*.md'],
       plugins: [

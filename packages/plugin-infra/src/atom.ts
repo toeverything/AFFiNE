@@ -56,7 +56,7 @@ export const contentLayoutAtom = atom<
   void
 >(
   get => get(contentLayoutBaseAtom),
-  (get, set, layout) => {
+  (_, set, layout) => {
     set(contentLayoutBaseAtom, prev => {
       let setV: (prev: ExpectedLayout) => ExpectedLayout;
       if (typeof layout !== 'function') {
