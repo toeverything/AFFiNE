@@ -145,6 +145,7 @@ export class DataDefine<Data extends DataTypeShape = Record<string, unknown>> {
 interface DataDefineConfig<T extends DataTypeShape> {
   name: string;
   supers: DataDefine[];
+  _phantom?: T;
 }
 
 interface DataHelper<T extends DataTypeShape> {

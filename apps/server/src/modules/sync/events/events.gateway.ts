@@ -1,5 +1,3 @@
-import type { Storage } from '@affine/storage';
-import { Inject } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -13,9 +11,7 @@ import { Server, Socket } from 'socket.io';
 import * as Y from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
-import { StorageProvide } from '../../../storage';
 import { DocManager } from '../../doc';
-import { WorkspaceService } from './workspace';
 
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
@@ -23,9 +19,7 @@ import { WorkspaceService } from './workspace';
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private connectionCount = 0;
   constructor(
-    private readonly storageService: WorkspaceService,
     private readonly docManager: DocManager,
-    @Inject(StorageProvide) private readonly storage: Storage,
     private readonly metric: Metrics
   ) {}
 
