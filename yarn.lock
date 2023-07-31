@@ -597,6 +597,7 @@ __metadata:
     next-auth: ^4.22.1
     nodemailer: ^6.9.3
     nodemon: ^2.0.22
+    on-headers: ^1.0.2
     parse-duration: ^1.1.0
     pretty-time: ^1.1.0
     prisma: ^5.0.0
@@ -25578,7 +25579,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"on-headers@npm:~1.0.2":
+"on-headers@npm:^1.0.2, on-headers@npm:~1.0.2":
   version: 1.0.2
   resolution: "on-headers@npm:1.0.2"
   checksum: 2bf13467215d1e540a62a75021e8b318a6cfc5d4fc53af8e8f84ad98dbcea02d506c6d24180cd62e1d769c44721ba542f3154effc1f7579a8288c9f7873ed8e5
