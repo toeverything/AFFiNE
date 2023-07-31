@@ -6,12 +6,12 @@
     "jotai": "^2.2.2"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.0.0-20230730071529-580daeb9-nightly",
-    "@blocksuite/blocks": "0.0.0-20230730071529-580daeb9-nightly",
-    "@blocksuite/editor": "0.0.0-20230730071529-580daeb9-nightly",
-    "@blocksuite/global": "0.0.0-20230730071529-580daeb9-nightly",
-    "@blocksuite/lit": "0.0.0-20230730071529-580daeb9-nightly",
-    "@blocksuite/store": "0.0.0-20230730071529-580daeb9-nightly",
+    "@blocksuite/block-std": "0.0.0-20230731152415-fdd3d9b0-nightly",
+    "@blocksuite/blocks": "0.0.0-20230731152415-fdd3d9b0-nightly",
+    "@blocksuite/editor": "0.0.0-20230731152415-fdd3d9b0-nightly",
+    "@blocksuite/global": "0.0.0-20230731152415-fdd3d9b0-nightly",
+    "@blocksuite/lit": "0.0.0-20230731152415-fdd3d9b0-nightly",
+    "@blocksuite/store": "0.0.0-20230731152415-fdd3d9b0-nightly",
     "lottie-web": "^5.12.2"
   },
   "peerDependencies": {
