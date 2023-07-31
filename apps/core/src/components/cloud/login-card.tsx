@@ -16,17 +16,14 @@ export const LoginCard = () => {
   return (
     <StyledSignInButton
       data-testid="sign-in-button"
-      type="plain"
-      icon={
-        <div className="circle">
-          <CloudWorkspaceIcon />
-        </div>
-      }
       onClick={async () => {
         // jump to login page
         signIn().catch(console.error);
       }}
     >
+      <div className="circle">
+        <CloudWorkspaceIcon />
+      </div>{' '}
       {t['Sign in']()}
     </StyledSignInButton>
   );

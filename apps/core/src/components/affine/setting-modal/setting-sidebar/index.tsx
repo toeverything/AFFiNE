@@ -14,13 +14,14 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
-import { useAtom } from 'jotai';
+import { signIn } from 'next-auth/react';
+// import { useAtom } from 'jotai';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
 
-import { openAuthModalAtom } from '../../../../atoms';
+// import { openAuthModalAtom } from '../../../../atoms';
 import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -69,14 +70,17 @@ export const UserInfo = ({
 
 export const SignInButton = () => {
   const t = useAFFiNEI18N();
-  const [, setAuthModal] = useAtom(openAuthModalAtom);
+  // const [, setAuthModal] = useAtom(openAuthModalAtom);
 
   return (
     <div
       className={accountButton}
+      // onClick={useCallback(() => {
+      //   setAuthModal({ open: true, state: 'signIn' });
+      // }, [setAuthModal])}
       onClick={useCallback(() => {
-        setAuthModal({ open: true, state: 'signIn' });
-      }, [setAuthModal])}
+        signIn().catch(console.error);
+      }, [])}
     >
       <div className="avatar not-sign">
         <Logo1Icon />

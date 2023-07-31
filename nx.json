@@ -33,7 +33,9 @@
         "{projectRoot}/build",
         "{projectRoot}/out",
         "{projectRoot}/storybook-static",
-        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts"
+        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts",
+        "{workspaceRoot}/apps/electron/dist/plugins",
+        "{workspaceRoot}/apps/core/public/plugins"
       ],
       "inputs": [
         {

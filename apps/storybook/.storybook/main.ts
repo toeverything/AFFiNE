@@ -32,7 +32,7 @@ export default {
   framework: {
     name: '@storybook/react-vite',
   },
-  async viteFinal(config, { configType }) {
+  async viteFinal(config, _) {
     return mergeConfig(config, {
       assetsInclude: ['**/*.md'],
       plugins: [
@@ -49,13 +49,6 @@ export default {
           channel: 'canary',
           coverage: false,
         }),
-      },
-      resolve: {
-        alias: {
-          'dotenv/config': fileURLToPath(
-            new URL('../../../scripts/vitest/dotenv-config.ts', import.meta.url)
-          ),
-        },
       },
     });
   },

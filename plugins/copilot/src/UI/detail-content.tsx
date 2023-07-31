@@ -1,6 +1,5 @@
 import { IconButton } from '@affine/component';
 import { SendIcon } from '@blocksuite/icons';
-import { contentLayoutAtom } from '@toeverything/plugin-infra/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
@@ -62,11 +61,7 @@ const DetailContentImpl = () => {
 };
 
 export const DetailContent = (): ReactElement => {
-  const layout = useAtomValue(contentLayoutAtom);
   const key = useAtomValue(openAIApiKeyAtom);
-  if (layout === 'editor' || layout.second !== 'copilot') {
-    return <></>;
-  }
   if (!key) {
     return <span>Please set OpenAI API Key in the debug panel.</span>;
   }

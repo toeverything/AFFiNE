@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.7.0-canary.59",
+  "version": "0.8.0-canary.4",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -31,7 +31,6 @@
     "@node-rs/jsonwebtoken": "^0.2.3",
     "@prisma/client": "^5.0.0",
     "@socket.io/redis-adapter": "^8.2.1",
-    "@types/on-headers": "^1.0.0",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -42,6 +41,7 @@
     "lodash-es": "^4.17.21",
     "next-auth": "^4.22.1",
     "nodemailer": "^6.9.3",
+    "on-headers": "^1.0.2",
     "parse-duration": "^1.1.0",
     "pretty-time": "^1.1.0",
     "prisma": "^5.0.0",
@@ -61,6 +61,7 @@
     "@types/lodash-es": "^4.17.8",
     "@types/node": "^18.17.1",
     "@types/nodemailer": "^6.4.9",
+    "@types/on-headers": "^1.0.0",
     "@types/pretty-time": "^1.1.2",
     "@types/sinon": "^10.0.15",
     "@types/supertest": "^2.0.12",

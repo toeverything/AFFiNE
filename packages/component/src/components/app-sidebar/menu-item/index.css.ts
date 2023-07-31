@@ -1,5 +1,4 @@
 import { style } from '@vanilla-extract/css';
-
 export const root = style({
   display: 'inline-flex',
   alignItems: 'center',
@@ -35,18 +34,13 @@ export const root = style({
       paddingLeft: '4px',
       paddingRight: '12px',
     },
-    '&[data-type="collection-list-item"][data-collapsible="false"]:hover': {
-      width: 'calc(100% + 8px)',
-      transform: 'translateX(-8px)',
-      paddingLeft: '20px',
-      paddingRight: '12px',
-    },
-    '&[data-type="favorite-list-item"][data-collapsible="false"]:hover': {
-      width: 'calc(100% + 8px)',
-      transform: 'translateX(-8px)',
-      paddingLeft: '20px',
-      paddingRight: '12px',
-    },
+    '&[data-type="collection-list-item"][data-collapsible="false"][data-active="true"],&[data-type="favorite-list-item"][data-collapsible="false"][data-active="true"], &[data-type="favorite-list-item"][data-collapsible="false"]:hover, &[data-type="collection-list-item"][data-collapsible="false"]:hover':
+      {
+        width: 'calc(100% + 8px)',
+        transform: 'translateX(-8px)',
+        paddingLeft: '20px',
+        paddingRight: '12px',
+      },
   },
 });
 

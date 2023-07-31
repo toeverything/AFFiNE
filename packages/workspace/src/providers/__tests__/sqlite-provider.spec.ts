@@ -32,14 +32,14 @@ const mockedAddBlob = vi.fn();
 vi.stubGlobal('window', {
   apis: {
     db: {
-      getDocAsUpdates: async (workspaceId, guid) => {
+      getDocAsUpdates: async (_, guid) => {
         const subdoc = guid ? getDoc(offlineYdoc, guid) : offlineYdoc;
         if (!subdoc) {
           return false;
         }
         return Y.encodeStateAsUpdate(subdoc);
       },
-      applyDocUpdate: async (id, update, subdocId) => {
+      applyDocUpdate: async (_, update, subdocId) => {
         const subdoc = subdocId ? getDoc(offlineYdoc, subdocId) : offlineYdoc;
         if (!subdoc) {
           return;
