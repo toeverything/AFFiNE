@@ -37,8 +37,8 @@
   },
   "devDependencies": {
     "@affine/y-provider": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230729011742-613f3782-nightly",
-    "@blocksuite/store": "0.0.0-20230729011742-613f3782-nightly",
+    "@blocksuite/blocks": "0.0.0-20230730071529-580daeb9-nightly",
+    "@blocksuite/store": "0.0.0-20230730071529-580daeb9-nightly",
     "vite": "^4.4.7",
     "vite-plugin-dts": "3.3.1",
     "y-indexeddb": "^9.0.11"
