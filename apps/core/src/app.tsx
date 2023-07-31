@@ -40,6 +40,13 @@ export const App = memo(function App() {
       console.error(error);
     });
   }, []);
+  useEffect(() => {
+    document.fonts.onloadingdone = () => {};
+
+    (() => {
+      document.fonts.load('16px Kalam');
+    })();
+  }, []);
   return (
     <CacheProvider value={cache}>
       <AffineContext>
