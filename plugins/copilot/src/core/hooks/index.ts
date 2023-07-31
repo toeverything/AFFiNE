@@ -132,7 +132,7 @@ const getFollowingUpAtoms = (
   const baseAtom = atomWithDefault<Promise<string[]> | string[]>(async () => {
     return chatHistory?.getFollowingUp() ?? [];
   });
-  const setAtom = atom<null, [], void>(null, async (get, set) => {
+  const setAtom = atom<null, [], void>(null, async (_, set) => {
     if (!followupLLMChain || !chatHistory) {
       throw new Error('followupLLMChain not set');
     }
