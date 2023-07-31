@@ -1,0 +1,23 @@
+{
+  "name": "@affine/linked-page-plugin",
+  "type": "module",
+  "private": true,
+  "description": "AFFiNE Linked Page plugin",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
+  "affinePlugin": {
+    "release": false,
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@toeverything/plugin-infra": "workspace:*"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*"
+  }
+}
