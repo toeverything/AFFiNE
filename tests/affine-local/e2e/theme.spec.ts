@@ -21,9 +21,14 @@ test('default white', async ({ browser }) => {
   await page.screenshot({
     path: resolve(testResultDir, 'affine-light-theme.png'),
   });
-  await page.getByTestId('editor-option-menu').click();
-  await page.getByTestId('change-theme-dark').click();
+  await page.getByTestId('settings-modal-trigger').click();
+  await page.getByTestId('appearance-panel-trigger').click();
   await page.waitForTimeout(50);
+  await page.getByTestId('dark-theme-trigger').click();
+  const darkMode = await root.evaluate(element =>
+    element.getAttribute('data-theme')
+  );
+  expect(darkMode).toBe('dark');
   await page.screenshot({
     path: resolve(testResultDir, 'affine-dark-theme.png'),
   });
