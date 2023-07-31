@@ -1,6 +1,16 @@
 /// <reference types="./global.d.ts" />
+import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
+import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import gql from '@opentelemetry/instrumentation-graphql';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import ioredis from '@opentelemetry/instrumentation-ioredis';
+import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
+import socketIO from '@opentelemetry/instrumentation-socket.io';
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { PrismaInstrumentation } from '@prisma/instrumentation';
 import cookieParser from 'cookie-parser';
 import { static as staticMiddleware } from 'express';
 // @ts-expect-error graphql-upload is not typed
@@ -12,6 +22,23 @@ import { serverTiming } from './middleware/timing';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const { AFFINE_ENV } = process.env;
+
+const tracing = new NodeSDK({
+  traceExporter: new TraceExporter(),
+  metricReader: new PeriodicExportingMetricReader({
+    exporter: new MetricExporter(),
+  }),
+  instrumentations: [
+    new NestInstrumentation(),
+    new ioredis.IORedisInstrumentation(),
+    new socketIO.SocketIoInstrumentation({ traceReserved: true }),
+    new gql.GraphQLInstrumentation({ mergeItems: true }),
+    new HttpInstrumentation(),
+    new PrismaInstrumentation(),
+  ],
+});
+
+tracing.start();
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   cors: true,
