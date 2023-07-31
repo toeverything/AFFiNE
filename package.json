@@ -19,7 +19,7 @@
     "node": ">=18.16.1 <19.0.0"
   },
   "scripts": {
-    "dev": "yarn build:infra && yarn build:plugins && dev-core",
+    "dev": "dev-core",
     "dev:electron": "yarn workspace @affine/electron dev:app",
     "build": "yarn nx build @affine/core",
     "build:electron": "yarn nx build @affine/electron",

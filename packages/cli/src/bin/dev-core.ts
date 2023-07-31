@@ -93,22 +93,49 @@ flags.channel = buildFlags.channel as any;
 flags.coverage = buildFlags.coverage;
 
 watchI18N();
-spawn(
-  'node',
-  [
-    '--loader',
-    'ts-node/esm/transpile-only',
-    '../../node_modules/webpack/bin/webpack.js',
-    flags.mode === 'development' ? 'serve' : undefined,
-    '--mode',
-    flags.mode === 'development' ? 'development' : 'production',
-    '--env',
-    'flags=' + Buffer.from(JSON.stringify(flags), 'utf-8').toString('hex'),
-  ].filter((v): v is string => !!v),
-  {
-    cwd,
-    stdio: 'inherit',
-    shell: true,
-    env: process.env,
+spawn('yarn', ['build:infra'], {
+  cwd,
+  stdio: 'inherit',
+  shell: true,
+  env: process.env,
+}).on('exit', code => {
+  if (code === 0) {
+    // Build:infra completed successfully, now run build:plugins
+    spawn('yarn', ['build:plugins'], {
+      cwd,
+      stdio: 'inherit',
+      shell: true,
+      env: process.env,
+    }).on('exit', code => {
+      if (code === 0) {
+        // Both build:infra and build:plugins completed successfully, now start webpack
+        spawn(
+          'node',
+          [
+            '--loader',
+            'ts-node/esm/transpile-only',
+            '../../node_modules/webpack/bin/webpack.js',
+            flags.mode === 'development' ? 'serve' : undefined,
+            '--mode',
+            flags.mode === 'development' ? 'development' : 'production',
+            '--env',
+            'flags=' +
+              Buffer.from(JSON.stringify(flags), 'utf-8').toString('hex'),
+          ].filter((v): v is string => !!v),
+          {
+            cwd,
+            stdio: 'inherit',
+            shell: true,
+            env: process.env,
+          }
+        );
+      } else {
+        console.error('Error running "yarn build:plugins"');
+        process.exit(1);
+      }
+    });
+  } else {
+    console.error('Error running "yarn build:infra"');
+    process.exit(1);
   }
-);
+});
