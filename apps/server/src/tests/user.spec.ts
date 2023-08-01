@@ -53,6 +53,7 @@ describe('User Module', () => {
     ok(currUser.id === user.id, 'user.id is not valid');
     ok(currUser.name === user.name, 'user.name is not valid');
     ok(currUser.email === user.email, 'user.email is not valid');
+    ok(currUser.hasPassword, 'currUser.hasPassword is not valid');
   });
 
   it('should be able to delete user', async () => {

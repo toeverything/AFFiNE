@@ -19,6 +19,9 @@ type UserType {
 
   """User created date"""
   createdAt: DateTime
+
+  """User password has been set"""
+  hasPassword: Boolean
   token: TokenType!
 }
 
@@ -51,6 +54,9 @@ type InviteUserType {
 
   """User created date"""
   createdAt: DateTime
+
+  """User password has been set"""
+  hasPassword: Boolean
   id: ID!
 
   """User permission in workspace"""
