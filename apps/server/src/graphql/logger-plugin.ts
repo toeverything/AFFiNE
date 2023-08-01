@@ -45,7 +45,7 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
         this.logger.log(requestInfo);
         return Promise.resolve();
       },
-      didEncounterErrors: () => {
+      didEncounterErrors: requestContext => {
         this.metrics.gqlError(1, { operation });
         const costInMilliseconds = timer() * 1000;
         res.setHeader(
@@ -56,7 +56,7 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
         this.logger.error(
           `${requestInfo}, query: ${reqContext.request.query}, ${
             variables ? `variables: ${JSON.stringify(variables)}` : ''
-          }`
+          }${requestContext.errors}`
         );
         return Promise.resolve();
       },
