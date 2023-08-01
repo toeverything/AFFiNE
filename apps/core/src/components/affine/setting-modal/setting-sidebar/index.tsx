@@ -1,4 +1,4 @@
-import { Tooltip } from '@affine/component';
+import { ScrollableContainer, Tooltip } from '@affine/component';
 import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
@@ -76,10 +76,12 @@ export const SettingSidebar: FC<{
       </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
         <Suspense fallback={<WorkspaceListSkeleton />}>
-          <WorkspaceList
-            onWorkspaceSettingClick={onWorkspaceSettingClick}
-            selectedWorkspaceId={selectedWorkspaceId}
-          />
+          <ScrollableContainer>
+            <WorkspaceList
+              onWorkspaceSettingClick={onWorkspaceSettingClick}
+              selectedWorkspaceId={selectedWorkspaceId}
+            />
+          </ScrollableContainer>
         </Suspense>
       </div>
     </div>
