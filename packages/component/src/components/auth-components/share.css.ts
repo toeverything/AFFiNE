@@ -24,29 +24,6 @@ globalStyle(`${modalHeaderWrapper} > p:last-of-type`, {
   lineHeight: '28px',
 });
 
-export const googleButton = style({
-  width: '100%',
-  height: '40px',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  borderRadius: '8px',
-  fontSize: 'var(--affine-font-sm)',
-  background: 'var(--affine-primary-color)',
-  color: 'var(--affine-white)',
-  borderColor: 'var(--affine-primary-color)',
-  backgroundBlendMode: 'overlay',
-  fontWeight: 600,
-  marginTop: '30px',
-  boxShadow:
-    '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset, 0px 12px 21px 4px rgba(30, 150, 235, 0.15)',
-});
-
-globalStyle(`${googleButton} .google-logo`, {
-  marginRight: '8px',
-  fontSize: '20px',
-});
-
 export const authInputWrapper = style({
   paddingBottom: '30px',
   position: 'relative',
@@ -60,9 +37,10 @@ export const authInputWrapper = style({
 globalStyle(`${authInputWrapper} label`, {
   display: 'block',
   color: 'var(--light-text-color-text-secondary-color, #8E8D91)',
-  marginBottom: '8px',
+  marginBottom: '4px',
   fontSize: 'var(--affine-font-sm)',
   fontWeight: 600,
+  lineHeight: '22px',
 });
 export const formHint = style({
   fontSize: 'var(--affine-font-sm)',
@@ -164,4 +142,33 @@ globalStyle(`${resendButtonWrapper} .resend-code-hint`, {
   fontWeight: 600,
   fontSize: 'var(--affine-font-sm)',
   marginRight: 8,
+});
+
+export const authPageContainer = style({
+  height: '100vh',
+  width: '100vw',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: 'var(--affine-font-base)',
+});
+globalStyle(`${authPageContainer} .wrapper`, {
+  display: 'flex',
+  alignItems: 'center',
+});
+globalStyle(`${authPageContainer} .content`, {
+  maxWidth: '700px',
+});
+
+globalStyle(`${authPageContainer} .title`, {
+  fontSize: 'var(--affine-font-title)',
+  fontWeight: 600,
+  marginBottom: '28px',
+});
+
+globalStyle(`${authPageContainer} .subtitle`, {
+  marginBottom: '28px',
+});
+globalStyle(`${authPageContainer} a`, {
+  color: 'var(--affine-link-color)',
 });

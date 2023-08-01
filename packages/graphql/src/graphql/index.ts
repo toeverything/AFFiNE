@@ -40,6 +40,22 @@ mutation setBlob($workspaceId: String!, $blob: Upload!) {
 }`,
 };
 
+export const changePasswordMutation = {
+  id: 'changePasswordMutation' as const,
+  operationName: 'changePassword',
+  definitionName: 'changePassword',
+  containsFile: false,
+  query: `
+mutation changePassword($email: String!, $newPassword: String!) {
+  changePassword(email: $email, newPassword: $newPassword) {
+    id
+    name
+    avatarUrl
+    email
+  }
+}`,
+};
+
 export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',
@@ -193,6 +209,39 @@ export const revokeMemberPermissionMutation = {
   query: `
 mutation revokeMemberPermission($workspaceId: String!, $userId: String!) {
   revoke(workspaceId: $workspaceId, userId: $userId)
+}`,
+};
+
+export const sendChangeEmailMutation = {
+  id: 'sendChangeEmailMutation' as const,
+  operationName: 'sendChangeEmail',
+  definitionName: 'sendChangeEmail',
+  containsFile: false,
+  query: `
+mutation sendChangeEmail($email: String!, $callbackUrl: String!) {
+  sendChangeEmail(email: $email, callbackUrl: $callbackUrl)
+}`,
+};
+
+export const sendChangePasswordEmailMutation = {
+  id: 'sendChangePasswordEmailMutation' as const,
+  operationName: 'sendChangePasswordEmail',
+  definitionName: 'sendChangePasswordEmail',
+  containsFile: false,
+  query: `
+mutation sendChangePasswordEmail($email: String!, $callbackUrl: String!) {
+  sendChangePasswordEmail(email: $email, callbackUrl: $callbackUrl)
+}`,
+};
+
+export const sendSetPasswordEmailMutation = {
+  id: 'sendSetPasswordEmailMutation' as const,
+  operationName: 'sendSetPasswordEmail',
+  definitionName: 'sendSetPasswordEmail',
+  containsFile: false,
+  query: `
+mutation sendSetPasswordEmail($email: String!, $callbackUrl: String!) {
+  sendSetPasswordEmail(email: $email, callbackUrl: $callbackUrl)
 }`,
 };
 

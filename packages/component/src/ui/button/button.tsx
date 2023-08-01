@@ -29,6 +29,7 @@ export type ButtonProps = PropsWithChildren &
     block?: boolean;
     size?: ButtonSize;
     loading?: boolean;
+    withoutHover?: boolean;
   };
 const defaultProps = {
   type: 'default',
@@ -37,6 +38,7 @@ const defaultProps = {
   size: 'default',
   iconPosition: 'start',
   loading: false,
+  withoutHover: false,
 };
 
 const ButtonIcon: FC<ButtonProps> = props => {
@@ -46,6 +48,7 @@ const ButtonIcon: FC<ButtonProps> = props => {
     iconPosition = 'start',
     children,
     type,
+    loading,
   } = {
     ...defaultProps,
     ...props,
@@ -59,6 +62,7 @@ const ButtonIcon: FC<ButtonProps> = props => {
         extraLarge: size === 'extraLarge',
         end: iconPosition === 'end' && !onlyIcon,
         start: iconPosition === 'start' && !onlyIcon,
+        loading,
       })}
     >
       {icon}
@@ -77,6 +81,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       iconPosition,
       block,
       loading,
+      withoutHover,
       className,
       ...otherProps
     } = {
@@ -110,6 +115,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             round: shape === 'round',
             block,
             loading,
+            'without-hover': withoutHover,
           },
           className
         )}
@@ -121,7 +127,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           <ButtonIcon {...props} icon={icon} />
         ) : null}
         <span>{children}</span>
-        {icon && iconPosition === 'end' ? <ButtonIcon {...props} /> : null}
+        {icon && iconPosition === 'end' ? (
+          <ButtonIcon {...props} icon={icon} />
+        ) : null}
       </button>
     );
   }
