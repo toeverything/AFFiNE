@@ -386,7 +386,8 @@ jobs:
         with:
           playwright-install: true
           hard-link-nm: false
-      - uses: ./.github/actions/setup-maker
+      - name: Setup Maker
+        uses: ./.github/actions/setup-maker
         if: ${{ matrix.spec.platform == 'macos' }}
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
