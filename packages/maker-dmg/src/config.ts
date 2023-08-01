@@ -45,7 +45,7 @@ export interface MakerDMGConfig {
   /**
    * Path to the icon to use for the app in the DMG window
    */
-  icon?: string;
+  icon: string;
   /**
    * Overwrite an existing DMG file if if already exists
    */
@@ -64,12 +64,7 @@ export interface MakerDMGConfig {
    * Default: UDZO
    */
   format?: 'UDRW' | 'UDRO' | 'UDCO' | 'UDZO' | 'UDBZ' | 'ULFO';
-  /**
-   * Override the contents of the DMG, has a reasonable default
-   */
-  contents?:
-    | DMGContents[]
-    | ((opts: MakerDMGConfig & AdditionalDMGOptions) => DMGContents[]);
+  file: string;
   /**
    * Additional options to pass through to node-appdmng
    *

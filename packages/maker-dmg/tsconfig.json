@@ -4,8 +4,6 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
-    "outDir": "lib",
-    "verbatimModuleSyntax": false,
-    "module": "CommonJS"
+    "outDir": "lib"
   }
 }

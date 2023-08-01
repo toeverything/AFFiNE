@@ -65,22 +65,17 @@ module.exports = {
         icon: icnsPath,
         name: 'AFFiNE',
         'icon-size': 128,
-        background: './resources/icons/dmg-background.png',
-        contents: [
-          {
-            x: 176,
-            y: 192,
-            type: 'file',
-            path: path.resolve(
-              __dirname,
-              'out',
-              buildType,
-              `${productName}-darwin-${arch}`,
-              `${productName}.app`
-            ),
-          },
-          { x: 432, y: 192, type: 'link', path: '/Applications' },
-        ],
+        background: path.resolve(
+          __dirname,
+          './resources/icons/dmg-background.png'
+        ),
+        file: path.resolve(
+          __dirname,
+          'out',
+          buildType,
+          `${productName}-darwin-${arch}`,
+          `${productName}.app`
+        ),
       },
     },
     {

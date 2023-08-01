@@ -1,10 +1,10 @@
 {
   "name": "@affine/maker-dmg",
   "version": "1.0.0",
-  "main": "lib/src/maker.js",
-  "typings": "lib/src/maker.d.ts",
+  "main": "dist/maker.js",
   "scripts": {
-    "build": "tsc"
+    "build": "vite build",
+    "dev": "vite build --watch"
   },
   "dependencies": {
     "@electron-forge/maker-base": "^6.2.1",
@@ -12,6 +12,7 @@
     "fs-extra": "^11.1.1"
   },
   "devDependencies": {
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "vite": "^4.4.7"
   }
 }

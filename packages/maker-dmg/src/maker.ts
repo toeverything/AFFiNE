@@ -1,9 +1,11 @@
-import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { cp, mkdtemp } from 'node:fs/promises';
+import os from 'node:os';
+import { join, resolve } from 'node:path';
 
 import type { MakerOptions } from '@electron-forge/maker-base';
 import { MakerBase } from '@electron-forge/maker-base';
 import type { ForgePlatform } from '@electron-forge/shared-types';
-import { execFileSync } from 'child_process';
 
 import type { MakerDMGConfig } from './config';
 
@@ -31,9 +33,12 @@ export default class MakerDMG extends MakerBase<MakerDMGConfig> {
 
     await this.ensureFile(outPath);
 
-    execFileSync('create-dmg', [
+    const args = [
       '--volname',
       appName,
+      '--window-size',
+      '610',
+      '365',
       '--background',
       this.config.background,
       '--icon-size',
@@ -47,11 +52,26 @@ export default class MakerDMG extends MakerBase<MakerDMGConfig> {
       '--app-drop-link',
       '423',
       '192',
-      outPath,
-      dir,
-    ]);
+    ];
+
+    const tempDir = await mkdtemp(join(os.tmpdir(), 'electron-forge-dmg-'));
+    const filePath = join(tempDir, `${appName}.app`);
+    try {
+      await cp(this.config.file, filePath, {
+        recursive: true,
+      });
+      args.push(outPath, filePath);
+
+      execFileSync('create-dmg', args, {
+        cwd: dir,
+        env: process.env,
+        stdio: 'inherit',
+        shell: true,
+      });
+    } finally {
+      // await rm(filePath, { force: true });
+    }
+
     return [forgeDefaultOutPath];
   }
 }
-
-export { MakerDMG, type MakerDMGConfig };
