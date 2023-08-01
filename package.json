@@ -9,6 +9,7 @@
     "apps/*",
     "plugins/*",
     "packages/*",
+    "deps/*",
     "tests/fixtures",
     "tests/kit",
     "tests/affine-legacy/*",
@@ -112,6 +113,9 @@
     "vitest": "^0.33.0",
     "vitest-fetch-mock": "^0.2.2",
     "vitest-mock-extended": "^1.1.4"
+  },
+  "resolutions": {
+    "macos-alias": "./deps/macos-alias"
   },
   "packageManager": "yarn@3.6.0"
 }
