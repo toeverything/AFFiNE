@@ -38,6 +38,7 @@ async function signUp(
 ): Promise<UserType & { token: TokenType }> {
   const res = await request(app.getHttpServer())
     .post(gql)
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -55,11 +56,12 @@ async function currentUser(app: INestApplication, token: string) {
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           query {
             currentUser {
-              id, name, email, emailVerified, avatarUrl, createdAt
+              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword
             }
           }
         `,
@@ -75,6 +77,7 @@ async function createWorkspace(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .field(
       'operations',
       JSON.stringify({
@@ -101,6 +104,7 @@ async function getWorkspace(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           query {
@@ -120,6 +124,7 @@ async function getPublicWorkspace(
 ): Promise<WorkspaceType> {
   const res = await request(app.getHttpServer())
     .post(gql)
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           query {
@@ -142,6 +147,7 @@ async function updateWorkspace(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -166,6 +172,7 @@ async function inviteUser(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -184,6 +191,7 @@ async function acceptInviteById(
 ): Promise<boolean> {
   const res = await request(app.getHttpServer())
     .post(gql)
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -203,6 +211,7 @@ async function acceptInvite(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -222,6 +231,7 @@ async function leaveWorkspace(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -242,6 +252,7 @@ async function revokeUser(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -262,6 +273,7 @@ async function sharePage(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -282,6 +294,7 @@ async function revokePage(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           mutation {
@@ -301,6 +314,7 @@ async function listBlobs(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
           query {
@@ -321,6 +335,7 @@ async function setBlob(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .field(
       'operations',
       JSON.stringify({
