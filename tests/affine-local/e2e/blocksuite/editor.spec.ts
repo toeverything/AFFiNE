@@ -32,9 +32,9 @@ test('database is useable', async ({ page }) => {
   await waitEditorLoad(page);
   const title2 = page.locator('.affine-default-page-block-title');
   title2.type('test title2');
-  await page.keyboard.press('Enter');
-  expect(await title2.innerText()).toBe('test title2');
   await page.waitForTimeout(500);
+  expect(await title2.innerText()).toBe('test title2');
+  await page.keyboard.press('Enter');
   await addDatabase(page);
   const database2 = page.locator('.affine-database-table');
   await expect(database2).toBeVisible();
