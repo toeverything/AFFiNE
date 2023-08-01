@@ -1,4 +1,8 @@
-exports.create = require('./lib/create');
-exports.encode = require('./lib/encode');
-exports.decode = require('./lib/decode');
-exports.isAlias = require('./lib/is-alias');
+function unimplemented() {
+  throw new Error('Not expected to be called');
+}
+
+exports.create = unimplemented;
+exports.encode = unimplemented;
+exports.decode = unimplemented;
+exports.isAlias = unimplemented;
