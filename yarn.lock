@@ -14299,6 +14299,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"base32-encode@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "base32-encode@npm:2.0.0"
+  dependencies:
+    to-data-view: ^2.0.0
+  checksum: 2adb7213c21670ac64f778e7fdc6e4ce77f06ebd70f9b5be4b542da011ea032982bc0d5258be684cfdfc1e34047e8538bf5ff5d02ad013f6ef0be483759d2db9
+  languageName: node
+  linkType: hard
+
 "base64-arraybuffer-es6@npm:^0.7.0":
   version: 0.7.0
   resolution: "base64-arraybuffer-es6@npm:0.7.0"
@@ -17471,6 +17480,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"encode-utf8@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "encode-utf8@npm:2.0.0"
+  checksum: 8ea087e1f252a399e745968df825abf594a82c8da5c0abf73ad86d36c5ce46fc85328fde1e90604720a2cc57fb128c38503ae359099fd2640a2dba3b8fbcc325
+  languageName: node
+  linkType: hard
+
 "encodeurl@npm:~1.0.2":
   version: 1.0.2
   resolution: "encodeurl@npm:1.0.2"
@@ -19172,6 +19188,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fmix@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "fmix@npm:1.0.0"
+  checksum: c35d0fac072d9ded16f97f962c3b764de7abf4bbdb0ea21816b7a13208330daf9e860f3a8fa74267bc99ba55085753cc28f812e0f137ee434e0bf89a8fd168b8
+  languageName: node
+  linkType: hard
+
 "follow-redirects@npm:^1.0.0, follow-redirects@npm:^1.14.0, follow-redirects@npm:^1.14.8, follow-redirects@npm:^1.14.9, follow-redirects@npm:^1.15.0":
   version: 1.15.2
   resolution: "follow-redirects@npm:1.15.2"
@@ -19454,6 +19477,15 @@ __metadata:
   dependencies:
     random-path: ^0.1.0
   checksum: 64d1b96c7adc172a0fbe6116f425f3588ac585dc7011524174e539df7794a4ca81874bb1c8ee74a47991cc35b7dc036f5bf880074844b2165027042b346b38d9
+  languageName: node
+  linkType: hard
+
+"fs-temp@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "fs-temp@npm:2.0.1"
+  dependencies:
+    random-path: ^1.0.0
+  checksum: 9bbf8dd37f1479272fdc481e4c1a1dfdcf5a39c5e9d133af97550427df81422bf71570aa1b62fef9f896a3eb6a1f3dfb1ecd94c057b1ab879d543524aa615084
   languageName: node
   linkType: hard
 
@@ -23776,6 +23808,10 @@ __metadata:
 "macos-alias@workspace:*, macos-alias@workspace:deps/macos-alias":
   version: 0.0.0-use.local
   resolution: "macos-alias@workspace:deps/macos-alias"
+  dependencies:
+    fs-temp: ^2.0.1
+    nan: ^2.17.0
+    node-gyp: ^9.4.0
   languageName: unknown
   linkType: soft
 
@@ -24726,6 +24762,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"murmur-32@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "murmur-32@npm:1.0.0"
+  dependencies:
+    encode-utf8: ^2.0.0
+    fmix: ^1.0.0
+  checksum: 313d3ad912017a9d43556498a46f21e2c0116eadc806ac4c2d0cccfb5f90522581b0fa22d219b40174f13cb7f29ca768bf6b070714f9ab5b6d72132bb8d58b62
+  languageName: node
+  linkType: hard
+
 "mustache@npm:^4.2.0":
   version: 4.2.0
   resolution: "mustache@npm:4.2.0"
@@ -24757,6 +24803,15 @@ __metadata:
     object-assign: ^4.0.1
     thenify-all: ^1.0.0
   checksum: 8427de0ece99a07e9faed3c0c6778820d7543e3776f9a84d22cf0ec0a8eb65f6e9aee9c9d353ff9a105ff62d33a9463c6ca638974cc652ee8140cd1e35951c87
+  languageName: node
+  linkType: hard
+
+"nan@npm:^2.17.0":
+  version: 2.17.0
+  resolution: "nan@npm:2.17.0"
+  dependencies:
+    node-gyp: latest
+  checksum: ec609aeaf7e68b76592a3ba96b372aa7f5df5b056c1e37410b0f1deefbab5a57a922061e2c5b369bae9c7c6b5e6eecf4ad2dac8833a1a7d3a751e0a7c7f849ed
   languageName: node
   linkType: hard
 
@@ -24991,7 +25046,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-gyp@npm:^9.0.0, node-gyp@npm:latest":
+"node-gyp@npm:^9.0.0, node-gyp@npm:^9.4.0, node-gyp@npm:latest":
   version: 9.4.0
   resolution: "node-gyp@npm:9.4.0"
   dependencies:
@@ -27329,6 +27384,16 @@ __metadata:
     base32-encode: ^0.1.0 || ^1.0.0
     murmur-32: ^0.1.0 || ^0.2.0
   checksum: 9fe83df7705e7c7707feba280433f1dd3937dfd6feccc85e1f5fad1e5f84930777a64faa871f4ced4c7825fdfeb5f727f70fc808d81914c02e4c914bac177a34
+  languageName: node
+  linkType: hard
+
+"random-path@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "random-path@npm:1.0.0"
+  dependencies:
+    base32-encode: ^2.0.0
+    murmur-32: ^1.0.0
+  checksum: bf072f316b2340d088441db1a6048e93d38459dffe8aca6f606813d364f81d631893ff48188d7fa9ba4fb2a5b35fba6beb801da2988210911ca890c2156c57db
   languageName: node
   linkType: hard
 
@@ -30687,6 +30752,13 @@ __metadata:
   version: 1.1.0
   resolution: "to-data-view@npm:1.1.0"
   checksum: 53bf818cf7ed4b481568085cfed5528b268efe1e95d0b90c2a45031de9cf40de91600771c046924348fdedbedb54f655f98e7bf1c51041ba06f0ec3f2fd53dc6
+  languageName: node
+  linkType: hard
+
+"to-data-view@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "to-data-view@npm:2.0.0"
+  checksum: 61d7979b0a040fb21cdd62a182c5c9f359e2f268304613fb6a5b778008aa2cf3e1eef05c0565bf0d1d7146809260ed547e91debfc18bf52aa26b0cdec6ab79f6
   languageName: node
   linkType: hard
 

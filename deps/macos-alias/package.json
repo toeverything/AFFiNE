@@ -1,7 +1,27 @@
 {
   "name": "macos-alias",
+  "version": "0.2.11",
   "main": "index.js",
+  "license": "MIT",
+  "author": "Linus Unnebäck <linus@folkdatorn.se>",
+  "contributors": [
+    "Linus Unnebäck <linus@folkdatorn.se>",
+    "Davide Liessi <davide.liessi@gmail.com>",
+    "Joshua Warner <joshuawarner32@gmail.com>"
+  ],
   "os": [
     "darwin"
-  ]
+  ],
+  "devDependencies": {
+    "fs-temp": "^2.0.1"
+  },
+  "scripts": {
+    "postinstall": "node-gyp configure",
+    "build": "node-gyp build",
+    "test": "node --test test"
+  },
+  "dependencies": {
+    "nan": "^2.17.0",
+    "node-gyp": "^9.4.0"
+  }
 }
