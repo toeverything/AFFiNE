@@ -8,13 +8,7 @@ import {
 } from '@toeverything/plugin-infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, ReactElement } from 'react';
-import {
-  lazy,
-  startTransition,
-  Suspense,
-  useCallback,
-  useTransition,
-} from 'react';
+import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {
@@ -130,7 +124,7 @@ export const AllWorkspaceModals = (): ReactElement => {
     currentWorkspaceIdAtom
   );
   const setCurrentPageId = useSetAtom(currentPageIdAtom);
-  const [transitioning, transition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(
@@ -149,7 +143,7 @@ export const AllWorkspaceModals = (): ReactElement => {
     <>
       <Suspense>
         <WorkspaceListModal
-          disabled={transitioning}
+          disabled={isPending}
           workspaces={workspaces}
           currentWorkspaceId={currentWorkspaceId}
           open={
@@ -163,10 +157,10 @@ export const AllWorkspaceModals = (): ReactElement => {
             (activeId, overId) => {
               const oldIndex = workspaces.findIndex(w => w.id === activeId);
               const newIndex = workspaces.findIndex(w => w.id === overId);
-              transition(() => {
+              startTransition(() => {
                 setWorkspaces(workspaces =>
                   arrayMove(workspaces, oldIndex, newIndex)
-                ).catch(console.error);
+                );
               });
             },
             [setWorkspaces, workspaces]
