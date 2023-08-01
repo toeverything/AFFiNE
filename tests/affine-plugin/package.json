@@ -9,5 +9,5 @@
     "@affine-test/kit": "workspace:*",
     "@playwright/test": "^1.36.2"
   },
-  "version": "0.8.0-canary.5"
+  "version": "0.8.0-canary.6"
 }
