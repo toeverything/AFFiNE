@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
-    "@blocksuite/icons": "^2.1.27",
+    "@blocksuite/icons": "^2.1.29",
     "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/theme": "^0.7.9",
     "clsx": "^2.0.0",
