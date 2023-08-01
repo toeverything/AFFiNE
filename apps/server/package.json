@@ -32,6 +32,7 @@
     "@node-rs/crc32": "^1.7.2",
     "@node-rs/jsonwebtoken": "^0.2.3",
     "@opentelemetry/api": "^1.4.1",
+    "@opentelemetry/exporter-jaeger": "^1.15.1",
     "@opentelemetry/instrumentation": "^0.41.1",
     "@opentelemetry/instrumentation-graphql": "^0.35.0",
     "@opentelemetry/instrumentation-http": "^0.41.1",

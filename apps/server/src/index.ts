@@ -36,6 +36,7 @@ const tracing = new NodeSDK({
     new HttpInstrumentation(),
     new PrismaInstrumentation(),
   ],
+  serviceName: 'affine-cloud',
 });
 
 tracing.start();
