@@ -8,7 +8,13 @@ import {
 } from '@toeverything/plugin-infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useTransition } from 'react';
+import {
+  lazy,
+  startTransition,
+  Suspense,
+  useCallback,
+  useTransition,
+} from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {
@@ -195,11 +201,13 @@ export const AllWorkspaceModals = (): ReactElement => {
             setOpenCreateWorkspaceModal(false);
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
-            async id => {
-              setOpenCreateWorkspaceModal(false);
-              setOpenWorkspacesModal(false);
-              setCurrentWorkspaceId(id);
-              return jumpToSubPath(id, WorkspaceSubPath.ALL);
+            id => {
+              startTransition(() => {
+                setOpenCreateWorkspaceModal(false);
+                setOpenWorkspacesModal(false);
+                setCurrentWorkspaceId(id);
+                jumpToSubPath(id, WorkspaceSubPath.ALL);
+              });
             },
             [
               jumpToSubPath,
