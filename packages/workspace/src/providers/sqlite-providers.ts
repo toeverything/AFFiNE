@@ -14,7 +14,7 @@ import { localProviderLogger as logger } from './logger';
 
 const Y = BlockSuiteWorkspace.Y;
 
-const sqliteOrigin = Symbol('sqlite-provider-origin');
+const sqliteOrigin = 'sqlite-provider-origin';
 
 const createDatasource = (workspaceId: string): DatasourceDocAdapter => {
   if (!window.apis?.db) {
