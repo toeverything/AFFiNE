@@ -11,7 +11,7 @@ import { useMutation } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
-
+import { signIn } from 'next-auth/react';
 import type { AuthPanelProps } from './index';
 import { forgetPasswordButton } from './style.css';
 
@@ -73,25 +73,33 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         size="extraLarge"
         style={{ width: '100%' }}
         onClick={useCallback(async () => {
-          const res = await sigInWithPassword({
-            email: email,
+          const result = await signIn('credentials', {
+            redirect: false,
+            email,
             password,
-          });
+            callbackUrl: '/',
+          }).catch(console.error);
+          console.log('result', result);
 
-          if (!res?.signIn?.token?.token) {
-            setPasswordError(true);
-            return;
-          }
-
-          pushNotification({
-            title: `${email}${t['com.affine.auth.has.signed']()}`,
-            message: '',
-            key: Date.now().toString(),
-            type: 'success',
-          });
-
-          setOpen(false);
-        }, [email, password, pushNotification, setOpen, sigInWithPassword, t])}
+          // const res = await sigInWithPassword({
+          //   email: email,
+          //   password,
+          // });
+          //
+          // if (!res?.signIn?.token?.token) {
+          //   setPasswordError(true);
+          //   return;
+          // }
+          //
+          // pushNotification({
+          //   title: `${email}${t['com.affine.auth.has.signed']()}`,
+          //   message: '',
+          //   key: Date.now().toString(),
+          //   type: 'success',
+          // });
+          //
+          // setOpen(false);
+        }, [email, password])}
       >
         {t['com.affine.auth.sign.in']()}
       </Button>
