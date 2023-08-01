@@ -23396,17 +23396,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"macos-alias@file:./deps/macos-alias::locator=%40affine%2Fmonorepo%40workspace%3A.":
-  version: 0.2.11
-  resolution: "macos-alias@file:./deps/macos-alias#./deps/macos-alias::hash=ad149e&locator=%40affine%2Fmonorepo%40workspace%3A."
-  dependencies:
-    nan: ^2.17.0
-    node-gyp: ^9.4.0
-  conditions: os=darwin
-  languageName: node
-  linkType: hard
-
-"macos-alias@workspace:deps/macos-alias":
+"macos-alias@workspace:*, macos-alias@workspace:deps/macos-alias":
   version: 0.0.0-use.local
   resolution: "macos-alias@workspace:deps/macos-alias"
   dependencies:

@@ -115,7 +115,7 @@
     "vitest-mock-extended": "^1.1.4"
   },
   "resolutions": {
-    "macos-alias": "./deps/macos-alias"
+    "macos-alias": "workspace:*"
   },
   "packageManager": "yarn@3.6.0"
 }
