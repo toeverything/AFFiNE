@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import onHeaders from 'on-headers';
 
-export const serverTiming = (
+export const serverTimingAndCache = (
   req: Request,
   res: Response,
   next: NextFunction
@@ -20,6 +20,8 @@ export const serverTiming = (
 
     res.setHeader('Server-Timing', serverTimingValue);
   });
+
+  res.setHeader('Cache-Control', 'max-age=0, private, must-revalidate');
 
   next();
 };
