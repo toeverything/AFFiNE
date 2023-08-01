@@ -1,0 +1,11 @@
+{
+  "name": "@affine/workers",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.4.0"
+  }
+}
