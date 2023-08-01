@@ -21,7 +21,7 @@ export const serverTimingAndCache = (
     res.setHeader('Server-Timing', serverTimingValue);
   });
 
-  res.setHeader('Cache-Control', 'max-age=0, private, must-revalidate');
+  res.setHeader('Cache-Control', 'no-store');
 
   next();
 };
