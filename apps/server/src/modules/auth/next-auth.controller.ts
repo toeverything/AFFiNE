@@ -85,6 +85,9 @@ export class NextAuthController {
           expires: session.expires,
         };
       };
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.callbacks!.session = ({ session }) => session;
     }
     const { status, headers, body, redirect, cookies } = await AuthHandler({
       req: {
