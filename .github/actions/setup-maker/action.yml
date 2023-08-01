@@ -6,3 +6,6 @@ runs:
     - name: 'Install create-dmg from brew'
       shell: bash
       run: brew install create-dmg
+    - name: 'Build @affine/makder-dmg'
+      shell: bash
+      run: yarn nx build @affine/maker-dmg
