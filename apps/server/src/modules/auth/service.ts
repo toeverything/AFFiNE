@@ -12,6 +12,7 @@ import type { User } from '@prisma/client';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { MailService } from './mailer';
 
 export type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'> & {
   avatarUrl?: string;
@@ -23,7 +24,8 @@ export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
 export class AuthService {
   constructor(
     private config: Config,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private mailer: MailService
   ) {}
 
   sign(user: UserClaim) {
@@ -170,5 +172,50 @@ export class AuthService {
         email,
       },
     });
+  }
+
+  async isUserHasPassword(email: string): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('Invalid email');
+    }
+    return Boolean(user.password);
+  }
+
+  async changePassword(email: string, newPassword: string): Promise<User> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid email');
+    }
+
+    const hashedPassword = await hash(newPassword);
+
+    return this.prisma.user.update({
+      where: {
+        email,
+      },
+      data: {
+        password: hashedPassword,
+      },
+    });
+  }
+
+  async sendChangePasswordEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendChangePasswordEmail(email, callbackUrl);
+  }
+  async sendSetPasswordEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendSetPasswordEmail(email, callbackUrl);
+  }
+  async sendChangeEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendChangeEmail(email, callbackUrl);
   }
 }

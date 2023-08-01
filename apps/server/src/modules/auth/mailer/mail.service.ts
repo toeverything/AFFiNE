@@ -41,4 +41,44 @@ export class MailService {
       html,
     });
   }
+  async sendChangePasswordEmail(to: string, url: string) {
+    const html = `
+      <h1>Change password</h1>
+      <p>Click button to open change password page</p>
+      <a href="${url}">${url}</a>
+    `;
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: `Change password`,
+      html,
+    });
+  }
+
+  async sendSetPasswordEmail(to: string, url: string) {
+    const html = `
+      <h1>Set password</h1>
+      <p>Click button to open set password page</p>
+      <a href="${url}">${url}</a>
+    `;
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: `Change password`,
+      html,
+    });
+  }
+  async sendChangeEmail(to: string, url: string) {
+    const html = `
+      <h1>Change Email</h1>
+      <p>Click button to open change email page</p>
+      <a href="${url}">${url}</a>
+    `;
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: `Change password`,
+      html,
+    });
+  }
 }
