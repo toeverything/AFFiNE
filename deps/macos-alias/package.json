@@ -16,8 +16,6 @@
     "fs-temp": "^2.0.1"
   },
   "scripts": {
-    "postinstall": "node-gyp configure",
-    "build": "node-gyp build",
     "test": "node --test test"
   },
   "dependencies": {
