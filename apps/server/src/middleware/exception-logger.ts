@@ -11,6 +11,9 @@ export class ExceptionLogger implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
     const requestId = request.header(REQUEST_ID);
-    this.logger.error(`Exception: ${requestId}`, exception);
+    this.logger.error(
+      `Exception: ${requestId ? `${requestId},` : ','}}}`,
+      exception
+    );
   }
 }
