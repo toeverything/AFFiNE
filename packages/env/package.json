@@ -12,6 +12,7 @@
     "zod": "^3.21.4"
   },
   "exports": {
+    "./automation": "./src/automation.ts",
     "./global": "./src/global.ts",
     "./constant": "./src/constant.ts",
     "./workspace": "./src/workspace.ts",
