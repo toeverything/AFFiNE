@@ -36,6 +36,9 @@ export class UserType implements Partial<User> {
 
   @Field({ description: 'User created date', nullable: true })
   createdAt!: Date;
+
+  @Field({ description: 'User password has been set', nullable: true })
+  hasPassword!: boolean;
 }
 
 @ObjectType()
@@ -56,7 +59,7 @@ export class UserResolver {
     name: 'currentUser',
     description: 'Get current user',
   })
-  async currentUser(@CurrentUser() user: UserType) {
+  async currentUser(@CurrentUser() user: User) {
     return {
       id: user.id,
       name: user.name,
@@ -64,6 +67,7 @@ export class UserResolver {
       emailVerified: user.emailVerified,
       avatarUrl: user.avatarUrl,
       createdAt: user.createdAt,
+      hasPassword: !!user.password,
     };
   }
 
