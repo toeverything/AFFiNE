@@ -59,7 +59,7 @@ module.exports = {
   },
   makers: [
     {
-      name: '@electron-forge/maker-dmg',
+      name: '@affine/maker-dmg',
       config: {
         format: 'ULFO',
         icon: icnsPath,

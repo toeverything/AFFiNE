@@ -1,0 +1,17 @@
+{
+  "name": "@affine/maker-dmg",
+  "version": "1.0.0",
+  "main": "lib/src/maker.js",
+  "typings": "lib/src/maker.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@electron-forge/maker-base": "^6.2.1",
+    "@electron-forge/shared-types": "^6.2.1",
+    "fs-extra": "^11.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6"
+  }
+}
