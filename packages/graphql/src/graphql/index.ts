@@ -109,6 +109,7 @@ query getCurrentUser {
     emailVerified
     avatarUrl
     createdAt
+    hasPassword
   }
 }`,
 };
@@ -306,6 +307,31 @@ mutation signUp($name: String!, $email: String!, $password: String!) {
     token {
       token
     }
+  }
+}`,
+};
+
+export const updateUserMutation = {
+  id: 'updateUserMutation' as const,
+  operationName: 'updateUser',
+  definitionName: 'updateUser',
+  containsFile: false,
+  query: `
+mutation updateUser($id: String!, $name: String, $password: String, $email: String, $avatar: Upload) {
+  updateUser(
+    id: $id
+    name: $name
+    password: $password
+    email: $email
+    avatar: $avatar
+  ) {
+    id
+    name
+    email
+    emailVerified
+    avatarUrl
+    createdAt
+    hasPassword
   }
 }`,
 };

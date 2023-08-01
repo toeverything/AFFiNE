@@ -21,8 +21,7 @@ import { Suspense } from 'react';
 import { useMemo } from 'react';
 
 import { openAuthModalAtom } from '../../../../atoms';
-import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
-import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { type User,useUserAtom } from '../../../../atoms/user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type {
   GeneralSettingKeys,
@@ -38,20 +37,21 @@ import {
   sidebarTitle,
 } from './style.css';
 
-export type UserInfoProps = {
+type UserInfoProps = {
   onAccountSettingClick: () => void;
+  user: User;
 };
 
-export const UserInfo = ({
+const UserInfo: FC<UserInfoProps> = ({
   onAccountSettingClick,
-}: UserInfoProps): ReactElement => {
-  const user = useCurrentUser();
+  user,
+}): ReactElement => {
   return (
     <div className={accountButton} onClick={onAccountSettingClick}>
       <UserAvatar
         size={28}
         name={user.name}
-        url={user.image}
+        url={user.avatarUrl || ''}
         className="avatar"
       />
 
@@ -110,7 +110,7 @@ export const SettingSidebar: FC<{
   onAccountSettingClick,
 }) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrenLoginStatus();
+  const { user } = useUserAtom();
   return (
     <div className={settingSlideBar} data-testid="settings-sidebar">
       <div className={sidebarTitle}>{t['Settings']()}</div>
@@ -151,12 +151,10 @@ export const SettingSidebar: FC<{
         </Suspense>
       </div>
 
-      {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
-        <SignInButton />
-      ) : null}
+      {runtimeConfig.enableCloud && !user ? <SignInButton /> : null}
 
-      {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
-        <UserInfo onAccountSettingClick={onAccountSettingClick} />
+      {runtimeConfig.enableCloud && user ? (
+        <UserInfo onAccountSettingClick={onAccountSettingClick} user={user} />
       ) : null}
     </div>
   );

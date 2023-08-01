@@ -7,6 +7,7 @@ import { ContactWithUsIcon } from '@blocksuite/icons';
 import type React from 'react';
 import { useCallback } from 'react';
 
+import { useUserAtom } from '../../../atoms/user';
 import { AccountSetting } from './account-setting';
 import {
   GeneralSetting,
@@ -36,7 +37,7 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
   const t = useAFFiNEI18N();
 
   const generalSettingList = useGeneralSettingList();
-
+  const { user, update } = useUserAtom();
   const onGeneralSettingClick = useCallback(
     (key: GeneralSettingKeys) => {
       onSettingClick({
@@ -79,7 +80,9 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
             {generalSettingList.find(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
             ) : null}
-            {activeTab === 'account' ? <AccountSetting /> : null}
+            {activeTab === 'account' && user ? (
+              <AccountSetting user={user} update={update} />
+            ) : null}
           </div>
           <div className="footer">
             <ContactWithUsIcon />

@@ -5,13 +5,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '../../ui/button';
 import { AuthPageContainer } from './auth-page-container';
 import { SetPassword } from './set-password';
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  image: string;
-};
+import type { User } from './sign-up-page';
 
 export const SetPasswordPage: FC<{
   user: User;

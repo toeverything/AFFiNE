@@ -6,7 +6,7 @@ import * as style from './style.css';
 
 export type UserAvatar = {
   size?: number;
-  url?: string;
+  url?: string | null;
   name?: string;
   className?: string;
   style?: CSSProperties;
@@ -28,7 +28,7 @@ export const UserAvatar: FC<UserAvatar> = ({
       }}
       className={clsx(style.avatarRoot, className)}
     >
-      <Avatar.Image className={style.avatarImage} src={url} alt={name} />
+      <Avatar.Image className={style.avatarImage} src={url || ''} alt={name} />
       <Avatar.Fallback className={style.avatarFallback} delayMs={600}>
         {name?.slice(0, 1) || 'A'}
       </Avatar.Fallback>

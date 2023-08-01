@@ -6,5 +6,6 @@ query getCurrentUser {
     emailVerified
     avatarUrl
     createdAt
+    hasPassword
   }
 }

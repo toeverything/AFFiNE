@@ -4,47 +4,40 @@ import {
   SettingRow,
 } from '@affine/component/setting-components';
 import { UserAvatar } from '@affine/component/user-avatar';
-import { uploadAvatarMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
-import { useAtom } from 'jotai/index';
+import { useAtom } from 'jotai';
 import { signOut } from 'next-auth/react';
 import { type FC, useCallback, useState } from 'react';
 
 import { openAuthModalAtom } from '../../../../atoms';
-import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import type { Update, User } from '../../../../atoms/user';
 import { toast } from '../../../../utils';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
-export const AvatarAndName = () => {
+export const AvatarAndName: FC<{
+  user: User;
+  update: Update;
+}> = ({ user, update }) => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
-  const [input, setInput] = useState<string>(user.name);
 
-  const { trigger: avatarTrigger } = useMutation({
-    mutation: uploadAvatarMutation,
-  });
+  const [input, setInput] = useState<string>(user.name);
 
   const handleUpdateUserName = useCallback(
     (newName: string) => {
-      user.update({ name: newName }).catch(console.error);
+      update({ name: newName }).catch(console.error);
     },
-    [user]
+    [update]
   );
 
   const handleUpdateUserAvatar = useCallback(
     async (file: File) => {
-      await avatarTrigger({
-        id: user.id,
-        avatar: file,
-      });
-      // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
-      user.update({ name: user.name }).catch(console.error);
+      update({ avatar: file }).catch(console.error);
     },
-    [avatarTrigger, user]
+    [update]
   );
+
   return (
     <>
       <SettingRow
@@ -66,7 +59,7 @@ export const AvatarAndName = () => {
                 <UserAvatar
                   size={56}
                   name={user.name}
-                  url={user.image}
+                  url={user.avatarUrl || ''}
                   className="avatar"
                 />
               </>
@@ -108,9 +101,11 @@ export const AvatarAndName = () => {
   );
 };
 
-export const AccountSetting: FC = () => {
+export const AccountSetting: FC<{
+  user: User;
+  update: Update;
+}> = ({ user, update }) => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
   const [, setAuthModal] = useAtom(openAuthModalAtom);
 
   const onChangePassword = useCallback(() => {
@@ -124,7 +119,7 @@ export const AccountSetting: FC = () => {
         subtitle={t['com.affine.setting.account.message']()}
         data-testid="account-title"
       />
-      <AvatarAndName />
+      <AvatarAndName user={user} update={update} />
       <SettingRow name={t['com.affine.settings.email']()} desc={user.email}>
         <Button
           onClick={useCallback(() => {

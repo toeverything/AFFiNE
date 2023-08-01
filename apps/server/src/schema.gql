@@ -141,6 +141,9 @@ type Mutation {
 
   """Upload user avatar"""
   uploadAvatar(id: String!, avatar: Upload!): UserType!
+
+  """Upload user avatar"""
+  updateUser(id: String, name: String, password: String, email: String, avatar: Upload): UserType!
   deleteAccount: DeleteAccount!
   signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!

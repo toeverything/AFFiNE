@@ -127,6 +127,7 @@ export type GetCurrentUserQuery = {
     emailVerified: string | null;
     avatarUrl: string | null;
     createdAt: string | null;
+    hasPassword: boolean | null;
   };
 };
 
@@ -296,6 +297,28 @@ export type SignUpMutation = {
   };
 };
 
+export type UpdateUserMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+  name: InputMaybe<Scalars['String']['input']>;
+  password: InputMaybe<Scalars['String']['input']>;
+  email: InputMaybe<Scalars['String']['input']>;
+  avatar: InputMaybe<Scalars['Upload']['input']>;
+}>;
+
+export type UpdateUserMutation = {
+  __typename?: 'Mutation';
+  updateUser: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: string | null;
+    avatarUrl: string | null;
+    createdAt: string | null;
+    hasPassword: boolean | null;
+  };
+};
+
 export type UploadAvatarMutationVariables = Exact<{
   id: Scalars['String']['input'];
   avatar: Scalars['Upload']['input'];
@@ -457,6 +480,11 @@ export type Mutations =
       name: 'signUpMutation';
       variables: SignUpMutationVariables;
       response: SignUpMutation;
+    }
+  | {
+      name: 'updateUserMutation';
+      variables: UpdateUserMutationVariables;
+      response: UpdateUserMutation;
     }
   | {
       name: 'uploadAvatarMutation';

@@ -15,7 +15,7 @@ import { MoreVerticalIcon } from '@blocksuite/icons';
 import type { MouseEvent, ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 
-import { useCurrentUser } from '../../../hooks/affine/use-current-user';
+import { type User, useUserAtom } from '../../../atoms/user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { useMembers } from '../../../hooks/affine/use-members';
@@ -44,15 +44,15 @@ const MembersPanelLocal = () => {
   );
 };
 
-export const CloudWorkspaceMembersPanel = (
-  props: MembersPanelProps
-): ReactElement => {
-  const workspaceId = props.workspace.id;
+export const CloudWorkspaceMembersPanel = ({
+  workspace,
+  user,
+}: MembersPanelProps & { user: User }): ReactElement => {
+  const workspaceId = workspace.id;
   const members = useMembers(workspaceId);
   const t = useAFFiNEI18N();
   const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
-  const currentUser = useCurrentUser();
-  const isOwner = useIsWorkspaceOwner(workspaceId);
+  const isOwner = useIsWorkspaceOwner(workspaceId, user.email);
   const [inviteEmail, setInviteEmail] = useState('');
   const [permission, setPermission] = useState(Permission.Write);
   const invite = useInviteMember(workspaceId);
@@ -119,7 +119,7 @@ export const CloudWorkspaceMembersPanel = (
             >
               <IconButton
                 className={`${style.displayNone} ${
-                  currentUser.email !== member.email ? style.iconButton : ''
+                  user?.email !== member.email ? style.iconButton : ''
                 }`}
               >
                 <MoreVerticalIcon />
@@ -163,12 +163,15 @@ export const CloudWorkspaceMembersPanel = (
 };
 
 export const MembersPanel = (props: MembersPanelProps): ReactElement | null => {
+  const { user } = useUserAtom();
+
   if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <MembersPanelLocal />;
   }
+
   return (
     <Suspense>
-      <CloudWorkspaceMembersPanel {...props} />
+      {user ? <CloudWorkspaceMembersPanel {...props} user={user} /> : null}
     </Suspense>
   );
 };

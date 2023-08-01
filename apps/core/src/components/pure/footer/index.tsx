@@ -3,17 +3,15 @@ import { CloudWorkspaceIcon } from '@blocksuite/icons';
 import { signIn } from 'next-auth/react';
 import { type CSSProperties, type FC, forwardRef, useCallback } from 'react';
 
-import { useCurrenLoginStatus } from '../../../hooks/affine/use-curren-login-status';
+import { useUserAtom } from '../../../atoms/user';
 // import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { stringToColour } from '../../../utils';
 import { StyledFooter, StyledSignInButton } from './styles';
 export const Footer: FC = () => {
-  const loginStatus = useCurrenLoginStatus();
-
-  // const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
+  const { user } = useUserAtom();
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
-      {loginStatus === 'authenticated' ? null : <SignInButton />}
+      {user ? null : <SignInButton />}
     </StyledFooter>
   );
 };

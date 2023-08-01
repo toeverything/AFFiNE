@@ -10,10 +10,7 @@ import type { FC } from 'react';
 import { useCallback } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
-import {
-  type CheckedUser,
-  useCurrentUser,
-} from '../hooks/affine/use-current-user';
+import { type User, useUserAtom } from '../atoms/user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 type AuthType =
@@ -24,7 +21,7 @@ type AuthType =
   | 'changeEmail';
 const authTypes: AuthType[] = ['setPassword', 'signIn', 'changePassword'];
 
-export const AuthPage: FC<{ user: CheckedUser }> = ({ user }) => {
+export const AuthPage: FC<{ user: User }> = ({ user }) => {
   const { authType } = useParams();
   const { trigger: changePassword } = useMutation({
     mutation: changePasswordMutation,
@@ -89,7 +86,7 @@ export const loader: LoaderFunction = async args => {
   return null;
 };
 export const Component = () => {
-  const user = useCurrentUser();
+  const { user } = useUserAtom();
 
-  return <AuthPage user={user} />;
+  return user ? <AuthPage user={user} /> : null;
 };

@@ -108,6 +108,41 @@ export class UserResolver {
     });
   }
 
+  @Mutation(() => UserType, {
+    name: 'updateUser',
+    description: 'Upload user avatar',
+  })
+  async updateUser(
+    @Args({ name: 'id', nullable: true }) id: string,
+    @Args({ name: 'name', nullable: true }) name?: string,
+    @Args({ name: 'password', nullable: true }) password?: string,
+    @Args({ name: 'email', nullable: true }) email?: string,
+    @Args({ name: 'avatar', type: () => GraphQLUpload, nullable: true })
+    avatar?: FileUpload
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new BadRequestException(`User ${id} not found`);
+    }
+    if (!name && !avatar && !password && !email) {
+      return user;
+    }
+    let url;
+    if (avatar) {
+      url = await this.storage.uploadFile(`${id}-avatar`, avatar);
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        avatarUrl: url ? url : user.avatarUrl,
+        name: name ? name : user.name,
+        password: password ? password : user.password,
+        email: email ? email : user.email,
+      },
+    });
+  }
+
   @Mutation(() => DeleteAccount)
   async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
     await this.prisma.user.delete({

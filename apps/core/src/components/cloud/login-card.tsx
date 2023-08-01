@@ -2,16 +2,16 @@ import { UserAvatar } from '@affine/component/user-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
 import { signIn } from 'next-auth/react';
+import type { FC } from 'react';
 
-import { useCurrenLoginStatus } from '../../hooks/affine/use-curren-login-status';
-import { useCurrentUser } from '../../hooks/affine/use-current-user';
+import { type User, useUserAtom } from '../../atoms/user';
 import { StyledSignInButton } from '../pure/footer/styles';
 
 export const LoginCard = () => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrenLoginStatus();
-  if (loginStatus === 'authenticated') {
-    return <UserCard />;
+  const { user } = useUserAtom();
+  if (user) {
+    return <UserCard user={user} />;
   }
   return (
     <StyledSignInButton
@@ -29,8 +29,7 @@ export const LoginCard = () => {
   );
 };
 
-const UserCard = () => {
-  const user = useCurrentUser();
+const UserCard: FC<{ user: User }> = ({ user }) => {
   return (
     <div
       style={{
@@ -41,7 +40,7 @@ const UserCard = () => {
       <UserAvatar
         size={28}
         name={user.name}
-        url={user.image}
+        url={user.avatarUrl}
         className="avatar"
       />
       <div style={{ marginLeft: '15px' }}>
