@@ -393,12 +393,42 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
 const group = new DisposableGroup();
 const entryLogger = new DebugLogger('plugin:entry');
 
-export const evaluatePluginEntry = (pluginName: string) => {
+export const evaluatePluginEntry = async (pluginName: string) => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const currentImportMap = pluginNestedImportsMap.get(pluginName)!;
   const pluginExports = currentImportMap.get('index.js');
   assertExists(pluginExports);
+  const dbName = 'plugin-db';
+  const objectStoreName = pluginName;
+
   const entryFunction = pluginExports.get('entry');
+  const request = indexedDB.open(dbName, 1);
+  request.onerror = () => {
+    console.error('Error opening database:', request.error);
+  };
+
+  request.onupgradeneeded = () => {
+    const db = request.result;
+
+    if (!db.objectStoreNames.contains(objectStoreName)) {
+      db.createObjectStore(objectStoreName);
+    }
+  };
+
+  const db: IDBObjectStore = await new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      const db = request.result;
+      console.log('Database opened successfully!');
+      const objectStore = db
+        .transaction(objectStoreName, 'readwrite')
+        .objectStore(objectStoreName);
+      resolve(objectStore);
+    };
+    request.onerror = () => {
+      reject(new Error('Error opening database'));
+    };
+  });
+
   const cleanup = entryFunction(<PluginContext>{
     register: (part, callback) => {
       entryLogger.info(`Registering ${pluginName} to ${part}`);
@@ -434,6 +464,44 @@ export const evaluatePluginEntry = (pluginName: string) => {
     },
     utils: {
       PluginProvider,
+    },
+    indexedDB: {
+      async get<T>(key: string): Promise<T | undefined> {
+        return new Promise((resolve, reject) => {
+          const request = db.get(key);
+          request.onsuccess = () => {
+            resolve(request.result);
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        });
+      },
+
+      async set<T>(key: string, val: T): Promise<void> {
+        return new Promise((resolve, reject) => {
+          const request = db.put(val, key);
+          request.onsuccess = () => {
+            resolve();
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        });
+      },
+
+      async getKeys(): Promise<string[]> {
+        return new Promise((resolve, reject) => {
+          const request = db.getAllKeys();
+          request.onsuccess = () => {
+            const keys = request.result as string[];
+            resolve(keys);
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        });
+      },
     },
   });
   if (typeof cleanup !== 'function') {
