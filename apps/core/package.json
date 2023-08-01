@@ -31,7 +31,6 @@
     "@emotion/react": "^11.11.1",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@google-cloud/opentelemetry-cloud-trace-exporter": "^2.1.0",
     "@mui/material": "^5.14.2",
     "@opentelemetry/api": "^1.4.1",
     "@opentelemetry/core": "^1.15.1",
