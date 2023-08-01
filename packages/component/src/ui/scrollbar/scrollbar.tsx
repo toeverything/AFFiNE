@@ -10,6 +10,7 @@ export type ScrollableContainerProps = {
   inTableView?: boolean;
   className?: string;
   viewPortClassName?: string;
+  styles?: React.CSSProperties;
 };
 
 export const ScrollableContainer = ({
@@ -17,11 +18,13 @@ export const ScrollableContainer = ({
   showScrollTopBorder = false,
   inTableView = false,
   className,
+  styles: _styles,
   viewPortClassName,
 }: PropsWithChildren<ScrollableContainerProps>) => {
   const [hasScrollTop, ref] = useHasScrollTop();
   return (
     <ScrollArea.Root
+      style={_styles}
       className={clsx(styles.scrollableContainerRoot, className)}
     >
       <div
