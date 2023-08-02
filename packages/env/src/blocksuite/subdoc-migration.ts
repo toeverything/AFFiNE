@@ -242,7 +242,7 @@ export function migrateToSubdoc(doc: Y.Doc): Y.Doc {
 
 export async function migrateDatabaseBlockTo3(doc: Y.Doc) {
   const { migratePageBlock } = await import(
-    '@blocksuite/store/workspace/mirgration/mirgrate-block'
+    '@blocksuite/store/workspace/migration/migrate-block'
   );
   migratePageBlock(doc, {
     'affine:database': 2,
