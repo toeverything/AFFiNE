@@ -1,0 +1,11 @@
+name: Setup maker
+description: 'Setup maker dmg for electron'
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Install create-dmg from brew'
+      shell: bash
+      run: brew install create-dmg
+    - name: 'Build @affine/makder-dmg'
+      shell: bash
+      run: yarn nx build @affine/maker-dmg
