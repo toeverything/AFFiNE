@@ -28,6 +28,59 @@ const arch =
 
 const windowsIconUrl = `https://cdn.affine.pro/app-icons/icon_${buildType}.ico`;
 
+const makers = [
+  !process.env.SKIP_BUNDLE && {
+    name: '@affine/maker-dmg',
+    config: {
+      format: 'ULFO',
+      icon: icnsPath,
+      name: 'AFFiNE',
+      'icon-size': 128,
+      background: path.resolve(
+        __dirname,
+        './resources/icons/dmg-background.png'
+      ),
+      file: path.resolve(
+        __dirname,
+        'out',
+        buildType,
+        `${productName}-darwin-${arch}`,
+        `${productName}.app`
+      ),
+    },
+  },
+  {
+    name: '@electron-forge/maker-zip',
+    config: {
+      name: 'affine',
+      iconUrl: icoPath,
+      setupIcon: icoPath,
+      platforms: ['darwin', 'linux', 'win32'],
+    },
+  },
+  !process.env.SKIP_BUNDLE && {
+    name: '@electron-forge/maker-squirrel',
+    config: {
+      name: 'AFFiNE',
+      setupIcon: icoPath,
+      iconUrl: windowsIconUrl,
+      loadingGif: './resources/icons/affine_installing.gif',
+    },
+  },
+  !process.env.SKIP_BUNDLE && {
+    name: '@reforged/maker-appimage',
+    config: {
+      name: 'AFFiNE',
+      iconUrl: icoPath,
+      setupIcon: icoPath,
+      platforms: ['linux'],
+      options: {
+        bin: productName,
+      },
+    },
+  },
+].filter(Boolean);
+
 /**
  * @type {import('@electron-forge/shared-types').ForgeConfig}
  */
@@ -57,58 +110,7 @@ module.exports = {
     // We need the following line for updater
     extraResource: ['./resources/app-update.yml'],
   },
-  makers: [
-    {
-      name: '@affine/maker-dmg',
-      config: {
-        format: 'ULFO',
-        icon: icnsPath,
-        name: 'AFFiNE',
-        'icon-size': 128,
-        background: path.resolve(
-          __dirname,
-          './resources/icons/dmg-background.png'
-        ),
-        file: path.resolve(
-          __dirname,
-          'out',
-          buildType,
-          `${productName}-darwin-${arch}`,
-          `${productName}.app`
-        ),
-      },
-    },
-    {
-      name: '@electron-forge/maker-zip',
-      config: {
-        name: 'affine',
-        iconUrl: icoPath,
-        setupIcon: icoPath,
-        platforms: ['darwin', 'linux', 'win32'],
-      },
-    },
-    {
-      name: '@electron-forge/maker-squirrel',
-      config: {
-        name: 'AFFiNE',
-        setupIcon: icoPath,
-        iconUrl: windowsIconUrl,
-        loadingGif: './resources/icons/affine_installing.gif',
-      },
-    },
-    {
-      name: '@reforged/maker-appimage',
-      config: {
-        name: 'AFFiNE',
-        iconUrl: icoPath,
-        setupIcon: icoPath,
-        platforms: ['linux'],
-        options: {
-          bin: productName,
-        },
-      },
-    },
-  ],
+  makers,
   hooks: {
     readPackageJson: async (_, packageJson) => {
       // we want different package name for canary build
