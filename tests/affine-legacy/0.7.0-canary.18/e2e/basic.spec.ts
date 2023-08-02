@@ -63,24 +63,6 @@ test('init page', async ({ page, context }) => {
   const locator = page.locator('v-line').nth(0);
   await locator.fill('hello');
 
-  const currentWorkspaceId: string = await page.evaluate(
-    () => (globalThis as any).currentWorkspace.id
-  );
-
-  const downloadPromise = page.waitForEvent('download');
-  await page.evaluate(() => {
-    const workspace = (globalThis as any).currentWorkspace.blockSuiteWorkspace;
-    workspace.exportYDoc();
-  });
-
-  const download = await downloadPromise;
-  const output = resolve(
-    __dirname,
-    '..',
-    'fixtures',
-    currentWorkspaceId + '.ydoc'
-  );
-  await download.saveAs(output);
   await switchToNext();
   await page.waitForTimeout(1000);
   await page.goto('http://localhost:8081/');

@@ -328,12 +328,8 @@ jobs:
         run: yarn unzip
         working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
 
-      - name: Run legacy playwright tests
+      - name: Run playwright tests
         run: yarn e2e --forbid-only
-        working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
-
-      - name: Run vitest
-        run: yarn test
         working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
 
       - name: Upload test results

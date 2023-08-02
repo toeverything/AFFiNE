@@ -25,7 +25,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@affine/env": "workspace:*"
     "@blocksuite/block-std": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/blocks": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/global": 0.0.0-20230802200139-381599c0-nightly
@@ -34,7 +33,6 @@ __metadata:
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
     serve: ^14.2.0
-    vitest: ^0.33.0
   languageName: unknown
   linkType: soft
 
@@ -44,7 +42,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@affine/env": "workspace:*"
     "@blocksuite/block-std": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/blocks": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/global": 0.0.0-20230802200139-381599c0-nightly

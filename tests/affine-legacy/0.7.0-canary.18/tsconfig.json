@@ -4,10 +4,5 @@
     "esModuleInterop": true,
     "outDir": "lib"
   },
-  "include": ["e2e"],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ]
+  "include": ["e2e"]
 }
