@@ -127,7 +127,7 @@ await rootStore
       const result = createFirst();
       console.info('create first workspace', result);
       localStorage.setItem('is-first-open', 'false');
-      rootStore.set(rootWorkspacesMetadataAtom, result).catch(console.error);
+      rootStore.set(rootWorkspacesMetadataAtom, result);
     }
   })
   .catch(console.error);

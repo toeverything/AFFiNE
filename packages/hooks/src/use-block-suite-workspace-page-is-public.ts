@@ -13,7 +13,7 @@ export function useBlockSuiteWorkspacePageIsPublic(page: Page) {
     const baseAtom = atom<boolean>(page.meta.isPublic ?? false);
     const writableAtom = atom(
       get => get(baseAtom),
-      (get, set, isPublic: boolean) => {
+      (_, set, isPublic: boolean) => {
         page.workspace.setPageMeta(page.id, {
           isPublic,
         });

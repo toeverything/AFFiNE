@@ -60,9 +60,9 @@ export const workspaceAdaptersAtom = atom<
  * which is `id` and `flavor`, that is enough to load the real workspace data
  */
 const METADATA_STORAGE_KEY = 'jotai-workspaces';
-const rootWorkspacesMetadataPrimitiveAtom = atom<
-  RootWorkspaceMetadata[] | null
->(null);
+const rootWorkspacesMetadataPrimitiveAtom = atom<Promise<
+  RootWorkspaceMetadata[]
+> | null>(null);
 const rootWorkspacesMetadataPromiseAtom = atom<
   Promise<RootWorkspaceMetadata[]>
 >(async (get, { signal }) => {
@@ -168,7 +168,7 @@ type SetStateAction<Value> = Value | ((prev: Value) => Value);
 export const rootWorkspacesMetadataAtom = atom<
   Promise<RootWorkspaceMetadata[]>,
   [SetStateAction<RootWorkspaceMetadata[]>],
-  Promise<RootWorkspaceMetadata[]>
+  void
 >(
   async get => {
     const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
@@ -178,29 +178,26 @@ export const rootWorkspacesMetadataAtom = atom<
     return get(rootWorkspacesMetadataPromiseAtom);
   },
   async (get, set, action) => {
+    const metadataPromise = get(rootWorkspacesMetadataPromiseAtom);
     // get metadata
-    let metadata: RootWorkspaceMetadata[];
-    const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
-    if (maybeMetadata !== null) {
-      metadata = maybeMetadata;
-    } else {
-      metadata = await get(rootWorkspacesMetadataPromiseAtom);
-    }
+    set(rootWorkspacesMetadataPrimitiveAtom, async maybeMetadataPromise => {
+      let metadata: RootWorkspaceMetadata[] =
+        (await maybeMetadataPromise) ?? (await metadataPromise);
 
-    // update metadata
-    if (typeof action === 'function') {
-      metadata = action(metadata);
-    } else {
-      metadata = action;
-    }
+      // update metadata
+      if (typeof action === 'function') {
+        metadata = action(metadata);
+      } else {
+        metadata = action;
+      }
 
-    const metadataMap = new Map(metadata.map(x => [x.id, x]));
-    metadata = Array.from(metadataMap.values());
-    // write back to localStorage
-    rootWorkspaceMetadataArraySchema.parse(metadata);
-    localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
-    set(rootWorkspacesMetadataPrimitiveAtom, metadata);
-    return metadata;
+      const metadataMap = new Map(metadata.map(x => [x.id, x]));
+      metadata = Array.from(metadataMap.values());
+      // write back to localStorage
+      rootWorkspaceMetadataArraySchema.parse(metadata);
+      localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
+      return metadata;
+    });
   }
 );
 

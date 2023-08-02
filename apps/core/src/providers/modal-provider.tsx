@@ -124,7 +124,7 @@ export const AllWorkspaceModals = (): ReactElement => {
     currentWorkspaceIdAtom
   );
   const setCurrentPageId = useSetAtom(currentPageIdAtom);
-  const [transitioning, transition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(
@@ -143,7 +143,7 @@ export const AllWorkspaceModals = (): ReactElement => {
     <>
       <Suspense>
         <WorkspaceListModal
-          disabled={transitioning}
+          disabled={isPending}
           workspaces={workspaces}
           currentWorkspaceId={currentWorkspaceId}
           open={
@@ -157,10 +157,10 @@ export const AllWorkspaceModals = (): ReactElement => {
             (activeId, overId) => {
               const oldIndex = workspaces.findIndex(w => w.id === activeId);
               const newIndex = workspaces.findIndex(w => w.id === overId);
-              transition(() => {
+              startTransition(() => {
                 setWorkspaces(workspaces =>
                   arrayMove(workspaces, oldIndex, newIndex)
-                ).catch(console.error);
+                );
               });
             },
             [setWorkspaces, workspaces]
@@ -195,11 +195,13 @@ export const AllWorkspaceModals = (): ReactElement => {
             setOpenCreateWorkspaceModal(false);
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
-            async id => {
-              setOpenCreateWorkspaceModal(false);
-              setOpenWorkspacesModal(false);
-              setCurrentWorkspaceId(id);
-              return jumpToSubPath(id, WorkspaceSubPath.ALL);
+            id => {
+              startTransition(() => {
+                setOpenCreateWorkspaceModal(false);
+                setOpenWorkspacesModal(false);
+                setCurrentWorkspaceId(id);
+                jumpToSubPath(id, WorkspaceSubPath.ALL);
+              });
             },
             [
               jumpToSubPath,

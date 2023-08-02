@@ -38,7 +38,7 @@ Promise.all(
         globalThis.__pluginPackageJson__.push(packageJson);
         logger.debug(`registering plugin ${pluginName}`);
         logger.debug(`package.json: ${packageJson}`);
-        if (!release && process.env.NODE_ENV === 'production') {
+        if (!release && !runtimeConfig.enablePlugin) {
           return Promise.resolve();
         }
         const baseURL = url;

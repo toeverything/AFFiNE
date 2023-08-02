@@ -11,10 +11,10 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     // noPropertyAccessFromIndexSignature: false,
     // noUncheckedIndexedAccess: false,
-    // noUnusedLocals: false,
-    // noUnusedParameters: false,
     "useUnknownInCatchVariables": true,
 
     // Modules
@@ -147,6 +147,9 @@
     },
     {
       "path": "./packages/y-indexeddb"
+    },
+    {
+      "path": "./packages/maker-dmg"
     },
     // Tests
     {

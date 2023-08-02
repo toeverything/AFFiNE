@@ -60,13 +60,13 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   // goto workspace setting
   await page.getByTestId('workspace-list-item').click();
 
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(500);
 
   // change workspace name
   await page.getByTestId('workspace-name-input').fill(newWorkspaceName);
   await page.getByTestId('save-workspace-name').click();
   await page.waitForSelector('text="Update workspace name success"');
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(500);
 
   const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
 
@@ -106,7 +106,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('create-workspace-continue-button').click();
 
   // sleep for a while to wait for the workspace to be added :D
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(2000);
   const newWorkspace = await workspace.current();
   expect(newWorkspace.id).not.toBe(originalId);
   // check its name is correct
