@@ -30,7 +30,7 @@ import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal
 import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useMemo } from 'react';
+import { lazy, Suspense, useCallback } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 
 import {
@@ -116,17 +116,6 @@ export const CurrentWorkspaceContext = ({
 
 export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
-    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-    const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
-    const meta = useMemo(
-      () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
-      [currentWorkspaceId, jotaiWorkspaces]
-    );
-
-    if (!meta) {
-      return <WorkspaceFallback />;
-    }
-
     return (
       <AdapterProviderWrapper>
         <CurrentWorkspaceContext>
