@@ -35,7 +35,7 @@ const HoverAnimateController = ({
     >
       {cloneElement(children, {
         isStopped: !startAnimate,
-        speed: 5,
+        speed: 1,
         width: 20,
         height: 20,
       })}
@@ -50,7 +50,7 @@ export const PageSwitchItem = (
     <HoverAnimateController {...props}>
       <InternalLottie
         options={{
-          loop: false,
+          loop: true,
           autoplay: false,
           animationData: require('./animation-data/page-hover.json'),
           rendererSettings: {
@@ -69,7 +69,7 @@ export const EdgelessSwitchItem = (
     <HoverAnimateController {...props}>
       <InternalLottie
         options={{
-          loop: false,
+          loop: true,
           autoplay: false,
           animationData: require('./animation-data/edgeless-hover.json'),
           rendererSettings: {
