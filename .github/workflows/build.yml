@@ -305,7 +305,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     needs: build-core
-
+    strategy:
+      matrix:
+        spec:
+          - { package: 0.7.0-canary.18 }
+          - { package: 0.8.0-canary.7 }
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -322,22 +326,18 @@ jobs:
 
       - name: Unzip
         run: yarn unzip
-        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+        working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
 
-      - name: Run legacy playwright tests
+      - name: Run playwright tests
         run: yarn e2e --forbid-only
-        working-directory: ./tests/affine-legacy/0.7.0-canary.18
-
-      - name: Run vitest
-        run: yarn test
-        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+        working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
 
       - name: Upload test results
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
-          name: test-results-e2e-migration
-          path: ./tests/affine-legacy/0.7.0-canary.18/test-results
+          name: test-results-e2e-migration-${{ matrix.spec.package }}
+          path: ./tests/affine-legacy/${{ matrix.spec.package }}/test-results
           if-no-files-found: ignore
 
   desktop-test:
