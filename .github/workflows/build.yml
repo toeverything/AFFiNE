@@ -388,7 +388,6 @@ jobs:
           hard-link-nm: false
       - name: Setup Maker
         uses: ./.github/actions/setup-maker
-        if: ${{ matrix.spec.platform == 'macos' }}
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
