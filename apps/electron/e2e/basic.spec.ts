@@ -96,9 +96,10 @@ test('app theme', async ({ page, electronApp }) => {
   }
 
   {
-    await page.getByTestId('editor-option-menu').click();
-    await page.getByTestId('change-theme-dark').click();
+    await page.getByTestId('settings-modal-trigger').click();
+    await page.getByTestId('appearance-panel-trigger').click();
     await page.waitForTimeout(50);
+    await page.getByTestId('dark-theme-trigger').click();
     const themeMode = await root.evaluate(element =>
       element.getAttribute('data-theme')
     );

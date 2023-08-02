@@ -8,7 +8,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';
 import { Config } from './config';
-import { serverTiming } from './middleware/timing';
+import { serverTimingAndCache } from './middleware/timing';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const { AFFINE_ENV } = process.env;
@@ -19,7 +19,7 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   logger: AFFINE_ENV === 'production' ? ['warn'] : ['verbose'],
 });
 
-app.use(serverTiming);
+app.use(serverTimingAndCache);
 
 app.use(
   graphqlUploadExpress({

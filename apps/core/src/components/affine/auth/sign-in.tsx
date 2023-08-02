@@ -1,13 +1,11 @@
-import {
-  AuthInput,
-  ContinueButton,
-  GoogleButton,
-  ModalHeader,
-} from '@affine/component/auth-components';
+import { Button } from '@affine/component';
+import { AuthInput, ModalHeader } from '@affine/component/auth-components';
+import { isDesktop } from '@affine/env/constant';
 import { getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
+import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { signIn } from 'next-auth/react';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
@@ -23,7 +21,8 @@ function validateEmail(email: string) {
 
 export const SignIn: FC<AuthPanelProps> = ({
   setAuthState,
-  setCurrentEmail,
+  setAuthEmail,
+  email,
 }) => {
   const t = useAFFiNEI18N();
 
@@ -32,7 +31,6 @@ export const SignIn: FC<AuthPanelProps> = ({
   });
   const [isValidEmail, setIsValidEmail] = useState(true);
 
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   const onContinue = useCallback(async () => {
@@ -43,43 +41,89 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setIsValidEmail(true);
     setLoading(true);
-    const res = await verifyUser({ email });
+    const res = await verifyUser({ email: email });
     setLoading(false);
 
-    setCurrentEmail(email);
+    setAuthEmail(email);
     if (res?.user) {
-      setAuthState('signInWithPassword');
+      signIn('email', {
+        email: email,
+        callbackUrl: `/auth/signIn?isClient=${isDesktop ? 'true' : 'false'}`,
+        redirect: true,
+      }).catch(console.error);
+
+      setAuthState('afterSignInSendEmail');
     } else {
-      setAuthState('confirmCode');
+      signIn('email', {
+        email: email,
+        callbackUrl: `/auth/signUp?isClient=${isDesktop ? 'true' : 'false'}`,
+        redirect: true,
+      }).catch(console.error);
+
+      setAuthState('afterSignUpSendEmail');
     }
-  }, [email, setAuthState, setCurrentEmail, verifyUser]);
+  }, [email, setAuthEmail, setAuthState, verifyUser]);
   return (
     <>
       <ModalHeader
         title={t['com.affine.auth.sign.in']()}
         subTitle={t['AFFiNE Cloud']()}
       />
-      <GoogleButton
+
+      <Button
+        type="primary"
+        block
+        size="extraLarge"
+        style={{
+          marginTop: 30,
+        }}
+        icon={<GoogleDuotoneIcon />}
         onClick={useCallback(() => {
           signIn('google').catch(console.error);
         }, [])}
-      />
+      >
+        {t['Continue with Google']()}
+      </Button>
 
       <div className={style.authModalContent}>
         <AuthInput
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
           value={email}
-          onChange={value => {
-            setEmail(value);
-          }}
+          onChange={useCallback(
+            (value: string) => {
+              setAuthEmail(value);
+            },
+            [setAuthEmail]
+          )}
           error={!isValidEmail}
           errorHint={
             isValidEmail ? '' : t['com.affine.auth.sign.email.error']()
           }
           onEnter={onContinue}
         />
-        <ContinueButton onClick={onContinue} loading={loading} />
+        {/*<ContinueButton onClick={onContinue} loading={loading} />*/}
+
+        <Button
+          size="extraLarge"
+          block
+          loading={loading}
+          icon={
+            <ArrowDownBigIcon
+              width={20}
+              height={20}
+              style={{
+                transform: 'rotate(-90deg)',
+                color: 'var(--affine-blue)',
+              }}
+            />
+          }
+          iconPosition="end"
+          onClick={onContinue}
+        >
+          {t['com.affine.auth.sign.email.continue']()}
+        </Button>
+
         <div className={style.authMessage}>
           {/*prettier-ignore*/}
           <Trans i18nKey="com.affine.auth.sign.message">

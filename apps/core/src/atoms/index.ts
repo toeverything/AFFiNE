@@ -23,11 +23,13 @@ export const openSettingModalAtom = atom<SettingAtom>({
 export type AuthAtom = {
   open: boolean;
   state: AuthModalProps['state'];
+  email?: string;
 };
 
 export const openAuthModalAtom = atom<AuthAtom>({
   open: false,
   state: 'signIn',
+  email: '',
 });
 
 export const openDisableCloudAlertModalAtom = atom(false);

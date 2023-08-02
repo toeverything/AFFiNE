@@ -2,8 +2,9 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { assertExists } from '@blocksuite/global/utils';
 import { GraphQLError } from 'graphql/index';
 import { useSetAtom } from 'jotai';
+import { SessionProvider } from 'next-auth/react';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import type { SWRConfiguration } from 'swr';
 import { SWRConfig } from 'swr';
 
@@ -29,8 +30,15 @@ const cloudConfig: SWRConfiguration = {
                   key: Date.now().toString(),
                   type: 'error',
                 });
+              } else {
+                pushNotification({
+                  title: 'Error',
+                  message: e.toString(),
+                  key: Date.now().toString(),
+                  type: 'error',
+                });
               }
-              return e;
+              throw e;
             });
           }
           return d;
@@ -47,19 +55,8 @@ export const Provider = (props: PropsWithChildren): ReactElement => {
     return <>{props.children}</>;
   }
   return (
-    <SWRConfig
-      value={
-        // This is a safe conditional hook
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useMemo(
-          () => ({
-            ...cloudConfig,
-          }),
-          []
-        )
-      }
-    >
-      {props.children}
-    </SWRConfig>
+    <SessionProvider>
+      <SWRConfig value={cloudConfig}>{props.children}</SWRConfig>
+    </SessionProvider>
   );
 };

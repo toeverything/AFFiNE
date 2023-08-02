@@ -203,6 +203,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           email,
           picture,
           sub: id,
+          id,
         };
       },
     };

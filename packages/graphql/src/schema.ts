@@ -69,6 +69,22 @@ export type SetBlobMutationVariables = Exact<{
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
 
+export type ChangePasswordMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+  newPassword: Scalars['String']['input'];
+}>;
+
+export type ChangePasswordMutation = {
+  __typename?: 'Mutation';
+  changePassword: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    email: string;
+  };
+};
+
 export type CreateWorkspaceMutationVariables = Exact<{
   init: Scalars['Upload']['input'];
 }>;
@@ -191,6 +207,36 @@ export type RevokeMemberPermissionMutationVariables = Exact<{
 export type RevokeMemberPermissionMutation = {
   __typename?: 'Mutation';
   revoke: boolean;
+};
+
+export type SendChangeEmailMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+  callbackUrl: Scalars['String']['input'];
+}>;
+
+export type SendChangeEmailMutation = {
+  __typename?: 'Mutation';
+  sendChangeEmail: boolean;
+};
+
+export type SendChangePasswordEmailMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+  callbackUrl: Scalars['String']['input'];
+}>;
+
+export type SendChangePasswordEmailMutation = {
+  __typename?: 'Mutation';
+  sendChangePasswordEmail: boolean;
+};
+
+export type SendSetPasswordEmailMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+  callbackUrl: Scalars['String']['input'];
+}>;
+
+export type SendSetPasswordEmailMutation = {
+  __typename?: 'Mutation';
+  sendSetPasswordEmail: boolean;
 };
 
 export type SetRevokePageMutationVariables = Exact<{
@@ -348,6 +394,11 @@ export type Mutations =
       response: SetBlobMutation;
     }
   | {
+      name: 'changePasswordMutation';
+      variables: ChangePasswordMutationVariables;
+      response: ChangePasswordMutation;
+    }
+  | {
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;
       response: CreateWorkspaceMutation;
@@ -366,6 +417,21 @@ export type Mutations =
       name: 'revokeMemberPermissionMutation';
       variables: RevokeMemberPermissionMutationVariables;
       response: RevokeMemberPermissionMutation;
+    }
+  | {
+      name: 'sendChangeEmailMutation';
+      variables: SendChangeEmailMutationVariables;
+      response: SendChangeEmailMutation;
+    }
+  | {
+      name: 'sendChangePasswordEmailMutation';
+      variables: SendChangePasswordEmailMutationVariables;
+      response: SendChangePasswordEmailMutation;
+    }
+  | {
+      name: 'sendSetPasswordEmailMutation';
+      variables: SendSetPasswordEmailMutationVariables;
+      response: SendSetPasswordEmailMutation;
     }
   | {
       name: 'setRevokePageMutation';

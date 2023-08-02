@@ -36,6 +36,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   Events: {
+    'app:access': async () => true,
     'app:init': () => {
       const blockSuiteWorkspace = getOrCreateWorkspace(
         nanoid(),

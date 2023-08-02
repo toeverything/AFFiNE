@@ -27,7 +27,7 @@ export const AuthInput: FC<AuthInputProps> = ({
       {label ? <label>{label}</label> : null}
       <Input
         {...inputProps}
-        size="large"
+        size="extraLarge"
         status={error ? 'error' : 'default'}
         onKeyDown={e => {
           if (e.key === 'Enter') {
