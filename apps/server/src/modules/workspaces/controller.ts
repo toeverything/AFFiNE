@@ -10,6 +10,7 @@ import {
 import type { Response } from 'express';
 import format from 'pretty-time';
 
+import { Metrics } from '../../metrics/metrics';
 import { StorageProvide } from '../../storage';
 import { Auth, CurrentUser, Publicable } from '../auth';
 import { DocManager } from '../doc';
@@ -21,7 +22,8 @@ export class WorkspacesController {
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
     private readonly permission: PermissionService,
-    private readonly docManager: DocManager
+    private readonly docManager: DocManager,
+    private readonly metrics: Metrics
   ) {}
 
   // get workspace blob
@@ -33,6 +35,10 @@ export class WorkspacesController {
     @Param('name') name: string,
     @Res() res: Response
   ) {
+    const path = '/api/workspaces/:id/blobs/:name';
+    this.metrics.metricsRestApiCounter(1, { path });
+    const timer = this.metrics.metricsRestApiTimer({ path });
+
     const blob = await this.storage.getBlob(workspaceId, name);
 
     if (!blob) {
@@ -44,6 +50,7 @@ export class WorkspacesController {
     res.setHeader('content-length', blob.size);
 
     res.send(blob.data);
+    timer();
   }
 
   // get doc binary
@@ -56,6 +63,10 @@ export class WorkspacesController {
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
+    const path = '/api/workspaces/:id/docs/:guid';
+    this.metrics.metricsRestApiCounter(1, { path });
+    const timer = this.metrics.metricsRestApiTimer({ path });
+
     const start = process.hrtime();
     await this.permission.check(ws, user?.id);
 
@@ -68,5 +79,6 @@ export class WorkspacesController {
     res.setHeader('content-type', 'application/octet-stream');
     res.send(update);
     console.info('workspaces doc api: ', format(process.hrtime(start)));
+    timer();
   }
 }

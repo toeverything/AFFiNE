@@ -30,7 +30,7 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
       ? headers.get(`${OPERATION_NAME}`)
       : 'Unknown Operation Name';
 
-    this.metrics.gqlRequest(1, { operation });
+    this.metrics.gqlRequestCounter(1, { operation });
     const timer = this.metrics.gqlTimer({ operation });
 
     const requestInfo = `${REQUEST_ID}: ${requestId}, ${OPERATION_NAME}: ${operationName}`;

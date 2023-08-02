@@ -16,7 +16,10 @@ export class Metrics implements OnModuleDestroy {
     'socket_io_connection_counter'
   );
 
-  gqlRequest = metricsCreator.counter('gql_request', ['operation']);
+  gqlRequestCounter = metricsCreator.counter('gql_request', ['operation']);
   gqlError = metricsCreator.counter('gql_error', ['operation']);
   gqlTimer = metricsCreator.timer('gql_timer', ['operation']);
+
+  metricsRestApiCounter = metricsCreator.counter('metricsRestApi', ['path']);
+  metricsRestApiTimer = metricsCreator.timer('metricsRestApiTimer', ['path']);
 }
