@@ -13,8 +13,8 @@ import { useMutation } from '../shared/gql';
 // valid URL: /invite?wsId=xxx
 export const Component = (): ReactElement => {
   const [searchParams] = useSearchParams();
-  const workspaceId = searchParams.get('wsId');
-  const inviteId = searchParams.get('inviteId');
+  const workspaceId = searchParams.get('id');
+  const inviteId = searchParams.get('invite');
   const { trigger: triggerByWorkspaceId } = useMutation({
     mutation: acceptInviteByWorkspaceIdMutation,
   });
