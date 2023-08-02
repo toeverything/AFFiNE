@@ -1,3 +1,4 @@
+import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -93,49 +94,72 @@ flags.channel = buildFlags.channel as any;
 flags.coverage = buildFlags.coverage;
 
 watchI18N();
-spawn('yarn', ['build:infra'], {
-  cwd,
-  stdio: 'inherit',
-  shell: true,
-  env: process.env,
-}).on('exit', code => {
-  if (code === 0) {
-    // Build:infra completed successfully, now run build:plugins
+
+function awaitChildProcess(child: ChildProcess): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    const handleExitCode = (code: number | null) => {
+      if (code) {
+        reject(
+          new Error(
+            `Child process at ${
+              (child as any).cwd
+            } fails: ${child.spawnargs.join(' ')}`
+          )
+        );
+      } else {
+        resolve(0);
+      }
+    };
+
+    child.on('error', () => handleExitCode(child.exitCode));
+    child.on('exit', code => handleExitCode(code));
+  });
+}
+
+try {
+  // Build:infra
+  await awaitChildProcess(
+    spawn('yarn', ['build:infra'], {
+      cwd,
+      stdio: 'inherit',
+      shell: true,
+      env: process.env,
+    })
+  );
+
+  // Build:plugins
+  await awaitChildProcess(
     spawn('yarn', ['build:plugins'], {
       cwd,
       stdio: 'inherit',
       shell: true,
       env: process.env,
-    }).on('exit', code => {
-      if (code === 0) {
-        // Both build:infra and build:plugins completed successfully, now start webpack
-        spawn(
-          'node',
-          [
-            '--loader',
-            'ts-node/esm/transpile-only',
-            '../../node_modules/webpack/bin/webpack.js',
-            flags.mode === 'development' ? 'serve' : undefined,
-            '--mode',
-            flags.mode === 'development' ? 'development' : 'production',
-            '--env',
-            'flags=' +
-              Buffer.from(JSON.stringify(flags), 'utf-8').toString('hex'),
-          ].filter((v): v is string => !!v),
-          {
-            cwd,
-            stdio: 'inherit',
-            shell: true,
-            env: process.env,
-          }
-        );
-      } else {
-        console.error('Error running "yarn build:plugins"');
-        process.exit(1);
+    })
+  );
+
+  // Start webpack
+  await awaitChildProcess(
+    spawn(
+      'node',
+      [
+        '--loader',
+        'ts-node/esm/transpile-only',
+        '../../node_modules/webpack/bin/webpack.js',
+        flags.mode === 'development' ? 'serve' : undefined,
+        '--mode',
+        flags.mode === 'development' ? 'development' : 'production',
+        '--env',
+        'flags=' + Buffer.from(JSON.stringify(flags), 'utf-8').toString('hex'),
+      ].filter((v): v is string => !!v),
+      {
+        cwd,
+        stdio: 'inherit',
+        shell: true,
+        env: process.env,
       }
-    });
-  } else {
-    console.error('Error running "yarn build:infra"');
-    process.exit(1);
-  }
-});
+    )
+  );
+} catch (error) {
+  console.error('Error during build:', error);
+  process.exit(1);
+}
