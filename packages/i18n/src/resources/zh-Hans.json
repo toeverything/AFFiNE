@@ -199,7 +199,7 @@
   "Workspace description": "工作区是为个人和团队进行引用、创建和规划的虚拟空间。",
   "Workspace Settings": "工作区设置",
   "Workspace Name": "工作区名称",
-  "emptyAllPages": "此工作区为空。创建新页面并开始编辑。",
+  "emptyAllPages": "此工作区为空。<1>$t(New Page)</1>并开始编辑。",
   "emptyFavorite": "单击“添加到收藏夹”，页面将显示在此处。",
   "emptyTrash": "单击“添加到垃圾箱”，页面将显示在此处。",
   "login success": "登录成功",
