@@ -127,13 +127,20 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     }
     // step 2: fetch from adapters
     {
-      const lists = Object.values(WorkspaceAdapters)
-        .sort((a, b) => a.loadPriority - b.loadPriority)
-        .map(({ CRUD }) => CRUD.list);
+      const Adapters = Object.values(WorkspaceAdapters).sort(
+        (a, b) => a.loadPriority - b.loadPriority
+      );
 
-      for (const list of lists) {
+      for (const Adapter of Adapters) {
+        if (
+          Adapter.Events['app:access'] &&
+          !(await Adapter.Events['app:access']())
+        ) {
+          // skip the adapter if the user doesn't have access to it
+          continue;
+        }
         try {
-          const item = await list();
+          const item = await Adapter.CRUD.list();
           if (metadata.length) {
             item.sort((a, b) => {
               return (
