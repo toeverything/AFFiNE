@@ -1,7 +1,7 @@
 {
   "name": "@affine/plugin-cli",
   "type": "module",
-  "version": "0.8.0-canary.7",
+  "version": "0.8.0-canary.8",
   "bin": {
     "af": "./src/af.mjs"
   },

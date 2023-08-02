@@ -1,6 +1,6 @@
 {
   "name": "@affine/maker-dmg",
-  "version": "0.8.0-canary.7",
+  "version": "0.8.0-canary.8",
   "main": "dist/maker.js",
   "scripts": {
     "build": "vite build",
