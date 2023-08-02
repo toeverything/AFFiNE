@@ -431,12 +431,13 @@ jobs:
 
       - name: Make bundle
         if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        env:
+          SKIP_BUNDLE: true
         run: yarn workspace @affine/electron make --platform=darwin --arch=arm64
 
       - name: Bundle output check
         if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
         run: |
-          ./scripts/unzip-macos-arm64.sh
           yarn ts-node-esm ./scripts/macos-arm64-output-check.mts
         working-directory: apps/electron
 
