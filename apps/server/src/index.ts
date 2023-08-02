@@ -3,6 +3,11 @@ import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exp
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import {
+  CompositePropagator,
+  W3CBaggagePropagator,
+  W3CTraceContextPropagator,
+} from '@opentelemetry/core';
 import gql from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import ioredis from '@opentelemetry/instrumentation-ioredis';
@@ -25,6 +30,9 @@ const { AFFINE_ENV } = process.env;
 
 const tracing = new NodeSDK({
   traceExporter: new TraceExporter(),
+  textMapPropagator: new CompositePropagator({
+    propagators: [new W3CBaggagePropagator(), new W3CTraceContextPropagator()],
+  }),
   metricReader: new PeriodicExportingMetricReader({
     exporter: new MetricExporter(),
   }),

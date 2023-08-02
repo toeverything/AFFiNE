@@ -1,5 +1,7 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
+import { W3CBaggagePropagator } from '@opentelemetry/core';
+import { CompositePropagator } from '@opentelemetry/core';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { DocumentLoadInstrumentation } from '@opentelemetry/instrumentation-document-load';
 import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch';
@@ -31,7 +33,12 @@ function registerTracer() {
   provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
 
   provider.register({
-    propagator: new W3CTraceContextPropagator(),
+    propagator: new CompositePropagator({
+      propagators: [
+        new W3CBaggagePropagator(),
+        new W3CTraceContextPropagator(),
+      ],
+    }),
   });
 
   registerInstrumentations({
