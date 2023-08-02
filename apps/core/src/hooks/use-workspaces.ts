@@ -27,12 +27,12 @@ export function useAppHelper() {
       async (workspaceId: string): Promise<string> => {
         getOrCreateWorkspace(workspaceId, WorkspaceFlavour.LOCAL);
         saveWorkspaceToLocalStorage(workspaceId);
-        await set(workspaces => [
+        set(workspaces => [
           ...workspaces,
           {
             id: workspaceId,
             flavour: WorkspaceFlavour.LOCAL,
-            version: WorkspaceVersion.SubDoc,
+            version: WorkspaceVersion.DatabaseV3,
           },
         ]);
         logger.debug('imported local workspace', workspaceId);
@@ -72,12 +72,12 @@ export function useAppHelper() {
             jumpOnce: true,
           });
         }
-        await set(workspaces => [
+        set(workspaces => [
           ...workspaces,
           {
             id,
             flavour: WorkspaceFlavour.LOCAL,
-            version: WorkspaceVersion.SubDoc,
+            version: WorkspaceVersion.DatabaseV3,
           },
         ]);
         logger.debug('created local workspace', id);

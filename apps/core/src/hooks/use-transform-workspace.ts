@@ -25,12 +25,12 @@ export function useTransformWorkspace() {
         workspace.blockSuiteWorkspace
       );
       await WorkspaceAdapters[from].CRUD.delete(workspace as any);
-      await set(workspaces => {
+      set(workspaces => {
         const idx = workspaces.findIndex(ws => ws.id === workspace.id);
         workspaces.splice(idx, 1, {
           id: newId,
           flavour: to,
-          version: WorkspaceVersion.SubDoc,
+          version: WorkspaceVersion.DatabaseV3,
         });
         return [...workspaces];
       });
