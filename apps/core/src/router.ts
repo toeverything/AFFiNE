@@ -7,6 +7,10 @@ export const router = createBrowserRouter(
       lazy: () => import('./pages/index'),
     },
     {
+      path: '/invite',
+      lazy: () => import('./pages/invite'),
+    },
+    {
       path: '/workspace/:workspaceId',
       lazy: () => import('./pages/workspace/index'),
       children: [
