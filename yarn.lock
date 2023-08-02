@@ -232,6 +232,7 @@ __metadata:
     "@opentelemetry/instrumentation-document-load": ^0.33.0
     "@opentelemetry/instrumentation-fetch": ^0.41.1
     "@opentelemetry/instrumentation-xml-http-request": ^0.41.1
+    "@opentelemetry/sdk-trace-base": ^1.15.1
     "@opentelemetry/sdk-trace-web": ^1.15.1
     "@perfsee/webpack": ^1.8.2
     "@pmmmwh/react-refresh-webpack-plugin": ^0.5.10
@@ -592,6 +593,7 @@ __metadata:
     "@opentelemetry/instrumentation-socket.io": ^0.34.0
     "@opentelemetry/sdk-metrics": ^1.15.1
     "@opentelemetry/sdk-node": ^0.41.1
+    "@opentelemetry/sdk-trace-base": ^1.15.1
     "@opentelemetry/sdk-trace-node": ^1.15.1
     "@prisma/client": ^5.0.0
     "@prisma/instrumentation": ^5.0.0
@@ -8096,7 +8098,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-trace-base@npm:1.15.1, @opentelemetry/sdk-trace-base@npm:^1.0.0":
+"@opentelemetry/sdk-trace-base@npm:1.15.1, @opentelemetry/sdk-trace-base@npm:^1.0.0, @opentelemetry/sdk-trace-base@npm:^1.15.1":
   version: 1.15.1
   resolution: "@opentelemetry/sdk-trace-base@npm:1.15.1"
   dependencies:

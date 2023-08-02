@@ -41,6 +41,7 @@
     "@opentelemetry/instrumentation-socket.io": "^0.34.0",
     "@opentelemetry/sdk-metrics": "^1.15.1",
     "@opentelemetry/sdk-node": "^0.41.1",
+    "@opentelemetry/sdk-trace-base": "^1.15.1",
     "@opentelemetry/sdk-trace-node": "^1.15.1",
     "@prisma/client": "^5.0.0",
     "@prisma/instrumentation": "^5.0.0",

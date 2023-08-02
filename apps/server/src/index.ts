@@ -28,8 +28,10 @@ import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const { AFFINE_ENV } = process.env;
 
+export const GCPTraceExporter = new TraceExporter();
+
 const tracing = new NodeSDK({
-  traceExporter: new TraceExporter(),
+  traceExporter: GCPTraceExporter,
   textMapPropagator: new CompositePropagator({
     propagators: [new W3CBaggagePropagator(), new W3CTraceContextPropagator()],
   }),

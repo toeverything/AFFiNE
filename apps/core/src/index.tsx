@@ -7,12 +7,11 @@ import { DocumentLoadInstrumentation } from '@opentelemetry/instrumentation-docu
 import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch';
 import { XMLHttpRequestInstrumentation } from '@opentelemetry/instrumentation-xml-http-request';
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import {
-  ConsoleSpanExporter,
-  WebTracerProvider,
-} from '@opentelemetry/sdk-trace-web';
+import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+
+import { CustomSpanExporter } from './exporter';
 
 async function main() {
   await import('./bootstrap/before-app');
@@ -29,8 +28,11 @@ async function main() {
 
 function registerTracer() {
   const provider = new WebTracerProvider();
-  // TODO
-  provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
+  provider.addSpanProcessor(
+    new SimpleSpanProcessor(
+      new CustomSpanExporter(runtimeConfig.serverUrlPrefix + '/telemetry')
+    )
+  );
 
   provider.register({
     propagator: new CompositePropagator({

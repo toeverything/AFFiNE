@@ -6,6 +6,7 @@ import { MetricsModule } from './metrics';
 import { BusinessModules } from './modules';
 import { PrismaModule } from './prisma';
 import { StorageModule } from './storage';
+import { TelemetryModule } from './telemetry';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { StorageModule } from './storage';
     ConfigModule.forRoot(),
     StorageModule.forRoot(),
     MetricsModule,
+    TelemetryModule,
     ...BusinessModules,
   ],
   controllers: [AppController],
