@@ -4,10 +4,17 @@
   "targets": {
     "build": {
       "executor": "nx:run-script",
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        {
+          "projects": ["tag:plugin"],
+          "target": "build",
+          "params": "ignore"
+        },
+        "^build"
+      ],
       "inputs": [
         "{projectRoot}/**/*",
-        "{projectRoot}/public/plugins/**/*",
+        "{projectRoot}/public/**/*",
         "{workspaceRoot}/packages/component/src/**/*",
         "{workspaceRoot}/packages/debug/src/**/*",
         "{workspaceRoot}/packages/graphql/src/**/*",
