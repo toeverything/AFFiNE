@@ -162,7 +162,7 @@ async function createFirstAppData() {
       );
     }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
   };
-  rootStore
+  return rootStore
     .get(rootWorkspacesMetadataAtom)
     .then(meta => {
       if (meta.length === 0 && localStorage.getItem('is-first-open') === null) {
