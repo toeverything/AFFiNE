@@ -67,9 +67,8 @@ export class NextAuthController {
             ...req.body,
             name: user.name,
             email: user.email,
-            password: user.password,
             image: user.avatarUrl,
-            hasPassword: !!user.password,
+            hashedPassword: user.password,
           };
         }
       }

@@ -9,9 +9,10 @@ import { signInMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
+import { signIn } from 'next-auth/react';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
-import { signIn } from 'next-auth/react';
+
 import type { AuthPanelProps } from './index';
 import { forgetPasswordButton } from './style.css';
 

@@ -4,7 +4,6 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { BadRequestException, FactoryProvider } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
-import type { User } from '@prisma/client';
 import { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Email, {
@@ -111,20 +110,21 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             password: { label: 'Password', type: 'password' },
           },
           async authorize(
-            credentials: Record<'email' | 'password', string> | undefined,
-            { body }: { body: Pick<User, 'email' | 'password' | 'avatarUrl'> }
+            credentials:
+              | Record<'email' | 'password' | 'hashedPassword', string>
+              | undefined
           ) {
             if (!credentials) {
               return null;
             }
-            const { password } = credentials;
-            if (!body.password || !password) {
+            const { password, hashedPassword } = credentials;
+            if (!password || !hashedPassword) {
               return null;
             }
-            if (!verify(body.password, password)) {
+            if (!(await verify(hashedPassword, password))) {
               return null;
             }
-            return body;
+            return credentials;
           },
         })
       );
