@@ -4,8 +4,8 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
-    "outDir": "lib",
-    "moduleResolution": "node16"
+    "moduleResolution": "Node16",
+    "outDir": "lib"
   },
   "references": [
     {

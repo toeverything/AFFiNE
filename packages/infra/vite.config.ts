@@ -12,14 +12,29 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(root, 'src/index.ts'),
+        atom: resolve(root, 'src/atom.ts'),
+        type: resolve(root, 'src/type.ts'),
         'core/event-emitter': resolve(root, 'src/core/event-emitter.ts'),
         'preload/electron': resolve(root, 'src/preload/electron.ts'),
+        '__internal__/workspace': resolve(
+          root,
+          'src/__internal__/workspace.ts'
+        ),
+        '__internal__/react': resolve(root, 'src/__internal__/react.ts'),
       },
       formats: ['es', 'cjs'],
       name: 'AffineInfra',
     },
     rollupOptions: {
-      external: ['electron', 'async-call-rpc', 'rxjs'],
+      external: [
+        'electron',
+        'async-call-rpc',
+        'rxjs',
+        'zod',
+        'react',
+        /^jotai/,
+        /^@blocksuite/,
+      ],
     },
   },
   plugins: [dts()],

@@ -1,6 +1,6 @@
 import { ProviderComposer } from '@affine/component/provider-composer';
 import { ThemeProvider } from '@affine/component/theme-provider';
-import { rootStore } from '@toeverything/plugin-infra/atom';
+import { rootStore } from '@toeverything/infra/atom';
 import { Provider } from 'jotai';
 import type { PropsWithChildren } from 'react';
 import { useMemo } from 'react';

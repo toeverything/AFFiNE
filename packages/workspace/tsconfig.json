@@ -11,6 +11,6 @@
     { "path": "../env" },
     { "path": "../debug" },
     { "path": "../hooks" },
-    { "path": "../plugin-infra" }
+    { "path": "../infra" }
   ]
 }

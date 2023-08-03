@@ -19,6 +19,26 @@
       "types": "./dist/src/preload/*.d.ts",
       "import": "./dist/preload/*.js",
       "require": "./dist/preload/*.cjs"
+    },
+    "./atom": {
+      "type": "./dist/src/atom.d.ts",
+      "import": "./dist/atom.js",
+      "require": "./dist/atom.cjs"
+    },
+    "./type": {
+      "type": "./dist/src/type.d.ts",
+      "import": "./dist/type.js",
+      "require": "./dist/type.cjs"
+    },
+    "./__internal__/workspace": {
+      "type": "./dist/src/__internal__/workspace.d.ts",
+      "import": "./dist/__internal__/workspace.js",
+      "require": "./dist/__internal__/workspace.cjs"
+    },
+    "./__internal__/react": {
+      "type": "./dist/src/__internal__/react.d.ts",
+      "import": "./dist/__internal__/react.js",
+      "require": "./dist/__internal__/react.cjs"
     }
   },
   "files": [
@@ -28,21 +48,42 @@
     "build": "vite build",
     "dev": "vite build --watch"
   },
+  "dependencies": {
+    "@affine/sdk": "workspace:*",
+    "@blocksuite/blocks": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/global": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/store": "0.0.0-20230802200139-381599c0-nightly",
+    "jotai": "^2.2.2",
+    "zod": "^3.21.4"
+  },
   "devDependencies": {
+    "@blocksuite/editor": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/lit": "0.0.0-20230802200139-381599c0-nightly",
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../apps/electron/node_modules/electron",
+    "react": "^18.2.0",
     "vite": "^4.4.7",
     "vite-plugin-dts": "3.3.1"
   },
   "peerDependencies": {
     "async-call-rpc": "*",
-    "electron": "*"
+    "electron": "*",
+    "react": "*"
   },
   "peerDependenciesMeta": {
+    "@blocksuite/editor": {
+      "optional": true
+    },
+    "@blocksuite/lit": {
+      "optional": true
+    },
     "async-call-rpc": {
       "optional": true
     },
     "electron": {
+      "optional": true
+    },
+    "react": {
       "optional": true
     }
   },

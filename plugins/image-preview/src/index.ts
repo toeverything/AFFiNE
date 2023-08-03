@@ -1,4 +1,4 @@
-import type { PluginContext } from '@toeverything/plugin-infra/entry';
+import type { PluginContext } from '@affine/sdk/entry';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 

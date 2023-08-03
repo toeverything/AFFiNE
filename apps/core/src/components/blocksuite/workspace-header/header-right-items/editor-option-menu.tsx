@@ -14,7 +14,7 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import { currentPageIdAtom } from '@toeverything/plugin-infra/atom';
+import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue } from 'jotai';
 import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';

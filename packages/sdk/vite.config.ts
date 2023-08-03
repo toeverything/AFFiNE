@@ -12,17 +12,11 @@ export default defineConfig({
     lib: {
       entry: {
         entry: resolve(root, 'src/entry.ts'),
-        type: resolve(root, 'src/type.ts'),
-        atom: resolve(root, 'src/atom.ts'),
-        '__internal__/workspace': resolve(
-          root,
-          'src/__internal__/workspace.ts'
-        ),
-        '__internal__/react': resolve(root, 'src/__internal__/react.ts'),
+        server: resolve(root, 'src/server.ts'),
       },
     },
     rollupOptions: {
-      external: ['react', /^jotai/, /^@blocksuite/, 'zod'],
+      external: [/^jotai/, /^@blocksuite/, 'zod'],
     },
   },
   plugins: [dts()],

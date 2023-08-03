@@ -1,23 +1,22 @@
 import * as AFFiNEComponent from '@affine/component';
 import { DebugLogger } from '@affine/debug';
+import type { CallbackMap, PluginContext } from '@affine/sdk/entry';
 import { FormatQuickBar } from '@blocksuite/blocks';
 import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
 import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import { assertExists } from '@blocksuite/global/utils';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
-import * as Atom from '@toeverything/plugin-infra/atom';
 import {
+  contentLayoutAtom,
+  currentPageAtom,
+  currentWorkspaceAtom,
   editorItemsAtom,
   headerItemsAtom,
   rootStore,
   settingItemsAtom,
   windowItemsAtom,
-} from '@toeverything/plugin-infra/atom';
-import type {
-  CallbackMap,
-  PluginContext,
-} from '@toeverything/plugin-infra/entry';
+} from '@toeverything/infra/atom';
 import * as Jotai from 'jotai/index';
 import { Provider } from 'jotai/react';
 import * as JotaiUtils from 'jotai/utils';
@@ -63,8 +62,15 @@ const setupRootImportsMap = () => {
   _rootImportsMap.set('jotai', new Map(Object.entries(Jotai)));
   _rootImportsMap.set('jotai/utils', new Map(Object.entries(JotaiUtils)));
   _rootImportsMap.set(
-    '@toeverything/plugin-infra/atom',
-    new Map(Object.entries(Atom))
+    '@affine/sdk/entry',
+    new Map(
+      Object.entries({
+        rootStore: rootStore,
+        currentWorkspaceAtom: currentWorkspaceAtom,
+        currentPageAtom: currentPageAtom,
+        contentLayoutAtom: contentLayoutAtom,
+      })
+    )
   );
   _rootImportsMap.set('swr', new Map(Object.entries(SWR)));
 };

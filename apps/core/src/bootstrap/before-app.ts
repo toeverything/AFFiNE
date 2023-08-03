@@ -20,7 +20,7 @@ import {
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
-import { rootStore } from '@toeverything/plugin-infra/atom';
+import { rootStore } from '@toeverything/infra/atom';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
