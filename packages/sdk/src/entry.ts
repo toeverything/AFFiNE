@@ -50,8 +50,3 @@ export declare const contentLayoutAtom: PrimitiveAtom<ExpectedLayout>;
 export declare const currentPageAtom: Atom<Promise<Page>>;
 export declare const currentWorkspaceAtom: Atom<Promise<Workspace>>;
 export declare const rootStore: ReturnType<typeof getDefaultStore>;
-
-/**
- * @internal
- */
-export const __INTERNAL__ = {};

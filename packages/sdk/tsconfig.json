@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"],
+  "include": ["./src/**.ts"],
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
