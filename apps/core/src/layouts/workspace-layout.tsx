@@ -26,6 +26,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
 import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -46,6 +47,7 @@ import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
 import {
+  DROPPABLE_SIDEBAR_FAVOURITES,
   DROPPABLE_SIDEBAR_TRASH,
   RootAppSidebar,
 } from '../components/root-app-sidebar';
@@ -152,6 +154,9 @@ export const WorkspaceLayout: FC<PropsWithChildren> =
 
 export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
+  const { setPageMeta } = usePageMetaHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
   const { openPage } = useNavigateHelper();
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
@@ -193,7 +198,7 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
     // Otherwise clicks would be intercepted
     useSensor(MouseSensor, {
       activationConstraint: {
-        delay: 500,
+        delay: 100,
         tolerance: 10,
       },
     })
@@ -217,6 +222,19 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         moveToTrash(pageId);
         toast(t['Successfully deleted']());
       }
+
+      // Drag page into favourites folder
+      if (
+        e.over?.id === DROPPABLE_SIDEBAR_FAVOURITES &&
+        String(e.active.id).startsWith('page-list-item-')
+      ) {
+        const { pageId } = e.active.data.current as DraggableTitleCellData;
+        setPageMeta(pageId, {
+          favorite: true,
+        });
+        toast(t['Added to Favorites']());
+      }
+
       // Drag page into Collections
       processCollectionsDrag(e);
     },

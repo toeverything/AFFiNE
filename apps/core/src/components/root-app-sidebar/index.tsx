@@ -78,6 +78,7 @@ RouteMenuLinkItem.displayName = 'RouteMenuLinkItem';
 
 // Unique droppable IDs
 export const DROPPABLE_SIDEBAR_TRASH = 'trash-folder';
+export const DROPPABLE_SIDEBAR_FAVOURITES = 'favourites-folder';
 
 /**
  * This is for the whole affine app sidebar.
@@ -149,6 +150,9 @@ export const RootAppSidebar = ({
   const trashDroppable = useDroppable({
     id: DROPPABLE_SIDEBAR_TRASH,
   });
+  const favouritesDroppable = useDroppable({
+    id: DROPPABLE_SIDEBAR_FAVOURITES,
+  });
 
   return (
     <>
@@ -189,8 +193,10 @@ export const RootAppSidebar = ({
         </SidebarContainer>
 
         <SidebarScrollableContainer>
-          <CategoryDivider label={t['Favorites']()} />
-          <FavoriteList workspace={blockSuiteWorkspace} />
+          <div ref={favouritesDroppable.setNodeRef}>
+            <CategoryDivider label={t['Favorites']()} />
+            <FavoriteList workspace={blockSuiteWorkspace} />
+          </div>
           <CategoryDivider label={t['Collections']()}>
             <AddCollectionButton workspace={blockSuiteWorkspace} />
           </CategoryDivider>
