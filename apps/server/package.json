@@ -8,6 +8,7 @@
     "run-test": "./scripts/run-test.ts"
   },
   "scripts": {
+    "build": "tsc",
     "dev": "nodemon ./src/index.ts",
     "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",
     "test:watch": "yarn exec ts-node-esm ./scripts/run-test.ts all --watch",
