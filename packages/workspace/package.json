@@ -34,5 +34,5 @@
     "@types/ws": "^8.5.5",
     "ws": "^8.13.0"
   },
-  "version": "0.8.0-canary.8"
+  "version": "0.8.0-canary.9"
 }
