@@ -154,7 +154,10 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
-  const [showDownloadTip, setShowDownloadTip] = useState(true);
+  const isDownloadTipHide = localStorage.getItem('affine-is-dt-hide');
+  const [showDownloadTip, setShowDownloadTip] = useState(
+    isDownloadTipHide ? false : true
+  );
   // const [shouldShowGuideDownloadClientTip] = useAtom(
   //   guideDownloadClientTipAtom
   // );
@@ -177,7 +180,10 @@ export const Header = forwardRef<
       {showDownloadTip ? (
         <DownloadClientTip
           show={showDownloadTip}
-          onClose={() => setShowDownloadTip(false)}
+          onClose={() => {
+            setShowDownloadTip(false);
+            localStorage.setItem('affine-is-dt-hide', '1');
+          }}
         />
       ) : (
         <BrowserWarning
