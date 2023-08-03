@@ -122,7 +122,9 @@ export class NextAuthController {
       }
     }
     if (redirect) {
-      if (action === 'signout') {
+      if (providerId === 'credentials') {
+        res.send(JSON.stringify({ ok: true, url: redirect }));
+      } else if (action === 'signout') {
         res.send(JSON.stringify({ url: redirect }));
       } else {
         res.redirect(redirect);
