@@ -32,7 +32,6 @@ async function tryMigration() {
       const promises: Promise<void>[] = [];
       const newMetadata = [...metadata];
       metadata.forEach(oldMeta => {
-        console.log('old meta', oldMeta);
         if (!('version' in oldMeta)) {
           const adapter = WorkspaceAdapters[oldMeta.flavour];
           assertExists(adapter);
