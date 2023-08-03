@@ -95,8 +95,8 @@ __metadata:
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
+    "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.29
-    "@toeverything/plugin-infra": "workspace:*"
     foxact: ^0.2.17
     link-preview-js: ^3.0.4
   languageName: unknown
@@ -186,7 +186,7 @@ __metadata:
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
-    "@toeverything/plugin-infra": "workspace:*"
+    "@affine/sdk": "workspace:*"
     "@types/marked": ^5.0.1
     idb: ^7.1.1
     jotai: ^2.2.2
@@ -321,6 +321,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/maker-dmg": "workspace:*"
     "@affine/native": "workspace:*"
+    "@affine/sdk": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/editor": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/lit": 0.0.0-20230802200139-381599c0-nightly
@@ -401,6 +402,7 @@ __metadata:
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
+    "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.29
     "@toeverything/plugin-infra": "workspace:*"
   languageName: unknown
@@ -426,8 +428,8 @@ __metadata:
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
+    "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.29
-    "@toeverything/plugin-infra": "workspace:*"
     "@toeverything/theme": ^0.7.9
     clsx: ^2.0.0
     foxact: ^0.2.17
@@ -562,6 +564,20 @@ __metadata:
     ts-node: ^10.9.1
   bin:
     af: ./src/af.mjs
+  languageName: unknown
+  linkType: soft
+
+"@affine/sdk@workspace:*, @affine/sdk@workspace:packages/sdk":
+  version: 0.0.0-use.local
+  resolution: "@affine/sdk@workspace:packages/sdk"
+  dependencies:
+    "@blocksuite/blocks": 0.0.0-20230802200139-381599c0-nightly
+    "@blocksuite/global": 0.0.0-20230802200139-381599c0-nightly
+    "@blocksuite/store": 0.0.0-20230802200139-381599c0-nightly
+    jotai: ^2.2.2
+    vite: ^4.4.7
+    vite-plugin-dts: 3.3.1
+    zod: ^3.21.4
   languageName: unknown
   linkType: soft
 
@@ -11396,6 +11412,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/plugin-infra@workspace:packages/plugin-infra"
   dependencies:
+    "@affine/sdk": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/editor": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/global": 0.0.0-20230802200139-381599c0-nightly

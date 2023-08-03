@@ -137,6 +137,20 @@ module.exports = {
           force: true,
         }
       );
+
+      await rm(resolve(__dirname, './node_modules/@affine/sdk'), {
+        recursive: true,
+        force: true,
+      });
+
+      await cp(
+        resolve(__dirname, '../../packages/sdk'),
+        resolve(__dirname, './node_modules/@affine/sdk'),
+        {
+          recursive: true,
+          force: true,
+        }
+      );
     },
     generateAssets: async (_, platform, arch) => {
       if (process.env.SKIP_GENERATE_ASSETS) {

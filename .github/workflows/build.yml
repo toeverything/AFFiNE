@@ -47,8 +47,6 @@ jobs:
           electron-install: false
       - name: Run i18n codegen
         run: yarn i18n-codegen gen
-      - name: Run Type Check
-        run: yarn typecheck
       - name: Run ESLint
         run: yarn lint:eslint --max-warnings=0
       - name: Run Prettier
@@ -58,12 +56,8 @@ jobs:
           yarn lint:prettier
       - name: Run circular
         run: yarn circular
-      - name: Upload server dist
-        uses: actions/upload-artifact@v3
-        with:
-          name: server-dist
-          path: ./apps/server/dist
-          if-no-files-found: error
+      - name: Run Type Check
+        run: yarn typecheck
 
   build-docs:
     name: Build Docs
@@ -490,7 +484,6 @@ jobs:
     if: github.ref == 'refs/heads/master'
     name: Build Docker
     needs:
-      - lint
       - desktop-test
       - server-test
     runs-on: ubuntu-latest
@@ -501,11 +494,9 @@ jobs:
         with:
           name: core
           path: ./apps/core/dist
-      - name: Download server dist
-        uses: actions/download-artifact@v3
-        with:
-          name: server-dist
-          path: ./apps/server/dist
+      - name: Compile server code
+        run: tsc -b
+        working-directory: ./apps/server
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:
