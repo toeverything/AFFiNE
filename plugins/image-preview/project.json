@@ -1,5 +1,19 @@
 {
   "name": "@affine/image-preview-plugin",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "tags": ["plugin"]
+  "tags": ["plugin"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "build"
+      },
+      "dependsOn": ["^build"],
+      "inputs": ["{projectRoot}/**/*"],
+      "outputs": [
+        "{workspaceRoot}/apps/core/public/plugins/image-preview",
+        "{workspaceRoot}/apps/electron/dist/plugins/image-preview"
+      ]
+    }
+  }
 }
