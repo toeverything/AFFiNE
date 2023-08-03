@@ -59,6 +59,24 @@ jobs:
       - name: Run Type Check
         run: yarn typecheck
 
+  build-server:
+    name: Build Server
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+      - name: Build Server
+        run: yarn nx build @affine/server
+      - name: Upload server dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+          if-no-files-found: error
   build-docs:
     name: Build Docs
     runs-on: ubuntu-latest
@@ -483,10 +501,8 @@ jobs:
   build-docker:
     if: github.ref == 'refs/heads/master'
     name: Build Docker
-    needs:
-      - desktop-test
-      - server-test
     runs-on: ubuntu-latest
+    needs: build-server
     steps:
       - uses: actions/checkout@v3
       - name: Download core artifact
@@ -494,9 +510,11 @@ jobs:
         with:
           name: core
           path: ./apps/core/dist
-      - name: Compile server code
-        run: tsc -b
-        working-directory: ./apps/server
+      - name: Download server dist
+        uses: actions/download-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:
