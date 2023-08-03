@@ -193,6 +193,7 @@ export const Header = forwardRef<
         data-has-warning={showWarning}
         data-testid="editor-header-items"
         data-is-edgeless={mode === 'edgeless'}
+        data-is-page-list={props.currentPage === null}
       >
         <div className={styles.headerLeftSide}>
           {!open && <SidebarSwitch />}

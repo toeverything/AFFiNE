@@ -1,5 +1,7 @@
 import type { ComplexStyleRule } from '@vanilla-extract/css';
-import { style } from '@vanilla-extract/css';
+import { createContainer, style } from '@vanilla-extract/css';
+
+export const headerVanillaContainer = createContainer();
 
 export const headerContainer = style({
   height: 'auto',
@@ -27,19 +29,26 @@ export const headerContainer = style({
 } as ComplexStyleRule);
 
 export const header = style({
+  containerName: headerVanillaContainer,
+  containerType: 'inline-size',
   flexShrink: 0,
-  height: '52px',
+  minHeight: '52px',
   width: '100%',
-  padding: '0 20px',
-  display: 'flex',
-  justifyContent: 'space-between',
+  padding: '8px 20px',
+  display: 'grid',
+  gridTemplateColumns: '1fr auto 1fr',
   alignItems: 'center',
   background: 'var(--affine-background-primary-color)',
   zIndex: 99,
   position: 'relative',
   selectors: {
-    '&[data-is-edgeless="true"]': {
+    '&[data-is-page-list="true"], &[data-is-edgeless="true"]': {
       borderBottom: `1px solid var(--affine-border-color)`,
+    },
+  },
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      alignItems: 'start',
     },
   },
 });
@@ -47,10 +56,6 @@ export const header = style({
 export const titleContainer = style({
   width: '100%',
   height: '100%',
-  margin: 'auto',
-  position: 'absolute',
-  inset: 'auto auto auto 50%',
-  transform: 'translate(-50%, 0px)',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -86,12 +91,6 @@ export const titleWrapper = style({
 export const headerLeftSide = style({
   display: 'flex',
   alignItems: 'center',
-  width: '150px',
-  '@media': {
-    '(max-width: 900px)': {
-      width: 'auto',
-    },
-  },
 });
 export const headerRightSide = style({
   height: '100%',
@@ -99,7 +98,14 @@ export const headerRightSide = style({
   alignItems: 'center',
   gap: '12px',
   zIndex: 1,
+  marginLeft: '20px',
   justifyContent: 'flex-end',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      flexDirection: 'column-reverse',
+      alignItems: 'flex-end',
+    },
+  },
 });
 
 export const browserWarning = style({
@@ -164,16 +170,12 @@ export const allPageListTitleWrapper = style({
   color: 'var(--affine-text-primary-color)',
   display: 'flex',
   alignItems: 'center',
-  '::after': {
-    content: '""',
-    display: 'block',
-    width: '100%',
-    height: '1px',
-    background: 'var(--affine-border-color)',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    margin: '0 1px',
+  width: '100%',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      alignItems: 'start',
+      height: '100%',
+    },
   },
 });
 export const pageListTitleIcon = style({
