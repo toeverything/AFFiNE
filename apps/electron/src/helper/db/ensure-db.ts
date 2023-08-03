@@ -115,7 +115,11 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
       const secondaryDB = new SecondaryWorkspaceSQLiteDB(path, db);
       return new Observable<SecondaryWorkspaceSQLiteDB>(subscriber => {
         subscriber.next(secondaryDB);
-        return () => secondaryDB.destroy();
+        return () => {
+          secondaryDB.destroy().catch(err => {
+            subscriber.error(err);
+          });
+        };
       });
     }),
     switchMap(secondaryDB => {
