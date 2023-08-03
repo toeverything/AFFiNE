@@ -58,12 +58,6 @@ jobs:
         run: yarn circular
       - name: Run Type Check
         run: yarn typecheck
-      - name: Upload server dist
-        uses: actions/upload-artifact@v3
-        with:
-          name: server-dist
-          path: ./apps/server/dist
-          if-no-files-found: error
 
   build-docs:
     name: Build Docs
@@ -501,11 +495,9 @@ jobs:
         with:
           name: core
           path: ./apps/core/dist
-      - name: Download server dist
-        uses: actions/download-artifact@v3
-        with:
-          name: server-dist
-          path: ./apps/server/dist
+      - name: Compile server code
+        run: tsc -b
+        working-directory: ./apps/server
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:
