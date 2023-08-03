@@ -484,7 +484,6 @@ jobs:
     if: github.ref == 'refs/heads/master'
     name: Build Docker
     needs:
-      - lint
       - desktop-test
       - server-test
     runs-on: ubuntu-latest
