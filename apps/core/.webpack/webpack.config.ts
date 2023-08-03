@@ -16,26 +16,23 @@ export default async function (cli_env: any, _: any) {
   return merge(config, {
     entry: {
       'bootstrap/setup': {
-        asyncChunks: true,
         import: resolve(rootPath, 'src/bootstrap/setup.ts'),
       },
       'polyfill/ses': {
-        asyncChunks: true,
         dependOn: ['bootstrap/setup'],
         import: resolve(rootPath, 'src/polyfill/ses.ts'),
       },
       plugin: {
-        asyncChunks: true,
         dependOn: ['polyfill/ses'],
         import: resolve(rootPath, 'src/bootstrap/register-plugins.ts'),
       },
       app: {
-        asyncChunks: false,
+        chunkLoading: 'import',
         dependOn: ['bootstrap/setup', 'polyfill/ses', 'plugin'],
         import: resolve(rootPath, 'src/index.tsx'),
       },
       '_plugin/index.test': {
-        asyncChunks: false,
+        chunkLoading: 'import',
         dependOn: ['bootstrap/setup', 'polyfill/ses', 'plugin'],
         import: resolve(rootPath, 'src/_plugin/index.test.tsx'),
       },
