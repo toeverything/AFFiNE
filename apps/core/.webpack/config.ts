@@ -81,7 +81,7 @@ export const createConfiguration: (
     context: projectRoot,
     experiments: {
       topLevelAwait: true,
-      outputModule: true,
+      outputModule: false,
     },
     output: {
       environment: {
