@@ -2,16 +2,14 @@
   "extends": "../../tsconfig.json",
   "include": ["./src"],
   "compilerOptions": {
+    "composite": true,
     "noEmit": false,
     "outDir": "lib",
-    "jsx": "preserve"
+    "moduleResolution": "node16"
   },
   "references": [
     {
-      "path": "../../packages/sdk"
-    },
-    {
-      "path": "../../packages/component"
+      "path": "./tsconfig.node.json"
     }
   ]
 }

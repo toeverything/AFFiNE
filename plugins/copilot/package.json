@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
+    "@affine/sdk": "workspace:*",
     "@toeverything/plugin-infra": "workspace:*",
     "idb": "^7.1.1",
     "langchain": "^0.0.118",
