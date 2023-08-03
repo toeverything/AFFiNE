@@ -24,17 +24,6 @@ import { rootStore } from '@toeverything/infra/atom';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
-rootStore.set(
-  workspaceAdaptersAtom,
-  WorkspaceAdapters as Record<
-    WorkspaceFlavour,
-    WorkspaceAdapter<WorkspaceFlavour>
-  >
-);
-
-console.log('setup global');
-setupGlobal();
-
 async function tryMigration() {
   const value = localStorage.getItem('jotai-workspaces');
   if (value) {
@@ -43,7 +32,9 @@ async function tryMigration() {
       const promises: Promise<void>[] = [];
       const newMetadata = [...metadata];
       metadata.forEach(oldMeta => {
+        console.log('old meta', oldMeta);
         if (!('version' in oldMeta)) {
+          console.log('migrate to v2');
           const adapter = WorkspaceAdapters[oldMeta.flavour];
           assertExists(adapter);
           const upgrade = async () => {
@@ -94,6 +85,7 @@ async function tryMigration() {
           // create a new workspace and push it to metadata
           promises.push(upgrade());
         } else if (oldMeta.version < WorkspaceVersion.DatabaseV3) {
+          console.log('migrate to v3');
           const adapter = WorkspaceAdapters[oldMeta.flavour];
           assertExists(adapter);
           promises.push(
@@ -145,7 +137,7 @@ async function tryMigration() {
   }
 }
 
-async function createFirstAppData() {
+function createFirstAppData() {
   const createFirst = (): RootWorkspaceMetadataV2[] => {
     const Plugins = Object.values(WorkspaceAdapters).sort(
       (a, b) => a.loadPriority - b.loadPriority
@@ -162,19 +154,28 @@ async function createFirstAppData() {
       );
     }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
   };
-  return rootStore
-    .get(rootWorkspacesMetadataAtom)
-    .then(meta => {
-      if (meta.length === 0 && localStorage.getItem('is-first-open') === null) {
-        const result = createFirst();
-        console.info('create first workspace', result);
-        localStorage.setItem('is-first-open', 'false');
-        rootStore.set(rootWorkspacesMetadataAtom, result);
-      }
-    })
-    .catch(console.error);
+  if (localStorage.getItem('is-first-open') !== null) {
+    return;
+  }
+  const result = createFirst();
+  console.info('create first workspace', result);
+  localStorage.setItem('is-first-open', 'false');
+  rootStore.set(rootWorkspacesMetadataAtom, result);
 }
 
-await createFirstAppData();
-await tryMigration();
-console.log('setup done');
+export async function setup() {
+  rootStore.set(
+    workspaceAdaptersAtom,
+    WorkspaceAdapters as Record<
+      WorkspaceFlavour,
+      WorkspaceAdapter<WorkspaceFlavour>
+    >
+  );
+
+  console.log('setup global');
+  setupGlobal();
+
+  createFirstAppData();
+  await tryMigration();
+  console.log('setup done');
+}

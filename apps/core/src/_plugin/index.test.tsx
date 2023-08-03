@@ -10,7 +10,8 @@ import { _pluginNestedImportsMap } from '../bootstrap/plugins/setup';
 import { pluginRegisterPromise } from '../bootstrap/register-plugins';
 
 async function main() {
-  await import('../bootstrap/setup');
+  const { setup } = await import('../bootstrap/setup');
+  await setup();
   const root = document.getElementById('app');
   assertExists(root);
 
