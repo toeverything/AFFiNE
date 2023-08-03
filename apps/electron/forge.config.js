@@ -121,17 +121,14 @@ module.exports = {
       const { rm, cp } = require('node:fs/promises');
       const { resolve } = require('node:path');
 
-      await rm(
-        resolve(__dirname, './node_modules/@toeverything/plugin-infra'),
-        {
-          recursive: true,
-          force: true,
-        }
-      );
+      await rm(resolve(__dirname, './node_modules/@toeverything/infra'), {
+        recursive: true,
+        force: true,
+      });
 
       await cp(
-        resolve(__dirname, '../../packages/plugin-infra'),
-        resolve(__dirname, './node_modules/@toeverything/plugin-infra'),
+        resolve(__dirname, '../../packages/infra'),
+        resolve(__dirname, './node_modules/@toeverything/infra'),
         {
           recursive: true,
           force: true,
