@@ -75,6 +75,7 @@ test('database migration', async ({ page, context }) => {
   await switchToNext();
   await page.waitForTimeout(1000);
   await page.goto('http://localhost:8081/');
+  await page.click('text=hello');
   await page.waitForSelector('v-line', {
     timeout: 10000,
   });
