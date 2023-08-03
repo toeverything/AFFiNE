@@ -50,6 +50,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         email: email,
         callbackUrl: `/auth/signIn?isClient=${isDesktop ? 'true' : 'false'}`,
         redirect: true,
+        foobar: true,
       }).catch(console.error);
 
       setAuthState('afterSignInSendEmail');
@@ -58,6 +59,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         email: email,
         callbackUrl: `/auth/signUp?isClient=${isDesktop ? 'true' : 'false'}`,
         redirect: true,
+        foobar: true,
       }).catch(console.error);
 
       setAuthState('afterSignUpSendEmail');

@@ -356,6 +356,7 @@ __metadata:
     async-call-rpc: ^6.3.1
     cross-env: 7.0.3
     electron: ^25.3.1
+    electron-deeplink: ^1.0.10
     electron-log: ^5.0.0-beta.24
     electron-squirrel-startup: 1.0.0
     electron-updater: ^6.0.0
@@ -11891,6 +11892,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/electron@npm:^1.6.10":
+  version: 1.6.10
+  resolution: "@types/electron@npm:1.6.10"
+  dependencies:
+    electron: "*"
+  checksum: 1194d023d425fad826d719b761c67022ef97a4d3bea40ce6a3ac36aa40f913e3714775ef816744ec61214ab49b0ca377a939b18a8c29bfd76285011c21e2de76
+  languageName: node
+  linkType: hard
+
 "@types/emscripten@npm:^1.39.6":
   version: 1.39.6
   resolution: "@types/emscripten@npm:1.39.6"
@@ -17511,6 +17521,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"electron-deeplink@npm:^1.0.10":
+  version: 1.0.10
+  resolution: "electron-deeplink@npm:1.0.10"
+  dependencies:
+    "@types/electron": ^1.6.10
+    bindings: ^1.5.0
+    electron-log: ^4.2.3
+    node-addon-api: ^2.0.0
+    node-gyp: latest
+  checksum: 47a8f71bf77c9b092cbdfa513a04e5ad0b8ce418e096e7d20425a4909d5d75193e2566fc1017b6fb2dc65c185c96d5079f47c675b48bca94c9c6000f92cf5360
+  languageName: node
+  linkType: hard
+
 "electron-installer-common@npm:^0.10.2":
   version: 0.10.3
   resolution: "electron-installer-common@npm:0.10.3"
@@ -17547,6 +17570,13 @@ __metadata:
   bin:
     electron-installer-debian: src/cli.js
   conditions: (os=darwin | os=linux)
+  languageName: node
+  linkType: hard
+
+"electron-log@npm:^4.2.3":
+  version: 4.4.8
+  resolution: "electron-log@npm:4.4.8"
+  checksum: 5a7958f8fd9a5c95987e885ffe1c5b88be15bb41d348b65c92e2d8664519faddf17ce0208cd4e7027b0908f92fecedfbef246a45061f53e4a53b5d2201aafbd9
   languageName: node
   linkType: hard
 
@@ -17646,6 +17676,19 @@ __metadata:
   resolution: "electron@link:../../apps/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Finfra"
   languageName: node
   linkType: soft
+
+"electron@npm:*":
+  version: 25.4.0
+  resolution: "electron@npm:25.4.0"
+  dependencies:
+    "@electron/get": ^2.0.0
+    "@types/node": ^18.11.18
+    extract-zip: ^2.0.1
+  bin:
+    electron: cli.js
+  checksum: a1c667dfc52e33a08a396b710a436bada4552bb3b622501e27abc85081c4c07965ce1620bb9d87f77f0d80df5d93d0e8dd169f8df17f6313c77ceff28c58420e
+  languageName: node
+  linkType: hard
 
 "electron@npm:^25.3.1":
   version: 25.3.1
@@ -25105,6 +25148,15 @@ __metadata:
   version: 3.1.1
   resolution: "node-abort-controller@npm:3.1.1"
   checksum: 2c340916af9710328b11c0828223fc65ba320e0d082214a211311bf64c2891028e42ef276b9799188c4ada9e6e1c54cf7a0b7c05dd9d59fcdc8cd633304c8047
+  languageName: node
+  linkType: hard
+
+"node-addon-api@npm:^2.0.0":
+  version: 2.0.2
+  resolution: "node-addon-api@npm:2.0.2"
+  dependencies:
+    node-gyp: latest
+  checksum: 31fb22d674648204f8dd94167eb5aac896c841b84a9210d614bf5d97c74ef059cc6326389cf0c54d2086e35312938401d4cc82e5fcd679202503eb8ac84814f8
   languageName: node
   linkType: hard
 

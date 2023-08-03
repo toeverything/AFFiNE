@@ -44,6 +44,7 @@ export const config = () => {
         'electron-updater',
         '@toeverything/plugin-infra',
         'yjs',
+        'electron-deeplink',
       ],
       define: define,
       format: 'cjs',
