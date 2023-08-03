@@ -10,6 +10,7 @@
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
+    "start": "electron .",
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
     "dev:prod": "yarn node scripts/dev.mjs",
     "build": "NODE_ENV=production zx scripts/build-layers.mjs",
