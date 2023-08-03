@@ -57,7 +57,6 @@ export const SignUpPage: FC<{
         <SetPassword
           onSetPassword={onSetPassword}
           onLater={onLater}
-          confirmButtonContent={t['com.affine.auth.create.count']()}
           showLater={true}
         />
       )}

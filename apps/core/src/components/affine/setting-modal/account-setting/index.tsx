@@ -21,6 +21,7 @@ import * as style from './style.css';
 export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
+
   const [input, setInput] = useState<string>(user.name);
 
   const { trigger: avatarTrigger } = useMutation({
@@ -113,8 +114,21 @@ export const AccountSetting: FC = () => {
   const user = useCurrentUser();
   const [, setAuthModal] = useAtom(openAuthModalAtom);
 
+  const onChangeEmail = useCallback(() => {
+    setAuthModal({
+      open: true,
+      state: 'sendEmail',
+      email: user.email,
+      emailType: 'changeEmail',
+    });
+  }, [setAuthModal, user.email]);
   const onChangePassword = useCallback(() => {
-    setAuthModal({ open: true, state: 'sendPasswordEmail', email: user.email });
+    setAuthModal({
+      open: true,
+      state: 'sendEmail',
+      email: user.email,
+      emailType: 'changePassword',
+    });
   }, [setAuthModal, user.email]);
 
   return (
@@ -126,11 +140,7 @@ export const AccountSetting: FC = () => {
       />
       <AvatarAndName />
       <SettingRow name={t['com.affine.settings.email']()} desc={user.email}>
-        <Button
-          onClick={useCallback(() => {
-            toast('Function coming soon');
-          }, [])}
-        >
+        <Button onClick={onChangeEmail}>
           {t['com.affine.settings.email.action']()}
         </Button>
       </SettingRow>
@@ -139,7 +149,9 @@ export const AccountSetting: FC = () => {
         desc={t['com.affine.settings.password.message']()}
       >
         <Button onClick={onChangePassword}>
-          {t['com.affine.settings.password.action']()}
+          {user.hasPassword
+            ? t['com.affine.settings.password.action.change']()
+            : t['com.affine.settings.password.action.set']()}
         </Button>
       </SettingRow>
 

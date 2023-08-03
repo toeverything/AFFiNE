@@ -1,16 +1,18 @@
 import {
+  ChangeEmailPage,
   ChangePasswordPage,
   SetPasswordPage,
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
-import { changePasswordMutation } from '@affine/graphql';
+import { changeEmailMutation, changePasswordMutation } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { SessionProvider } from 'next-auth/react';
-import type { FC } from 'react';
+import { type FC, useEffect } from 'react';
 import { useCallback } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
+import { useCurrenLoginStatus } from '../hooks/affine/use-curren-login-status';
 import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
@@ -20,7 +22,13 @@ type AuthType =
   | 'changePassword'
   | 'signUp'
   | 'changeEmail';
-const authTypes: AuthType[] = ['setPassword', 'signIn', 'changePassword'];
+const authTypes: AuthType[] = [
+  'setPassword',
+  'signIn',
+  'changePassword',
+  'signUp',
+  'changeEmail',
+];
 
 export const AuthPage: FC = () => {
   const user = useCurrentUser();
@@ -28,16 +36,31 @@ export const AuthPage: FC = () => {
   const { trigger: changePassword } = useMutation({
     mutation: changePasswordMutation,
   });
+
+  const { trigger: changeEmail } = useMutation({
+    mutation: changeEmailMutation,
+  });
   const { jumpToIndex } = useNavigateHelper();
+
+  const onChangeEmail = useCallback(
+    async (email: string) => {
+      const res = await changeEmail({
+        id: user.id,
+        newEmail: email,
+      });
+      return !!res?.changeEmail;
+    },
+    [changeEmail, user.id]
+  );
 
   const onSetPassword = useCallback(
     (password: string) => {
       changePassword({
-        email: user.email,
+        id: user.id,
         newPassword: password,
       }).catch(console.error);
     },
-    [changePassword, user.email]
+    [changePassword, user.id]
   );
 
   const onOpenAffine = useCallback(() => {
@@ -75,6 +98,15 @@ export const AuthPage: FC = () => {
       />
     );
   }
+  if (authType === 'changeEmail') {
+    return (
+      <ChangeEmailPage
+        user={user}
+        onChangeEmail={onChangeEmail}
+        onOpenAffine={onOpenAffine}
+      />
+    );
+  }
 
   return null;
 };
@@ -88,9 +120,24 @@ export const loader: LoaderFunction = async args => {
   return null;
 };
 export const Component = () => {
+  const Page = () => {
+    const loginStatus = useCurrenLoginStatus();
+    const { jumpToExpired } = useNavigateHelper();
+
+    useEffect(() => {
+      if (loginStatus === 'unauthenticated') {
+        jumpToExpired(RouteLogic.REPLACE);
+      }
+    }, [jumpToExpired, loginStatus]);
+
+    if (loginStatus === 'authenticated') {
+      return <AuthPage />;
+    }
+    return null;
+  };
   return (
     <SessionProvider>
-      <AuthPage />
+      <Page />
     </SessionProvider>
   );
 };

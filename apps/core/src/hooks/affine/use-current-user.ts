@@ -6,6 +6,7 @@ export type CheckedUser = {
   name: string;
   email: string;
   image: string;
+  hasPassword: boolean;
   update: ReturnType<typeof useSession>['update'];
 };
 
@@ -14,6 +15,7 @@ declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
+      hasPassword: boolean;
     } & DefaultSession['user'];
   }
 }
@@ -37,6 +39,7 @@ export function useCurrentUser(): CheckedUser {
     name: user?.name ?? 'REPLACE_ME_DEFAULT_NAME',
     email: user?.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
     image: user?.image ?? 'REPLACE_ME_DEFAULT_URL',
+    hasPassword: user?.hasPassword ?? false,
     update,
   };
 }

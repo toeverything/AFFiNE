@@ -189,10 +189,10 @@ export class AuthService {
     return Boolean(user.password);
   }
 
-  async changePassword(email: string, newPassword: string): Promise<User> {
-    const user = await this.prisma.user.findFirst({
+  async changePassword(id: string, newPassword: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
       where: {
-        email,
+        id,
       },
     });
 
@@ -204,10 +204,30 @@ export class AuthService {
 
     return this.prisma.user.update({
       where: {
-        email,
+        id,
       },
       data: {
         password: hashedPassword,
+      },
+    });
+  }
+  async changeEmail(id: string, newEmail: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid email');
+    }
+
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        email: newEmail,
       },
     });
   }

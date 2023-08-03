@@ -55,7 +55,7 @@ export const Provider = (props: PropsWithChildren): ReactElement => {
     return <>{props.children}</>;
   }
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus>
       <SWRConfig value={cloudConfig}>{props.children}</SWRConfig>
     </SessionProvider>
   );
