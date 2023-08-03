@@ -100,6 +100,8 @@
   "com.affine.auth.set.password.placeholder.confirm": "Confirm password",
   "com.affine.auth.create.count": "Create Account",
 
+  "com.affine.expired.page.title": "This link has expired...",
+  "com.affine.expired.page.subtitle": "Please request a new reset password link.",
   "Back": "Back",
 
   "com.affine.pageMode": "Page Mode",

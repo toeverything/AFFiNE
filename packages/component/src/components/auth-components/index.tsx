@@ -1,5 +1,6 @@
 export * from './auth-content';
 export * from './auth-input';
+export * from './auth-page-container';
 export * from './back-button';
 export * from './change-email-page';
 export * from './change-password-page';
