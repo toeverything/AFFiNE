@@ -92,8 +92,10 @@ class AuthGuard implements CanActivate {
         return false;
       }
 
-      // @ts-expect-error body is user here
-      req.user = body.user;
+      req.user = await this.prisma.user.findUnique({
+        // @ts-expect-error body is user here
+        where: { email: body.user.email },
+      });
       if (cookies && res) {
         for (const cookie of cookies) {
           res.cookie(cookie.name, cookie.value, cookie.options);
