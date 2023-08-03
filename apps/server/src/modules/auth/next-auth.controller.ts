@@ -25,13 +25,18 @@ const BASE_URL = '/api/auth/';
 
 @Controller(BASE_URL)
 export class NextAuthController {
+  private readonly callbackSession;
+
   constructor(
     readonly config: Config,
     readonly prisma: PrismaService,
     private readonly authService: AuthService,
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions
-  ) {}
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    this.callbackSession = nextAuthOptions.callbacks!.session;
+  }
 
   @All('*')
   async auth(
@@ -85,6 +90,9 @@ export class NextAuthController {
           expires: session.expires,
         };
       };
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.callbacks!.session = this.callbackSession;
     }
     const { status, headers, body, redirect, cookies } = await AuthHandler({
       req: {

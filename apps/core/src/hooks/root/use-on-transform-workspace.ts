@@ -29,7 +29,7 @@ export function useOnTransformWorkspace() {
         workspace.blockSuiteWorkspace
       );
       await WorkspaceAdapters[from].CRUD.delete(workspace.blockSuiteWorkspace);
-      await setMetadata(workspaces => {
+      setMetadata(workspaces => {
         const idx = workspaces.findIndex(ws => ws.id === workspace.id);
         workspaces.splice(idx, 1, {
           id: newId,

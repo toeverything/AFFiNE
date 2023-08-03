@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.8.0-canary.5",
+  "version": "0.8.0-canary.6",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -34,6 +34,8 @@
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "file-type": "^18.5.0",
+    "get-stream": "^7.0.1",
     "graphql": "^16.7.1",
     "graphql-type-json": "^0.3.2",
     "graphql-upload": "^16.0.2",
