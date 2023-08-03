@@ -1,7 +1,12 @@
 import { test } from '@affine-test/kit/playwright';
-import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { openHomePage, openPluginPage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
+
+test('plugin map should valid', async ({ page }) => {
+  await openPluginPage(page);
+  await page.waitForSelector('[data-plugins-load-status="success"]');
+});
 
 test('plugin should exist', async ({ page }) => {
   await openHomePage(page);

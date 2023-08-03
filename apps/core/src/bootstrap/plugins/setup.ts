@@ -37,43 +37,46 @@ const permissionLogger = new DebugLogger('plugins:permission');
 const importLogger = new DebugLogger('plugins:import');
 
 const setupRootImportsMap = () => {
-  rootImportsMap.set('react', new Map(Object.entries(React)));
-  rootImportsMap.set(
+  _rootImportsMap.set('react', new Map(Object.entries(React)));
+  _rootImportsMap.set(
     'react/jsx-runtime',
     new Map(Object.entries(ReactJSXRuntime))
   );
-  rootImportsMap.set('react-dom', new Map(Object.entries(ReactDom)));
-  rootImportsMap.set(
+  _rootImportsMap.set('react-dom', new Map(Object.entries(ReactDom)));
+  _rootImportsMap.set(
     'react-dom/client',
     new Map(Object.entries(ReactDomClient))
   );
-  rootImportsMap.set('@blocksuite/icons', new Map(Object.entries(Icons)));
-  rootImportsMap.set(
+  _rootImportsMap.set('@blocksuite/icons', new Map(Object.entries(Icons)));
+  _rootImportsMap.set(
     '@affine/component',
     new Map(Object.entries(AFFiNEComponent))
   );
-  rootImportsMap.set(
+  _rootImportsMap.set(
     '@blocksuite/blocks/std',
     new Map(Object.entries(BlockSuiteBlocksStd))
   );
-  rootImportsMap.set(
+  _rootImportsMap.set(
     '@blocksuite/global/utils',
     new Map(Object.entries(BlockSuiteGlobalUtils))
   );
-  rootImportsMap.set('jotai', new Map(Object.entries(Jotai)));
-  rootImportsMap.set('jotai/utils', new Map(Object.entries(JotaiUtils)));
-  rootImportsMap.set(
+  _rootImportsMap.set('jotai', new Map(Object.entries(Jotai)));
+  _rootImportsMap.set('jotai/utils', new Map(Object.entries(JotaiUtils)));
+  _rootImportsMap.set(
     '@toeverything/plugin-infra/atom',
     new Map(Object.entries(Atom))
   );
-  rootImportsMap.set('swr', new Map(Object.entries(SWR)));
+  _rootImportsMap.set('swr', new Map(Object.entries(SWR)));
 };
 
 // module -> importName -> updater[]
-const rootImportsMap = new Map<string, Map<string, any>>();
+export const _rootImportsMap = new Map<string, Map<string, any>>();
 setupRootImportsMap();
 // pluginName -> module -> importName -> updater[]
-const pluginNestedImportsMap = new Map<string, Map<string, Map<string, any>>>();
+export const _pluginNestedImportsMap = new Map<
+  string,
+  Map<string, Map<string, any>>
+>();
 
 const pluginImportsFunctionMap = new Map<string, (imports: any) => void>();
 export const createImports = (pluginName: string) => {
@@ -85,12 +88,12 @@ export const createImports = (pluginName: string) => {
     newUpdaters: [string, [string, ((val: any) => void)[]][]][]
   ) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const currentImportMap = pluginNestedImportsMap.get(pluginName)!;
+    const currentImportMap = _pluginNestedImportsMap.get(pluginName)!;
     importLogger.debug('currentImportMap', pluginName, currentImportMap);
 
     for (const [module, moduleUpdaters] of newUpdaters) {
       importLogger.debug('imports module', module, moduleUpdaters);
-      let moduleImports = rootImportsMap.get(module);
+      let moduleImports = _rootImportsMap.get(module);
       if (!moduleImports) {
         moduleImports = currentImportMap.get(module);
       }
@@ -111,7 +114,7 @@ export const createImports = (pluginName: string) => {
           'cannot find module in plugin import map',
           module,
           currentImportMap,
-          pluginNestedImportsMap
+          _pluginNestedImportsMap
         );
       }
     }
@@ -299,13 +302,13 @@ export const setupPluginCode = async (
   pluginName: string,
   filename: string
 ) => {
-  if (!pluginNestedImportsMap.has(pluginName)) {
-    pluginNestedImportsMap.set(pluginName, new Map());
+  if (!_pluginNestedImportsMap.has(pluginName)) {
+    _pluginNestedImportsMap.set(pluginName, new Map());
   }
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const currentImportMap = pluginNestedImportsMap.get(pluginName)!;
+  const currentImportMap = _pluginNestedImportsMap.get(pluginName)!;
   const isMissingPackage = (name: string) =>
-    rootImportsMap.has(name) && !currentImportMap.has(name);
+    _rootImportsMap.has(name) && !currentImportMap.has(name);
 
   const bundleAnalysis = await fetch(`${baseUrl}/${filename}.json`).then(res =>
     res.json()
@@ -392,7 +395,7 @@ const entryLogger = new DebugLogger('plugin:entry');
 
 export const evaluatePluginEntry = (pluginName: string) => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const currentImportMap = pluginNestedImportsMap.get(pluginName)!;
+  const currentImportMap = _pluginNestedImportsMap.get(pluginName)!;
   const pluginExports = currentImportMap.get('index.js');
   assertExists(pluginExports);
   const entryFunction = pluginExports.get('entry');

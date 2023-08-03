@@ -1,8 +1,9 @@
 import { createConfiguration, rootPath } from './config.js';
 import { merge } from 'webpack-merge';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { BuildFlags } from '@affine/cli/config';
 import { getRuntimeConfig } from './runtime-config.js';
+import HTMLPlugin from 'html-webpack-plugin';
 
 export default async function (cli_env: any, _: any) {
   const flags: BuildFlags = JSON.parse(
@@ -28,6 +29,29 @@ export default async function (cli_env: any, _: any) {
         dependOn: ['polyfill-ses', 'plugin'],
         import: resolve(rootPath, 'src/index.tsx'),
       },
+      '_plugin/index.test': {
+        asyncChunks: false,
+        dependOn: ['polyfill-ses', 'plugin'],
+        import: resolve(rootPath, 'src/_plugin/index.test.tsx'),
+      },
     },
+    plugins: [
+      new HTMLPlugin({
+        template: join(rootPath, '.webpack', 'template.html'),
+        inject: 'body',
+        scriptLoading: 'module',
+        minify: false,
+        chunks: ['index', 'plugin', 'polyfill-ses'],
+        filename: 'index.html',
+      }),
+      new HTMLPlugin({
+        template: join(rootPath, '.webpack', 'template.html'),
+        inject: 'body',
+        scriptLoading: 'module',
+        minify: false,
+        chunks: ['_plugin/index.test', 'plugin', 'polyfill-ses'],
+        filename: '_plugin/index.html',
+      }),
+    ],
   });
 }
