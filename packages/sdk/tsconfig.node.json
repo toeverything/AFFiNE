@@ -4,7 +4,9 @@
     "composite": true,
     "module": "ESNext",
     "moduleResolution": "Node",
-    "outDir": "lib"
+    "allowSyntheticDefaultImports": true,
+    "outDir": "lib",
+    "noEmit": false
   },
   "include": ["vite.config.ts"]
 }
