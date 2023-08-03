@@ -1,9 +1,6 @@
 {
   "name": "@affine/core",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "application",
-  "root": "apps/core",
-  "sourceRoot": "apps/core/src",
   "targets": {
     "build": {
       "executor": "nx:run-script",
@@ -46,7 +43,7 @@
       "options": {
         "script": "build"
       },
-      "outputs": ["{projectRoot}/dist", "{projectRoot}/public/plugins"]
+      "outputs": ["{projectRoot}/dist"]
     }
   }
 }
