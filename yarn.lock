@@ -260,6 +260,7 @@ __metadata:
     react-router-dom: ^6.14.2
     rxjs: ^7.8.1
     ses: ^0.18.5
+    source-map-loader: ^4.0.1
     style-loader: ^3.3.3
     swc-loader: ^0.2.3
     swc-plugin-coverage-instrument: ^0.0.19
@@ -13251,6 +13252,13 @@ __metadata:
   bin:
     JSONStream: ./bin.js
   checksum: 2605fa124260c61bad38bb65eba30d2f72216a78e94d0ab19b11b4e0327d572b8d530c0c9cc3b0764f727ad26d39e00bf7ebad57781ca6368394d73169c59e46
+  languageName: node
+  linkType: hard
+
+"abab@npm:^2.0.6":
+  version: 2.0.6
+  resolution: "abab@npm:2.0.6"
+  checksum: 6ffc1af4ff315066c62600123990d87551ceb0aafa01e6539da77b0f5987ac7019466780bf480f1787576d4385e3690c81ccc37cfda12819bf510b8ab47e5a3e
   languageName: node
   linkType: hard
 
@@ -29180,6 +29188,19 @@ __metadata:
   version: 1.0.2
   resolution: "source-map-js@npm:1.0.2"
   checksum: c049a7fc4deb9a7e9b481ae3d424cc793cb4845daa690bc5a05d428bf41bf231ced49b4cf0c9e77f9d42fdb3d20d6187619fc586605f5eabe995a316da8d377c
+  languageName: node
+  linkType: hard
+
+"source-map-loader@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "source-map-loader@npm:4.0.1"
+  dependencies:
+    abab: ^2.0.6
+    iconv-lite: ^0.6.3
+    source-map-js: ^1.0.2
+  peerDependencies:
+    webpack: ^5.72.1
+  checksum: 4ddca8b03dc61f406effd4bffe70de4b87fef48bae6f737017b2dabcbc7d609133325be1e73838e9265331de28039111d729fcbb8bce88a6018a816bef510eb1
   languageName: node
   linkType: hard
 
