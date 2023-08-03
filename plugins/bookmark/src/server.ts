@@ -1,4 +1,4 @@
-import type { ServerContext } from '@toeverything/plugin-infra/server';
+import type { ServerContext } from '@affine/sdk/server';
 import { getLinkPreview } from 'link-preview-js';
 
 type MetaData = {

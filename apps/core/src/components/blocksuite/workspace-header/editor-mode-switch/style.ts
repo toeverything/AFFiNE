@@ -54,7 +54,7 @@ export const StyledSwitchItem = styled('button')<{
     zIndex: 2,
     fontSize: '20px',
     path: {
-      fill: 'currentColor',
+      stroke: 'currentColor',
     },
   };
 });

@@ -1,7 +1,6 @@
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import HTMLPlugin from 'html-webpack-plugin';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 import { PerfseePlugin } from '@perfsee/webpack';
 import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
@@ -253,14 +252,6 @@ export const createConfiguration: (
               ignoreOrder: true,
             }),
           ]),
-      new HTMLPlugin({
-        template: join(rootPath, '.webpack', 'template.html'),
-        inject: 'body',
-        scriptLoading: 'module',
-        minify: false,
-        chunks: ['index', 'plugin', 'polyfill-ses'],
-        filename: 'index.html',
-      }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),

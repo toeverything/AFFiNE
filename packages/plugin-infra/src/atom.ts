@@ -1,10 +1,9 @@
+import type { CallbackMap, ExpectedLayout } from '@affine/sdk/entry';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { atom, createStore } from 'jotai/vanilla';
 
 import { getWorkspace, waitForWorkspace } from './__internal__/workspace.js';
-import type { CallbackMap } from './entry.js';
-import type { ExpectedLayout } from './type.js';
 
 // global store
 export const rootStore = createStore();

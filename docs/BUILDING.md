@@ -56,11 +56,17 @@ yarn install
 ### Build Native Dependencies
 
 Run the following script. It will build the native module at [`/packages/native`](/packages/native) and build Node.js binding using [NAPI.rs](https://napi.rs/).
-This could take a while if you build it for the first time.  
+This could take a while if you build it for the first time.
 Note: use `strip` from system instead of `binutils` if you are runinng MacOS. [see problem here](https://github.com/toeverything/AFFiNE/discussions/2840)
 
 ```
 yarn workspace @affine/native build
+```
+
+### Build Plugins
+
+```
+yarn run build:plugins
 ```
 
 ## Debugging the Electron App
