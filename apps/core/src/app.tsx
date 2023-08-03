@@ -3,7 +3,6 @@ import '@affine/component/theme/theme.css';
 
 import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import { use } from 'foxact/use';
 import type { PropsWithChildren, ReactElement } from 'react';
@@ -13,7 +12,6 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 import createEmotionCache from './utils/create-emotion-cache';
 
-const i18n = createI18n();
 const cache = createEmotionCache();
 
 const DevTools = lazy(() =>
@@ -33,18 +31,16 @@ const future = {
   v7_startTransition: true,
 } as const;
 
-const languageLoadingPromise = new Promise<void>(resolve => {
+async function loadLanguage() {
   if (environment.isBrowser) {
+    const { createI18n, setUpLanguage } = await import('@affine/i18n');
+    const i18n = createI18n();
     document.documentElement.lang = i18n.language;
-    setUpLanguage(i18n)
-      .then(() => resolve())
-      .catch(error => {
-        console.error(error);
-      });
-  } else {
-    resolve();
+    await setUpLanguage(i18n);
   }
-});
+}
+
+const languageLoadingPromise = loadLanguage().catch(console.error);
 
 export const App = memo(function App() {
   use(languageLoadingPromise);

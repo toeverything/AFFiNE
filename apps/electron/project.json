@@ -7,7 +7,14 @@
   "targets": {
     "build": {
       "executor": "nx:run-script",
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        {
+          "projects": ["tag:plugin"],
+          "target": "build",
+          "params": "ignore"
+        },
+        "^build"
+      ],
       "options": {
         "script": "build"
       },

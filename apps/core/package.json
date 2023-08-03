@@ -69,6 +69,7 @@
     "express": "^4.18.2",
     "html-webpack-plugin": "^5.5.3",
     "raw-loader": "^4.0.2",
+    "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.3",
     "swc-loader": "^0.2.3",
     "swc-plugin-coverage-instrument": "^0.0.19",

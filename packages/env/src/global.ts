@@ -206,10 +206,6 @@ export function setupGlobal() {
   }
   globalThis.environment = environment;
 
-  if (environment.isBrowser) {
-    globalThis.editorVersion = global.editorVersion;
-  }
-
   let prefixUrl: string;
   if (!isBrowser || isDesktop) {
     // SSR or Desktop
