@@ -54,7 +54,12 @@ export default async function (cli_env: any, _: any) {
         inject: 'body',
         scriptLoading: 'module',
         minify: false,
-        chunks: ['_plugin/index.test', 'plugin', 'polyfill/ses'],
+        chunks: [
+          'bootstrap/setup',
+          '_plugin/index.test',
+          'plugin',
+          'polyfill/ses',
+        ],
         filename: '_plugin/index.html',
       }),
     ],

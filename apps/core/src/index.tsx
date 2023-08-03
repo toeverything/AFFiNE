@@ -1,5 +1,6 @@
+import { WorkspaceFallback } from '@affine/component/workspace';
 import { assertExists } from '@blocksuite/global/utils';
-import { StrictMode } from 'react';
+import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 
 async function main() {
@@ -9,7 +10,9 @@ async function main() {
 
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <Suspense fallback={<WorkspaceFallback key="AppLoading" />}>
+        <App />
+      </Suspense>
     </StrictMode>
   );
 }
