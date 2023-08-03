@@ -15,7 +15,7 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai/index';
-import { type FC, useCallback, useState } from 'react';
+import { type FC, useCallback } from 'react';
 
 import type { AuthPanelProps } from './index';
 
@@ -61,44 +61,60 @@ const useButtonContent = (emailType: AuthPanelProps['emailType']) => {
 };
 
 const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
-  const { trigger: sendChangePasswordEmail } = useMutation({
+  const {
+    trigger: sendChangePasswordEmail,
+    isMutating: isChangePasswordMutating,
+  } = useMutation({
     mutation: sendChangePasswordEmailMutation,
   });
-  const { trigger: sendSetPasswordEmail } = useMutation({
-    mutation: sendSetPasswordEmailMutation,
-  });
-  const { trigger: sendChangeEmail } = useMutation({
-    mutation: sendChangeEmailMutation,
-  });
+  const { trigger: sendSetPasswordEmail, isMutating: isSetPasswordMutating } =
+    useMutation({
+      mutation: sendSetPasswordEmailMutation,
+    });
+  const { trigger: sendChangeEmail, isMutating: isChangeEmailMutating } =
+    useMutation({
+      mutation: sendChangeEmailMutation,
+    });
 
-  return useCallback(
-    (email: string) => {
-      let trigger;
-      let callbackUrl;
-      switch (emailType) {
-        case 'setPassword':
-          trigger = sendSetPasswordEmail;
-          callbackUrl = 'setPassword';
-          break;
-        case 'changePassword':
-          trigger = sendChangePasswordEmail;
-          callbackUrl = 'changePassword';
-          break;
-        case 'changeEmail':
-          trigger = sendChangeEmail;
-          callbackUrl = 'changeEmail';
-          break;
-      }
-      // TODO: add error handler
-      return trigger({
-        email,
-        callbackUrl: `/auth/${callbackUrl}?isClient=${
-          isDesktop ? 'true' : 'false'
-        }`,
-      });
-    },
-    [emailType, sendChangeEmail, sendChangePasswordEmail, sendSetPasswordEmail]
-  );
+  return {
+    loading:
+      isChangePasswordMutating ||
+      isSetPasswordMutating ||
+      isChangeEmailMutating,
+    sendEmail: useCallback(
+      (email: string) => {
+        let trigger;
+        let callbackUrl;
+        switch (emailType) {
+          case 'setPassword':
+            trigger = sendSetPasswordEmail;
+            callbackUrl = 'setPassword';
+            break;
+          case 'changePassword':
+            trigger = sendChangePasswordEmail;
+            callbackUrl = 'changePassword';
+            break;
+          case 'changeEmail':
+            trigger = sendChangeEmail;
+            callbackUrl = 'changeEmail';
+            break;
+        }
+        // TODO: add error handler
+        return trigger({
+          email,
+          callbackUrl: `/auth/${callbackUrl}?isClient=${
+            isDesktop ? 'true' : 'false'
+          }`,
+        });
+      },
+      [
+        emailType,
+        sendChangeEmail,
+        sendChangePasswordEmail,
+        sendSetPasswordEmail,
+      ]
+    ),
+  };
 };
 
 export const SendEmail: FC<AuthPanelProps> = ({
@@ -114,15 +130,11 @@ export const SendEmail: FC<AuthPanelProps> = ({
   const title = useEmailTitle(emailType);
   const hint = useNotificationHint(emailType);
   const buttonContent = useButtonContent(emailType);
-  const sendEmail = useSendEmail(emailType);
-
-  const [loading, setLoading] = useState(false);
+  const { loading, sendEmail } = useSendEmail(emailType);
 
   const onSendEmail = useCallback(async () => {
-    setLoading(true);
     // TODO: add error handler
     await sendEmail(email);
-    setLoading(false);
 
     pushNotification({
       title: hint,

@@ -26,12 +26,10 @@ export const SignIn: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
 
-  const { trigger: verifyUser } = useMutation({
+  const { trigger: verifyUser, isMutating } = useMutation({
     mutation: getUserQuery,
   });
   const [isValidEmail, setIsValidEmail] = useState(true);
-
-  const [loading, setLoading] = useState(false);
 
   const onContinue = useCallback(async () => {
     if (!validateEmail(email)) {
@@ -40,9 +38,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsValidEmail(true);
-    setLoading(true);
     const res = await verifyUser({ email: email });
-    setLoading(false);
 
     setAuthEmail(email);
     if (res?.user) {
@@ -102,12 +98,11 @@ export const SignIn: FC<AuthPanelProps> = ({
           }
           onEnter={onContinue}
         />
-        {/*<ContinueButton onClick={onContinue} loading={loading} />*/}
 
         <Button
           size="extraLarge"
           block
-          loading={loading}
+          loading={isMutating}
           icon={
             <ArrowDownBigIcon
               width={20}
