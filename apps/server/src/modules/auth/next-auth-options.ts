@@ -50,6 +50,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       if (result) {
         // @ts-expect-error Third part library type mismatch
         result.image = result.avatarUrl;
+        // @ts-expect-error Third part library type mismatch
+        result.hasPassword = Boolean(result.password);
       }
       return result;
     };
@@ -217,10 +219,17 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             session.user.id = user.id;
             // @ts-expect-error Third part library type mismatch
             session.user.image = user.image ?? user.avatarUrl;
+            // @ts-expect-error Third part library type mismatch
+            session.user.hasPassword = Boolean(user.password);
           } else {
             // technically the sub should be the same as id
             // @ts-expect-error Third part library type mismatch
             session.user.id = token.sub;
+            const databaseUser = await prisma.user.findUnique({
+              where: { id: token.sub },
+            });
+            // @ts-expect-error Third part library type mismatch
+            session.user.hasPassword = Boolean(databaseUser?.password);
           }
           if (token && token.picture) {
             session.user.image = token.picture;

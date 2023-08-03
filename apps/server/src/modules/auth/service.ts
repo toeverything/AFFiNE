@@ -15,7 +15,8 @@ import { PrismaService } from '../../prisma';
 import { MailService } from './mailer';
 
 export type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'> & {
-  avatarUrl?: string;
+  avatarUrl: string;
+  hasPassword?: boolean;
 };
 
 export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
@@ -37,6 +38,7 @@ export class AuthService {
           name: user.name,
           email: user.email,
           image: user.avatarUrl,
+          hasPassword: Boolean(user.hasPassword),
           createdAt: user.createdAt.toISOString(),
         },
         iat: now,
@@ -64,6 +66,7 @@ export class AuthService {
           name: user.name,
           email: user.email,
           image: user.avatarUrl,
+          hasPassword: Boolean(user.hasPassword),
           createdAt: user.createdAt.toISOString(),
         },
         exp: now + this.config.auth.refreshTokenExpiresIn,

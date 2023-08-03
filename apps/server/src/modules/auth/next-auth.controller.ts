@@ -69,6 +69,7 @@ export class NextAuthController {
             email: user.email,
             password: user.password,
             image: user.avatarUrl,
+            hasPassword: !!user.password,
           };
         }
       }
@@ -86,6 +87,7 @@ export class NextAuthController {
           user: {
             ...pick(user, 'id', 'name', 'email'),
             image: user.avatarUrl,
+            hasPassword: !!user.password,
           },
           expires: session.expires,
         };
