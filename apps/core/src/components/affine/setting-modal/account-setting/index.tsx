@@ -14,7 +14,6 @@ import { type FC, useCallback, useState } from 'react';
 
 import { openAuthModalAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { toast } from '../../../../utils';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
@@ -165,21 +164,21 @@ export const AccountSetting: FC = () => {
       >
         <ArrowRightSmallIcon />
       </SettingRow>
-      <SettingRow
-        name={
-          <span style={{ color: 'var(--affine-warning-color)' }}>
-            {t['com.affine.setting.account.delete']()}
-          </span>
-        }
-        desc={t['com.affine.setting.account.delete.message']()}
-        style={{ cursor: 'pointer' }}
-        onClick={useCallback(() => {
-          toast('Function coming soon');
-        }, [])}
-        testId="delete-account-button"
-      >
-        <ArrowRightSmallIcon />
-      </SettingRow>
+      {/*<SettingRow*/}
+      {/*  name={*/}
+      {/*    <span style={{ color: 'var(--affine-warning-color)' }}>*/}
+      {/*      {t['com.affine.setting.account.delete']()}*/}
+      {/*    </span>*/}
+      {/*  }*/}
+      {/*  desc={t['com.affine.setting.account.delete.message']()}*/}
+      {/*  style={{ cursor: 'pointer' }}*/}
+      {/*  onClick={useCallback(() => {*/}
+      {/*    toast('Function coming soon');*/}
+      {/*  }, [])}*/}
+      {/*  testId="delete-account-button"*/}
+      {/*>*/}
+      {/*  <ArrowRightSmallIcon />*/}
+      {/*</SettingRow>*/}
     </>
   );
 };

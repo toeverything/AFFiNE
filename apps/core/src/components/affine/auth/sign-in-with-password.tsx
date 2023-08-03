@@ -23,10 +23,32 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   const t = useAFFiNEI18N();
   const { update } = useSession();
 
-  // const pushNotification = useSetAtom(pushNotificationAtom);
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+
+  const onSignIn = useCallback(async () => {
+    const res = await signIn('credentials', {
+      redirect: false,
+      email,
+      password,
+      callbackUrl: '/',
+    }).catch(console.error);
+
+    if (!res?.ok) {
+      return setPasswordError(true);
+    }
+
+    await update();
+    setOpen(false);
+    pushNotification({
+      title: `${email}${t['com.affine.auth.has.signed']()}`,
+      message: '',
+      key: Date.now().toString(),
+      type: 'success',
+    });
+  }, [email, password, pushNotification, setOpen, t, update]);
 
   return (
     <>
@@ -56,6 +78,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           }, [])}
           error={passwordError}
           errorHint={t['com.affine.auth.password.error']()}
+          onEnter={onSignIn}
         />
         <span></span>
         <button
@@ -71,15 +94,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         type="primary"
         size="extraLarge"
         style={{ width: '100%' }}
-        onClick={useCallback(async () => {
-          const result = await signIn('credentials', {
-            redirect: false,
-            email,
-            password,
-            callbackUrl: '/',
-          }).catch(console.error);
-          update();
-        }, [email, password])}
+        onClick={onSignIn}
       >
         {t['com.affine.auth.sign.in']()}
       </Button>

@@ -71,6 +71,7 @@ export const PasswordInput: FC<
   return (
     <>
       <Input
+        type="password"
         size="extraLarge"
         style={{ marginBottom: 20 }}
         placeholder={t['com.affine.auth.set.password.placeholder']()}
@@ -79,6 +80,7 @@ export const PasswordInput: FC<
         {...inputProps}
       />
       <Input
+        type="password"
         size="extraLarge"
         placeholder={t['com.affine.auth.set.password.placeholder.confirm']()}
         onChange={onConfirmPasswordChange}

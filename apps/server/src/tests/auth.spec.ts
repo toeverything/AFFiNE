@@ -58,6 +58,7 @@ test('should be able to verify', async () => {
     name: 'Alex Yang',
     email: 'alexyang@example.org',
     createdAt: new Date(),
+    avatarUrl: '',
   };
   {
     const token = await auth.sign(user);
