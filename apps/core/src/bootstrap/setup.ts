@@ -176,5 +176,6 @@ export async function setup() {
 
   createFirstAppData();
   await tryMigration();
+  await rootStore.get(rootWorkspacesMetadataAtom);
   console.log('setup done');
 }
