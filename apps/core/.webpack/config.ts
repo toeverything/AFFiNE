@@ -79,6 +79,10 @@ export const createConfiguration: (
     name: 'affine',
     // to set a correct base path for the source map
     context: projectRoot,
+    experiments: {
+      topLevelAwait: true,
+      outputModule: true,
+    },
     output: {
       environment: {
         module: true,

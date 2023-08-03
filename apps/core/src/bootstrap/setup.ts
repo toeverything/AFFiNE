@@ -34,7 +34,6 @@ async function tryMigration() {
       metadata.forEach(oldMeta => {
         console.log('old meta', oldMeta);
         if (!('version' in oldMeta)) {
-          console.log('migrate to v2');
           const adapter = WorkspaceAdapters[oldMeta.flavour];
           assertExists(adapter);
           const upgrade = async () => {
