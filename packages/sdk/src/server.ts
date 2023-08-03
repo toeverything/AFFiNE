@@ -3,4 +3,7 @@ export interface ServerContext {
   unregisterCommand: (command: string) => void;
 }
 
-export {};
+/**
+ * @internal
+ */
+export const __INTERNAL__ = {};

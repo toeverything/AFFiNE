@@ -51,4 +51,7 @@ export declare const currentPageAtom: Atom<Promise<Page>>;
 export declare const currentWorkspaceAtom: Atom<Promise<Workspace>>;
 export declare const rootStore: ReturnType<typeof getDefaultStore>;
 
-export {};
+/**
+ * @internal
+ */
+export const __INTERNAL__ = {};
