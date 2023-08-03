@@ -47,8 +47,6 @@ jobs:
           electron-install: false
       - name: Run i18n codegen
         run: yarn i18n-codegen gen
-      - name: Run Type Check
-        run: yarn typecheck
       - name: Run ESLint
         run: yarn lint:eslint --max-warnings=0
       - name: Run Prettier
@@ -58,12 +56,8 @@ jobs:
           yarn lint:prettier
       - name: Run circular
         run: yarn circular
-      - name: Upload server dist
-        uses: actions/upload-artifact@v3
-        with:
-          name: server-dist
-          path: ./apps/server/dist
-          if-no-files-found: error
+      - name: Run Type Check
+        run: yarn typecheck
 
   build-docs:
     name: Build Docs
@@ -305,7 +299,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     needs: build-core
-
+    strategy:
+      matrix:
+        spec:
+          - { package: 0.7.0-canary.18 }
+          - { package: 0.8.0-canary.7 }
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -322,22 +320,18 @@ jobs:
 
       - name: Unzip
         run: yarn unzip
-        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+        working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
 
-      - name: Run legacy playwright tests
+      - name: Run playwright tests
         run: yarn e2e --forbid-only
-        working-directory: ./tests/affine-legacy/0.7.0-canary.18
-
-      - name: Run vitest
-        run: yarn test
-        working-directory: ./tests/affine-legacy/0.7.0-canary.18
+        working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
 
       - name: Upload test results
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
-          name: test-results-e2e-migration
-          path: ./tests/affine-legacy/0.7.0-canary.18/test-results
+          name: test-results-e2e-migration-${{ matrix.spec.package }}
+          path: ./tests/affine-legacy/${{ matrix.spec.package }}/test-results
           if-no-files-found: ignore
 
   desktop-test:
@@ -388,7 +382,6 @@ jobs:
           hard-link-nm: false
       - name: Setup Maker
         uses: ./.github/actions/setup-maker
-        if: ${{ matrix.spec.platform == 'macos' }}
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
@@ -432,12 +425,13 @@ jobs:
 
       - name: Make bundle
         if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        env:
+          SKIP_BUNDLE: true
         run: yarn workspace @affine/electron make --platform=darwin --arch=arm64
 
       - name: Bundle output check
         if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
         run: |
-          ./scripts/unzip-macos-arm64.sh
           yarn ts-node-esm ./scripts/macos-arm64-output-check.mts
         working-directory: apps/electron
 
@@ -490,7 +484,6 @@ jobs:
     if: github.ref == 'refs/heads/master'
     name: Build Docker
     needs:
-      - lint
       - desktop-test
       - server-test
     runs-on: ubuntu-latest
@@ -501,11 +494,9 @@ jobs:
         with:
           name: core
           path: ./apps/core/dist
-      - name: Download server dist
-        uses: actions/download-artifact@v3
-        with:
-          name: server-dist
-          path: ./apps/server/dist
+      - name: Compile server code
+        run: tsc -b
+        working-directory: ./apps/server
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:

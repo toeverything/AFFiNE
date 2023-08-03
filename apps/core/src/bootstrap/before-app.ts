@@ -1,4 +1,7 @@
-import { migrateToSubdoc } from '@affine/env/blocksuite';
+import {
+  migrateDatabaseBlockTo3,
+  migrateToSubdoc,
+} from '@affine/env/blocksuite';
 import { setupGlobal } from '@affine/env/global';
 import type {
   LocalIndexedDBDownloadProvider,
@@ -64,6 +67,7 @@ if (value) {
             return;
           }
           const newWorkspace = upgradeV1ToV2(workspace);
+          await migrateDatabaseBlockTo3(newWorkspace.blockSuiteWorkspace.doc);
 
           const newId = await adapter.CRUD.create(
             newWorkspace.blockSuiteWorkspace
@@ -75,13 +79,41 @@ if (value) {
           newMetadata[index] = {
             ...oldMeta,
             id: newId,
-            version: WorkspaceVersion.SubDoc,
+            version: WorkspaceVersion.DatabaseV3,
           };
           await migrateLocalBlobStorage(workspace.id, newId);
+          console.log('migrate to v2');
         };
 
         // create a new workspace and push it to metadata
         promises.push(upgrade());
+      } else if (oldMeta.version < WorkspaceVersion.DatabaseV3) {
+        const adapter = WorkspaceAdapters[oldMeta.flavour];
+        assertExists(adapter);
+        promises.push(
+          (async () => {
+            const workspace = await adapter.CRUD.get(oldMeta.id);
+            if (workspace) {
+              const provider = createIndexedDBDownloadProvider(
+                workspace.id,
+                workspace.blockSuiteWorkspace.doc,
+                {
+                  awareness:
+                    workspace.blockSuiteWorkspace.awarenessStore.awareness,
+                }
+              ) as LocalIndexedDBDownloadProvider;
+              provider.sync();
+              await provider.whenReady;
+              await migrateDatabaseBlockTo3(workspace.blockSuiteWorkspace.doc);
+            }
+            const index = newMetadata.findIndex(meta => meta.id === oldMeta.id);
+            console.log('migrate to v3');
+            newMetadata[index] = {
+              ...oldMeta,
+              version: WorkspaceVersion.DatabaseV3,
+            };
+          })()
+        );
       }
     });
 
@@ -110,12 +142,11 @@ const createFirst = (): RootWorkspaceMetadataV2[] => {
   return Plugins.flatMap(Plugin => {
     return Plugin.Events['app:init']?.().map(
       id =>
-        ({
+        <RootWorkspaceMetadataV2>{
           id,
           flavour: Plugin.flavour,
-          // new workspace should all support sub-doc feature
-          version: WorkspaceVersion.SubDoc,
-        }) satisfies RootWorkspaceMetadataV2
+          version: WorkspaceVersion.DatabaseV3,
+        }
     );
   }).filter((ids): ids is RootWorkspaceMetadataV2 => !!ids);
 };

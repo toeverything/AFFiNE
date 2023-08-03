@@ -1,7 +1,7 @@
 {
   "name": "@affine/image-preview-plugin",
   "type": "module",
-  "version": "0.8.0-canary.6",
+  "version": "0.8.0-canary.8",
   "description": "Image preview plugin",
   "affinePlugin": {
     "release": true,
@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
+    "@affine/sdk": "workspace:*",
     "@blocksuite/icons": "^2.1.29",
-    "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/theme": "^0.7.9",
     "clsx": "^2.0.0",
     "foxact": "^0.2.17",
