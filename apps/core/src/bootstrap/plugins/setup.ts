@@ -86,10 +86,10 @@ export const createImports = (pluginName: string) => {
   ) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const currentImportMap = pluginNestedImportsMap.get(pluginName)!;
-    console.log('currentImportMap', pluginName, currentImportMap);
+    importLogger.debug('currentImportMap', pluginName, currentImportMap);
 
     for (const [module, moduleUpdaters] of newUpdaters) {
-      console.log('imports module', module, moduleUpdaters);
+      importLogger.debug('imports module', module, moduleUpdaters);
       let moduleImports = rootImportsMap.get(module);
       if (!moduleImports) {
         moduleImports = currentImportMap.get(module);
@@ -107,7 +107,7 @@ export const createImports = (pluginName: string) => {
           }
         }
       } else {
-        console.log(
+        console.error(
           'cannot find module in plugin import map',
           module,
           currentImportMap,
@@ -321,7 +321,7 @@ export const setupPluginCode = async (
       if (isMissingPackage(name)) {
         return Promise.resolve();
       } else {
-        console.log('missing package', name);
+        importLogger.debug('missing package', name);
         return setupPluginCode(baseUrl, pluginName, name);
       }
     })
@@ -329,7 +329,7 @@ export const setupPluginCode = async (
   const code = await fetch(`${baseUrl}/${filename.replace(/^\.\//, '')}`).then(
     res => res.text()
   );
-  console.log('evaluating', filename);
+  importLogger.debug('evaluating', filename);
   const moduleCompartment = new Compartment(
     createOrGetGlobalThis(
       pluginName,
@@ -358,7 +358,6 @@ export const setupPluginCode = async (
     onceVar: setVarProxy,
   });
 
-  console.log('module exports alias', moduleExports);
   for (const [newExport, [originalExport]] of Object.entries(moduleExports)) {
     if (newExport === originalExport) continue;
     const value = moduleExportsMap.get(originalExport);
@@ -366,7 +365,6 @@ export const setupPluginCode = async (
     moduleExportsMap.delete(originalExport);
   }
 
-  console.log('module re-exports', moduleReexports);
   for (const [name, reexports] of Object.entries(moduleReexports)) {
     const targetExports = currentImportMap.get(filename);
     const moduleExports = currentImportMap.get(name);
@@ -374,7 +372,6 @@ export const setupPluginCode = async (
     assertExists(moduleExports);
     for (const [exportedName, localName] of reexports) {
       const exportedValue: any = moduleExports.get(exportedName);
-      console.log('re-export', name, localName, exportedName, exportedValue);
       assertExists(exportedValue);
       targetExports.set(localName, exportedValue);
     }
