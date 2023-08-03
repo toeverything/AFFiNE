@@ -404,5 +404,9 @@
   "com.affine.settings.workspace.remove.message": "从此设备中删除工作区，并可选择删除所有数据。",
   "com.affine.settings.appearance.sidebar.noise": "侧边栏的噪点背景",
   "com.affine.settings.appearance.sidebar.translucent": "侧边栏的透明效果",
-  "com.affine.settings.appearance.sidebar.translucent.message": "在侧边栏使用半透明效果。"
+  "com.affine.settings.appearance.sidebar.translucent.message": "在侧边栏使用半透明效果。",
+  "com.affine.collection-bar.action.tooltip.pin": "固定到侧边栏",
+  "com.affine.collection-bar.action.tooltip.unpin": "取消固定",
+  "com.affine.collection-bar.action.tooltip.edit": "编辑",
+  "com.affine.collection-bar.action.tooltip.delete": "删除"
 }
