@@ -4,6 +4,7 @@ import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 
 async function main() {
+  await import('./bootstrap/setup');
   const { App } = await import('./app');
   const root = document.getElementById('app');
   assertExists(root);

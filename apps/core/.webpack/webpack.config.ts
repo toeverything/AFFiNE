@@ -15,11 +15,7 @@ export default async function (cli_env: any, _: any) {
   const config = createConfiguration(flags, runtimeConfig);
   return merge(config, {
     entry: {
-      'bootstrap/setup': {
-        import: resolve(rootPath, 'src/bootstrap/setup.ts'),
-      },
       'polyfill/ses': {
-        dependOn: ['bootstrap/setup'],
         import: resolve(rootPath, 'src/polyfill/ses.ts'),
       },
       plugin: {
@@ -28,12 +24,12 @@ export default async function (cli_env: any, _: any) {
       },
       app: {
         chunkLoading: 'import',
-        dependOn: ['bootstrap/setup', 'polyfill/ses', 'plugin'],
+        dependOn: ['polyfill/ses', 'plugin'],
         import: resolve(rootPath, 'src/index.tsx'),
       },
       '_plugin/index.test': {
         chunkLoading: 'import',
-        dependOn: ['bootstrap/setup', 'polyfill/ses', 'plugin'],
+        dependOn: ['polyfill/ses', 'plugin'],
         import: resolve(rootPath, 'src/_plugin/index.test.tsx'),
       },
     },
@@ -43,7 +39,7 @@ export default async function (cli_env: any, _: any) {
         inject: 'body',
         scriptLoading: 'module',
         minify: false,
-        chunks: ['bootstrap/setup', 'app', 'plugin', 'polyfill/ses'],
+        chunks: ['app', 'plugin', 'polyfill/ses'],
         filename: 'index.html',
       }),
       new HTMLPlugin({
@@ -51,12 +47,7 @@ export default async function (cli_env: any, _: any) {
         inject: 'body',
         scriptLoading: 'module',
         minify: false,
-        chunks: [
-          'bootstrap/setup',
-          '_plugin/index.test',
-          'plugin',
-          'polyfill/ses',
-        ],
+        chunks: ['_plugin/index.test', 'plugin', 'polyfill/ses'],
         filename: '_plugin/index.html',
       }),
     ],
