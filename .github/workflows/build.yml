@@ -134,10 +134,33 @@ jobs:
           path: ./apps/core/dist
           if-no-files-found: error
 
+  build-storage:
+    name: Build Storage
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          target: 'x86_64-unknown-linux-gnu'
+      - name: Build Storage
+        run: yarn build:storage
+      - name: Upload storage.node
+        uses: actions/upload-artifact@v3
+        with:
+          name: storage.node
+          path: ./packages/storage/storage.node
+          if-no-files-found: error
+
   server-test:
     name: Server Test
     runs-on: ubuntu-latest
     environment: development
+    needs: build-storage
     services:
       postgres:
         image: postgres
@@ -173,12 +196,11 @@ jobs:
         working-directory: apps/server
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-      - name: Setup Rust
-        uses: ./.github/actions/setup-rust
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
         with:
-          target: 'x86_64-unknown-linux-gnu'
-      - name: Build Storage
-        run: yarn build:storage
+          name: storage.node
+          path: ./apps/server
       - name: Run server tests
         run: yarn test:coverage
         working-directory: apps/server
@@ -506,6 +528,7 @@ jobs:
     needs:
       - build-server
       - build-core
+      - build-storage
     steps:
       - uses: actions/checkout@v3
       - name: Download core artifact
