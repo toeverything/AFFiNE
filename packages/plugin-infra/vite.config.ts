@@ -11,7 +11,6 @@ export default defineConfig({
     minify: false,
     lib: {
       entry: {
-        entry: resolve(root, 'src/entry.ts'),
         type: resolve(root, 'src/type.ts'),
         atom: resolve(root, 'src/atom.ts'),
         '__internal__/workspace': resolve(

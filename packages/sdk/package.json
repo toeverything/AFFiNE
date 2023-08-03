@@ -1,0 +1,35 @@
+{
+  "name": "@affine/sdk",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "exports": {
+    "./entry": {
+      "types": "./dist/src/entry.d.ts",
+      "import": "./dist/entry.js",
+      "require": "./dist/entry.cjs"
+    },
+    "./server": {
+      "types": "./dist/src/server.d.ts",
+      "import": "./dist/server.js",
+      "require": "./dist/server.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@blocksuite/blocks": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/global": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/store": "0.0.0-20230802200139-381599c0-nightly",
+    "jotai": "^2.2.2",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "vite": "^4.4.7",
+    "vite-plugin-dts": "3.3.1"
+  }
+}
