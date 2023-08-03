@@ -23,9 +23,6 @@
       "path": "../../packages/native"
     },
     {
-      "path": "../../packages/infra"
-    },
-    {
       "path": "../../packages/sdk"
     },
     {
