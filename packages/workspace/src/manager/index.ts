@@ -8,7 +8,7 @@ import {
   Generator,
   Workspace,
 } from '@blocksuite/store';
-import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/plugin-infra/__internal__/workspace';
+import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/infra/__internal__/workspace';
 import type { Doc } from 'yjs';
 import type { Transaction } from 'yjs';
 

@@ -1,6 +1,6 @@
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import { currentPageIdAtom } from '@toeverything/plugin-infra/atom';
+import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

@@ -38,6 +38,8 @@
         "{workspaceRoot}/apps/core/public/plugins"
       ],
       "inputs": [
+        "{workspaceRoot}/infra/**/*",
+        "{workspaceRoot}/sdk/**/*",
         {
           "runtime": "node -v"
         },

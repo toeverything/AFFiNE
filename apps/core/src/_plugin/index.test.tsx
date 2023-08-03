@@ -1,8 +1,5 @@
 import { assertExists } from '@blocksuite/global/utils';
-import {
-  registeredPluginAtom,
-  rootStore,
-} from '@toeverything/plugin-infra/atom';
+import { registeredPluginAtom, rootStore } from '@toeverything/infra/atom';
 import { use } from 'foxact/use';
 import { useAtomValue } from 'jotai';
 import { Provider } from 'jotai/react';

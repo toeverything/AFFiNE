@@ -148,7 +148,6 @@ __metadata:
     "@radix-ui/react-scroll-area": ^1.0.4
     "@radix-ui/react-toast": ^1.1.4
     "@toeverything/hooks": "workspace:*"
-    "@toeverything/plugin-infra": "workspace:*"
     "@toeverything/theme": ^0.7.9
     "@types/react": ^18.2.17
     "@types/react-datepicker": ^4.15.0
@@ -336,7 +335,6 @@ __metadata:
     "@electron/remote": 2.0.10
     "@reforged/maker-appimage": ^3.3.1
     "@toeverything/infra": "workspace:*"
-    "@toeverything/plugin-infra": "workspace:*"
     "@types/fs-extra": ^11.0.1
     "@types/uuid": ^9.0.2
     async-call-rpc: ^6.3.1
@@ -404,7 +402,6 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.29
-    "@toeverything/plugin-infra": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -491,7 +488,6 @@ __metadata:
     "@taplo/cli": ^0.5.2
     "@testing-library/react": ^14.0.0
     "@toeverything/infra": "workspace:*"
-    "@toeverything/plugin-infra": "workspace:*"
     "@types/eslint": ^8.44.1
     "@types/node": ^18.17.1
     "@typescript-eslint/eslint-plugin": ^6.2.0
@@ -557,7 +553,7 @@ __metadata:
   dependencies:
     "@endo/static-module-record": ^0.7.20
     "@swc/core": ^1.3.72
-    "@toeverything/plugin-infra": "workspace:^"
+    "@toeverything/infra": "workspace:^"
     "@vanilla-extract/rollup-plugin": ^1.2.2
     rollup: ^3.27.0
     rollup-plugin-swc3: ^0.9.1
@@ -706,7 +702,6 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@toeverything/hooks": "workspace:*"
-    "@toeverything/plugin-infra": "workspace:*"
     "@toeverything/y-indexeddb": "workspace:*"
     "@types/ws": ^8.5.5
     async-call-rpc: ^6.3.1
@@ -11389,28 +11384,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/infra@workspace:*, @toeverything/infra@workspace:packages/infra":
+"@toeverything/infra@workspace:*, @toeverything/infra@workspace:^, @toeverything/infra@workspace:packages/infra":
   version: 0.0.0-use.local
   resolution: "@toeverything/infra@workspace:packages/infra"
-  dependencies:
-    async-call-rpc: ^6.3.1
-    electron: "link:../../apps/electron/node_modules/electron"
-    vite: ^4.4.7
-    vite-plugin-dts: 3.3.1
-  peerDependencies:
-    async-call-rpc: "*"
-    electron: "*"
-  peerDependenciesMeta:
-    async-call-rpc:
-      optional: true
-    electron:
-      optional: true
-  languageName: unknown
-  linkType: soft
-
-"@toeverything/plugin-infra@workspace:*, @toeverything/plugin-infra@workspace:^, @toeverything/plugin-infra@workspace:packages/plugin-infra":
-  version: 0.0.0-use.local
-  resolution: "@toeverything/plugin-infra@workspace:packages/plugin-infra"
   dependencies:
     "@affine/sdk": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230802200139-381599c0-nightly
@@ -11418,16 +11394,28 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/lit": 0.0.0-20230802200139-381599c0-nightly
     "@blocksuite/store": 0.0.0-20230802200139-381599c0-nightly
+    async-call-rpc: ^6.3.1
+    electron: "link:../../apps/electron/node_modules/electron"
     jotai: ^2.2.2
+    react: ^18.2.0
     vite: ^4.4.7
     vite-plugin-dts: 3.3.1
     zod: ^3.21.4
   peerDependencies:
-    "@blocksuite/blocks": "*"
-    "@blocksuite/editor": "*"
-    "@blocksuite/lit": "*"
+    async-call-rpc: "*"
+    electron: "*"
     react: "*"
-    react-dom: "*"
+  peerDependenciesMeta:
+    "@blocksuite/editor":
+      optional: true
+    "@blocksuite/lit":
+      optional: true
+    async-call-rpc:
+      optional: true
+    electron:
+      optional: true
+    react:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -27687,7 +27675,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:18.2.0":
+"react@npm:18.2.0, react@npm:^18.2.0":
   version: 18.2.0
   resolution: "react@npm:18.2.0"
   dependencies:

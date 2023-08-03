@@ -7,7 +7,7 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { currentPageIdAtom, rootStore } from '@toeverything/plugin-infra/atom';
+import { currentPageIdAtom, rootStore } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import { useAtom } from 'jotai/react';
 import { type ReactElement, useCallback, useEffect } from 'react';

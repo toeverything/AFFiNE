@@ -22,7 +22,7 @@
       "path": "../hooks"
     },
     {
-      "path": "../plugin-infra"
+      "path": "../infra"
     },
     { "path": "../workspace" },
     { "path": "../../tests/fixtures" }
