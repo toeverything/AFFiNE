@@ -207,12 +207,6 @@ jobs:
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-      - name: Upload storage.node
-        uses: actions/upload-artifact@v3
-        with:
-          name: storage.node
-          path: ./packages/storage/storage.node
-          if-no-files-found: error
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
         with:
