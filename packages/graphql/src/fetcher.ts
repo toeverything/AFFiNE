@@ -5,6 +5,12 @@ import { nanoid } from 'nanoid';
 
 import type { GraphQLQuery } from './graphql';
 import type { Mutations, Queries } from './schema';
+import {
+  generateRandUTF16Chars,
+  SPAN_ID_BYTES,
+  toZuluDateFormat,
+  TRACE_ID_BYTES,
+} from './utils';
 
 export type NotArray<T> = T extends Array<unknown> ? never : T;
 
@@ -173,7 +179,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
     if (!isFormData) {
       headers['content-type'] = 'application/json';
     }
-    const ret = fetchWithRequestId(
+    const ret = fetchWithReport(
       endpoint,
       merge(options.context, {
         method: 'POST',
@@ -206,17 +212,45 @@ export const gqlFetcherFactory = (endpoint: string) => {
   return gqlFetch;
 };
 
-export const fetchWithRequestId = (
+// TODO
+const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID;
+const traceWorkerEndpoint = '';
+
+export const fetchWithReport = (
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> => {
+  const startTime = toZuluDateFormat(new Date());
   init = init || {};
   init.headers = init.headers || new Headers();
+  const requestId = nanoid();
   if (init.headers instanceof Headers) {
-    init.headers.append('x-request-id', nanoid());
+    init.headers.append('x-request-id', requestId);
   } else {
-    (init.headers as Record<string, string>)['x-request-id'] = nanoid();
+    (init.headers as Record<string, string>)['x-request-id'] = requestId;
   }
 
-  return fetch(input, init);
+  return fetch(input, init).finally(() => {
+    if (!GCP_PROJECT_ID) return;
+    const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
+    const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
+    const postBody = {
+      name: `projects/${GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`,
+      spanId,
+      displayName: 'fetch',
+      startTime,
+      endTime: toZuluDateFormat(new Date()),
+      attributes: JSON.stringify({ requestId }),
+    };
+
+    fetch(traceWorkerEndpoint, {
+      method: 'POST',
+      mode: 'cors',
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(postBody), // body data type must match "Content-Type" header
+    }).catch(console.error);
+  });
 };
