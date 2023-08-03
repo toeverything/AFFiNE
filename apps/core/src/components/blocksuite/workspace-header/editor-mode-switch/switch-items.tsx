@@ -50,7 +50,7 @@ export const PageSwitchItem = (
     <HoverAnimateController {...props}>
       <InternalLottie
         options={{
-          loop: true,
+          loop: false,
           autoplay: false,
           animationData: require('./animation-data/page-hover.json'),
           rendererSettings: {
@@ -69,7 +69,7 @@ export const EdgelessSwitchItem = (
     <HoverAnimateController {...props}>
       <InternalLottie
         options={{
-          loop: true,
+          loop: false,
           autoplay: false,
           animationData: require('./animation-data/edgeless-hover.json'),
           rendererSettings: {
