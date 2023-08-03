@@ -12,7 +12,7 @@ import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-pa
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtom, useAtomValue } from 'jotai';
 import type React from 'react';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
@@ -70,16 +70,20 @@ const PagePreview = ({
 };
 
 const PageListEmpty = (props: {
-  createPage?: () => void;
+  createPage?: ReturnType<typeof usePageHelper>['createPage'];
   listType: BlockSuitePageListProps['listType'];
 }) => {
   const { listType, createPage } = props;
   const t = useAFFiNEI18N();
 
+  const onCreatePage = useCallback(() => {
+    createPage?.();
+  }, [createPage]);
+
   const getEmptyDescription = () => {
     if (listType === 'all') {
-      const CreateNewPageButton = () => (
-        <button className={emptyDescButton} onClick={createPage}>
+      const createNewPageButton = (
+        <button className={emptyDescButton} onClick={onCreatePage}>
           New Page
         </button>
       );
@@ -87,7 +91,7 @@ const PageListEmpty = (props: {
         const shortcut = environment.isMacOs ? '⌘ + N' : 'Ctrl + N';
         return (
           <Trans i18nKey="emptyAllPagesClient">
-            Click on the <CreateNewPageButton /> button Or press
+            Click on the {createNewPageButton} button Or press
             <kbd className={emptyDescKbd}>{{ shortcut } as any}</kbd> to create
             your first page.
           </Trans>
@@ -96,7 +100,7 @@ const PageListEmpty = (props: {
       return (
         <Trans i18nKey="emptyAllPages">
           Click on the
-          <CreateNewPageButton />
+          {createNewPageButton}
           button to create your first page.
         </Trans>
       );

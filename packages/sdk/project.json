@@ -1,0 +1,21 @@
+{
+  "name": "sdk",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "packages/sdk/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "packages/sdk/dist"
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "packages/sdk/dist",
+        "watch": true
+      }
+    }
+  }
+}

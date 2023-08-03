@@ -4,6 +4,7 @@ runs:
   using: 'composite'
   steps:
     - name: 'Install create-dmg from brew'
+      if: runner.os == 'macos'
       shell: bash
       run: brew install create-dmg
     - name: 'Build @affine/makder-dmg'

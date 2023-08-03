@@ -26,6 +26,9 @@
       "path": "../../packages/infra"
     },
     {
+      "path": "../../packages/sdk"
+    },
+    {
       "path": "../../packages/env"
     },
 

@@ -1,13 +1,14 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.8.0-canary.6",
+  "version": "0.8.0-canary.8",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
     "run-test": "./scripts/run-test.ts"
   },
   "scripts": {
+    "build": "tsc",
     "start": "node --loader ts-node/esm.mjs --es-module-specifier-resolution node ./src/index.ts",
     "dev": "nodemon ./src/index.ts",
     "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",

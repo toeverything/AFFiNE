@@ -153,7 +153,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
             ...item.map(x => ({
               id: x.id,
               flavour: x.flavour,
-              version: WorkspaceVersion.SubDoc,
+              version: WorkspaceVersion.DatabaseV3,
             }))
           );
         } catch (e) {
