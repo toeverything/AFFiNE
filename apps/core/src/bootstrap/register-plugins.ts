@@ -22,7 +22,7 @@ declare global {
 
 globalThis.__pluginPackageJson__ = [];
 
-Promise.all(
+export const pluginRegisterPromise = Promise.all(
   [...builtinPluginUrl].map(url => {
     return fetch(`${url}/package.json`)
       .then(async res => {

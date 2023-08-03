@@ -26,8 +26,8 @@ export default defineConfig({
     include: [
       resolve(rootDir, 'packages/**/*.spec.ts'),
       resolve(rootDir, 'packages/**/*.spec.tsx'),
-      resolve(rootDir, 'apps/web/**/*.spec.ts'),
-      resolve(rootDir, 'apps/web/**/*.spec.tsx'),
+      resolve(rootDir, 'apps/core/**/*.spec.ts'),
+      resolve(rootDir, 'apps/core/**/*.spec.tsx'),
       resolve(rootDir, 'tests/unit/**/*.spec.ts'),
       resolve(rootDir, 'tests/unit/**/*.spec.tsx'),
     ],
