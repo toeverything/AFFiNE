@@ -11404,10 +11404,17 @@ __metadata:
   peerDependencies:
     async-call-rpc: "*"
     electron: "*"
+    react: "*"
   peerDependenciesMeta:
+    "@blocksuite/editor":
+      optional: true
+    "@blocksuite/lit":
+      optional: true
     async-call-rpc:
       optional: true
     electron:
+      optional: true
+    react:
       optional: true
   languageName: unknown
   linkType: soft
