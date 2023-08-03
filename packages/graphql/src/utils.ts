@@ -1,5 +1,7 @@
 export const SPAN_ID_BYTES = 8;
 export const TRACE_ID_BYTES = 16;
+export const TRACE_VERSION = '00';
+export const TRACE_FLAG = '01';
 
 const BytesBuffer = Array(32);
 

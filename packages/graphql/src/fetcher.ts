@@ -9,7 +9,9 @@ import {
   generateRandUTF16Chars,
   SPAN_ID_BYTES,
   toZuluDateFormat,
+  TRACE_FLAG,
   TRACE_ID_BYTES,
+  TRACE_VERSION,
 } from './utils';
 
 export type NotArray<T> = T extends Array<unknown> ? never : T;
@@ -221,19 +223,23 @@ export const fetchWithReport = (
   init?: RequestInit
 ): Promise<Response> => {
   const startTime = toZuluDateFormat(new Date());
+  const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
+  const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
+  const traceparent = `${TRACE_VERSION}-${traceId}-${spanId}-${TRACE_FLAG}`;
   init = init || {};
   init.headers = init.headers || new Headers();
   const requestId = nanoid();
   if (init.headers instanceof Headers) {
     init.headers.append('x-request-id', requestId);
+    init.headers.append('traceparent', traceparent);
   } else {
-    (init.headers as Record<string, string>)['x-request-id'] = requestId;
+    const headers = init.headers as Record<string, string>;
+    headers['x-request-id'] = requestId;
+    headers['traceparent'] = traceparent;
   }
 
   return fetch(input, init).finally(() => {
     if (!GCP_PROJECT_ID) return;
-    const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
-    const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
     const postBody = {
       name: `projects/${GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`,
       spanId,
