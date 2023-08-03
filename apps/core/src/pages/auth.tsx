@@ -6,14 +6,12 @@ import {
 } from '@affine/component/auth-components';
 import { changePasswordMutation } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
+import { SessionProvider } from 'next-auth/react';
 import type { FC } from 'react';
 import { useCallback } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
-import {
-  type CheckedUser,
-  useCurrentUser,
-} from '../hooks/affine/use-current-user';
+import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 type AuthType =
@@ -24,7 +22,8 @@ type AuthType =
   | 'changeEmail';
 const authTypes: AuthType[] = ['setPassword', 'signIn', 'changePassword'];
 
-export const AuthPage: FC<{ user: CheckedUser }> = ({ user }) => {
+export const AuthPage: FC = () => {
+  const user = useCurrentUser();
   const { authType } = useParams();
   const { trigger: changePassword } = useMutation({
     mutation: changePasswordMutation,
@@ -89,7 +88,9 @@ export const loader: LoaderFunction = async args => {
   return null;
 };
 export const Component = () => {
-  const user = useCurrentUser();
-
-  return <AuthPage user={user} />;
+  return (
+    <SessionProvider>
+      <AuthPage />
+    </SessionProvider>
+  );
 };
