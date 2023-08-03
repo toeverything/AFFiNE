@@ -47,8 +47,6 @@ jobs:
           electron-install: false
       - name: Run i18n codegen
         run: yarn i18n-codegen gen
-      - name: Run Type Check
-        run: yarn typecheck
       - name: Run ESLint
         run: yarn lint:eslint --max-warnings=0
       - name: Run Prettier
@@ -58,6 +56,8 @@ jobs:
           yarn lint:prettier
       - name: Run circular
         run: yarn circular
+      - name: Run Type Check
+        run: yarn typecheck
       - name: Upload server dist
         uses: actions/upload-artifact@v3
         with:
