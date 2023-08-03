@@ -6,7 +6,7 @@ import { assertEquals } from '@blocksuite/global/utils';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import { atom } from 'jotai';
 import { z } from 'zod';
 

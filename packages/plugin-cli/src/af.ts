@@ -8,7 +8,7 @@ import { StaticModuleRecord } from '@endo/static-module-record';
 import {
   packageJsonInputSchema,
   packageJsonOutputSchema,
-} from '@toeverything/plugin-infra/type';
+} from '@toeverything/infra/type';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
 import { build, type PluginOption } from 'vite';

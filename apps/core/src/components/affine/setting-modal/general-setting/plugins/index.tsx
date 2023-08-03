@@ -3,7 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   registeredPluginAtom,
   settingItemsAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import type { FC, ReactNode } from 'react';
 import { useRef } from 'react';

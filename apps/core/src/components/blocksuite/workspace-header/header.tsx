@@ -7,7 +7,7 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { headerItemsAtom } from '@toeverything/plugin-infra/atom';
+import { headerItemsAtom } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
@@ -154,7 +154,10 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
-  const [showDownloadTip, setShowDownloadTip] = useState(true);
+  const isDownloadTipHide = localStorage.getItem('affine-is-dt-hide');
+  const [showDownloadTip, setShowDownloadTip] = useState(
+    isDownloadTipHide ? false : true
+  );
   // const [shouldShowGuideDownloadClientTip] = useAtom(
   //   guideDownloadClientTipAtom
   // );
@@ -177,7 +180,10 @@ export const Header = forwardRef<
       {showDownloadTip ? (
         <DownloadClientTip
           show={showDownloadTip}
-          onClose={() => setShowDownloadTip(false)}
+          onClose={() => {
+            setShowDownloadTip(false);
+            localStorage.setItem('affine-is-dt-hide', '1');
+          }}
         />
       ) : (
         <BrowserWarning

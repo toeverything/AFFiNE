@@ -1,8 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import {
-  registeredPluginAtom,
-  rootStore,
-} from '@toeverything/plugin-infra/atom';
+import { registeredPluginAtom, rootStore } from '@toeverything/infra/atom';
 
 import { evaluatePluginEntry, setupPluginCode } from './plugins/setup';
 

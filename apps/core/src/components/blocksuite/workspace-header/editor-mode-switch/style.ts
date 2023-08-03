@@ -5,14 +5,15 @@ export const StyledEditorModeSwitch = styled('div')<{
   showAlone?: boolean;
 }>(({ switchLeft, showAlone }) => {
   return {
-    width: showAlone ? '40px' : '78px',
+    maxWidth: showAlone ? '40px' : '70px',
+    gap: '8px',
     height: '32px',
     background: showAlone
       ? 'transparent'
       : 'var(--affine-background-secondary-color)',
     borderRadius: '12px',
     ...displayFlex('space-between', 'center'),
-    padding: '0 8px',
+    padding: '4px 4px',
     position: 'relative',
 
     '::after': {
@@ -25,7 +26,7 @@ export const StyledEditorModeSwitch = styled('div')<{
       borderRadius: '8px',
       zIndex: 1,
       position: 'absolute',
-      transform: `translateX(${switchLeft ? '0' : '38px'})`,
+      transform: `translateX(${switchLeft ? '0' : '32px'})`,
       transition: 'all .15s',
     },
   };
