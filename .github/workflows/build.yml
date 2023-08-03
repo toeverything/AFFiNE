@@ -502,6 +502,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     name: Build Docker
     runs-on: ubuntu-latest
+    needs: build-server
     steps:
       - uses: actions/checkout@v3
       - name: Download core artifact
